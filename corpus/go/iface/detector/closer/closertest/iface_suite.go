@@ -15,6 +15,19 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Closer:
+//
+// Closer.Close/smoke: Close returns without a panic for derived inputs.
+
+// The derived checks of Closer that witness their laws at the shallow end:
+//
+// Closer.Close/smoke
+
+// The unclaimed classifications of Closer:
+//
+// The shape:closer of Closer.Close has the stance silent. A close returns
+// nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -180,4 +193,4 @@ func closerClosePanics(h *CloserHandle) closer.Closer {
 	return &closerClosePanicsDefect{closerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2f812daef78c47c882784b46e8657d7a7015b63a49e4593872e63c4123a1502b
+// dokimi:provenance sha256:268dc9ffa50184955302f7db2f82c9fed41c8527498f09348df73f398b23f25d

@@ -407,7 +407,9 @@ type Door struct {
 // callables, and empty for the test of a subject. Options refers to the
 // function of the param options of the subject, whose list each test of the
 // subject passes after the options of its directives. It is nil for a subject
-// without the param and for the test of a suite.
+// without the param and for the test of a suite. Isolate reports that the
+// test of the subject passes conform.Isolate, as the option isolate of the
+// generator states.
 //
 // The record of a conformance test is a struct with ten fields. Their types
 // refer, in this order, to the form of the application, as RunStoreSuite, to
@@ -451,6 +453,7 @@ type Conformance struct {
 	Cases       int64
 	Function    bool
 	FromHandle  bool
+	Isolate     bool
 }
 
 // Identity is the identity of one check of a suite, which the test of the
@@ -622,6 +625,7 @@ var excuseSchema = directive.Schema{
 // The workers of a phase call read the handles concurrently, and no handler
 // writes them.
 type generator struct {
+	settings    *Options
 	declaration meta.Key[symbol.Identity]
 	defect      meta.Key[symbol.Identity]
 	callable    meta.Key[string]
@@ -637,6 +641,11 @@ type generator struct {
 	options     meta.Key[symbol.Identity]
 	around      meta.Key[symbol.Identity]
 	doors       [len(doors)]meta.Key[symbol.Identity]
+}
+
+// Options are the options of suite.
+type Options struct {
+	Isolate bool `opt:"isolate" doc:"When true, the conformance test of each subject passes conform.Isolate, so the falsification of each derived check also runs every other derived check on its planted defect. The corpus sets it for its controls."`
 }
 
 // New returns suite, a plugin with an annotate half and a generate half. The
@@ -675,9 +684,10 @@ type generator struct {
 // suite records and stamps nothing for a declaration that it reports. Each
 // call returns a new plugin.
 func New() sdk.Dual {
-	g := &generator{}
+	g := &generator{settings: &Options{}}
 	b := sdk.NewPlugin(ID).
 		Version(Version).
+		Options(g.settings).
 		Keys(g.register).
 		Output(plugin.Output{Per: plugin.PerSource, Word: Word, Template: suiteTemplate}).
 		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, External: true, Word: Word, Template: conformTemplate})
@@ -1704,7 +1714,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	test := Conformance{
 		Test:    e.JoinName(conforms, testWord),
 		Subject: st.Name, Declaration: declared.Name, Excusals: excusals, Ceilings: ceilings, Targets: targets,
-		Levels: levels, Options: options, FromHandle: len(view.Params) == 1,
+		Levels: levels, Options: options, FromHandle: len(view.Params) == 1, Isolate: g.settings.Isolate,
 	}
 	if cases, stated := d.Param(CasesParam); stated {
 		test.Cases = cases.Int

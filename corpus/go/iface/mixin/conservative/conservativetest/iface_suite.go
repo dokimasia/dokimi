@@ -15,6 +15,32 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Apply/smoke: Apply returns without a panic for derived inputs.
+//
+// Mixed.Apply/cancel: Apply returns an error for a cancelled context.
+//
+// Mixed.Total/smoke: Total returns without a panic for derived inputs.
+//
+// Mixed.Total/cancel: Total returns an error for a cancelled context.
+//
+// Mixed.Total/zero-on-error: Total returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Apply/smoke
+//
+// Mixed.Total/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Apply has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The mixin:conservative of Mixed.Apply has the stance needs. The claims
+// of the mixin need generated sequences.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,7 +138,7 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 						return h.Subject().Apply(ctx, conservative.Delta{Key: "Key-a"})
 					})
 				},
-				Defect: mixedApplySucceedsAlways,
+				Defect: mixedApplyIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Total.Smoke(),
@@ -145,7 +171,7 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedTotalSucceedsAlways,
+				Defect: mixedTotalIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Total.ZeroOnError(),
@@ -300,21 +326,24 @@ func mixedApplyPanics(h *MixedHandle) conservative.Mixed {
 	return &mixedApplyPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedApplySucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedApplyIgnoresCancelDefect is the planted defect of a Mixed whose
 // Apply ignores the context.
-type mixedApplySucceedsAlwaysDefect struct {
+type mixedApplyIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Apply is the override of the planted defect.
-func (*mixedApplySucceedsAlwaysDefect) Apply(p0 context.Context, p1 conservative.Delta) (r0 error) {
-	return r0
+func (d *mixedApplyIgnoresCancelDefect) Apply(p0 context.Context, p1 conservative.Delta) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Apply(p0, p1)
 }
 
-// mixedApplySucceedsAlways returns the planted defect of a Mixed whose
+// mixedApplyIgnoresCancel returns the planted defect of a Mixed whose
 // Apply ignores the context over a fresh subject.
-func mixedApplySucceedsAlways(h *MixedHandle) conservative.Mixed {
-	return &mixedApplySucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedApplyIgnoresCancel(h *MixedHandle) conservative.Mixed {
+	return &mixedApplyIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedTotalPanicsDefect is the planted defect of a Mixed whose Total
@@ -334,21 +363,24 @@ func mixedTotalPanics(h *MixedHandle) conservative.Mixed {
 	return &mixedTotalPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedTotalSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedTotalIgnoresCancelDefect is the planted defect of a Mixed whose
 // Total ignores the context.
-type mixedTotalSucceedsAlwaysDefect struct {
+type mixedTotalIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Total is the override of the planted defect.
-func (*mixedTotalSucceedsAlwaysDefect) Total(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *mixedTotalIgnoresCancelDefect) Total(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Total(p0)
 }
 
-// mixedTotalSucceedsAlways returns the planted defect of a Mixed whose
+// mixedTotalIgnoresCancel returns the planted defect of a Mixed whose
 // Total ignores the context over a fresh subject.
-func mixedTotalSucceedsAlways(h *MixedHandle) conservative.Mixed {
-	return &mixedTotalSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedTotalIgnoresCancel(h *MixedHandle) conservative.Mixed {
+	return &mixedTotalIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedTotalValueBesideDefect is the planted defect of a Mixed whose Total
@@ -358,9 +390,11 @@ type mixedTotalValueBesideDefect struct {
 }
 
 // Total is the override of the planted defect.
-func (*mixedTotalValueBesideDefect) Total(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *mixedTotalValueBesideDefect) Total(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Total(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -370,4 +404,4 @@ func mixedTotalValueBeside(h *MixedHandle) conservative.Mixed {
 	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:36b8d7d99da930c0b10dda7eaee30a5f8737c2f6c6461bf733030cbfcec54574
+// dokimi:provenance sha256:b9beb2e7c4c6b7dbf8e4102d4c7f1987d1c643b7ce3f3d5d74b99a0e4c040492

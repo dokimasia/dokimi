@@ -7,6 +7,8 @@ package deletertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/deleter"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/deleter/deletertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToDeleter(t *testing.T) {
 	t.Parallel()
 
-	deletertest.RunDeleterSuite(t, deletertest.NewInMemory)
+	deletertest.RunDeleterSuite(
+		t,
+		deletertest.NewInMemory,
+		conform.Isolate[deleter.Deleter](),
+	)
 }
 
 // BenchmarkInMemoryConformsToDeleter measures each callable of the suite
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToDeleterDelete(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:93f613507c91d3d11c69ecdd76ea3ca43699c9b796c052c90584436b7f72ff40
+// dokimi:provenance sha256:574647f7ef81bfa611efc3e59af1afef71f5dc424905d348ea6989b84eb27e29

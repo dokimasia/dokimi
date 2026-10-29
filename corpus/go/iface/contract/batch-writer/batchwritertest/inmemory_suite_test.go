@@ -7,6 +7,8 @@ package batchwritertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	batchwriter "go.dokimi.dev/dokimi/corpus/go/iface/contract/batch-writer"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/batch-writer/batchwritertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	batchwritertest.RunContractSuite(t, batchwritertest.NewInMemory)
+	batchwritertest.RunContractSuite(
+		t,
+		batchwritertest.NewInMemory,
+		conform.Isolate[batchwriter.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0ed1c42ce07610d4797da69c82dd89e4d34a23675fde82a5cdb28546910ac6bb
+// dokimi:provenance sha256:40384bce306c8639ad583ecb4fdd0ed0a62080feef228bc4c22af5768f017bfd

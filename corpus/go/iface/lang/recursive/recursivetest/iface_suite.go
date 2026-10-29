@@ -14,6 +14,16 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/recursive"
 )
 
+// The refused claims of Counter:
+//
+// Counter.Nodes/deterministic: eidos derives no sample of the parameter
+// root of Nodes. The remedy is to author a sample of the parameter root
+// with the directive sample.
+//
+// Counter.Steps/deterministic: eidos derives no sample of the parameter
+// start of Steps. The remedy is to author a sample of the parameter start
+// with the directive sample.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -300,4 +310,4 @@ func newCounterOver(_ *CounterHandle, spend func()) recursive.Counter {
 	return counterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:92f6288f1dd550ca2ece3b8df1ad2ca718636bba47b613298033b6c2a910ac69
+// dokimi:provenance sha256:f838f9664d2d14797391dacaa9cba7a8a5bab09f0360fe80cdb10c5350a7a45f

@@ -7,6 +7,8 @@ package writertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/writer"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/writer/writertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToWriter(t *testing.T) {
 	t.Parallel()
 
-	writertest.RunWriterSuite(t, writertest.NewInMemory)
+	writertest.RunWriterSuite(
+		t,
+		writertest.NewInMemory,
+		conform.Isolate[writer.Writer](),
+	)
 }
 
 // BenchmarkInMemoryConformsToWriter measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToWriterPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9bf8636dc2bd34781d127670652a0066ac7c5782cf7ffbdc9895a8733e4299b1
+// dokimi:provenance sha256:d420cfc0e9b68049adc63bccdd54b501caac3f887160f29529742cee4ccdc148

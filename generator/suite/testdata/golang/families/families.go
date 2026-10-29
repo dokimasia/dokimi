@@ -128,6 +128,33 @@ type Keyed interface {
 	Delete(ctx context.Context, key string) error
 }
 
+// Stamped stores values under their keys, and stamps the revision of each.
+//
+//dokimi:suite
+type Stamped interface {
+	// Store stores v and returns it with the revision that it stamped.
+	Store(ctx context.Context, v Value) (Value, error)
+
+	// Get returns the value under key.
+	//
+	//dokimi:mixin read-after-write write=Store
+	//dokimi:mixin writes-follow-reads version=Rev
+	Get(ctx context.Context, key string) (Value, error)
+}
+
+// Decoded stores values under keys, and decodes each value that it reads.
+//
+//dokimi:suite
+type Decoded interface {
+	// Put stores v under key.
+	Put(ctx context.Context, key string, v Value) error
+
+	// Get returns the value under key, as decode returns it.
+	//
+	//dokimi:mixin read-after-write write=Put
+	Get(ctx context.Context, key string, decode func(Value) Value) (Value, error)
+}
+
 // Expiring keeps each value for a minute.
 //
 //dokimi:suite

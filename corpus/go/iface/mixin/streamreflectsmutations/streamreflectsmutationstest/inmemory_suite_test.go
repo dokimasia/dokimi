@@ -7,6 +7,8 @@ package streamreflectsmutationstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/streamreflectsmutations"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/streamreflectsmutations/streamreflectsmutationstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	streamreflectsmutationstest.RunMixedSuite(t, streamreflectsmutationstest.NewInMemory)
+	streamreflectsmutationstest.RunMixedSuite(
+		t,
+		streamreflectsmutationstest.NewInMemory,
+		conform.Isolate[streamreflectsmutations.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToMixedRemove(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5661401255ff5858e327f8998efe18bfac544fe55fbf7f3df81b5c3096743ef0
+// dokimi:provenance sha256:0ff61773bb5dbd99bdf3ac175fb4da68c76c1bdb756004e2ce0b591f7b849d78

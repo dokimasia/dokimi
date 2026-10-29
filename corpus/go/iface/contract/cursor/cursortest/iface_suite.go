@@ -15,6 +15,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Next/smoke: Next returns without a panic for derived inputs.
+//
+// Contract.Next/cancel: Next returns an error for a cancelled context.
+//
+// Contract.Next/zeroes-on-error: Next returns the zero values beside an
+// error.
+//
+// Contract.Next/cursor: Next fails with the declared sentinel after Close.
+//
+// Contract.Close/smoke: Close returns without a panic for derived inputs.
+//
+// Contract.Close/cancel: Close returns an error for a cancelled context.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Next/smoke
+//
+// Contract.Close/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:lifecycle of Contract.Close has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -120,7 +147,7 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 						return err
 					})
 				},
-				Defect: contractNextSucceedsAlways,
+				Defect: contractNextIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Next.ZeroesOnError(),
@@ -185,7 +212,7 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 						return h.Subject().Close(ctx)
 					})
 				},
-				Defect: contractCloseSucceedsAlways,
+				Defect: contractCloseIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[cursor.Contract]{
@@ -324,21 +351,24 @@ func contractNextPanics(h *ContractHandle) cursor.Contract {
 	return &contractNextPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractNextSucceedsAlwaysDefect is the planted defect of a Contract
+// contractNextIgnoresCancelDefect is the planted defect of a Contract
 // whose Next ignores the context.
-type contractNextSucceedsAlwaysDefect struct {
+type contractNextIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Next is the override of the planted defect.
-func (*contractNextSucceedsAlwaysDefect) Next(p0 context.Context) (r0 cursor.Value, r1 bool, r2 error) {
-	return r0, r1, r2
+func (d *contractNextIgnoresCancelDefect) Next(p0 context.Context) (r0 cursor.Value, r1 bool, r2 error) {
+	if p0.Err() != nil {
+		return r0, r1, r2
+	}
+	return d.contractOverEmbedded.Next(p0)
 }
 
-// contractNextSucceedsAlways returns the planted defect of a Contract
-// whose Next ignores the context over a fresh subject.
-func contractNextSucceedsAlways(h *ContractHandle) cursor.Contract {
-	return &contractNextSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+// contractNextIgnoresCancel returns the planted defect of a Contract whose
+// Next ignores the context over a fresh subject.
+func contractNextIgnoresCancel(h *ContractHandle) cursor.Contract {
+	return &contractNextIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractNextValuesBesideDefect is the planted defect of a Contract whose
@@ -348,10 +378,12 @@ type contractNextValuesBesideDefect struct {
 }
 
 // Next is the override of the planted defect.
-func (*contractNextValuesBesideDefect) Next(p0 context.Context) (r0 cursor.Value, r1 bool, r2 error) {
-	r0 = cursor.Value{Key: "Key-b"}
-	r1 = bool(true)
-	r2 = conform.ErrGenerated
+func (d *contractNextValuesBesideDefect) Next(p0 context.Context) (r0 cursor.Value, r1 bool, r2 error) {
+	r0, r1, r2 = d.contractOverEmbedded.Next(p0)
+	if r2 != nil {
+		r0 = cursor.Value{Key: "Key-b"}
+		r1 = bool(true)
+	}
 	return r0, r1, r2
 }
 
@@ -359,6 +391,27 @@ func (*contractNextValuesBesideDefect) Next(p0 context.Context) (r0 cursor.Value
 // Next returns values beside an error over a fresh subject.
 func contractNextValuesBeside(h *ContractHandle) cursor.Contract {
 	return &contractNextValuesBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractNextSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Next keeps draining after Close.
+type contractNextSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Next is the override of the planted defect.
+func (*contractNextSucceedsAlwaysDefect) Next(p0 context.Context) (r0 cursor.Value, r1 bool, r2 error) {
+	if err := p0.Err(); err != nil {
+		r2 = err
+		return r0, r1, r2
+	}
+	return r0, r1, r2
+}
+
+// contractNextSucceedsAlways returns the planted defect of a Contract
+// whose Next keeps draining after Close over a fresh subject.
+func contractNextSucceedsAlways(h *ContractHandle) cursor.Contract {
+	return &contractNextSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractClosePanicsDefect is the planted defect of a Contract whose
@@ -378,21 +431,24 @@ func contractClosePanics(h *ContractHandle) cursor.Contract {
 	return &contractClosePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractCloseSucceedsAlwaysDefect is the planted defect of a Contract
+// contractCloseIgnoresCancelDefect is the planted defect of a Contract
 // whose Close ignores the context.
-type contractCloseSucceedsAlwaysDefect struct {
+type contractCloseIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Close is the override of the planted defect.
-func (*contractCloseSucceedsAlwaysDefect) Close(p0 context.Context) (r0 error) {
-	return r0
+func (d *contractCloseIgnoresCancelDefect) Close(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Close(p0)
 }
 
-// contractCloseSucceedsAlways returns the planted defect of a Contract
+// contractCloseIgnoresCancel returns the planted defect of a Contract
 // whose Close ignores the context over a fresh subject.
-func contractCloseSucceedsAlways(h *ContractHandle) cursor.Contract {
-	return &contractCloseSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractCloseIgnoresCancel(h *ContractHandle) cursor.Contract {
+	return &contractCloseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:db632ac0b0938dff1dfca37ebccaafa2635a898f642f4aa83acfaad9d97fb16b
+// dokimi:provenance sha256:c940ecf4fb02493331392b3739c43e2bfb73fc0d11b0b8f04c24895e1ac67c35

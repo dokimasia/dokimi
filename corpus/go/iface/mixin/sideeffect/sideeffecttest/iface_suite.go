@@ -15,6 +15,34 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Touch/smoke: Touch returns without a panic for derived inputs.
+//
+// Mixed.Touch/cancel: Touch returns an error for a cancelled context.
+//
+// Mixed.Touch/side-effect: Touch changes what Observed returns.
+//
+// Mixed.Observed/smoke: Observed returns without a panic for derived
+// inputs.
+//
+// Mixed.Observed/cancel: Observed returns an error for a cancelled
+// context.
+//
+// Mixed.Observed/zero-on-error: Observed returns the zero value beside an
+// error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Touch/smoke
+//
+// Mixed.Observed/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Touch has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -118,7 +146,7 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 						return h.Subject().Touch(ctx, string("key-a"))
 					})
 				},
-				Defect: mixedTouchSucceedsAlways,
+				Defect: mixedTouchIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Touch.SideEffect(),
@@ -168,7 +196,7 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedObservedSucceedsAlways,
+				Defect: mixedObservedIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Observed.ZeroOnError(),
@@ -320,21 +348,24 @@ func mixedTouchPanics(h *MixedHandle) sideeffect.Mixed {
 	return &mixedTouchPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedTouchSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedTouchIgnoresCancelDefect is the planted defect of a Mixed whose
 // Touch ignores the context.
-type mixedTouchSucceedsAlwaysDefect struct {
+type mixedTouchIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Touch is the override of the planted defect.
-func (*mixedTouchSucceedsAlwaysDefect) Touch(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedTouchIgnoresCancelDefect) Touch(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Touch(p0, p1)
 }
 
-// mixedTouchSucceedsAlways returns the planted defect of a Mixed whose
+// mixedTouchIgnoresCancel returns the planted defect of a Mixed whose
 // Touch ignores the context over a fresh subject.
-func mixedTouchSucceedsAlways(h *MixedHandle) sideeffect.Mixed {
-	return &mixedTouchSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedTouchIgnoresCancel(h *MixedHandle) sideeffect.Mixed {
+	return &mixedTouchIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedObservedObservationUnmovedDefect is the planted defect of a Mixed
@@ -345,6 +376,10 @@ type mixedObservedObservationUnmovedDefect struct {
 
 // Observed is the override of the planted defect.
 func (*mixedObservedObservationUnmovedDefect) Observed(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	return r0, r1
 }
 
@@ -371,21 +406,24 @@ func mixedObservedPanics(h *MixedHandle) sideeffect.Mixed {
 	return &mixedObservedPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedObservedSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedObservedIgnoresCancelDefect is the planted defect of a Mixed whose
 // Observed ignores the context.
-type mixedObservedSucceedsAlwaysDefect struct {
+type mixedObservedIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Observed is the override of the planted defect.
-func (*mixedObservedSucceedsAlwaysDefect) Observed(p0 context.Context, p1 string) (r0 int, r1 error) {
-	return r0, r1
+func (d *mixedObservedIgnoresCancelDefect) Observed(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Observed(p0, p1)
 }
 
-// mixedObservedSucceedsAlways returns the planted defect of a Mixed whose
+// mixedObservedIgnoresCancel returns the planted defect of a Mixed whose
 // Observed ignores the context over a fresh subject.
-func mixedObservedSucceedsAlways(h *MixedHandle) sideeffect.Mixed {
-	return &mixedObservedSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedObservedIgnoresCancel(h *MixedHandle) sideeffect.Mixed {
+	return &mixedObservedIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedObservedValueBesideDefect is the planted defect of a Mixed whose
@@ -395,9 +433,11 @@ type mixedObservedValueBesideDefect struct {
 }
 
 // Observed is the override of the planted defect.
-func (*mixedObservedValueBesideDefect) Observed(p0 context.Context, p1 string) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *mixedObservedValueBesideDefect) Observed(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Observed(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -407,4 +447,4 @@ func mixedObservedValueBeside(h *MixedHandle) sideeffect.Mixed {
 	return &mixedObservedValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7e37df015742c0147c63a7579d28e6caee66c3bf4bbb2d58913a33929a20a781
+// dokimi:provenance sha256:614f67865d5f4dcc45a5fbb9358faefa735d0ef65b01a8369932e07ed4f5e790

@@ -15,6 +15,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Close/smoke: Close returns without a panic for derived inputs.
+//
+// Mixed.Close/cancel: Close returns an error for a cancelled context.
+//
+// Mixed.Work/smoke: Work returns without a panic for derived inputs.
+//
+// Mixed.Work/cancel: Work returns an error for a cancelled context.
+//
+// Mixed.Work/lifecycle-after-close: Work fails with the declared sentinel
+// after Close.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Close/smoke
+//
+// Mixed.Work/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:lifecycle of Mixed.Close has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The shape:lifecycle of Mixed.Work has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -111,7 +138,7 @@ func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 						return h.Subject().Close(ctx)
 					})
 				},
-				Defect: mixedCloseSucceedsAlways,
+				Defect: mixedCloseIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Work.Smoke(),
@@ -142,7 +169,7 @@ func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 						return h.Subject().Work(ctx)
 					})
 				},
-				Defect: mixedWorkSucceedsAlways,
+				Defect: mixedWorkIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Work.LifecycleAfterClose(),
@@ -303,21 +330,24 @@ func mixedClosePanics(h *MixedHandle) lifecycleafterclose.Mixed {
 	return &mixedClosePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCloseSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedCloseIgnoresCancelDefect is the planted defect of a Mixed whose
 // Close ignores the context.
-type mixedCloseSucceedsAlwaysDefect struct {
+type mixedCloseIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Close is the override of the planted defect.
-func (*mixedCloseSucceedsAlwaysDefect) Close(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedCloseIgnoresCancelDefect) Close(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Close(p0)
 }
 
-// mixedCloseSucceedsAlways returns the planted defect of a Mixed whose
+// mixedCloseIgnoresCancel returns the planted defect of a Mixed whose
 // Close ignores the context over a fresh subject.
-func mixedCloseSucceedsAlways(h *MixedHandle) lifecycleafterclose.Mixed {
-	return &mixedCloseSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedCloseIgnoresCancel(h *MixedHandle) lifecycleafterclose.Mixed {
+	return &mixedCloseIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedWorkPanicsDefect is the planted defect of a Mixed whose Work
@@ -337,21 +367,45 @@ func mixedWorkPanics(h *MixedHandle) lifecycleafterclose.Mixed {
 	return &mixedWorkPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedWorkIgnoresCancelDefect is the planted defect of a Mixed whose Work
+// ignores the context.
+type mixedWorkIgnoresCancelDefect struct {
+	mixedOverEmbedded
+}
+
+// Work is the override of the planted defect.
+func (d *mixedWorkIgnoresCancelDefect) Work(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Work(p0)
+}
+
+// mixedWorkIgnoresCancel returns the planted defect of a Mixed whose Work
+// ignores the context over a fresh subject.
+func mixedWorkIgnoresCancel(h *MixedHandle) lifecycleafterclose.Mixed {
+	return &mixedWorkIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedWorkSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Work ignores the context.
+// Work works on after Close.
 type mixedWorkSucceedsAlwaysDefect struct {
 	mixedOverEmbedded
 }
 
 // Work is the override of the planted defect.
 func (*mixedWorkSucceedsAlwaysDefect) Work(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // mixedWorkSucceedsAlways returns the planted defect of a Mixed whose Work
-// ignores the context over a fresh subject.
+// works on after Close over a fresh subject.
 func mixedWorkSucceedsAlways(h *MixedHandle) lifecycleafterclose.Mixed {
 	return &mixedWorkSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:09268588c41d3070603e318414bf5c7351681f5e2c295748ef6d76e53df575ca
+// dokimi:provenance sha256:3f8327da3cb7be98f5931890c56edf8cfde6c9f16662149ebc1ca31600df652a

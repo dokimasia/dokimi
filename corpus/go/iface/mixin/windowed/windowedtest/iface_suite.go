@@ -17,6 +17,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Record/smoke: Record returns without a panic for derived inputs.
+//
+// Mixed.Record/cancel: Record returns an error for a cancelled context.
+//
+// Mixed.Record/windowed: CountIn includes a Record inside the declared
+// window and not after it.
+//
+// Mixed.CountIn/smoke: CountIn returns without a panic for derived inputs.
+//
+// Mixed.CountIn/cancel: CountIn returns an error for a cancelled context.
+//
+// Mixed.CountIn/zero-on-error: CountIn returns the zero value beside an
+// error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Record/smoke
+//
+// Mixed.CountIn/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Record has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -120,7 +147,7 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 						return h.Subject().Record(ctx, string("key-a"))
 					})
 				},
-				Defect: mixedRecordSucceedsAlways,
+				Defect: mixedRecordIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Record.Windowed(),
@@ -171,7 +198,7 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedCountInSucceedsAlways,
+				Defect: mixedCountInIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.CountIn.ZeroOnError(),
@@ -323,21 +350,24 @@ func mixedRecordPanics(h *MixedHandle) windowed.Mixed {
 	return &mixedRecordPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedRecordSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedRecordIgnoresCancelDefect is the planted defect of a Mixed whose
 // Record ignores the context.
-type mixedRecordSucceedsAlwaysDefect struct {
+type mixedRecordIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Record is the override of the planted defect.
-func (*mixedRecordSucceedsAlwaysDefect) Record(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedRecordIgnoresCancelDefect) Record(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Record(p0, p1)
 }
 
-// mixedRecordSucceedsAlways returns the planted defect of a Mixed whose
+// mixedRecordIgnoresCancel returns the planted defect of a Mixed whose
 // Record ignores the context over a fresh subject.
-func mixedRecordSucceedsAlways(h *MixedHandle) windowed.Mixed {
-	return &mixedRecordSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedRecordIgnoresCancel(h *MixedHandle) windowed.Mixed {
+	return &mixedRecordIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedCountInCountDriftsDefect is the planted defect of a Mixed whose
@@ -349,6 +379,10 @@ type mixedCountInCountDriftsDefect struct {
 
 // CountIn is the override of the planted defect.
 func (d *mixedCountInCountDriftsDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = int(7)
@@ -380,21 +414,24 @@ func mixedCountInPanics(h *MixedHandle) windowed.Mixed {
 	return &mixedCountInPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCountInSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedCountInIgnoresCancelDefect is the planted defect of a Mixed whose
 // CountIn ignores the context.
-type mixedCountInSucceedsAlwaysDefect struct {
+type mixedCountInIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // CountIn is the override of the planted defect.
-func (*mixedCountInSucceedsAlwaysDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
-	return r0, r1
+func (d *mixedCountInIgnoresCancelDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.CountIn(p0, p1)
 }
 
-// mixedCountInSucceedsAlways returns the planted defect of a Mixed whose
+// mixedCountInIgnoresCancel returns the planted defect of a Mixed whose
 // CountIn ignores the context over a fresh subject.
-func mixedCountInSucceedsAlways(h *MixedHandle) windowed.Mixed {
-	return &mixedCountInSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedCountInIgnoresCancel(h *MixedHandle) windowed.Mixed {
+	return &mixedCountInIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedCountInValueBesideDefect is the planted defect of a Mixed whose
@@ -404,9 +441,11 @@ type mixedCountInValueBesideDefect struct {
 }
 
 // CountIn is the override of the planted defect.
-func (*mixedCountInValueBesideDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *mixedCountInValueBesideDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.CountIn(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -416,4 +455,4 @@ func mixedCountInValueBeside(h *MixedHandle) windowed.Mixed {
 	return &mixedCountInValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:daed011f1d0208b82d90f7ef764dcba1f69ec29f418c00ddfc1d3244a4541af6
+// dokimi:provenance sha256:75ca02d21276bcf135ef725000e4ce289221bc63fdb84b487a5b3401d8cafe44

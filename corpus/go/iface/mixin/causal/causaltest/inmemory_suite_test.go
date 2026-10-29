@@ -7,6 +7,8 @@ package causaltest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal/causaltest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	causaltest.RunMixedSuite(t, causaltest.NewInMemory)
+	causaltest.RunMixedSuite(
+		t,
+		causaltest.NewInMemory,
+		conform.Isolate[causal.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b9a89919d641c42e9afd60cc6f7dfa75314265950b9f447812649dc254e00f8a
+// dokimi:provenance sha256:6aff37c8e08ff12f67fb6ab240e390bd8677ab74341ecf8c7f2398110fb0ae36

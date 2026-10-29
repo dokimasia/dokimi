@@ -7,6 +7,8 @@ package readerwithbooltest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readerwithbool"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readerwithbool/readerwithbooltest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToReaderWithBool(t *testing.T) {
 	t.Parallel()
 
-	readerwithbooltest.RunReaderWithBoolSuite(t, readerwithbooltest.NewInMemory)
+	readerwithbooltest.RunReaderWithBoolSuite(
+		t,
+		readerwithbooltest.NewInMemory,
+		conform.Isolate[readerwithbool.ReaderWithBool](),
+	)
 }
 
 // BenchmarkInMemoryConformsToReaderWithBool measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToReaderWithBoolLoad(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:909f39e91b6ef31a4568f55b2992e3911c6fb630f4d543cf93c5672d4750e0b7
+// dokimi:provenance sha256:a2d5e32f8611e0309517fd1534436655a57efbe132ea949d3fa978de7f8daf57

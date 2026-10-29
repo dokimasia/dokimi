@@ -72,6 +72,10 @@ func TestMixedSuite(t *testing.T) {
 				monotonicwritestest.MixedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				monotonicwritestest.MixedChecks.Get.MonotonicWrites(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -115,6 +119,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				monotonicwritestest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				monotonicwritestest.MixedChecks.Get.MonotonicWrites(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -161,6 +169,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			monotonicwritestest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			monotonicwritestest.MixedChecks.Get.MonotonicWrites(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -193,6 +205,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			monotonicwritestest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			monotonicwritestest.MixedChecks.Get.MonotonicWrites(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -229,6 +245,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			monotonicwritestest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			monotonicwritestest.MixedChecks.Get.MonotonicWrites(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -243,4 +263,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f71166315f4f792b18dc4afea0fa4fed0220821b2ca255ffa354f4c32c2a06e4
+// dokimi:provenance sha256:f6d4193ed9381757510fd05ecfa34b121854b6f80baed88c591f5981fbf77754

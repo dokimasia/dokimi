@@ -7,6 +7,8 @@ package archive_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	causalchain "go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain/archive"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain/causalchaintest"
 )
@@ -15,7 +17,11 @@ import (
 func TestLogConformsToLog(t *testing.T) {
 	t.Parallel()
 
-	causalchaintest.RunLogSuite(t, newLog)
+	causalchaintest.RunLogSuite(
+		t,
+		newLog,
+		conform.Isolate[causalchain.Log](),
+	)
 }
 
 // BenchmarkLogConformsToLog measures each callable of the suite of Log on
@@ -57,4 +63,4 @@ func FuzzLogConformsToLogReplay(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a446e855a9490111843c66b2e5047ba1f724717246f3aa875662725242916897
+// dokimi:provenance sha256:078d7da9360f66a938ed3199aae034508c8aba86521ffab553bcac7615c53586

@@ -4,6 +4,7 @@
 package suite
 
 import (
+	"reflect"
 	"slices"
 	"strconv"
 
@@ -95,6 +96,12 @@ func (k *caller) closure(in *input) *Closure {
 		c.Args[at] = Expr{Name: writtenName}
 		if sl.form == formActs {
 			k.act(c, f)
+			return c
+		}
+		if len(f.Results) == 1 && reflect.DeepEqual(f.Results[0].Shape, f.Inputs[index].Shape) {
+			// A write that returns a value of the written type, such as a
+			// write that stamps a revision, returns what it stored.
+			k.values(c, f)
 			return c
 		}
 		c.Returns = []*emit.TypeRef{k.typeOf(k.inputRef(f, index))}
@@ -278,7 +285,9 @@ const selectorName = "s"
 // argsOf returns the arguments of a call of the callable of f: the context of
 // the closure for a parameter in the role context, and the first sample of
 // each input. The read of pair takes the arguments that the pair binds, and
-// the write of pair the first sample of the written input.
+// the write of pair the first sample of the written input. A parameter that
+// the pair leaves to its own sample takes it, and a closure of the probe
+// replaces the sample of a function that the probe supplies.
 func (k *caller) argsOf(f *derive.Facts, pair *derive.Pair) []Expr {
 	out := make([]Expr, 0, len(f.Signature.Params))
 	if pair != nil && same(pair.Read, f) {
@@ -292,6 +301,9 @@ func (k *caller) argsOf(f *derive.Facts, pair *derive.Pair) []Expr {
 			case derive.ArgField:
 				written := k.sampleOf(pair.Write, pair.Written, 0)
 				out = append(out, Expr{Of: &written, Select: a.Field})
+			case derive.ArgOwn:
+				i := slices.IndexFunc(f.Inputs, func(v derive.Value) bool { return v.Name == a.Name })
+				out = append(out, k.sampleOf(f, i, 0))
 			}
 		}
 		return out

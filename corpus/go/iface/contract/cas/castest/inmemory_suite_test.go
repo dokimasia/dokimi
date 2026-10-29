@@ -7,6 +7,8 @@ package castest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cas"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cas/castest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	castest.RunContractSuite(t, castest.NewInMemory)
+	castest.RunContractSuite(
+		t,
+		castest.NewInMemory,
+		conform.Isolate[cas.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c9260982e5b8a87cc9398196a2703a68cc9d9c5fa1d5566eb16cab51dcefe9fc
+// dokimi:provenance sha256:ab342df5cce87108a8660a5be3e4a8c9aa01d178174afda4d55555a953a72790

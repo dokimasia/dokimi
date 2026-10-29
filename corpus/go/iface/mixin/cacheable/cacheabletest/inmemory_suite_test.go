@@ -7,6 +7,8 @@ package cacheabletest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/cacheable"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/cacheable/cacheabletest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	cacheabletest.RunMixedSuite(t, cacheabletest.NewInMemory)
+	cacheabletest.RunMixedSuite(
+		t,
+		cacheabletest.NewInMemory,
+		conform.Isolate[cacheable.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:85599310c72a7b1e5d289a1e306270c097c9b0232520aba76bb033498db21c03
+// dokimi:provenance sha256:3d040427eb8a6bda3d436845ac97333800f54a3470019706fcc5619951a13a14

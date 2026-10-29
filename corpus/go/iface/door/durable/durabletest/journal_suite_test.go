@@ -7,6 +7,8 @@ package durabletest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/door/durable"
 	"go.dokimi.dev/dokimi/corpus/go/iface/door/durable/durabletest"
 )
 
@@ -15,7 +17,10 @@ import (
 func TestJournalConformsToStore(t *testing.T) {
 	t.Parallel()
 
-	durabletest.RunStoreSuite(t, durabletest.NewJournal, durabletest.JournalOptions()...)
+	opts := append([]durabletest.StoreOption{
+		conform.Isolate[durable.Store](),
+	}, durabletest.JournalOptions()...)
+	durabletest.RunStoreSuite(t, durabletest.NewJournal, opts...)
 }
 
 // BenchmarkJournalConformsToStore measures each callable of the suite of
@@ -58,4 +63,4 @@ func FuzzJournalConformsToStoreGet(f *testing.F) {
 		durabletest.JournalOptions()...)
 }
 
-// dokimi:provenance sha256:7e6824c3ce8a1adebcff031d0dded2d0e92f6ac218294349ed32d4f875510487
+// dokimi:provenance sha256:6eaa41ff295860b3a7196ab0eec61c0a1d9783f16c96a82035bc2670f824596a

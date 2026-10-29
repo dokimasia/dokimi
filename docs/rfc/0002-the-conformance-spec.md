@@ -208,7 +208,7 @@ claims:
       read: {from: callable}
       write: {from: partner, partner: write}
     defect:
-      form: forgets-writes
+      form: reads-another-value
       clause: "a {declaration} whose {callable} does not return what {write} stored"
       reason: unobserved-write
     since: 1.0.0
@@ -218,7 +218,7 @@ claims:
 |---|---|
 | `named` | The callable that a param of the licence names, such as `write` of the mixin `read-after-write`. The licensed callable reads, and the partner writes |
 | `reader` | The callable that a param of the licence names, with the halves swapped: the licensed callable writes, and the partner reads, such as the role `reader` of the contract `persister` |
-| `derived` | The one other callable that takes, as a parameter, the type of the result field that a param of the licence names, such as `version` of the mixin `monotonic-reads` |
+| `derived` | The one other callable that takes, as a parameter, the value whose field a param of the licence names, such as the value with the field `version` of the mixin `monotonic-reads` |
 | `role` | The callable with the named role of the same contract, such as `backing` of the contract `cache` |
 | `interposed` | A `named` partner that the probe calls twice, with reads before and after the second call. The derivation also binds a field of the written value that the second call changes |
 | `rewriter` | A `reader` partner of a licensed callable that the probe calls twice, with the same field as `interposed` |
@@ -232,9 +232,9 @@ A mode binds exactly one callable or the claim refuses. No match refuses with th
 
 ```yaml
 forms:
-  forgets-writes:
-    changes: partner:write
-    does: The partner returns success and stores nothing.
+  reads-another-value:
+    changes: callable
+    does: The callable returns the second sample of each value wherever the call of the fresh subject succeeds.
     min-steps: 2
     since: 1.0.0
   value-beside:

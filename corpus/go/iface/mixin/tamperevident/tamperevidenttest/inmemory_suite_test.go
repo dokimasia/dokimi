@@ -7,6 +7,8 @@ package tamperevidenttest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/tamperevident"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/tamperevident/tamperevidenttest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	tamperevidenttest.RunMixedSuite(t, tamperevidenttest.NewInMemory)
+	tamperevidenttest.RunMixedSuite(
+		t,
+		tamperevidenttest.NewInMemory,
+		conform.Isolate[tamperevident.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToMixedVerify(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:6cdeafbb6ad0d5437271d95eb338ed0da323fd1d56a95d68c45a1899cfd02737
+// dokimi:provenance sha256:e1ffec0d78f7766bef8b67524834d43b1fe4f053656143e51b8d115852f2e96e

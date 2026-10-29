@@ -15,6 +15,34 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of MultiArgWriter:
+//
+// MultiArgWriter.Set/smoke: Set returns without a panic for derived
+// inputs.
+//
+// MultiArgWriter.Set/cancel: Set returns an error for a cancelled context.
+//
+// MultiArgWriter.Get/smoke: Get returns without a panic for derived
+// inputs.
+//
+// MultiArgWriter.Get/cancel: Get returns an error for a cancelled context.
+//
+// MultiArgWriter.Get/zero-on-error: Get returns the zero value beside an
+// error.
+
+// The derived checks of MultiArgWriter that witness their laws at the
+// shallow end:
+//
+// MultiArgWriter.Set/smoke
+//
+// MultiArgWriter.Get/smoke
+
+// The unclaimed classifications of MultiArgWriter:
+//
+// The shape:multi-arg-writer of MultiArgWriter.Set has the stance silent.
+// A write is an input of the other checks, and its result is an error
+// alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,7 +140,7 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 						return h.Subject().Set(ctx, string("key-a"), string("body-a"), string("mime-a"))
 					})
 				},
-				Defect: multiArgWriterSetSucceedsAlways,
+				Defect: multiArgWriterSetIgnoresCancel,
 			},
 			{
 				ID:          MultiArgWriterChecks.Get.Smoke(),
@@ -145,7 +173,7 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 						return err
 					})
 				},
-				Defect: multiArgWriterGetSucceedsAlways,
+				Defect: multiArgWriterGetIgnoresCancel,
 			},
 			{
 				ID:          MultiArgWriterChecks.Get.ZeroOnError(),
@@ -318,21 +346,24 @@ func multiArgWriterSetPanics(h *MultiArgWriterHandle) multiargwriter.MultiArgWri
 	return &multiArgWriterSetPanicsDefect{multiArgWriterOverEmbedded: h.Fresh()}
 }
 
-// multiArgWriterSetSucceedsAlwaysDefect is the planted defect of a
+// multiArgWriterSetIgnoresCancelDefect is the planted defect of a
 // MultiArgWriter whose Set ignores the context.
-type multiArgWriterSetSucceedsAlwaysDefect struct {
+type multiArgWriterSetIgnoresCancelDefect struct {
 	multiArgWriterOverEmbedded
 }
 
 // Set is the override of the planted defect.
-func (*multiArgWriterSetSucceedsAlwaysDefect) Set(p0 context.Context, p1, p2, p3 string) (r0 error) {
-	return r0
+func (d *multiArgWriterSetIgnoresCancelDefect) Set(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.multiArgWriterOverEmbedded.Set(p0, p1, p2, p3)
 }
 
-// multiArgWriterSetSucceedsAlways returns the planted defect of a
+// multiArgWriterSetIgnoresCancel returns the planted defect of a
 // MultiArgWriter whose Set ignores the context over a fresh subject.
-func multiArgWriterSetSucceedsAlways(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter {
-	return &multiArgWriterSetSucceedsAlwaysDefect{multiArgWriterOverEmbedded: h.Fresh()}
+func multiArgWriterSetIgnoresCancel(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter {
+	return &multiArgWriterSetIgnoresCancelDefect{multiArgWriterOverEmbedded: h.Fresh()}
 }
 
 // multiArgWriterGetPanicsDefect is the planted defect of a MultiArgWriter
@@ -352,21 +383,24 @@ func multiArgWriterGetPanics(h *MultiArgWriterHandle) multiargwriter.MultiArgWri
 	return &multiArgWriterGetPanicsDefect{multiArgWriterOverEmbedded: h.Fresh()}
 }
 
-// multiArgWriterGetSucceedsAlwaysDefect is the planted defect of a
+// multiArgWriterGetIgnoresCancelDefect is the planted defect of a
 // MultiArgWriter whose Get ignores the context.
-type multiArgWriterGetSucceedsAlwaysDefect struct {
+type multiArgWriterGetIgnoresCancelDefect struct {
 	multiArgWriterOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*multiArgWriterGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *multiArgWriterGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.multiArgWriterOverEmbedded.Get(p0, p1)
 }
 
-// multiArgWriterGetSucceedsAlways returns the planted defect of a
+// multiArgWriterGetIgnoresCancel returns the planted defect of a
 // MultiArgWriter whose Get ignores the context over a fresh subject.
-func multiArgWriterGetSucceedsAlways(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter {
-	return &multiArgWriterGetSucceedsAlwaysDefect{multiArgWriterOverEmbedded: h.Fresh()}
+func multiArgWriterGetIgnoresCancel(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter {
+	return &multiArgWriterGetIgnoresCancelDefect{multiArgWriterOverEmbedded: h.Fresh()}
 }
 
 // multiArgWriterGetValueBesideDefect is the planted defect of a
@@ -376,9 +410,11 @@ type multiArgWriterGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*multiArgWriterGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *multiArgWriterGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.multiArgWriterOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -389,4 +425,4 @@ func multiArgWriterGetValueBeside(h *MultiArgWriterHandle) multiargwriter.MultiA
 	return &multiArgWriterGetValueBesideDefect{multiArgWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:76fa89cebfeaea98c0d6e4e937c20ba4784158a44ef410d28f2153bfea70645d
+// dokimi:provenance sha256:8062f06edaf2dd913bece28e32d7bd71b7bb06924d5155b9e4718b9001a4be52

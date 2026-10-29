@@ -15,6 +15,58 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Publish/smoke: Publish returns without a panic for derived
+// inputs.
+//
+// Contract.Publish/cancel: Publish returns an error for a cancelled
+// context.
+//
+// Contract.Republish/smoke: Republish returns without a panic for derived
+// inputs.
+//
+// Contract.Republish/cancel: Republish returns an error for a cancelled
+// context.
+//
+// Contract.Subscribe/smoke: Subscribe returns without a panic for derived
+// inputs.
+//
+// Contract.Subscribe/cancel: Subscribe returns an error for a cancelled
+// context.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Publish/smoke
+//
+// Contract.Republish/smoke
+//
+// Contract.Subscribe/smoke
+
+// The refused claims of Contract:
+//
+// Contract.Subscribe/zero-on-error: eidos derives no sample of a result of
+// Subscribe. The remedy is to author a sample of the result type with the
+// directive sample.
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Publish has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+//
+// The contract:publisher/publish of Contract.Publish has the stance needs.
+// The claims of the contract need generated sequences.
+//
+// The shape:writer of Contract.Republish has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+//
+// The contract:publisher/redeliver of Contract.Republish has the stance
+// needs. The claims of the contract need generated sequences.
+//
+// The contract:publisher/subscribe of Contract.Subscribe has the stance
+// needs. The claims of the contract need generated sequences.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -126,7 +178,7 @@ func ContractSuite() conform.Suite[publisherredeliver.Contract] {
 						return h.Subject().Publish(ctx, publisherredeliver.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractPublishSucceedsAlways,
+				Defect: contractPublishIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Republish.Smoke(),
@@ -157,7 +209,7 @@ func ContractSuite() conform.Suite[publisherredeliver.Contract] {
 						return h.Subject().Republish(ctx, publisherredeliver.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractRepublishSucceedsAlways,
+				Defect: contractRepublishIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Subscribe.Smoke(),
@@ -190,7 +242,7 @@ func ContractSuite() conform.Suite[publisherredeliver.Contract] {
 						return err
 					})
 				},
-				Defect: contractSubscribeSucceedsAlways,
+				Defect: contractSubscribeIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[publisherredeliver.Contract]{
@@ -358,21 +410,24 @@ func contractPublishPanics(h *ContractHandle) publisherredeliver.Contract {
 	return &contractPublishPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractPublishSucceedsAlwaysDefect is the planted defect of a Contract
+// contractPublishIgnoresCancelDefect is the planted defect of a Contract
 // whose Publish ignores the context.
-type contractPublishSucceedsAlwaysDefect struct {
+type contractPublishIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Publish is the override of the planted defect.
-func (*contractPublishSucceedsAlwaysDefect) Publish(p0 context.Context, p1 publisherredeliver.Value) (r0 error) {
-	return r0
+func (d *contractPublishIgnoresCancelDefect) Publish(p0 context.Context, p1 publisherredeliver.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Publish(p0, p1)
 }
 
-// contractPublishSucceedsAlways returns the planted defect of a Contract
+// contractPublishIgnoresCancel returns the planted defect of a Contract
 // whose Publish ignores the context over a fresh subject.
-func contractPublishSucceedsAlways(h *ContractHandle) publisherredeliver.Contract {
-	return &contractPublishSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractPublishIgnoresCancel(h *ContractHandle) publisherredeliver.Contract {
+	return &contractPublishIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractRepublishPanicsDefect is the planted defect of a Contract whose
@@ -392,21 +447,24 @@ func contractRepublishPanics(h *ContractHandle) publisherredeliver.Contract {
 	return &contractRepublishPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractRepublishSucceedsAlwaysDefect is the planted defect of a
-// Contract whose Republish ignores the context.
-type contractRepublishSucceedsAlwaysDefect struct {
+// contractRepublishIgnoresCancelDefect is the planted defect of a Contract
+// whose Republish ignores the context.
+type contractRepublishIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Republish is the override of the planted defect.
-func (*contractRepublishSucceedsAlwaysDefect) Republish(p0 context.Context, p1 publisherredeliver.Value) (r0 error) {
-	return r0
+func (d *contractRepublishIgnoresCancelDefect) Republish(p0 context.Context, p1 publisherredeliver.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Republish(p0, p1)
 }
 
-// contractRepublishSucceedsAlways returns the planted defect of a Contract
+// contractRepublishIgnoresCancel returns the planted defect of a Contract
 // whose Republish ignores the context over a fresh subject.
-func contractRepublishSucceedsAlways(h *ContractHandle) publisherredeliver.Contract {
-	return &contractRepublishSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractRepublishIgnoresCancel(h *ContractHandle) publisherredeliver.Contract {
+	return &contractRepublishIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractSubscribePanicsDefect is the planted defect of a Contract whose
@@ -426,23 +484,26 @@ func contractSubscribePanics(h *ContractHandle) publisherredeliver.Contract {
 	return &contractSubscribePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractSubscribeSucceedsAlwaysDefect is the planted defect of a
-// Contract whose Subscribe ignores the context.
-type contractSubscribeSucceedsAlwaysDefect struct {
+// contractSubscribeIgnoresCancelDefect is the planted defect of a Contract
+// whose Subscribe ignores the context.
+type contractSubscribeIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Subscribe is the override of the planted defect.
-func (*contractSubscribeSucceedsAlwaysDefect) Subscribe(
+func (d *contractSubscribeIgnoresCancelDefect) Subscribe(
 	p0 context.Context,
 ) (r0 <-chan publisherredeliver.Value, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Subscribe(p0)
 }
 
-// contractSubscribeSucceedsAlways returns the planted defect of a Contract
+// contractSubscribeIgnoresCancel returns the planted defect of a Contract
 // whose Subscribe ignores the context over a fresh subject.
-func contractSubscribeSucceedsAlways(h *ContractHandle) publisherredeliver.Contract {
-	return &contractSubscribeSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractSubscribeIgnoresCancel(h *ContractHandle) publisherredeliver.Contract {
+	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f31fc3ac2d913cf7f6d120033f5ec88f7ade974533849b0680bd2f94c9f8bd42
+// dokimi:provenance sha256:b1dbcf75cd90261f2078fd34bdaf5d719a11d2dece2f857b595021c95ff3ce10

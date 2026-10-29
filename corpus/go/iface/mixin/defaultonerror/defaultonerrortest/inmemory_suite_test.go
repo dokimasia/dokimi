@@ -7,6 +7,8 @@ package defaultonerrortest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/defaultonerror"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/defaultonerror/defaultonerrortest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	defaultonerrortest.RunMixedSuite(t, defaultonerrortest.NewInMemory)
+	defaultonerrortest.RunMixedSuite(
+		t,
+		defaultonerrortest.NewInMemory,
+		conform.Isolate[defaultonerror.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:373b238ac992b37503282724b60282a22662223eed4f28a6620fbad3157f3f61
+// dokimi:provenance sha256:cfa50ef4dcb491f721ecf6c36271f18dba74dac06ea10ae5d3372d30787fc5ec

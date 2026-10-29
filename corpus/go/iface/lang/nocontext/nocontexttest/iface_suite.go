@@ -15,6 +15,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Calculator:
+//
+// Calculator.Add/smoke: Add returns without a panic for derived inputs.
+//
+// Calculator.Add/deterministic: Add returns the same value for the same
+// inputs.
+//
+// Calculator.Divide/smoke: Divide returns without a panic for derived
+// inputs.
+//
+// Calculator.Reset/smoke: Reset returns without a panic for derived
+// inputs.
+//
+// Calculator.Reset/repeat-survives: Reset returns without a panic when it
+// is called twice.
+
+// The derived checks of Calculator that witness their laws at the shallow
+// end:
+//
+// Calculator.Add/smoke
+//
+// Calculator.Add/deterministic
+//
+// Calculator.Divide/smoke
+//
+// Calculator.Reset/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -117,6 +144,7 @@ func CalculatorSuite() conform.Suite[nocontext.Calculator] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[nocontext.Calculator]{CalculatorChecks.Add.Smoke()},
 				Apply: func(h *CalculatorHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Add(int(42), int(42))
@@ -167,7 +195,6 @@ func CalculatorSuite() conform.Suite[nocontext.Calculator] {
 				Reason:      spec.PanickedRepeat,
 				Law:         spec.RepeatedCallSurvives,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Entails:     []conform.ID[nocontext.Calculator]{CalculatorChecks.Reset.Smoke()},
 				Apply: func(h *CalculatorHandle) {
 					probe.SurvivesRepeat(h, func(ctx context.Context) error {
 						h.Subject().Reset()
@@ -421,4 +448,4 @@ func calculatorResetPanicsOnRepeat(h *CalculatorHandle) nocontext.Calculator {
 	return &calculatorResetPanicsOnRepeatDefect{calculatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f82ab61e10c52be33b29fd43ff9f4610ef4280b9be0ea34922a13521d66b91eb
+// dokimi:provenance sha256:e961eeac12159f2597d7600893b8677e868ed9c6c84c439917da0534cc315d30

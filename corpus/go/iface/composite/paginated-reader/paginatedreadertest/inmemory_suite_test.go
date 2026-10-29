@@ -7,6 +7,8 @@ package paginatedreadertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	paginatedreader "go.dokimi.dev/dokimi/corpus/go/iface/composite/paginated-reader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/paginated-reader/paginatedreadertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToPaginatedReader(t *testing.T) {
 	t.Parallel()
 
-	paginatedreadertest.RunPaginatedReaderSuite(t, paginatedreadertest.NewInMemory)
+	paginatedreadertest.RunPaginatedReaderSuite(
+		t,
+		paginatedreadertest.NewInMemory,
+		conform.Isolate[paginatedreader.PaginatedReader](),
+	)
 }
 
 // BenchmarkInMemoryConformsToPaginatedReader measures each callable of the
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToPaginatedReaderAdd(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:1fb5f48ca669a4d786aff5e61dc2fd42b0f45e3766435cfeef038f589d1b8c2e
+// dokimi:provenance sha256:48e276c0043e01f653a86c3b8c0a6b1f38bb63c42288e6c9fb4af9d1a252fef4

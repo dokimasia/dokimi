@@ -7,6 +7,8 @@ package watchertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher/watchertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	watchertest.RunContractSuite(t, watchertest.NewInMemory)
+	watchertest.RunContractSuite(
+		t,
+		watchertest.NewInMemory,
+		conform.Isolate[watcher.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractTrigger(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:798ab11904fb4f3dac7985365464803894bf66eb62e1e88adfbb63dc7f5cfb70
+// dokimi:provenance sha256:b45b67fc08a0ab9b9a6bcc6e01e466346825a3c2180f04f439883c22537ac279

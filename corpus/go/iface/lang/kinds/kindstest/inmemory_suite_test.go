@@ -7,6 +7,8 @@ package kindstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/kinds"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/kinds/kindstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToEvery(t *testing.T) {
 	t.Parallel()
 
-	kindstest.RunEverySuite(t, kindstest.NewInMemory)
+	kindstest.RunEverySuite(
+		t,
+		kindstest.NewInMemory,
+		conform.Isolate[kinds.Every](),
+	)
 }
 
 // BenchmarkInMemoryConformsToEvery measures each callable of the suite of
@@ -227,4 +233,4 @@ func FuzzInMemoryConformsToEveryUse(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:59b760ae4b41cd0479a5976afb455989ca28282a1187eec07237d143c85271d6
+// dokimi:provenance sha256:f29c21d979039f93072fa1e8cb7d73340d3125766c27d5ea3aea5f9fbb145f77

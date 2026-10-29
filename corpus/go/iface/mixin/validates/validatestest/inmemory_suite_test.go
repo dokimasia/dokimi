@@ -7,6 +7,8 @@ package validatestest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/validates"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/validates/validatestest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	validatestest.RunMixedSuite(t, validatestest.NewInMemory)
+	validatestest.RunMixedSuite(
+		t,
+		validatestest.NewInMemory,
+		conform.Isolate[validates.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:11d203682b6968ec074c368c072ad42a77a6e2f13d16605c9231b22329b030f3
+// dokimi:provenance sha256:a4783fcaf490ad96e6b55639ec4a96da9ffeae522420086b413334639bc18fb4

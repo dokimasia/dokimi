@@ -15,6 +15,22 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of MultiAggregator:
+//
+// MultiAggregator.Stats/smoke: Stats returns without a panic for derived
+// inputs.
+//
+// MultiAggregator.Stats/cancel: Stats returns an error for a cancelled
+// context.
+//
+// MultiAggregator.Stats/zeroes-on-error: Stats returns the zero values
+// beside an error.
+
+// The derived checks of MultiAggregator that witness their laws at the
+// shallow end:
+//
+// MultiAggregator.Stats/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,7 +110,7 @@ func MultiAggregatorSuite() conform.Suite[multiaggregator.MultiAggregator] {
 						return err
 					})
 				},
-				Defect: multiAggregatorStatsSucceedsAlways,
+				Defect: multiAggregatorStatsIgnoresCancel,
 			},
 			{
 				ID:          MultiAggregatorChecks.Stats.ZeroesOnError(),
@@ -243,21 +259,24 @@ func multiAggregatorStatsPanics(h *MultiAggregatorHandle) multiaggregator.MultiA
 	return &multiAggregatorStatsPanicsDefect{multiAggregatorOverEmbedded: h.Fresh()}
 }
 
-// multiAggregatorStatsSucceedsAlwaysDefect is the planted defect of a
+// multiAggregatorStatsIgnoresCancelDefect is the planted defect of a
 // MultiAggregator whose Stats ignores the context.
-type multiAggregatorStatsSucceedsAlwaysDefect struct {
+type multiAggregatorStatsIgnoresCancelDefect struct {
 	multiAggregatorOverEmbedded
 }
 
 // Stats is the override of the planted defect.
-func (*multiAggregatorStatsSucceedsAlwaysDefect) Stats(p0 context.Context) (r0, r1 int, r2 error) {
-	return r0, r1, r2
+func (d *multiAggregatorStatsIgnoresCancelDefect) Stats(p0 context.Context) (r0, r1 int, r2 error) {
+	if p0.Err() != nil {
+		return r0, r1, r2
+	}
+	return d.multiAggregatorOverEmbedded.Stats(p0)
 }
 
-// multiAggregatorStatsSucceedsAlways returns the planted defect of a
+// multiAggregatorStatsIgnoresCancel returns the planted defect of a
 // MultiAggregator whose Stats ignores the context over a fresh subject.
-func multiAggregatorStatsSucceedsAlways(h *MultiAggregatorHandle) multiaggregator.MultiAggregator {
-	return &multiAggregatorStatsSucceedsAlwaysDefect{multiAggregatorOverEmbedded: h.Fresh()}
+func multiAggregatorStatsIgnoresCancel(h *MultiAggregatorHandle) multiaggregator.MultiAggregator {
+	return &multiAggregatorStatsIgnoresCancelDefect{multiAggregatorOverEmbedded: h.Fresh()}
 }
 
 // multiAggregatorStatsValuesBesideDefect is the planted defect of a
@@ -267,10 +286,12 @@ type multiAggregatorStatsValuesBesideDefect struct {
 }
 
 // Stats is the override of the planted defect.
-func (*multiAggregatorStatsValuesBesideDefect) Stats(p0 context.Context) (r0, r1 int, r2 error) {
-	r0 = int(7)
-	r1 = int(7)
-	r2 = conform.ErrGenerated
+func (d *multiAggregatorStatsValuesBesideDefect) Stats(p0 context.Context) (r0, r1 int, r2 error) {
+	r0, r1, r2 = d.multiAggregatorOverEmbedded.Stats(p0)
+	if r2 != nil {
+		r0 = int(7)
+		r1 = int(7)
+	}
 	return r0, r1, r2
 }
 
@@ -281,4 +302,4 @@ func multiAggregatorStatsValuesBeside(h *MultiAggregatorHandle) multiaggregator.
 	return &multiAggregatorStatsValuesBesideDefect{multiAggregatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4a9eaf0d1fec0ac73f8d7e66bf7bccafdccac8d9690bb3ff5260ec48360a49de
+// dokimi:provenance sha256:ab7c1d7bceafd0315c478d157242343f5af4d1c34a2f8f2b75bd96ffafdb2ee0

@@ -16,6 +16,35 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of StreamReader:
+//
+// StreamReader.Add/smoke: Add returns without a panic for derived inputs.
+//
+// StreamReader.Add/cancel: Add returns an error for a cancelled context.
+//
+// StreamReader.List/smoke: List returns without a panic for derived
+// inputs.
+
+// The derived checks of StreamReader that witness their laws at the
+// shallow end:
+//
+// StreamReader.Add/smoke
+//
+// StreamReader.List/smoke
+
+// The refused claims of StreamReader:
+//
+// StreamReader.List/cancel: List cannot fail. The remedy is to give List
+// an error result.
+
+// The unclaimed classifications of StreamReader:
+//
+// The shape:writer of StreamReader.Add has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:stream-reader of StreamReader.List has the stance gap. No
+// claim states what a stream returns after its end.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -101,7 +130,7 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 						return h.Subject().Add(ctx, streamreader.Value{Key: "Key-a"})
 					})
 				},
-				Defect: streamReaderAddSucceedsAlways,
+				Defect: streamReaderAddIgnoresCancel,
 			},
 			{
 				ID:          StreamReaderChecks.List.Smoke(),
@@ -264,21 +293,24 @@ func streamReaderAddPanics(h *StreamReaderHandle) streamreader.StreamReader {
 	return &streamReaderAddPanicsDefect{streamReaderOverEmbedded: h.Fresh()}
 }
 
-// streamReaderAddSucceedsAlwaysDefect is the planted defect of a
+// streamReaderAddIgnoresCancelDefect is the planted defect of a
 // StreamReader whose Add ignores the context.
-type streamReaderAddSucceedsAlwaysDefect struct {
+type streamReaderAddIgnoresCancelDefect struct {
 	streamReaderOverEmbedded
 }
 
 // Add is the override of the planted defect.
-func (*streamReaderAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 streamreader.Value) (r0 error) {
-	return r0
+func (d *streamReaderAddIgnoresCancelDefect) Add(p0 context.Context, p1 streamreader.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.streamReaderOverEmbedded.Add(p0, p1)
 }
 
-// streamReaderAddSucceedsAlways returns the planted defect of a
+// streamReaderAddIgnoresCancel returns the planted defect of a
 // StreamReader whose Add ignores the context over a fresh subject.
-func streamReaderAddSucceedsAlways(h *StreamReaderHandle) streamreader.StreamReader {
-	return &streamReaderAddSucceedsAlwaysDefect{streamReaderOverEmbedded: h.Fresh()}
+func streamReaderAddIgnoresCancel(h *StreamReaderHandle) streamreader.StreamReader {
+	return &streamReaderAddIgnoresCancelDefect{streamReaderOverEmbedded: h.Fresh()}
 }
 
 // streamReaderListPanicsDefect is the planted defect of a StreamReader
@@ -298,4 +330,4 @@ func streamReaderListPanics(h *StreamReaderHandle) streamreader.StreamReader {
 	return &streamReaderListPanicsDefect{streamReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6eaf8c06051abae1d6d6449ddfe98ad49f4f94c72bfca1ccdfc339bfd473441b
+// dokimi:provenance sha256:3a00952eefa40a1aab7e0a34a97bdb52d96de513cb0dd36f5726863bebf34857

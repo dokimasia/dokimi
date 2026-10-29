@@ -66,12 +66,16 @@ func TestDefect(t *testing.T) {
 				give: "LedgerRollbackSettlesTwice", wantBody: "zero",
 			},
 			{
-				name: "fails every call without a call of the subject", giveSuite: "Lifecycle",
-				give: "LifecycleSyncFailsAlways", wantBody: "fail",
+				name: "fails each call where the call of the subject succeeds", giveSuite: "Lifecycle",
+				give: "LifecycleSyncFailsAlways", wantBody: "fail-success", wantDelegates: true,
 			},
 			{
-				name: "fails with a sample beside the error", giveSuite: "Store", give: "StoreGetValueBeside",
-				wantBody: "fail-beside",
+				name: "returns a sample beside the error of the subject", giveSuite: "Store",
+				give: "StoreGetValueBeside", wantBody: "beside-error", wantDelegates: true,
+			},
+			{
+				name: "calls the subject under a context that the caller cannot cancel", giveSuite: "Store",
+				give: "StoreGetIgnoresCancel", wantBody: "uncancelled", wantDelegates: true,
 			},
 			{
 				name: "returns a sample beside a false flag of the subject", giveSuite: "Store",
@@ -118,8 +122,12 @@ func TestDefect(t *testing.T) {
 				wantBody: "sample",
 			},
 			{
-				name: "returns success and stores nothing", giveSuite: "Store", give: "StorePutForgetsWrites",
-				wantBody: "zero",
+				name: "returns the value of the write of the subject with the version 0", giveSuite: "Stamped",
+				give: "StampedStoreStampsThePast", wantBody: "version-zero", wantDelegates: true,
+			},
+			{
+				name: "returns a sample where the read of the subject succeeds", giveSuite: "Store",
+				give: "StoreGetReadsAnotherValue", wantBody: "sample-success", wantDelegates: true,
 			},
 		}
 		for _, tt := range tests {
@@ -135,6 +143,25 @@ func TestDefect(t *testing.T) {
 				expect.Equal(t, d.Counts, tt.wantCounts, "the defect counts its calls where its body does")
 			})
 		}
+
+		t.Run("returns the error of a cancelled context before the break of its callable", func(t *testing.T) {
+			t.Parallel()
+
+			s := family("Store")
+			misreads := defectNamed(t, s, "StoreGetReadsAnotherValue")
+			expect.Equal(t, misreads.Context, "p0", "the defect knows the parameter of the context")
+			expect.True(t, misreads.Guards, "the defect returns the error of its context first")
+			expect.False(t, defectNamed(t, s, "StoreGetPanics").Guards, "a panic needs no guard")
+			expect.False(t, defectNamed(t, s, "StoreGetValueBeside").Guards,
+				"a value beside an error reads the error of the subject")
+			ignores := defectNamed(t, s, "StoreGetIgnoresCancel")
+			expect.False(t, ignores.Guards, "the defect of cancel ignores the context")
+			expect.Equal(t, ignores.Context, "p0", "the defect of cancel reads its context")
+			expect.False(t, defectNamed(t, s, "StoreLoadDrifts").Guards,
+				"a callable without an error has no error to return")
+			expect.Equal(t, defectNamed(t, family("Plain"), "PlainSetPanics").Context, "",
+				"a callable without a context has no context")
+		})
 
 		t.Run("names the partner that a form changes by the role of the partner", func(t *testing.T) {
 			t.Parallel()

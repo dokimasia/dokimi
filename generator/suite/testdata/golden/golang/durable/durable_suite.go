@@ -10,6 +10,29 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Keeper:
+//
+// Keeper.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Keeper.Put/cancel: Put returns an error for a cancelled context.
+//
+// Keeper.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Keeper.Get/cancel: Get returns an error for a cancelled context.
+//
+// Keeper.Get/zero-on-error: Get returns the zero value beside an error.
+
+// The derived checks of Keeper that witness their laws at the shallow end:
+//
+// Keeper.Put/smoke
+//
+// Keeper.Get/smoke
+
+// The unclaimed classifications of Keeper:
+//
+// The shape:composite-writer of Keeper.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -123,7 +146,7 @@ func KeeperSuite() conform.Suite[Keeper] {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
 					})
 				},
-				Defect: keeperPutSucceedsAlways,
+				Defect: keeperPutIgnoresCancel,
 			},
 			{
 				ID:          KeeperChecks.Get.Smoke(),
@@ -156,7 +179,7 @@ func KeeperSuite() conform.Suite[Keeper] {
 						return err
 					})
 				},
-				Defect: keeperGetSucceedsAlways,
+				Defect: keeperGetIgnoresCancel,
 			},
 			{
 				ID:          KeeperChecks.Get.ZeroOnError(),
@@ -338,21 +361,24 @@ func keeperPutPanics(h *KeeperHandle) Keeper {
 	return &keeperPutPanicsDefect{keeperOverEmbedded: h.Fresh()}
 }
 
-// keeperPutSucceedsAlwaysDefect is the planted defect of a Keeper whose
-// Put ignores the context.
-type keeperPutSucceedsAlwaysDefect struct {
+// keeperPutIgnoresCancelDefect is the planted defect of a Keeper whose Put
+// ignores the context.
+type keeperPutIgnoresCancelDefect struct {
 	keeperOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*keeperPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
-	return r0
+func (d *keeperPutIgnoresCancelDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.keeperOverEmbedded.Put(p0, p1, p2)
 }
 
-// keeperPutSucceedsAlways returns the planted defect of a Keeper whose Put
+// keeperPutIgnoresCancel returns the planted defect of a Keeper whose Put
 // ignores the context over a fresh subject.
-func keeperPutSucceedsAlways(h *KeeperHandle) Keeper {
-	return &keeperPutSucceedsAlwaysDefect{keeperOverEmbedded: h.Fresh()}
+func keeperPutIgnoresCancel(h *KeeperHandle) Keeper {
+	return &keeperPutIgnoresCancelDefect{keeperOverEmbedded: h.Fresh()}
 }
 
 // keeperGetPanicsDefect is the planted defect of a Keeper whose Get
@@ -372,21 +398,24 @@ func keeperGetPanics(h *KeeperHandle) Keeper {
 	return &keeperGetPanicsDefect{keeperOverEmbedded: h.Fresh()}
 }
 
-// keeperGetSucceedsAlwaysDefect is the planted defect of a Keeper whose
-// Get ignores the context.
-type keeperGetSucceedsAlwaysDefect struct {
+// keeperGetIgnoresCancelDefect is the planted defect of a Keeper whose Get
+// ignores the context.
+type keeperGetIgnoresCancelDefect struct {
 	keeperOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*keeperGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *keeperGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.keeperOverEmbedded.Get(p0, p1)
 }
 
-// keeperGetSucceedsAlways returns the planted defect of a Keeper whose Get
+// keeperGetIgnoresCancel returns the planted defect of a Keeper whose Get
 // ignores the context over a fresh subject.
-func keeperGetSucceedsAlways(h *KeeperHandle) Keeper {
-	return &keeperGetSucceedsAlwaysDefect{keeperOverEmbedded: h.Fresh()}
+func keeperGetIgnoresCancel(h *KeeperHandle) Keeper {
+	return &keeperGetIgnoresCancelDefect{keeperOverEmbedded: h.Fresh()}
 }
 
 // keeperGetValueBesideDefect is the planted defect of a Keeper whose Get
@@ -396,9 +425,11 @@ type keeperGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*keeperGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *keeperGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.keeperOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 

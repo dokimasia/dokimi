@@ -7,6 +7,8 @@ package transactiontest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/transaction"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/transaction/transactiontest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	transactiontest.RunContractSuite(t, transactiontest.NewInMemory)
+	transactiontest.RunContractSuite(
+		t,
+		transactiontest.NewInMemory,
+		conform.Isolate[transaction.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b43f05ec4c222f9739798b53a6bffbfcb6c2620201e36235a3c3c98773e1cf28
+// dokimi:provenance sha256:c8cd26033779a8e9395d16d80e187a847c1c82b03c9e9805711027d65291eeb8

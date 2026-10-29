@@ -10,6 +10,18 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Slug:
+//
+// Slug/smoke: Slug returns without a panic for derived inputs.
+//
+// Slug/deterministic: Slug returns the same value for the same inputs.
+
+// The derived checks of Slug that witness their laws at the shallow end:
+//
+// Slug/smoke
+//
+// Slug/deterministic
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -89,6 +101,7 @@ func SlugSuite() conform.Suite[SlugFunc] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[SlugFunc]{SlugChecks.Smoke()},
 				Apply: func(h *SlugHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
 						r0 := h.Subject()(string("title-a"), string("keep-a"))

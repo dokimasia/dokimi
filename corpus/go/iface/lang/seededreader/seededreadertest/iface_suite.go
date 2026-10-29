@@ -15,6 +15,28 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Catalog:
+//
+// Catalog.Lookup/smoke: Lookup returns without a panic for derived inputs.
+//
+// Catalog.Lookup/cancel: Lookup returns an error for a cancelled context.
+//
+// Catalog.Lookup/zero-on-error: Lookup returns the zero value beside an
+// error.
+//
+// Catalog.Len/smoke: Len returns without a panic for derived inputs.
+//
+// Catalog.Len/cancel: Len returns an error for a cancelled context.
+//
+// Catalog.Len/zero-on-error: Len returns the zero value beside an error.
+
+// The derived checks of Catalog that witness their laws at the shallow
+// end:
+//
+// Catalog.Lookup/smoke
+//
+// Catalog.Len/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -120,7 +142,7 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 						return err
 					})
 				},
-				Defect: catalogLookupSucceedsAlways,
+				Defect: catalogLookupIgnoresCancel,
 			},
 			{
 				ID:          CatalogChecks.Lookup.ZeroOnError(),
@@ -168,7 +190,7 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 						return err
 					})
 				},
-				Defect: catalogLenSucceedsAlways,
+				Defect: catalogLenIgnoresCancel,
 			},
 			{
 				ID:          CatalogChecks.Len.ZeroOnError(),
@@ -343,24 +365,27 @@ func catalogLookupPanics(h *CatalogHandle) seededreader.Catalog {
 	return &catalogLookupPanicsDefect{catalogOverEmbedded: h.Fresh()}
 }
 
-// catalogLookupSucceedsAlwaysDefect is the planted defect of a Catalog
+// catalogLookupIgnoresCancelDefect is the planted defect of a Catalog
 // whose Lookup ignores the context.
-type catalogLookupSucceedsAlwaysDefect struct {
+type catalogLookupIgnoresCancelDefect struct {
 	catalogOverEmbedded
 }
 
 // Lookup is the override of the planted defect.
-func (*catalogLookupSucceedsAlwaysDefect) Lookup(
+func (d *catalogLookupIgnoresCancelDefect) Lookup(
 	p0 context.Context,
 	p1 seededreader.Key,
 ) (r0 seededreader.Body, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.catalogOverEmbedded.Lookup(p0, p1)
 }
 
-// catalogLookupSucceedsAlways returns the planted defect of a Catalog
-// whose Lookup ignores the context over a fresh subject.
-func catalogLookupSucceedsAlways(h *CatalogHandle) seededreader.Catalog {
-	return &catalogLookupSucceedsAlwaysDefect{catalogOverEmbedded: h.Fresh()}
+// catalogLookupIgnoresCancel returns the planted defect of a Catalog whose
+// Lookup ignores the context over a fresh subject.
+func catalogLookupIgnoresCancel(h *CatalogHandle) seededreader.Catalog {
+	return &catalogLookupIgnoresCancelDefect{catalogOverEmbedded: h.Fresh()}
 }
 
 // catalogLookupValueBesideDefect is the planted defect of a Catalog whose
@@ -370,12 +395,14 @@ type catalogLookupValueBesideDefect struct {
 }
 
 // Lookup is the override of the planted defect.
-func (*catalogLookupValueBesideDefect) Lookup(
+func (d *catalogLookupValueBesideDefect) Lookup(
 	p0 context.Context,
 	p1 seededreader.Key,
 ) (r0 seededreader.Body, r1 error) {
-	r0 = seededreader.Body("sample-b")
-	r1 = conform.ErrGenerated
+	r0, r1 = d.catalogOverEmbedded.Lookup(p0, p1)
+	if r1 != nil {
+		r0 = seededreader.Body("sample-b")
+	}
 	return r0, r1
 }
 
@@ -402,21 +429,24 @@ func catalogLenPanics(h *CatalogHandle) seededreader.Catalog {
 	return &catalogLenPanicsDefect{catalogOverEmbedded: h.Fresh()}
 }
 
-// catalogLenSucceedsAlwaysDefect is the planted defect of a Catalog whose
+// catalogLenIgnoresCancelDefect is the planted defect of a Catalog whose
 // Len ignores the context.
-type catalogLenSucceedsAlwaysDefect struct {
+type catalogLenIgnoresCancelDefect struct {
 	catalogOverEmbedded
 }
 
 // Len is the override of the planted defect.
-func (*catalogLenSucceedsAlwaysDefect) Len(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *catalogLenIgnoresCancelDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.catalogOverEmbedded.Len(p0)
 }
 
-// catalogLenSucceedsAlways returns the planted defect of a Catalog whose
+// catalogLenIgnoresCancel returns the planted defect of a Catalog whose
 // Len ignores the context over a fresh subject.
-func catalogLenSucceedsAlways(h *CatalogHandle) seededreader.Catalog {
-	return &catalogLenSucceedsAlwaysDefect{catalogOverEmbedded: h.Fresh()}
+func catalogLenIgnoresCancel(h *CatalogHandle) seededreader.Catalog {
+	return &catalogLenIgnoresCancelDefect{catalogOverEmbedded: h.Fresh()}
 }
 
 // catalogLenValueBesideDefect is the planted defect of a Catalog whose Len
@@ -426,9 +456,11 @@ type catalogLenValueBesideDefect struct {
 }
 
 // Len is the override of the planted defect.
-func (*catalogLenValueBesideDefect) Len(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *catalogLenValueBesideDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.catalogOverEmbedded.Len(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -438,4 +470,4 @@ func catalogLenValueBeside(h *CatalogHandle) seededreader.Catalog {
 	return &catalogLenValueBesideDefect{catalogOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:78845a4f9012e46b65c42b35f6fbef22fe584792bbf1dc03e4a3922e874eb5c2
+// dokimi:provenance sha256:6b9105b28c7d2e40e96b27a2785559518d40b7731492beb38d9755b121238c52

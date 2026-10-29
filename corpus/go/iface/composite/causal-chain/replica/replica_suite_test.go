@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/conform"
+	causalchain "go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain/causalchaintest"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain/replica"
 )
@@ -19,6 +20,7 @@ func TestLogConformsToLog(t *testing.T) {
 	causalchaintest.RunLogSuite(
 		t,
 		replica.New,
+		conform.Isolate[causalchain.Log](),
 		conform.Excuse(
 			causalchaintest.LogChecks.Append.ChainCausal(),
 			"a replica refuses each append, so its replay has no stamps to order",
@@ -111,4 +113,4 @@ func FuzzLogConformsToLogReplay(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:4bcab0f476baee22e603c6fd5c63a422a938f62000fc6bb18b2b12e43234c429
+// dokimi:provenance sha256:714a4e94f1e337f131560145589fff9377ce148c501f7a63f41aaa5f89ef5b0a

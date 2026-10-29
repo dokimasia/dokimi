@@ -7,6 +7,8 @@ package windowedtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/windowed"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/windowed/windowedtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	windowedtest.RunMixedSuiteFromHandle(t, windowedtest.NewInMemoryFromHandle)
+	windowedtest.RunMixedSuiteFromHandle(
+		t,
+		windowedtest.NewInMemoryFromHandle,
+		conform.Isolate[windowed.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -41,4 +47,4 @@ func FuzzInMemoryConformsToMixedCountIn(f *testing.F) {
 	windowedtest.FuzzMixedSuite(f, windowedtest.MixedChecks.CountIn.Callable, windowedtest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:342c7cddc68cb5b87f910c78451f5c02e723e5a2aebb634f0b29445b28d1e67d
+// dokimi:provenance sha256:cdafddcf652f22b4f1858ea67dc69e8107db32e0e738ef3aefd62d40b963ca7e

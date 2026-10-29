@@ -7,6 +7,8 @@ package answeringwritertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/answeringwriter"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/answeringwriter/answeringwritertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToAnsweringWriter(t *testing.T) {
 	t.Parallel()
 
-	answeringwritertest.RunAnsweringWriterSuite(t, answeringwritertest.NewInMemory)
+	answeringwritertest.RunAnsweringWriterSuite(
+		t,
+		answeringwritertest.NewInMemory,
+		conform.Isolate[answeringwriter.AnsweringWriter](),
+	)
 }
 
 // BenchmarkInMemoryConformsToAnsweringWriter measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToAnsweringWriterPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:20402025f3d7c86749776bb1359a81cab69b9dc17e9ec005ac9623793f59b1dd
+// dokimi:provenance sha256:2ee4c1d913c6223bc678b68415413dd301a6edf00b377a7429dc1cc4b1441210

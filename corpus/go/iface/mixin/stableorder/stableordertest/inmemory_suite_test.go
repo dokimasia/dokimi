@@ -7,6 +7,8 @@ package stableordertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/stableorder"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/stableorder/stableordertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	stableordertest.RunMixedSuite(t, stableordertest.NewInMemory)
+	stableordertest.RunMixedSuite(
+		t,
+		stableordertest.NewInMemory,
+		conform.Isolate[stableorder.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:af297d179a4273821dddca0da95e5adbc066443e9c238e065396bbcc5ec9ba5b
+// dokimi:provenance sha256:faf7948a5894422fba942a00e1ce344356aae72b46db8d94287ad65b9df17f5b

@@ -7,6 +7,8 @@ package multiargwritertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiargwriter"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiargwriter/multiargwritertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMultiArgWriter(t *testing.T) {
 	t.Parallel()
 
-	multiargwritertest.RunMultiArgWriterSuite(t, multiargwritertest.NewInMemory)
+	multiargwritertest.RunMultiArgWriterSuite(
+		t,
+		multiargwritertest.NewInMemory,
+		conform.Isolate[multiargwriter.MultiArgWriter](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMultiArgWriter measures each callable of the
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToMultiArgWriterGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ed04830be711f84ab044e708502fe909b8068d13eddc59f4a6bcbcf70846d26d
+// dokimi:provenance sha256:d70a8e7fc5e1e6fe7cb87e2520391f7ee4a11317cf08ba03e6ad632f3f60b9f2

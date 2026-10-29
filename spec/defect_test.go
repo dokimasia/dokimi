@@ -52,10 +52,10 @@ func TestDefect(t *testing.T) {
 		t.Run("returns the form with the identifier", func(t *testing.T) {
 			t.Parallel()
 
-			got, ok := spec.DefectFormOf(spec.ForgetsWrites)
+			got, ok := spec.DefectFormOf(spec.PutRefuses)
 
 			assert.True(t, ok, "the spec has the form")
-			assert.Equal(t, got.Changes, "partner:write", "the form changes the partner write")
+			assert.Equal(t, got.Changes, "partner:put", "the form changes the partner put")
 		})
 
 		t.Run("returns false for an identifier without a form", func(t *testing.T) {

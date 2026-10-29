@@ -7,6 +7,8 @@ package publisherexactlyoncetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	publisherexactlyonce "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-exactlyonce"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-exactlyonce/publisherexactlyoncetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	publisherexactlyoncetest.RunContractSuite(t, publisherexactlyoncetest.NewInMemory)
+	publisherexactlyoncetest.RunContractSuite(
+		t,
+		publisherexactlyoncetest.NewInMemory,
+		conform.Isolate[publisherexactlyonce.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToContractSubscribe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5653d388952f128e27cb5f2e7947c7f1d44c6e7ebb38ea999ce3baaad68f5724
+// dokimi:provenance sha256:2d86f38377cdd1626dcf7c2667997d5802cb48d954a716971b568c404ed4aa81

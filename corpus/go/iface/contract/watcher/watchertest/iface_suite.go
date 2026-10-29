@@ -15,6 +15,42 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Watch/smoke: Watch returns without a panic for derived inputs.
+//
+// Contract.Watch/cancel: Watch returns an error for a cancelled context.
+//
+// Contract.Trigger/smoke: Trigger returns without a panic for derived
+// inputs.
+//
+// Contract.Trigger/cancel: Trigger returns an error for a cancelled
+// context.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Watch/smoke
+//
+// Contract.Trigger/smoke
+
+// The refused claims of Contract:
+//
+// Contract.Watch/zero-on-error: eidos derives no sample of a result of
+// Watch. The remedy is to author a sample of the result type with the
+// directive sample.
+
+// The unclaimed classifications of Contract:
+//
+// The contract:watcher/watch of Contract.Watch has the stance needs. The
+// claims of the contract need generated sequences.
+//
+// The shape:composite-writer of Contract.Trigger has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The contract:watcher/trigger of Contract.Trigger has the stance needs.
+// The claims of the contract need generated sequences.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -108,7 +144,7 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 						return err
 					})
 				},
-				Defect: contractWatchSucceedsAlways,
+				Defect: contractWatchIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Trigger.Smoke(),
@@ -139,7 +175,7 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 						return h.Subject().Trigger(ctx, string("key-a"), watcher.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractTriggerSucceedsAlways,
+				Defect: contractTriggerIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[watcher.Contract]{
@@ -287,21 +323,24 @@ func contractWatchPanics(h *ContractHandle) watcher.Contract {
 	return &contractWatchPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractWatchSucceedsAlwaysDefect is the planted defect of a Contract
+// contractWatchIgnoresCancelDefect is the planted defect of a Contract
 // whose Watch ignores the context.
-type contractWatchSucceedsAlwaysDefect struct {
+type contractWatchIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Watch is the override of the planted defect.
-func (*contractWatchSucceedsAlwaysDefect) Watch(p0 context.Context, p1 string) (r0 watcher.Subscription, r1 error) {
-	return r0, r1
+func (d *contractWatchIgnoresCancelDefect) Watch(p0 context.Context, p1 string) (r0 watcher.Subscription, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Watch(p0, p1)
 }
 
-// contractWatchSucceedsAlways returns the planted defect of a Contract
+// contractWatchIgnoresCancel returns the planted defect of a Contract
 // whose Watch ignores the context over a fresh subject.
-func contractWatchSucceedsAlways(h *ContractHandle) watcher.Contract {
-	return &contractWatchSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractWatchIgnoresCancel(h *ContractHandle) watcher.Contract {
+	return &contractWatchIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractTriggerPanicsDefect is the planted defect of a Contract whose
@@ -321,21 +360,24 @@ func contractTriggerPanics(h *ContractHandle) watcher.Contract {
 	return &contractTriggerPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractTriggerSucceedsAlwaysDefect is the planted defect of a Contract
+// contractTriggerIgnoresCancelDefect is the planted defect of a Contract
 // whose Trigger ignores the context.
-type contractTriggerSucceedsAlwaysDefect struct {
+type contractTriggerIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Trigger is the override of the planted defect.
-func (*contractTriggerSucceedsAlwaysDefect) Trigger(p0 context.Context, p1 string, p2 watcher.Value) (r0 error) {
-	return r0
+func (d *contractTriggerIgnoresCancelDefect) Trigger(p0 context.Context, p1 string, p2 watcher.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Trigger(p0, p1, p2)
 }
 
-// contractTriggerSucceedsAlways returns the planted defect of a Contract
+// contractTriggerIgnoresCancel returns the planted defect of a Contract
 // whose Trigger ignores the context over a fresh subject.
-func contractTriggerSucceedsAlways(h *ContractHandle) watcher.Contract {
-	return &contractTriggerSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractTriggerIgnoresCancel(h *ContractHandle) watcher.Contract {
+	return &contractTriggerIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:88b900ab3f9e059053f1c47de973f5053fe35f172de5a1cc12c03d09050e9ab5
+// dokimi:provenance sha256:918f3ba2dea3f3040890c397879c6e1923537fcf818c83285c89562c71cbf371

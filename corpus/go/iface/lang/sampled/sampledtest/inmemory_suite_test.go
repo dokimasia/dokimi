@@ -7,6 +7,8 @@ package sampledtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled/sampledtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToLabeller(t *testing.T) {
 	t.Parallel()
 
-	sampledtest.RunLabellerSuite(t, sampledtest.NewInMemory)
+	sampledtest.RunLabellerSuite(
+		t,
+		sampledtest.NewInMemory,
+		conform.Isolate[sampled.Labeller](),
+	)
 }
 
 // BenchmarkInMemoryConformsToLabeller measures each callable of the suite
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToLabellerApply(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:d635644f83b07b0ab98c89e0b1801ec150d19747af0ce6f8723c46bde10c4e42
+// dokimi:provenance sha256:c60a8104f3ebdc9afa7baae1bdaaf28601757aaed0316df5f5b4eb15a1788a68

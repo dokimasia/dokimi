@@ -10,6 +10,7 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk/rules"
+	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/internal/derive"
 	"go.dokimi.dev/dokimi/spec"
@@ -197,25 +198,6 @@ func TestDerive(t *testing.T) {
 			}}, "the shape writer is silent")
 		})
 
-		t.Run("adds an edge where a claim entails another that binds on the callable", func(t *testing.T) {
-			t.Parallel()
-			closer := derive.Facts{
-				Declaration: "Store", Callable: "Close",
-				Signature: signature("Close", false, nil, nil, rules.ErrorsNone),
-			}
-			decl := []derive.Facts{withShape(closer, "void-lifecycle")}
-
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime)
-
-			assert.NoError(t, err, "the declaration derives")
-			assert.Equal(
-				t,
-				got.Edges,
-				[]derive.Edge{{Deeper: "Store.Close/repeat-survives", Shallower: "Store.Close/smoke"}},
-				"the repeat entails the smoke",
-			)
-		})
-
 		t.Run("adds the id of the instance to a claim that binds twice on one callable", func(t *testing.T) {
 			t.Parallel()
 			get := getter()
@@ -254,6 +236,51 @@ func TestDerive(t *testing.T) {
 				Remedy: "author a sample of the parameter key with the directive sample",
 			}}, "the claim of the shape refuses, and smoke is silent")
 		})
+
+		{
+			tests := []struct {
+				name        string
+				give        symbol.TypeForm
+				giveRefused int
+				want        []string
+			}{
+				{
+					name: "binds the claims of an input of two function literals of one spelling",
+					give: symbol.FormFunc, giveRefused: -1,
+					want: []string{"Store.Hash/smoke", "Store.Hash/deterministic"},
+				},
+				{
+					name: "refuses the claims of an input of a function without a first sample",
+					give: symbol.FormFunc, giveRefused: 0, want: []string{},
+				},
+				{
+					name: "refuses the claims of an input of a function without a second sample",
+					give: symbol.FormFunc, giveRefused: 1, want: []string{},
+				},
+				{
+					name: "refuses the claims of an input of two makes of a channel of one spelling",
+					give: symbol.FormStream, giveRefused: -1, want: []string{},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					hash := withShape(pure(), "computation")
+					hash.Inputs = append([]derive.Value(nil), hash.Inputs...)
+					hash.Inputs[0].Shape = rules.TypeShape{Form: tt.give}
+					hash.Inputs[0].Samples[1] = hash.Inputs[0].Samples[0]
+					if tt.giveRefused >= 0 {
+						hash.Inputs[0].Samples[tt.giveRefused] = rules.Refused(rules.RefusedNoLiteral)
+					}
+
+					got, err := derive.Derive([]derive.Facts{hash}, spec.Claims(), nil, runtime)
+
+					assert.NoError(t, err, "the declaration derives")
+					assert.Equal(t, identities(got), tt.want,
+						"each literal is a value of its own, and a make that nothing closes is no sample")
+				})
+			}
+		}
 
 		t.Run("licenses a claim with its param and withdraws the licence of a conflict", func(t *testing.T) {
 			t.Parallel()

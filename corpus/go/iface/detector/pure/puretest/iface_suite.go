@@ -15,6 +15,20 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Pure:
+//
+// Pure.Describe/smoke: Describe returns without a panic for derived
+// inputs.
+//
+// Pure.Describe/deterministic: Describe returns the same value for the
+// same inputs.
+
+// The derived checks of Pure that witness their laws at the shallow end:
+//
+// Pure.Describe/smoke
+//
+// Pure.Describe/deterministic
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -83,6 +97,7 @@ func PureSuite() conform.Suite[pure.Pure] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[pure.Pure]{PureChecks.Describe.Smoke()},
 				Apply: func(h *PureHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
 						r0 := h.Subject().Describe()
@@ -227,4 +242,4 @@ func pureDescribeDrifts(h *PureHandle) pure.Pure {
 	return &pureDescribeDriftsDefect{pureOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6c3f637d36340d4d1a9f30e514f314d8ae347de9b1b4a82bb6303afb5972a7ab
+// dokimi:provenance sha256:baf8383ea80fed9299f870d8e6dd1d8e9cd61b7ebf666f18004a540cf4d61a79

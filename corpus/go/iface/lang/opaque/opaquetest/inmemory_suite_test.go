@@ -7,6 +7,8 @@ package opaquetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/opaque"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/opaque/opaquetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToStore(t *testing.T) {
 	t.Parallel()
 
-	opaquetest.RunStoreSuite(t, opaquetest.NewInMemory)
+	opaquetest.RunStoreSuite(
+		t,
+		opaquetest.NewInMemory,
+		conform.Isolate[opaque.Store](),
+	)
 }
 
 // TestInMemoryConformsToStoreAllocs applies the allocation ceilings and
@@ -49,4 +55,4 @@ func FuzzInMemoryConformsToStorePut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a2a6b88e109d934dd407fe89731aa5bcb3e1ece5ab56d3add87f4afb2779b59a
+// dokimi:provenance sha256:5c2caa4919f1e48dab212dd4cf4053dd8ff72aeb867237b9387e3a48a3814942

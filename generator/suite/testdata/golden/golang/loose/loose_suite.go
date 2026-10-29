@@ -12,6 +12,15 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Printer:
+//
+// Printer.Print/smoke: Print returns without a panic for derived inputs.
+
+// The derived checks of Printer that witness their laws at the shallow
+// end:
+//
+// Printer.Print/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -200,6 +209,15 @@ func (*printerPrintPanicsDefect) Print(p0 string, p1 ...any) {
 func printerPrintPanics(h *PrinterHandle) Printer {
 	return &printerPrintPanicsDefect{printerOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Recorder:
+//
+// Recorder.Field/smoke: Field returns without a panic for derived inputs.
+
+// The derived checks of Recorder that witness their laws at the shallow
+// end:
+//
+// Recorder.Field/smoke
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -390,6 +408,20 @@ func recorderFieldPanics(h *RecorderHandle) Recorder {
 	return &recorderFieldPanicsDefect{recorderOverEmbedded: h.Fresh()}
 }
 
+// The derived checks of Journal:
+//
+// Journal.Put/smoke: Put returns without a panic for derived inputs.
+
+// The derived checks of Journal that witness their laws at the shallow
+// end:
+//
+// Journal.Put/smoke
+
+// The unclaimed classifications of Journal:
+//
+// The shape:mutator of Journal.Put has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -578,6 +610,19 @@ func journalPutPanics(h *JournalHandle) Journal {
 	return &journalPutPanicsDefect{journalOverEmbedded: h.Fresh()}
 }
 
+// The derived checks of Plain:
+//
+// Plain.Print/smoke: Print returns without a panic for derived inputs.
+
+// The derived checks of Plain that witness their laws at the shallow end:
+//
+// Plain.Print/smoke
+
+// The unclaimed classifications of Plain:
+//
+// The shape:mutator of Plain.Print has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -752,6 +797,17 @@ func (*plainPrintPanicsDefect) Print(p0 string) {
 func plainPrintPanics(h *PlainHandle) Plain {
 	return &plainPrintPanicsDefect{plainOverEmbedded: h.Fresh()}
 }
+
+// The unclaimed classifications of Zoned:
+//
+// The shape:mutator of Zoned.In has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Zoned.Scale has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Zoned.Ratio has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1

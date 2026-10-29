@@ -15,6 +15,40 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Ranked:
+//
+// Ranked.Add/smoke: Add returns without a panic for derived inputs.
+//
+// Ranked.Add/cancel: Add returns an error for a cancelled context.
+//
+// Ranked.Len/smoke: Len returns without a panic for derived inputs.
+//
+// Ranked.Len/cancel: Len returns an error for a cancelled context.
+//
+// Ranked.Len/zero-on-error: Len returns the zero value beside an error.
+//
+// Ranked.At/smoke: At returns without a panic for derived inputs.
+//
+// Ranked.At/cancel: At returns an error for a cancelled context.
+//
+// Ranked.At/zero-on-error: At returns the zero value beside an error.
+
+// The derived checks of Ranked that witness their laws at the shallow end:
+//
+// Ranked.Add/smoke
+//
+// Ranked.Len/smoke
+//
+// Ranked.At/smoke
+
+// The unclaimed classifications of Ranked:
+//
+// The shape:writer of Ranked.Add has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The mixin:indexed of Ranked.At has the stance gap. No claim states that
+// a read by index returns the element at that index.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -135,7 +169,7 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 						return h.Subject().Add(ctx, indexed.Value{Key: "Key-a"})
 					})
 				},
-				Defect: rankedAddSucceedsAlways,
+				Defect: rankedAddIgnoresCancel,
 			},
 			{
 				ID:          RankedChecks.Len.Smoke(),
@@ -168,7 +202,7 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 						return err
 					})
 				},
-				Defect: rankedLenSucceedsAlways,
+				Defect: rankedLenIgnoresCancel,
 			},
 			{
 				ID:          RankedChecks.Len.ZeroOnError(),
@@ -216,7 +250,7 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 						return err
 					})
 				},
-				Defect: rankedAtSucceedsAlways,
+				Defect: rankedAtIgnoresCancel,
 			},
 			{
 				ID:          RankedChecks.At.ZeroOnError(),
@@ -392,21 +426,24 @@ func rankedAddPanics(h *RankedHandle) indexed.Ranked {
 	return &rankedAddPanicsDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// rankedAddSucceedsAlwaysDefect is the planted defect of a Ranked whose
-// Add ignores the context.
-type rankedAddSucceedsAlwaysDefect struct {
+// rankedAddIgnoresCancelDefect is the planted defect of a Ranked whose Add
+// ignores the context.
+type rankedAddIgnoresCancelDefect struct {
 	rankedOverEmbedded
 }
 
 // Add is the override of the planted defect.
-func (*rankedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 indexed.Value) (r0 error) {
-	return r0
+func (d *rankedAddIgnoresCancelDefect) Add(p0 context.Context, p1 indexed.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.rankedOverEmbedded.Add(p0, p1)
 }
 
-// rankedAddSucceedsAlways returns the planted defect of a Ranked whose Add
+// rankedAddIgnoresCancel returns the planted defect of a Ranked whose Add
 // ignores the context over a fresh subject.
-func rankedAddSucceedsAlways(h *RankedHandle) indexed.Ranked {
-	return &rankedAddSucceedsAlwaysDefect{rankedOverEmbedded: h.Fresh()}
+func rankedAddIgnoresCancel(h *RankedHandle) indexed.Ranked {
+	return &rankedAddIgnoresCancelDefect{rankedOverEmbedded: h.Fresh()}
 }
 
 // rankedLenPanicsDefect is the planted defect of a Ranked whose Len
@@ -426,21 +463,24 @@ func rankedLenPanics(h *RankedHandle) indexed.Ranked {
 	return &rankedLenPanicsDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// rankedLenSucceedsAlwaysDefect is the planted defect of a Ranked whose
-// Len ignores the context.
-type rankedLenSucceedsAlwaysDefect struct {
+// rankedLenIgnoresCancelDefect is the planted defect of a Ranked whose Len
+// ignores the context.
+type rankedLenIgnoresCancelDefect struct {
 	rankedOverEmbedded
 }
 
 // Len is the override of the planted defect.
-func (*rankedLenSucceedsAlwaysDefect) Len(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *rankedLenIgnoresCancelDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.rankedOverEmbedded.Len(p0)
 }
 
-// rankedLenSucceedsAlways returns the planted defect of a Ranked whose Len
+// rankedLenIgnoresCancel returns the planted defect of a Ranked whose Len
 // ignores the context over a fresh subject.
-func rankedLenSucceedsAlways(h *RankedHandle) indexed.Ranked {
-	return &rankedLenSucceedsAlwaysDefect{rankedOverEmbedded: h.Fresh()}
+func rankedLenIgnoresCancel(h *RankedHandle) indexed.Ranked {
+	return &rankedLenIgnoresCancelDefect{rankedOverEmbedded: h.Fresh()}
 }
 
 // rankedLenValueBesideDefect is the planted defect of a Ranked whose Len
@@ -450,9 +490,11 @@ type rankedLenValueBesideDefect struct {
 }
 
 // Len is the override of the planted defect.
-func (*rankedLenValueBesideDefect) Len(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *rankedLenValueBesideDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.rankedOverEmbedded.Len(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -478,21 +520,24 @@ func rankedAtPanics(h *RankedHandle) indexed.Ranked {
 	return &rankedAtPanicsDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// rankedAtSucceedsAlwaysDefect is the planted defect of a Ranked whose At
+// rankedAtIgnoresCancelDefect is the planted defect of a Ranked whose At
 // ignores the context.
-type rankedAtSucceedsAlwaysDefect struct {
+type rankedAtIgnoresCancelDefect struct {
 	rankedOverEmbedded
 }
 
 // At is the override of the planted defect.
-func (*rankedAtSucceedsAlwaysDefect) At(p0 context.Context, p1 int) (r0 indexed.Value, r1 error) {
-	return r0, r1
+func (d *rankedAtIgnoresCancelDefect) At(p0 context.Context, p1 int) (r0 indexed.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.rankedOverEmbedded.At(p0, p1)
 }
 
-// rankedAtSucceedsAlways returns the planted defect of a Ranked whose At
+// rankedAtIgnoresCancel returns the planted defect of a Ranked whose At
 // ignores the context over a fresh subject.
-func rankedAtSucceedsAlways(h *RankedHandle) indexed.Ranked {
-	return &rankedAtSucceedsAlwaysDefect{rankedOverEmbedded: h.Fresh()}
+func rankedAtIgnoresCancel(h *RankedHandle) indexed.Ranked {
+	return &rankedAtIgnoresCancelDefect{rankedOverEmbedded: h.Fresh()}
 }
 
 // rankedAtValueBesideDefect is the planted defect of a Ranked whose At
@@ -502,9 +547,11 @@ type rankedAtValueBesideDefect struct {
 }
 
 // At is the override of the planted defect.
-func (*rankedAtValueBesideDefect) At(p0 context.Context, p1 int) (r0 indexed.Value, r1 error) {
-	r0 = indexed.Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *rankedAtValueBesideDefect) At(p0 context.Context, p1 int) (r0 indexed.Value, r1 error) {
+	r0, r1 = d.rankedOverEmbedded.At(p0, p1)
+	if r1 != nil {
+		r0 = indexed.Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -514,4 +561,4 @@ func rankedAtValueBeside(h *RankedHandle) indexed.Ranked {
 	return &rankedAtValueBesideDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6a28bcfff5283210965abd736acbd12406da0790db7530d8722fab7bbc3f204d
+// dokimi:provenance sha256:5146a50795f8d42812be08718a74acffae473f809e13ec83911f56e57083a8d1

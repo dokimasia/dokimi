@@ -7,6 +7,8 @@ package pooltest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pool"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pool/pooltest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	pooltest.RunContractSuite(t, pooltest.NewInMemory)
+	pooltest.RunContractSuite(
+		t,
+		pooltest.NewInMemory,
+		conform.Isolate[pool.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToContractStats(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:4830a98407da797b8355655e1a7b41b947002bf6b97e7083dde674e6b2029424
+// dokimi:provenance sha256:4122d44644d877aaccd2e8699b8272c58612c1f8c3ad376a25412822265ed4f8

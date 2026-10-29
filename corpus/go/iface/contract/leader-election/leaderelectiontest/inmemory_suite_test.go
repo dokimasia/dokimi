@@ -7,6 +7,8 @@ package leaderelectiontest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	leaderelection "go.dokimi.dev/dokimi/corpus/go/iface/contract/leader-election"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/leader-election/leaderelectiontest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	leaderelectiontest.RunContractSuite(t, leaderelectiontest.NewInMemory)
+	leaderelectiontest.RunContractSuite(
+		t,
+		leaderelectiontest.NewInMemory,
+		conform.Isolate[leaderelection.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToContractIsLeader(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:fd59f52512d3d337022535733e8f5adb27ce5d950d03c2ed90cc088666161e4f
+// dokimi:provenance sha256:70dde4aa4adb0cae70d2d1cc59ce1cf7c38d1e2936b1e2944d0124068ecd7b0d

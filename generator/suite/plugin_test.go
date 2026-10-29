@@ -539,14 +539,14 @@ func TestSuite(t *testing.T) {
 						"NewStoreOver",
 						"StoreGetPanics",
 						"StoreGetPanicsDefect",
-						"StoreGetSucceedsAlways",
-						"StoreGetSucceedsAlwaysDefect",
+						"StoreGetIgnoresCancel",
+						"StoreGetIgnoresCancelDefect",
 						"StoreGetValueBeside",
 						"StoreGetValueBesideDefect",
 						"StorePutPanics",
 						"StorePutPanicsDefect",
-						"StorePutSucceedsAlways",
-						"StorePutSucceedsAlwaysDefect",
+						"StorePutIgnoresCancel",
+						"StorePutIgnoresCancelDefect",
 						"StoreSuite",
 						"RunStoreSuite",
 						"RunStoreSuiteFromHandle",
@@ -565,10 +565,10 @@ func TestSuite(t *testing.T) {
 					wantDecl: []string{
 						"MeterCount", "MeterRecord", "MeterMerge", "MeterTotal", "MeterCountCalls",
 						"MeterRecordCalls", "MeterMergeCalls", "MeterTotalCalls", "MeterOver", "MeterOverEmbedded",
-						"NewMeterOver", "MeterCountPanics", "MeterCountPanicsDefect", "MeterCountSucceedsAlways",
-						"MeterCountSucceedsAlwaysDefect", "MeterCountValueBeside", "MeterCountValueBesideDefect",
-						"MeterRecordPanics", "MeterRecordPanicsDefect", "MeterRecordSucceedsAlways",
-						"MeterRecordSucceedsAlwaysDefect", "MeterMergePanics", "MeterMergePanicsDefect",
+						"NewMeterOver", "MeterCountPanics", "MeterCountPanicsDefect", "MeterCountIgnoresCancel",
+						"MeterCountIgnoresCancelDefect", "MeterCountValueBeside", "MeterCountValueBesideDefect",
+						"MeterRecordPanics", "MeterRecordPanicsDefect", "MeterRecordIgnoresCancel",
+						"MeterRecordIgnoresCancelDefect", "MeterMergePanics", "MeterMergePanicsDefect",
 						"MeterTotalPanics", "MeterTotalPanicsDefect", "MeterTotalDrifts", "MeterTotalDriftsDefect",
 						"MeterSuite", "RunMeterSuite", "RunMeterSuiteFromHandle", "FuzzMeterSuite", "RunMeterBudgets",
 						"BenchMeterSuite", "BenchMeterSuiteParallel", "MeterHandle", "MeterCheck", "MeterOption",
@@ -1116,6 +1116,17 @@ func TestSuite(t *testing.T) {
 			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
 			expect.Equal(t, *refs[2].Type, emit.TypeRef{Spelling: "StoreChecks", Target: store, Emitted: true},
 				"the record refers to the names of the checks that the suite of Store emits")
+		})
+
+		t.Run("records the isolation of each conformance test under the option isolate", func(t *testing.T) {
+			t.Parallel()
+
+			off := generate(t, goTree, storePackage, memoryPackage).tests["TestForgetfulConformsToStore"]
+			expect.False(t, off.Data.Isolate, "a conformance test does not isolate by default")
+			p := suite.New()
+			p.(plugin.OptionsProvider).Options().(*suite.Options).Isolate = true
+			on := recorded(t, fixture(t, goTree, p, storePackage, memoryPackage), p).tests["TestForgetfulConformsToStore"]
+			expect.True(t, on.Data.Isolate, "the option isolate isolates the planted defects of each conformance test")
 		})
 
 		t.Run("records the excusal of a derived check of a generic interface", func(t *testing.T) {

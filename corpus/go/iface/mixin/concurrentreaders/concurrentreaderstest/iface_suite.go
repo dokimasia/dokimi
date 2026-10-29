@@ -15,6 +15,32 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Mixed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Mixed.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Mixed.Put/cancel: Put returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Get/smoke
+//
+// Mixed.Put/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The mixin:concurrent-readers of Mixed.Get has the stance needs. The
+// claims of the mixin need concurrent callers.
+//
+// The shape:composite-writer of Mixed.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,7 +138,7 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedGetSucceedsAlways,
+				Defect: mixedGetIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Get.ZeroOnError(),
@@ -158,7 +184,7 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
 					})
 				},
-				Defect: mixedPutSucceedsAlways,
+				Defect: mixedPutIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[concurrentreaders.Mixed]{
@@ -314,21 +340,24 @@ func mixedGetPanics(h *MixedHandle) concurrentreaders.Mixed {
 	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedGetSucceedsAlwaysDefect is the planted defect of a Mixed whose Get
+// mixedGetIgnoresCancelDefect is the planted defect of a Mixed whose Get
 // ignores the context.
-type mixedGetSucceedsAlwaysDefect struct {
+type mixedGetIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*mixedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Get(p0, p1)
 }
 
-// mixedGetSucceedsAlways returns the planted defect of a Mixed whose Get
+// mixedGetIgnoresCancel returns the planted defect of a Mixed whose Get
 // ignores the context over a fresh subject.
-func mixedGetSucceedsAlways(h *MixedHandle) concurrentreaders.Mixed {
-	return &mixedGetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedGetIgnoresCancel(h *MixedHandle) concurrentreaders.Mixed {
+	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
@@ -338,9 +367,11 @@ type mixedGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -366,21 +397,24 @@ func mixedPutPanics(h *MixedHandle) concurrentreaders.Mixed {
 	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancelDefect is the planted defect of a Mixed whose Put
 // ignores the context.
-type mixedPutSucceedsAlwaysDefect struct {
+type mixedPutIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*mixedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
-	return r0
+func (d *mixedPutIgnoresCancelDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Put(p0, p1, p2)
 }
 
-// mixedPutSucceedsAlways returns the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancel returns the planted defect of a Mixed whose Put
 // ignores the context over a fresh subject.
-func mixedPutSucceedsAlways(h *MixedHandle) concurrentreaders.Mixed {
-	return &mixedPutSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedPutIgnoresCancel(h *MixedHandle) concurrentreaders.Mixed {
+	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:29d8d57e515373a77e5af0c69a16020dd355cd11bcfc4b8821a9c4ddf56e45dd
+// dokimi:provenance sha256:10c3fcfd26fb10a9a957a60734204dad8832ed066dd15464df84f596b599fd38

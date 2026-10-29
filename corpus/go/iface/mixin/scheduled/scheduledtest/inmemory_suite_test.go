@@ -7,6 +7,8 @@ package scheduledtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/scheduled"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/scheduled/scheduledtest"
 )
 
@@ -15,46 +17,34 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	scheduledtest.RunMixedSuite(t, scheduledtest.NewInMemory)
+	scheduledtest.RunMixedSuiteFromHandle(
+		t,
+		scheduledtest.NewInMemoryFromHandle,
+		conform.Isolate[scheduled.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
 // Mixed on InMemory.
 func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("At", func(b *testing.B) {
-		scheduledtest.BenchMixedSuite(
-			b,
-			scheduledtest.MixedChecks.At.Callable,
-			func(*scheduledtest.MixedHandle) *scheduledtest.InMemory { return scheduledtest.NewInMemory() },
-		)
+		scheduledtest.BenchMixedSuite(b, scheduledtest.MixedChecks.At.Callable, scheduledtest.NewInMemoryFromHandle)
 	})
 	b.Run("Fired", func(b *testing.B) {
-		scheduledtest.BenchMixedSuite(
-			b,
-			scheduledtest.MixedChecks.Fired.Callable,
-			func(*scheduledtest.MixedHandle) *scheduledtest.InMemory { return scheduledtest.NewInMemory() },
-		)
+		scheduledtest.BenchMixedSuite(b, scheduledtest.MixedChecks.Fired.Callable, scheduledtest.NewInMemoryFromHandle)
 	})
 }
 
 // FuzzInMemoryConformsToMixedAt fuzzes the property checks of Mixed.At on
 // InMemory.
 func FuzzInMemoryConformsToMixedAt(f *testing.F) {
-	scheduledtest.FuzzMixedSuite(
-		f,
-		scheduledtest.MixedChecks.At.Callable,
-		func(*scheduledtest.MixedHandle) *scheduledtest.InMemory { return scheduledtest.NewInMemory() },
-	)
+	scheduledtest.FuzzMixedSuite(f, scheduledtest.MixedChecks.At.Callable, scheduledtest.NewInMemoryFromHandle)
 }
 
 // FuzzInMemoryConformsToMixedFired fuzzes the property checks of
 // Mixed.Fired on InMemory.
 func FuzzInMemoryConformsToMixedFired(f *testing.F) {
-	scheduledtest.FuzzMixedSuite(
-		f,
-		scheduledtest.MixedChecks.Fired.Callable,
-		func(*scheduledtest.MixedHandle) *scheduledtest.InMemory { return scheduledtest.NewInMemory() },
-	)
+	scheduledtest.FuzzMixedSuite(f, scheduledtest.MixedChecks.Fired.Callable, scheduledtest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:893fae2876d461be506290f9397e1eae7fb30a39cedd9923c2476e15bc690e76
+// dokimi:provenance sha256:61e08d9c8eb9873bae1521ed5086d611ba17f4850a65774fb46c554527e9359b

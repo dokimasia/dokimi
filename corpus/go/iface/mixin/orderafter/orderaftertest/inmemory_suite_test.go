@@ -7,6 +7,8 @@ package orderaftertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/orderafter"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/orderafter/orderaftertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	orderaftertest.RunMixedSuite(t, orderaftertest.NewInMemory)
+	orderaftertest.RunMixedSuite(
+		t,
+		orderaftertest.NewInMemory,
+		conform.Isolate[orderafter.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedPrepare(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b80b145906c6e411f65b392b458e41cdbcdf8876e372e94ece41e97a4dbf2264
+// dokimi:provenance sha256:f5ff796bab2e68a846fecbdf81d2e50b07972f5c5713bf5b2c70f9a3d56deb30

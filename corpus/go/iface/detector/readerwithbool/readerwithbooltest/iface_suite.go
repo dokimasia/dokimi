@@ -15,6 +15,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of ReaderWithBool:
+//
+// ReaderWithBool.Load/smoke: Load returns without a panic for derived
+// inputs.
+//
+// ReaderWithBool.Load/zero-on-miss: Load returns the zero value beside a
+// false presence flag.
+
+// The derived checks of ReaderWithBool that witness their laws at the
+// shallow end:
+//
+// ReaderWithBool.Load/smoke
+
+// The refused claims of ReaderWithBool:
+//
+// ReaderWithBool.Load/cancel: Load cannot fail. The remedy is to give Load
+// an error result.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -246,4 +264,4 @@ func readerWithBoolLoadValueBesideAFalseFlag(h *ReaderWithBoolHandle) readerwith
 	return &readerWithBoolLoadValueBesideAFalseFlagDefect{readerWithBoolOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a965c98fbbfdefa7e018473ee563ac8566ac84502ac844e3ec0fc90e5e11e84f
+// dokimi:provenance sha256:baae424879d3eff63f64b149e97bbd77df3b80306b184f19155ebccf3b5a7e6c

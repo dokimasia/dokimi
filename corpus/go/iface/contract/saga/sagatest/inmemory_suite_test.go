@@ -7,6 +7,8 @@ package sagatest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/saga"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/saga/sagatest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	sagatest.RunContractSuite(t, sagatest.NewInMemory)
+	sagatest.RunContractSuite(
+		t,
+		sagatest.NewInMemory,
+		conform.Isolate[saga.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -108,4 +114,4 @@ func FuzzInMemoryConformsToContractState(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5368ce35ab52e23d896aab9bd34df2699a86b9ade9a5d7c8b8c1c0428241ad33
+// dokimi:provenance sha256:d42f6b696d81c5906956c36d245fc37c31b11026c5c1d9f71df4be5ccb5b7f58

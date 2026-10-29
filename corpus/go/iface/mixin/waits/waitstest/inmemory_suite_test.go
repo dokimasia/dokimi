@@ -7,6 +7,8 @@ package waitstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/waits"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/waits/waitstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToLock(t *testing.T) {
 	t.Parallel()
 
-	waitstest.RunLockSuite(t, waitstest.NewInMemory)
+	waitstest.RunLockSuite(
+		t,
+		waitstest.NewInMemory,
+		conform.Isolate[waits.Lock](),
+	)
 }
 
 // BenchmarkInMemoryConformsToLock measures each callable of the suite of
@@ -67,4 +73,4 @@ func FuzzInMemoryConformsToLockHeld(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:75918cf3377888b39a84796732f2438ac2f3def65defa19bdb860b18f328e452
+// dokimi:provenance sha256:3635add044159f0bf005a1506e9734039db21b71b8b07ee24f2c10227d3d28cc

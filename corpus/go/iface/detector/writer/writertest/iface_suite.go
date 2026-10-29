@@ -15,6 +15,21 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Writer:
+//
+// Writer.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Writer.Put/cancel: Put returns an error for a cancelled context.
+
+// The derived checks of Writer that witness their laws at the shallow end:
+//
+// Writer.Put/smoke
+
+// The unclaimed classifications of Writer:
+//
+// The shape:writer of Writer.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -85,7 +100,7 @@ func WriterSuite() conform.Suite[writer.Writer] {
 						return h.Subject().Put(ctx, writer.Value{Key: "Key-a"})
 					})
 				},
-				Defect: writerPutSucceedsAlways,
+				Defect: writerPutIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[writer.Writer]{
@@ -201,21 +216,24 @@ func writerPutPanics(h *WriterHandle) writer.Writer {
 	return &writerPutPanicsDefect{writerOverEmbedded: h.Fresh()}
 }
 
-// writerPutSucceedsAlwaysDefect is the planted defect of a Writer whose
-// Put ignores the context.
-type writerPutSucceedsAlwaysDefect struct {
+// writerPutIgnoresCancelDefect is the planted defect of a Writer whose Put
+// ignores the context.
+type writerPutIgnoresCancelDefect struct {
 	writerOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*writerPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 writer.Value) (r0 error) {
-	return r0
+func (d *writerPutIgnoresCancelDefect) Put(p0 context.Context, p1 writer.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.writerOverEmbedded.Put(p0, p1)
 }
 
-// writerPutSucceedsAlways returns the planted defect of a Writer whose Put
+// writerPutIgnoresCancel returns the planted defect of a Writer whose Put
 // ignores the context over a fresh subject.
-func writerPutSucceedsAlways(h *WriterHandle) writer.Writer {
-	return &writerPutSucceedsAlwaysDefect{writerOverEmbedded: h.Fresh()}
+func writerPutIgnoresCancel(h *WriterHandle) writer.Writer {
+	return &writerPutIgnoresCancelDefect{writerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:655a205eb2d382ed50e1070c439c1a44d7549eb557e8a511c7cff4e14203a652
+// dokimi:provenance sha256:d1c8edc1a182e8fb3a95b799c3916ac2461c56d4e24f6a48e5ff703ceb062997

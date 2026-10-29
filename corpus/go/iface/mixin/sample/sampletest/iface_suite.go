@@ -15,6 +15,35 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Process/smoke: Process returns without a panic for derived inputs.
+//
+// Mixed.Process/cancel: Process returns an error for a cancelled context.
+//
+// Mixed.Process/zero-on-error: Process returns the zero value beside an
+// error.
+//
+// Mixed.NewInput/smoke: NewInput returns without a panic for derived
+// inputs.
+//
+// Mixed.NewInput/cancel: NewInput returns an error for a cancelled
+// context.
+//
+// Mixed.NewInput/zero-on-error: NewInput returns the zero value beside an
+// error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Process/smoke
+//
+// Mixed.NewInput/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The mixin:sample of Mixed.Process has the stance silent. The mixin
+// documents the sample of a value.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -120,7 +149,7 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedProcessSucceedsAlways,
+				Defect: mixedProcessIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Process.ZeroOnError(),
@@ -168,7 +197,7 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedNewInputSucceedsAlways,
+				Defect: mixedNewInputIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.NewInput.ZeroOnError(),
@@ -320,21 +349,24 @@ func mixedProcessPanics(h *MixedHandle) sample.Mixed {
 	return &mixedProcessPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedProcessSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedProcessIgnoresCancelDefect is the planted defect of a Mixed whose
 // Process ignores the context.
-type mixedProcessSucceedsAlwaysDefect struct {
+type mixedProcessIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Process is the override of the planted defect.
-func (*mixedProcessSucceedsAlwaysDefect) Process(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedProcessIgnoresCancelDefect) Process(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Process(p0, p1)
 }
 
-// mixedProcessSucceedsAlways returns the planted defect of a Mixed whose
+// mixedProcessIgnoresCancel returns the planted defect of a Mixed whose
 // Process ignores the context over a fresh subject.
-func mixedProcessSucceedsAlways(h *MixedHandle) sample.Mixed {
-	return &mixedProcessSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedProcessIgnoresCancel(h *MixedHandle) sample.Mixed {
+	return &mixedProcessIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedProcessValueBesideDefect is the planted defect of a Mixed whose
@@ -344,9 +376,11 @@ type mixedProcessValueBesideDefect struct {
 }
 
 // Process is the override of the planted defect.
-func (*mixedProcessValueBesideDefect) Process(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedProcessValueBesideDefect) Process(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Process(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -373,21 +407,24 @@ func mixedNewInputPanics(h *MixedHandle) sample.Mixed {
 	return &mixedNewInputPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedNewInputSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedNewInputIgnoresCancelDefect is the planted defect of a Mixed whose
 // NewInput ignores the context.
-type mixedNewInputSucceedsAlwaysDefect struct {
+type mixedNewInputIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // NewInput is the override of the planted defect.
-func (*mixedNewInputSucceedsAlwaysDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedNewInputIgnoresCancelDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.NewInput(p0)
 }
 
-// mixedNewInputSucceedsAlways returns the planted defect of a Mixed whose
+// mixedNewInputIgnoresCancel returns the planted defect of a Mixed whose
 // NewInput ignores the context over a fresh subject.
-func mixedNewInputSucceedsAlways(h *MixedHandle) sample.Mixed {
-	return &mixedNewInputSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedNewInputIgnoresCancel(h *MixedHandle) sample.Mixed {
+	return &mixedNewInputIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedNewInputValueBesideDefect is the planted defect of a Mixed whose
@@ -397,9 +434,11 @@ type mixedNewInputValueBesideDefect struct {
 }
 
 // NewInput is the override of the planted defect.
-func (*mixedNewInputValueBesideDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedNewInputValueBesideDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.NewInput(p0)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -409,4 +448,4 @@ func mixedNewInputValueBeside(h *MixedHandle) sample.Mixed {
 	return &mixedNewInputValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:211cb26b05556c9d0ede01bf289786d70c0f461355b05c857d034bc780550ac5
+// dokimi:provenance sha256:cf9234de46900f7e337d38c6b4aee0c0e1806502afe590aad7a0bc876ca6a139

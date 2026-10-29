@@ -15,6 +15,20 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Lookup:
+//
+// Lookup.Inspect/smoke: Inspect returns without a panic for derived
+// inputs.
+
+// The derived checks of Lookup that witness their laws at the shallow end:
+//
+// Lookup.Inspect/smoke
+
+// The refused claims of Lookup:
+//
+// Lookup.Inspect/zeroes-on-miss: Inspect returns no presence flag. The
+// remedy is to return a presence flag beside the value of Inspect.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -183,4 +197,4 @@ func lookupInspectPanics(h *LookupHandle) lookup.Lookup {
 	return &lookupInspectPanicsDefect{lookupOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8942c732f0d5c9b7155db7d77f93ab44e9c0225646fd870a5323956327d1c465
+// dokimi:provenance sha256:0dff2f8a0e52f36582e5a7e3654e62f0d05c760f50ad0dfd47997cbb0a385bff

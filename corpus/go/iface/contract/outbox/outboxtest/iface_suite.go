@@ -15,6 +15,43 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Append/smoke: Append returns without a panic for derived
+// inputs.
+//
+// Contract.Append/cancel: Append returns an error for a cancelled context.
+//
+// Contract.Subscribe/smoke: Subscribe returns without a panic for derived
+// inputs.
+//
+// Contract.Subscribe/cancel: Subscribe returns an error for a cancelled
+// context.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Append/smoke
+//
+// Contract.Subscribe/smoke
+
+// The refused claims of Contract:
+//
+// Contract.Subscribe/zero-on-error: eidos derives no sample of a result of
+// Subscribe. The remedy is to author a sample of the result type with the
+// directive sample.
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Append has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The contract:outbox/append of Contract.Append has the stance needs. The
+// claims of the contract need generated sequences.
+//
+// The contract:outbox/subscribe of Contract.Subscribe has the stance
+// needs. The claims of the contract need generated sequences.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -106,7 +143,7 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 						return h.Subject().Append(ctx, outbox.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractAppendSucceedsAlways,
+				Defect: contractAppendIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Subscribe.Smoke(),
@@ -139,7 +176,7 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 						return err
 					})
 				},
-				Defect: contractSubscribeSucceedsAlways,
+				Defect: contractSubscribeIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[outbox.Contract]{
@@ -279,21 +316,24 @@ func contractAppendPanics(h *ContractHandle) outbox.Contract {
 	return &contractAppendPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractAppendSucceedsAlwaysDefect is the planted defect of a Contract
+// contractAppendIgnoresCancelDefect is the planted defect of a Contract
 // whose Append ignores the context.
-type contractAppendSucceedsAlwaysDefect struct {
+type contractAppendIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Append is the override of the planted defect.
-func (*contractAppendSucceedsAlwaysDefect) Append(p0 context.Context, p1 outbox.Value) (r0 error) {
-	return r0
+func (d *contractAppendIgnoresCancelDefect) Append(p0 context.Context, p1 outbox.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Append(p0, p1)
 }
 
-// contractAppendSucceedsAlways returns the planted defect of a Contract
+// contractAppendIgnoresCancel returns the planted defect of a Contract
 // whose Append ignores the context over a fresh subject.
-func contractAppendSucceedsAlways(h *ContractHandle) outbox.Contract {
-	return &contractAppendSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractAppendIgnoresCancel(h *ContractHandle) outbox.Contract {
+	return &contractAppendIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractSubscribePanicsDefect is the planted defect of a Contract whose
@@ -313,21 +353,24 @@ func contractSubscribePanics(h *ContractHandle) outbox.Contract {
 	return &contractSubscribePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractSubscribeSucceedsAlwaysDefect is the planted defect of a
-// Contract whose Subscribe ignores the context.
-type contractSubscribeSucceedsAlwaysDefect struct {
+// contractSubscribeIgnoresCancelDefect is the planted defect of a Contract
+// whose Subscribe ignores the context.
+type contractSubscribeIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Subscribe is the override of the planted defect.
-func (*contractSubscribeSucceedsAlwaysDefect) Subscribe(p0 context.Context) (r0 <-chan outbox.Value, r1 error) {
-	return r0, r1
+func (d *contractSubscribeIgnoresCancelDefect) Subscribe(p0 context.Context) (r0 <-chan outbox.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Subscribe(p0)
 }
 
-// contractSubscribeSucceedsAlways returns the planted defect of a Contract
+// contractSubscribeIgnoresCancel returns the planted defect of a Contract
 // whose Subscribe ignores the context over a fresh subject.
-func contractSubscribeSucceedsAlways(h *ContractHandle) outbox.Contract {
-	return &contractSubscribeSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractSubscribeIgnoresCancel(h *ContractHandle) outbox.Contract {
+	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:587b4379063fa25353897243d2f34e41ec3e84d969f1722d4cedf547fa45b86a
+// dokimi:provenance sha256:6612e84d7b7d864f6ab196fd81c6234a73dc081c29dd9047a3f520a99e643d56

@@ -15,6 +15,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of ReaderNoError:
+//
+// ReaderNoError.Lookup/smoke: Lookup returns without a panic for derived
+// inputs.
+//
+// ReaderNoError.Lookup/miss-is-zero: Lookup returns the zero value for an
+// input that nothing stored.
+
+// The derived checks of ReaderNoError that witness their laws at the
+// shallow end:
+//
+// ReaderNoError.Lookup/smoke
+
+// The refused claims of ReaderNoError:
+//
+// ReaderNoError.Lookup/cancel: Lookup cannot fail. The remedy is to give
+// Lookup an error result.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -241,4 +259,4 @@ func readerNoErrorLookupInventsAValue(h *ReaderNoErrorHandle) readernoerror.Read
 	return &readerNoErrorLookupInventsAValueDefect{readerNoErrorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8beb4aeeaa0ed45828af178d32807e53ddaf83f0feedf6bca686738d05f3ccde
+// dokimi:provenance sha256:421ca4f3634d39dbf2cc84739b77a53aefd73d05959a182f05404a5b15dfcda6

@@ -25,6 +25,71 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Every:
+//
+// Every.Fields/smoke: Fields returns without a panic for derived inputs.
+//
+// Every.Fields/deterministic: Fields returns the same value for the same
+// inputs.
+//
+// Every.Elements/smoke: Elements returns without a panic for derived
+// inputs.
+//
+// Every.Elements/deterministic: Elements returns the same value for the
+// same inputs.
+
+// The derived checks of Every that witness their laws at the shallow end:
+//
+// Every.Fields/smoke
+//
+// Every.Fields/deterministic
+//
+// Every.Elements/smoke
+//
+// Every.Elements/deterministic
+
+// The refused claims of Every:
+//
+// Every.Params/deterministic: eidos derives no sample of the parameter ch
+// of Params. The remedy is to author a sample of the parameter ch with the
+// directive sample.
+//
+// Every.Results/deterministic: eidos derives no sample of the parameter r
+// of Results. The remedy is to author a sample of the parameter r with the
+// directive sample.
+//
+// Every.Place/deterministic: eidos derives no sample of the parameter
+// clock of Place. The remedy is to author a sample of the parameter clock
+// with the directive sample.
+//
+// Every.Route/deterministic: eidos derives no sample of the parameter in
+// of Route. The remedy is to author a sample of the parameter in with the
+// directive sample.
+//
+// Every.Drain/deterministic: eidos derives no sample of the parameter f of
+// Drain. The remedy is to author a sample of the parameter f with the
+// directive sample.
+//
+// Every.Watch/deterministic: eidos derives no sample of the parameter s of
+// Watch. The remedy is to author a sample of the parameter s with the
+// directive sample.
+//
+// Every.Measure/deterministic: eidos derives no sample of the parameter s
+// of Measure. The remedy is to author a sample of the parameter s with the
+// directive sample.
+//
+// Every.Index/deterministic: eidos derives no sample of the parameter
+// names of Index. The remedy is to author a sample of the parameter names
+// with the directive sample.
+//
+// Every.Count/deterministic: eidos derives no sample of the parameter
+// shapes of Count. The remedy is to author a sample of the parameter
+// shapes with the directive sample.
+//
+// Every.Use/deterministic: eidos derives no sample of the parameter r of
+// Use. The remedy is to author a sample of the parameter r with the
+// directive sample.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -210,6 +275,7 @@ func EverySuite() conform.Suite[kinds.Every] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[kinds.Every]{EveryChecks.Fields.Smoke()},
 				Apply: func(h *EveryHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Fields(&kinds.Fields{Map: map[string]int{"Map-a": 42}})
@@ -244,6 +310,7 @@ func EverySuite() conform.Suite[kinds.Every] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[kinds.Every]{EveryChecks.Elements.Smoke()},
 				Apply: func(h *EveryHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Elements(&kinds.Elements{Bool: []bool{true}})
@@ -1465,4 +1532,4 @@ func everyElementsDrifts(h *EveryHandle) kinds.Every {
 	return &everyElementsDriftsDefect{everyOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3df42602fd28f667b4d6da60b30c7df972e2a5a86c305b926b550e9a588165c6
+// dokimi:provenance sha256:b3971ccc592fbd6c13ee1cd3c7808cd9a4d987e6b03c586fd34b31571c13f672

@@ -95,6 +95,15 @@ func (v *Value) sampled() bool {
 	return v.Samples[0].OK() && v.Samples[1].OK() && !reflect.DeepEqual(v.Samples[0].Value, v.Samples[1].Value)
 }
 
+// made reports whether eidos derives both samples of the input v as a
+// function literal. Each literal is a new value wherever a call writes it,
+// so its two samples differ also where they have one spelling. The two
+// makes of a channel differ in the same way, but nothing sends to them or
+// closes them, so a callable that receives from one never returns.
+func (v *Value) made() bool {
+	return v.Shape.Form == symbol.FormFunc && v.Samples[0].OK() && v.Samples[1].OK()
+}
+
 // Suite is the derivation of one declaration.
 type Suite struct {
 	Checks    []Check
@@ -275,7 +284,7 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		}
 	}
 	for i := range f.Inputs {
-		if in := &f.Inputs[i]; !in.sampled() {
+		if in := &f.Inputs[i]; !in.sampled() && !in.made() {
 			return refuse(
 				fmt.Sprintf("eidos derives no sample of the parameter %s of %s", in.Name, f.Callable),
 				fmt.Sprintf("author a sample of the parameter %s with the directive sample", in.Name),

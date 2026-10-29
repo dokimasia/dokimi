@@ -16,6 +16,45 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Stream/smoke: Stream returns without a panic for derived inputs.
+//
+// Mixed.Add/smoke: Add returns without a panic for derived inputs.
+//
+// Mixed.Add/cancel: Add returns an error for a cancelled context.
+//
+// Mixed.Remove/smoke: Remove returns without a panic for derived inputs.
+//
+// Mixed.Remove/cancel: Remove returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Stream/smoke
+//
+// Mixed.Add/smoke
+//
+// Mixed.Remove/smoke
+
+// The refused claims of Mixed:
+//
+// Mixed.Stream/cancel: Stream cannot fail. The remedy is to give Stream an
+// error result.
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:stream-reader of Mixed.Stream has the stance gap. No claim
+// states what a stream returns after its end.
+//
+// The mixin:stream-reflects-mutations of Mixed.Stream has the stance
+// needs. The claims of the mixin need generated sequences.
+//
+// The shape:writer of Mixed.Add has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:deleter of Mixed.Remove has the stance silent. A delete is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -137,7 +176,7 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 						return h.Subject().Add(ctx, string("item-a"))
 					})
 				},
-				Defect: mixedAddSucceedsAlways,
+				Defect: mixedAddIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Remove.Smoke(),
@@ -168,7 +207,7 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 						return h.Subject().Remove(ctx, string("item-a"))
 					})
 				},
-				Defect: mixedRemoveSucceedsAlways,
+				Defect: mixedRemoveIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[streamreflectsmutations.Mixed]{
@@ -350,21 +389,24 @@ func mixedAddPanics(h *MixedHandle) streamreflectsmutations.Mixed {
 	return &mixedAddPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedAddSucceedsAlwaysDefect is the planted defect of a Mixed whose Add
+// mixedAddIgnoresCancelDefect is the planted defect of a Mixed whose Add
 // ignores the context.
-type mixedAddSucceedsAlwaysDefect struct {
+type mixedAddIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Add is the override of the planted defect.
-func (*mixedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedAddIgnoresCancelDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Add(p0, p1)
 }
 
-// mixedAddSucceedsAlways returns the planted defect of a Mixed whose Add
+// mixedAddIgnoresCancel returns the planted defect of a Mixed whose Add
 // ignores the context over a fresh subject.
-func mixedAddSucceedsAlways(h *MixedHandle) streamreflectsmutations.Mixed {
-	return &mixedAddSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedAddIgnoresCancel(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedAddIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedRemovePanicsDefect is the planted defect of a Mixed whose Remove
@@ -384,21 +426,24 @@ func mixedRemovePanics(h *MixedHandle) streamreflectsmutations.Mixed {
 	return &mixedRemovePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedRemoveSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedRemoveIgnoresCancelDefect is the planted defect of a Mixed whose
 // Remove ignores the context.
-type mixedRemoveSucceedsAlwaysDefect struct {
+type mixedRemoveIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Remove is the override of the planted defect.
-func (*mixedRemoveSucceedsAlwaysDefect) Remove(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedRemoveIgnoresCancelDefect) Remove(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Remove(p0, p1)
 }
 
-// mixedRemoveSucceedsAlways returns the planted defect of a Mixed whose
+// mixedRemoveIgnoresCancel returns the planted defect of a Mixed whose
 // Remove ignores the context over a fresh subject.
-func mixedRemoveSucceedsAlways(h *MixedHandle) streamreflectsmutations.Mixed {
-	return &mixedRemoveSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedRemoveIgnoresCancel(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedRemoveIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4d7c68cc81bca2fea8bb934d1d1165654cbb278edde8b50e7f7494bc1da201f3
+// dokimi:provenance sha256:5748d4703eb5f31d50d5177085cd7f5552c431d935ba76f851461059b4ee13dd

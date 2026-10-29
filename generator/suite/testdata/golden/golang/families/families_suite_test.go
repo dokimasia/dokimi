@@ -67,6 +67,10 @@ func TestStoreSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				StoreChecks.Get.MonotonicReads(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				StoreChecks.Load.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -169,6 +173,10 @@ func TestStoreSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				StoreChecks.Get.ReadAfterWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Get.MonotonicReads(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -283,6 +291,10 @@ func TestStoreSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -374,6 +386,10 @@ func FuzzStoreSuitePut(f *testing.F) {
 		),
 		conform.Excuse(
 			StoreChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -471,6 +487,10 @@ func FuzzStoreSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -562,6 +582,10 @@ func FuzzStoreSuiteLoad(f *testing.F) {
 		),
 		conform.Excuse(
 			StoreChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -659,6 +683,10 @@ func FuzzStoreSuiteSplit(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -750,6 +778,10 @@ func FuzzStoreSuiteFind(f *testing.F) {
 		),
 		conform.Excuse(
 			StoreChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -847,6 +879,10 @@ func FuzzStoreSuiteLevel(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -938,6 +974,10 @@ func FuzzStoreSuiteRaise(f *testing.F) {
 		),
 		conform.Excuse(
 			StoreChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1035,6 +1075,10 @@ func FuzzStoreSuiteInspect(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1126,6 +1170,10 @@ func FuzzStoreSuiteGetWithMeta(f *testing.F) {
 		),
 		conform.Excuse(
 			StoreChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1536,6 +1584,486 @@ func BenchmarkKeyedSuite(b *testing.B) {
 	})
 	b.Run("Delete", func(b *testing.B) {
 		BenchKeyedSuite(b, KeyedChecks.Delete.Callable, keyedIdle)
+	})
+}
+
+// stampedSubjectEmbedded is Stamped under the name of the field that
+// stampedSubject embeds.
+type stampedSubjectEmbedded = Stamped
+
+// stampedSubject is a value of Stamped that only TestStampedSuite builds.
+type stampedSubject struct{ stampedSubjectEmbedded }
+
+// TestStampedSuite checks the suite of Stamped and the two forms of its
+// application.
+func TestStampedSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("StampedSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, StampedSuite())
+	})
+
+	t.Run("RunStampedSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *stampedSubject
+		RunStampedSuite(
+			t,
+			func() *stampedSubject {
+				built = &stampedSubject{}
+				return built
+			},
+			conform.With(StampedCheck{
+				ID:        "Stamped/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *StampedHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, Stamped(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*StampedHandle) Stamped { return &stampedSubject{} },
+			}),
+			conform.Excuse(
+				StampedChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Store.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.ReadAfterWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.WritesFollowReads(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunStampedSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *stampedSubject
+		RunStampedSuiteFromHandle(
+			t,
+			func(*StampedHandle) *stampedSubject {
+				built = &stampedSubject{}
+				return built
+			},
+			conform.With(StampedCheck{
+				ID:        "Stamped/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *StampedHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, Stamped(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*StampedHandle) Stamped { return &stampedSubject{} },
+			}),
+			conform.Excuse(
+				StampedChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Store.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.ReadAfterWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StampedChecks.Get.WritesFollowReads(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// stampedIdle returns the planted defect of a ceiling of Stamped with a
+// spend of nothing, a subject that answers each call at once.
+func stampedIdle(h *StampedHandle) Stamped {
+	return StampedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStampedSuiteBudgets applies the allocation ceilings of the suite of
+// Stamped to stampedIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestStampedSuiteBudgets(t *testing.T) {
+	RunStampedBudgets(
+		t,
+		stampedIdle,
+		conform.Ceilings(StampedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(StampedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			StampedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Store.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.WritesFollowReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStampedSuiteStore registers the fuzz target of Stamped.Store on
+// stampedIdle, with every check of the suite excused.
+func FuzzStampedSuiteStore(f *testing.F) {
+	FuzzStampedSuite(
+		f,
+		StampedChecks.Store.Callable,
+		stampedIdle,
+		conform.Excuse(
+			StampedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Store.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.WritesFollowReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStampedSuiteGet registers the fuzz target of Stamped.Get on
+// stampedIdle, with every check of the suite excused.
+func FuzzStampedSuiteGet(f *testing.F) {
+	FuzzStampedSuite(
+		f,
+		StampedChecks.Get.Callable,
+		stampedIdle,
+		conform.Excuse(
+			StampedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Store.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StampedChecks.Get.WritesFollowReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkStampedSuite measures each callable of the suite of Stamped on
+// stampedIdle.
+func BenchmarkStampedSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		BenchStampedSuite(b, StampedChecks.Store.Callable, stampedIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		BenchStampedSuite(b, StampedChecks.Get.Callable, stampedIdle)
+	})
+}
+
+// decodedSubjectEmbedded is Decoded under the name of the field that
+// decodedSubject embeds.
+type decodedSubjectEmbedded = Decoded
+
+// decodedSubject is a value of Decoded that only TestDecodedSuite builds.
+type decodedSubject struct{ decodedSubjectEmbedded }
+
+// TestDecodedSuite checks the suite of Decoded and the two forms of its
+// application.
+func TestDecodedSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("DecodedSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, DecodedSuite())
+	})
+
+	t.Run("RunDecodedSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *decodedSubject
+		RunDecodedSuite(
+			t,
+			func() *decodedSubject {
+				built = &decodedSubject{}
+				return built
+			},
+			conform.With(DecodedCheck{
+				ID:        "Decoded/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *DecodedHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, Decoded(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*DecodedHandle) Decoded { return &decodedSubject{} },
+			}),
+			conform.Excuse(
+				DecodedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DecodedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DecodedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DecodedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DecodedChecks.Get.ReadAfterWrite(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunDecodedSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *decodedSubject
+		RunDecodedSuiteFromHandle(
+			t,
+			func(*DecodedHandle) *decodedSubject {
+				built = &decodedSubject{}
+				return built
+			},
+			conform.With(DecodedCheck{
+				ID:        "Decoded/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *DecodedHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, Decoded(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*DecodedHandle) Decoded { return &decodedSubject{} },
+			}),
+			conform.Excuse(
+				DecodedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DecodedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DecodedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DecodedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DecodedChecks.Get.ReadAfterWrite(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// decodedIdle returns the planted defect of a ceiling of Decoded with a
+// spend of nothing, a subject that answers each call at once.
+func decodedIdle(h *DecodedHandle) Decoded {
+	return DecodedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestDecodedSuiteBudgets applies the allocation ceilings of the suite of
+// Decoded to decodedIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestDecodedSuiteBudgets(t *testing.T) {
+	RunDecodedBudgets(
+		t,
+		decodedIdle,
+		conform.Ceilings(DecodedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(DecodedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			DecodedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzDecodedSuitePut registers the fuzz target of Decoded.Put on
+// decodedIdle, with every check of the suite excused.
+func FuzzDecodedSuitePut(f *testing.F) {
+	FuzzDecodedSuite(
+		f,
+		DecodedChecks.Put.Callable,
+		decodedIdle,
+		conform.Excuse(
+			DecodedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzDecodedSuiteGet registers the fuzz target of Decoded.Get on
+// decodedIdle, with every check of the suite excused.
+func FuzzDecodedSuiteGet(f *testing.F) {
+	FuzzDecodedSuite(
+		f,
+		DecodedChecks.Get.Callable,
+		decodedIdle,
+		conform.Excuse(
+			DecodedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			DecodedChecks.Get.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkDecodedSuite measures each callable of the suite of Decoded on
+// decodedIdle.
+func BenchmarkDecodedSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		BenchDecodedSuite(b, DecodedChecks.Put.Callable, decodedIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		BenchDecodedSuite(b, DecodedChecks.Get.Callable, decodedIdle)
 	})
 }
 
@@ -4644,6 +5172,18 @@ func TestScopeSuite(t *testing.T) {
 				Defect: func(*ScopeHandle) Scope { return &scopeSubject{} },
 			}),
 			conform.Excuse(
+				ScopeChecks.Run.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ScopeChecks.Run.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ScopeChecks.Run.Transaction(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				ScopeChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -4684,6 +5224,18 @@ func TestScopeSuite(t *testing.T) {
 				},
 				Defect: func(*ScopeHandle) Scope { return &scopeSubject{} },
 			}),
+			conform.Excuse(
+				ScopeChecks.Run.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ScopeChecks.Run.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ScopeChecks.Run.Transaction(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				ScopeChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
@@ -4726,6 +5278,18 @@ func TestScopeSuiteBudgets(t *testing.T) {
 		conform.Ceilings(ScopeChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(ScopeChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			ScopeChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ScopeChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ScopeChecks.Run.Transaction(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			ScopeChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -4755,6 +5319,18 @@ func FuzzScopeSuiteRun(f *testing.F) {
 		f,
 		ScopeChecks.Run.Callable,
 		scopeIdle,
+		conform.Excuse(
+			ScopeChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ScopeChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ScopeChecks.Run.Transaction(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			ScopeChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -4786,6 +5362,18 @@ func FuzzScopeSuitePut(f *testing.F) {
 		ScopeChecks.Put.Callable,
 		scopeIdle,
 		conform.Excuse(
+			ScopeChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ScopeChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ScopeChecks.Run.Transaction(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			ScopeChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -4815,6 +5403,18 @@ func FuzzScopeSuiteGet(f *testing.F) {
 		f,
 		ScopeChecks.Get.Callable,
 		scopeIdle,
+		conform.Excuse(
+			ScopeChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ScopeChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ScopeChecks.Run.Transaction(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			ScopeChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -4899,6 +5499,10 @@ func TestEventsSuite(t *testing.T) {
 				EventsChecks.Fire.Hooks(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				EventsChecks.OnEvent.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -4930,6 +5534,10 @@ func TestEventsSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				EventsChecks.Fire.Hooks(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				EventsChecks.OnEvent.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4964,6 +5572,10 @@ func TestEventsSuiteBudgets(t *testing.T) {
 			EventsChecks.Fire.Hooks(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			EventsChecks.OnEvent.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -4986,6 +5598,10 @@ func FuzzEventsSuiteFire(f *testing.F) {
 			EventsChecks.Fire.Hooks(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			EventsChecks.OnEvent.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -5006,6 +5622,10 @@ func FuzzEventsSuiteOnEvent(f *testing.F) {
 		),
 		conform.Excuse(
 			EventsChecks.Fire.Hooks(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			EventsChecks.OnEvent.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)

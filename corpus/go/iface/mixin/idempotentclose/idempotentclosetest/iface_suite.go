@@ -15,6 +15,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Closer:
+//
+// Closer.Close/smoke: Close returns without a panic for derived inputs.
+//
+// Closer.Close/cancel: Close returns an error for a cancelled context.
+//
+// Closer.Close/idempotent: a second identical Close succeeds after the
+// first.
+//
+// Closer.Stats/smoke: Stats returns without a panic for derived inputs.
+//
+// Closer.Stats/cancel: Stats returns an error for a cancelled context.
+//
+// Closer.Stats/zero-on-error: Stats returns the zero value beside an
+// error.
+
+// The derived checks of Closer that witness their laws at the shallow end:
+//
+// Closer.Close/smoke
+//
+// Closer.Stats/smoke
+
+// The unclaimed classifications of Closer:
+//
+// The shape:lifecycle of Closer.Close has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -118,7 +145,7 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 						return h.Subject().Close(ctx)
 					})
 				},
-				Defect: closerCloseSucceedsAlways,
+				Defect: closerCloseIgnoresCancel,
 			},
 			{
 				ID:          CloserChecks.Close.Idempotent(),
@@ -166,7 +193,7 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 						return err
 					})
 				},
-				Defect: closerStatsSucceedsAlways,
+				Defect: closerStatsIgnoresCancel,
 			},
 			{
 				ID:          CloserChecks.Stats.ZeroOnError(),
@@ -326,21 +353,24 @@ func closerClosePanics(h *CloserHandle) idempotentclose.Closer {
 	return &closerClosePanicsDefect{closerOverEmbedded: h.Fresh()}
 }
 
-// closerCloseSucceedsAlwaysDefect is the planted defect of a Closer whose
+// closerCloseIgnoresCancelDefect is the planted defect of a Closer whose
 // Close ignores the context.
-type closerCloseSucceedsAlwaysDefect struct {
+type closerCloseIgnoresCancelDefect struct {
 	closerOverEmbedded
 }
 
 // Close is the override of the planted defect.
-func (*closerCloseSucceedsAlwaysDefect) Close(p0 context.Context) (r0 error) {
-	return r0
+func (d *closerCloseIgnoresCancelDefect) Close(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.closerOverEmbedded.Close(p0)
 }
 
-// closerCloseSucceedsAlways returns the planted defect of a Closer whose
+// closerCloseIgnoresCancel returns the planted defect of a Closer whose
 // Close ignores the context over a fresh subject.
-func closerCloseSucceedsAlways(h *CloserHandle) idempotentclose.Closer {
-	return &closerCloseSucceedsAlwaysDefect{closerOverEmbedded: h.Fresh()}
+func closerCloseIgnoresCancel(h *CloserHandle) idempotentclose.Closer {
+	return &closerCloseIgnoresCancelDefect{closerOverEmbedded: h.Fresh()}
 }
 
 // closerCloseRefusesRepeatDefect is the planted defect of a Closer whose
@@ -352,6 +382,10 @@ type closerCloseRefusesRepeatDefect struct {
 
 // Close is the override of the planted defect.
 func (d *closerCloseRefusesRepeatDefect) Close(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = conform.ErrGenerated
@@ -383,21 +417,24 @@ func closerStatsPanics(h *CloserHandle) idempotentclose.Closer {
 	return &closerStatsPanicsDefect{closerOverEmbedded: h.Fresh()}
 }
 
-// closerStatsSucceedsAlwaysDefect is the planted defect of a Closer whose
+// closerStatsIgnoresCancelDefect is the planted defect of a Closer whose
 // Stats ignores the context.
-type closerStatsSucceedsAlwaysDefect struct {
+type closerStatsIgnoresCancelDefect struct {
 	closerOverEmbedded
 }
 
 // Stats is the override of the planted defect.
-func (*closerStatsSucceedsAlwaysDefect) Stats(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *closerStatsIgnoresCancelDefect) Stats(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.closerOverEmbedded.Stats(p0)
 }
 
-// closerStatsSucceedsAlways returns the planted defect of a Closer whose
+// closerStatsIgnoresCancel returns the planted defect of a Closer whose
 // Stats ignores the context over a fresh subject.
-func closerStatsSucceedsAlways(h *CloserHandle) idempotentclose.Closer {
-	return &closerStatsSucceedsAlwaysDefect{closerOverEmbedded: h.Fresh()}
+func closerStatsIgnoresCancel(h *CloserHandle) idempotentclose.Closer {
+	return &closerStatsIgnoresCancelDefect{closerOverEmbedded: h.Fresh()}
 }
 
 // closerStatsValueBesideDefect is the planted defect of a Closer whose
@@ -407,9 +444,11 @@ type closerStatsValueBesideDefect struct {
 }
 
 // Stats is the override of the planted defect.
-func (*closerStatsValueBesideDefect) Stats(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *closerStatsValueBesideDefect) Stats(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.closerOverEmbedded.Stats(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -419,4 +458,4 @@ func closerStatsValueBeside(h *CloserHandle) idempotentclose.Closer {
 	return &closerStatsValueBesideDefect{closerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fd96523a688773439df30e6534bf6226adf66022c8aa5ca05d1bcbd304c94334
+// dokimi:provenance sha256:73df7d901d1222b93735f07b3a2429cf21f15c210f7b64526f700fd86209ef7a

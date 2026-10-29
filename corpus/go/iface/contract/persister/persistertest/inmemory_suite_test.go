@@ -7,6 +7,8 @@ package persistertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/persister"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/persister/persistertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	persistertest.RunContractSuite(t, persistertest.NewInMemory)
+	persistertest.RunContractSuite(
+		t,
+		persistertest.NewInMemory,
+		conform.Isolate[persister.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a1223322509d87e186b9ae23b2e420c88465d5da30de815e4ee536632304a13d
+// dokimi:provenance sha256:c5f48f22cece780e7374157ed09070be58058d39b7f895e9ae82a5a3687ba631

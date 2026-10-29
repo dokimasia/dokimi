@@ -7,6 +7,8 @@ package pointintimetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime/pointintimetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	pointintimetest.RunMixedSuite(t, pointintimetest.NewInMemory)
+	pointintimetest.RunMixedSuite(
+		t,
+		pointintimetest.NewInMemory,
+		conform.Isolate[pointintime.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:66374f89ff7856ffcce3c626c8670fe3dadf98e85cae371c203e06ec885ea10a
+// dokimi:provenance sha256:1ea9d125b190dbd981460d6c68a207551b6dd5f1c85eab0e8b8f8730f433d2ea

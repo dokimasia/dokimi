@@ -7,6 +7,8 @@ package embeddedtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embedded"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embedded/embeddedtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToComposed(t *testing.T) {
 	t.Parallel()
 
-	embeddedtest.RunComposedSuite(t, embeddedtest.NewInMemory)
+	embeddedtest.RunComposedSuite(
+		t,
+		embeddedtest.NewInMemory,
+		conform.Isolate[embedded.Composed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToComposed measures each callable of the suite
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToComposedClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0097b92c776197759013391fba678459d08d96591687dff1c9e90d563bed4384
+// dokimi:provenance sha256:b3c15ef6e6f15882f73e0b92b35a68fb901b9f7f1a947e229798bd07b0c76350

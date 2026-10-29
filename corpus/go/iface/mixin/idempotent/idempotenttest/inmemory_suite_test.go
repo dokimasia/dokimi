@@ -7,6 +7,8 @@ package idempotenttest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotent"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotent/idempotenttest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	idempotenttest.RunMixedSuite(t, idempotenttest.NewInMemory)
+	idempotenttest.RunMixedSuite(
+		t,
+		idempotenttest.NewInMemory,
+		conform.Isolate[idempotent.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:aaae251530e2cc1f0b68cdc4550b97f052e18da9e6729b747c476eeedf9aa1ec
+// dokimi:provenance sha256:a96deb2958a0d077484317a37490cb45954d95d28deaa93b2a17d66122045c59

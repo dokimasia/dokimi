@@ -7,6 +7,8 @@ package deprecatedtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deprecated"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deprecated/deprecatedtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	deprecatedtest.RunMixedSuite(t, deprecatedtest.NewInMemory)
+	deprecatedtest.RunMixedSuite(
+		t,
+		deprecatedtest.NewInMemory,
+		conform.Isolate[deprecated.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedNew(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:be98eb94af00525305d75658b19531cdd48ff94d9a702cf6c6a7463959aff1db
+// dokimi:provenance sha256:266bd5dd791a9e4a53b4a4885efb0504593394432a299b25009b09613357c1f5

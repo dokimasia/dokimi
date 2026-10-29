@@ -7,6 +7,8 @@ package paginationtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pagination"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pagination/paginationtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	paginationtest.RunContractSuite(t, paginationtest.NewInMemory)
+	paginationtest.RunContractSuite(
+		t,
+		paginationtest.NewInMemory,
+		conform.Isolate[pagination.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:56d76f601992826ccb2aefb34256ba1a0c7d3180e4eea96efdf714dec1183ebc
+// dokimi:provenance sha256:5e3766175a76744b8ce42ff51141cf8549121957f36f3a27830ad1d192c87d28

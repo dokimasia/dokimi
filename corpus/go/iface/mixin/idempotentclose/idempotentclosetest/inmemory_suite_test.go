@@ -7,6 +7,8 @@ package idempotentclosetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose/idempotentclosetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToCloser(t *testing.T) {
 	t.Parallel()
 
-	idempotentclosetest.RunCloserSuite(t, idempotentclosetest.NewInMemory)
+	idempotentclosetest.RunCloserSuite(
+		t,
+		idempotentclosetest.NewInMemory,
+		conform.Isolate[idempotentclose.Closer](),
+	)
 }
 
 // BenchmarkInMemoryConformsToCloser measures each callable of the suite of
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToCloserStats(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a27c3d21f0ef7589b6fb97109b8935b9a10318928f8d3eda88395c9aa6d67d35
+// dokimi:provenance sha256:2d3bdafb6e04f7ecf1da548b6da6c71523fd857b66f56e9f11b88a28967dac87

@@ -7,6 +7,7 @@ package genericboundtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound/genericboundtest"
 )
@@ -16,7 +17,11 @@ import (
 func TestInMemoryConformsToRanked(t *testing.T) {
 	t.Parallel()
 
-	genericboundtest.RunRankedSuite(t, genericboundtest.NewInMemory)
+	genericboundtest.RunRankedSuite(
+		t,
+		genericboundtest.NewInMemory,
+		conform.Isolate[genericbound.Ranked[int, genericbound.Score]](),
+	)
 }
 
 // BenchmarkInMemoryConformsToRanked measures each callable of the suite of
@@ -66,4 +71,4 @@ func FuzzInMemoryConformsToRankedReset(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:cc4498ed750dcdc4c87ce602b0ca2890f9dd3546fad1d3d4734a085fd8dcae9d
+// dokimi:provenance sha256:d5333953a8ba6b96e548bbb21c8cac5c3f7f274d77bafacfdaa62322cbd7e39c

@@ -20,6 +20,180 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Params:
+//
+// Params.Bool/smoke: Bool returns without a panic for derived inputs.
+//
+// Params.Int/smoke: Int returns without a panic for derived inputs.
+//
+// Params.Int8/smoke: Int8 returns without a panic for derived inputs.
+//
+// Params.Int16/smoke: Int16 returns without a panic for derived inputs.
+//
+// Params.Int32/smoke: Int32 returns without a panic for derived inputs.
+//
+// Params.Int64/smoke: Int64 returns without a panic for derived inputs.
+//
+// Params.Uint/smoke: Uint returns without a panic for derived inputs.
+//
+// Params.Uint8/smoke: Uint8 returns without a panic for derived inputs.
+//
+// Params.Uint16/smoke: Uint16 returns without a panic for derived inputs.
+//
+// Params.Uint32/smoke: Uint32 returns without a panic for derived inputs.
+//
+// Params.Uint64/smoke: Uint64 returns without a panic for derived inputs.
+//
+// Params.Uintptr/smoke: Uintptr returns without a panic for derived
+// inputs.
+//
+// Params.Float32/smoke: Float32 returns without a panic for derived
+// inputs.
+//
+// Params.Float64/smoke: Float64 returns without a panic for derived
+// inputs.
+//
+// Params.Complex64/smoke: Complex64 returns without a panic for derived
+// inputs.
+//
+// Params.Complex128/smoke: Complex128 returns without a panic for derived
+// inputs.
+//
+// Params.Array/smoke: Array returns without a panic for derived inputs.
+//
+// Params.Func/smoke: Func returns without a panic for derived inputs.
+//
+// Params.Map/smoke: Map returns without a panic for derived inputs.
+//
+// Params.Slice/smoke: Slice returns without a panic for derived inputs.
+//
+// Params.String/smoke: String returns without a panic for derived inputs.
+
+// The derived checks of Params that witness their laws at the shallow end:
+//
+// Params.Bool/smoke
+//
+// Params.Int/smoke
+//
+// Params.Int8/smoke
+//
+// Params.Int16/smoke
+//
+// Params.Int32/smoke
+//
+// Params.Int64/smoke
+//
+// Params.Uint/smoke
+//
+// Params.Uint8/smoke
+//
+// Params.Uint16/smoke
+//
+// Params.Uint32/smoke
+//
+// Params.Uint64/smoke
+//
+// Params.Uintptr/smoke
+//
+// Params.Float32/smoke
+//
+// Params.Float64/smoke
+//
+// Params.Complex64/smoke
+//
+// Params.Complex128/smoke
+//
+// Params.Array/smoke
+//
+// Params.Func/smoke
+//
+// Params.Map/smoke
+//
+// Params.Slice/smoke
+//
+// Params.String/smoke
+
+// The unclaimed classifications of Params:
+//
+// The shape:mutator of Params.Bool has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Int has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Int8 has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Int16 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Int32 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Int64 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Uint has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Uint8 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Uint16 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Uint32 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Uint64 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Uintptr has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Float32 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Float64 has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Complex64 has the stance silent. A mutation
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Complex128 has the stance silent. A mutation
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Array has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Chan has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Func has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Interface has the stance silent. A mutation
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Map has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Ptr has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Slice has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.String has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.Struct has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Params.UnsafePointer has the stance silent. A
+// mutation is an input of the other checks, and its result is an error
+// alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -301,6 +475,12 @@ type paramsChan struct {
 // checks.
 type paramsFunc struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Func returns without a
+// panic for derived inputs.
+func (c paramsFunc) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsInterface is the name of Params.Interface, with the identities of
@@ -655,6 +835,23 @@ func ParamsSuite() conform.Suite[Params] {
 					})
 				},
 				Defect: paramsArrayPanics,
+			},
+			{
+				ID:          ParamsChecks.Func.Smoke(),
+				Statement:   "Func returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Func(func() int { return 0 })
+						return nil
+					})
+				},
+				Defect: paramsFuncPanics,
 			},
 			{
 				ID:          ParamsChecks.Map.Smoke(),
@@ -1649,6 +1846,23 @@ func paramsArrayPanics(h *ParamsHandle) Params {
 	return &paramsArrayPanicsDefect{paramsOverEmbedded: h.Fresh()}
 }
 
+// paramsFuncPanicsDefect is the planted defect of a Params whose Func
+// panics.
+type paramsFuncPanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Func is the override of the planted defect.
+func (*paramsFuncPanicsDefect) Func(p0 func() int) {
+	panic("the planted defect of a Params whose Func panics")
+}
+
+// paramsFuncPanics returns the planted defect of a Params whose Func
+// panics over a fresh subject.
+func paramsFuncPanics(h *ParamsHandle) Params {
+	return &paramsFuncPanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
 // paramsMapPanicsDefect is the planted defect of a Params whose Map
 // panics.
 type paramsMapPanicsDefect struct {
@@ -1699,6 +1913,30 @@ func (*paramsStringPanicsDefect) String(p0 string) {
 func paramsStringPanics(h *ParamsHandle) Params {
 	return &paramsStringPanicsDefect{paramsOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Every:
+//
+// Every.Fields/smoke: Fields returns without a panic for derived inputs.
+//
+// Every.Elements/smoke: Elements returns without a panic for derived
+// inputs.
+
+// The derived checks of Every that witness their laws at the shallow end:
+//
+// Every.Fields/smoke
+//
+// Every.Elements/smoke
+
+// The unclaimed classifications of Every:
+//
+// The shape:mutator of Every.Fields has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Every.Elements has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Every.Results has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -2651,6 +2889,30 @@ func newPlacerOver(_ *PlacerHandle, spend func()) Placer {
 	return placerOver{spend: spend}
 }
 
+// The refused claims of Router:
+//
+// Router.Route/cancel: eidos derives no sample of the parameter f of
+// Route. The remedy is to author a sample of the parameter f with the
+// directive sample.
+//
+// Router.Read/deterministic: eidos derives no sample of the parameter in
+// of Read. The remedy is to author a sample of the parameter in with the
+// directive sample.
+
+// The unclaimed classifications of Router:
+//
+// The shape:writer of Router.Route has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Router.Write has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Router.Pass has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Router.Watch has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2973,6 +3235,32 @@ func (o routerOver) Watch(Source) (r0 error) {
 func newRouterOver(_ *RouterHandle, spend func()) Router {
 	return routerOver{spend: spend}
 }
+
+// The refused claims of Drawer:
+//
+// Drawer.Draw/deterministic: eidos derives no sample of the parameter s of
+// Draw. The remedy is to author a sample of the parameter s with the
+// directive sample.
+//
+// Drawer.Count/deterministic: eidos derives no sample of the parameter
+// shapes of Count. The remedy is to author a sample of the parameter
+// shapes with the directive sample.
+//
+// Drawer.Name/deterministic: eidos derives no sample of the parameter
+// names of Name. The remedy is to author a sample of the parameter names
+// with the directive sample.
+//
+// Drawer.Pick/deterministic: eidos derives no sample of the parameter p of
+// Pick. The remedy is to author a sample of the parameter p with the
+// directive sample.
+
+// The unclaimed classifications of Drawer:
+//
+// The shape:mutator of Drawer.Seal has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Drawer.Test has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -3322,6 +3610,31 @@ func newDrawerOver(_ *DrawerHandle, spend func()) Drawer {
 	return drawerOver{spend: spend}
 }
 
+// The derived checks of Odd:
+//
+// Odd.Keep/smoke: Keep returns without a panic for derived inputs.
+
+// The derived checks of Odd that witness their laws at the shallow end:
+//
+// Odd.Keep/smoke
+
+// The refused claims of Odd:
+//
+// Odd.Embed/deterministic: eidos derives no sample of the parameter v of
+// Embed. The remedy is to author a sample of the parameter v with the
+// directive sample.
+
+// The unclaimed classifications of Odd:
+//
+// The shape:mutator of Odd.Tag has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Odd.Keep has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Odd.Loop has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -3666,6 +3979,59 @@ func oddKeepPanics(h *OddHandle) Odd {
 	return &oddKeepPanicsDefect{oddOverEmbedded: h.Fresh()}
 }
 
+// The derived checks of Std:
+//
+// Std.Within/smoke: Within returns without a panic for derived inputs.
+//
+// Std.Within/cancel: Within returns an error for a cancelled context.
+//
+// Std.Pair/smoke: Pair returns without a panic for derived inputs.
+//
+// Std.Meet/smoke: Meet returns without a panic for derived inputs.
+
+// The derived checks of Std that witness their laws at the shallow end:
+//
+// Std.Within/smoke
+//
+// Std.Pair/smoke
+//
+// Std.Meet/smoke
+
+// The unclaimed classifications of Std:
+//
+// The shape:composite-writer of Std.Copy has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Std.Close has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:writer of Std.From has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:writer of Std.At has the stance silent. A write is an input of
+// the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Std.Buffer has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Std.Lock has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Std.Fail has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:lifecycle of Std.Within has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The shape:mutator of Std.Hold has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Std.Pair has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Std.Meet has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -3825,7 +4191,7 @@ func StdSuite() conform.Suite[Std] {
 						return h.Subject().Within(ctx, ctx)
 					})
 				},
-				Defect: stdWithinSucceedsAlways,
+				Defect: stdWithinIgnoresCancel,
 			},
 			{
 				ID:          StdChecks.Pair.Smoke(),
@@ -4363,21 +4729,24 @@ func stdWithinPanics(h *StdHandle) Std {
 	return &stdWithinPanicsDefect{stdOverEmbedded: h.Fresh()}
 }
 
-// stdWithinSucceedsAlwaysDefect is the planted defect of a Std whose
-// Within ignores the context.
-type stdWithinSucceedsAlwaysDefect struct {
+// stdWithinIgnoresCancelDefect is the planted defect of a Std whose Within
+// ignores the context.
+type stdWithinIgnoresCancelDefect struct {
 	stdOverEmbedded
 }
 
 // Within is the override of the planted defect.
-func (*stdWithinSucceedsAlwaysDefect) Within(p0, p1 context.Context) (r0 error) {
-	return r0
+func (d *stdWithinIgnoresCancelDefect) Within(p0, p1 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.stdOverEmbedded.Within(p0, p1)
 }
 
-// stdWithinSucceedsAlways returns the planted defect of a Std whose Within
+// stdWithinIgnoresCancel returns the planted defect of a Std whose Within
 // ignores the context over a fresh subject.
-func stdWithinSucceedsAlways(h *StdHandle) Std {
-	return &stdWithinSucceedsAlwaysDefect{stdOverEmbedded: h.Fresh()}
+func stdWithinIgnoresCancel(h *StdHandle) Std {
+	return &stdWithinIgnoresCancelDefect{stdOverEmbedded: h.Fresh()}
 }
 
 // stdPairPanicsDefect is the planted defect of a Std whose Pair panics.

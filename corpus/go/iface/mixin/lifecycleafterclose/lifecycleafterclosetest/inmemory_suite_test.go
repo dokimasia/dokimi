@@ -7,6 +7,8 @@ package lifecycleafterclosetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/lifecycleafterclose"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/lifecycleafterclose/lifecycleafterclosetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	lifecycleafterclosetest.RunMixedSuite(t, lifecycleafterclosetest.NewInMemory)
+	lifecycleafterclosetest.RunMixedSuite(
+		t,
+		lifecycleafterclosetest.NewInMemory,
+		conform.Isolate[lifecycleafterclose.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToMixedWork(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f27513d802aec0886d8e1b472be6c81c176c045a7ce18a85c304bbf1155b6ab3
+// dokimi:provenance sha256:739a168b4909d2bcccb6f68dab74b3bd3aa6243b2f926386f425643daa6e3cd6

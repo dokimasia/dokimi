@@ -15,6 +15,35 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Encode/smoke: Encode returns without a panic for derived
+// inputs.
+//
+// Contract.Encode/cancel: Encode returns an error for a cancelled context.
+//
+// Contract.Encode/zero-on-error: Encode returns the zero value beside an
+// error.
+//
+// Contract.Encode/codec: Decode returns what went into Encode.
+//
+// Contract.Decode/smoke: Decode returns without a panic for derived
+// inputs.
+//
+// Contract.Decode/cancel: Decode returns an error for a cancelled context.
+//
+// Contract.Decode/zero-on-error: Decode returns the zero value beside an
+// error.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Encode/smoke
+//
+// Contract.Encode/codec
+//
+// Contract.Decode/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -126,7 +155,7 @@ func ContractSuite() conform.Suite[codec.Contract] {
 						return err
 					})
 				},
-				Defect: contractEncodeSucceedsAlways,
+				Defect: contractEncodeIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Encode.ZeroOnError(),
@@ -194,7 +223,7 @@ func ContractSuite() conform.Suite[codec.Contract] {
 						return err
 					})
 				},
-				Defect: contractDecodeSucceedsAlways,
+				Defect: contractDecodeIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Decode.ZeroOnError(),
@@ -351,21 +380,24 @@ func contractEncodePanics(h *ContractHandle) codec.Contract {
 	return &contractEncodePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractEncodeSucceedsAlwaysDefect is the planted defect of a Contract
+// contractEncodeIgnoresCancelDefect is the planted defect of a Contract
 // whose Encode ignores the context.
-type contractEncodeSucceedsAlwaysDefect struct {
+type contractEncodeIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Encode is the override of the planted defect.
-func (*contractEncodeSucceedsAlwaysDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *contractEncodeIgnoresCancelDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Encode(p0, p1)
 }
 
-// contractEncodeSucceedsAlways returns the planted defect of a Contract
+// contractEncodeIgnoresCancel returns the planted defect of a Contract
 // whose Encode ignores the context over a fresh subject.
-func contractEncodeSucceedsAlways(h *ContractHandle) codec.Contract {
-	return &contractEncodeSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractEncodeIgnoresCancel(h *ContractHandle) codec.Contract {
+	return &contractEncodeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractEncodeValueBesideDefect is the planted defect of a Contract
@@ -375,9 +407,11 @@ type contractEncodeValueBesideDefect struct {
 }
 
 // Encode is the override of the planted defect.
-func (*contractEncodeValueBesideDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *contractEncodeValueBesideDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Encode(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -396,6 +430,10 @@ type contractEncodeDriftsDefect struct {
 
 // Encode is the override of the planted defect.
 func (d *contractEncodeDriftsDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = string("sample-b")
@@ -426,21 +464,24 @@ func contractDecodePanics(h *ContractHandle) codec.Contract {
 	return &contractDecodePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractDecodeSucceedsAlwaysDefect is the planted defect of a Contract
+// contractDecodeIgnoresCancelDefect is the planted defect of a Contract
 // whose Decode ignores the context.
-type contractDecodeSucceedsAlwaysDefect struct {
+type contractDecodeIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Decode is the override of the planted defect.
-func (*contractDecodeSucceedsAlwaysDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *contractDecodeIgnoresCancelDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Decode(p0, p1)
 }
 
-// contractDecodeSucceedsAlways returns the planted defect of a Contract
+// contractDecodeIgnoresCancel returns the planted defect of a Contract
 // whose Decode ignores the context over a fresh subject.
-func contractDecodeSucceedsAlways(h *ContractHandle) codec.Contract {
-	return &contractDecodeSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractDecodeIgnoresCancel(h *ContractHandle) codec.Contract {
+	return &contractDecodeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractDecodeValueBesideDefect is the planted defect of a Contract
@@ -450,9 +491,11 @@ type contractDecodeValueBesideDefect struct {
 }
 
 // Decode is the override of the planted defect.
-func (*contractDecodeValueBesideDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *contractDecodeValueBesideDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Decode(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -462,4 +505,4 @@ func contractDecodeValueBeside(h *ContractHandle) codec.Contract {
 	return &contractDecodeValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6a0cd05d640d32ad74ef4e3077afb426aa78cd0bd8d273a4e95bc50151808fd0
+// dokimi:provenance sha256:aba5554cb2db4c97fa0b6faa89264357497af5cb0d132edabd0108e5e5a2f5be

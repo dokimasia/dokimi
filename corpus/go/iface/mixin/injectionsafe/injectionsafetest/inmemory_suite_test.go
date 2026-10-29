@@ -7,6 +7,8 @@ package injectionsafetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/injectionsafe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/injectionsafe/injectionsafetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	injectionsafetest.RunMixedSuite(t, injectionsafetest.NewInMemory)
+	injectionsafetest.RunMixedSuite(
+		t,
+		injectionsafetest.NewInMemory,
+		conform.Isolate[injectionsafe.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToMixedLoad(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:612322b807add98284db0bcf95a370c99b506c42cb2941171bdc976200a443d3
+// dokimi:provenance sha256:ca24c78080f3a134f2ff9920eaa7dfb02c2a5c07b64a124ca01923ea1bbaa835

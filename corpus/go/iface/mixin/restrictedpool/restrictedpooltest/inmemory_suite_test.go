@@ -7,6 +7,8 @@ package restrictedpooltest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/restrictedpool"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/restrictedpool/restrictedpooltest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToStore(t *testing.T) {
 	t.Parallel()
 
-	restrictedpooltest.RunStoreSuite(t, restrictedpooltest.NewInMemory)
+	restrictedpooltest.RunStoreSuite(
+		t,
+		restrictedpooltest.NewInMemory,
+		conform.Isolate[restrictedpool.Store](),
+	)
 }
 
 // BenchmarkInMemoryConformsToStore measures each callable of the suite of
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToStoreGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:3615b3fa3b231848cae2346afe70c58eb724782ae25ab0e58dd812e057466057
+// dokimi:provenance sha256:46ef8154a9588f1cfbebc295e4489a4b47dec72da03848f09a2885496cdf2293

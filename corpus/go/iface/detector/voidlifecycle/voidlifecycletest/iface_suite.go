@@ -15,6 +15,19 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of VoidLifecycle:
+//
+// VoidLifecycle.Stop/smoke: Stop returns without a panic for derived
+// inputs.
+//
+// VoidLifecycle.Stop/repeat-survives: Stop returns without a panic when it
+// is called twice.
+
+// The derived checks of VoidLifecycle that witness their laws at the
+// shallow end:
+//
+// VoidLifecycle.Stop/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -82,7 +95,6 @@ func VoidLifecycleSuite() conform.Suite[voidlifecycle.VoidLifecycle] {
 				Reason:      spec.PanickedRepeat,
 				Law:         spec.RepeatedCallSurvives,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Entails:     []conform.ID[voidlifecycle.VoidLifecycle]{VoidLifecycleChecks.Stop.Smoke()},
 				Apply: func(h *VoidLifecycleHandle) {
 					probe.SurvivesRepeat(h, func(ctx context.Context) error {
 						h.Subject().Stop()
@@ -240,4 +252,4 @@ func voidLifecycleStopPanicsOnRepeat(h *VoidLifecycleHandle) voidlifecycle.VoidL
 	return &voidLifecycleStopPanicsOnRepeatDefect{voidLifecycleOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7079591142ebb3ac268af083c56ecfc273379b1a0c291478901a3051f7ec82d2
+// dokimi:provenance sha256:9b9b7f8ab5a15ce70365fe34d33569e28c066adcf72b31ef83c224fe3ef81925

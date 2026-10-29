@@ -7,6 +7,8 @@ package embeddedforeigntest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign/embeddedforeigntest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToStream(t *testing.T) {
 	t.Parallel()
 
-	embeddedforeigntest.RunStreamSuite(t, embeddedforeigntest.NewInMemory)
+	embeddedforeigntest.RunStreamSuite(
+		t,
+		embeddedforeigntest.NewInMemory,
+		conform.Isolate[embeddedforeign.Stream](),
+	)
 }
 
 // BenchmarkInMemoryConformsToStream measures each callable of the suite of
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToStreamClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f80fc81585778d14dbf115f63846e771b919971a3ccf3309fb86a316abc054cf
+// dokimi:provenance sha256:8bf44b4d8bdfca9da6b85179070e82a283b45667017db90b366cba9a20132e9f

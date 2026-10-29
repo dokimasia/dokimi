@@ -15,6 +15,22 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Mixed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Mixed.Get/cacheable: Get returns the same value on a repeat.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Get/smoke
+//
+// Mixed.Get/cacheable
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -99,7 +115,7 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedGetSucceedsAlways,
+				Defect: mixedGetIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Get.ZeroOnError(),
@@ -246,21 +262,24 @@ func mixedGetPanics(h *MixedHandle) cacheable.Mixed {
 	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedGetSucceedsAlwaysDefect is the planted defect of a Mixed whose Get
+// mixedGetIgnoresCancelDefect is the planted defect of a Mixed whose Get
 // ignores the context.
-type mixedGetSucceedsAlwaysDefect struct {
+type mixedGetIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*mixedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Get(p0, p1)
 }
 
-// mixedGetSucceedsAlways returns the planted defect of a Mixed whose Get
+// mixedGetIgnoresCancel returns the planted defect of a Mixed whose Get
 // ignores the context over a fresh subject.
-func mixedGetSucceedsAlways(h *MixedHandle) cacheable.Mixed {
-	return &mixedGetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedGetIgnoresCancel(h *MixedHandle) cacheable.Mixed {
+	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
@@ -270,9 +289,11 @@ type mixedGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -291,6 +312,10 @@ type mixedGetDriftsDefect struct {
 
 // Get is the override of the planted defect.
 func (d *mixedGetDriftsDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = string("sample-b")
@@ -304,4 +329,4 @@ func mixedGetDrifts(h *MixedHandle) cacheable.Mixed {
 	return &mixedGetDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:676f0d41cf59346886f9056be9be7c97ceaaaf1a13872df64bf35308d2afae75
+// dokimi:provenance sha256:6638e5413e607e71872d8a42ed41beb8106cba03be3845cb14676d189addf0f0

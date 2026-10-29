@@ -7,6 +7,8 @@ package txwithretrytest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	txwithretry "go.dokimi.dev/dokimi/corpus/go/iface/composite/tx-with-retry"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/tx-with-retry/txwithretrytest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToTxWithRetry(t *testing.T) {
 	t.Parallel()
 
-	txwithretrytest.RunTxWithRetrySuite(t, txwithretrytest.NewInMemory)
+	txwithretrytest.RunTxWithRetrySuite(
+		t,
+		txwithretrytest.NewInMemory,
+		conform.Isolate[txwithretry.TxWithRetry](),
+	)
 }
 
 // BenchmarkInMemoryConformsToTxWithRetry measures each callable of the
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToTxWithRetryRollback(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:99a2d13b8ddd8f60856e03a4ab8d997cc6585a00470e33bc29a7dcc7281aac27
+// dokimi:provenance sha256:15409747ba73a7d3374cfd20126cb3160bc3f5a4fa49e3c9b8bc81dce0482d94

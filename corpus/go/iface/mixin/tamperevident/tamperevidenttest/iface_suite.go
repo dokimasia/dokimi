@@ -15,6 +15,42 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Store/smoke: Store returns without a panic for derived inputs.
+//
+// Mixed.Store/cancel: Store returns an error for a cancelled context.
+//
+// Mixed.Store/tamper-evident: Verify fails for a value of Store after
+// Corrupt.
+//
+// Mixed.Corrupt/smoke: Corrupt returns without a panic for derived inputs.
+//
+// Mixed.Corrupt/cancel: Corrupt returns an error for a cancelled context.
+//
+// Mixed.Verify/smoke: Verify returns without a panic for derived inputs.
+//
+// Mixed.Verify/cancel: Verify returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Store/smoke
+//
+// Mixed.Corrupt/smoke
+//
+// Mixed.Verify/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Store has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:lifecycle of Mixed.Corrupt has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The shape:lifecycle of Mixed.Verify has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -53,6 +89,12 @@ func (c mixedStore) Smoke() conform.ID[tamperevident.Mixed] {
 // a cancelled context.
 func (c mixedStore) Cancel() conform.ID[tamperevident.Mixed] {
 	return c.Check("cancel")
+}
+
+// TamperEvident returns the identity of the check that Verify fails for a
+// value of Store after Corrupt.
+func (c mixedStore) TamperEvident() conform.ID[tamperevident.Mixed] {
+	return c.Check("tamper-evident")
 }
 
 // mixedCorrupt is the name of Mixed.Corrupt, with the identities of its
@@ -126,7 +168,26 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 						return h.Subject().Store(ctx, string("body-a"))
 					})
 				},
-				Defect: mixedStoreSucceedsAlways,
+				Defect: mixedStoreIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Store.TamperEvident(),
+				Statement:   "Verify fails for a value of Store after Corrupt",
+				Claim:       spec.TamperEvident,
+				Probe:       spec.DetectsTamper,
+				Reason:      spec.SilentTamper,
+				Law:         spec.TamperIsDetected,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.DetectsTamper(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, string("body-a"))
+					}, func(ctx context.Context) error {
+						return h.Subject().Verify(ctx)
+					}, func(ctx context.Context) error {
+						return h.Subject().Corrupt(ctx)
+					})
+				},
+				Defect: mixedVerifyVerifySilent,
 			},
 			{
 				ID:          MixedChecks.Corrupt.Smoke(),
@@ -157,7 +218,7 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 						return h.Subject().Corrupt(ctx)
 					})
 				},
-				Defect: mixedCorruptSucceedsAlways,
+				Defect: mixedCorruptIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Verify.Smoke(),
@@ -188,7 +249,7 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 						return h.Subject().Verify(ctx)
 					})
 				},
-				Defect: mixedVerifySucceedsAlways,
+				Defect: mixedVerifyIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[tamperevident.Mixed]{
@@ -346,21 +407,45 @@ func mixedStorePanics(h *MixedHandle) tamperevident.Mixed {
 	return &mixedStorePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedStoreSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedStoreIgnoresCancelDefect is the planted defect of a Mixed whose
 // Store ignores the context.
-type mixedStoreSucceedsAlwaysDefect struct {
+type mixedStoreIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Store is the override of the planted defect.
-func (*mixedStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 string) (r0 error) {
+func (d *mixedStoreIgnoresCancelDefect) Store(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Store(p0, p1)
+}
+
+// mixedStoreIgnoresCancel returns the planted defect of a Mixed whose
+// Store ignores the context over a fresh subject.
+func mixedStoreIgnoresCancel(h *MixedHandle) tamperevident.Mixed {
+	return &mixedStoreIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedVerifyVerifySilentDefect is the planted defect of a Mixed whose
+// Verify returns no error after Corrupt.
+type mixedVerifyVerifySilentDefect struct {
+	mixedOverEmbedded
+}
+
+// Verify is the override of the planted defect.
+func (*mixedVerifyVerifySilentDefect) Verify(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
-// mixedStoreSucceedsAlways returns the planted defect of a Mixed whose
-// Store ignores the context over a fresh subject.
-func mixedStoreSucceedsAlways(h *MixedHandle) tamperevident.Mixed {
-	return &mixedStoreSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+// mixedVerifyVerifySilent returns the planted defect of a Mixed whose
+// Verify returns no error after Corrupt over a fresh subject.
+func mixedVerifyVerifySilent(h *MixedHandle) tamperevident.Mixed {
+	return &mixedVerifyVerifySilentDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedCorruptPanicsDefect is the planted defect of a Mixed whose Corrupt
@@ -380,21 +465,24 @@ func mixedCorruptPanics(h *MixedHandle) tamperevident.Mixed {
 	return &mixedCorruptPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCorruptSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedCorruptIgnoresCancelDefect is the planted defect of a Mixed whose
 // Corrupt ignores the context.
-type mixedCorruptSucceedsAlwaysDefect struct {
+type mixedCorruptIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Corrupt is the override of the planted defect.
-func (*mixedCorruptSucceedsAlwaysDefect) Corrupt(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedCorruptIgnoresCancelDefect) Corrupt(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Corrupt(p0)
 }
 
-// mixedCorruptSucceedsAlways returns the planted defect of a Mixed whose
+// mixedCorruptIgnoresCancel returns the planted defect of a Mixed whose
 // Corrupt ignores the context over a fresh subject.
-func mixedCorruptSucceedsAlways(h *MixedHandle) tamperevident.Mixed {
-	return &mixedCorruptSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedCorruptIgnoresCancel(h *MixedHandle) tamperevident.Mixed {
+	return &mixedCorruptIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedVerifyPanicsDefect is the planted defect of a Mixed whose Verify
@@ -414,21 +502,24 @@ func mixedVerifyPanics(h *MixedHandle) tamperevident.Mixed {
 	return &mixedVerifyPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedVerifySucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedVerifyIgnoresCancelDefect is the planted defect of a Mixed whose
 // Verify ignores the context.
-type mixedVerifySucceedsAlwaysDefect struct {
+type mixedVerifyIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Verify is the override of the planted defect.
-func (*mixedVerifySucceedsAlwaysDefect) Verify(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedVerifyIgnoresCancelDefect) Verify(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Verify(p0)
 }
 
-// mixedVerifySucceedsAlways returns the planted defect of a Mixed whose
+// mixedVerifyIgnoresCancel returns the planted defect of a Mixed whose
 // Verify ignores the context over a fresh subject.
-func mixedVerifySucceedsAlways(h *MixedHandle) tamperevident.Mixed {
-	return &mixedVerifySucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedVerifyIgnoresCancel(h *MixedHandle) tamperevident.Mixed {
+	return &mixedVerifyIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:79bfdcf06d1eb8d0864dc6e6e61311e4b5e4c7ad5c77e0f98bac91a97b3d2f60
+// dokimi:provenance sha256:f7cc1e3062015966edc6bd80382a0fcdd96b5b5ee3d813b41e082c4ca537d35c

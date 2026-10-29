@@ -16,6 +16,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Run/smoke: Run returns without a panic for derived inputs.
+//
+// Contract.Run/cancel: Run returns an error for a cancelled context.
+//
+// Contract.Flights/smoke: Flights returns without a panic for derived
+// inputs.
+//
+// Contract.Flights/cancel: Flights returns an error for a cancelled
+// context.
+//
+// Contract.Flights/zero-on-error: Flights returns the zero value beside an
+// error.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Run/smoke
+//
+// Contract.Flights/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The contract:single-flight/fn of Contract.Run has the stance needs. The
+// claims of the contract need concurrent callers.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -40,6 +67,18 @@ var ContractChecks = struct {
 // checks.
 type contractRun struct {
 	conform.Callable[singleflight.Contract]
+}
+
+// Smoke returns the identity of the check that Run returns without a panic
+// for derived inputs.
+func (c contractRun) Smoke() conform.ID[singleflight.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Run returns an error for a
+// cancelled context.
+func (c contractRun) Cancel() conform.ID[singleflight.Contract] {
+	return c.Check("cancel")
 }
 
 // contractFlights is the name of Contract.Flights, with the identities of
@@ -73,6 +112,39 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 		Declaration: "Contract",
 		Checks: []conform.Check[singleflight.Contract]{
 			{
+				ID:          ContractChecks.Run.Smoke(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Run(ctx, string("key-a"), func() string { return "" })
+						return err
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
+				ID:          ContractChecks.Run.Cancel(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Run(ctx, string("key-a"), func() string { return "" })
+						return err
+					})
+				},
+				Defect: contractRunIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Flights.Smoke(),
 				Statement:   "Flights returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -103,7 +175,7 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 						return err
 					})
 				},
-				Defect: contractFlightsSucceedsAlways,
+				Defect: contractFlightsIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Flights.ZeroOnError(),
@@ -257,6 +329,43 @@ func newContractOver(_ *ContractHandle, spend func()) singleflight.Contract {
 	return contractOver{spend: spend}
 }
 
+// contractRunPanicsDefect is the planted defect of a Contract whose Run
+// panics.
+type contractRunPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunPanicsDefect) Run(p0 context.Context, p1 string, p2 func() string) (r0 string, r1 error) {
+	panic("the planted defect of a Contract whose Run panics")
+}
+
+// contractRunPanics returns the planted defect of a Contract whose Run
+// panics over a fresh subject.
+func contractRunPanics(h *ContractHandle) singleflight.Contract {
+	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractRunIgnoresCancelDefect is the planted defect of a Contract whose
+// Run ignores the context.
+type contractRunIgnoresCancelDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (d *contractRunIgnoresCancelDefect) Run(p0 context.Context, p1 string, p2 func() string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Run(p0, p1, p2)
+}
+
+// contractRunIgnoresCancel returns the planted defect of a Contract whose
+// Run ignores the context over a fresh subject.
+func contractRunIgnoresCancel(h *ContractHandle) singleflight.Contract {
+	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractFlightsPanicsDefect is the planted defect of a Contract whose
 // Flights panics.
 type contractFlightsPanicsDefect struct {
@@ -274,21 +383,24 @@ func contractFlightsPanics(h *ContractHandle) singleflight.Contract {
 	return &contractFlightsPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractFlightsSucceedsAlwaysDefect is the planted defect of a Contract
+// contractFlightsIgnoresCancelDefect is the planted defect of a Contract
 // whose Flights ignores the context.
-type contractFlightsSucceedsAlwaysDefect struct {
+type contractFlightsIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Flights is the override of the planted defect.
-func (*contractFlightsSucceedsAlwaysDefect) Flights(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *contractFlightsIgnoresCancelDefect) Flights(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Flights(p0)
 }
 
-// contractFlightsSucceedsAlways returns the planted defect of a Contract
+// contractFlightsIgnoresCancel returns the planted defect of a Contract
 // whose Flights ignores the context over a fresh subject.
-func contractFlightsSucceedsAlways(h *ContractHandle) singleflight.Contract {
-	return &contractFlightsSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractFlightsIgnoresCancel(h *ContractHandle) singleflight.Contract {
+	return &contractFlightsIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractFlightsValueBesideDefect is the planted defect of a Contract
@@ -298,9 +410,11 @@ type contractFlightsValueBesideDefect struct {
 }
 
 // Flights is the override of the planted defect.
-func (*contractFlightsValueBesideDefect) Flights(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *contractFlightsValueBesideDefect) Flights(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Flights(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -310,4 +424,4 @@ func contractFlightsValueBeside(h *ContractHandle) singleflight.Contract {
 	return &contractFlightsValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4c673ca041aafd07626d5ba7af8c255875518f992e5e1ce31de6d3bfb694ea55
+// dokimi:provenance sha256:870869a7a36ef9e143612cb78dc296e76fefdcde756b4288c5658776ee4a899b

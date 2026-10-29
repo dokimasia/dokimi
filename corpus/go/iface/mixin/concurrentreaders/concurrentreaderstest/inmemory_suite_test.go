@@ -7,6 +7,8 @@ package concurrentreaderstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrentreaders"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrentreaders/concurrentreaderstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	concurrentreaderstest.RunMixedSuite(t, concurrentreaderstest.NewInMemory)
+	concurrentreaderstest.RunMixedSuite(
+		t,
+		concurrentreaderstest.NewInMemory,
+		conform.Isolate[concurrentreaders.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -80,4 +86,4 @@ func FuzzInMemoryConformsToMixedPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:e7417fedd2d31f81db7903f8fe3d68e1e5fc766e945fe36b4093eda69fdc5470
+// dokimi:provenance sha256:ee9cd8f02d255873836cb5863797c55fd33d93213683966097d517c2299cc6d4

@@ -15,6 +15,25 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Contract.Put/cancel: Put returns an error for a cancelled context.
+//
+// Contract.Put/if-absent: a second Put for one key fails with the declared
+// conflict.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Put/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,7 +111,7 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 						return h.Subject().Put(ctx, ifabsent.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractPutSucceedsAlways,
+				Defect: contractPutIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Put.IfAbsent(),
@@ -233,21 +252,45 @@ func contractPutPanics(h *ContractHandle) ifabsent.Contract {
 	return &contractPutPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractPutIgnoresCancelDefect is the planted defect of a Contract whose
+// Put ignores the context.
+type contractPutIgnoresCancelDefect struct {
+	contractOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (d *contractPutIgnoresCancelDefect) Put(p0 context.Context, p1 ifabsent.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Put(p0, p1)
+}
+
+// contractPutIgnoresCancel returns the planted defect of a Contract whose
+// Put ignores the context over a fresh subject.
+func contractPutIgnoresCancel(h *ContractHandle) ifabsent.Contract {
+	return &contractPutIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractPutSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Put ignores the context.
+// whose Put accepts the duplicate.
 type contractPutSucceedsAlwaysDefect struct {
 	contractOverEmbedded
 }
 
 // Put is the override of the planted defect.
 func (*contractPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 ifabsent.Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // contractPutSucceedsAlways returns the planted defect of a Contract whose
-// Put ignores the context over a fresh subject.
+// Put accepts the duplicate over a fresh subject.
 func contractPutSucceedsAlways(h *ContractHandle) ifabsent.Contract {
 	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d46eb1e8ab432a594c13f6a40a53e79e0ef0d6fc6d82f9dd724753afc63edbb4
+// dokimi:provenance sha256:13e5c55b4d26ea60955f446bbfb96c1cfcb61d574467bf0f6927b725514ac82d

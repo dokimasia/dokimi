@@ -7,6 +7,8 @@ package predicatetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/predicate"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/predicate/predicatetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToPredicate(t *testing.T) {
 	t.Parallel()
 
-	predicatetest.RunPredicateSuite(t, predicatetest.NewInMemory)
+	predicatetest.RunPredicateSuite(
+		t,
+		predicatetest.NewInMemory,
+		conform.Isolate[predicate.Predicate](),
+	)
 }
 
 // BenchmarkInMemoryConformsToPredicate measures each callable of the suite
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToPredicateIsEmpty(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:2f8ec00250b6e7074e710e9cd000585129245497cdf684a1f0cbec9fd9f47c10
+// dokimi:provenance sha256:d8927351e3ac1e073a2bd7f26bbde3dc3b06c92f9ffb4c5be86568a74d7872ec

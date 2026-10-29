@@ -10,6 +10,22 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Catalog:
+//
+// Catalog.Find/smoke: Find returns without a panic for derived inputs.
+//
+// Catalog.Find/zero-on-miss: Find returns the zero value beside a false
+// presence flag.
+//
+// Catalog.Add/smoke: Add returns without a panic for derived inputs.
+
+// The derived checks of Catalog that witness their laws at the shallow
+// end:
+//
+// Catalog.Find/smoke
+//
+// Catalog.Add/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 

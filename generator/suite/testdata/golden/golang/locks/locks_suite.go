@@ -10,6 +10,42 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Lock:
+//
+// Lock.Acquire/cancel: Acquire returns an error for a cancelled context.
+//
+// Lock.Release/smoke: Release returns without a panic for derived inputs.
+//
+// Lock.Release/repeat-survives: Release returns without a panic when it is
+// called twice.
+//
+// Lock.Held/smoke: Held returns without a panic for derived inputs.
+//
+// Lock.Held/predicate: Held returns the same answer twice for an unchanged
+// subject.
+
+// The derived checks of Lock that witness their laws at the shallow end:
+//
+// Lock.Release/smoke
+//
+// Lock.Held/smoke
+//
+// Lock.Held/predicate
+
+// The unclaimed classifications of Lock:
+//
+// The shape:lifecycle of Lock.Acquire has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The mixin:concurrent of Lock.Acquire has the stance needs. The claims of
+// the mixin need concurrent callers.
+//
+// The mixin:waits of Lock.Acquire has the stance silent. The mixin
+// documents that the callable can wait for another call.
+//
+// The mixin:concurrent of Lock.Release has the stance needs. The claims of
+// the mixin need concurrent callers.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -104,7 +140,7 @@ func LockSuite() conform.Suite[Lock] {
 						return h.Subject().Acquire(ctx)
 					})
 				},
-				Defect: lockAcquireSucceedsAlways,
+				Defect: lockAcquireIgnoresCancel,
 			},
 			{
 				ID:          LockChecks.Release.Smoke(),
@@ -131,7 +167,6 @@ func LockSuite() conform.Suite[Lock] {
 				Reason:      spec.PanickedRepeat,
 				Law:         spec.RepeatedCallSurvives,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Entails:     []conform.ID[Lock]{LockChecks.Release.Smoke()},
 				Apply: func(h *LockHandle) {
 					probe.SurvivesRepeat(h, func(ctx context.Context) error {
 						h.Subject().Release()
@@ -335,21 +370,24 @@ func newLockOver(_ *LockHandle, spend func()) Lock {
 	return lockOver{spend: spend}
 }
 
-// lockAcquireSucceedsAlwaysDefect is the planted defect of a Lock whose
+// lockAcquireIgnoresCancelDefect is the planted defect of a Lock whose
 // Acquire ignores the context.
-type lockAcquireSucceedsAlwaysDefect struct {
+type lockAcquireIgnoresCancelDefect struct {
 	lockOverEmbedded
 }
 
 // Acquire is the override of the planted defect.
-func (*lockAcquireSucceedsAlwaysDefect) Acquire(p0 context.Context) (r0 error) {
-	return r0
+func (d *lockAcquireIgnoresCancelDefect) Acquire(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.lockOverEmbedded.Acquire(p0)
 }
 
-// lockAcquireSucceedsAlways returns the planted defect of a Lock whose
+// lockAcquireIgnoresCancel returns the planted defect of a Lock whose
 // Acquire ignores the context over a fresh subject.
-func lockAcquireSucceedsAlways(h *LockHandle) Lock {
-	return &lockAcquireSucceedsAlwaysDefect{lockOverEmbedded: h.Fresh()}
+func lockAcquireIgnoresCancel(h *LockHandle) Lock {
+	return &lockAcquireIgnoresCancelDefect{lockOverEmbedded: h.Fresh()}
 }
 
 // lockReleasePanicsDefect is the planted defect of a Lock whose Release
@@ -429,6 +467,18 @@ func lockHeldDrifts(h *LockHandle) Lock {
 	return &lockHeldDriftsDefect{lockOverEmbedded: h.Fresh()}
 }
 
+// The derived checks of Gate:
+//
+// Gate.Pass/cancel: Pass returns an error for a cancelled context.
+
+// The unclaimed classifications of Gate:
+//
+// The shape:lifecycle of Gate.Pass has the stance silent. A lifecycle call
+// returns nothing that a check could compare.
+//
+// The mixin:waits of Gate.Pass has the stance silent. The mixin documents
+// that the callable can wait for another call.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -477,7 +527,7 @@ func GateSuite() conform.Suite[Gate] {
 						return h.Subject().Pass(ctx)
 					})
 				},
-				Defect: gatePassSucceedsAlways,
+				Defect: gatePassIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[Gate]{
@@ -580,22 +630,37 @@ func newGateOver(_ *GateHandle, spend func()) Gate {
 	return gateOver{spend: spend}
 }
 
-// gatePassSucceedsAlwaysDefect is the planted defect of a Gate whose Pass
+// gatePassIgnoresCancelDefect is the planted defect of a Gate whose Pass
 // ignores the context.
-type gatePassSucceedsAlwaysDefect struct {
+type gatePassIgnoresCancelDefect struct {
 	gateOverEmbedded
 }
 
 // Pass is the override of the planted defect.
-func (*gatePassSucceedsAlwaysDefect) Pass(p0 context.Context) (r0 error) {
-	return r0
+func (d *gatePassIgnoresCancelDefect) Pass(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.gateOverEmbedded.Pass(p0)
 }
 
-// gatePassSucceedsAlways returns the planted defect of a Gate whose Pass
+// gatePassIgnoresCancel returns the planted defect of a Gate whose Pass
 // ignores the context over a fresh subject.
-func gatePassSucceedsAlways(h *GateHandle) Gate {
-	return &gatePassSucceedsAlwaysDefect{gateOverEmbedded: h.Fresh()}
+func gatePassIgnoresCancel(h *GateHandle) Gate {
+	return &gatePassIgnoresCancelDefect{gateOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Await:
+//
+// Await/cancel: Await returns an error for a cancelled context.
+
+// The unclaimed classifications of Await:
+//
+// The shape:lifecycle of Await has the stance silent. A lifecycle call
+// returns nothing that a check could compare.
+//
+// The mixin:waits of Await has the stance silent. The mixin documents that
+// the callable can wait for another call.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -645,7 +710,7 @@ func AwaitSuite() conform.Suite[AwaitFunc] {
 						return h.Subject()(ctx)
 					})
 				},
-				Defect: awaitSucceedsAlways,
+				Defect: awaitIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[AwaitFunc]{
@@ -722,10 +787,14 @@ func newAwaitOver(_ *AwaitHandle, spend func()) AwaitFunc {
 	}
 }
 
-// awaitSucceedsAlways returns the planted defect of a Await whose Await
+// awaitIgnoresCancel returns the planted defect of a Await whose Await
 // ignores the context over the fresh function.
-func awaitSucceedsAlways(h *AwaitHandle) AwaitFunc {
+func awaitIgnoresCancel(h *AwaitHandle) AwaitFunc {
+	fresh := h.Fresh()
 	return func(p0 context.Context) (r0 error) {
-		return r0
+		if p0.Err() != nil {
+			return r0
+		}
+		return fresh(p0)
 	}
 }

@@ -72,6 +72,10 @@ func TestMixedSuite(t *testing.T) {
 				causaltest.MixedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				causaltest.MixedChecks.Get.Causal(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -115,6 +119,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				causaltest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causaltest.MixedChecks.Get.Causal(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -161,6 +169,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			causaltest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			causaltest.MixedChecks.Get.Causal(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -193,6 +205,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			causaltest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causaltest.MixedChecks.Get.Causal(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -229,6 +245,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			causaltest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			causaltest.MixedChecks.Get.Causal(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -243,4 +263,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:d1fa8f43f529bb2224d22eae53c5c900ca446d16fca16a94769e6a62b358af0e
+// dokimi:provenance sha256:a627ac00db96413462590a94b79dbbc319cd9906f1e37b99b2042da92d365fc2

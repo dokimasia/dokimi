@@ -7,6 +7,8 @@ package ifmatchtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	ifmatch "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-match"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/if-match/ifmatchtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	ifmatchtest.RunContractSuite(t, ifmatchtest.NewInMemory)
+	ifmatchtest.RunContractSuite(
+		t,
+		ifmatchtest.NewInMemory,
+		conform.Isolate[ifmatch.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractMatch(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:e40e021bac327e1c42cb6f7b4a55307afbc3edac0c8b8d46044c0a1ef665dfe6
+// dokimi:provenance sha256:bec631b528855795e1fd68ec519b396a51ee8eb777b4ecfa16b5334cc7391842

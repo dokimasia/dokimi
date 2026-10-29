@@ -7,6 +7,8 @@ package publisherredelivertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	publisherredeliver "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-redeliver"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-redeliver/publisherredelivertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	publisherredelivertest.RunContractSuite(t, publisherredelivertest.NewInMemory)
+	publisherredelivertest.RunContractSuite(
+		t,
+		publisherredelivertest.NewInMemory,
+		conform.Isolate[publisherredeliver.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToContractSubscribe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f9581bf88e3fe2366b360b9e9830d782983143058da55296eb0809267a901334
+// dokimi:provenance sha256:ce6465b92e2ff04f000787194db932966f7cc06586755852a262872216ea203a

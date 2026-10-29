@@ -15,6 +15,23 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Derive/smoke: Derive returns without a panic for derived inputs.
+//
+// Mixed.Derive/deterministic: Derive returns the same value for the same
+// inputs.
+//
+// Mixed.Derive/pure: Derive returns the same value on a repeat.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Derive/smoke
+//
+// Mixed.Derive/deterministic
+//
+// Mixed.Derive/pure
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -89,6 +106,7 @@ func MixedSuite() conform.Suite[pure.Mixed] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[pure.Mixed]{MixedChecks.Derive.Smoke()},
 				Apply: func(h *MixedHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
 						r0 := h.Subject().Derive(string("input-a"))
@@ -251,4 +269,4 @@ func mixedDeriveDrifts(h *MixedHandle) pure.Mixed {
 	return &mixedDeriveDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b2f8d61267179db3d03d2f190e6bdfdf475ef410a162a84a6cb5a2b26d985b84
+// dokimi:provenance sha256:13e95ad67dc618d47f3c2e64e466071d96e73d0817a3e653cd1052d2d2acc663

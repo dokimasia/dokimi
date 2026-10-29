@@ -7,6 +7,8 @@ package integrationonlytest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/integrationonly"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/integrationonly/integrationonlytest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	integrationonlytest.RunMixedSuite(t, integrationonlytest.NewInMemory)
+	integrationonlytest.RunMixedSuite(
+		t,
+		integrationonlytest.NewInMemory,
+		conform.Isolate[integrationonly.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToMixedConnect(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:41f2ed39011f43ded902cca7a3b1f01f41e920c50337c05e9f312713095ace86
+// dokimi:provenance sha256:bccf3b703deb646d4bd866ba07d45fd1697081a48fdafccb22d202adb320488d

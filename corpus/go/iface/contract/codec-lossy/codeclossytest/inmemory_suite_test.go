@@ -7,6 +7,8 @@ package codeclossytest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	codeclossy "go.dokimi.dev/dokimi/corpus/go/iface/contract/codec-lossy"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/codec-lossy/codeclossytest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	codeclossytest.RunContractSuite(t, codeclossytest.NewInMemory)
+	codeclossytest.RunContractSuite(
+		t,
+		codeclossytest.NewInMemory,
+		conform.Isolate[codeclossy.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractDecode(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5c8778a505520c39a3387d55c750b54527fa93bfc8ff60ef4da4bec5ce16de69
+// dokimi:provenance sha256:e36f117f564a749b46bb6db00f8d1d77bf53a646744c2ad3eba7a41d3440467a

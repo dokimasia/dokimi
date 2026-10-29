@@ -18,6 +18,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Slow/smoke: Slow returns without a panic for derived inputs.
+//
+// Mixed.Slow/cancel: Slow returns an error for a cancelled context.
+//
+// Mixed.Slow/within: Slow returns before the clock passes the declared
+// budget.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Slow/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Slow has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,7 +112,7 @@ func MixedSuite() conform.Suite[timeout.Mixed] {
 						return h.Subject().Slow(ctx, string("key-a"))
 					})
 				},
-				Defect: mixedSlowSucceedsAlways,
+				Defect: mixedSlowIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Slow.Within(),
@@ -226,21 +244,24 @@ func mixedSlowPanics(h *MixedHandle) timeout.Mixed {
 	return &mixedSlowPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedSlowSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Slow ignores the context.
-type mixedSlowSucceedsAlwaysDefect struct {
+// mixedSlowIgnoresCancelDefect is the planted defect of a Mixed whose Slow
+// ignores the context.
+type mixedSlowIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Slow is the override of the planted defect.
-func (*mixedSlowSucceedsAlwaysDefect) Slow(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedSlowIgnoresCancelDefect) Slow(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Slow(p0, p1)
 }
 
-// mixedSlowSucceedsAlways returns the planted defect of a Mixed whose Slow
+// mixedSlowIgnoresCancel returns the planted defect of a Mixed whose Slow
 // ignores the context over a fresh subject.
-func mixedSlowSucceedsAlways(h *MixedHandle) timeout.Mixed {
-	return &mixedSlowSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedSlowIgnoresCancel(h *MixedHandle) timeout.Mixed {
+	return &mixedSlowIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedSlowSlowDefect is the planted defect of a Mixed whose Slow waits
@@ -252,6 +273,10 @@ type mixedSlowSlowDefect struct {
 
 // Slow is the override of the planted defect.
 func (d *mixedSlowSlowDefect) Slow(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.clock.Sleep(10 * time.Second)
 	return d.mixedOverEmbedded.Slow(p0, p1)
 }
@@ -262,4 +287,4 @@ func mixedSlowSlow(h *MixedHandle) timeout.Mixed {
 	return &mixedSlowSlowDefect{mixedOverEmbedded: h.Fresh(), clock: h.Clock()}
 }
 
-// dokimi:provenance sha256:cc7812f3f66ce84c071452cb1aa262f08b5fda76a517e014570e59b502fa8430
+// dokimi:provenance sha256:a90633129e3c9d8761a1e4e84da40872a6446db87ab1f74efbba4545a3ab8f3d

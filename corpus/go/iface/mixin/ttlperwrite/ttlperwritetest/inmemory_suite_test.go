@@ -7,6 +7,8 @@ package ttlperwritetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttlperwrite"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttlperwrite/ttlperwritetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	ttlperwritetest.RunMixedSuite(t, ttlperwritetest.NewInMemory)
+	ttlperwritetest.RunMixedSuite(
+		t,
+		ttlperwritetest.NewInMemory,
+		conform.Isolate[ttlperwrite.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:97d5fd7731aec6cb026fade5e8b4484d1d2ced150a5d14a188934ef5c446b531
+// dokimi:provenance sha256:21aa40da02172ea48b6b701594edcbeb3a8add758e8c50dd8ce68a45f216be58

@@ -15,6 +15,47 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Store/smoke: Store returns without a panic for derived inputs.
+//
+// Contract.Store/cancel: Store returns an error for a cancelled context.
+//
+// Contract.Lookup/smoke: Lookup returns without a panic for derived
+// inputs.
+//
+// Contract.Lookup/cancel: Lookup returns an error for a cancelled context.
+//
+// Contract.Lookup/zero-on-error: Lookup returns the zero value beside an
+// error.
+//
+// Contract.Fetch/smoke: Fetch returns without a panic for derived inputs.
+//
+// Contract.Fetch/cancel: Fetch returns an error for a cancelled context.
+//
+// Contract.Fetch/zero-on-error: Fetch returns the zero value beside an
+// error.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Store/smoke
+//
+// Contract.Lookup/smoke
+//
+// Contract.Fetch/smoke
+
+// The refused claims of Contract:
+//
+// Contract.Lookup/cache: no callable of the declaration is the partner put
+// of Lookup. The remedy is to name the partner of Lookup with the param of
+// the classification.
+
+// The unclaimed classifications of Contract:
+//
+// The shape:composite-writer of Contract.Store has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -138,7 +179,7 @@ func ContractSuite() conform.Suite[cache.Contract] {
 						return h.Subject().Store(ctx, string("key-a"), cache.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractStoreSucceedsAlways,
+				Defect: contractStoreIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Lookup.Smoke(),
@@ -171,7 +212,7 @@ func ContractSuite() conform.Suite[cache.Contract] {
 						return err
 					})
 				},
-				Defect: contractLookupSucceedsAlways,
+				Defect: contractLookupIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Lookup.ZeroOnError(),
@@ -219,7 +260,7 @@ func ContractSuite() conform.Suite[cache.Contract] {
 						return err
 					})
 				},
-				Defect: contractFetchSucceedsAlways,
+				Defect: contractFetchIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Fetch.ZeroOnError(),
@@ -397,21 +438,24 @@ func contractStorePanics(h *ContractHandle) cache.Contract {
 	return &contractStorePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractStoreSucceedsAlwaysDefect is the planted defect of a Contract
+// contractStoreIgnoresCancelDefect is the planted defect of a Contract
 // whose Store ignores the context.
-type contractStoreSucceedsAlwaysDefect struct {
+type contractStoreIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Store is the override of the planted defect.
-func (*contractStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 string, p2 cache.Value) (r0 error) {
-	return r0
+func (d *contractStoreIgnoresCancelDefect) Store(p0 context.Context, p1 string, p2 cache.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Store(p0, p1, p2)
 }
 
-// contractStoreSucceedsAlways returns the planted defect of a Contract
+// contractStoreIgnoresCancel returns the planted defect of a Contract
 // whose Store ignores the context over a fresh subject.
-func contractStoreSucceedsAlways(h *ContractHandle) cache.Contract {
-	return &contractStoreSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractStoreIgnoresCancel(h *ContractHandle) cache.Contract {
+	return &contractStoreIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractLookupPanicsDefect is the planted defect of a Contract whose
@@ -431,21 +475,24 @@ func contractLookupPanics(h *ContractHandle) cache.Contract {
 	return &contractLookupPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractLookupSucceedsAlwaysDefect is the planted defect of a Contract
+// contractLookupIgnoresCancelDefect is the planted defect of a Contract
 // whose Lookup ignores the context.
-type contractLookupSucceedsAlwaysDefect struct {
+type contractLookupIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Lookup is the override of the planted defect.
-func (*contractLookupSucceedsAlwaysDefect) Lookup(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
-	return r0, r1
+func (d *contractLookupIgnoresCancelDefect) Lookup(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Lookup(p0, p1)
 }
 
-// contractLookupSucceedsAlways returns the planted defect of a Contract
+// contractLookupIgnoresCancel returns the planted defect of a Contract
 // whose Lookup ignores the context over a fresh subject.
-func contractLookupSucceedsAlways(h *ContractHandle) cache.Contract {
-	return &contractLookupSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractLookupIgnoresCancel(h *ContractHandle) cache.Contract {
+	return &contractLookupIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractLookupValueBesideDefect is the planted defect of a Contract
@@ -455,9 +502,11 @@ type contractLookupValueBesideDefect struct {
 }
 
 // Lookup is the override of the planted defect.
-func (*contractLookupValueBesideDefect) Lookup(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
-	r0 = cache.Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *contractLookupValueBesideDefect) Lookup(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Lookup(p0, p1)
+	if r1 != nil {
+		r0 = cache.Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -484,21 +533,24 @@ func contractFetchPanics(h *ContractHandle) cache.Contract {
 	return &contractFetchPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractFetchSucceedsAlwaysDefect is the planted defect of a Contract
+// contractFetchIgnoresCancelDefect is the planted defect of a Contract
 // whose Fetch ignores the context.
-type contractFetchSucceedsAlwaysDefect struct {
+type contractFetchIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Fetch is the override of the planted defect.
-func (*contractFetchSucceedsAlwaysDefect) Fetch(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
-	return r0, r1
+func (d *contractFetchIgnoresCancelDefect) Fetch(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Fetch(p0, p1)
 }
 
-// contractFetchSucceedsAlways returns the planted defect of a Contract
+// contractFetchIgnoresCancel returns the planted defect of a Contract
 // whose Fetch ignores the context over a fresh subject.
-func contractFetchSucceedsAlways(h *ContractHandle) cache.Contract {
-	return &contractFetchSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractFetchIgnoresCancel(h *ContractHandle) cache.Contract {
+	return &contractFetchIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractFetchValueBesideDefect is the planted defect of a Contract whose
@@ -508,9 +560,11 @@ type contractFetchValueBesideDefect struct {
 }
 
 // Fetch is the override of the planted defect.
-func (*contractFetchValueBesideDefect) Fetch(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
-	r0 = cache.Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *contractFetchValueBesideDefect) Fetch(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Fetch(p0, p1)
+	if r1 != nil {
+		r0 = cache.Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -520,4 +574,4 @@ func contractFetchValueBeside(h *ContractHandle) cache.Contract {
 	return &contractFetchValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2f68b5085dbe07ee629977f628c6b9647fee4363009abb0549f57ef54b8fa386
+// dokimi:provenance sha256:eb7177ebdc82244db1400e795f9462b9545c4fc63f10ff6d90ee102714951ac0

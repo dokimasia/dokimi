@@ -7,6 +7,8 @@ package sideeffecttest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sideeffect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sideeffect/sideeffecttest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	sideeffecttest.RunMixedSuite(t, sideeffecttest.NewInMemory)
+	sideeffecttest.RunMixedSuite(
+		t,
+		sideeffecttest.NewInMemory,
+		conform.Isolate[sideeffect.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedObserved(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:8afc73ef1463b9527dc54cf9e013ebcb36e32773011df13bce9777ff58c661d9
+// dokimi:provenance sha256:0495036c4d5c80052a260d79fc2d750a31ccad31d5be5c0024f9372525574deb

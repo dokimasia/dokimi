@@ -61,6 +61,10 @@ func TestBatchedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Put.SideEffect(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				batchedmixinstest.BatchedChecks.Read.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -131,6 +135,10 @@ func TestBatchedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				batchedmixinstest.BatchedChecks.Put.Idempotent(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Put.SideEffect(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -217,6 +225,10 @@ func TestBatchedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.SideEffect(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			batchedmixinstest.BatchedChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -276,6 +288,10 @@ func FuzzBatchedSuitePut(f *testing.F) {
 		),
 		conform.Excuse(
 			batchedmixinstest.BatchedChecks.Put.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.SideEffect(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -341,6 +357,10 @@ func FuzzBatchedSuiteRead(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.SideEffect(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			batchedmixinstest.BatchedChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -400,6 +420,10 @@ func FuzzBatchedSuiteList(f *testing.F) {
 		),
 		conform.Excuse(
 			batchedmixinstest.BatchedChecks.Put.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.SideEffect(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -468,4 +492,4 @@ func BenchmarkBatchedSuiteParallel(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1dec021db358f2210fa6432ccdfd9f7f322e9f437b1feb0703bac67e5f0da3d4
+// dokimi:provenance sha256:c2abfc6c270db928e6616a6b0e6eb2321e4e95d10136c9436b4f4e22ae7b91ed

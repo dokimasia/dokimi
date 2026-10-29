@@ -7,6 +7,8 @@ package txtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/tx"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/tx/txtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	txtest.RunContractSuite(t, txtest.NewInMemory)
+	txtest.RunContractSuite(
+		t,
+		txtest.NewInMemory,
+		conform.Isolate[tx.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -108,4 +114,4 @@ func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5e406fc124f6d1a3d96a4470b5c42d70c9fe12b91f9a61671250623990e01eb6
+// dokimi:provenance sha256:f5fc1705f0b9542529feca5e742f02b9ba96937897e14cecc4bbf9792a98adb2

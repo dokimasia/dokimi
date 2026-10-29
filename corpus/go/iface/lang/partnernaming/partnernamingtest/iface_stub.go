@@ -61,6 +61,28 @@ type StoreCountCall struct {
 	Err    error
 }
 
+// StoreVersionCall records one call of Store.Version.
+type StoreVersionCall struct {
+	Ctx    context.Context
+	Key    string
+	Result partnernaming.Rec
+	Err    error
+}
+
+// StorePutCall records one call of Store.Put.
+type StorePutCall struct {
+	Ctx context.Context
+	R   partnernaming.Rec
+	Err error
+}
+
+// StoreReplaceCall records one call of Store.Replace.
+type StoreReplaceCall struct {
+	Ctx context.Context
+	R   partnernaming.Rec
+	Err error
+}
+
 // StoreTouchStub configures Touch and records its calls. A fault armed
 // through it takes precedence over the function and the fixed results.
 type StoreTouchStub struct {
@@ -232,6 +254,91 @@ func (s *StoreCountStub) Func(fn func(context.Context, int) (int, error)) *Store
 	return s
 }
 
+// StoreVersionStub configures Version and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
+type StoreVersionStub struct {
+	*stub.MethodStub[StoreVersionCall]
+
+	fn       func(context.Context, string) (partnernaming.Rec, error)
+	fallback *StoreVersionReturn
+}
+
+// StoreVersionReturn contains the fixed results of Version.
+type StoreVersionReturn struct {
+	Result partnernaming.Rec
+	Err    error
+}
+
+// Returns sets the results of every call of Version. A function and an
+// injected fault take precedence over them.
+func (s *StoreVersionStub) Returns(result partnernaming.Rec, err error) *StoreVersionStub {
+	s.fallback = &StoreVersionReturn{Result: result, Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Version from its
+// arguments. An injected fault takes precedence over it.
+func (s *StoreVersionStub) Func(fn func(context.Context, string) (partnernaming.Rec, error)) *StoreVersionStub {
+	s.fn = fn
+	return s
+}
+
+// StorePutStub configures Put and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
+type StorePutStub struct {
+	*stub.MethodStub[StorePutCall]
+
+	fn       func(context.Context, partnernaming.Rec) error
+	fallback *StorePutReturn
+}
+
+// StorePutReturn contains the fixed results of Put.
+type StorePutReturn struct {
+	Err error
+}
+
+// Returns sets the results of every call of Put. A function and an
+// injected fault take precedence over them.
+func (s *StorePutStub) Returns(err error) *StorePutStub {
+	s.fallback = &StorePutReturn{Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Put from its
+// arguments. An injected fault takes precedence over it.
+func (s *StorePutStub) Func(fn func(context.Context, partnernaming.Rec) error) *StorePutStub {
+	s.fn = fn
+	return s
+}
+
+// StoreReplaceStub configures Replace and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
+type StoreReplaceStub struct {
+	*stub.MethodStub[StoreReplaceCall]
+
+	fn       func(context.Context, partnernaming.Rec) error
+	fallback *StoreReplaceReturn
+}
+
+// StoreReplaceReturn contains the fixed results of Replace.
+type StoreReplaceReturn struct {
+	Err error
+}
+
+// Returns sets the results of every call of Replace. A function and an
+// injected fault take precedence over them.
+func (s *StoreReplaceStub) Returns(err error) *StoreReplaceStub {
+	s.fallback = &StoreReplaceReturn{Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Replace from its
+// arguments. An injected fault takes precedence over it.
+func (s *StoreReplaceStub) Func(fn func(context.Context, partnernaming.Rec) error) *StoreReplaceStub {
+	s.fn = fn
+	return s
+}
+
 // The reference to stub.CompatV1 fails the build against another major
 // version of the runtime of doubles.
 var _ = stub.CompatV1
@@ -255,6 +362,9 @@ func StoreStubDelegateTo(impl partnernaming.Store) StoreStubOption {
 		s.OnAt.Func(impl.At)
 		s.OnEmit.Func(impl.Emit)
 		s.OnCount.Func(impl.Count)
+		s.OnVersion.Func(impl.Version)
+		s.OnPut.Func(impl.Put)
+		s.OnReplace.Func(impl.Replace)
 	}
 }
 
@@ -295,6 +405,9 @@ func StoreStubFailing(err error) StoreStubOption {
 		s.OnAt.Faults(err, 1)
 		s.OnEmit.Faults(err, 1)
 		s.OnCount.Faults(err, 1)
+		s.OnVersion.Faults(err, 1)
+		s.OnPut.Faults(err, 1)
+		s.OnReplace.Faults(err, 1)
 	}
 }
 
@@ -328,16 +441,34 @@ func WithStoreCount(fn func(context.Context, int) (int, error)) StoreStubOption 
 	return func(s *StoreStub) { s.OnCount.Func(fn) }
 }
 
+// WithStoreVersion returns the option that sets the function of Version.
+func WithStoreVersion(fn func(context.Context, string) (partnernaming.Rec, error)) StoreStubOption {
+	return func(s *StoreStub) { s.OnVersion.Func(fn) }
+}
+
+// WithStorePut returns the option that sets the function of Put.
+func WithStorePut(fn func(context.Context, partnernaming.Rec) error) StoreStubOption {
+	return func(s *StoreStub) { s.OnPut.Func(fn) }
+}
+
+// WithStoreReplace returns the option that sets the function of Replace.
+func WithStoreReplace(fn func(context.Context, partnernaming.Rec) error) StoreStubOption {
+	return func(s *StoreStub) { s.OnReplace.Func(fn) }
+}
+
 // StoreStub is a recording test double of Store. Each field On<Method>
 // configures its method. An unconfigured method records the call and
 // returns the zero values of its results.
 type StoreStub struct {
-	OnTouch *StoreTouchStub
-	OnSeen  *StoreSeenStub
-	OnMove  *StoreMoveStub
-	OnAt    *StoreAtStub
-	OnEmit  *StoreEmitStub
-	OnCount *StoreCountStub
+	OnTouch   *StoreTouchStub
+	OnSeen    *StoreSeenStub
+	OnMove    *StoreMoveStub
+	OnAt      *StoreAtStub
+	OnEmit    *StoreEmitStub
+	OnCount   *StoreCountStub
+	OnVersion *StoreVersionStub
+	OnPut     *StorePutStub
+	OnReplace *StoreReplaceStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -352,12 +483,15 @@ var _ partnernaming.Store = (*StoreStub)(nil)
 // end of the test. With a nil tb, the double reports nothing.
 func NewStoreStub(tb assert.TB, opts ...StoreStubOption) *StoreStub {
 	s := &StoreStub{
-		OnTouch: &StoreTouchStub{MethodStub: stub.NewMethodStub[StoreTouchCall](tb, "Store.Touch")},
-		OnSeen:  &StoreSeenStub{MethodStub: stub.NewMethodStub[StoreSeenCall](tb, "Store.Seen")},
-		OnMove:  &StoreMoveStub{MethodStub: stub.NewMethodStub[StoreMoveCall](tb, "Store.Move")},
-		OnAt:    &StoreAtStub{MethodStub: stub.NewMethodStub[StoreAtCall](tb, "Store.At")},
-		OnEmit:  &StoreEmitStub{MethodStub: stub.NewMethodStub[StoreEmitCall](tb, "Store.Emit")},
-		OnCount: &StoreCountStub{MethodStub: stub.NewMethodStub[StoreCountCall](tb, "Store.Count")},
+		OnTouch:   &StoreTouchStub{MethodStub: stub.NewMethodStub[StoreTouchCall](tb, "Store.Touch")},
+		OnSeen:    &StoreSeenStub{MethodStub: stub.NewMethodStub[StoreSeenCall](tb, "Store.Seen")},
+		OnMove:    &StoreMoveStub{MethodStub: stub.NewMethodStub[StoreMoveCall](tb, "Store.Move")},
+		OnAt:      &StoreAtStub{MethodStub: stub.NewMethodStub[StoreAtCall](tb, "Store.At")},
+		OnEmit:    &StoreEmitStub{MethodStub: stub.NewMethodStub[StoreEmitCall](tb, "Store.Emit")},
+		OnCount:   &StoreCountStub{MethodStub: stub.NewMethodStub[StoreCountCall](tb, "Store.Count")},
+		OnVersion: &StoreVersionStub{MethodStub: stub.NewMethodStub[StoreVersionCall](tb, "Store.Version")},
+		OnPut:     &StorePutStub{MethodStub: stub.NewMethodStub[StorePutCall](tb, "Store.Put")},
+		OnReplace: &StoreReplaceStub{MethodStub: stub.NewMethodStub[StoreReplaceCall](tb, "Store.Replace")},
 	}
 	s.group = stub.NewGroup(
 		s.OnTouch.MethodStub,
@@ -366,6 +500,9 @@ func NewStoreStub(tb assert.TB, opts ...StoreStubOption) *StoreStub {
 		s.OnAt.MethodStub,
 		s.OnEmit.MethodStub,
 		s.OnCount.MethodStub,
+		s.OnVersion.MethodStub,
+		s.OnPut.MethodStub,
+		s.OnReplace.MethodStub,
 	)
 	for _, opt := range opts {
 		opt(s)
@@ -569,4 +706,89 @@ func (s *StoreStub) Count(ctx context.Context, bucket int) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:a22c89828cc5e227143fda298810da6df5449288d108ae89066923133b28e9fd
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *StoreVersionStub) invoke(ctx context.Context, key string) func() StoreVersionReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() StoreVersionReturn {
+		r0, r1 := s.fn(ctx, key)
+		return StoreVersionReturn{Result: r0, Err: r1}
+	}
+}
+
+// Version records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
+func (s *StoreStub) Version(ctx context.Context, key string) (partnernaming.Rec, error) {
+	call := StoreVersionCall{Ctx: ctx, Key: key}
+	r := stub.Answer(s.OnVersion.MethodStub, call, stub.Arms[StoreVersionCall, StoreVersionReturn]{
+		Invoke:   s.OnVersion.invoke(ctx, key),
+		Fallback: s.OnVersion.fallback,
+		Fault:    func(err error) StoreVersionReturn { return StoreVersionReturn{Err: err} },
+		Stamp: func(c StoreVersionCall, r StoreVersionReturn) StoreVersionCall {
+			c.Result = r.Result
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r.Result, r.Err
+}
+
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *StorePutStub) invoke(ctx context.Context, r partnernaming.Rec) func() StorePutReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() StorePutReturn {
+		r0 := s.fn(ctx, r)
+		return StorePutReturn{Err: r0}
+	}
+}
+
+// Put records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *StoreStub) Put(ctx context.Context, r partnernaming.Rec) error {
+	call := StorePutCall{Ctx: ctx, R: r}
+	r1 := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[StorePutCall, StorePutReturn]{
+		Invoke:   s.OnPut.invoke(ctx, r),
+		Fallback: s.OnPut.fallback,
+		Fault:    func(err error) StorePutReturn { return StorePutReturn{Err: err} },
+		Stamp: func(c StorePutCall, r StorePutReturn) StorePutCall {
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r1.Err
+}
+
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *StoreReplaceStub) invoke(ctx context.Context, r partnernaming.Rec) func() StoreReplaceReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() StoreReplaceReturn {
+		r0 := s.fn(ctx, r)
+		return StoreReplaceReturn{Err: r0}
+	}
+}
+
+// Replace records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
+func (s *StoreStub) Replace(ctx context.Context, r partnernaming.Rec) error {
+	call := StoreReplaceCall{Ctx: ctx, R: r}
+	r1 := stub.Answer(s.OnReplace.MethodStub, call, stub.Arms[StoreReplaceCall, StoreReplaceReturn]{
+		Invoke:   s.OnReplace.invoke(ctx, r),
+		Fallback: s.OnReplace.fallback,
+		Fault:    func(err error) StoreReplaceReturn { return StoreReplaceReturn{Err: err} },
+		Stamp: func(c StoreReplaceCall, r StoreReplaceReturn) StoreReplaceCall {
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r1.Err
+}
+
+// dokimi:provenance sha256:f3bf6d3a38e5b64b8c9d6f33e72a83e38eddeaf914d04c113d6d28928f9a31b6

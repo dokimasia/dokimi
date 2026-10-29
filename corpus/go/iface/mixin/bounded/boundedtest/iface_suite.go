@@ -15,6 +15,32 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Add/smoke: Add returns without a panic for derived inputs.
+//
+// Mixed.Add/cancel: Add returns an error for a cancelled context.
+//
+// Mixed.List/smoke: List returns without a panic for derived inputs.
+//
+// Mixed.List/cancel: List returns an error for a cancelled context.
+//
+// Mixed.List/zero-on-error: List returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Add/smoke
+//
+// Mixed.List/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Add has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The mixin:bounded of Mixed.List has the stance needs. The claims of the
+// mixin need generated sequences.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -110,7 +136,7 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 						return h.Subject().Add(ctx, string("item-a"))
 					})
 				},
-				Defect: mixedAddSucceedsAlways,
+				Defect: mixedAddIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.List.Smoke(),
@@ -143,7 +169,7 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedListSucceedsAlways,
+				Defect: mixedListIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.List.ZeroOnError(),
@@ -293,21 +319,24 @@ func mixedAddPanics(h *MixedHandle) bounded.Mixed {
 	return &mixedAddPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedAddSucceedsAlwaysDefect is the planted defect of a Mixed whose Add
+// mixedAddIgnoresCancelDefect is the planted defect of a Mixed whose Add
 // ignores the context.
-type mixedAddSucceedsAlwaysDefect struct {
+type mixedAddIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Add is the override of the planted defect.
-func (*mixedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedAddIgnoresCancelDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Add(p0, p1)
 }
 
-// mixedAddSucceedsAlways returns the planted defect of a Mixed whose Add
+// mixedAddIgnoresCancel returns the planted defect of a Mixed whose Add
 // ignores the context over a fresh subject.
-func mixedAddSucceedsAlways(h *MixedHandle) bounded.Mixed {
-	return &mixedAddSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedAddIgnoresCancel(h *MixedHandle) bounded.Mixed {
+	return &mixedAddIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedListPanicsDefect is the planted defect of a Mixed whose List
@@ -327,21 +356,24 @@ func mixedListPanics(h *MixedHandle) bounded.Mixed {
 	return &mixedListPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedListSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// List ignores the context.
-type mixedListSucceedsAlwaysDefect struct {
+// mixedListIgnoresCancelDefect is the planted defect of a Mixed whose List
+// ignores the context.
+type mixedListIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // List is the override of the planted defect.
-func (*mixedListSucceedsAlwaysDefect) List(p0 context.Context) (r0 []string, r1 error) {
-	return r0, r1
+func (d *mixedListIgnoresCancelDefect) List(p0 context.Context) (r0 []string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.List(p0)
 }
 
-// mixedListSucceedsAlways returns the planted defect of a Mixed whose List
+// mixedListIgnoresCancel returns the planted defect of a Mixed whose List
 // ignores the context over a fresh subject.
-func mixedListSucceedsAlways(h *MixedHandle) bounded.Mixed {
-	return &mixedListSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedListIgnoresCancel(h *MixedHandle) bounded.Mixed {
+	return &mixedListIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedListValueBesideDefect is the planted defect of a Mixed whose List
@@ -351,9 +383,11 @@ type mixedListValueBesideDefect struct {
 }
 
 // List is the override of the planted defect.
-func (*mixedListValueBesideDefect) List(p0 context.Context) (r0 []string, r1 error) {
-	r0 = []string{"sample-b"}
-	r1 = conform.ErrGenerated
+func (d *mixedListValueBesideDefect) List(p0 context.Context) (r0 []string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.List(p0)
+	if r1 != nil {
+		r0 = []string{"sample-b"}
+	}
 	return r0, r1
 }
 
@@ -363,4 +397,4 @@ func mixedListValueBeside(h *MixedHandle) bounded.Mixed {
 	return &mixedListValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4935fcafc80bd9d908de178464a8b4d19e19dfb32752ceb2c7bb4e91ee351a62
+// dokimi:provenance sha256:dc92e59c3e02e226767d78fbb47324fec752572668f2d691b592b2f512161a5c

@@ -7,6 +7,8 @@ package multireadertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multireader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multireader/multireadertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMultiReader(t *testing.T) {
 	t.Parallel()
 
-	multireadertest.RunMultiReaderSuite(t, multireadertest.NewInMemory)
+	multireadertest.RunMultiReaderSuite(
+		t,
+		multireadertest.NewInMemory,
+		conform.Isolate[multireader.MultiReader](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMultiReader measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToMultiReaderGetWithMeta(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:164776f3f482a4df0f632aba27e89a84814347432d226c1f11c5b952e2028f15
+// dokimi:provenance sha256:856879e7e9d5fe46e1be34e713fdcc7d265c85447e3a27d598c00490c1a60b91

@@ -15,6 +15,30 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Fail/smoke: Fail returns without a panic for derived inputs.
+//
+// Mixed.Fail/cancel: Fail returns an error for a cancelled context.
+//
+// Mixed.Probe/smoke: Probe returns without a panic for derived inputs.
+//
+// Mixed.Probe/poisonable: Probe fails after Fail, and keeps failing.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Fail/smoke
+//
+// Mixed.Probe/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:lifecycle of Mixed.Fail has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The shape:poison-accessor of Mixed.Probe has the stance gap. No claim
+// states what the accessor of a poisoned subject returns.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -105,7 +129,7 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 						return h.Subject().Fail(ctx)
 					})
 				},
-				Defect: mixedFailSucceedsAlways,
+				Defect: mixedFailIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Probe.Smoke(),
@@ -272,21 +296,24 @@ func mixedFailPanics(h *MixedHandle) poisonable.Mixed {
 	return &mixedFailPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedFailSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Fail ignores the context.
-type mixedFailSucceedsAlwaysDefect struct {
+// mixedFailIgnoresCancelDefect is the planted defect of a Mixed whose Fail
+// ignores the context.
+type mixedFailIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Fail is the override of the planted defect.
-func (*mixedFailSucceedsAlwaysDefect) Fail(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedFailIgnoresCancelDefect) Fail(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Fail(p0)
 }
 
-// mixedFailSucceedsAlways returns the planted defect of a Mixed whose Fail
+// mixedFailIgnoresCancel returns the planted defect of a Mixed whose Fail
 // ignores the context over a fresh subject.
-func mixedFailSucceedsAlways(h *MixedHandle) poisonable.Mixed {
-	return &mixedFailSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedFailIgnoresCancel(h *MixedHandle) poisonable.Mixed {
+	return &mixedFailIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedProbePanicsDefect is the planted defect of a Mixed whose Probe
@@ -323,4 +350,4 @@ func mixedProbeSucceedsAlways(h *MixedHandle) poisonable.Mixed {
 	return &mixedProbeSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:593cd28b32035139b0ae92c610da7bd3f4eda45e86ab4b6fe8bf7ded58451287
+// dokimi:provenance sha256:a18f80d16d6515cd6dccfee60f2e22382494e72827af788df882d5113b52648c

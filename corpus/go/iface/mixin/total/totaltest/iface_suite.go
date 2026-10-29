@@ -15,6 +15,41 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Classify/smoke: Classify returns without a panic for derived
+// inputs.
+//
+// Mixed.Classify/cancel: Classify returns an error for a cancelled
+// context.
+//
+// Mixed.Classify/zero-on-error: Classify returns the zero value beside an
+// error.
+//
+// Mixed.Classify/total: Classify succeeds for the input that its directive
+// declares at the edge of the domain.
+//
+// Mixed.Normalize/smoke: Normalize returns without a panic for derived
+// inputs.
+//
+// Mixed.Normalize/deterministic: Normalize returns the same value for the
+// same inputs.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Classify/smoke
+//
+// Mixed.Classify/total
+//
+// Mixed.Normalize/smoke
+//
+// Mixed.Normalize/deterministic
+
+// The refused claims of Mixed:
+//
+// Mixed.Normalize/total: Normalize cannot fail. The remedy is to give
+// Normalize an error result.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -120,7 +155,7 @@ func MixedSuite() conform.Suite[total.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedClassifySucceedsAlways,
+				Defect: mixedClassifyIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Classify.ZeroOnError(),
@@ -180,6 +215,7 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[total.Mixed]{MixedChecks.Normalize.Smoke()},
 				Apply: func(h *MixedHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
 						r0 := h.Subject().Normalize(string("in-a"))
@@ -324,21 +360,24 @@ func mixedClassifyPanics(h *MixedHandle) total.Mixed {
 	return &mixedClassifyPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedClassifySucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedClassifyIgnoresCancelDefect is the planted defect of a Mixed whose
 // Classify ignores the context.
-type mixedClassifySucceedsAlwaysDefect struct {
+type mixedClassifyIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Classify is the override of the planted defect.
-func (*mixedClassifySucceedsAlwaysDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedClassifyIgnoresCancelDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Classify(p0, p1)
 }
 
-// mixedClassifySucceedsAlways returns the planted defect of a Mixed whose
+// mixedClassifyIgnoresCancel returns the planted defect of a Mixed whose
 // Classify ignores the context over a fresh subject.
-func mixedClassifySucceedsAlways(h *MixedHandle) total.Mixed {
-	return &mixedClassifySucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedClassifyIgnoresCancel(h *MixedHandle) total.Mixed {
+	return &mixedClassifyIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedClassifyValueBesideDefect is the planted defect of a Mixed whose
@@ -348,9 +387,11 @@ type mixedClassifyValueBesideDefect struct {
 }
 
 // Classify is the override of the planted defect.
-func (*mixedClassifyValueBesideDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedClassifyValueBesideDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Classify(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -367,8 +408,16 @@ type mixedClassifyFailsAlwaysDefect struct {
 }
 
 // Classify is the override of the planted defect.
-func (*mixedClassifyFailsAlwaysDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r1 = conform.ErrGenerated
+func (d *mixedClassifyFailsAlwaysDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Classify(p0, p1)
+	if r1 == nil {
+		r0 = *new(string)
+		r1 = conform.ErrGenerated
+	}
 	return r0, r1
 }
 
@@ -417,4 +466,4 @@ func mixedNormalizeDrifts(h *MixedHandle) total.Mixed {
 	return &mixedNormalizeDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:acd9e3a0e7106ab0ce425754226e5c151a6b5413420d53c2df7643665f56885f
+// dokimi:provenance sha256:b48ae37f859a83cbc8be61c5c9558a45652bf8b4d31c76c3c378e43d1e528cf8

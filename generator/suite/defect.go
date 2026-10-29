@@ -37,7 +37,12 @@ import (
 // input. Handle is the handle that a callable of the form opens-a-live-handle
 // returns in place of its own, and Handled the type of the handle that it
 // wraps. Delegates reports a body that calls the callable of the fresh
-// subject, and Counts a body that counts its calls.
+// subject, and Counts a body that counts its calls. Context is the parameter
+// of the context of the callable, and empty for a callable without one.
+// Guards reports a body that returns the error of a cancelled context first,
+// so the defect reports a cancelled context as the callable does. A panic, a
+// body that breaks cancellation and a body that reads the error of the fresh
+// subject have no guard.
 type Defect struct {
 	Method    *emit.Method
 	Handle    *Defect
@@ -47,12 +52,14 @@ type Defect struct {
 	Doc       string
 	Body      string
 	Version   string
+	Context   string
 	Args      []string
 	Results   []Outcome
 	Budget    time.Duration
 	Input     int
 	Delegates bool
 	Counts    bool
+	Guards    bool
 }
 
 // Outcome is one result of the callable of a planted defect: its name, its
@@ -79,13 +86,17 @@ const (
 	bodyZero           = "zero"
 	bodyZeroLater      = "zero-later"
 	bodyFail           = "fail"
+	bodyFailSuccess    = "fail-success"
 	bodyFailLater      = "fail-later"
-	bodyFailBeside     = "fail-beside"
+	bodyBesideError    = "beside-error"
+	bodyUncancelled    = "uncancelled"
 	bodyBesideFalse    = "beside-false"
 	bodySample         = "sample"
+	bodySampleSuccess  = "sample-success"
 	bodyDrift          = "drift"
 	bodyDescend        = "descend"
 	bodyVersionDescend = "version-descend"
+	bodyVersionZero    = "version-zero"
 	bodyDrainTwice     = "drain-twice"
 	bodyReorder        = "reorder"
 	bodyEcho           = "echo"
@@ -102,12 +113,13 @@ var bodies = map[spec.DefectFormID]string{
 	spec.Panics:                 bodyPanic,
 	spec.PanicsOnRepeat:         bodyPanicLater,
 	spec.SucceedsAlways:         bodyZero,
-	spec.FailsAlways:            bodyFail,
+	spec.FailsAlways:            bodyFailSuccess,
 	spec.ReportsAnotherError:    bodyFail,
 	spec.RefusesRepeat:          bodyFailLater,
 	spec.IgnoresThePredicate:    bodyZeroLater,
-	spec.ValueBeside:            bodyFailBeside,
-	spec.ValuesBeside:           bodyFailBeside,
+	spec.IgnoresCancel:          bodyUncancelled,
+	spec.ValueBeside:            bodyBesideError,
+	spec.ValuesBeside:           bodyBesideError,
 	spec.ValueBesideAFalseFlag:  bodyBesideFalse,
 	spec.ValuesBesideAFalseFlag: bodyBesideFalse,
 	spec.InventsAPointer:        bodySample,
@@ -115,8 +127,9 @@ var bodies = map[spec.DefectFormID]string{
 	spec.Drifts:                 bodyDrift,
 	spec.Descends:               bodyDescend,
 	spec.VersionDescends:        bodyVersionDescend,
+	spec.StampsThePast:          bodyVersionZero,
 	spec.AnswersASample:         bodySample,
-	spec.ForgetsWrites:          bodyZero,
+	spec.ReadsAnotherValue:      bodySampleSuccess,
 	spec.StoresNothing:          bodyZero,
 	spec.DrainsTwice:            bodyDrainTwice,
 	spec.ReordersDrain:          bodyReorder,
@@ -155,13 +168,19 @@ func partnerOf(c *derive.Check, name string) *derive.Pair {
 // counting the bodies that count the calls of the override.
 var (
 	delegating = []string{
-		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyBesideFalse, bodyDrainTwice, bodyReorder, bodyReverse,
-		bodySlow, bodyFirstPage, bodyLiveHandle,
+		bodyPanicLater, bodyFailLater, bodyFailSuccess, bodyZeroLater, bodyBesideFalse, bodyBesideError,
+		bodySampleSuccess, bodyUncancelled, bodyVersionZero, bodyDrainTwice, bodyReorder, bodyReverse, bodySlow,
+		bodyFirstPage, bodyLiveHandle,
 	}
 	counting = []string{
 		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyDrift, bodyDescend, bodyVersionDescend, bodyReorder,
 	}
 )
+
+// cancelling are the bodies that do not return the error of a cancelled
+// context first: a panic, which needs none, and the bodies whose break is the
+// answer to a cancelled context.
+var cancelling = []string{bodyPanic, bodyBesideError, bodyUncancelled}
 
 // budgetParam is the param of the mixin timeout that states the budget.
 const budgetParam = "duration"
@@ -200,6 +219,12 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	}
 	d.Method, d.Args = k.signatureOf(f)
 	d.Results = k.outcomesOf(f)
+	if ctx := slices.IndexFunc(f.Signature.Params, func(p rules.ParamView) bool {
+		return p.Role == rules.ParamContext
+	}); ctx >= 0 {
+		d.Context = d.Args[ctx]
+		d.Guards = hasError(f) && !slices.Contains(cancelling, d.Body)
+	}
 	if form.ID == spec.OpensALiveHandle {
 		d.Handle = k.liveHandle(f, nameOf(b.param(nextParam)), k.e.JoinName(handleWord, name))
 	}

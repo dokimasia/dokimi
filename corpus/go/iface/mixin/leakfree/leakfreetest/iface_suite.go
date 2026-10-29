@@ -15,6 +15,44 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Acquire/smoke: Acquire returns without a panic for derived inputs.
+//
+// Mixed.Acquire/cancel: Acquire returns an error for a cancelled context.
+//
+// Mixed.Release/smoke: Release returns without a panic for derived inputs.
+//
+// Mixed.Release/cancel: Release returns an error for a cancelled context.
+//
+// Mixed.Outstanding/smoke: Outstanding returns without a panic for derived
+// inputs.
+//
+// Mixed.Outstanding/cancel: Outstanding returns an error for a cancelled
+// context.
+//
+// Mixed.Outstanding/zero-on-error: Outstanding returns the zero value
+// beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Acquire/smoke
+//
+// Mixed.Release/smoke
+//
+// Mixed.Outstanding/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:lifecycle of Mixed.Acquire has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The mixin:leak-free of Mixed.Acquire has the stance gap. No claim states
+// that the callable leaves no goroutine or task behind.
+//
+// The shape:lifecycle of Mixed.Release has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -132,7 +170,7 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 						return h.Subject().Acquire(ctx)
 					})
 				},
-				Defect: mixedAcquireSucceedsAlways,
+				Defect: mixedAcquireIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Release.Smoke(),
@@ -163,7 +201,7 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 						return h.Subject().Release(ctx)
 					})
 				},
-				Defect: mixedReleaseSucceedsAlways,
+				Defect: mixedReleaseIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Outstanding.Smoke(),
@@ -196,7 +234,7 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedOutstandingSucceedsAlways,
+				Defect: mixedOutstandingIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Outstanding.ZeroOnError(),
@@ -365,21 +403,24 @@ func mixedAcquirePanics(h *MixedHandle) leakfree.Mixed {
 	return &mixedAcquirePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedAcquireSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedAcquireIgnoresCancelDefect is the planted defect of a Mixed whose
 // Acquire ignores the context.
-type mixedAcquireSucceedsAlwaysDefect struct {
+type mixedAcquireIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Acquire is the override of the planted defect.
-func (*mixedAcquireSucceedsAlwaysDefect) Acquire(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedAcquireIgnoresCancelDefect) Acquire(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Acquire(p0)
 }
 
-// mixedAcquireSucceedsAlways returns the planted defect of a Mixed whose
+// mixedAcquireIgnoresCancel returns the planted defect of a Mixed whose
 // Acquire ignores the context over a fresh subject.
-func mixedAcquireSucceedsAlways(h *MixedHandle) leakfree.Mixed {
-	return &mixedAcquireSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedAcquireIgnoresCancel(h *MixedHandle) leakfree.Mixed {
+	return &mixedAcquireIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedReleasePanicsDefect is the planted defect of a Mixed whose Release
@@ -399,21 +440,24 @@ func mixedReleasePanics(h *MixedHandle) leakfree.Mixed {
 	return &mixedReleasePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedReleaseSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedReleaseIgnoresCancelDefect is the planted defect of a Mixed whose
 // Release ignores the context.
-type mixedReleaseSucceedsAlwaysDefect struct {
+type mixedReleaseIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Release is the override of the planted defect.
-func (*mixedReleaseSucceedsAlwaysDefect) Release(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedReleaseIgnoresCancelDefect) Release(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Release(p0)
 }
 
-// mixedReleaseSucceedsAlways returns the planted defect of a Mixed whose
+// mixedReleaseIgnoresCancel returns the planted defect of a Mixed whose
 // Release ignores the context over a fresh subject.
-func mixedReleaseSucceedsAlways(h *MixedHandle) leakfree.Mixed {
-	return &mixedReleaseSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedReleaseIgnoresCancel(h *MixedHandle) leakfree.Mixed {
+	return &mixedReleaseIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedOutstandingPanicsDefect is the planted defect of a Mixed whose
@@ -433,21 +477,24 @@ func mixedOutstandingPanics(h *MixedHandle) leakfree.Mixed {
 	return &mixedOutstandingPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedOutstandingSucceedsAlwaysDefect is the planted defect of a Mixed
+// mixedOutstandingIgnoresCancelDefect is the planted defect of a Mixed
 // whose Outstanding ignores the context.
-type mixedOutstandingSucceedsAlwaysDefect struct {
+type mixedOutstandingIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Outstanding is the override of the planted defect.
-func (*mixedOutstandingSucceedsAlwaysDefect) Outstanding(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *mixedOutstandingIgnoresCancelDefect) Outstanding(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Outstanding(p0)
 }
 
-// mixedOutstandingSucceedsAlways returns the planted defect of a Mixed
+// mixedOutstandingIgnoresCancel returns the planted defect of a Mixed
 // whose Outstanding ignores the context over a fresh subject.
-func mixedOutstandingSucceedsAlways(h *MixedHandle) leakfree.Mixed {
-	return &mixedOutstandingSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedOutstandingIgnoresCancel(h *MixedHandle) leakfree.Mixed {
+	return &mixedOutstandingIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedOutstandingValueBesideDefect is the planted defect of a Mixed whose
@@ -457,9 +504,11 @@ type mixedOutstandingValueBesideDefect struct {
 }
 
 // Outstanding is the override of the planted defect.
-func (*mixedOutstandingValueBesideDefect) Outstanding(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *mixedOutstandingValueBesideDefect) Outstanding(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Outstanding(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -469,4 +518,4 @@ func mixedOutstandingValueBeside(h *MixedHandle) leakfree.Mixed {
 	return &mixedOutstandingValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:89831952a0a089a3e9fd86852fdbf4fa3342c09a7277e8f6efa5ffd0132d171a
+// dokimi:provenance sha256:5671dc2cdfae31b180a1fd8d1ba8155bb4ae3d4ca06bd26748d167b547873da3

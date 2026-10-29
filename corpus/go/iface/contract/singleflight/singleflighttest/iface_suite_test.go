@@ -50,6 +50,14 @@ func TestContractSuite(t *testing.T) {
 				Defect: func(*singleflighttest.ContractHandle) singleflight.Contract { return &contractSubject{} },
 			}),
 			conform.Excuse(
+				singleflighttest.ContractChecks.Run.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				singleflighttest.ContractChecks.Run.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				singleflighttest.ContractChecks.Flights.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -83,6 +91,14 @@ func TestContractSuite(t *testing.T) {
 				Defect: func(*singleflighttest.ContractHandle) singleflight.Contract { return &contractSubject{} },
 			}),
 			conform.Excuse(
+				singleflighttest.ContractChecks.Run.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				singleflighttest.ContractChecks.Run.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				singleflighttest.ContractChecks.Flights.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -115,6 +131,14 @@ func TestContractSuiteBudgets(t *testing.T) {
 		conform.Ceilings(singleflighttest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(singleflighttest.ContractChecks.Flights.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			singleflighttest.ContractChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			singleflighttest.ContractChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			singleflighttest.ContractChecks.Flights.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -137,6 +161,14 @@ func FuzzContractSuiteRun(f *testing.F) {
 		singleflighttest.ContractChecks.Run.Callable,
 		contractIdle,
 		conform.Excuse(
+			singleflighttest.ContractChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			singleflighttest.ContractChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			singleflighttest.ContractChecks.Flights.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -158,6 +190,14 @@ func FuzzContractSuiteFlights(f *testing.F) {
 		f,
 		singleflighttest.ContractChecks.Flights.Callable,
 		contractIdle,
+		conform.Excuse(
+			singleflighttest.ContractChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			singleflighttest.ContractChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			singleflighttest.ContractChecks.Flights.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -184,4 +224,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:4e44e77caa34440589b910b846f8c8dceb5609a0a89f8263656e7997621f395a
+// dokimi:provenance sha256:90bb618e90e6b3ab968e66bfd5152fb8aed1e6ff6d145d7fa6489516e5afb261

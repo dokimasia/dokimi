@@ -16,6 +16,45 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Dispatcher:
+//
+// Dispatcher.Dispatch/smoke: Dispatch returns without a panic for derived
+// inputs.
+//
+// Dispatcher.Dispatch/cancel: Dispatch returns an error for a cancelled
+// context.
+//
+// Dispatcher.DispatchAll/smoke: DispatchAll returns without a panic for
+// derived inputs.
+//
+// Dispatcher.DispatchAll/cancel: DispatchAll returns an error for a
+// cancelled context.
+//
+// Dispatcher.Weight/smoke: Weight returns without a panic for derived
+// inputs.
+//
+// Dispatcher.Weight/deterministic: Weight returns the same value for the
+// same inputs.
+
+// The derived checks of Dispatcher that witness their laws at the shallow
+// end:
+//
+// Dispatcher.Dispatch/smoke
+//
+// Dispatcher.DispatchAll/smoke
+//
+// Dispatcher.Weight/smoke
+//
+// Dispatcher.Weight/deterministic
+
+// The unclaimed classifications of Dispatcher:
+//
+// The shape:writer of Dispatcher.Dispatch has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Dispatcher.DispatchAll has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -139,7 +178,7 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 						return h.Subject().Dispatch(ctx, &nested.DispatchRequest{ID: "ID-a"})
 					})
 				},
-				Defect: dispatcherDispatchSucceedsAlways,
+				Defect: dispatcherDispatchIgnoresCancel,
 			},
 			{
 				ID:          DispatcherChecks.DispatchAll.Smoke(),
@@ -172,7 +211,7 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 							DispatchAll(ctx, nested.Batch{Requests: []nested.DispatchRequest{{ID: "ID-a"}}})
 					})
 				},
-				Defect: dispatcherDispatchAllSucceedsAlways,
+				Defect: dispatcherDispatchAllIgnoresCancel,
 			},
 			{
 				ID:          DispatcherChecks.Weight.Smoke(),
@@ -200,6 +239,7 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[nested.Dispatcher]{DispatcherChecks.Weight.Smoke()},
 				Apply: func(h *DispatcherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Weight()
@@ -433,21 +473,24 @@ func dispatcherDispatchPanics(h *DispatcherHandle) nested.Dispatcher {
 	return &dispatcherDispatchPanicsDefect{dispatcherOverEmbedded: h.Fresh()}
 }
 
-// dispatcherDispatchSucceedsAlwaysDefect is the planted defect of a
+// dispatcherDispatchIgnoresCancelDefect is the planted defect of a
 // Dispatcher whose Dispatch ignores the context.
-type dispatcherDispatchSucceedsAlwaysDefect struct {
+type dispatcherDispatchIgnoresCancelDefect struct {
 	dispatcherOverEmbedded
 }
 
 // Dispatch is the override of the planted defect.
-func (*dispatcherDispatchSucceedsAlwaysDefect) Dispatch(p0 context.Context, p1 *nested.DispatchRequest) (r0 error) {
-	return r0
+func (d *dispatcherDispatchIgnoresCancelDefect) Dispatch(p0 context.Context, p1 *nested.DispatchRequest) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.dispatcherOverEmbedded.Dispatch(p0, p1)
 }
 
-// dispatcherDispatchSucceedsAlways returns the planted defect of a
+// dispatcherDispatchIgnoresCancel returns the planted defect of a
 // Dispatcher whose Dispatch ignores the context over a fresh subject.
-func dispatcherDispatchSucceedsAlways(h *DispatcherHandle) nested.Dispatcher {
-	return &dispatcherDispatchSucceedsAlwaysDefect{dispatcherOverEmbedded: h.Fresh()}
+func dispatcherDispatchIgnoresCancel(h *DispatcherHandle) nested.Dispatcher {
+	return &dispatcherDispatchIgnoresCancelDefect{dispatcherOverEmbedded: h.Fresh()}
 }
 
 // dispatcherDispatchAllPanicsDefect is the planted defect of a Dispatcher
@@ -467,21 +510,24 @@ func dispatcherDispatchAllPanics(h *DispatcherHandle) nested.Dispatcher {
 	return &dispatcherDispatchAllPanicsDefect{dispatcherOverEmbedded: h.Fresh()}
 }
 
-// dispatcherDispatchAllSucceedsAlwaysDefect is the planted defect of a
+// dispatcherDispatchAllIgnoresCancelDefect is the planted defect of a
 // Dispatcher whose DispatchAll ignores the context.
-type dispatcherDispatchAllSucceedsAlwaysDefect struct {
+type dispatcherDispatchAllIgnoresCancelDefect struct {
 	dispatcherOverEmbedded
 }
 
 // DispatchAll is the override of the planted defect.
-func (*dispatcherDispatchAllSucceedsAlwaysDefect) DispatchAll(p0 context.Context, p1 nested.Batch) (r0 error) {
-	return r0
+func (d *dispatcherDispatchAllIgnoresCancelDefect) DispatchAll(p0 context.Context, p1 nested.Batch) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.dispatcherOverEmbedded.DispatchAll(p0, p1)
 }
 
-// dispatcherDispatchAllSucceedsAlways returns the planted defect of a
+// dispatcherDispatchAllIgnoresCancel returns the planted defect of a
 // Dispatcher whose DispatchAll ignores the context over a fresh subject.
-func dispatcherDispatchAllSucceedsAlways(h *DispatcherHandle) nested.Dispatcher {
-	return &dispatcherDispatchAllSucceedsAlwaysDefect{dispatcherOverEmbedded: h.Fresh()}
+func dispatcherDispatchAllIgnoresCancel(h *DispatcherHandle) nested.Dispatcher {
+	return &dispatcherDispatchAllIgnoresCancelDefect{dispatcherOverEmbedded: h.Fresh()}
 }
 
 // dispatcherWeightPanicsDefect is the planted defect of a Dispatcher whose
@@ -523,4 +569,4 @@ func dispatcherWeightDrifts(h *DispatcherHandle) nested.Dispatcher {
 	return &dispatcherWeightDriftsDefect{dispatcherOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1a8a3be3c9eef4b65214a1ea433e5e2cb57e3f7d8912a53519c1e08dad193a10
+// dokimi:provenance sha256:8c60c96b9e2ed6927dcb3fc39b9545fe55b3153e08067f852bfe295360695102

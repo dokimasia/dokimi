@@ -7,6 +7,8 @@ package timeawaretest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeaware"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeaware/timeawaretest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	timeawaretest.RunMixedSuiteFromHandle(t, timeawaretest.NewInMemoryFromHandle)
+	timeawaretest.RunMixedSuiteFromHandle(
+		t,
+		timeawaretest.NewInMemoryFromHandle,
+		conform.Isolate[timeaware.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -41,4 +47,4 @@ func FuzzInMemoryConformsToMixedAgeOf(f *testing.F) {
 	timeawaretest.FuzzMixedSuite(f, timeawaretest.MixedChecks.AgeOf.Callable, timeawaretest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:1fe22c9cb83c9656b4f2dba5b27844c066be19f7745e651ac4cabd8293c8bf36
+// dokimi:provenance sha256:4ea4fe11872f313b9001085109a6c97bde20395e29f413e53ecc640ff2c51904

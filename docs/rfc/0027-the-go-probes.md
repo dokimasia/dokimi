@@ -175,7 +175,7 @@ The gates of each claim select the callables whose results fit the shape of its 
 | `TakesBackWhatItLent` | `[V](call Call[V], put func(ctx context.Context, v V) error)` | Gets a value with call and puts it back, and fails when put fails |
 | `ContinuesFromTheCursor` | `[V, C](call func(ctx context.Context, cursor C) (V, error), cursor func(v V) C)` | Reads the first page, reads with its cursor, and fails when the second page has the cursor of the first |
 | `CompensatesTheStep` | `(call, compensate Act)` | Calls call, then compensate, and fails when compensate fails |
-| `RefusedLeavesNothing` | `[V, R](call func(ctx context.Context, r R) error, reader Call[V], refused R, zero V)` | Calls call with refused, then reader, and fails when reader returns a value other than zero. A call that accepts refused ends the probe |
+| `RefusedLeavesNothing` | `[V, R](call func(ctx context.Context, r R) error, reader Call[V], refused R, zero V)` | Calls call with refused, then reader, and fails when reader returns a value other than zero. A call that accepts refused ends the probe, and so does a reader that fails |
 | `RemovesOnDelete` | `(call, put, read Act, sentinel error)` | Calls put, call and read, and fails unless the error of read matches sentinel |
 
 #### Drains, histories and versions
@@ -187,7 +187,7 @@ The gates of each claim select the callables whose results fit the shape of its 
 | `GainsWhatWentIn` | `[E](drain Call[[]E], write Act)` | Drains, writes twice, drains, and fails unless the drain gains exactly two elements |
 | `KeepsWhatWentIn` | `[E](drain Call[[]E], write Act)` | As `GainsWhatWentIn`, and fails when the drain gains fewer than two |
 | `ReadsNeverRegress` | `[V, O cmp.Ordered](read Call[V], write Act, version func(v V) O)` | Reads, writes, reads, and fails when the second version is below the first |
-| `WritesAdvance` | `[V, O cmp.Ordered](read Call[V], write Call[V], version func(v V) O)` | Reads, then writes, and fails unless the version of the write is above the version of the read |
+| `WritesAdvance` | `[V, O cmp.Ordered](read Call[V], write Call[V], version func(v V) O)` | Writes, reads and writes, and fails unless the version of the second write is above the version of the read |
 | `ReplaysInStampOrder` | `[O cmp.Ordered](call Act, replay Call[[]O])` | Appends twice, replays, which returns the stamp of each entry, and fails when a stamp is below the stamp before it |
 | `ReplayGrows` | `[E](call Act, replay Call[[]E])` | Replays, appends, replays, and fails unless the replay grows by one entry |
 

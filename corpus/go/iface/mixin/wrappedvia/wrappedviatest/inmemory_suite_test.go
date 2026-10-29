@@ -7,6 +7,8 @@ package wrappedviatest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia/wrappedviatest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	wrappedviatest.RunMixedSuite(t, wrappedviatest.NewInMemory)
+	wrappedviatest.RunMixedSuite(
+		t,
+		wrappedviatest.NewInMemory,
+		conform.Isolate[wrappedvia.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedCause(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:081b7510d517938b7b0b171dccfd93d59d431c4789f7ecb6a10411e95e9a1afe
+// dokimi:provenance sha256:2b19334b59d30e82d336ed3c4fca4f7c24abd4dd0e7a1bb7c1264c5eff2defc7

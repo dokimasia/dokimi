@@ -15,6 +15,25 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Labeller:
+//
+// Labeller.Apply/smoke: Apply returns without a panic for derived inputs.
+//
+// Labeller.Apply/cancel: Apply returns an error for a cancelled context.
+//
+// Labeller.Apply/idempotent: a second identical Apply succeeds after the
+// first.
+
+// The derived checks of Labeller that witness their laws at the shallow
+// end:
+//
+// Labeller.Apply/smoke
+
+// The unclaimed classifications of Labeller:
+//
+// The shape:composite-writer of Labeller.Apply has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,7 +111,7 @@ func LabellerSuite() conform.Suite[sampled.Labeller] {
 						return h.Subject().Apply(ctx, sampled.NewTestTag(), sampled.NewTestLevel())
 					})
 				},
-				Defect: labellerApplySucceedsAlways,
+				Defect: labellerApplyIgnoresCancel,
 			},
 			{
 				ID:          LabellerChecks.Apply.Idempotent(),
@@ -258,21 +277,24 @@ func labellerApplyPanics(h *LabellerHandle) sampled.Labeller {
 	return &labellerApplyPanicsDefect{labellerOverEmbedded: h.Fresh()}
 }
 
-// labellerApplySucceedsAlwaysDefect is the planted defect of a Labeller
+// labellerApplyIgnoresCancelDefect is the planted defect of a Labeller
 // whose Apply ignores the context.
-type labellerApplySucceedsAlwaysDefect struct {
+type labellerApplyIgnoresCancelDefect struct {
 	labellerOverEmbedded
 }
 
 // Apply is the override of the planted defect.
-func (*labellerApplySucceedsAlwaysDefect) Apply(p0 context.Context, p1 sampled.Tag, p2 sampled.Level) (r0 error) {
-	return r0
+func (d *labellerApplyIgnoresCancelDefect) Apply(p0 context.Context, p1 sampled.Tag, p2 sampled.Level) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.labellerOverEmbedded.Apply(p0, p1, p2)
 }
 
-// labellerApplySucceedsAlways returns the planted defect of a Labeller
+// labellerApplyIgnoresCancel returns the planted defect of a Labeller
 // whose Apply ignores the context over a fresh subject.
-func labellerApplySucceedsAlways(h *LabellerHandle) sampled.Labeller {
-	return &labellerApplySucceedsAlwaysDefect{labellerOverEmbedded: h.Fresh()}
+func labellerApplyIgnoresCancel(h *LabellerHandle) sampled.Labeller {
+	return &labellerApplyIgnoresCancelDefect{labellerOverEmbedded: h.Fresh()}
 }
 
 // labellerApplyRefusesRepeatDefect is the planted defect of a Labeller
@@ -284,6 +306,10 @@ type labellerApplyRefusesRepeatDefect struct {
 
 // Apply is the override of the planted defect.
 func (d *labellerApplyRefusesRepeatDefect) Apply(p0 context.Context, p1 sampled.Tag, p2 sampled.Level) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = conform.ErrGenerated
@@ -298,4 +324,4 @@ func labellerApplyRefusesRepeat(h *LabellerHandle) sampled.Labeller {
 	return &labellerApplyRefusesRepeatDefect{labellerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b5eb9f939b72478a7bd10e0498bae8551d7b416f549282da6c6d79bdce5e29be
+// dokimi:provenance sha256:261b4a09a2b7e3469119ecbd15a0b6154d9acd37eecf2f4c5324966693b592a8

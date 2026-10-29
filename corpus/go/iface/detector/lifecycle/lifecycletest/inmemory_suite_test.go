@@ -7,6 +7,8 @@ package lifecycletest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lifecycle"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lifecycle/lifecycletest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToLifecycle(t *testing.T) {
 	t.Parallel()
 
-	lifecycletest.RunLifecycleSuite(t, lifecycletest.NewInMemory)
+	lifecycletest.RunLifecycleSuite(
+		t,
+		lifecycletest.NewInMemory,
+		conform.Isolate[lifecycle.Lifecycle](),
+	)
 }
 
 // BenchmarkInMemoryConformsToLifecycle measures each callable of the suite
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToLifecycleClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9ac85c923e4263228334fbc7d0616090c771d5f8dbba755cff3ac479dd84d347
+// dokimi:provenance sha256:1dbef167d24d7392fa7116f78f34be144db824ad75631a4ab6201e815243691e

@@ -7,6 +7,8 @@ package seededreadertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/seededreader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/seededreader/seededreadertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToCatalog(t *testing.T) {
 	t.Parallel()
 
-	seededreadertest.RunCatalogSuite(t, seededreadertest.NewInMemory)
+	seededreadertest.RunCatalogSuite(
+		t,
+		seededreadertest.NewInMemory,
+		conform.Isolate[seededreader.Catalog](),
+	)
 }
 
 // BenchmarkInMemoryConformsToCatalog measures each callable of the suite
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToCatalogLen(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:7a1ad8c01a262d5b027a1e0706c6646abd9b500522f8ece1fb80a1bf474c643d
+// dokimi:provenance sha256:67e44083a0af38a0c8427d1d311494f60717991a7a04b14028bdb8d631f0c9dc

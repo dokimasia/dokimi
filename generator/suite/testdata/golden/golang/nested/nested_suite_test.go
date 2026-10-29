@@ -395,6 +395,14 @@ func TestHireSuite(t *testing.T) {
 				},
 				Defect: func(*HireHandle) HireFunc { return nil },
 			}),
+			conform.Excuse(
+				HireChecks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HireChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -413,6 +421,14 @@ func TestHireSuite(t *testing.T) {
 				},
 				Defect: func(*HireHandle) HireFunc { return nil },
 			}),
+			conform.Excuse(
+				HireChecks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HireChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }

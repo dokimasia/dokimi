@@ -7,6 +7,8 @@ package deleteremovestest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deleteremoves"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deleteremoves/deleteremovestest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	deleteremovestest.RunMixedSuite(t, deleteremovestest.NewInMemory)
+	deleteremovestest.RunMixedSuite(
+		t,
+		deleteremovestest.NewInMemory,
+		conform.Isolate[deleteremoves.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:cf19582061c34bd2c85634bc9a6567281fc2830edec59afefe6d5336057e0a90
+// dokimi:provenance sha256:5f1466b3ec7ba0b3aee596b390b6f49dbd1ae7cc6af99f2bc283a8d7bd03b711

@@ -7,6 +7,8 @@ package chaintest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/chain"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/chain/chaintest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	chaintest.RunContractSuite(t, chaintest.NewInMemory)
+	chaintest.RunContractSuite(
+		t,
+		chaintest.NewInMemory,
+		conform.Isolate[chain.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToContractVerify(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:47d345ff2fddb8c9ae0c80069812d5cded72cdad6aff57619da352f34dd5550a
+// dokimi:provenance sha256:78d9c65a1d2c222e20ab0579bbf620a82c6093c136d7c5fdf5bc18f253a7688f

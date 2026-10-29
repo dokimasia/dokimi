@@ -7,6 +7,8 @@ package suitedhandletest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/suitedhandle"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/suitedhandle/suitedhandletest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryFileConformsToFile(t *testing.T) {
 	t.Parallel()
 
-	suitedhandletest.RunFileSuite(t, suitedhandletest.NewInMemoryFile)
+	suitedhandletest.RunFileSuite(
+		t,
+		suitedhandletest.NewInMemoryFile,
+		conform.Isolate[suitedhandle.File](),
+	)
 }
 
 // BenchmarkInMemoryFileConformsToFile measures each callable of the suite
@@ -70,7 +76,11 @@ func FuzzInMemoryFileConformsToFileClose(f *testing.F) {
 func TestInMemoryFSConformsToFS(t *testing.T) {
 	t.Parallel()
 
-	suitedhandletest.RunFSSuite(t, suitedhandletest.NewInMemoryFS)
+	suitedhandletest.RunFSSuite(
+		t,
+		suitedhandletest.NewInMemoryFS,
+		conform.Isolate[suitedhandle.FS](),
+	)
 }
 
 // BenchmarkInMemoryFSConformsToFS measures each callable of the suite of
@@ -95,4 +105,4 @@ func FuzzInMemoryFSConformsToFSOpen(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:e49c1ff1c6e7048a26a02757af44fe2db9ec49edc45294d7647c26f85e97229c
+// dokimi:provenance sha256:b5bfee0be615bfe8a5a61ea672a91aec7a18d7c0d738dc715a0a1e503f2c20ef

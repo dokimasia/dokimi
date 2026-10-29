@@ -15,6 +15,21 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Predicate:
+//
+// Predicate.IsEmpty/smoke: IsEmpty returns without a panic for derived
+// inputs.
+//
+// Predicate.IsEmpty/predicate: IsEmpty returns the same answer twice for
+// an unchanged subject.
+
+// The derived checks of Predicate that witness their laws at the shallow
+// end:
+//
+// Predicate.IsEmpty/smoke
+//
+// Predicate.IsEmpty/predicate
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -237,4 +252,4 @@ func predicateIsEmptyDrifts(h *PredicateHandle) predicate.Predicate {
 	return &predicateIsEmptyDriftsDefect{predicateOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5f73142a045fa5f20d137a4dfef77b84ae11720941991147d1794b37ea36b0d0
+// dokimi:provenance sha256:87a9f6bad2a0c76bfee75a52bf8d3e54e00c7e11fc206f5af3b2fd1372846c9c

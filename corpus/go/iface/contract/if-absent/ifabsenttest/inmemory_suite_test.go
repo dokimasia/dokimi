@@ -7,6 +7,8 @@ package ifabsenttest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	ifabsent "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-absent"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/if-absent/ifabsenttest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	ifabsenttest.RunContractSuite(t, ifabsenttest.NewInMemory)
+	ifabsenttest.RunContractSuite(
+		t,
+		ifabsenttest.NewInMemory,
+		conform.Isolate[ifabsent.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToContractPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:63c40e54f00aa60575748756e62f0f0946f717f054a1a1979243c987dd164234
+// dokimi:provenance sha256:cd8ceadb8025736d1270ee70a39d8c72d84cc2162ef06e5bec6af33588b14b94

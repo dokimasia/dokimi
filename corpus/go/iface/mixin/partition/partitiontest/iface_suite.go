@@ -15,6 +15,30 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Mixed.Put/cancel: Put returns an error for a cancelled context.
+//
+// Mixed.Put/partition: Read does not return in one partition what Put
+// wrote in another.
+//
+// Mixed.Read/smoke: Read returns without a panic for derived inputs.
+//
+// Mixed.Read/cancel: Read returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Put/smoke
+//
+// Mixed.Read/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:multi-arg-writer of Mixed.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -110,7 +134,7 @@ func MixedSuite() conform.Suite[partition.Mixed] {
 						return h.Subject().Put(ctx, string("partition-a"), string("key-a"), string("value-a"))
 					})
 				},
-				Defect: mixedPutSucceedsAlways,
+				Defect: mixedPutIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Put.Partition(),
@@ -173,7 +197,7 @@ func MixedSuite() conform.Suite[partition.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedReadSucceedsAlways,
+				Defect: mixedReadIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[partition.Mixed]{
@@ -312,19 +336,43 @@ func mixedPutPanics(h *MixedHandle) partition.Mixed {
 	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancelDefect is the planted defect of a Mixed whose Put
 // ignores the context.
+type mixedPutIgnoresCancelDefect struct {
+	mixedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (d *mixedPutIgnoresCancelDefect) Put(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Put(p0, p1, p2, p3)
+}
+
+// mixedPutIgnoresCancel returns the planted defect of a Mixed whose Put
+// ignores the context over a fresh subject.
+func mixedPutIgnoresCancel(h *MixedHandle) partition.Mixed {
+	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// keeps no partition.
 type mixedPutSucceedsAlwaysDefect struct {
 	mixedOverEmbedded
 }
 
 // Put is the override of the planted defect.
 func (*mixedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // mixedPutSucceedsAlways returns the planted defect of a Mixed whose Put
-// ignores the context over a fresh subject.
+// keeps no partition over a fresh subject.
 func mixedPutSucceedsAlways(h *MixedHandle) partition.Mixed {
 	return &mixedPutSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
@@ -346,21 +394,24 @@ func mixedReadPanics(h *MixedHandle) partition.Mixed {
 	return &mixedReadPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedReadSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Read ignores the context.
-type mixedReadSucceedsAlwaysDefect struct {
+// mixedReadIgnoresCancelDefect is the planted defect of a Mixed whose Read
+// ignores the context.
+type mixedReadIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Read is the override of the planted defect.
-func (*mixedReadSucceedsAlwaysDefect) Read(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedReadIgnoresCancelDefect) Read(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Read(p0, p1, p2)
 }
 
-// mixedReadSucceedsAlways returns the planted defect of a Mixed whose Read
+// mixedReadIgnoresCancel returns the planted defect of a Mixed whose Read
 // ignores the context over a fresh subject.
-func mixedReadSucceedsAlways(h *MixedHandle) partition.Mixed {
-	return &mixedReadSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedReadIgnoresCancel(h *MixedHandle) partition.Mixed {
+	return &mixedReadIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d756774f29dd56e4d0678a9662f4371a3064c3f7bc445079ec030f18d044e628
+// dokimi:provenance sha256:be5914f3f680efe0b8642e73bd565f76e684684c975d3d38e4d2fa8a0dcba816

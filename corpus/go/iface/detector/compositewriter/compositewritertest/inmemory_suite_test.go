@@ -7,6 +7,8 @@ package compositewritertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter/compositewritertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToCompositeWriter(t *testing.T) {
 	t.Parallel()
 
-	compositewritertest.RunCompositeWriterSuite(t, compositewritertest.NewInMemory)
+	compositewritertest.RunCompositeWriterSuite(
+		t,
+		compositewritertest.NewInMemory,
+		conform.Isolate[compositewriter.CompositeWriter](),
+	)
 }
 
 // BenchmarkInMemoryConformsToCompositeWriter measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToCompositeWriterSet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ccff60de37ead5d62f59ad9d9887829d26b333c75577f6ef216ef821c1f37858
+// dokimi:provenance sha256:cc28459864a913f25c34d76780f3fe1b277d59b66306e0ff16dba05e983769ca

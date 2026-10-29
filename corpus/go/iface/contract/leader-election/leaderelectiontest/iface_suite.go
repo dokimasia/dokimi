@@ -15,6 +15,50 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Campaign/smoke: Campaign returns without a panic for derived
+// inputs.
+//
+// Contract.Campaign/cancel: Campaign returns an error for a cancelled
+// context.
+//
+// Contract.Campaign/leader-election: IsLeader reports no leadership that
+// Campaign took once Resign has run.
+//
+// Contract.Resign/smoke: Resign returns without a panic for derived
+// inputs.
+//
+// Contract.Resign/cancel: Resign returns an error for a cancelled context.
+//
+// Contract.IsLeader/smoke: IsLeader returns without a panic for derived
+// inputs.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Campaign/smoke
+//
+// Contract.Resign/smoke
+//
+// Contract.IsLeader/smoke
+
+// The refused claims of Contract:
+//
+// Contract.IsLeader/cancel: IsLeader cannot fail. The remedy is to give
+// IsLeader an error result.
+//
+// Contract.IsLeader/zero-on-error: IsLeader cannot fail. The remedy is to
+// give IsLeader an error result.
+
+// The unclaimed classifications of Contract:
+//
+// The shape:lifecycle of Contract.Campaign has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
+//
+// The shape:lifecycle of Contract.Resign has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -126,7 +170,7 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 						return h.Subject().Campaign(ctx)
 					})
 				},
-				Defect: contractCampaignSucceedsAlways,
+				Defect: contractCampaignIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Campaign.LeaderElection(),
@@ -177,7 +221,7 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 						return h.Subject().Resign(ctx)
 					})
 				},
-				Defect: contractResignSucceedsAlways,
+				Defect: contractResignIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.IsLeader.Smoke(),
@@ -358,21 +402,24 @@ func contractCampaignPanics(h *ContractHandle) leaderelection.Contract {
 	return &contractCampaignPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractCampaignSucceedsAlwaysDefect is the planted defect of a Contract
+// contractCampaignIgnoresCancelDefect is the planted defect of a Contract
 // whose Campaign ignores the context.
-type contractCampaignSucceedsAlwaysDefect struct {
+type contractCampaignIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Campaign is the override of the planted defect.
-func (*contractCampaignSucceedsAlwaysDefect) Campaign(p0 context.Context) (r0 error) {
-	return r0
+func (d *contractCampaignIgnoresCancelDefect) Campaign(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Campaign(p0)
 }
 
-// contractCampaignSucceedsAlways returns the planted defect of a Contract
+// contractCampaignIgnoresCancel returns the planted defect of a Contract
 // whose Campaign ignores the context over a fresh subject.
-func contractCampaignSucceedsAlways(h *ContractHandle) leaderelection.Contract {
-	return &contractCampaignSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractCampaignIgnoresCancel(h *ContractHandle) leaderelection.Contract {
+	return &contractCampaignIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractIsLeaderLeadsOnDefect is the planted defect of a Contract whose
@@ -410,21 +457,24 @@ func contractResignPanics(h *ContractHandle) leaderelection.Contract {
 	return &contractResignPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractResignSucceedsAlwaysDefect is the planted defect of a Contract
+// contractResignIgnoresCancelDefect is the planted defect of a Contract
 // whose Resign ignores the context.
-type contractResignSucceedsAlwaysDefect struct {
+type contractResignIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Resign is the override of the planted defect.
-func (*contractResignSucceedsAlwaysDefect) Resign(p0 context.Context) (r0 error) {
-	return r0
+func (d *contractResignIgnoresCancelDefect) Resign(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Resign(p0)
 }
 
-// contractResignSucceedsAlways returns the planted defect of a Contract
+// contractResignIgnoresCancel returns the planted defect of a Contract
 // whose Resign ignores the context over a fresh subject.
-func contractResignSucceedsAlways(h *ContractHandle) leaderelection.Contract {
-	return &contractResignSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractResignIgnoresCancel(h *ContractHandle) leaderelection.Contract {
+	return &contractResignIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractIsLeaderPanicsDefect is the planted defect of a Contract whose
@@ -444,4 +494,4 @@ func contractIsLeaderPanics(h *ContractHandle) leaderelection.Contract {
 	return &contractIsLeaderPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a04d8912721dd405fdf662f9680074de1dbe1559fa791d05830d8202a2b3c870
+// dokimi:provenance sha256:915f0e421b12e76c7af90be83ad07b549fa7c25d3cd4a2265c9310c45b2de6dc

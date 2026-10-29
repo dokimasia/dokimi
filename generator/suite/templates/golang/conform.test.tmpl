@@ -6,7 +6,7 @@
 {{- $test := suitePascal $c.Test}}
 {{- if $c.Subject}}
 {{- $options := or $c.Ceilings $c.Excusals}}
-{{- if or $options $c.Cases}}{{use "go.dokimi.dev/conform"}}{{end}}
+{{- if or $options $c.Cases $c.Isolate}}{{use "go.dokimi.dev/conform"}}{{end}}
 {{- $checks := spell (index $refs 2).Type}}
 {{- $factory := spell (index $refs 1).Type}}
 {{- if not $c.FromHandle}}
@@ -19,9 +19,10 @@
 {{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $test $c.Declaration $c.Subject))}}
 {{- ""}}func {{$test}}(t *testing.T) {
 	t.Parallel()
-{{- if and $c.Options (or $c.Excusals $c.Cases)}}
+{{- if and $c.Options (or $c.Excusals $c.Cases $c.Isolate)}}
 
 	opts := append([]{{$option}}{
+{{- template "suite.isolate" $r}}
 {{- template "suite.cases" $r}}
 {{- template "suite.excusals" $r}}
 	}, {{$opts}})
@@ -29,11 +30,12 @@
 {{- else if $c.Options}}
 
 	{{spell (index $refs 0).Type}}(t, {{spell (index $refs 1).Type}}, {{$opts}})
-{{- else if or $c.Excusals $c.Cases}}
+{{- else if or $c.Excusals $c.Cases $c.Isolate}}
 
 	{{spell (index $refs 0).Type}}(
 		t,
 		{{spell (index $refs 1).Type}},
+{{- template "suite.isolate" $r}}
 {{- template "suite.cases" $r}}
 {{- template "suite.excusals" $r}}
 	)
@@ -280,6 +282,16 @@
 }
 {{- end}}
 {{- end}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.isolate writes the option Isolate of a conformance test under the option
+isolate of the generator, and nothing otherwise.
+*/}}
+{{- define "suite.isolate"}}
+{{- if .Data.Isolate}}
+		conform.Isolate[{{spell (index $.Decl.Fields.Items 9).Type}}](),
 {{- end}}
 {{- end}}
 

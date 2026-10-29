@@ -15,6 +15,44 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Delete/smoke: Delete returns without a panic for derived inputs.
+//
+// Mixed.Delete/cancel: Delete returns an error for a cancelled context.
+//
+// Mixed.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Mixed.Put/cancel: Put returns an error for a cancelled context.
+//
+// Mixed.Read/smoke: Read returns without a panic for derived inputs.
+//
+// Mixed.Read/cancel: Read returns an error for a cancelled context.
+//
+// Mixed.Read/zero-on-error: Read returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Delete/smoke
+//
+// Mixed.Put/smoke
+//
+// Mixed.Read/smoke
+
+// The refused claims of Mixed:
+//
+// Mixed.Delete/delete-removes: no callable of the declaration is the
+// partner put of Delete. The remedy is to name the partner of Delete with
+// the param of the classification.
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:deleter of Mixed.Delete has the stance silent. A delete is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Mixed.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -130,7 +168,7 @@ func MixedSuite() conform.Suite[deleteremoves.Mixed] {
 						return h.Subject().Delete(ctx, string("key-a"))
 					})
 				},
-				Defect: mixedDeleteSucceedsAlways,
+				Defect: mixedDeleteIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Put.Smoke(),
@@ -161,7 +199,7 @@ func MixedSuite() conform.Suite[deleteremoves.Mixed] {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
 					})
 				},
-				Defect: mixedPutSucceedsAlways,
+				Defect: mixedPutIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Read.Smoke(),
@@ -194,7 +232,7 @@ func MixedSuite() conform.Suite[deleteremoves.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedReadSucceedsAlways,
+				Defect: mixedReadIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Read.ZeroOnError(),
@@ -371,21 +409,24 @@ func mixedDeletePanics(h *MixedHandle) deleteremoves.Mixed {
 	return &mixedDeletePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedDeleteSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedDeleteIgnoresCancelDefect is the planted defect of a Mixed whose
 // Delete ignores the context.
-type mixedDeleteSucceedsAlwaysDefect struct {
+type mixedDeleteIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Delete is the override of the planted defect.
-func (*mixedDeleteSucceedsAlwaysDefect) Delete(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedDeleteIgnoresCancelDefect) Delete(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Delete(p0, p1)
 }
 
-// mixedDeleteSucceedsAlways returns the planted defect of a Mixed whose
+// mixedDeleteIgnoresCancel returns the planted defect of a Mixed whose
 // Delete ignores the context over a fresh subject.
-func mixedDeleteSucceedsAlways(h *MixedHandle) deleteremoves.Mixed {
-	return &mixedDeleteSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedDeleteIgnoresCancel(h *MixedHandle) deleteremoves.Mixed {
+	return &mixedDeleteIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedPutPanicsDefect is the planted defect of a Mixed whose Put panics.
@@ -404,21 +445,24 @@ func mixedPutPanics(h *MixedHandle) deleteremoves.Mixed {
 	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancelDefect is the planted defect of a Mixed whose Put
 // ignores the context.
-type mixedPutSucceedsAlwaysDefect struct {
+type mixedPutIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*mixedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
-	return r0
+func (d *mixedPutIgnoresCancelDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Put(p0, p1, p2)
 }
 
-// mixedPutSucceedsAlways returns the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancel returns the planted defect of a Mixed whose Put
 // ignores the context over a fresh subject.
-func mixedPutSucceedsAlways(h *MixedHandle) deleteremoves.Mixed {
-	return &mixedPutSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedPutIgnoresCancel(h *MixedHandle) deleteremoves.Mixed {
+	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedReadPanicsDefect is the planted defect of a Mixed whose Read
@@ -438,21 +482,24 @@ func mixedReadPanics(h *MixedHandle) deleteremoves.Mixed {
 	return &mixedReadPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedReadSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Read ignores the context.
-type mixedReadSucceedsAlwaysDefect struct {
+// mixedReadIgnoresCancelDefect is the planted defect of a Mixed whose Read
+// ignores the context.
+type mixedReadIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Read is the override of the planted defect.
-func (*mixedReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedReadIgnoresCancelDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Read(p0, p1)
 }
 
-// mixedReadSucceedsAlways returns the planted defect of a Mixed whose Read
+// mixedReadIgnoresCancel returns the planted defect of a Mixed whose Read
 // ignores the context over a fresh subject.
-func mixedReadSucceedsAlways(h *MixedHandle) deleteremoves.Mixed {
-	return &mixedReadSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedReadIgnoresCancel(h *MixedHandle) deleteremoves.Mixed {
+	return &mixedReadIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedReadValueBesideDefect is the planted defect of a Mixed whose Read
@@ -462,9 +509,11 @@ type mixedReadValueBesideDefect struct {
 }
 
 // Read is the override of the planted defect.
-func (*mixedReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Read(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -474,4 +523,4 @@ func mixedReadValueBeside(h *MixedHandle) deleteremoves.Mixed {
 	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b11f702f76797ccdc837784d7404a54dcbd82b164eb4fd3a906ceb2255fbc228
+// dokimi:provenance sha256:5c35ed2b498898de93860497e42590909a0363c11d87fc1fa6287f0b97a3923a

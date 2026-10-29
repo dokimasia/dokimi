@@ -7,6 +7,8 @@ package poisonabletest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/poisonable"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/poisonable/poisonabletest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	poisonabletest.RunMixedSuite(t, poisonabletest.NewInMemory)
+	poisonabletest.RunMixedSuite(
+		t,
+		poisonabletest.NewInMemory,
+		conform.Isolate[poisonable.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedProbe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f4730ccdc9f1e366e0a9ffaf2a45e0b62ca3ca694405e920eb1ce07506ad5ba1
+// dokimi:provenance sha256:16e36f1c531e892918799969cb3cddf81d53729ee98088490a1ece76d8d525fb

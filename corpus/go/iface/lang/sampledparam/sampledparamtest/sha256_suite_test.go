@@ -7,6 +7,8 @@ package sampledparamtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampledparam"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampledparam/sampledparamtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestSha256ConformsToHasher(t *testing.T) {
 	t.Parallel()
 
-	sampledparamtest.RunHasherSuite(t, sampledparamtest.NewSHA256)
+	sampledparamtest.RunHasherSuite(
+		t,
+		sampledparamtest.NewSHA256,
+		conform.Isolate[sampledparam.Hasher](),
+	)
 }
 
 // TestSha256ConformsToHasherAllocs applies the allocation ceilings and the
@@ -66,4 +72,4 @@ func FuzzSha256ConformsToHasherCombineTagged(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f3e4bd8717df28ae0d39092d67aee9bc50c597bdf6f4d3f29d07d802f66b87c2
+// dokimi:provenance sha256:f40cef030e4bbedf57cd0a84b586a77ff65a825029ef415ea074f1d7c5080424

@@ -7,6 +7,8 @@ package monotonictest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonic"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonic/monotonictest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	monotonictest.RunMixedSuite(t, monotonictest.NewInMemory)
+	monotonictest.RunMixedSuite(
+		t,
+		monotonictest.NewInMemory,
+		conform.Isolate[monotonic.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedAdvance(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:1e8d91ecc4f969ca8789820f5df8d4b6e6bafef44fb9fed90559bd31e0424810
+// dokimi:provenance sha256:f89734d68ced81fb3e2376aeaf078586df7637abf32578a407de7840fd26006b

@@ -7,6 +7,8 @@ package recursivetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/recursive"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/recursive/recursivetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToCounter(t *testing.T) {
 	t.Parallel()
 
-	recursivetest.RunCounterSuite(t, recursivetest.NewInMemory)
+	recursivetest.RunCounterSuite(
+		t,
+		recursivetest.NewInMemory,
+		conform.Isolate[recursive.Counter](),
+	)
 }
 
 // BenchmarkInMemoryConformsToCounter measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToCounterSteps(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f4c66600bfc5fb61d141f51022523bb173706ea15e972a1d77eb98dcd8606cc7
+// dokimi:provenance sha256:a5b1a348fe672cbbc1336576b77eeb2df364d2234ec6364098f8309dfa3479e2

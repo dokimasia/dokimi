@@ -15,6 +15,34 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Store/smoke: Store returns without a panic for derived inputs.
+//
+// Mixed.Store/cancel: Store returns an error for a cancelled context.
+//
+// Mixed.Store/injection-safe: Load returns the value that the directive of
+// Store declares unsafe, unchanged.
+//
+// Mixed.Load/smoke: Load returns without a panic for derived inputs.
+//
+// Mixed.Load/cancel: Load returns an error for a cancelled context.
+//
+// Mixed.Load/zero-on-error: Load returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Store/smoke
+//
+// Mixed.Store/injection-safe
+//
+// Mixed.Load/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:composite-writer of Mixed.Store has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -117,7 +145,7 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 						return h.Subject().Store(ctx, string("key-a"), string("value-a"))
 					})
 				},
-				Defect: mixedStoreSucceedsAlways,
+				Defect: mixedStoreIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Store.InjectionSafe(),
@@ -170,7 +198,7 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedLoadSucceedsAlways,
+				Defect: mixedLoadIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Load.ZeroOnError(),
@@ -327,21 +355,24 @@ func mixedStorePanics(h *MixedHandle) injectionsafe.Mixed {
 	return &mixedStorePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedStoreSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedStoreIgnoresCancelDefect is the planted defect of a Mixed whose
 // Store ignores the context.
-type mixedStoreSucceedsAlwaysDefect struct {
+type mixedStoreIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Store is the override of the planted defect.
-func (*mixedStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1, p2 string) (r0 error) {
-	return r0
+func (d *mixedStoreIgnoresCancelDefect) Store(p0 context.Context, p1, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Store(p0, p1, p2)
 }
 
-// mixedStoreSucceedsAlways returns the planted defect of a Mixed whose
+// mixedStoreIgnoresCancel returns the planted defect of a Mixed whose
 // Store ignores the context over a fresh subject.
-func mixedStoreSucceedsAlways(h *MixedHandle) injectionsafe.Mixed {
-	return &mixedStoreSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedStoreIgnoresCancel(h *MixedHandle) injectionsafe.Mixed {
+	return &mixedStoreIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedStoreStoresNothingDefect is the planted defect of a Mixed whose
@@ -352,6 +383,10 @@ type mixedStoreStoresNothingDefect struct {
 
 // Store is the override of the planted defect.
 func (*mixedStoreStoresNothingDefect) Store(p0 context.Context, p1, p2 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
@@ -378,21 +413,24 @@ func mixedLoadPanics(h *MixedHandle) injectionsafe.Mixed {
 	return &mixedLoadPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedLoadSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Load ignores the context.
-type mixedLoadSucceedsAlwaysDefect struct {
+// mixedLoadIgnoresCancelDefect is the planted defect of a Mixed whose Load
+// ignores the context.
+type mixedLoadIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Load is the override of the planted defect.
-func (*mixedLoadSucceedsAlwaysDefect) Load(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedLoadIgnoresCancelDefect) Load(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Load(p0, p1)
 }
 
-// mixedLoadSucceedsAlways returns the planted defect of a Mixed whose Load
+// mixedLoadIgnoresCancel returns the planted defect of a Mixed whose Load
 // ignores the context over a fresh subject.
-func mixedLoadSucceedsAlways(h *MixedHandle) injectionsafe.Mixed {
-	return &mixedLoadSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedLoadIgnoresCancel(h *MixedHandle) injectionsafe.Mixed {
+	return &mixedLoadIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedLoadValueBesideDefect is the planted defect of a Mixed whose Load
@@ -402,9 +440,11 @@ type mixedLoadValueBesideDefect struct {
 }
 
 // Load is the override of the planted defect.
-func (*mixedLoadValueBesideDefect) Load(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedLoadValueBesideDefect) Load(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Load(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -414,4 +454,4 @@ func mixedLoadValueBeside(h *MixedHandle) injectionsafe.Mixed {
 	return &mixedLoadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7ceb7c86eedee2ae4c1c5a70a33f2278ea41f8e8bcaa81ce7eafd161285a04e2
+// dokimi:provenance sha256:24ba0b9d3ac14c94cbd2da7acaf83fae3e0a024726c39f92b1e5cb09cce7ee9d

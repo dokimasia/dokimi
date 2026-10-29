@@ -7,6 +7,8 @@ package partitiontest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/partition"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/partition/partitiontest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	partitiontest.RunMixedSuite(t, partitiontest.NewInMemory)
+	partitiontest.RunMixedSuite(
+		t,
+		partitiontest.NewInMemory,
+		conform.Isolate[partition.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:3d32014fd43cc11dec7d7fe38517e111fd83d6ed583e2891918d050bf67d612f
+// dokimi:provenance sha256:eecd2bd42dc8e571a8eb1ec550d1234ec9da35032dd0026817cfb588b94f548a

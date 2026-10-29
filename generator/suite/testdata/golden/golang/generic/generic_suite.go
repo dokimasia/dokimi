@@ -10,6 +10,21 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Cache:
+//
+// Cache.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Cache.Get/zero-on-miss: Get returns the zero value beside a false
+// presence flag.
+//
+// Cache.Set/smoke: Set returns without a panic for derived inputs.
+
+// The derived checks of Cache that witness their laws at the shallow end:
+//
+// Cache.Get/smoke
+//
+// Cache.Set/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 

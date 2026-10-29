@@ -15,6 +15,35 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Commit/smoke: Commit returns without a panic for derived inputs.
+//
+// Mixed.Commit/cancel: Commit returns an error for a cancelled context.
+//
+// Mixed.Commit/order-after: Commit fails with the declared unready
+// sentinel before its declared predecessor.
+//
+// Mixed.Commit/ready-after: Commit succeeds once Prepare has run.
+//
+// Mixed.Prepare/smoke: Prepare returns without a panic for derived inputs.
+//
+// Mixed.Prepare/cancel: Prepare returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Commit/smoke
+//
+// Mixed.Prepare/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:lifecycle of Mixed.Commit has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The shape:lifecycle of Mixed.Prepare has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -118,7 +147,7 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 						return h.Subject().Commit(ctx)
 					})
 				},
-				Defect: mixedCommitSucceedsAlways,
+				Defect: mixedCommitIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Commit.OrderAfter(),
@@ -181,7 +210,7 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 						return h.Subject().Prepare(ctx)
 					})
 				},
-				Defect: mixedPrepareSucceedsAlways,
+				Defect: mixedPrepareIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[orderafter.Mixed]{
@@ -315,19 +344,43 @@ func mixedCommitPanics(h *MixedHandle) orderafter.Mixed {
 	return &mixedCommitPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCommitSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedCommitIgnoresCancelDefect is the planted defect of a Mixed whose
 // Commit ignores the context.
+type mixedCommitIgnoresCancelDefect struct {
+	mixedOverEmbedded
+}
+
+// Commit is the override of the planted defect.
+func (d *mixedCommitIgnoresCancelDefect) Commit(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Commit(p0)
+}
+
+// mixedCommitIgnoresCancel returns the planted defect of a Mixed whose
+// Commit ignores the context over a fresh subject.
+func mixedCommitIgnoresCancel(h *MixedHandle) orderafter.Mixed {
+	return &mixedCommitIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCommitSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Commit succeeds before its predecessor ran.
 type mixedCommitSucceedsAlwaysDefect struct {
 	mixedOverEmbedded
 }
 
 // Commit is the override of the planted defect.
 func (*mixedCommitSucceedsAlwaysDefect) Commit(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // mixedCommitSucceedsAlways returns the planted defect of a Mixed whose
-// Commit ignores the context over a fresh subject.
+// Commit succeeds before its predecessor ran over a fresh subject.
 func mixedCommitSucceedsAlways(h *MixedHandle) orderafter.Mixed {
 	return &mixedCommitSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
@@ -339,8 +392,15 @@ type mixedCommitFailsAlwaysDefect struct {
 }
 
 // Commit is the override of the planted defect.
-func (*mixedCommitFailsAlwaysDefect) Commit(p0 context.Context) (r0 error) {
-	r0 = conform.ErrGenerated
+func (d *mixedCommitFailsAlwaysDefect) Commit(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	r0 = d.mixedOverEmbedded.Commit(p0)
+	if r0 == nil {
+		r0 = conform.ErrGenerated
+	}
 	return r0
 }
 
@@ -367,21 +427,24 @@ func mixedPreparePanics(h *MixedHandle) orderafter.Mixed {
 	return &mixedPreparePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedPrepareSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedPrepareIgnoresCancelDefect is the planted defect of a Mixed whose
 // Prepare ignores the context.
-type mixedPrepareSucceedsAlwaysDefect struct {
+type mixedPrepareIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Prepare is the override of the planted defect.
-func (*mixedPrepareSucceedsAlwaysDefect) Prepare(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedPrepareIgnoresCancelDefect) Prepare(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Prepare(p0)
 }
 
-// mixedPrepareSucceedsAlways returns the planted defect of a Mixed whose
+// mixedPrepareIgnoresCancel returns the planted defect of a Mixed whose
 // Prepare ignores the context over a fresh subject.
-func mixedPrepareSucceedsAlways(h *MixedHandle) orderafter.Mixed {
-	return &mixedPrepareSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedPrepareIgnoresCancel(h *MixedHandle) orderafter.Mixed {
+	return &mixedPrepareIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4a26900dc2e43fadb03049b6251f4eaf79c0f132157324ea7ed7eae07b6e5c93
+// dokimi:provenance sha256:53e82d3d386f45471ca960c524fea7d23bfcb4500fac01d8a93811c1121fdb82

@@ -15,6 +15,21 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Aggregator:
+//
+// Aggregator.Count/smoke: Count returns without a panic for derived
+// inputs.
+//
+// Aggregator.Count/cancel: Count returns an error for a cancelled context.
+//
+// Aggregator.Count/zero-on-error: Count returns the zero value beside an
+// error.
+
+// The derived checks of Aggregator that witness their laws at the shallow
+// end:
+//
+// Aggregator.Count/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,7 +109,7 @@ func AggregatorSuite() conform.Suite[aggregator.Aggregator] {
 						return err
 					})
 				},
-				Defect: aggregatorCountSucceedsAlways,
+				Defect: aggregatorCountIgnoresCancel,
 			},
 			{
 				ID:          AggregatorChecks.Count.ZeroOnError(),
@@ -235,21 +250,24 @@ func aggregatorCountPanics(h *AggregatorHandle) aggregator.Aggregator {
 	return &aggregatorCountPanicsDefect{aggregatorOverEmbedded: h.Fresh()}
 }
 
-// aggregatorCountSucceedsAlwaysDefect is the planted defect of a
-// Aggregator whose Count ignores the context.
-type aggregatorCountSucceedsAlwaysDefect struct {
+// aggregatorCountIgnoresCancelDefect is the planted defect of a Aggregator
+// whose Count ignores the context.
+type aggregatorCountIgnoresCancelDefect struct {
 	aggregatorOverEmbedded
 }
 
 // Count is the override of the planted defect.
-func (*aggregatorCountSucceedsAlwaysDefect) Count(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *aggregatorCountIgnoresCancelDefect) Count(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.aggregatorOverEmbedded.Count(p0)
 }
 
-// aggregatorCountSucceedsAlways returns the planted defect of a Aggregator
+// aggregatorCountIgnoresCancel returns the planted defect of a Aggregator
 // whose Count ignores the context over a fresh subject.
-func aggregatorCountSucceedsAlways(h *AggregatorHandle) aggregator.Aggregator {
-	return &aggregatorCountSucceedsAlwaysDefect{aggregatorOverEmbedded: h.Fresh()}
+func aggregatorCountIgnoresCancel(h *AggregatorHandle) aggregator.Aggregator {
+	return &aggregatorCountIgnoresCancelDefect{aggregatorOverEmbedded: h.Fresh()}
 }
 
 // aggregatorCountValueBesideDefect is the planted defect of a Aggregator
@@ -259,9 +277,11 @@ type aggregatorCountValueBesideDefect struct {
 }
 
 // Count is the override of the planted defect.
-func (*aggregatorCountValueBesideDefect) Count(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *aggregatorCountValueBesideDefect) Count(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.aggregatorOverEmbedded.Count(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -271,4 +291,4 @@ func aggregatorCountValueBeside(h *AggregatorHandle) aggregator.Aggregator {
 	return &aggregatorCountValueBesideDefect{aggregatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a79dd1abd4a1fba0490aa0d8c2adbb4c24cbd0341e3372c922684c578c8faa76
+// dokimi:provenance sha256:7c42ddc2203f34b8dc812d5fe03f3b8856123baf2c9e03d6c0f7aab64d4f45ac

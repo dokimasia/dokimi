@@ -7,6 +7,8 @@ package voidlifecycletest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle/voidlifecycletest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToVoidLifecycle(t *testing.T) {
 	t.Parallel()
 
-	voidlifecycletest.RunVoidLifecycleSuite(t, voidlifecycletest.NewInMemory)
+	voidlifecycletest.RunVoidLifecycleSuite(
+		t,
+		voidlifecycletest.NewInMemory,
+		conform.Isolate[voidlifecycle.VoidLifecycle](),
+	)
 }
 
 // BenchmarkInMemoryConformsToVoidLifecycle measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToVoidLifecycleStop(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ce6cefdd50590975b57a4630549bc1b44d3cbdd61f7ee190fe0457ea436dc8d1
+// dokimi:provenance sha256:888d1d40b5d416fbc8cd22742e9959e00a42e7adf254208d1e8dc2cabbe5dc2a

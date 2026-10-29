@@ -15,6 +15,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Contract.Put/cancel: Put returns an error for a cancelled context.
+//
+// Contract.Put/if-match: Put refuses a value that Match rejects.
+//
+// Contract.Match/smoke: Match returns without a panic for derived inputs.
+//
+// Contract.Match/cancel: Match returns an error for a cancelled context.
+//
+// Contract.Match/zero-on-error: Match returns the zero value beside an
+// error.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Put/smoke
+//
+// Contract.Match/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -118,7 +145,7 @@ func ContractSuite() conform.Suite[ifmatch.Contract] {
 						return h.Subject().Put(ctx, ifmatch.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractPutSucceedsAlways,
+				Defect: contractPutIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Put.IfMatch(),
@@ -179,7 +206,7 @@ func ContractSuite() conform.Suite[ifmatch.Contract] {
 						return err
 					})
 				},
-				Defect: contractMatchSucceedsAlways,
+				Defect: contractMatchIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Match.ZeroOnError(),
@@ -341,21 +368,24 @@ func contractPutPanics(h *ContractHandle) ifmatch.Contract {
 	return &contractPutPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractPutSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Put ignores the context.
-type contractPutSucceedsAlwaysDefect struct {
+// contractPutIgnoresCancelDefect is the planted defect of a Contract whose
+// Put ignores the context.
+type contractPutIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*contractPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 ifmatch.Value) (r0 error) {
-	return r0
+func (d *contractPutIgnoresCancelDefect) Put(p0 context.Context, p1 ifmatch.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Put(p0, p1)
 }
 
-// contractPutSucceedsAlways returns the planted defect of a Contract whose
+// contractPutIgnoresCancel returns the planted defect of a Contract whose
 // Put ignores the context over a fresh subject.
-func contractPutSucceedsAlways(h *ContractHandle) ifmatch.Contract {
-	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractPutIgnoresCancel(h *ContractHandle) ifmatch.Contract {
+	return &contractPutIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractPutIgnoresThePredicateDefect is the planted defect of a Contract
@@ -367,6 +397,10 @@ type contractPutIgnoresThePredicateDefect struct {
 
 // Put is the override of the planted defect.
 func (d *contractPutIgnoresThePredicateDefect) Put(p0 context.Context, p1 ifmatch.Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.calls++
 	if d.calls > 1 {
 		return r0
@@ -397,21 +431,24 @@ func contractMatchPanics(h *ContractHandle) ifmatch.Contract {
 	return &contractMatchPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractMatchSucceedsAlwaysDefect is the planted defect of a Contract
+// contractMatchIgnoresCancelDefect is the planted defect of a Contract
 // whose Match ignores the context.
-type contractMatchSucceedsAlwaysDefect struct {
+type contractMatchIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Match is the override of the planted defect.
-func (*contractMatchSucceedsAlwaysDefect) Match(p0 context.Context, p1 ifmatch.Value) (r0 bool, r1 error) {
-	return r0, r1
+func (d *contractMatchIgnoresCancelDefect) Match(p0 context.Context, p1 ifmatch.Value) (r0 bool, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Match(p0, p1)
 }
 
-// contractMatchSucceedsAlways returns the planted defect of a Contract
+// contractMatchIgnoresCancel returns the planted defect of a Contract
 // whose Match ignores the context over a fresh subject.
-func contractMatchSucceedsAlways(h *ContractHandle) ifmatch.Contract {
-	return &contractMatchSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractMatchIgnoresCancel(h *ContractHandle) ifmatch.Contract {
+	return &contractMatchIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractMatchValueBesideDefect is the planted defect of a Contract whose
@@ -421,9 +458,11 @@ type contractMatchValueBesideDefect struct {
 }
 
 // Match is the override of the planted defect.
-func (*contractMatchValueBesideDefect) Match(p0 context.Context, p1 ifmatch.Value) (r0 bool, r1 error) {
-	r0 = bool(true)
-	r1 = conform.ErrGenerated
+func (d *contractMatchValueBesideDefect) Match(p0 context.Context, p1 ifmatch.Value) (r0 bool, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Match(p0, p1)
+	if r1 != nil {
+		r0 = bool(true)
+	}
 	return r0, r1
 }
 
@@ -433,4 +472,4 @@ func contractMatchValueBeside(h *ContractHandle) ifmatch.Contract {
 	return &contractMatchValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f09669c62b3d2850e589823a2659a88718fce502e9c40f90eb6f80e71e737b70
+// dokimi:provenance sha256:c1917524512e4d0b4e85ba460e50641533daab51d95847490b9333fde7c0d630

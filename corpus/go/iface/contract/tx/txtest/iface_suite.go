@@ -15,6 +15,63 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Begin/smoke: Begin returns without a panic for derived inputs.
+//
+// Contract.Begin/cancel: Begin returns an error for a cancelled context.
+//
+// Contract.Begin/zero-on-error: Begin returns the zero value beside an
+// error.
+//
+// Contract.Begin/tx: Rollback of a transaction that Begin opened and
+// Commit settled fails with the declared sentinel.
+//
+// Contract.Commit/smoke: Commit returns without a panic for derived
+// inputs.
+//
+// Contract.Commit/cancel: Commit returns an error for a cancelled context.
+//
+// Contract.Rollback/smoke: Rollback returns without a panic for derived
+// inputs.
+//
+// Contract.Rollback/cancel: Rollback returns an error for a cancelled
+// context.
+//
+// Contract.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Contract.Put/cancel: Put returns an error for a cancelled context.
+//
+// Contract.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Contract.Get/cancel: Get returns an error for a cancelled context.
+//
+// Contract.Get/zero-on-error: Get returns the zero value beside an error.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Begin/smoke
+//
+// Contract.Commit/smoke
+//
+// Contract.Rollback/smoke
+//
+// Contract.Put/smoke
+//
+// Contract.Get/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Commit has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Contract.Rollback has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:multi-arg-writer of Contract.Put has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -186,7 +243,7 @@ func ContractSuite() conform.Suite[tx.Contract] {
 						return err
 					})
 				},
-				Defect: contractBeginSucceedsAlways,
+				Defect: contractBeginIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Begin.ZeroOnError(),
@@ -251,7 +308,7 @@ func ContractSuite() conform.Suite[tx.Contract] {
 						return h.Subject().Commit(ctx, tx.Tx{ID: 42})
 					})
 				},
-				Defect: contractCommitSucceedsAlways,
+				Defect: contractCommitIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Rollback.Smoke(),
@@ -282,7 +339,7 @@ func ContractSuite() conform.Suite[tx.Contract] {
 						return h.Subject().Rollback(ctx, tx.Tx{ID: 42})
 					})
 				},
-				Defect: contractRollbackSucceedsAlways,
+				Defect: contractRollbackIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Put.Smoke(),
@@ -313,7 +370,7 @@ func ContractSuite() conform.Suite[tx.Contract] {
 						return h.Subject().Put(ctx, tx.Tx{ID: 42}, string("key-a"), tx.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractPutSucceedsAlways,
+				Defect: contractPutIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Get.Smoke(),
@@ -346,7 +403,7 @@ func ContractSuite() conform.Suite[tx.Contract] {
 						return err
 					})
 				},
-				Defect: contractGetSucceedsAlways,
+				Defect: contractGetIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Get.ZeroOnError(),
@@ -564,21 +621,24 @@ func contractBeginPanics(h *ContractHandle) tx.Contract {
 	return &contractBeginPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractBeginSucceedsAlwaysDefect is the planted defect of a Contract
+// contractBeginIgnoresCancelDefect is the planted defect of a Contract
 // whose Begin ignores the context.
-type contractBeginSucceedsAlwaysDefect struct {
+type contractBeginIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Begin is the override of the planted defect.
-func (*contractBeginSucceedsAlwaysDefect) Begin(p0 context.Context) (r0 tx.Tx, r1 error) {
-	return r0, r1
+func (d *contractBeginIgnoresCancelDefect) Begin(p0 context.Context) (r0 tx.Tx, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Begin(p0)
 }
 
-// contractBeginSucceedsAlways returns the planted defect of a Contract
+// contractBeginIgnoresCancel returns the planted defect of a Contract
 // whose Begin ignores the context over a fresh subject.
-func contractBeginSucceedsAlways(h *ContractHandle) tx.Contract {
-	return &contractBeginSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractBeginIgnoresCancel(h *ContractHandle) tx.Contract {
+	return &contractBeginIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractBeginValueBesideDefect is the planted defect of a Contract whose
@@ -588,9 +648,11 @@ type contractBeginValueBesideDefect struct {
 }
 
 // Begin is the override of the planted defect.
-func (*contractBeginValueBesideDefect) Begin(p0 context.Context) (r0 tx.Tx, r1 error) {
-	r0 = tx.Tx{ID: 7}
-	r1 = conform.ErrGenerated
+func (d *contractBeginValueBesideDefect) Begin(p0 context.Context) (r0 tx.Tx, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Begin(p0)
+	if r1 != nil {
+		r0 = tx.Tx{ID: 7}
+	}
 	return r0, r1
 }
 
@@ -608,6 +670,10 @@ type contractRollbackSettlesTwiceDefect struct {
 
 // Rollback is the override of the planted defect.
 func (*contractRollbackSettlesTwiceDefect) Rollback(p0 context.Context, p1 tx.Tx) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
@@ -635,21 +701,24 @@ func contractCommitPanics(h *ContractHandle) tx.Contract {
 	return &contractCommitPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractCommitSucceedsAlwaysDefect is the planted defect of a Contract
+// contractCommitIgnoresCancelDefect is the planted defect of a Contract
 // whose Commit ignores the context.
-type contractCommitSucceedsAlwaysDefect struct {
+type contractCommitIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Commit is the override of the planted defect.
-func (*contractCommitSucceedsAlwaysDefect) Commit(p0 context.Context, p1 tx.Tx) (r0 error) {
-	return r0
+func (d *contractCommitIgnoresCancelDefect) Commit(p0 context.Context, p1 tx.Tx) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Commit(p0, p1)
 }
 
-// contractCommitSucceedsAlways returns the planted defect of a Contract
+// contractCommitIgnoresCancel returns the planted defect of a Contract
 // whose Commit ignores the context over a fresh subject.
-func contractCommitSucceedsAlways(h *ContractHandle) tx.Contract {
-	return &contractCommitSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractCommitIgnoresCancel(h *ContractHandle) tx.Contract {
+	return &contractCommitIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractRollbackPanicsDefect is the planted defect of a Contract whose
@@ -669,21 +738,24 @@ func contractRollbackPanics(h *ContractHandle) tx.Contract {
 	return &contractRollbackPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractRollbackSucceedsAlwaysDefect is the planted defect of a Contract
+// contractRollbackIgnoresCancelDefect is the planted defect of a Contract
 // whose Rollback ignores the context.
-type contractRollbackSucceedsAlwaysDefect struct {
+type contractRollbackIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Rollback is the override of the planted defect.
-func (*contractRollbackSucceedsAlwaysDefect) Rollback(p0 context.Context, p1 tx.Tx) (r0 error) {
-	return r0
+func (d *contractRollbackIgnoresCancelDefect) Rollback(p0 context.Context, p1 tx.Tx) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Rollback(p0, p1)
 }
 
-// contractRollbackSucceedsAlways returns the planted defect of a Contract
+// contractRollbackIgnoresCancel returns the planted defect of a Contract
 // whose Rollback ignores the context over a fresh subject.
-func contractRollbackSucceedsAlways(h *ContractHandle) tx.Contract {
-	return &contractRollbackSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractRollbackIgnoresCancel(h *ContractHandle) tx.Contract {
+	return &contractRollbackIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractPutPanicsDefect is the planted defect of a Contract whose Put
@@ -703,21 +775,24 @@ func contractPutPanics(h *ContractHandle) tx.Contract {
 	return &contractPutPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractPutSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Put ignores the context.
-type contractPutSucceedsAlwaysDefect struct {
+// contractPutIgnoresCancelDefect is the planted defect of a Contract whose
+// Put ignores the context.
+type contractPutIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*contractPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 tx.Tx, p2 string, p3 tx.Value) (r0 error) {
-	return r0
+func (d *contractPutIgnoresCancelDefect) Put(p0 context.Context, p1 tx.Tx, p2 string, p3 tx.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Put(p0, p1, p2, p3)
 }
 
-// contractPutSucceedsAlways returns the planted defect of a Contract whose
+// contractPutIgnoresCancel returns the planted defect of a Contract whose
 // Put ignores the context over a fresh subject.
-func contractPutSucceedsAlways(h *ContractHandle) tx.Contract {
-	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractPutIgnoresCancel(h *ContractHandle) tx.Contract {
+	return &contractPutIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractGetPanicsDefect is the planted defect of a Contract whose Get
@@ -737,21 +812,24 @@ func contractGetPanics(h *ContractHandle) tx.Contract {
 	return &contractGetPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractGetSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Get ignores the context.
-type contractGetSucceedsAlwaysDefect struct {
+// contractGetIgnoresCancelDefect is the planted defect of a Contract whose
+// Get ignores the context.
+type contractGetIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*contractGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 tx.Value, r1 error) {
-	return r0, r1
+func (d *contractGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 tx.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Get(p0, p1)
 }
 
-// contractGetSucceedsAlways returns the planted defect of a Contract whose
+// contractGetIgnoresCancel returns the planted defect of a Contract whose
 // Get ignores the context over a fresh subject.
-func contractGetSucceedsAlways(h *ContractHandle) tx.Contract {
-	return &contractGetSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractGetIgnoresCancel(h *ContractHandle) tx.Contract {
+	return &contractGetIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractGetValueBesideDefect is the planted defect of a Contract whose
@@ -761,9 +839,11 @@ type contractGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*contractGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 tx.Value, r1 error) {
-	r0 = tx.Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *contractGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 tx.Value, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = tx.Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -773,4 +853,4 @@ func contractGetValueBeside(h *ContractHandle) tx.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6423b17df775ad87c5026bedf8dc128b389561aa08f17be39f4afb5b16ef2673
+// dokimi:provenance sha256:eb52835684fa3f9b529fa0ea36fc4505b5b99c50703a46ad9d06540ddf142122

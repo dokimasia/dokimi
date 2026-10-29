@@ -7,6 +7,8 @@ package associativetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/associative"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/associative/associativetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	associativetest.RunMixedSuite(t, associativetest.NewInMemory)
+	associativetest.RunMixedSuite(
+		t,
+		associativetest.NewInMemory,
+		conform.Isolate[associative.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedTotal(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:1614229caaf2bd13254beabd7834a291e78d04ede337c974391b30ad5a5ff154
+// dokimi:provenance sha256:9c958d5369c8fba990aa15e75e28dbc6050c0c083ea347ab5672f529d67c9c51

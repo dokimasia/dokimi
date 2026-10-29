@@ -15,6 +15,38 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Wide:
+//
+// Wide.Quad/smoke: Quad returns without a panic for derived inputs.
+//
+// Wide.Quad/cancel: Quad returns an error for a cancelled context.
+//
+// Wide.Triple/smoke: Triple returns without a panic for derived inputs.
+//
+// Wide.NoError/smoke: NoError returns without a panic for derived inputs.
+
+// The derived checks of Wide that witness their laws at the shallow end:
+//
+// Wide.Quad/smoke
+//
+// Wide.Triple/smoke
+//
+// Wide.NoError/smoke
+
+// The refused claims of Wide:
+//
+// Wide.Quad/zeroes-on-error: Quad does not return exactly two values. The
+// remedy is to return two values from Quad.
+//
+// Wide.Triple/cancel: Triple cannot fail. The remedy is to give Triple an
+// error result.
+//
+// Wide.Triple/zeroes-on-miss: Triple returns no presence flag. The remedy
+// is to return a presence flag beside the value of Triple.
+//
+// Wide.NoError/cancel: NoError cannot fail. The remedy is to give NoError
+// an error result.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -115,7 +147,7 @@ func WideSuite() conform.Suite[multireturn.Wide] {
 						return err
 					})
 				},
-				Defect: wideQuadSucceedsAlways,
+				Defect: wideQuadIgnoresCancel,
 			},
 			{
 				ID:          WideChecks.Triple.Smoke(),
@@ -307,21 +339,24 @@ func wideQuadPanics(h *WideHandle) multireturn.Wide {
 	return &wideQuadPanicsDefect{wideOverEmbedded: h.Fresh()}
 }
 
-// wideQuadSucceedsAlwaysDefect is the planted defect of a Wide whose Quad
+// wideQuadIgnoresCancelDefect is the planted defect of a Wide whose Quad
 // ignores the context.
-type wideQuadSucceedsAlwaysDefect struct {
+type wideQuadIgnoresCancelDefect struct {
 	wideOverEmbedded
 }
 
 // Quad is the override of the planted defect.
-func (*wideQuadSucceedsAlwaysDefect) Quad(p0 context.Context, p1 string) (r0 string, r1 int, r2 bool, r3 error) {
-	return r0, r1, r2, r3
+func (d *wideQuadIgnoresCancelDefect) Quad(p0 context.Context, p1 string) (r0 string, r1 int, r2 bool, r3 error) {
+	if p0.Err() != nil {
+		return r0, r1, r2, r3
+	}
+	return d.wideOverEmbedded.Quad(p0, p1)
 }
 
-// wideQuadSucceedsAlways returns the planted defect of a Wide whose Quad
+// wideQuadIgnoresCancel returns the planted defect of a Wide whose Quad
 // ignores the context over a fresh subject.
-func wideQuadSucceedsAlways(h *WideHandle) multireturn.Wide {
-	return &wideQuadSucceedsAlwaysDefect{wideOverEmbedded: h.Fresh()}
+func wideQuadIgnoresCancel(h *WideHandle) multireturn.Wide {
+	return &wideQuadIgnoresCancelDefect{wideOverEmbedded: h.Fresh()}
 }
 
 // wideTriplePanicsDefect is the planted defect of a Wide whose Triple
@@ -358,4 +393,4 @@ func wideNoErrorPanics(h *WideHandle) multireturn.Wide {
 	return &wideNoErrorPanicsDefect{wideOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:bd9c05376d40ca88d3e80fd4fdf94a1b4a641cb2cf2497afbf1bb9f99228af3f
+// dokimi:provenance sha256:cd569ea8553917d322b872695be2dbcdf2aa81e1540bc427ee16c6aefa528fa0

@@ -15,6 +15,42 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Service:
+//
+// Service.Named/smoke: Named returns without a panic for derived inputs.
+//
+// Service.Named/cancel: Named returns an error for a cancelled context.
+//
+// Service.Named/zero-on-error: Named returns the zero value beside an
+// error.
+//
+// Service.Unnamed/smoke: Unnamed returns without a panic for derived
+// inputs.
+//
+// Service.Unnamed/cancel: Unnamed returns an error for a cancelled
+// context.
+//
+// Service.Unnamed/zero-on-error: Unnamed returns the zero value beside an
+// error.
+//
+// Service.PartiallyNamed/smoke: PartiallyNamed returns without a panic for
+// derived inputs.
+//
+// Service.PartiallyNamed/cancel: PartiallyNamed returns an error for a
+// cancelled context.
+//
+// Service.PartiallyNamed/zero-on-error: PartiallyNamed returns the zero
+// value beside an error.
+
+// The derived checks of Service that witness their laws at the shallow
+// end:
+//
+// Service.Named/smoke
+//
+// Service.Unnamed/smoke
+//
+// Service.PartiallyNamed/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -146,7 +182,7 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 						return err
 					})
 				},
-				Defect: serviceNamedSucceedsAlways,
+				Defect: serviceNamedIgnoresCancel,
 			},
 			{
 				ID:          ServiceChecks.Named.ZeroOnError(),
@@ -194,7 +230,7 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 						return err
 					})
 				},
-				Defect: serviceUnnamedSucceedsAlways,
+				Defect: serviceUnnamedIgnoresCancel,
 			},
 			{
 				ID:          ServiceChecks.Unnamed.ZeroOnError(),
@@ -242,7 +278,7 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 						return err
 					})
 				},
-				Defect: servicePartiallyNamedSucceedsAlways,
+				Defect: servicePartiallyNamedIgnoresCancel,
 			},
 			{
 				ID:          ServiceChecks.PartiallyNamed.ZeroOnError(),
@@ -426,21 +462,24 @@ func serviceNamedPanics(h *ServiceHandle) namedreturns.Service {
 	return &serviceNamedPanicsDefect{serviceOverEmbedded: h.Fresh()}
 }
 
-// serviceNamedSucceedsAlwaysDefect is the planted defect of a Service
-// whose Named ignores the context.
-type serviceNamedSucceedsAlwaysDefect struct {
+// serviceNamedIgnoresCancelDefect is the planted defect of a Service whose
+// Named ignores the context.
+type serviceNamedIgnoresCancelDefect struct {
 	serviceOverEmbedded
 }
 
 // Named is the override of the planted defect.
-func (*serviceNamedSucceedsAlwaysDefect) Named(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *serviceNamedIgnoresCancelDefect) Named(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.serviceOverEmbedded.Named(p0, p1)
 }
 
-// serviceNamedSucceedsAlways returns the planted defect of a Service whose
+// serviceNamedIgnoresCancel returns the planted defect of a Service whose
 // Named ignores the context over a fresh subject.
-func serviceNamedSucceedsAlways(h *ServiceHandle) namedreturns.Service {
-	return &serviceNamedSucceedsAlwaysDefect{serviceOverEmbedded: h.Fresh()}
+func serviceNamedIgnoresCancel(h *ServiceHandle) namedreturns.Service {
+	return &serviceNamedIgnoresCancelDefect{serviceOverEmbedded: h.Fresh()}
 }
 
 // serviceNamedValueBesideDefect is the planted defect of a Service whose
@@ -450,9 +489,11 @@ type serviceNamedValueBesideDefect struct {
 }
 
 // Named is the override of the planted defect.
-func (*serviceNamedValueBesideDefect) Named(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("item-b")
-	r1 = conform.ErrGenerated
+func (d *serviceNamedValueBesideDefect) Named(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.serviceOverEmbedded.Named(p0, p1)
+	if r1 != nil {
+		r0 = string("item-b")
+	}
 	return r0, r1
 }
 
@@ -479,21 +520,24 @@ func serviceUnnamedPanics(h *ServiceHandle) namedreturns.Service {
 	return &serviceUnnamedPanicsDefect{serviceOverEmbedded: h.Fresh()}
 }
 
-// serviceUnnamedSucceedsAlwaysDefect is the planted defect of a Service
+// serviceUnnamedIgnoresCancelDefect is the planted defect of a Service
 // whose Unnamed ignores the context.
-type serviceUnnamedSucceedsAlwaysDefect struct {
+type serviceUnnamedIgnoresCancelDefect struct {
 	serviceOverEmbedded
 }
 
 // Unnamed is the override of the planted defect.
-func (*serviceUnnamedSucceedsAlwaysDefect) Unnamed(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *serviceUnnamedIgnoresCancelDefect) Unnamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.serviceOverEmbedded.Unnamed(p0, p1)
 }
 
-// serviceUnnamedSucceedsAlways returns the planted defect of a Service
+// serviceUnnamedIgnoresCancel returns the planted defect of a Service
 // whose Unnamed ignores the context over a fresh subject.
-func serviceUnnamedSucceedsAlways(h *ServiceHandle) namedreturns.Service {
-	return &serviceUnnamedSucceedsAlwaysDefect{serviceOverEmbedded: h.Fresh()}
+func serviceUnnamedIgnoresCancel(h *ServiceHandle) namedreturns.Service {
+	return &serviceUnnamedIgnoresCancelDefect{serviceOverEmbedded: h.Fresh()}
 }
 
 // serviceUnnamedValueBesideDefect is the planted defect of a Service whose
@@ -503,9 +547,11 @@ type serviceUnnamedValueBesideDefect struct {
 }
 
 // Unnamed is the override of the planted defect.
-func (*serviceUnnamedValueBesideDefect) Unnamed(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *serviceUnnamedValueBesideDefect) Unnamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.serviceOverEmbedded.Unnamed(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -532,21 +578,24 @@ func servicePartiallyNamedPanics(h *ServiceHandle) namedreturns.Service {
 	return &servicePartiallyNamedPanicsDefect{serviceOverEmbedded: h.Fresh()}
 }
 
-// servicePartiallyNamedSucceedsAlwaysDefect is the planted defect of a
+// servicePartiallyNamedIgnoresCancelDefect is the planted defect of a
 // Service whose PartiallyNamed ignores the context.
-type servicePartiallyNamedSucceedsAlwaysDefect struct {
+type servicePartiallyNamedIgnoresCancelDefect struct {
 	serviceOverEmbedded
 }
 
 // PartiallyNamed is the override of the planted defect.
-func (*servicePartiallyNamedSucceedsAlwaysDefect) PartiallyNamed(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *servicePartiallyNamedIgnoresCancelDefect) PartiallyNamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.serviceOverEmbedded.PartiallyNamed(p0, p1)
 }
 
-// servicePartiallyNamedSucceedsAlways returns the planted defect of a
+// servicePartiallyNamedIgnoresCancel returns the planted defect of a
 // Service whose PartiallyNamed ignores the context over a fresh subject.
-func servicePartiallyNamedSucceedsAlways(h *ServiceHandle) namedreturns.Service {
-	return &servicePartiallyNamedSucceedsAlwaysDefect{serviceOverEmbedded: h.Fresh()}
+func servicePartiallyNamedIgnoresCancel(h *ServiceHandle) namedreturns.Service {
+	return &servicePartiallyNamedIgnoresCancelDefect{serviceOverEmbedded: h.Fresh()}
 }
 
 // servicePartiallyNamedValueBesideDefect is the planted defect of a
@@ -556,9 +605,11 @@ type servicePartiallyNamedValueBesideDefect struct {
 }
 
 // PartiallyNamed is the override of the planted defect.
-func (*servicePartiallyNamedValueBesideDefect) PartiallyNamed(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("item-b")
-	r1 = conform.ErrGenerated
+func (d *servicePartiallyNamedValueBesideDefect) PartiallyNamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.serviceOverEmbedded.PartiallyNamed(p0, p1)
+	if r1 != nil {
+		r0 = string("item-b")
+	}
 	return r0, r1
 }
 
@@ -569,4 +620,4 @@ func servicePartiallyNamedValueBeside(h *ServiceHandle) namedreturns.Service {
 	return &servicePartiallyNamedValueBesideDefect{serviceOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:06411eb8f81bef39027aa19802a5f2cfb81537a1c559299c4d0bd4aca9ce34bb
+// dokimi:provenance sha256:968b867f33694798440552c00ab000852a3d77d8d022408c5f09d647026b5071

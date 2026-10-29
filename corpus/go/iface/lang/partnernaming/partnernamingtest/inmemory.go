@@ -21,7 +21,9 @@ type InMemory struct {
 	weights map[string]int
 	at      map[string]int
 	buckets map[int]int
+	recs    map[string]partnernaming.Rec
 	mu      sync.Mutex
+	rev     int64
 }
 
 // The compiler checks that InMemory implements [partnernaming.Store].
@@ -33,6 +35,7 @@ func NewInMemory() *InMemory {
 		weights: map[string]int{},
 		at:      map[string]int{},
 		buckets: map[int]int{},
+		recs:    map[string]partnernaming.Rec{},
 	}
 }
 
@@ -98,6 +101,40 @@ func (s *InMemory) Count(ctx context.Context, bucket int) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.buckets[bucket], nil
+}
+
+// Version implements [partnernaming.Store]. It returns the zero record for a
+// key without a record.
+func (s *InMemory) Version(ctx context.Context, key string) (partnernaming.Rec, error) {
+	if err := contextErr(ctx); err != nil {
+		return partnernaming.Rec{}, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.recs[key], nil
+}
+
+// Put implements [partnernaming.Store].
+func (s *InMemory) Put(ctx context.Context, r partnernaming.Rec) error {
+	return s.store(ctx, r)
+}
+
+// Replace implements [partnernaming.Store].
+func (s *InMemory) Replace(ctx context.Context, r partnernaming.Rec) error {
+	return s.store(ctx, r)
+}
+
+// store stores the record r under its key with the next revision.
+func (s *InMemory) store(ctx context.Context, r partnernaming.Rec) error {
+	if err := contextErr(ctx); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.rev++
+	r.Rev = s.rev
+	s.recs[r.Key] = r
+	return nil
 }
 
 // contextErr returns the error of a canceled or expired context, and an error

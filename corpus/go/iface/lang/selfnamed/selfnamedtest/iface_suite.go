@@ -16,6 +16,25 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Filter:
+//
+// Filter.Filter/smoke: Filter returns without a panic for derived inputs.
+//
+// Filter.Filter/deterministic: Filter returns the same value for the same
+// inputs.
+
+// The derived checks of Filter that witness their laws at the shallow end:
+//
+// Filter.Filter/smoke
+//
+// Filter.Filter/deterministic
+
+// The refused claims of Filter:
+//
+// Filter.Drain/deterministic: eidos derives no sample of the parameter src
+// of Drain. The remedy is to author a sample of the parameter src with the
+// directive sample.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,6 +111,7 @@ func FilterSuite() conform.Suite[selfnamed.Filter] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[selfnamed.Filter]{FilterChecks.Filter.Smoke()},
 				Apply: func(h *FilterHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (bool, error) {
 						r0 := h.Subject().Filter(string("item-a"))
@@ -293,4 +313,4 @@ func filterFilterDrifts(h *FilterHandle) selfnamed.Filter {
 	return &filterFilterDriftsDefect{filterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8d319812cf23124a2e371259b457e632107e8de01a551162231b3f01e760ce01
+// dokimi:provenance sha256:fba08f48bff22358b764679f2d52d2823712de22d38b0e3921f4533e73025c67

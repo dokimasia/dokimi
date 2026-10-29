@@ -7,6 +7,8 @@ package roledtypestest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/roledtypes"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/roledtypes/roledtypestest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToStore(t *testing.T) {
 	t.Parallel()
 
-	roledtypestest.RunStoreSuite(t, roledtypestest.NewInMemory)
+	roledtypestest.RunStoreSuite(
+		t,
+		roledtypestest.NewInMemory,
+		conform.Isolate[roledtypes.Store](),
+	)
 }
 
 // BenchmarkInMemoryConformsToStore measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToStoreGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:400400696126d2ebed06cc0c0dbc7ba4d91577c97c7e9a377dde16783f625d24
+// dokimi:provenance sha256:9f87dcce8af5f0ff73adfa8bb518f549d9c455c6ed558d75e578648d34c7ae82

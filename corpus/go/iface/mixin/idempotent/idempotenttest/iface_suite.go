@@ -15,6 +15,31 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Mixed.Put/cancel: Put returns an error for a cancelled context.
+//
+// Mixed.Put/idempotent: a second identical Put succeeds after the first.
+//
+// Mixed.Read/smoke: Read returns without a panic for derived inputs.
+//
+// Mixed.Read/cancel: Read returns an error for a cancelled context.
+//
+// Mixed.Read/zero-on-error: Read returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Put/smoke
+//
+// Mixed.Read/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:composite-writer of Mixed.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -116,7 +141,7 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
 					})
 				},
-				Defect: mixedPutSucceedsAlways,
+				Defect: mixedPutIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Put.Idempotent(),
@@ -164,7 +189,7 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedReadSucceedsAlways,
+				Defect: mixedReadIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Read.ZeroOnError(),
@@ -316,21 +341,24 @@ func mixedPutPanics(h *MixedHandle) idempotent.Mixed {
 	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancelDefect is the planted defect of a Mixed whose Put
 // ignores the context.
-type mixedPutSucceedsAlwaysDefect struct {
+type mixedPutIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*mixedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
-	return r0
+func (d *mixedPutIgnoresCancelDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Put(p0, p1, p2)
 }
 
-// mixedPutSucceedsAlways returns the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancel returns the planted defect of a Mixed whose Put
 // ignores the context over a fresh subject.
-func mixedPutSucceedsAlways(h *MixedHandle) idempotent.Mixed {
-	return &mixedPutSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedPutIgnoresCancel(h *MixedHandle) idempotent.Mixed {
+	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedPutRefusesRepeatDefect is the planted defect of a Mixed whose Put
@@ -342,6 +370,10 @@ type mixedPutRefusesRepeatDefect struct {
 
 // Put is the override of the planted defect.
 func (d *mixedPutRefusesRepeatDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = conform.ErrGenerated
@@ -373,21 +405,24 @@ func mixedReadPanics(h *MixedHandle) idempotent.Mixed {
 	return &mixedReadPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedReadSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Read ignores the context.
-type mixedReadSucceedsAlwaysDefect struct {
+// mixedReadIgnoresCancelDefect is the planted defect of a Mixed whose Read
+// ignores the context.
+type mixedReadIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Read is the override of the planted defect.
-func (*mixedReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedReadIgnoresCancelDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Read(p0, p1)
 }
 
-// mixedReadSucceedsAlways returns the planted defect of a Mixed whose Read
+// mixedReadIgnoresCancel returns the planted defect of a Mixed whose Read
 // ignores the context over a fresh subject.
-func mixedReadSucceedsAlways(h *MixedHandle) idempotent.Mixed {
-	return &mixedReadSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedReadIgnoresCancel(h *MixedHandle) idempotent.Mixed {
+	return &mixedReadIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedReadValueBesideDefect is the planted defect of a Mixed whose Read
@@ -397,9 +432,11 @@ type mixedReadValueBesideDefect struct {
 }
 
 // Read is the override of the planted defect.
-func (*mixedReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Read(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -409,4 +446,4 @@ func mixedReadValueBeside(h *MixedHandle) idempotent.Mixed {
 	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8635554751d50448c308852996072ed89feb2450f73eb54df36134d1aaabc963
+// dokimi:provenance sha256:bb1e25e4d962a05af094675d1b5c1e1e479b3f41b927632f164c766df87b9679

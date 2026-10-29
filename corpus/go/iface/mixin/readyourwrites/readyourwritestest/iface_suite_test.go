@@ -72,6 +72,10 @@ func TestMixedSuite(t *testing.T) {
 				readyourwritestest.MixedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				readyourwritestest.MixedChecks.Get.ReadYourWrites(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -115,6 +119,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				readyourwritestest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readyourwritestest.MixedChecks.Get.ReadYourWrites(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -161,6 +169,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			readyourwritestest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			readyourwritestest.MixedChecks.Get.ReadYourWrites(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -193,6 +205,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			readyourwritestest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readyourwritestest.MixedChecks.Get.ReadYourWrites(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -229,6 +245,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			readyourwritestest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			readyourwritestest.MixedChecks.Get.ReadYourWrites(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -243,4 +263,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b347f769f66219a04bf2aa2e63036cbe9f69a0b23e0afb25615489c7595350cd
+// dokimi:provenance sha256:6a2c12c135bcd61354c931e5a1ee1fc42391bf2d7fe963afef74f0436d721689

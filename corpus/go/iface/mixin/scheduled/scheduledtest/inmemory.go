@@ -19,7 +19,7 @@ import (
 // InMemory implements [scheduled.Mixed] in memory. The corpus applies the
 // suite of Mixed to it as a control.
 //
-//dokimi:subject scheduled.Mixed new=NewInMemory
+//dokimi:subject scheduled.Mixed new=NewInMemoryFromHandle
 type InMemory struct {
 	clk   assert.Clock
 	tasks []time.Time
@@ -38,6 +38,10 @@ func NewInMemoryOn(clk assert.Clock) *InMemory {
 func NewInMemory() *InMemory {
 	return NewInMemoryOn(assert.NewControlled(time.Unix(0, 0).UTC()))
 }
+
+// NewInMemoryFromHandle returns an InMemory on the clock of the handle h, so
+// a check that advances the clock runs the tasks that are due.
+func NewInMemoryFromHandle(h *MixedHandle) *InMemory { return NewInMemoryOn(h.Clock()) }
 
 // At implements [scheduled.Mixed].
 func (s *InMemory) At(ctx context.Context, after time.Duration) error {

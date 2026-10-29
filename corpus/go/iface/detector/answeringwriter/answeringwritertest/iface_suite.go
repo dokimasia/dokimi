@@ -15,6 +15,22 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of AnsweringWriter:
+//
+// AnsweringWriter.Put/smoke: Put returns without a panic for derived
+// inputs.
+//
+// AnsweringWriter.Put/cancel: Put returns an error for a cancelled
+// context.
+//
+// AnsweringWriter.Put/zero-on-error: Put returns the zero value beside an
+// error.
+
+// The derived checks of AnsweringWriter that witness their laws at the
+// shallow end:
+//
+// AnsweringWriter.Put/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,7 +110,7 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 						return err
 					})
 				},
-				Defect: answeringWriterPutSucceedsAlways,
+				Defect: answeringWriterPutIgnoresCancel,
 			},
 			{
 				ID:          AnsweringWriterChecks.Put.ZeroOnError(),
@@ -246,24 +262,27 @@ func answeringWriterPutPanics(h *AnsweringWriterHandle) answeringwriter.Answerin
 	return &answeringWriterPutPanicsDefect{answeringWriterOverEmbedded: h.Fresh()}
 }
 
-// answeringWriterPutSucceedsAlwaysDefect is the planted defect of a
+// answeringWriterPutIgnoresCancelDefect is the planted defect of a
 // AnsweringWriter whose Put ignores the context.
-type answeringWriterPutSucceedsAlwaysDefect struct {
+type answeringWriterPutIgnoresCancelDefect struct {
 	answeringWriterOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*answeringWriterPutSucceedsAlwaysDefect) Put(
+func (d *answeringWriterPutIgnoresCancelDefect) Put(
 	p0 context.Context,
 	p1 answeringwriter.Value,
 ) (r0 answeringwriter.Value, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.answeringWriterOverEmbedded.Put(p0, p1)
 }
 
-// answeringWriterPutSucceedsAlways returns the planted defect of a
+// answeringWriterPutIgnoresCancel returns the planted defect of a
 // AnsweringWriter whose Put ignores the context over a fresh subject.
-func answeringWriterPutSucceedsAlways(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter {
-	return &answeringWriterPutSucceedsAlwaysDefect{answeringWriterOverEmbedded: h.Fresh()}
+func answeringWriterPutIgnoresCancel(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter {
+	return &answeringWriterPutIgnoresCancelDefect{answeringWriterOverEmbedded: h.Fresh()}
 }
 
 // answeringWriterPutValueBesideDefect is the planted defect of a
@@ -273,12 +292,14 @@ type answeringWriterPutValueBesideDefect struct {
 }
 
 // Put is the override of the planted defect.
-func (*answeringWriterPutValueBesideDefect) Put(
+func (d *answeringWriterPutValueBesideDefect) Put(
 	p0 context.Context,
 	p1 answeringwriter.Value,
 ) (r0 answeringwriter.Value, r1 error) {
-	r0 = answeringwriter.Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+	r0, r1 = d.answeringWriterOverEmbedded.Put(p0, p1)
+	if r1 != nil {
+		r0 = answeringwriter.Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -289,4 +310,4 @@ func answeringWriterPutValueBeside(h *AnsweringWriterHandle) answeringwriter.Ans
 	return &answeringWriterPutValueBesideDefect{answeringWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:96fe080988cb79f84a78d1ac476a392672051237c24695101a0d8b540a1186db
+// dokimi:provenance sha256:319eae0a6c751b33c9406283a847eb60023aa99827994e8868c95d77d0a14dbb

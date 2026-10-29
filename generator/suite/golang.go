@@ -30,8 +30,9 @@ var golangTemplates embed.FS
 // of a [Budget], and durationHelper writes a duration as a Go expression.
 //
 // defectHelper and bodyHelper return the views of a planted defect that its
-// templates read, joinHelper joins words with commas, and namesHelper joins
-// the names of the results of a planted defect.
+// templates read, joinHelper joins words with commas, namesHelper joins the
+// names of the results of a planted defect, and identityHelper writes the
+// identity of a check of a suite.
 const (
 	pascalHelper   = "suitePascal"
 	camelHelper    = "suiteCamel"
@@ -41,7 +42,24 @@ const (
 	bodyHelper     = "suiteBody"
 	joinHelper     = "suiteJoin"
 	namesHelper    = "suiteNames"
+	identityHelper = "suiteIdentity"
 )
+
+// identityIn returns the identity of the check segment of the callable of the
+// declaration named declaration, such as Store.Get/smoke, and the name of the
+// callable alone for an empty segment. methods reports a declaration with
+// methods. The callable of a function is the function, so its identity has no
+// declaration, such as Slug/smoke.
+func identityIn(declaration string, methods bool, callable, segment string) string {
+	name := declaration
+	if methods {
+		name += "." + callable
+	}
+	if segment == "" {
+		return name
+	}
+	return name + "/" + segment
+}
 
 // defectView is a planted defect with the names of the suite that its
 // template writes: the alias of the subject type that its type embeds, the
@@ -131,7 +149,7 @@ func (golangPart) Options() []sdk.TargetOption {
 		sdk.Funcs(template.FuncMap{
 			pascalHelper: naming.Pascal, camelHelper: naming.Camel, ceilingsHelper: Budget.segments,
 			durationHelper: golangDuration, defectHelper: viewOfDefect, bodyHelper: viewOfBody, joinHelper: joined,
-			namesHelper: namesOfOutcomes,
+			namesHelper: namesOfOutcomes, identityHelper: identityIn,
 		}),
 	}
 }

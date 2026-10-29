@@ -7,6 +7,8 @@ package permutationtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation/permutationtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	permutationtest.RunMixedSuite(t, permutationtest.NewInMemory)
+	permutationtest.RunMixedSuite(
+		t,
+		permutationtest.NewInMemory,
+		conform.Isolate[permutation.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:40773f76a1e097395806f45c4b2854ed175c010960bcaaa63faf7b0190a3d804
+// dokimi:provenance sha256:a080cfc4d6c93afe2745aff06e17accbb0c780edc8156fd34d77221b466084e1

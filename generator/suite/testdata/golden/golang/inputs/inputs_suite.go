@@ -12,6 +12,90 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Pipeline:
+//
+// Pipeline.Each/smoke: Each returns without a panic for derived inputs.
+//
+// Pipeline.Do/smoke: Do returns without a panic for derived inputs.
+//
+// Pipeline.Notify/smoke: Notify returns without a panic for derived
+// inputs.
+//
+// Pipeline.Apply/smoke: Apply returns without a panic for derived inputs.
+//
+// Pipeline.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Pipeline.Label/smoke: Label returns without a panic for derived inputs.
+
+// The derived checks of Pipeline that witness their laws at the shallow
+// end:
+//
+// Pipeline.Each/smoke
+//
+// Pipeline.Do/smoke
+//
+// Pipeline.Notify/smoke
+//
+// Pipeline.Apply/smoke
+//
+// Pipeline.Put/smoke
+//
+// Pipeline.Label/smoke
+
+// The refused claims of Pipeline:
+//
+// Pipeline.Pump/cancel: eidos derives no sample of the parameter from of
+// Pump. The remedy is to author a sample of the parameter from with the
+// directive sample.
+//
+// Pipeline.Pump/zero-on-error: eidos derives no sample of the parameter
+// from of Pump. The remedy is to author a sample of the parameter from
+// with the directive sample.
+//
+// Pipeline.Fold/cancel: eidos derives no sample of the parameter items of
+// Fold. The remedy is to author a sample of the parameter items with the
+// directive sample.
+//
+// Pipeline.Count/deterministic: eidos derives no sample of the parameter
+// ints of Count. The remedy is to author a sample of the parameter ints
+// with the directive sample.
+
+// The unclaimed classifications of Pipeline:
+//
+// The shape:composite-writer of Pipeline.Merge has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Pipeline.Each has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Pipeline.Handle has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Pipeline.Do has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Pipeline.Notify has the stance silent. A mutation
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Pipeline.Apply has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Pipeline.Fold has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:multi-arg-writer of Pipeline.Put has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Pipeline.Spin has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Pipeline.Copy has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Pipeline.Subscribe has the stance silent. A
+// mutation is an input of the other checks, and its result is an error
+// alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -76,6 +160,12 @@ type pipelineEach struct {
 	conform.Callable[Pipeline]
 }
 
+// Smoke returns the identity of the check that Each returns without a
+// panic for derived inputs.
+func (c pipelineEach) Smoke() conform.ID[Pipeline] {
+	return c.Check("smoke")
+}
+
 // pipelineHandle is the name of Pipeline.Handle, with the identities of
 // its checks.
 type pipelineHandle struct {
@@ -88,16 +178,34 @@ type pipelineDo struct {
 	conform.Callable[Pipeline]
 }
 
+// Smoke returns the identity of the check that Do returns without a panic
+// for derived inputs.
+func (c pipelineDo) Smoke() conform.ID[Pipeline] {
+	return c.Check("smoke")
+}
+
 // pipelineNotify is the name of Pipeline.Notify, with the identities of
 // its checks.
 type pipelineNotify struct {
 	conform.Callable[Pipeline]
 }
 
+// Smoke returns the identity of the check that Notify returns without a
+// panic for derived inputs.
+func (c pipelineNotify) Smoke() conform.ID[Pipeline] {
+	return c.Check("smoke")
+}
+
 // pipelineApply is the name of Pipeline.Apply, with the identities of its
 // checks.
 type pipelineApply struct {
 	conform.Callable[Pipeline]
+}
+
+// Smoke returns the identity of the check that Apply returns without a
+// panic for derived inputs.
+func (c pipelineApply) Smoke() conform.ID[Pipeline] {
+	return c.Check("smoke")
 }
 
 // pipelineFold is the name of Pipeline.Fold, with the identities of its
@@ -166,6 +274,74 @@ func PipelineSuite() conform.Suite[Pipeline] {
 	return conform.Suite[Pipeline]{
 		Declaration: "Pipeline",
 		Checks: []conform.Check[Pipeline]{
+			{
+				ID:          PipelineChecks.Each.Smoke(),
+				Statement:   "Each returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PipelineHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Each(func(Item) bool { return false })
+						return nil
+					})
+				},
+				Defect: pipelineEachPanics,
+			},
+			{
+				ID:          PipelineChecks.Do.Smoke(),
+				Statement:   "Do returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PipelineHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Do(func() (int, error) { return 0, nil })
+						return nil
+					})
+				},
+				Defect: pipelineDoPanics,
+			},
+			{
+				ID:          PipelineChecks.Notify.Smoke(),
+				Statement:   "Notify returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PipelineHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Notify(func(event string) {})
+						return nil
+					})
+				},
+				Defect: pipelineNotifyPanics,
+			},
+			{
+				ID:          PipelineChecks.Apply.Smoke(),
+				Statement:   "Apply returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PipelineHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Apply(func(counts ...int) {})
+						return nil
+					})
+				},
+				Defect: pipelineApplyPanics,
+			},
 			{
 				ID:          PipelineChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
@@ -989,6 +1165,74 @@ func (o pipelineOver) Label(Tag, Code, Level, Text, Bag[int]) {
 // whose callables call spend.
 func newPipelineOver(_ *PipelineHandle, spend func()) Pipeline {
 	return pipelineOver{spend: spend}
+}
+
+// pipelineEachPanicsDefect is the planted defect of a Pipeline whose Each
+// panics.
+type pipelineEachPanicsDefect struct {
+	pipelineOverEmbedded
+}
+
+// Each is the override of the planted defect.
+func (*pipelineEachPanicsDefect) Each(p0 func(Item) bool) {
+	panic("the planted defect of a Pipeline whose Each panics")
+}
+
+// pipelineEachPanics returns the planted defect of a Pipeline whose Each
+// panics over a fresh subject.
+func pipelineEachPanics(h *PipelineHandle) Pipeline {
+	return &pipelineEachPanicsDefect{pipelineOverEmbedded: h.Fresh()}
+}
+
+// pipelineDoPanicsDefect is the planted defect of a Pipeline whose Do
+// panics.
+type pipelineDoPanicsDefect struct {
+	pipelineOverEmbedded
+}
+
+// Do is the override of the planted defect.
+func (*pipelineDoPanicsDefect) Do(p0 func() (int, error)) {
+	panic("the planted defect of a Pipeline whose Do panics")
+}
+
+// pipelineDoPanics returns the planted defect of a Pipeline whose Do
+// panics over a fresh subject.
+func pipelineDoPanics(h *PipelineHandle) Pipeline {
+	return &pipelineDoPanicsDefect{pipelineOverEmbedded: h.Fresh()}
+}
+
+// pipelineNotifyPanicsDefect is the planted defect of a Pipeline whose
+// Notify panics.
+type pipelineNotifyPanicsDefect struct {
+	pipelineOverEmbedded
+}
+
+// Notify is the override of the planted defect.
+func (*pipelineNotifyPanicsDefect) Notify(p0 func(event string)) {
+	panic("the planted defect of a Pipeline whose Notify panics")
+}
+
+// pipelineNotifyPanics returns the planted defect of a Pipeline whose
+// Notify panics over a fresh subject.
+func pipelineNotifyPanics(h *PipelineHandle) Pipeline {
+	return &pipelineNotifyPanicsDefect{pipelineOverEmbedded: h.Fresh()}
+}
+
+// pipelineApplyPanicsDefect is the planted defect of a Pipeline whose
+// Apply panics.
+type pipelineApplyPanicsDefect struct {
+	pipelineOverEmbedded
+}
+
+// Apply is the override of the planted defect.
+func (*pipelineApplyPanicsDefect) Apply(p0 func(counts ...int)) {
+	panic("the planted defect of a Pipeline whose Apply panics")
+}
+
+// pipelineApplyPanics returns the planted defect of a Pipeline whose Apply
+// panics over a fresh subject.
+func pipelineApplyPanics(h *PipelineHandle) Pipeline {
+	return &pipelineApplyPanicsDefect{pipelineOverEmbedded: h.Fresh()}
 }
 
 // pipelinePutPanicsDefect is the planted defect of a Pipeline whose Put

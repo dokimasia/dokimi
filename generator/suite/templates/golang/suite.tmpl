@@ -22,6 +22,7 @@
 {{- $newOver := suiteCamel $n.NewOver}}
 {{- $subjects := suiteCamel $n.Subjects}}
 {{- if $c.Calls}}{{use "context"}}{{use "go.dokimi.dev/assert/prop"}}{{end}}
+{{- template "suite.header" $c}}
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -493,6 +494,59 @@ of one callable: the type that embeds the subject type and overrides the
 callable, with the function that wraps a fresh subject in it, or the function
 of a function suite that wraps the fresh function.
 */}}
+{{- /*
+suite.header writes the header of a suite: each derived check with its
+statement, each derived check that witnesses its law at the shallow end, each
+refused claim with its reason and its remedy, and each unclaimed
+classification with its stance and its note.
+*/}}
+{{- define "suite.header"}}
+{{- $c := .}}
+{{- with $c.Derived}}{{"\n"}}
+{{- range wrapdocs (printf "The derived checks of %s:" $c.Declaration)}}
+// {{.}}
+{{- end}}
+{{- range .}}
+//
+{{- range wrapdocs (printf "%s: %s." (suiteIdentity $c.Declaration (not $c.Func) .Field .Segment) .Statement)}}
+// {{.}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- $shallow := false}}{{range $c.Derived}}{{if .Shallow}}{{$shallow = true}}{{end}}{{end}}
+{{- if $shallow}}{{"\n"}}
+{{- range wrapdocs (printf "The derived checks of %s that witness their laws at the shallow end:" $c.Declaration)}}
+// {{.}}
+{{- end}}
+{{- range $c.Derived}}{{if .Shallow}}
+//
+// {{suiteIdentity $c.Declaration (not $c.Func) .Field .Segment}}
+{{- end}}{{end}}
+{{- end}}
+{{- with $c.Derivation.Refusals}}{{"\n"}}
+{{- range wrapdocs (printf "The refused claims of %s:" $c.Declaration)}}
+// {{.}}
+{{- end}}
+{{- range .}}
+//
+{{- range wrapdocs (printf "%s: %s. The remedy is to %s." (suiteIdentity $c.Declaration (not $c.Func) .Callable (print .Claim)) .Why .Remedy)}}
+// {{.}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- with $c.Derivation.Unclaimed}}{{"\n"}}
+{{- range wrapdocs (printf "The unclaimed classifications of %s:" $c.Declaration)}}
+// {{.}}
+{{- end}}
+{{- range .}}
+//
+{{- range wrapdocs (printf "The %s of %s has the stance %s. %s" .Classification (suiteIdentity $c.Declaration (not $c.Func) .Callable "") .Stance .Note)}}
+// {{.}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+
 {{- define "suite.defect"}}
 {{- $d := .Defect}}
 {{- $new := suiteCamel $d.Name}}
@@ -561,6 +615,14 @@ counter and of the clock of the defect.
 {{- $d := .Defect}}
 {{- $call := printf "%s(%s)" .Call (suiteJoin $d.Args)}}
 {{- $all := suiteNames $d.Results}}
+{{- if $d.Guards}}
+	if err := {{$d.Context}}.Err(); err != nil {
+{{- range $d.Results}}{{if eq .Role "error"}}
+		{{.Name}} = err
+{{- end}}{{end}}
+		return
+	}
+{{- end}}
 {{- if eq $d.Body "panic"}}
 	panic({{printf "%q" (printf "the planted defect of %s" $d.Doc)}})
 {{- else if eq $d.Body "panic-later"}}
@@ -580,6 +642,16 @@ counter and of the clock of the defect.
 {{- else if eq $d.Body "fail"}}
 {{- template "suite.defect.fail" $d}}
 	return
+{{- else if eq $d.Body "fail-success"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
+	{{$all}} = {{$call}}
+	if {{$err}} == nil {
+{{- range $d.Method.Returns.Items}}{{if ne .Name $err}}
+		{{.Name}} = *new({{spell .Type}})
+{{- end}}{{end}}
+{{- template "suite.defect.fail" $d}}
+	}
+	return
 {{- else if eq $d.Body "fail-later"}}
 	{{.State}}calls++
 	if {{.State}}calls > 1 {
@@ -587,10 +659,26 @@ counter and of the clock of the defect.
 		return
 	}
 	{{if $d.Results}}return {{end}}{{$call}}
-{{- else if eq $d.Body "fail-beside"}}
+{{- else if eq $d.Body "beside-error"}}
+	{{$all}} = {{$call}}
+	if {{range $d.Results}}{{if eq .Role "error"}}{{.Name}}{{end}}{{end}} != nil {
 {{- template "suite.defect.samples" $d}}
-{{- template "suite.defect.fail" $d}}
+	}
 	return
+{{- else if eq $d.Body "sample-success"}}
+{{- $ok := "true"}}
+{{- range $d.Results}}{{if eq .Role "flag"}}{{$ok = .Name}}{{end}}{{end}}
+{{- range $d.Results}}{{if eq .Role "error"}}{{$ok = printf "%s == nil" .Name}}{{end}}{{end}}
+	{{$all}} = {{$call}}
+	if {{$ok}} {
+{{- template "suite.defect.samples" $d}}
+	}
+	return
+{{- else if eq $d.Body "uncancelled"}}
+	if {{$d.Context}}.Err() != nil {
+		return
+	}
+	{{if $d.Results}}return {{end}}{{$call}}
 {{- else if eq $d.Body "beside-false"}}
 	{{$all}} = {{$call}}
 	if !{{range $d.Results}}{{if eq .Role "flag"}}{{.Name}}{{end}}{{end}} {
@@ -620,6 +708,10 @@ counter and of the clock of the defect.
 	} else {
 		r0.{{$d.Version}} = 0
 	}
+	return
+{{- else if eq $d.Body "version-zero"}}
+	{{$all}} = {{$call}}
+	r0.{{$d.Version}} = 0
 	return
 {{- else if eq $d.Body "echo"}}
 	r0 = p{{$d.Input}}

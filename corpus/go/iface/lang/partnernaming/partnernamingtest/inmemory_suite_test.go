@@ -7,6 +7,8 @@ package partnernamingtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming/partnernamingtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToStore(t *testing.T) {
 	t.Parallel()
 
-	partnernamingtest.RunStoreSuite(t, partnernamingtest.NewInMemory)
+	partnernamingtest.RunStoreSuite(
+		t,
+		partnernamingtest.NewInMemory,
+		conform.Isolate[partnernaming.Store](),
+	)
 }
 
 // BenchmarkInMemoryConformsToStore measures each callable of the suite of
@@ -70,6 +76,33 @@ func BenchmarkInMemoryConformsToStore(b *testing.B) {
 		partnernamingtest.BenchStoreSuite(
 			b,
 			partnernamingtest.StoreChecks.Count.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Version", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.Version.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Put", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.Put.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Replace", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.Replace.Callable,
 			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
 				return partnernamingtest.NewInMemory()
 			},
@@ -149,4 +182,40 @@ func FuzzInMemoryConformsToStoreCount(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:716a0a4f099c0e9b9b7cb6a8654ea06c235896113177ae305d8f120b45417995
+// FuzzInMemoryConformsToStoreVersion fuzzes the property checks of
+// Store.Version on InMemory.
+func FuzzInMemoryConformsToStoreVersion(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Version.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryConformsToStorePut fuzzes the property checks of Store.Put
+// on InMemory.
+func FuzzInMemoryConformsToStorePut(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Put.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryConformsToStoreReplace fuzzes the property checks of
+// Store.Replace on InMemory.
+func FuzzInMemoryConformsToStoreReplace(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Replace.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:cc1b84b338608a042645849cd0c18ec3cddf1817b49a7c09e28f996bc99bba16

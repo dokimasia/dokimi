@@ -7,6 +7,8 @@ package multireturntest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn/multireturntest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToWide(t *testing.T) {
 	t.Parallel()
 
-	multireturntest.RunWideSuite(t, multireturntest.NewInMemory)
+	multireturntest.RunWideSuite(
+		t,
+		multireturntest.NewInMemory,
+		conform.Isolate[multireturn.Wide](),
+	)
 }
 
 // BenchmarkInMemoryConformsToWide measures each callable of the suite of
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToWideNoError(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c78c3839688d99b6fe8d1236926193bcb9c1fea340184b137555ff815f56d571
+// dokimi:provenance sha256:f8505b1c77cf8e17e3a4bb6103caaaea756a6cbc734cc92390d6a40a75b25a64

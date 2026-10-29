@@ -7,6 +7,8 @@ package leasetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/lease"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/lease/leasetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	leasetest.RunContractSuite(t, leasetest.NewInMemory)
+	leasetest.RunContractSuite(
+		t,
+		leasetest.NewInMemory,
+		conform.Isolate[lease.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractRelease(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:4793cb5897fb1aaa3edad781c8066854b14b5cb7f0dacef73ecd25be1799a5fb
+// dokimi:provenance sha256:de18cdd9564ce7ef6bde47ec91910d604dbbdb0eb9ca0b494982aeee32b17ae4

@@ -7,6 +7,8 @@ package xsssafetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/xsssafe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/xsssafe/xsssafetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	xsssafetest.RunMixedSuite(t, xsssafetest.NewInMemory)
+	xsssafetest.RunMixedSuite(
+		t,
+		xsssafetest.NewInMemory,
+		conform.Isolate[xsssafe.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToMixedRender(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:af1f9f734460b20c394b5caacbd8b093764a49d5452095baa4e914a76286e1d8
+// dokimi:provenance sha256:b44d0d89d0707fc136842f95d70337d62280f4fbc72f3e43ebdc72706ee6f9be

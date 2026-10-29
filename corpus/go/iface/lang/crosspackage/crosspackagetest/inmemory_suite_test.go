@@ -7,6 +7,8 @@ package crosspackagetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/crosspackage"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/crosspackage/crosspackagetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToFitter(t *testing.T) {
 	t.Parallel()
 
-	crosspackagetest.RunFitterSuite(t, crosspackagetest.NewInMemory)
+	crosspackagetest.RunFitterSuite(
+		t,
+		crosspackagetest.NewInMemory,
+		conform.Isolate[crosspackage.Fitter](),
+	)
 }
 
 // BenchmarkInMemoryConformsToFitter measures each callable of the suite of
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToFitterSense(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:d5538bf7b9e5eba3f6d8c39a012ecfc06830b4cb14f6e67a6da94b78f0d4b6bc
+// dokimi:provenance sha256:be8f326a2a63963e9cf8fcb0a6df6aac3dba4a3a4efd19f74ecfd6f01b5421d0

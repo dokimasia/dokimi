@@ -121,6 +121,51 @@ func TestPartner(t *testing.T) {
 			}, "the read takes the context and the field of the written value")
 		})
 
+		t.Run("leaves a function parameter of the read to the probe", func(t *testing.T) {
+			t.Parallel()
+			body := derive.Value{Name: "body", Shape: rules.TypeShape{Form: symbol.FormFunc}}
+			run := derive.Facts{
+				Declaration: "Store", Callable: "Run", ID: idOf("Run"),
+				Signature: signature("Run", true, []derive.Value{body}, []rules.ReturnRole{rules.ReturnError},
+					rules.ErrorsLastReturn),
+				Inputs: []derive.Value{body},
+			}
+			decl := []derive.Facts{withParam(run, "transaction", "write", idOf("Put")), putter()}
+
+			got, gate := derive.Partner(
+				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&decl[0],
+				decl,
+			)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, argumentsOf(got), []derive.Argument{
+				{Name: "ctx", Kind: derive.ArgContext},
+				{Name: "body", Kind: derive.ArgOwn},
+			}, "the read takes the context and the function that the probe supplies")
+		})
+
+		t.Run("leaves each parameter of the read to its own sample for a write without inputs", func(t *testing.T) {
+			t.Parallel()
+			closer := derive.Facts{
+				Declaration: "Store", Callable: "Close", ID: idOf("Close"),
+				Signature: signature("Close", true, nil, []rules.ReturnRole{rules.ReturnError}, rules.ErrorsLastReturn),
+			}
+			decl := []derive.Facts{withParam(getter(), "lifecycle-after-close", "close", idOf("Close")), closer}
+
+			got, gate := derive.Partner(
+				&spec.Partner{Name: "close", Mode: spec.ModeNamed, Param: "close"},
+				&decl[0],
+				decl,
+			)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, argumentsOf(got), []derive.Argument{
+				{Name: "ctx", Kind: derive.ArgContext},
+				{Name: "id", Kind: derive.ArgOwn},
+			}, "the read takes the context and its own sample of the id")
+		})
+
 		t.Run("shares one sample for a parameter of the same name in both calls", func(t *testing.T) {
 			t.Parallel()
 			get := withParam(getter(), "read-after-write", "write", idOf("Set"))
@@ -208,10 +253,10 @@ func TestPartner(t *testing.T) {
 			assert.Equal(t, got.Write.Callable, "Put", "the licensed callable writes")
 		})
 
-		t.Run("derives the one other callable that takes the type of the field of the param", func(t *testing.T) {
+		t.Run("derives the one other callable that takes the value whose field the param names", func(t *testing.T) {
 			t.Parallel()
 			get := withParam(getter(), "causal", "version", fieldID("Name"))
-			decl := []derive.Facts{get, putter(), keyedPutter()}
+			decl := []derive.Facts{get, putter(), marker()}
 
 			got, gate := derive.Partner(
 				&spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
@@ -220,7 +265,7 @@ func TestPartner(t *testing.T) {
 			)
 
 			assert.Nil(t, gate, "the partner binds")
-			assert.Equal(t, got.Partner.Callable, "Set", "the partner takes a string, the type of the field Name")
+			assert.Equal(t, got.Partner.Callable, "Put", "the partner takes the Item that has the field Name")
 			assert.Equal(t, got.Read.Callable, "Get", "the licensed callable reads")
 		})
 
@@ -707,18 +752,18 @@ func TestPartner(t *testing.T) {
 				want: spec.PartnerArguments,
 			},
 			{
-				name: "refuses with one-partner for two callables that take the type of the field",
+				name: "refuses with one-partner for two callables that take the value of the field",
 				give: spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
 				giveDecl: []derive.Facts{
-					withParam(getter(), "causal", "version", fieldID("ID")), keyedPutter(), marker(),
+					withParam(getter(), "causal", "version", fieldID("ID")), keyedPutter(), putter(),
 				},
 				want: spec.OnePartner,
 			},
 			{
-				name: "refuses with partner-found for a field whose type no other callable takes",
+				name: "refuses with partner-found for a value of the field that no other callable takes",
 				give: spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
 				giveDecl: []derive.Facts{
-					withParam(getter(), "causal", "version", fieldID("ID")), putter(),
+					withParam(getter(), "causal", "version", fieldID("ID")), marker(),
 				},
 				want: spec.PartnerFound,
 			},

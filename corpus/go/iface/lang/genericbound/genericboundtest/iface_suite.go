@@ -15,6 +15,29 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Ranked:
+//
+// Ranked.Rank/smoke: Rank returns without a panic for derived inputs.
+//
+// Ranked.Rank/cancel: Rank returns an error for a cancelled context.
+//
+// Ranked.Rank/zero-on-error: Rank returns the zero value beside an error.
+//
+// Ranked.Reset/smoke: Reset returns without a panic for derived inputs.
+//
+// Ranked.Reset/cancel: Reset returns an error for a cancelled context.
+
+// The derived checks of Ranked that witness their laws at the shallow end:
+//
+// Ranked.Rank/smoke
+//
+// Ranked.Reset/smoke
+
+// The unclaimed classifications of Ranked:
+//
+// The shape:lifecycle of Ranked.Reset has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -114,7 +137,7 @@ func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
 						return err
 					})
 				},
-				Defect: rankedRankSucceedsAlways,
+				Defect: rankedRankIgnoresCancel,
 			},
 			{
 				ID:          RankedChecks.Rank.ZeroOnError(),
@@ -160,7 +183,7 @@ func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
 						return h.Subject().Reset(ctx)
 					})
 				},
-				Defect: rankedResetSucceedsAlways,
+				Defect: rankedResetIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[genericbound.Ranked[int, genericbound.Score]]{
@@ -314,21 +337,24 @@ func rankedRankPanics(h *RankedHandle) genericbound.Ranked[int, genericbound.Sco
 	return &rankedRankPanicsDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// rankedRankSucceedsAlwaysDefect is the planted defect of a Ranked whose
+// rankedRankIgnoresCancelDefect is the planted defect of a Ranked whose
 // Rank ignores the context.
-type rankedRankSucceedsAlwaysDefect struct {
+type rankedRankIgnoresCancelDefect struct {
 	rankedOverEmbedded
 }
 
 // Rank is the override of the planted defect.
-func (*rankedRankSucceedsAlwaysDefect) Rank(p0 context.Context, p1 int) (r0 genericbound.Score, r1 error) {
-	return r0, r1
+func (d *rankedRankIgnoresCancelDefect) Rank(p0 context.Context, p1 int) (r0 genericbound.Score, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.rankedOverEmbedded.Rank(p0, p1)
 }
 
-// rankedRankSucceedsAlways returns the planted defect of a Ranked whose
+// rankedRankIgnoresCancel returns the planted defect of a Ranked whose
 // Rank ignores the context over a fresh subject.
-func rankedRankSucceedsAlways(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] {
-	return &rankedRankSucceedsAlwaysDefect{rankedOverEmbedded: h.Fresh()}
+func rankedRankIgnoresCancel(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] {
+	return &rankedRankIgnoresCancelDefect{rankedOverEmbedded: h.Fresh()}
 }
 
 // rankedRankValueBesideDefect is the planted defect of a Ranked whose Rank
@@ -338,9 +364,11 @@ type rankedRankValueBesideDefect struct {
 }
 
 // Rank is the override of the planted defect.
-func (*rankedRankValueBesideDefect) Rank(p0 context.Context, p1 int) (r0 genericbound.Score, r1 error) {
-	r0 = genericbound.Score{Points: 7}
-	r1 = conform.ErrGenerated
+func (d *rankedRankValueBesideDefect) Rank(p0 context.Context, p1 int) (r0 genericbound.Score, r1 error) {
+	r0, r1 = d.rankedOverEmbedded.Rank(p0, p1)
+	if r1 != nil {
+		r0 = genericbound.Score{Points: 7}
+	}
 	return r0, r1
 }
 
@@ -367,21 +395,24 @@ func rankedResetPanics(h *RankedHandle) genericbound.Ranked[int, genericbound.Sc
 	return &rankedResetPanicsDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// rankedResetSucceedsAlwaysDefect is the planted defect of a Ranked whose
+// rankedResetIgnoresCancelDefect is the planted defect of a Ranked whose
 // Reset ignores the context.
-type rankedResetSucceedsAlwaysDefect struct {
+type rankedResetIgnoresCancelDefect struct {
 	rankedOverEmbedded
 }
 
 // Reset is the override of the planted defect.
-func (*rankedResetSucceedsAlwaysDefect) Reset(p0 context.Context) (r0 error) {
-	return r0
+func (d *rankedResetIgnoresCancelDefect) Reset(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.rankedOverEmbedded.Reset(p0)
 }
 
-// rankedResetSucceedsAlways returns the planted defect of a Ranked whose
+// rankedResetIgnoresCancel returns the planted defect of a Ranked whose
 // Reset ignores the context over a fresh subject.
-func rankedResetSucceedsAlways(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] {
-	return &rankedResetSucceedsAlwaysDefect{rankedOverEmbedded: h.Fresh()}
+func rankedResetIgnoresCancel(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] {
+	return &rankedResetIgnoresCancelDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2384b5799ed896c69dbbe069eb58b4cd6520e03dd582072b9dbbef90785ba05c
+// dokimi:provenance sha256:a5323bbb10603df98a4f494acf687c56900329bca460c92dc5d443ac784cc4ea

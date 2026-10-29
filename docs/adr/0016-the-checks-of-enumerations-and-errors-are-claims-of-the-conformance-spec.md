@@ -4,7 +4,7 @@ title: The checks of enumerations and errors are claims of the conformance spec
 status: Accepted
 date: 2026-10-28
 supersedes: RFC-0004 in part
-superseded-by: none
+superseded-by: ADR-0018 in part
 rfc: 0004
 ---
 

@@ -7,6 +7,8 @@ package nocontexttest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nocontext"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nocontext/nocontexttest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToCalculator(t *testing.T) {
 	t.Parallel()
 
-	nocontexttest.RunCalculatorSuite(t, nocontexttest.NewInMemory)
+	nocontexttest.RunCalculatorSuite(
+		t,
+		nocontexttest.NewInMemory,
+		conform.Isolate[nocontext.Calculator](),
+	)
 }
 
 // BenchmarkInMemoryConformsToCalculator measures each callable of the
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToCalculatorReset(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:3caf0cc00f65f85d281cdb521caf7a70eae717684285d86805d336a4e10578a4
+// dokimi:provenance sha256:41d36d6f7df6ef2530435e31c4237f695df8631953aeedb9f298b9046dddf722

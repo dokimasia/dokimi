@@ -15,6 +15,54 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of TxWithRetry:
+//
+// TxWithRetry.Begin/smoke: Begin returns without a panic for derived
+// inputs.
+//
+// TxWithRetry.Begin/cancel: Begin returns an error for a cancelled
+// context.
+//
+// TxWithRetry.Commit/smoke: Commit returns without a panic for derived
+// inputs.
+//
+// TxWithRetry.Commit/cancel: Commit returns an error for a cancelled
+// context.
+//
+// TxWithRetry.Commit/retry-succeeds-tx: Commit succeeds within the
+// declared attempts once Begin has opened its transaction.
+//
+// TxWithRetry.Rollback/smoke: Rollback returns without a panic for derived
+// inputs.
+//
+// TxWithRetry.Rollback/cancel: Rollback returns an error for a cancelled
+// context.
+
+// The derived checks of TxWithRetry that witness their laws at the shallow
+// end:
+//
+// TxWithRetry.Begin/smoke
+//
+// TxWithRetry.Commit/smoke
+//
+// TxWithRetry.Rollback/smoke
+
+// The refused claims of TxWithRetry:
+//
+// TxWithRetry.Begin/tx: Begin does not return exactly one value. The
+// remedy is to return one value from Begin.
+
+// The unclaimed classifications of TxWithRetry:
+//
+// The shape:lifecycle of TxWithRetry.Begin has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
+//
+// The shape:lifecycle of TxWithRetry.Commit has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
+//
+// The shape:lifecycle of TxWithRetry.Rollback has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -132,7 +180,7 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 						return h.Subject().Begin(ctx)
 					})
 				},
-				Defect: txWithRetryBeginSucceedsAlways,
+				Defect: txWithRetryBeginIgnoresCancel,
 			},
 			{
 				ID:          TxWithRetryChecks.Commit.Smoke(),
@@ -163,7 +211,7 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 						return h.Subject().Commit(ctx)
 					})
 				},
-				Defect: txWithRetryCommitSucceedsAlways,
+				Defect: txWithRetryCommitIgnoresCancel,
 			},
 			{
 				ID:          TxWithRetryChecks.Commit.RetrySucceedsTx(),
@@ -211,7 +259,7 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 						return h.Subject().Rollback(ctx)
 					})
 				},
-				Defect: txWithRetryRollbackSucceedsAlways,
+				Defect: txWithRetryRollbackIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[txwithretry.TxWithRetry]{
@@ -374,21 +422,24 @@ func txWithRetryBeginPanics(h *TxWithRetryHandle) txwithretry.TxWithRetry {
 	return &txWithRetryBeginPanicsDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
-// txWithRetryBeginSucceedsAlwaysDefect is the planted defect of a
+// txWithRetryBeginIgnoresCancelDefect is the planted defect of a
 // TxWithRetry whose Begin ignores the context.
-type txWithRetryBeginSucceedsAlwaysDefect struct {
+type txWithRetryBeginIgnoresCancelDefect struct {
 	txWithRetryOverEmbedded
 }
 
 // Begin is the override of the planted defect.
-func (*txWithRetryBeginSucceedsAlwaysDefect) Begin(p0 context.Context) (r0 error) {
-	return r0
+func (d *txWithRetryBeginIgnoresCancelDefect) Begin(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.txWithRetryOverEmbedded.Begin(p0)
 }
 
-// txWithRetryBeginSucceedsAlways returns the planted defect of a
+// txWithRetryBeginIgnoresCancel returns the planted defect of a
 // TxWithRetry whose Begin ignores the context over a fresh subject.
-func txWithRetryBeginSucceedsAlways(h *TxWithRetryHandle) txwithretry.TxWithRetry {
-	return &txWithRetryBeginSucceedsAlwaysDefect{txWithRetryOverEmbedded: h.Fresh()}
+func txWithRetryBeginIgnoresCancel(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryBeginIgnoresCancelDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
 // txWithRetryCommitPanicsDefect is the planted defect of a TxWithRetry
@@ -408,21 +459,24 @@ func txWithRetryCommitPanics(h *TxWithRetryHandle) txwithretry.TxWithRetry {
 	return &txWithRetryCommitPanicsDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
-// txWithRetryCommitSucceedsAlwaysDefect is the planted defect of a
+// txWithRetryCommitIgnoresCancelDefect is the planted defect of a
 // TxWithRetry whose Commit ignores the context.
-type txWithRetryCommitSucceedsAlwaysDefect struct {
+type txWithRetryCommitIgnoresCancelDefect struct {
 	txWithRetryOverEmbedded
 }
 
 // Commit is the override of the planted defect.
-func (*txWithRetryCommitSucceedsAlwaysDefect) Commit(p0 context.Context) (r0 error) {
-	return r0
+func (d *txWithRetryCommitIgnoresCancelDefect) Commit(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.txWithRetryOverEmbedded.Commit(p0)
 }
 
-// txWithRetryCommitSucceedsAlways returns the planted defect of a
+// txWithRetryCommitIgnoresCancel returns the planted defect of a
 // TxWithRetry whose Commit ignores the context over a fresh subject.
-func txWithRetryCommitSucceedsAlways(h *TxWithRetryHandle) txwithretry.TxWithRetry {
-	return &txWithRetryCommitSucceedsAlwaysDefect{txWithRetryOverEmbedded: h.Fresh()}
+func txWithRetryCommitIgnoresCancel(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryCommitIgnoresCancelDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
 // txWithRetryCommitFailsAlwaysDefect is the planted defect of a
@@ -432,8 +486,15 @@ type txWithRetryCommitFailsAlwaysDefect struct {
 }
 
 // Commit is the override of the planted defect.
-func (*txWithRetryCommitFailsAlwaysDefect) Commit(p0 context.Context) (r0 error) {
-	r0 = conform.ErrGenerated
+func (d *txWithRetryCommitFailsAlwaysDefect) Commit(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	r0 = d.txWithRetryOverEmbedded.Commit(p0)
+	if r0 == nil {
+		r0 = conform.ErrGenerated
+	}
 	return r0
 }
 
@@ -460,21 +521,24 @@ func txWithRetryRollbackPanics(h *TxWithRetryHandle) txwithretry.TxWithRetry {
 	return &txWithRetryRollbackPanicsDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
-// txWithRetryRollbackSucceedsAlwaysDefect is the planted defect of a
+// txWithRetryRollbackIgnoresCancelDefect is the planted defect of a
 // TxWithRetry whose Rollback ignores the context.
-type txWithRetryRollbackSucceedsAlwaysDefect struct {
+type txWithRetryRollbackIgnoresCancelDefect struct {
 	txWithRetryOverEmbedded
 }
 
 // Rollback is the override of the planted defect.
-func (*txWithRetryRollbackSucceedsAlwaysDefect) Rollback(p0 context.Context) (r0 error) {
-	return r0
+func (d *txWithRetryRollbackIgnoresCancelDefect) Rollback(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.txWithRetryOverEmbedded.Rollback(p0)
 }
 
-// txWithRetryRollbackSucceedsAlways returns the planted defect of a
+// txWithRetryRollbackIgnoresCancel returns the planted defect of a
 // TxWithRetry whose Rollback ignores the context over a fresh subject.
-func txWithRetryRollbackSucceedsAlways(h *TxWithRetryHandle) txwithretry.TxWithRetry {
-	return &txWithRetryRollbackSucceedsAlwaysDefect{txWithRetryOverEmbedded: h.Fresh()}
+func txWithRetryRollbackIgnoresCancel(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryRollbackIgnoresCancelDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:312cb72acc421546809c2c7e8d0f5a0c439425284510ac2af97565035604bf6d
+// dokimi:provenance sha256:e2890eda767c55c16f158dcb3e824b8488326835eddcef20885010af0ad1b1e4

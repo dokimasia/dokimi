@@ -13,6 +13,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming/partnernamingtest"
 	"go.dokimi.dev/stub"
 )
@@ -163,6 +164,77 @@ func storeStubCountPins() (int, error) {
 	want1 := errors.New("Count-returns")
 	want0 = 42
 	return want0, want1
+}
+
+// storeStubVersionArgs returns the samples of the arguments of Version.
+func storeStubVersionArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Version-a"
+	return a0, a1
+}
+
+// storeStubVersion calls Version of s with the samples of its arguments.
+func storeStubVersion(tb assert.TB, s *partnernamingtest.StoreStub) (partnernaming.Rec, error) {
+	tb.Helper()
+	a0, a1 := storeStubVersionArgs(tb)
+	return s.Version(a0, a1)
+}
+
+// storeStubVersionPins returns the samples of the results of Version, with
+// a new error as its error result.
+func storeStubVersionPins() (partnernaming.Rec, error) {
+	var want0 partnernaming.Rec
+	want1 := errors.New("Version-returns")
+	want0 = partnernaming.Rec{Key: "Key-a"}
+	return want0, want1
+}
+
+// storeStubPutArgs returns the samples of the arguments of Put.
+func storeStubPutArgs(tb assert.TB) (context.Context, partnernaming.Rec) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 partnernaming.Rec
+	a1 = partnernaming.Rec{Key: "Key-a"}
+	return a0, a1
+}
+
+// storeStubPut calls Put of s with the samples of its arguments.
+func storeStubPut(tb assert.TB, s *partnernamingtest.StoreStub) error {
+	tb.Helper()
+	a0, a1 := storeStubPutArgs(tb)
+	return s.Put(a0, a1)
+}
+
+// storeStubPutPins returns the samples of the results of Put, with a new
+// error as its error result.
+func storeStubPutPins() error {
+	want0 := errors.New("Put-returns")
+	return want0
+}
+
+// storeStubReplaceArgs returns the samples of the arguments of Replace.
+func storeStubReplaceArgs(tb assert.TB) (context.Context, partnernaming.Rec) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 partnernaming.Rec
+	a1 = partnernaming.Rec{Key: "Key-a"}
+	return a0, a1
+}
+
+// storeStubReplace calls Replace of s with the samples of its arguments.
+func storeStubReplace(tb assert.TB, s *partnernamingtest.StoreStub) error {
+	tb.Helper()
+	a0, a1 := storeStubReplaceArgs(tb)
+	return s.Replace(a0, a1)
+}
+
+// storeStubReplacePins returns the samples of the results of Replace, with
+// a new error as its error result.
+func storeStubReplacePins() error {
+	want0 := errors.New("Replace-returns")
+	return want0
 }
 
 // storeStubTouchSubject returns the subject of [stub.Behaviour] for Touch.
@@ -346,6 +418,95 @@ func storeStubCountSubject(
 	}
 }
 
+// storeStubVersionSubject returns the subject of [stub.Behaviour] for
+// Version. The subject calls a new double that reports to tb.
+func storeStubVersionSubject(
+	tb assert.TB,
+) stub.Subject[partnernamingtest.StoreVersionCall, partnernamingtest.StoreVersionReturn] {
+	tb.Helper()
+	s := partnernamingtest.NewStoreStub(tb)
+	return stub.Subject[partnernamingtest.StoreVersionCall, partnernamingtest.StoreVersionReturn]{
+		Stub: s.OnVersion.MethodStub,
+		Call: func() {
+			_, _ = storeStubVersion(tb, s)
+		},
+		Result: func() partnernamingtest.StoreVersionReturn {
+			got0, got1 := storeStubVersion(tb, s)
+			return partnernamingtest.StoreVersionReturn{Result: got0, Err: got1}
+		},
+		Override: func(mark func()) {
+			s.OnVersion.Func(func(_ context.Context, _ string) (partnernaming.Rec, error) {
+				mark()
+				var z0 partnernaming.Rec
+				var z1 error
+				return z0, z1
+			})
+		},
+		Fails: func() error {
+			_, r1 := storeStubVersion(tb, s)
+			return r1
+		},
+	}
+}
+
+// storeStubPutSubject returns the subject of [stub.Behaviour] for Put. The
+// subject calls a new double that reports to tb.
+func storeStubPutSubject(tb assert.TB) stub.Subject[partnernamingtest.StorePutCall, partnernamingtest.StorePutReturn] {
+	tb.Helper()
+	s := partnernamingtest.NewStoreStub(tb)
+	return stub.Subject[partnernamingtest.StorePutCall, partnernamingtest.StorePutReturn]{
+		Stub: s.OnPut.MethodStub,
+		Call: func() {
+			_ = storeStubPut(tb, s)
+		},
+		Result: func() partnernamingtest.StorePutReturn {
+			got0 := storeStubPut(tb, s)
+			return partnernamingtest.StorePutReturn{Err: got0}
+		},
+		Override: func(mark func()) {
+			s.OnPut.Func(func(_ context.Context, _ partnernaming.Rec) error {
+				mark()
+				var z0 error
+				return z0
+			})
+		},
+		Fails: func() error {
+			r0 := storeStubPut(tb, s)
+			return r0
+		},
+	}
+}
+
+// storeStubReplaceSubject returns the subject of [stub.Behaviour] for
+// Replace. The subject calls a new double that reports to tb.
+func storeStubReplaceSubject(
+	tb assert.TB,
+) stub.Subject[partnernamingtest.StoreReplaceCall, partnernamingtest.StoreReplaceReturn] {
+	tb.Helper()
+	s := partnernamingtest.NewStoreStub(tb)
+	return stub.Subject[partnernamingtest.StoreReplaceCall, partnernamingtest.StoreReplaceReturn]{
+		Stub: s.OnReplace.MethodStub,
+		Call: func() {
+			_ = storeStubReplace(tb, s)
+		},
+		Result: func() partnernamingtest.StoreReplaceReturn {
+			got0 := storeStubReplace(tb, s)
+			return partnernamingtest.StoreReplaceReturn{Err: got0}
+		},
+		Override: func(mark func()) {
+			s.OnReplace.Func(func(_ context.Context, _ partnernaming.Rec) error {
+				mark()
+				var z0 error
+				return z0
+			})
+		},
+		Fails: func() error {
+			r0 := storeStubReplace(tb, s)
+			return r0
+		},
+	}
+}
+
 // storeStubInstance is the instance of a partnernamingtest.StoreStub that
 // the checks of the constructors and the options drive.
 type storeStubInstance = stub.Instance[partnernamingtest.StoreTouchCall]
@@ -520,6 +681,81 @@ func TestStoreStub(t *testing.T) {
 		})
 	})
 
+	t.Run("Version", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Version", storeStubVersionSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_, _ = storeStubVersion(t, s)
+			got := s.OnVersion.AssertCalledOnce(t, "Version records the call")
+			a0, a1 := storeStubVersionArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StoreVersionCall
+			s.OnVersion.OnRecord(func(c partnernamingtest.StoreVersionCall) { seen = append(seen, c) })
+			_, _ = storeStubVersion(t, s)
+			_, _ = storeStubVersion(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Version")
+		})
+	})
+
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", storeStubPutSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubPut(t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0, a1 := storeStubPutArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.R, a1, "the call records R")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StorePutCall
+			s.OnPut.OnRecord(func(c partnernamingtest.StorePutCall) { seen = append(seen, c) })
+			_ = storeStubPut(t, s)
+			_ = storeStubPut(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("Replace", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Replace", storeStubReplaceSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubReplace(t, s)
+			got := s.OnReplace.AssertCalledOnce(t, "Replace records the call")
+			a0, a1 := storeStubReplaceArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.R, a1, "the call records R")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StoreReplaceCall
+			s.OnReplace.OnRecord(func(c partnernamingtest.StoreReplaceCall) { seen = append(seen, c) })
+			_ = storeStubReplace(t, s)
+			_ = storeStubReplace(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Replace")
+		})
+	})
+
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) storeStubInstance {
@@ -636,6 +872,61 @@ func TestStoreStub(t *testing.T) {
 			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Count")
 			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Count")
 		})
+
+		t.Run("clears the recorded calls of Version", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_, _ = storeStubVersion(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnVersion.CallCount(), 0, "ResetCalls clears the calls of Version")
+		})
+
+		t.Run("keeps the results of Returns of Version", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0, want1 := storeStubVersionPins()
+			s.OnVersion.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := storeStubVersion(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Version")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Version")
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubPut(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubPutPins()
+			s.OnPut.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+		})
+
+		t.Run("clears the recorded calls of Replace", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubReplace(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnReplace.CallCount(), 0, "ResetCalls clears the calls of Replace")
+		})
+
+		t.Run("keeps the results of Returns of Replace", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubReplacePins()
+			s.OnReplace.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubReplace(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Replace")
+		})
 	})
 
 	t.Run("NewStoreStubDelayed", func(t *testing.T) {
@@ -694,6 +985,30 @@ func TestStoreStub(t *testing.T) {
 			s := partnernamingtest.NewStoreStubFailing(t, want)
 			_, r1 := storeStubCount(t, s)
 			assert.ErrorIs(t, r1, want, "Count fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Version with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Version-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			_, r1 := storeStubVersion(t, s)
+			assert.ErrorIs(t, r1, want, "Version fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			r0 := storeStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Replace with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replace-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			r0 := storeStubReplace(t, s)
+			assert.ErrorIs(t, r0, want, "Replace fails with the error of NewStoreStubFailing")
 		})
 	})
 
@@ -814,6 +1129,60 @@ func TestStoreStub(t *testing.T) {
 			_, r1 := storeStubCount(t, s)
 			assert.ErrorIs(t, r1, want, "Count fails with the error of the implementation")
 		})
+
+		t.Run("passes Version to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_, _ = storeStubVersion(t, s)
+			inner.OnVersion.AssertCalledOnce(t, "Version calls the implementation")
+		})
+
+		t.Run("fails Version with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Version-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnVersion.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_, r1 := storeStubVersion(t, s)
+			assert.ErrorIs(t, r1, want, "Version fails with the error of the implementation")
+		})
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_ = storeStubPut(t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("fails Put with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnPut.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			r0 := storeStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of the implementation")
+		})
+
+		t.Run("passes Replace to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_ = storeStubReplace(t, s)
+			inner.OnReplace.AssertCalledOnce(t, "Replace calls the implementation")
+		})
+
+		t.Run("fails Replace with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replace-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnReplace.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			r0 := storeStubReplace(t, s)
+			assert.ErrorIs(t, r0, want, "Replace fails with the error of the implementation")
+		})
 	})
 
 	t.Run("StoreStubWithClock", func(t *testing.T) {
@@ -906,6 +1275,30 @@ func TestStoreStub(t *testing.T) {
 			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
 			_, r1 := storeStubCount(t, s)
 			assert.ErrorIs(t, r1, want, "Count fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Version with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Version-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			_, r1 := storeStubVersion(t, s)
+			assert.ErrorIs(t, r1, want, "Version fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			r0 := storeStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Replace with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replace-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			r0 := storeStubReplace(t, s)
+			assert.ErrorIs(t, r0, want, "Replace fails with the error of StoreStubFailing")
 		})
 	})
 
@@ -1023,6 +1416,64 @@ func TestStoreStub(t *testing.T) {
 			)
 			_, _ = storeStubCount(t, s)
 			assert.True(t, called, "WithStoreCount sets the function of Count")
+		})
+	})
+
+	t.Run("WithStoreVersion", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Version", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStoreVersion(func(_ context.Context, _ string) (partnernaming.Rec, error) {
+					called = true
+					var z0 partnernaming.Rec
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = storeStubVersion(t, s)
+			assert.True(t, called, "WithStoreVersion sets the function of Version")
+		})
+	})
+
+	t.Run("WithStorePut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStorePut(func(_ context.Context, _ partnernaming.Rec) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = storeStubPut(t, s)
+			assert.True(t, called, "WithStorePut sets the function of Put")
+		})
+	})
+
+	t.Run("WithStoreReplace", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Replace", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStoreReplace(func(_ context.Context, _ partnernaming.Rec) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = storeStubReplace(t, s)
+			assert.True(t, called, "WithStoreReplace sets the function of Replace")
 		})
 	})
 }
@@ -1339,4 +1790,157 @@ func TestStoreCountStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:349c1e3f331ca04d5caba05789aff03b894922447a551aa99eaa186da71d76ad
+// TestStoreVersionStub checks the methods of StoreVersionStub, which
+// configures Version.
+func TestStoreVersionStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Version", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0, want1 := storeStubVersionPins()
+			s.OnVersion.Returns(want0, want1)
+			got0, got1 := storeStubVersion(t, s)
+			expect.Equal(t, got0, want0, "Version returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Version returns the error that Returns sets")
+		})
+
+		t.Run("configures Version for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnVersion.Strict()
+			var want0 partnernaming.Rec
+			var want1 error
+			s.OnVersion.Returns(want0, want1)
+			_, _ = storeStubVersion(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Version")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Version to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnVersion.Func(func(p0 context.Context, p1 string) (partnernaming.Rec, error) {
+				got0, got1 = p0, p1
+				var z0 partnernaming.Rec
+				var z1 error
+				return z0, z1
+			})
+			_, _ = storeStubVersion(t, s)
+			a0, a1 := storeStubVersionArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// TestStorePutStub checks the methods of StorePutStub, which configures
+// Put.
+func TestStorePutStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Put", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubPutPins()
+			s.OnPut.Returns(want0)
+			got0 := storeStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
+		})
+
+		t.Run("configures Put for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnPut.Strict()
+			var want0 error
+			s.OnPut.Returns(want0)
+			_ = storeStubPut(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 partnernaming.Rec
+			s.OnPut.Func(func(p0 context.Context, p1 partnernaming.Rec) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = storeStubPut(t, s)
+			a0, a1 := storeStubPutArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives R")
+		})
+	})
+}
+
+// TestStoreReplaceStub checks the methods of StoreReplaceStub, which
+// configures Replace.
+func TestStoreReplaceStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Replace", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubReplacePins()
+			s.OnReplace.Returns(want0)
+			got0 := storeStubReplace(t, s)
+			assert.ErrorIs(t, got0, want0, "Replace returns the error that Returns sets")
+		})
+
+		t.Run("configures Replace for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnReplace.Strict()
+			var want0 error
+			s.OnReplace.Returns(want0)
+			_ = storeStubReplace(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Replace")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Replace to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 partnernaming.Rec
+			s.OnReplace.Func(func(p0 context.Context, p1 partnernaming.Rec) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = storeStubReplace(t, s)
+			a0, a1 := storeStubReplaceArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives R")
+		})
+	})
+}
+
+// dokimi:provenance sha256:9e6e851908037c4c4e76ab34261368652738a12e4da7f11ae0b784464f22afff

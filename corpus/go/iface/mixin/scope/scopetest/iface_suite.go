@@ -15,6 +15,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Set/smoke: Set returns without a panic for derived inputs.
+//
+// Mixed.Set/cancel: Set returns an error for a cancelled context.
+//
+// Mixed.Set/partition: Get does not return in one partition what Set wrote
+// in another.
+//
+// Mixed.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Mixed.Get/cancel: Get returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Set/smoke
+//
+// Mixed.Get/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:multi-arg-writer of Mixed.Set has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The mixin:scope of Mixed.Set has the stance silent. The mixin documents
+// the scope of the callable.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -110,7 +137,7 @@ func MixedSuite() conform.Suite[scope.Mixed] {
 						return h.Subject().Set(ctx, string("scope-a"), string("key-a"), string("value-a"))
 					})
 				},
-				Defect: mixedSetSucceedsAlways,
+				Defect: mixedSetIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Set.Partition(),
@@ -173,7 +200,7 @@ func MixedSuite() conform.Suite[scope.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedGetSucceedsAlways,
+				Defect: mixedGetIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[scope.Mixed]{
@@ -312,19 +339,43 @@ func mixedSetPanics(h *MixedHandle) scope.Mixed {
 	return &mixedSetPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedSetSucceedsAlwaysDefect is the planted defect of a Mixed whose Set
+// mixedSetIgnoresCancelDefect is the planted defect of a Mixed whose Set
 // ignores the context.
+type mixedSetIgnoresCancelDefect struct {
+	mixedOverEmbedded
+}
+
+// Set is the override of the planted defect.
+func (d *mixedSetIgnoresCancelDefect) Set(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Set(p0, p1, p2, p3)
+}
+
+// mixedSetIgnoresCancel returns the planted defect of a Mixed whose Set
+// ignores the context over a fresh subject.
+func mixedSetIgnoresCancel(h *MixedHandle) scope.Mixed {
+	return &mixedSetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedSetSucceedsAlwaysDefect is the planted defect of a Mixed whose Set
+// keeps no partition.
 type mixedSetSucceedsAlwaysDefect struct {
 	mixedOverEmbedded
 }
 
 // Set is the override of the planted defect.
 func (*mixedSetSucceedsAlwaysDefect) Set(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // mixedSetSucceedsAlways returns the planted defect of a Mixed whose Set
-// ignores the context over a fresh subject.
+// keeps no partition over a fresh subject.
 func mixedSetSucceedsAlways(h *MixedHandle) scope.Mixed {
 	return &mixedSetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
@@ -345,21 +396,24 @@ func mixedGetPanics(h *MixedHandle) scope.Mixed {
 	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedGetSucceedsAlwaysDefect is the planted defect of a Mixed whose Get
+// mixedGetIgnoresCancelDefect is the planted defect of a Mixed whose Get
 // ignores the context.
-type mixedGetSucceedsAlwaysDefect struct {
+type mixedGetIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*mixedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Get(p0, p1, p2)
 }
 
-// mixedGetSucceedsAlways returns the planted defect of a Mixed whose Get
+// mixedGetIgnoresCancel returns the planted defect of a Mixed whose Get
 // ignores the context over a fresh subject.
-func mixedGetSucceedsAlways(h *MixedHandle) scope.Mixed {
-	return &mixedGetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedGetIgnoresCancel(h *MixedHandle) scope.Mixed {
+	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2d579582cc4ecf1d633ef056fbb5129d76b00cefae7b132b689e180828062c45
+// dokimi:provenance sha256:202e12aab5feaee2f5c3874c60b6a81aa610eba6fd72fb4e021321cfc2b8226b

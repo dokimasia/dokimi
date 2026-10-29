@@ -7,6 +7,8 @@ package multiaggregatortest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator/multiaggregatortest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMultiAggregator(t *testing.T) {
 	t.Parallel()
 
-	multiaggregatortest.RunMultiAggregatorSuite(t, multiaggregatortest.NewInMemory)
+	multiaggregatortest.RunMultiAggregatorSuite(
+		t,
+		multiaggregatortest.NewInMemory,
+		conform.Isolate[multiaggregator.MultiAggregator](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMultiAggregator measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToMultiAggregatorStats(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:7ce3bcad95ebd45e38a9eb6281096cc6b00e278519e752f9767c0b23b231724f
+// dokimi:provenance sha256:b7a6242ff1e86819143862a77d2175455b14df11e5db992d3f49bb91743945b3

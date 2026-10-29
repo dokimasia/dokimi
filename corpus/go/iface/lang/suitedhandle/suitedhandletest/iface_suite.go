@@ -15,6 +15,28 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of File:
+//
+// File.Name/smoke: Name returns without a panic for derived inputs.
+//
+// File.Name/deterministic: Name returns the same value for the same
+// inputs.
+//
+// File.Close/smoke: Close returns without a panic for derived inputs.
+
+// The derived checks of File that witness their laws at the shallow end:
+//
+// File.Name/smoke
+//
+// File.Name/deterministic
+//
+// File.Close/smoke
+
+// The unclaimed classifications of File:
+//
+// The shape:closer of File.Close has the stance silent. A close returns
+// nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -95,6 +117,7 @@ func FileSuite() conform.Suite[suitedhandle.File] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[suitedhandle.File]{FileChecks.Name.Smoke()},
 				Apply: func(h *FileHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
 						r0 := h.Subject().Name()
@@ -290,6 +313,20 @@ func fileClosePanics(h *FileHandle) suitedhandle.File {
 	return &fileClosePanicsDefect{fileOverEmbedded: h.Fresh()}
 }
 
+// The derived checks of FS:
+//
+// FS.Open/smoke: Open returns without a panic for derived inputs.
+
+// The derived checks of FS that witness their laws at the shallow end:
+//
+// FS.Open/smoke
+
+// The refused claims of FS:
+//
+// FS.Open/zero-on-error: eidos derives no sample of a result of Open. The
+// remedy is to author a sample of the result type with the directive
+// sample.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -456,4 +493,4 @@ func fsOpenPanics(h *FSHandle) suitedhandle.FS {
 	return &fsOpenPanicsDefect{fsOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:36eec8a4fd4896b0deef95b4fda84f160f7f07df4c89fe0a1fab59b5a7c17f42
+// dokimi:provenance sha256:fa3bd6197ba67315b4a1e34ed31c0c63991d214820702f488117c748de2de420

@@ -56,6 +56,10 @@ func TestMixedSuite(t *testing.T) {
 				hookstest.MixedChecks.Fire.Cancel(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				hookstest.MixedChecks.OnEvent.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -83,6 +87,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				hookstest.MixedChecks.Fire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				hookstest.MixedChecks.OnEvent.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -113,6 +121,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			hookstest.MixedChecks.Fire.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			hookstest.MixedChecks.OnEvent.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -129,6 +141,10 @@ func FuzzMixedSuiteFire(f *testing.F) {
 		),
 		conform.Excuse(
 			hookstest.MixedChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			hookstest.MixedChecks.OnEvent.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -149,6 +165,10 @@ func FuzzMixedSuiteOnEvent(f *testing.F) {
 			hookstest.MixedChecks.Fire.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			hookstest.MixedChecks.OnEvent.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -163,4 +183,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:dc73ce2815c8a8e934a9f6aaec80afbd86d44800712e6168557fe3e03cda7023
+// dokimi:provenance sha256:2dbdd24fafa4d0fb9d000b160e24952aec247f0e707d85262fa5e314bb5842b8

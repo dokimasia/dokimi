@@ -7,6 +7,8 @@ package readertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader/readertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToReader(t *testing.T) {
 	t.Parallel()
 
-	readertest.RunReaderSuite(t, readertest.NewInMemory)
+	readertest.RunReaderSuite(
+		t,
+		readertest.NewInMemory,
+		conform.Isolate[reader.Reader](),
+	)
 }
 
 // BenchmarkInMemoryConformsToReader measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToReaderGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a7efac6a86113a00e627e50b7271fcd6257876a37ff1875216a8ca6ab6d49d77
+// dokimi:provenance sha256:08c74a22851a84b6e04c26477e84732379dcbf1d9a696dc4d00bfa9e97c2c80c

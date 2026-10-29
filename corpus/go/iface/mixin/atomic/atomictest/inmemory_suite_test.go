@@ -7,6 +7,8 @@ package atomictest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/atomic"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/atomic/atomictest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	atomictest.RunMixedSuite(t, atomictest.NewInMemory)
+	atomictest.RunMixedSuite(
+		t,
+		atomictest.NewInMemory,
+		conform.Isolate[atomic.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:55db73674492bf198a48ec257d5131ead1a91058d0b6a637c6f980976dd8fc8a
+// dokimi:provenance sha256:4c8cb2562b386ded18df47d877e61a4e6dd3af1180908bc40ffaa992004684d2

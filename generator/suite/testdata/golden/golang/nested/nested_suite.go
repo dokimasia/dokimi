@@ -12,6 +12,29 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Courier:
+//
+// Courier.Ship/smoke: Ship returns without a panic for derived inputs.
+//
+// Courier.Ship/cancel: Ship returns an error for a cancelled context.
+//
+// Courier.Send/smoke: Send returns without a panic for derived inputs.
+
+// The derived checks of Courier that witness their laws at the shallow
+// end:
+//
+// Courier.Ship/smoke
+//
+// Courier.Send/smoke
+
+// The unclaimed classifications of Courier:
+//
+// The shape:writer of Courier.Ship has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Courier.Send has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -97,7 +120,7 @@ func CourierSuite() conform.Suite[Courier] {
 						return h.Subject().Ship(ctx, &ShipRequest{ID: "ID-a"})
 					})
 				},
-				Defect: courierShipSucceedsAlways,
+				Defect: courierShipIgnoresCancel,
 			},
 			{
 				ID:          CourierChecks.Send.Smoke(),
@@ -365,21 +388,24 @@ func courierShipPanics(h *CourierHandle) Courier {
 	return &courierShipPanicsDefect{courierOverEmbedded: h.Fresh()}
 }
 
-// courierShipSucceedsAlwaysDefect is the planted defect of a Courier whose
+// courierShipIgnoresCancelDefect is the planted defect of a Courier whose
 // Ship ignores the context.
-type courierShipSucceedsAlwaysDefect struct {
+type courierShipIgnoresCancelDefect struct {
 	courierOverEmbedded
 }
 
 // Ship is the override of the planted defect.
-func (*courierShipSucceedsAlwaysDefect) Ship(p0 context.Context, p1 *ShipRequest) (r0 error) {
-	return r0
+func (d *courierShipIgnoresCancelDefect) Ship(p0 context.Context, p1 *ShipRequest) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.courierOverEmbedded.Ship(p0, p1)
 }
 
-// courierShipSucceedsAlways returns the planted defect of a Courier whose
+// courierShipIgnoresCancel returns the planted defect of a Courier whose
 // Ship ignores the context over a fresh subject.
-func courierShipSucceedsAlways(h *CourierHandle) Courier {
-	return &courierShipSucceedsAlwaysDefect{courierOverEmbedded: h.Fresh()}
+func courierShipIgnoresCancel(h *CourierHandle) Courier {
+	return &courierShipIgnoresCancelDefect{courierOverEmbedded: h.Fresh()}
 }
 
 // courierSendPanicsDefect is the planted defect of a Courier whose Send
@@ -398,6 +424,40 @@ func (*courierSendPanicsDefect) Send(p0 Batch) (r0 error) {
 func courierSendPanics(h *CourierHandle) Courier {
 	return &courierSendPanicsDefect{courierOverEmbedded: h.Fresh()}
 }
+
+// The refused claims of Tracker:
+//
+// Tracker.Route/deterministic: eidos derives no sample of the parameter
+// root of Route. The remedy is to author a sample of the parameter root
+// with the directive sample.
+//
+// Tracker.Follow/deterministic: eidos derives no sample of the parameter b
+// of Follow. The remedy is to author a sample of the parameter b with the
+// directive sample.
+//
+// Tracker.Walk/deterministic: eidos derives no sample of the parameter s
+// of Walk. The remedy is to author a sample of the parameter s with the
+// directive sample.
+//
+// Tracker.Volley/deterministic: eidos derives no sample of the parameter p
+// of Volley. The remedy is to author a sample of the parameter p with the
+// directive sample.
+//
+// Tracker.Track/deterministic: eidos derives no sample of the parameter l
+// of Track. The remedy is to author a sample of the parameter l with the
+// directive sample.
+//
+// Tracker.Pick/deterministic: eidos derives no sample of the parameter c
+// of Pick. The remedy is to author a sample of the parameter c with the
+// directive sample.
+//
+// Tracker.Play/deterministic: eidos derives no sample of the parameter m
+// of Play. The remedy is to author a sample of the parameter m with the
+// directive sample.
+//
+// Tracker.Link/deterministic: eidos derives no sample of the parameter l
+// of Link. The remedy is to author a sample of the parameter l with the
+// directive sample.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -1141,6 +1201,18 @@ func newTrackerOver(_ *TrackerHandle, spend func()) Tracker {
 	return trackerOver{spend: spend}
 }
 
+// The derived checks of Hire:
+//
+// Hire/smoke: Hire returns without a panic for derived inputs.
+//
+// Hire/deterministic: Hire returns the same value for the same inputs.
+
+// The derived checks of Hire that witness their laws at the shallow end:
+//
+// Hire/smoke
+//
+// Hire/deterministic
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1164,11 +1236,60 @@ type hireCallable struct {
 	conform.Callable[HireFunc]
 }
 
+// Smoke returns the identity of the check that Hire returns without a
+// panic for derived inputs.
+func (c hireCallable) Smoke() conform.ID[HireFunc] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Hire returns the
+// same value for the same inputs.
+func (c hireCallable) Deterministic() conform.ID[HireFunc] {
+	return c.Check("deterministic")
+}
+
 // HireSuite returns the checks of Hire, and the calls and the budgets of
 // its callables.
 func HireSuite() conform.Suite[HireFunc] {
 	return conform.Suite[HireFunc]{
 		Declaration: "Hire",
+		Checks: []conform.Check[HireFunc]{
+			{
+				ID:          HireChecks.Smoke(),
+				Statement:   "Hire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HireHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject()(func() Labeler { return nil })
+						return nil
+					})
+				},
+				Defect: hirePanics,
+			},
+			{
+				ID:          HireChecks.Deterministic(),
+				Statement:   "Hire returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Entails:     []conform.ID[HireFunc]{HireChecks.Smoke()},
+				Apply: func(h *HireHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject()(func() Labeler { return nil })
+						return r0, nil
+					})
+				},
+				Defect: hireDrifts,
+			},
+		},
 		Calls: []conform.Call[HireFunc]{
 			{
 				Calls:    hireCalls,
@@ -1292,6 +1413,27 @@ func (in hireLabelerInput) Label(a0 string) (Receipt, error) {
 func newHireOver(_ *HireHandle, spend func()) HireFunc {
 	return func(func() Labeler) (r0 int) {
 		spend()
+		return r0
+	}
+}
+
+// hirePanics returns the planted defect of a Hire whose Hire panics over
+// the fresh function.
+func hirePanics(h *HireHandle) HireFunc {
+	return func(p0 func() Labeler) (r0 int) {
+		panic("the planted defect of a Hire whose Hire panics")
+	}
+}
+
+// hireDrifts returns the planted defect of a Hire whose Hire returns
+// another value on the repeat over the fresh function.
+func hireDrifts(h *HireHandle) HireFunc {
+	calls := 0
+	return func(p0 func() Labeler) (r0 int) {
+		calls++
+		if calls > 1 {
+			r0 = int(7)
+		}
 		return r0
 	}
 }

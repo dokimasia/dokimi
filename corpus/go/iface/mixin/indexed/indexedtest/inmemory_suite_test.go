@@ -7,6 +7,8 @@ package indexedtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed/indexedtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToRanked(t *testing.T) {
 	t.Parallel()
 
-	indexedtest.RunRankedSuite(t, indexedtest.NewInMemory)
+	indexedtest.RunRankedSuite(
+		t,
+		indexedtest.NewInMemory,
+		conform.Isolate[indexed.Ranked](),
+	)
 }
 
 // BenchmarkInMemoryConformsToRanked measures each callable of the suite of
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToRankedAt(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:47f48b37f8fef84ed97933af96fee97a3fc7fa3f5c0eee4e599d3bd23e989976
+// dokimi:provenance sha256:b7a12c3659baf31f244c8d68af536de6ce6f36dba263a09577eb048008a6e2f2

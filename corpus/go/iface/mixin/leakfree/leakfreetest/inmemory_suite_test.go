@@ -7,6 +7,8 @@ package leakfreetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/leakfree"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/leakfree/leakfreetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	leakfreetest.RunMixedSuite(t, leakfreetest.NewInMemory)
+	leakfreetest.RunMixedSuite(
+		t,
+		leakfreetest.NewInMemory,
+		conform.Isolate[leakfree.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToMixedOutstanding(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:14783d47a473fce96cd7fd22ba9a4ed4c8b475d4030f676f24f9d6315237ac5a
+// dokimi:provenance sha256:82653cffc701465ed1b6d4b60d25e042edaf57e2ed3718963a860af69d86f3aa

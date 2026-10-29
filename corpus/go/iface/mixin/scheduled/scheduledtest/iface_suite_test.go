@@ -57,6 +57,10 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				scheduledtest.MixedChecks.At.Scheduled(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				scheduledtest.MixedChecks.Fired.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -95,6 +99,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				scheduledtest.MixedChecks.At.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				scheduledtest.MixedChecks.At.Scheduled(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -138,6 +146,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			scheduledtest.MixedChecks.At.Scheduled(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			scheduledtest.MixedChecks.Fired.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -165,6 +177,10 @@ func FuzzMixedSuiteAt(f *testing.F) {
 		),
 		conform.Excuse(
 			scheduledtest.MixedChecks.At.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			scheduledtest.MixedChecks.At.Scheduled(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -198,6 +214,10 @@ func FuzzMixedSuiteFired(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			scheduledtest.MixedChecks.At.Scheduled(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			scheduledtest.MixedChecks.Fired.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -223,4 +243,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6c15c5065cd2bd35e3ed18b822feb14df64eee31f0922dd78aa075fa7e8cdfe7
+// dokimi:provenance sha256:9c186cb4c26016183ec8d5a46609f113efe425631101eee065dfd3e38b1982cf

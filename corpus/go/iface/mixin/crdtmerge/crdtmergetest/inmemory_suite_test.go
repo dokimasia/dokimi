@@ -7,6 +7,8 @@ package crdtmergetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge/crdtmergetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	crdtmergetest.RunMixedSuite(t, crdtmergetest.NewInMemory)
+	crdtmergetest.RunMixedSuite(
+		t,
+		crdtmergetest.NewInMemory,
+		conform.Isolate[crdtmerge.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToMixedItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:eed26b13bc8e6dcd67646687fe95e3dcd5aada009865447676447feb707f62c7
+// dokimi:provenance sha256:f86b08cf5382eac7f9265619cb44e4b23c86cfce4fd8f9880b41257d7827b39b

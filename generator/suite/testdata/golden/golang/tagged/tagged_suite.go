@@ -10,6 +10,61 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Hasher:
+//
+// Hasher.HashTagged/smoke: HashTagged returns without a panic for derived
+// inputs.
+//
+// Hasher.HashTagged/deterministic: HashTagged returns the same value for
+// the same inputs.
+//
+// Hasher.CombineTagged/smoke: CombineTagged returns without a panic for
+// derived inputs.
+//
+// Hasher.CombineTagged/deterministic: CombineTagged returns the same value
+// for the same inputs.
+//
+// Hasher.HashRoles/smoke: HashRoles returns without a panic for derived
+// inputs.
+//
+// Hasher.HashRoles/deterministic: HashRoles returns the same value for the
+// same inputs.
+//
+// Hasher.Truncate/smoke: Truncate returns without a panic for derived
+// inputs.
+//
+// Hasher.Truncate/deterministic: Truncate returns the same value for the
+// same inputs.
+//
+// Hasher.Seal/smoke: Seal returns without a panic for derived inputs.
+//
+// Hasher.Seal/cancel: Seal returns an error for a cancelled context.
+
+// The derived checks of Hasher that witness their laws at the shallow end:
+//
+// Hasher.HashTagged/smoke
+//
+// Hasher.HashTagged/deterministic
+//
+// Hasher.CombineTagged/smoke
+//
+// Hasher.CombineTagged/deterministic
+//
+// Hasher.HashRoles/smoke
+//
+// Hasher.HashRoles/deterministic
+//
+// Hasher.Truncate/smoke
+//
+// Hasher.Truncate/deterministic
+//
+// Hasher.Seal/smoke
+
+// The unclaimed classifications of Hasher:
+//
+// The shape:writer of Hasher.Seal has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -158,6 +213,7 @@ func HasherSuite() conform.Suite[Hasher] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[Hasher]{HasherChecks.HashTagged.Smoke()},
 				Apply: func(h *HasherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
 						r0 := h.Subject().HashTagged(Role(1), []byte{1})
@@ -192,6 +248,7 @@ func HasherSuite() conform.Suite[Hasher] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[Hasher]{HasherChecks.CombineTagged.Smoke()},
 				Apply: func(h *HasherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
 						r0 := h.Subject().CombineTagged(Role(129), [32]byte{1}, [32]byte{1})
@@ -226,6 +283,7 @@ func HasherSuite() conform.Suite[Hasher] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[Hasher]{HasherChecks.HashRoles.Smoke()},
 				Apply: func(h *HasherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
 						r0 := h.Subject().HashRoles(Role(2))
@@ -260,6 +318,7 @@ func HasherSuite() conform.Suite[Hasher] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[Hasher]{HasherChecks.Truncate.Smoke()},
 				Apply: func(h *HasherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([]byte, error) {
 						r0 := h.Subject().Truncate([32]byte{1}, Size(16))
@@ -297,7 +356,7 @@ func HasherSuite() conform.Suite[Hasher] {
 						return h.Subject().Seal(ctx, [32]byte{1})
 					})
 				},
-				Defect: hasherSealSucceedsAlways,
+				Defect: hasherSealIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[Hasher]{
@@ -680,22 +739,37 @@ func hasherSealPanics(h *HasherHandle) Hasher {
 	return &hasherSealPanicsDefect{hasherOverEmbedded: h.Fresh()}
 }
 
-// hasherSealSucceedsAlwaysDefect is the planted defect of a Hasher whose
+// hasherSealIgnoresCancelDefect is the planted defect of a Hasher whose
 // Seal ignores the context.
-type hasherSealSucceedsAlwaysDefect struct {
+type hasherSealIgnoresCancelDefect struct {
 	hasherOverEmbedded
 }
 
 // Seal is the override of the planted defect.
-func (*hasherSealSucceedsAlwaysDefect) Seal(p0 context.Context, p1 [32]byte) (r0 error) {
-	return r0
+func (d *hasherSealIgnoresCancelDefect) Seal(p0 context.Context, p1 [32]byte) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.hasherOverEmbedded.Seal(p0, p1)
 }
 
-// hasherSealSucceedsAlways returns the planted defect of a Hasher whose
+// hasherSealIgnoresCancel returns the planted defect of a Hasher whose
 // Seal ignores the context over a fresh subject.
-func hasherSealSucceedsAlways(h *HasherHandle) Hasher {
-	return &hasherSealSucceedsAlwaysDefect{hasherOverEmbedded: h.Fresh()}
+func hasherSealIgnoresCancel(h *HasherHandle) Hasher {
+	return &hasherSealIgnoresCancelDefect{hasherOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Digest:
+//
+// Digest/smoke: Digest returns without a panic for derived inputs.
+//
+// Digest/deterministic: Digest returns the same value for the same inputs.
+
+// The derived checks of Digest that witness their laws at the shallow end:
+//
+// Digest/smoke
+//
+// Digest/deterministic
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -764,6 +838,7 @@ func DigestSuite() conform.Suite[DigestFunc] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[DigestFunc]{DigestChecks.Smoke()},
 				Apply: func(h *DigestHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
 						r0 := h.Subject()(Role(3), []byte{1})

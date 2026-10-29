@@ -7,6 +7,8 @@ package commutativetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/commutative"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/commutative/commutativetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	commutativetest.RunMixedSuite(t, commutativetest.NewInMemory)
+	commutativetest.RunMixedSuite(
+		t,
+		commutativetest.NewInMemory,
+		conform.Isolate[commutative.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedTotal(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9d91af4ac9716fc3e2680ef6f08cdfb66affd84b3918f53ac393515a100ebe10
+// dokimi:provenance sha256:214a454c3a0c9aa0a50dfa8e5e3586b3f0ce29b1326f00f4963579e0ab0dda40

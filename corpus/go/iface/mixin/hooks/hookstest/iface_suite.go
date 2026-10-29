@@ -15,6 +15,35 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Fire/smoke: Fire returns without a panic for derived inputs.
+//
+// Mixed.Fire/cancel: Fire returns an error for a cancelled context.
+//
+// Mixed.OnEvent/smoke: OnEvent returns without a panic for derived inputs.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Fire/smoke
+//
+// Mixed.OnEvent/smoke
+
+// The refused claims of Mixed:
+//
+// Mixed.Fire/hooks: a parameter of the read of Fire selects neither a
+// value that register takes nor a field of the written value. The remedy
+// is to align the name of the parameter of the read with a parameter or a
+// field of the write.
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Fire has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Mixed.OnEvent has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -58,6 +87,12 @@ type mixedOnEvent struct {
 	conform.Callable[hooks.Mixed]
 }
 
+// Smoke returns the identity of the check that OnEvent returns without a
+// panic for derived inputs.
+func (c mixedOnEvent) Smoke() conform.ID[hooks.Mixed] {
+	return c.Check("smoke")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[hooks.Mixed] {
@@ -93,7 +128,24 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 						return h.Subject().Fire(ctx, string("event-a"))
 					})
 				},
-				Defect: mixedFireSucceedsAlways,
+				Defect: mixedFireIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.OnEvent.Smoke(),
+				Statement:   "OnEvent returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().OnEvent(func(event string) {})
+						return nil
+					})
+				},
+				Defect: mixedOnEventPanics,
 			},
 		},
 		Calls: []conform.Call[hooks.Mixed]{
@@ -229,21 +281,41 @@ func mixedFirePanics(h *MixedHandle) hooks.Mixed {
 	return &mixedFirePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedFireSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Fire ignores the context.
-type mixedFireSucceedsAlwaysDefect struct {
+// mixedFireIgnoresCancelDefect is the planted defect of a Mixed whose Fire
+// ignores the context.
+type mixedFireIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Fire is the override of the planted defect.
-func (*mixedFireSucceedsAlwaysDefect) Fire(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedFireIgnoresCancelDefect) Fire(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Fire(p0, p1)
 }
 
-// mixedFireSucceedsAlways returns the planted defect of a Mixed whose Fire
+// mixedFireIgnoresCancel returns the planted defect of a Mixed whose Fire
 // ignores the context over a fresh subject.
-func mixedFireSucceedsAlways(h *MixedHandle) hooks.Mixed {
-	return &mixedFireSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedFireIgnoresCancel(h *MixedHandle) hooks.Mixed {
+	return &mixedFireIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:41363c96535d1bfb99544639415e6790cb432ee38806bf3402c1cd6f171815fb
+// mixedOnEventPanicsDefect is the planted defect of a Mixed whose OnEvent
+// panics.
+type mixedOnEventPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// OnEvent is the override of the planted defect.
+func (*mixedOnEventPanicsDefect) OnEvent(p0 func(event string)) {
+	panic("the planted defect of a Mixed whose OnEvent panics")
+}
+
+// mixedOnEventPanics returns the planted defect of a Mixed whose OnEvent
+// panics over a fresh subject.
+func mixedOnEventPanics(h *MixedHandle) hooks.Mixed {
+	return &mixedOnEventPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:09935a26f2f33c489025137f1b8af24d49b824887013eb3efa57c773b88ebe1a

@@ -7,6 +7,8 @@ package overmatchtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/overmatch"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/overmatch/overmatchtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	overmatchtest.RunMixedSuite(t, overmatchtest.NewInMemory)
+	overmatchtest.RunMixedSuite(
+		t,
+		overmatchtest.NewInMemory,
+		conform.Isolate[overmatch.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5af764f491da6b835d8333895229fe282bc1bb3d68047aab3e1f1529a86a971a
+// dokimi:provenance sha256:d9ea604cd7d318c064471f7b330069fdac271c8dd8c7f3017112cb9421ef827c

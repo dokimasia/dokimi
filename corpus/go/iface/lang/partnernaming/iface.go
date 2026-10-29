@@ -20,6 +20,9 @@
 //     says so.
 //   - Emit/Count — no candidate at all, so a check would have to invent a value
 //     the method never takes. Declined, and for a different reason.
+//   - Version/Put/Replace — two writes take the record whose revision Version
+//     reads, so the partner write of monotonic-reads has two candidates.
+//     Declined with one-partner.
 //
 // This axis varies Go's naming rather than the classification, so it breaks
 // generators independently of any directive — which is why it sits here beside
@@ -75,4 +78,24 @@ type Store interface {
 
 	// Count reports how many records a bucket holds.
 	Count(ctx context.Context, bucket int) (int, error)
+
+	// Version returns the record under key, whose revision never goes back.
+	//
+	// Put and Replace both take a Rec, so the derivation finds two writes that
+	// the reads could follow, and refuses the claim with one-partner.
+	//dokimi:mixin monotonic-reads version=Rev
+	Version(ctx context.Context, key string) (Rec, error)
+
+	// Put stores a record and stamps its revision.
+	Put(ctx context.Context, r Rec) error
+
+	// Replace stores a record in place of the record under its key and stamps
+	// its revision.
+	Replace(ctx context.Context, r Rec) error
+}
+
+// Rec is a record of Store with the revision that its last write stamped.
+type Rec struct {
+	Key string
+	Rev int64
 }

@@ -15,6 +15,22 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Deleter:
+//
+// Deleter.Delete/smoke: Delete returns without a panic for derived inputs.
+//
+// Deleter.Delete/cancel: Delete returns an error for a cancelled context.
+
+// The derived checks of Deleter that witness their laws at the shallow
+// end:
+//
+// Deleter.Delete/smoke
+
+// The unclaimed classifications of Deleter:
+//
+// The shape:deleter of Deleter.Delete has the stance silent. A delete is
+// an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -86,7 +102,7 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 						return h.Subject().Delete(ctx, string("key-a"))
 					})
 				},
-				Defect: deleterDeleteSucceedsAlways,
+				Defect: deleterDeleteIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[deleter.Deleter]{
@@ -206,21 +222,24 @@ func deleterDeletePanics(h *DeleterHandle) deleter.Deleter {
 	return &deleterDeletePanicsDefect{deleterOverEmbedded: h.Fresh()}
 }
 
-// deleterDeleteSucceedsAlwaysDefect is the planted defect of a Deleter
+// deleterDeleteIgnoresCancelDefect is the planted defect of a Deleter
 // whose Delete ignores the context.
-type deleterDeleteSucceedsAlwaysDefect struct {
+type deleterDeleteIgnoresCancelDefect struct {
 	deleterOverEmbedded
 }
 
 // Delete is the override of the planted defect.
-func (*deleterDeleteSucceedsAlwaysDefect) Delete(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *deleterDeleteIgnoresCancelDefect) Delete(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.deleterOverEmbedded.Delete(p0, p1)
 }
 
-// deleterDeleteSucceedsAlways returns the planted defect of a Deleter
-// whose Delete ignores the context over a fresh subject.
-func deleterDeleteSucceedsAlways(h *DeleterHandle) deleter.Deleter {
-	return &deleterDeleteSucceedsAlwaysDefect{deleterOverEmbedded: h.Fresh()}
+// deleterDeleteIgnoresCancel returns the planted defect of a Deleter whose
+// Delete ignores the context over a fresh subject.
+func deleterDeleteIgnoresCancel(h *DeleterHandle) deleter.Deleter {
+	return &deleterDeleteIgnoresCancelDefect{deleterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a2ca88a42f625467819880d3e7484ae07bb47b89775570d92c52efe1b807acb8
+// dokimi:provenance sha256:9940376d6e56b3143c0f37282064a3c02ef67beea7ac3e2de65a2bf10e172d0a

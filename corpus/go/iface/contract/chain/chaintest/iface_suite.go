@@ -15,6 +15,49 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Append/smoke: Append returns without a panic for derived
+// inputs.
+//
+// Contract.Append/cancel: Append returns an error for a cancelled context.
+//
+// Contract.Append/chain: Append grows Replay by the entry that it admits.
+//
+// Contract.Replay/smoke: Replay returns without a panic for derived
+// inputs.
+//
+// Contract.Replay/cancel: Replay returns an error for a cancelled context.
+//
+// Contract.Replay/zero-on-error: Replay returns the zero value beside an
+// error.
+//
+// Contract.Verify/smoke: Verify returns without a panic for derived
+// inputs.
+//
+// Contract.Verify/cancel: Verify returns an error for a cancelled context.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Append/smoke
+//
+// Contract.Replay/smoke
+//
+// Contract.Verify/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Append has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:lifecycle of Contract.Verify has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
+//
+// The contract:chain/verify of Contract.Verify has the stance gap. No
+// claim states that the verify of a chain refuses a chain that an append
+// did not produce.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -138,7 +181,7 @@ func ContractSuite() conform.Suite[chain.Contract] {
 						return h.Subject().Append(ctx, chain.Entry{Key: "Key-a"})
 					})
 				},
-				Defect: contractAppendSucceedsAlways,
+				Defect: contractAppendIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Append.Chain(),
@@ -188,7 +231,7 @@ func ContractSuite() conform.Suite[chain.Contract] {
 						return err
 					})
 				},
-				Defect: contractReplaySucceedsAlways,
+				Defect: contractReplayIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Replay.ZeroOnError(),
@@ -234,7 +277,7 @@ func ContractSuite() conform.Suite[chain.Contract] {
 						return h.Subject().Verify(ctx)
 					})
 				},
-				Defect: contractVerifySucceedsAlways,
+				Defect: contractVerifyIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[chain.Contract]{
@@ -393,19 +436,43 @@ func contractAppendPanics(h *ContractHandle) chain.Contract {
 	return &contractAppendPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractAppendSucceedsAlwaysDefect is the planted defect of a Contract
+// contractAppendIgnoresCancelDefect is the planted defect of a Contract
 // whose Append ignores the context.
+type contractAppendIgnoresCancelDefect struct {
+	contractOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (d *contractAppendIgnoresCancelDefect) Append(p0 context.Context, p1 chain.Entry) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Append(p0, p1)
+}
+
+// contractAppendIgnoresCancel returns the planted defect of a Contract
+// whose Append ignores the context over a fresh subject.
+func contractAppendIgnoresCancel(h *ContractHandle) chain.Contract {
+	return &contractAppendIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractAppendSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Append returns success and appends nothing.
 type contractAppendSucceedsAlwaysDefect struct {
 	contractOverEmbedded
 }
 
 // Append is the override of the planted defect.
 func (*contractAppendSucceedsAlwaysDefect) Append(p0 context.Context, p1 chain.Entry) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // contractAppendSucceedsAlways returns the planted defect of a Contract
-// whose Append ignores the context over a fresh subject.
+// whose Append returns success and appends nothing over a fresh subject.
 func contractAppendSucceedsAlways(h *ContractHandle) chain.Contract {
 	return &contractAppendSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
@@ -427,21 +494,24 @@ func contractReplayPanics(h *ContractHandle) chain.Contract {
 	return &contractReplayPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractReplaySucceedsAlwaysDefect is the planted defect of a Contract
+// contractReplayIgnoresCancelDefect is the planted defect of a Contract
 // whose Replay ignores the context.
-type contractReplaySucceedsAlwaysDefect struct {
+type contractReplayIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Replay is the override of the planted defect.
-func (*contractReplaySucceedsAlwaysDefect) Replay(p0 context.Context) (r0 []chain.Entry, r1 error) {
-	return r0, r1
+func (d *contractReplayIgnoresCancelDefect) Replay(p0 context.Context) (r0 []chain.Entry, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Replay(p0)
 }
 
-// contractReplaySucceedsAlways returns the planted defect of a Contract
+// contractReplayIgnoresCancel returns the planted defect of a Contract
 // whose Replay ignores the context over a fresh subject.
-func contractReplaySucceedsAlways(h *ContractHandle) chain.Contract {
-	return &contractReplaySucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractReplayIgnoresCancel(h *ContractHandle) chain.Contract {
+	return &contractReplayIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractReplayValueBesideDefect is the planted defect of a Contract
@@ -451,9 +521,11 @@ type contractReplayValueBesideDefect struct {
 }
 
 // Replay is the override of the planted defect.
-func (*contractReplayValueBesideDefect) Replay(p0 context.Context) (r0 []chain.Entry, r1 error) {
-	r0 = []chain.Entry{{Key: "Key-b"}}
-	r1 = conform.ErrGenerated
+func (d *contractReplayValueBesideDefect) Replay(p0 context.Context) (r0 []chain.Entry, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Replay(p0)
+	if r1 != nil {
+		r0 = []chain.Entry{{Key: "Key-b"}}
+	}
 	return r0, r1
 }
 
@@ -480,21 +552,24 @@ func contractVerifyPanics(h *ContractHandle) chain.Contract {
 	return &contractVerifyPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractVerifySucceedsAlwaysDefect is the planted defect of a Contract
+// contractVerifyIgnoresCancelDefect is the planted defect of a Contract
 // whose Verify ignores the context.
-type contractVerifySucceedsAlwaysDefect struct {
+type contractVerifyIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Verify is the override of the planted defect.
-func (*contractVerifySucceedsAlwaysDefect) Verify(p0 context.Context) (r0 error) {
-	return r0
+func (d *contractVerifyIgnoresCancelDefect) Verify(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Verify(p0)
 }
 
-// contractVerifySucceedsAlways returns the planted defect of a Contract
+// contractVerifyIgnoresCancel returns the planted defect of a Contract
 // whose Verify ignores the context over a fresh subject.
-func contractVerifySucceedsAlways(h *ContractHandle) chain.Contract {
-	return &contractVerifySucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractVerifyIgnoresCancel(h *ContractHandle) chain.Contract {
+	return &contractVerifyIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:618acd81705f3be050fdede3dccd6fdc874f9bd685e22a0926b81f501415b4db
+// dokimi:provenance sha256:98e5355902cdd1f271b91392dda279c62c6804a34ffe8865370b86e5fffa544e

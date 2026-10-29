@@ -7,6 +7,8 @@ package retrysucceedstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/retrysucceeds"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/retrysucceeds/retrysucceedstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	retrysucceedstest.RunMixedSuite(t, retrysucceedstest.NewInMemory)
+	retrysucceedstest.RunMixedSuite(
+		t,
+		retrysucceedstest.NewInMemory,
+		conform.Isolate[retrysucceeds.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToMixedAttempts(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a1668cc81c4e86fcc51755880bfef280d603e972182c7dda6b305831ab90a32c
+// dokimi:provenance sha256:597e6bdbaf25be4c56aa8626f9f990b8881f6e00e03a54d3bf9624ee083d575d

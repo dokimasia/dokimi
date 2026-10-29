@@ -15,6 +15,33 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Open/smoke: Open returns without a panic for derived inputs.
+//
+// Mixed.Open/cancel: Open returns an error for a cancelled context.
+//
+// Mixed.Cause/smoke: Cause returns without a panic for derived inputs.
+//
+// Mixed.Cause/cancel: Cause returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Open/smoke
+//
+// Mixed.Cause/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Open has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The mixin:wrapped-via of Mixed.Open has the stance gap. No claim states
+// that the error of the callable wraps the declared error.
+//
+// The shape:lifecycle of Mixed.Cause has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -105,7 +132,7 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 						return h.Subject().Open(ctx, string("name-a"))
 					})
 				},
-				Defect: mixedOpenSucceedsAlways,
+				Defect: mixedOpenIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Cause.Smoke(),
@@ -136,7 +163,7 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 						return h.Subject().Cause(ctx)
 					})
 				},
-				Defect: mixedCauseSucceedsAlways,
+				Defect: mixedCauseIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[wrappedvia.Mixed]{
@@ -271,21 +298,24 @@ func mixedOpenPanics(h *MixedHandle) wrappedvia.Mixed {
 	return &mixedOpenPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedOpenSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Open ignores the context.
-type mixedOpenSucceedsAlwaysDefect struct {
+// mixedOpenIgnoresCancelDefect is the planted defect of a Mixed whose Open
+// ignores the context.
+type mixedOpenIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Open is the override of the planted defect.
-func (*mixedOpenSucceedsAlwaysDefect) Open(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedOpenIgnoresCancelDefect) Open(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Open(p0, p1)
 }
 
-// mixedOpenSucceedsAlways returns the planted defect of a Mixed whose Open
+// mixedOpenIgnoresCancel returns the planted defect of a Mixed whose Open
 // ignores the context over a fresh subject.
-func mixedOpenSucceedsAlways(h *MixedHandle) wrappedvia.Mixed {
-	return &mixedOpenSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedOpenIgnoresCancel(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedOpenIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedCausePanicsDefect is the planted defect of a Mixed whose Cause
@@ -305,21 +335,24 @@ func mixedCausePanics(h *MixedHandle) wrappedvia.Mixed {
 	return &mixedCausePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCauseSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedCauseIgnoresCancelDefect is the planted defect of a Mixed whose
 // Cause ignores the context.
-type mixedCauseSucceedsAlwaysDefect struct {
+type mixedCauseIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Cause is the override of the planted defect.
-func (*mixedCauseSucceedsAlwaysDefect) Cause(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedCauseIgnoresCancelDefect) Cause(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Cause(p0)
 }
 
-// mixedCauseSucceedsAlways returns the planted defect of a Mixed whose
+// mixedCauseIgnoresCancel returns the planted defect of a Mixed whose
 // Cause ignores the context over a fresh subject.
-func mixedCauseSucceedsAlways(h *MixedHandle) wrappedvia.Mixed {
-	return &mixedCauseSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedCauseIgnoresCancel(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedCauseIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6cfe621634d71cbc9e866f3d52db676607534ba7a9d0ceddd827cf7c151297df
+// dokimi:provenance sha256:d035eec27a4d7bdd5bff21c2fa291631f553ef28ec903a8378a84bb97d2625c9

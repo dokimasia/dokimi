@@ -7,6 +7,8 @@ package appendertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/appender"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/appender/appendertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	appendertest.RunContractSuite(t, appendertest.NewInMemory)
+	appendertest.RunContractSuite(
+		t,
+		appendertest.NewInMemory,
+		conform.Isolate[appender.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToContractRun(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:07fb1190a3f7a8eb9bfa4e20ce517cc0f1c876be0f89d88dbdda8125660e6cab
+// dokimi:provenance sha256:9fd81cebe2452f5517ab2f278392fe3dfc0d0ec313c63e7f548d079685036453

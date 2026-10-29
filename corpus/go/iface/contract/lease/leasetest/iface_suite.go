@@ -15,6 +15,43 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Acquire/smoke: Acquire returns without a panic for derived
+// inputs.
+//
+// Contract.Acquire/cancel: Acquire returns an error for a cancelled
+// context.
+//
+// Contract.Acquire/lease: a second Acquire for one key fails with the
+// declared sentinel.
+//
+// Contract.Release/smoke: Release returns without a panic for derived
+// inputs.
+//
+// Contract.Release/cancel: Release returns an error for a cancelled
+// context.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Acquire/smoke
+//
+// Contract.Acquire/lease
+//
+// Contract.Release/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Acquire has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Contract.Release has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+//
+// The contract:lease/release of Contract.Release has the stance gap. No
+// claim states that a released lease is granted again.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,7 +149,7 @@ func ContractSuite() conform.Suite[lease.Contract] {
 						return h.Subject().Acquire(ctx, string("key-a"))
 					})
 				},
-				Defect: contractAcquireSucceedsAlways,
+				Defect: contractAcquireIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Acquire.Lease(),
@@ -159,7 +196,7 @@ func ContractSuite() conform.Suite[lease.Contract] {
 						return h.Subject().Release(ctx, string("key-a"))
 					})
 				},
-				Defect: contractReleaseSucceedsAlways,
+				Defect: contractReleaseIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[lease.Contract]{
@@ -299,19 +336,43 @@ func contractAcquirePanics(h *ContractHandle) lease.Contract {
 	return &contractAcquirePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractAcquireSucceedsAlwaysDefect is the planted defect of a Contract
+// contractAcquireIgnoresCancelDefect is the planted defect of a Contract
 // whose Acquire ignores the context.
+type contractAcquireIgnoresCancelDefect struct {
+	contractOverEmbedded
+}
+
+// Acquire is the override of the planted defect.
+func (d *contractAcquireIgnoresCancelDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Acquire(p0, p1)
+}
+
+// contractAcquireIgnoresCancel returns the planted defect of a Contract
+// whose Acquire ignores the context over a fresh subject.
+func contractAcquireIgnoresCancel(h *ContractHandle) lease.Contract {
+	return &contractAcquireIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractAcquireSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Acquire grants a lease that it holds.
 type contractAcquireSucceedsAlwaysDefect struct {
 	contractOverEmbedded
 }
 
 // Acquire is the override of the planted defect.
 func (*contractAcquireSucceedsAlwaysDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // contractAcquireSucceedsAlways returns the planted defect of a Contract
-// whose Acquire ignores the context over a fresh subject.
+// whose Acquire grants a lease that it holds over a fresh subject.
 func contractAcquireSucceedsAlways(h *ContractHandle) lease.Contract {
 	return &contractAcquireSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
@@ -333,21 +394,24 @@ func contractReleasePanics(h *ContractHandle) lease.Contract {
 	return &contractReleasePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractReleaseSucceedsAlwaysDefect is the planted defect of a Contract
+// contractReleaseIgnoresCancelDefect is the planted defect of a Contract
 // whose Release ignores the context.
-type contractReleaseSucceedsAlwaysDefect struct {
+type contractReleaseIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Release is the override of the planted defect.
-func (*contractReleaseSucceedsAlwaysDefect) Release(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *contractReleaseIgnoresCancelDefect) Release(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Release(p0, p1)
 }
 
-// contractReleaseSucceedsAlways returns the planted defect of a Contract
+// contractReleaseIgnoresCancel returns the planted defect of a Contract
 // whose Release ignores the context over a fresh subject.
-func contractReleaseSucceedsAlways(h *ContractHandle) lease.Contract {
-	return &contractReleaseSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractReleaseIgnoresCancel(h *ContractHandle) lease.Contract {
+	return &contractReleaseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:cbef53681418603c4d46cac131a3ccd2d61aa38f3f132a95305d42f24781776d
+// dokimi:provenance sha256:ea4bbc550c0651ed44bbd66b20e7a2af7b50e06605f153b33dfb6af4a645e098

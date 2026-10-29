@@ -5,3 +5,7 @@ version: 1
 # The Go backend wraps each line of code at the width of golines in the lint of the repository.
 policies:
   golang.width: "120"
+# The conformance test of each control isolates the planted defects of its derived checks.
+options:
+  suite:
+    isolate: true

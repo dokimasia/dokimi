@@ -7,6 +7,8 @@ package variadictest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/variadic"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/variadic/variadictest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToFinder(t *testing.T) {
 	t.Parallel()
 
-	variadictest.RunFinderSuite(t, variadictest.NewInMemory)
+	variadictest.RunFinderSuite(
+		t,
+		variadictest.NewInMemory,
+		conform.Isolate[variadic.Finder](),
+	)
 }
 
 // BenchmarkInMemoryConformsToFinder measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToFinderFindWithLimit(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:e63d2af55aaec46f3ae5fc898c9508a04cebe0a3e4cb600cd651cc4821721ba9
+// dokimi:provenance sha256:9a621b371aef498361363342965e49c819ab5867070bede94f8b00ae1d38bf80

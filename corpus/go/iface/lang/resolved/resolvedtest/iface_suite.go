@@ -15,6 +15,31 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Applier:
+//
+// Applier.Apply/smoke: Apply returns without a panic for derived inputs.
+//
+// Applier.Apply/cancel: Apply returns an error for a cancelled context.
+//
+// Applier.Limit/smoke: Limit returns without a panic for derived inputs.
+//
+// Applier.Limit/cancel: Limit returns an error for a cancelled context.
+//
+// Applier.Limit/zero-on-error: Limit returns the zero value beside an
+// error.
+
+// The derived checks of Applier that witness their laws at the shallow
+// end:
+//
+// Applier.Apply/smoke
+//
+// Applier.Limit/smoke
+
+// The unclaimed classifications of Applier:
+//
+// The shape:writer of Applier.Apply has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,7 +137,7 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 						return h.Subject().Apply(ctx, resolved.ApplyRequest{Key: "Key-a"})
 					})
 				},
-				Defect: applierApplySucceedsAlways,
+				Defect: applierApplyIgnoresCancel,
 			},
 			{
 				ID:          ApplierChecks.Limit.Smoke(),
@@ -145,7 +170,7 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 						return err
 					})
 				},
-				Defect: applierLimitSucceedsAlways,
+				Defect: applierLimitIgnoresCancel,
 			},
 			{
 				ID:          ApplierChecks.Limit.ZeroOnError(),
@@ -310,21 +335,24 @@ func applierApplyPanics(h *ApplierHandle) resolved.Applier {
 	return &applierApplyPanicsDefect{applierOverEmbedded: h.Fresh()}
 }
 
-// applierApplySucceedsAlwaysDefect is the planted defect of a Applier
-// whose Apply ignores the context.
-type applierApplySucceedsAlwaysDefect struct {
+// applierApplyIgnoresCancelDefect is the planted defect of a Applier whose
+// Apply ignores the context.
+type applierApplyIgnoresCancelDefect struct {
 	applierOverEmbedded
 }
 
 // Apply is the override of the planted defect.
-func (*applierApplySucceedsAlwaysDefect) Apply(p0 context.Context, p1 resolved.ApplyRequest) (r0 error) {
-	return r0
+func (d *applierApplyIgnoresCancelDefect) Apply(p0 context.Context, p1 resolved.ApplyRequest) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.applierOverEmbedded.Apply(p0, p1)
 }
 
-// applierApplySucceedsAlways returns the planted defect of a Applier whose
+// applierApplyIgnoresCancel returns the planted defect of a Applier whose
 // Apply ignores the context over a fresh subject.
-func applierApplySucceedsAlways(h *ApplierHandle) resolved.Applier {
-	return &applierApplySucceedsAlwaysDefect{applierOverEmbedded: h.Fresh()}
+func applierApplyIgnoresCancel(h *ApplierHandle) resolved.Applier {
+	return &applierApplyIgnoresCancelDefect{applierOverEmbedded: h.Fresh()}
 }
 
 // applierLimitPanicsDefect is the planted defect of a Applier whose Limit
@@ -344,21 +372,24 @@ func applierLimitPanics(h *ApplierHandle) resolved.Applier {
 	return &applierLimitPanicsDefect{applierOverEmbedded: h.Fresh()}
 }
 
-// applierLimitSucceedsAlwaysDefect is the planted defect of a Applier
-// whose Limit ignores the context.
-type applierLimitSucceedsAlwaysDefect struct {
+// applierLimitIgnoresCancelDefect is the planted defect of a Applier whose
+// Limit ignores the context.
+type applierLimitIgnoresCancelDefect struct {
 	applierOverEmbedded
 }
 
 // Limit is the override of the planted defect.
-func (*applierLimitSucceedsAlwaysDefect) Limit(p0 context.Context, p1 string) (r0 int, r1 error) {
-	return r0, r1
+func (d *applierLimitIgnoresCancelDefect) Limit(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.applierOverEmbedded.Limit(p0, p1)
 }
 
-// applierLimitSucceedsAlways returns the planted defect of a Applier whose
+// applierLimitIgnoresCancel returns the planted defect of a Applier whose
 // Limit ignores the context over a fresh subject.
-func applierLimitSucceedsAlways(h *ApplierHandle) resolved.Applier {
-	return &applierLimitSucceedsAlwaysDefect{applierOverEmbedded: h.Fresh()}
+func applierLimitIgnoresCancel(h *ApplierHandle) resolved.Applier {
+	return &applierLimitIgnoresCancelDefect{applierOverEmbedded: h.Fresh()}
 }
 
 // applierLimitValueBesideDefect is the planted defect of a Applier whose
@@ -368,9 +399,11 @@ type applierLimitValueBesideDefect struct {
 }
 
 // Limit is the override of the planted defect.
-func (*applierLimitValueBesideDefect) Limit(p0 context.Context, p1 string) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *applierLimitValueBesideDefect) Limit(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0, r1 = d.applierOverEmbedded.Limit(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -380,4 +413,4 @@ func applierLimitValueBeside(h *ApplierHandle) resolved.Applier {
 	return &applierLimitValueBesideDefect{applierOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:bf72cc410852e0cc260bcf0d89e811c9edc51cbee5bf3316b4e4a00db881baa9
+// dokimi:provenance sha256:3f37f10339125771de0cd0a962b997a1d013ff11ba0ccc90afa273e0cf07b4a0

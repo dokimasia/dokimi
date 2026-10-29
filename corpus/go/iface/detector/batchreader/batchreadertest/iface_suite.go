@@ -15,6 +15,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of BatchReader:
+//
+// BatchReader.GetAll/smoke: GetAll returns without a panic for derived
+// inputs.
+//
+// BatchReader.GetAll/cancel: GetAll returns an error for a cancelled
+// context.
+
+// The derived checks of BatchReader that witness their laws at the shallow
+// end:
+//
+// BatchReader.GetAll/smoke
+
+// The unclaimed classifications of BatchReader:
+//
+// The shape:batch-reader of BatchReader.GetAll has the stance gap. No
+// claim states what a batch read returns for a key that it does not find.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -88,7 +106,7 @@ func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 						return err
 					})
 				},
-				Defect: batchReaderGetAllSucceedsAlways,
+				Defect: batchReaderGetAllIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[batchreader.BatchReader]{
@@ -215,24 +233,27 @@ func batchReaderGetAllPanics(h *BatchReaderHandle) batchreader.BatchReader {
 	return &batchReaderGetAllPanicsDefect{batchReaderOverEmbedded: h.Fresh()}
 }
 
-// batchReaderGetAllSucceedsAlwaysDefect is the planted defect of a
+// batchReaderGetAllIgnoresCancelDefect is the planted defect of a
 // BatchReader whose GetAll ignores the context.
-type batchReaderGetAllSucceedsAlwaysDefect struct {
+type batchReaderGetAllIgnoresCancelDefect struct {
 	batchReaderOverEmbedded
 }
 
 // GetAll is the override of the planted defect.
-func (*batchReaderGetAllSucceedsAlwaysDefect) GetAll(
+func (d *batchReaderGetAllIgnoresCancelDefect) GetAll(
 	p0 context.Context,
 	p1 ...string,
 ) (r0 []batchreader.Value, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.batchReaderOverEmbedded.GetAll(p0, p1...)
 }
 
-// batchReaderGetAllSucceedsAlways returns the planted defect of a
+// batchReaderGetAllIgnoresCancel returns the planted defect of a
 // BatchReader whose GetAll ignores the context over a fresh subject.
-func batchReaderGetAllSucceedsAlways(h *BatchReaderHandle) batchreader.BatchReader {
-	return &batchReaderGetAllSucceedsAlwaysDefect{batchReaderOverEmbedded: h.Fresh()}
+func batchReaderGetAllIgnoresCancel(h *BatchReaderHandle) batchreader.BatchReader {
+	return &batchReaderGetAllIgnoresCancelDefect{batchReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c2417f1ea65c58086d9639647bd0add9a3c3dbef2f39bdecdcec8702c213a22c
+// dokimi:provenance sha256:17e2b7fd569487d8212c786f2ba208c9c5e0fe7d3796af6bd2650b05918aa392

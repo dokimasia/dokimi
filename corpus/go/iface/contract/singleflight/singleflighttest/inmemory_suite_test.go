@@ -7,6 +7,8 @@ package singleflighttest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/singleflight"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/singleflight/singleflighttest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	singleflighttest.RunContractSuite(t, singleflighttest.NewInMemory)
+	singleflighttest.RunContractSuite(
+		t,
+		singleflighttest.NewInMemory,
+		conform.Isolate[singleflight.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToContractFlights(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5ac5eafe5532e66d27230a5cd9538fdb8aec9cc035e660bbf298bfdc5dea0258
+// dokimi:provenance sha256:c3940037ef79d8515a2afa4ef181cb26994adc51efb8a96e662411197ad22ea3

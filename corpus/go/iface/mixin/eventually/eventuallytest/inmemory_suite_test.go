@@ -7,6 +7,8 @@ package eventuallytest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually/eventuallytest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	eventuallytest.RunMixedSuite(t, eventuallytest.NewInMemory)
+	eventuallytest.RunMixedSuite(
+		t,
+		eventuallytest.NewInMemory,
+		conform.Isolate[eventually.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -91,4 +97,4 @@ func FuzzInMemoryConformsToMixedItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:8e0d16e332d2120de4eb7a30a2eb88c74b1231ec807e474dcf2cd0c8ce4be6ef
+// dokimi:provenance sha256:d78406756b42829f77900dbd6d072b5c4aec18777b8d8e6390e52ad5347afcde

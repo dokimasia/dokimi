@@ -23,7 +23,7 @@ forms:
     since: 1.0.0
   fails-always:
     changes: callable
-    does: The callable fails on every call with an error that no directive declares.
+    does: The callable fails with an error that no directive declares wherever the call of the fresh subject succeeds.
     min-steps: 1
     since: 1.0.0
   reports-another-error:
@@ -40,6 +40,11 @@ forms:
     changes: callable
     does: The callable succeeds on its first call and fails on every later call.
     min-steps: 2
+    since: 1.0.0
+  ignores-cancel:
+    changes: callable
+    does: The callable returns its zero results and no error for a cancelled context, and calls the fresh subject for any other.
+    min-steps: 1
     since: 1.0.0
   value-beside:
     changes: callable
@@ -81,6 +86,11 @@ forms:
     does: The callable returns the second sample on its first call and the zero value on every later call.
     min-steps: 2
     since: 1.0.0
+  stamps-the-past:
+    changes: partner:write
+    does: The partner calls the fresh subject and returns its value with the version 0.
+    min-steps: 3
+    since: 1.0.0
   version-descends:
     changes: callable
     does: The callable returns a value whose version is 1 on its first call and 0 on every later call.
@@ -91,9 +101,9 @@ forms:
     does: The callable returns the second sample and no error, whatever the state of the subject.
     min-steps: 1
     since: 1.0.0
-  forgets-writes:
-    changes: partner:write
-    does: The partner returns success and stores nothing.
+  reads-another-value:
+    changes: callable
+    does: The callable returns the second sample of each value wherever the call of the fresh subject succeeds.
     min-steps: 2
     since: 1.0.0
   stores-nothing:

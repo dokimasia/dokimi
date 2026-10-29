@@ -7,6 +7,8 @@ package outboxtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/outbox"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/outbox/outboxtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	outboxtest.RunContractSuite(t, outboxtest.NewInMemory)
+	outboxtest.RunContractSuite(
+		t,
+		outboxtest.NewInMemory,
+		conform.Isolate[outbox.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractSubscribe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:52e76b82c2bae822b3650609e6491ff381a0562127cbe48e8dad2cb4b389d09b
+// dokimi:provenance sha256:0f01c75ca612a9a8e4d93f604448444f1e9398939cab7883368c042c90d94118

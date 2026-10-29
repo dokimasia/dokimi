@@ -7,6 +7,8 @@ package nilsafetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/nilsafe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/nilsafe/nilsafetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	nilsafetest.RunMixedSuite(t, nilsafetest.NewInMemory)
+	nilsafetest.RunMixedSuite(
+		t,
+		nilsafetest.NewInMemory,
+		conform.Isolate[nilsafe.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToMixedStore(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:6ef622209c54892acda29c427163333eda4132184c514a0c081fccadaf67a6b4
+// dokimi:provenance sha256:db9635692ab0bb7ce7fe0470e6a79753ae2aad31a49e14d010fb2acf8730b1d2

@@ -7,6 +7,8 @@ package streamreadertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader/streamreadertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToStreamReader(t *testing.T) {
 	t.Parallel()
 
-	streamreadertest.RunStreamReaderSuite(t, streamreadertest.NewInMemory)
+	streamreadertest.RunStreamReaderSuite(
+		t,
+		streamreadertest.NewInMemory,
+		conform.Isolate[streamreader.StreamReader](),
+	)
 }
 
 // BenchmarkInMemoryConformsToStreamReader measures each callable of the
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToStreamReaderList(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:e94630c594080ccee91bc790c73469f353ec199bc4423ea27be1fd7b4a0be6c3
+// dokimi:provenance sha256:8620713e1f56e1d1da90321d24124c189452af0946412f83574ff4827746be21

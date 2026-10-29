@@ -7,6 +7,8 @@ package workflowtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/workflow"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/workflow/workflowtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	workflowtest.RunContractSuite(t, workflowtest.NewInMemory)
+	workflowtest.RunContractSuite(
+		t,
+		workflowtest.NewInMemory,
+		conform.Isolate[workflow.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractState(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f710a2bf559bfd1dd3c60c1e28635584b14d70e879fa49fcaa06715805b353ef
+// dokimi:provenance sha256:17e16ebbe4a20592b01050cc9b3e5677429ba5654293693501c632bb17d20c40

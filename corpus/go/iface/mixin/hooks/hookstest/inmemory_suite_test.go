@@ -7,6 +7,8 @@ package hookstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/hooks"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/hooks/hookstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	hookstest.RunMixedSuite(t, hookstest.NewInMemory)
+	hookstest.RunMixedSuite(
+		t,
+		hookstest.NewInMemory,
+		conform.Isolate[hooks.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedOnEvent(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5c55286bd449d13b713bf39c2c32f0cffd298c9bf679a8720db9e758da4b5ed5
+// dokimi:provenance sha256:87a41bbd195ad60c0b8fe47a4c048ada6ddc7d479c2675e69523c6c2cbdf1cd3

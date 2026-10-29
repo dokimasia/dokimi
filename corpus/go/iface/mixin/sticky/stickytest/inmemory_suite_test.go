@@ -7,6 +7,8 @@ package stickytest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sticky"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sticky/stickytest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	stickytest.RunMixedSuite(t, stickytest.NewInMemory)
+	stickytest.RunMixedSuite(
+		t,
+		stickytest.NewInMemory,
+		conform.Isolate[sticky.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9ddfa44360619cba1df8c78362e00a0c052b6131183a36349642d961ebe4476d
+// dokimi:provenance sha256:53e56109fc445c6c77e26f6163507571734414f945b91ef42a9abe8081599031

@@ -16,6 +16,105 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Store:
+//
+// Store.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Store.Put/cancel: Put returns an error for a cancelled context.
+//
+// Store.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Store.Get/cancel: Get returns an error for a cancelled context.
+//
+// Store.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Store.Get/read-after-write: Get returns what Put stored before it.
+//
+// Store.Get/monotonic-reads: Get never returns an older version than one
+// that it returned before.
+//
+// Store.Load/smoke: Load returns without a panic for derived inputs.
+//
+// Store.Load/zero-on-miss: Load returns the zero value beside a false
+// presence flag.
+//
+// Store.Load/cacheable: Load returns the same value on a repeat.
+//
+// Store.Split/smoke: Split returns without a panic for derived inputs.
+//
+// Store.Find/smoke: Find returns without a panic for derived inputs.
+//
+// Store.Find/cancel: Find returns an error for a cancelled context.
+//
+// Store.Level/smoke: Level returns without a panic for derived inputs.
+//
+// Store.Level/cancel: Level returns an error for a cancelled context.
+//
+// Store.Level/zero-on-error: Level returns the zero value beside an error.
+//
+// Store.Raise/smoke: Raise returns without a panic for derived inputs.
+//
+// Store.Raise/cancel: Raise returns an error for a cancelled context.
+//
+// Store.Inspect/smoke: Inspect returns without a panic for derived inputs.
+//
+// Store.GetWithMeta/smoke: GetWithMeta returns without a panic for derived
+// inputs.
+//
+// Store.GetWithMeta/cancel: GetWithMeta returns an error for a cancelled
+// context.
+//
+// Store.GetWithMeta/zeroes-on-error: GetWithMeta returns the zero values
+// beside an error.
+
+// The derived checks of Store that witness their laws at the shallow end:
+//
+// Store.Put/smoke
+//
+// Store.Get/smoke
+//
+// Store.Get/read-after-write
+//
+// Store.Get/monotonic-reads
+//
+// Store.Load/smoke
+//
+// Store.Load/cacheable
+//
+// Store.Split/smoke
+//
+// Store.Find/smoke
+//
+// Store.Level/smoke
+//
+// Store.Raise/smoke
+//
+// Store.Inspect/smoke
+//
+// Store.GetWithMeta/smoke
+
+// The refused claims of Store:
+//
+// Store.Load/cancel: Load cannot fail. The remedy is to give Load an error
+// result.
+//
+// Store.Split/pure: Split does not return exactly one value. The remedy is
+// to return one value from Split.
+//
+// Store.Inspect/zeroes-on-miss: Inspect returns no presence flag. The
+// remedy is to return a presence flag beside the value of Inspect.
+
+// The unclaimed classifications of Store:
+//
+// The shape:writer of Store.Put has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:batch-reader of Store.Find has the stance gap. No claim states
+// what a batch read returns for a key that it does not find.
+//
+// The shape:writer of Store.Raise has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,6 +193,12 @@ func (c storeGet) ZeroOnError() conform.ID[Store] {
 // Put stored before it.
 func (c storeGet) ReadAfterWrite() conform.ID[Store] {
 	return c.Check("read-after-write")
+}
+
+// MonotonicReads returns the identity of the check that Get never returns
+// an older version than one that it returned before.
+func (c storeGet) MonotonicReads() conform.ID[Store] {
+	return c.Check("monotonic-reads")
 }
 
 // storeLoad is the name of Store.Load, with the identities of its checks.
@@ -261,7 +366,7 @@ func StoreSuite() conform.Suite[Store] {
 						return h.Subject().Put(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: storePutSucceedsAlways,
+				Defect: storePutIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Get.Smoke(),
@@ -294,7 +399,7 @@ func StoreSuite() conform.Suite[Store] {
 						return err
 					})
 				},
-				Defect: storeGetSucceedsAlways,
+				Defect: storeGetIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Get.ZeroOnError(),
@@ -329,7 +434,25 @@ func StoreSuite() conform.Suite[Store] {
 						return w, err
 					})
 				},
-				Defect: storePutForgetsWrites,
+				Defect: storeGetReadsAnotherValue,
+			},
+			{
+				ID:          StoreChecks.Get.MonotonicReads(),
+				Statement:   "Get never returns an older version than one that it returned before",
+				Claim:       spec.MonotonicReads,
+				Probe:       spec.ReadsNeverRegress,
+				Reason:      spec.Regressed,
+				Law:         spec.ReadsNeverGoBackwards,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StoreHandle) {
+					probe.ReadsNeverRegress(h, func(ctx context.Context) (Value, error) {
+						return h.Subject().Get(ctx, (Value{Key: "Key-a"}).Key)
+					}, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, Value{Key: "Key-a"})
+					}, func(v Value) int64 { return v.Rev })
+				},
+				Defect: storeGetVersionDescends,
 			},
 			{
 				ID:          StoreChecks.Load.Smoke(),
@@ -428,7 +551,7 @@ func StoreSuite() conform.Suite[Store] {
 						return err
 					})
 				},
-				Defect: storeFindSucceedsAlways,
+				Defect: storeFindIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Level.Smoke(),
@@ -461,7 +584,7 @@ func StoreSuite() conform.Suite[Store] {
 						return err
 					})
 				},
-				Defect: storeLevelSucceedsAlways,
+				Defect: storeLevelIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Level.ZeroOnError(),
@@ -507,7 +630,7 @@ func StoreSuite() conform.Suite[Store] {
 						return h.Subject().Raise(ctx, Level(Base))
 					})
 				},
-				Defect: storeRaiseSucceedsAlways,
+				Defect: storeRaiseIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Inspect.Smoke(),
@@ -557,7 +680,7 @@ func StoreSuite() conform.Suite[Store] {
 						return err
 					})
 				},
-				Defect: storeGetWithMetaSucceedsAlways,
+				Defect: storeGetWithMetaIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.GetWithMeta.ZeroesOnError(),
@@ -880,21 +1003,24 @@ func storePutPanics(h *StoreHandle) Store {
 	return &storePutPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storePutSucceedsAlwaysDefect is the planted defect of a Store whose Put
+// storePutIgnoresCancelDefect is the planted defect of a Store whose Put
 // ignores the context.
-type storePutSucceedsAlwaysDefect struct {
+type storePutIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*storePutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *storePutIgnoresCancelDefect) Put(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Put(p0, p1)
 }
 
-// storePutSucceedsAlways returns the planted defect of a Store whose Put
+// storePutIgnoresCancel returns the planted defect of a Store whose Put
 // ignores the context over a fresh subject.
-func storePutSucceedsAlways(h *StoreHandle) Store {
-	return &storePutSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storePutIgnoresCancel(h *StoreHandle) Store {
+	return &storePutIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeGetPanicsDefect is the planted defect of a Store whose Get panics.
@@ -913,21 +1039,24 @@ func storeGetPanics(h *StoreHandle) Store {
 	return &storeGetPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeGetSucceedsAlwaysDefect is the planted defect of a Store whose Get
+// storeGetIgnoresCancelDefect is the planted defect of a Store whose Get
 // ignores the context.
-type storeGetSucceedsAlwaysDefect struct {
+type storeGetIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*storeGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *storeGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.storeOverEmbedded.Get(p0, p1)
 }
 
-// storeGetSucceedsAlways returns the planted defect of a Store whose Get
+// storeGetIgnoresCancel returns the planted defect of a Store whose Get
 // ignores the context over a fresh subject.
-func storeGetSucceedsAlways(h *StoreHandle) Store {
-	return &storeGetSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeGetIgnoresCancel(h *StoreHandle) Store {
+	return &storeGetIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeGetValueBesideDefect is the planted defect of a Store whose Get
@@ -937,9 +1066,11 @@ type storeGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*storeGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *storeGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.storeOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -949,21 +1080,58 @@ func storeGetValueBeside(h *StoreHandle) Store {
 	return &storeGetValueBesideDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storePutForgetsWritesDefect is the planted defect of a Store whose Put
-// returns success and stores nothing.
-type storePutForgetsWritesDefect struct {
+// storeGetReadsAnotherValueDefect is the planted defect of a Store whose
+// Get returns a value that Put did not write.
+type storeGetReadsAnotherValueDefect struct {
 	storeOverEmbedded
 }
 
-// Put is the override of the planted defect.
-func (*storePutForgetsWritesDefect) Put(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+// Get is the override of the planted defect.
+func (d *storeGetReadsAnotherValueDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.storeOverEmbedded.Get(p0, p1)
+	if r1 == nil {
+		r0 = Value{Key: "Key-b"}
+	}
+	return r0, r1
 }
 
-// storePutForgetsWrites returns the planted defect of a Store whose Put
-// returns success and stores nothing over a fresh subject.
-func storePutForgetsWrites(h *StoreHandle) Store {
-	return &storePutForgetsWritesDefect{storeOverEmbedded: h.Fresh()}
+// storeGetReadsAnotherValue returns the planted defect of a Store whose
+// Get returns a value that Put did not write over a fresh subject.
+func storeGetReadsAnotherValue(h *StoreHandle) Store {
+	return &storeGetReadsAnotherValueDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeGetVersionDescendsDefect is the planted defect of a Store whose Get
+// returns an older version on the second read.
+type storeGetVersionDescendsDefect struct {
+	storeOverEmbedded
+	calls int
+}
+
+// Get is the override of the planted defect.
+func (d *storeGetVersionDescendsDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0 = Value{Key: "Key-b"}
+	if d.calls == 1 {
+		r0.Rev = 1
+	} else {
+		r0.Rev = 0
+	}
+	return r0, r1
+}
+
+// storeGetVersionDescends returns the planted defect of a Store whose Get
+// returns an older version on the second read over a fresh subject.
+func storeGetVersionDescends(h *StoreHandle) Store {
+	return &storeGetVersionDescendsDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeLoadPanicsDefect is the planted defect of a Store whose Load
@@ -1064,24 +1232,27 @@ func storeFindPanics(h *StoreHandle) Store {
 	return &storeFindPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeFindSucceedsAlwaysDefect is the planted defect of a Store whose
-// Find ignores the context.
-type storeFindSucceedsAlwaysDefect struct {
+// storeFindIgnoresCancelDefect is the planted defect of a Store whose Find
+// ignores the context.
+type storeFindIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Find is the override of the planted defect.
-func (*storeFindSucceedsAlwaysDefect) Find(
+func (d *storeFindIgnoresCancelDefect) Find(
 	p0 context.Context,
 	p1 ...string,
 ) (r0 []Value, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.storeOverEmbedded.Find(p0, p1...)
 }
 
-// storeFindSucceedsAlways returns the planted defect of a Store whose Find
+// storeFindIgnoresCancel returns the planted defect of a Store whose Find
 // ignores the context over a fresh subject.
-func storeFindSucceedsAlways(h *StoreHandle) Store {
-	return &storeFindSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeFindIgnoresCancel(h *StoreHandle) Store {
+	return &storeFindIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeLevelPanicsDefect is the planted defect of a Store whose Level
@@ -1101,21 +1272,24 @@ func storeLevelPanics(h *StoreHandle) Store {
 	return &storeLevelPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeLevelSucceedsAlwaysDefect is the planted defect of a Store whose
+// storeLevelIgnoresCancelDefect is the planted defect of a Store whose
 // Level ignores the context.
-type storeLevelSucceedsAlwaysDefect struct {
+type storeLevelIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Level is the override of the planted defect.
-func (*storeLevelSucceedsAlwaysDefect) Level(p0 context.Context, p1 string) (r0 Level, r1 error) {
-	return r0, r1
+func (d *storeLevelIgnoresCancelDefect) Level(p0 context.Context, p1 string) (r0 Level, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.storeOverEmbedded.Level(p0, p1)
 }
 
-// storeLevelSucceedsAlways returns the planted defect of a Store whose
+// storeLevelIgnoresCancel returns the planted defect of a Store whose
 // Level ignores the context over a fresh subject.
-func storeLevelSucceedsAlways(h *StoreHandle) Store {
-	return &storeLevelSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeLevelIgnoresCancel(h *StoreHandle) Store {
+	return &storeLevelIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeLevelValueBesideDefect is the planted defect of a Store whose Level
@@ -1125,9 +1299,11 @@ type storeLevelValueBesideDefect struct {
 }
 
 // Level is the override of the planted defect.
-func (*storeLevelValueBesideDefect) Level(p0 context.Context, p1 string) (r0 Level, r1 error) {
-	r0 = Level(7)
-	r1 = conform.ErrGenerated
+func (d *storeLevelValueBesideDefect) Level(p0 context.Context, p1 string) (r0 Level, r1 error) {
+	r0, r1 = d.storeOverEmbedded.Level(p0, p1)
+	if r1 != nil {
+		r0 = Level(7)
+	}
 	return r0, r1
 }
 
@@ -1154,21 +1330,24 @@ func storeRaisePanics(h *StoreHandle) Store {
 	return &storeRaisePanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeRaiseSucceedsAlwaysDefect is the planted defect of a Store whose
+// storeRaiseIgnoresCancelDefect is the planted defect of a Store whose
 // Raise ignores the context.
-type storeRaiseSucceedsAlwaysDefect struct {
+type storeRaiseIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Raise is the override of the planted defect.
-func (*storeRaiseSucceedsAlwaysDefect) Raise(p0 context.Context, p1 Level) (r0 error) {
-	return r0
+func (d *storeRaiseIgnoresCancelDefect) Raise(p0 context.Context, p1 Level) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Raise(p0, p1)
 }
 
-// storeRaiseSucceedsAlways returns the planted defect of a Store whose
+// storeRaiseIgnoresCancel returns the planted defect of a Store whose
 // Raise ignores the context over a fresh subject.
-func storeRaiseSucceedsAlways(h *StoreHandle) Store {
-	return &storeRaiseSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeRaiseIgnoresCancel(h *StoreHandle) Store {
+	return &storeRaiseIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeInspectPanicsDefect is the planted defect of a Store whose Inspect
@@ -1208,24 +1387,27 @@ func storeGetWithMetaPanics(h *StoreHandle) Store {
 	return &storeGetWithMetaPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeGetWithMetaSucceedsAlwaysDefect is the planted defect of a Store
+// storeGetWithMetaIgnoresCancelDefect is the planted defect of a Store
 // whose GetWithMeta ignores the context.
-type storeGetWithMetaSucceedsAlwaysDefect struct {
+type storeGetWithMetaIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // GetWithMeta is the override of the planted defect.
-func (*storeGetWithMetaSucceedsAlwaysDefect) GetWithMeta(
+func (d *storeGetWithMetaIgnoresCancelDefect) GetWithMeta(
 	p0 context.Context,
 	p1 string,
 ) (r0 Value, r1 Meta, r2 error) {
-	return r0, r1, r2
+	if p0.Err() != nil {
+		return r0, r1, r2
+	}
+	return d.storeOverEmbedded.GetWithMeta(p0, p1)
 }
 
-// storeGetWithMetaSucceedsAlways returns the planted defect of a Store
+// storeGetWithMetaIgnoresCancel returns the planted defect of a Store
 // whose GetWithMeta ignores the context over a fresh subject.
-func storeGetWithMetaSucceedsAlways(h *StoreHandle) Store {
-	return &storeGetWithMetaSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeGetWithMetaIgnoresCancel(h *StoreHandle) Store {
+	return &storeGetWithMetaIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeGetWithMetaValuesBesideDefect is the planted defect of a Store
@@ -1235,13 +1417,15 @@ type storeGetWithMetaValuesBesideDefect struct {
 }
 
 // GetWithMeta is the override of the planted defect.
-func (*storeGetWithMetaValuesBesideDefect) GetWithMeta(
+func (d *storeGetWithMetaValuesBesideDefect) GetWithMeta(
 	p0 context.Context,
 	p1 string,
 ) (r0 Value, r1 Meta, r2 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = Meta{Revision: 7}
-	r2 = conform.ErrGenerated
+	r0, r1, r2 = d.storeOverEmbedded.GetWithMeta(p0, p1)
+	if r2 != nil {
+		r0 = Value{Key: "Key-b"}
+		r1 = Meta{Revision: 7}
+	}
 	return r0, r1, r2
 }
 
@@ -1250,6 +1434,48 @@ func (*storeGetWithMetaValuesBesideDefect) GetWithMeta(
 func storeGetWithMetaValuesBeside(h *StoreHandle) Store {
 	return &storeGetWithMetaValuesBesideDefect{storeOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Keyed:
+//
+// Keyed.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Keyed.Put/cancel: Put returns an error for a cancelled context.
+//
+// Keyed.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Keyed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Keyed.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Keyed.Get/read-after-write: Get returns what Put stored before it.
+//
+// Keyed.Delete/smoke: Delete returns without a panic for derived inputs.
+//
+// Keyed.Delete/cancel: Delete returns an error for a cancelled context.
+
+// The derived checks of Keyed that witness their laws at the shallow end:
+//
+// Keyed.Put/smoke
+//
+// Keyed.Get/smoke
+//
+// Keyed.Get/read-after-write
+//
+// Keyed.Delete/smoke
+
+// The refused claims of Keyed:
+//
+// Keyed.Delete/delete-removes: no callable of the declaration is the
+// partner put of Delete. The remedy is to name the partner of Delete with
+// the param of the classification.
+
+// The unclaimed classifications of Keyed:
+//
+// The shape:composite-writer of Keyed.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:deleter of Keyed.Delete has the stance silent. A delete is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -1372,7 +1598,7 @@ func KeyedSuite() conform.Suite[Keyed] {
 						return h.Subject().Put(ctx, string("key-a"), Value{Key: "Key-a"})
 					})
 				},
-				Defect: keyedPutSucceedsAlways,
+				Defect: keyedPutIgnoresCancel,
 			},
 			{
 				ID:          KeyedChecks.Get.Smoke(),
@@ -1405,7 +1631,7 @@ func KeyedSuite() conform.Suite[Keyed] {
 						return err
 					})
 				},
-				Defect: keyedGetSucceedsAlways,
+				Defect: keyedGetIgnoresCancel,
 			},
 			{
 				ID:          KeyedChecks.Get.ZeroOnError(),
@@ -1440,7 +1666,7 @@ func KeyedSuite() conform.Suite[Keyed] {
 						return w, err
 					})
 				},
-				Defect: keyedPutForgetsWrites,
+				Defect: keyedGetReadsAnotherValue,
 			},
 			{
 				ID:          KeyedChecks.Delete.Smoke(),
@@ -1471,7 +1697,7 @@ func KeyedSuite() conform.Suite[Keyed] {
 						return h.Subject().Delete(ctx, string("key-a"))
 					})
 				},
-				Defect: keyedDeleteSucceedsAlways,
+				Defect: keyedDeleteIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[Keyed]{
@@ -1636,21 +1862,24 @@ func keyedPutPanics(h *KeyedHandle) Keyed {
 	return &keyedPutPanicsDefect{keyedOverEmbedded: h.Fresh()}
 }
 
-// keyedPutSucceedsAlwaysDefect is the planted defect of a Keyed whose Put
+// keyedPutIgnoresCancelDefect is the planted defect of a Keyed whose Put
 // ignores the context.
-type keyedPutSucceedsAlwaysDefect struct {
+type keyedPutIgnoresCancelDefect struct {
 	keyedOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*keyedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 string, p2 Value) (r0 error) {
-	return r0
+func (d *keyedPutIgnoresCancelDefect) Put(p0 context.Context, p1 string, p2 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.keyedOverEmbedded.Put(p0, p1, p2)
 }
 
-// keyedPutSucceedsAlways returns the planted defect of a Keyed whose Put
+// keyedPutIgnoresCancel returns the planted defect of a Keyed whose Put
 // ignores the context over a fresh subject.
-func keyedPutSucceedsAlways(h *KeyedHandle) Keyed {
-	return &keyedPutSucceedsAlwaysDefect{keyedOverEmbedded: h.Fresh()}
+func keyedPutIgnoresCancel(h *KeyedHandle) Keyed {
+	return &keyedPutIgnoresCancelDefect{keyedOverEmbedded: h.Fresh()}
 }
 
 // keyedGetPanicsDefect is the planted defect of a Keyed whose Get panics.
@@ -1669,21 +1898,24 @@ func keyedGetPanics(h *KeyedHandle) Keyed {
 	return &keyedGetPanicsDefect{keyedOverEmbedded: h.Fresh()}
 }
 
-// keyedGetSucceedsAlwaysDefect is the planted defect of a Keyed whose Get
+// keyedGetIgnoresCancelDefect is the planted defect of a Keyed whose Get
 // ignores the context.
-type keyedGetSucceedsAlwaysDefect struct {
+type keyedGetIgnoresCancelDefect struct {
 	keyedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*keyedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *keyedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.keyedOverEmbedded.Get(p0, p1)
 }
 
-// keyedGetSucceedsAlways returns the planted defect of a Keyed whose Get
+// keyedGetIgnoresCancel returns the planted defect of a Keyed whose Get
 // ignores the context over a fresh subject.
-func keyedGetSucceedsAlways(h *KeyedHandle) Keyed {
-	return &keyedGetSucceedsAlwaysDefect{keyedOverEmbedded: h.Fresh()}
+func keyedGetIgnoresCancel(h *KeyedHandle) Keyed {
+	return &keyedGetIgnoresCancelDefect{keyedOverEmbedded: h.Fresh()}
 }
 
 // keyedGetValueBesideDefect is the planted defect of a Keyed whose Get
@@ -1693,9 +1925,11 @@ type keyedGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*keyedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *keyedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.keyedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -1705,21 +1939,29 @@ func keyedGetValueBeside(h *KeyedHandle) Keyed {
 	return &keyedGetValueBesideDefect{keyedOverEmbedded: h.Fresh()}
 }
 
-// keyedPutForgetsWritesDefect is the planted defect of a Keyed whose Put
-// returns success and stores nothing.
-type keyedPutForgetsWritesDefect struct {
+// keyedGetReadsAnotherValueDefect is the planted defect of a Keyed whose
+// Get returns a value that Put did not write.
+type keyedGetReadsAnotherValueDefect struct {
 	keyedOverEmbedded
 }
 
-// Put is the override of the planted defect.
-func (*keyedPutForgetsWritesDefect) Put(p0 context.Context, p1 string, p2 Value) (r0 error) {
-	return r0
+// Get is the override of the planted defect.
+func (d *keyedGetReadsAnotherValueDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.keyedOverEmbedded.Get(p0, p1)
+	if r1 == nil {
+		r0 = Value{Key: "Key-b"}
+	}
+	return r0, r1
 }
 
-// keyedPutForgetsWrites returns the planted defect of a Keyed whose Put
-// returns success and stores nothing over a fresh subject.
-func keyedPutForgetsWrites(h *KeyedHandle) Keyed {
-	return &keyedPutForgetsWritesDefect{keyedOverEmbedded: h.Fresh()}
+// keyedGetReadsAnotherValue returns the planted defect of a Keyed whose
+// Get returns a value that Put did not write over a fresh subject.
+func keyedGetReadsAnotherValue(h *KeyedHandle) Keyed {
+	return &keyedGetReadsAnotherValueDefect{keyedOverEmbedded: h.Fresh()}
 }
 
 // keyedDeletePanicsDefect is the planted defect of a Keyed whose Delete
@@ -1739,22 +1981,1029 @@ func keyedDeletePanics(h *KeyedHandle) Keyed {
 	return &keyedDeletePanicsDefect{keyedOverEmbedded: h.Fresh()}
 }
 
-// keyedDeleteSucceedsAlwaysDefect is the planted defect of a Keyed whose
+// keyedDeleteIgnoresCancelDefect is the planted defect of a Keyed whose
 // Delete ignores the context.
-type keyedDeleteSucceedsAlwaysDefect struct {
+type keyedDeleteIgnoresCancelDefect struct {
 	keyedOverEmbedded
 }
 
 // Delete is the override of the planted defect.
-func (*keyedDeleteSucceedsAlwaysDefect) Delete(p0 context.Context, p1 string) (r0 error) {
+func (d *keyedDeleteIgnoresCancelDefect) Delete(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.keyedOverEmbedded.Delete(p0, p1)
+}
+
+// keyedDeleteIgnoresCancel returns the planted defect of a Keyed whose
+// Delete ignores the context over a fresh subject.
+func keyedDeleteIgnoresCancel(h *KeyedHandle) Keyed {
+	return &keyedDeleteIgnoresCancelDefect{keyedOverEmbedded: h.Fresh()}
+}
+
+// The derived checks of Stamped:
+//
+// Stamped.Store/smoke: Store returns without a panic for derived inputs.
+//
+// Stamped.Store/cancel: Store returns an error for a cancelled context.
+//
+// Stamped.Store/zero-on-error: Store returns the zero value beside an
+// error.
+//
+// Stamped.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Stamped.Get/cancel: Get returns an error for a cancelled context.
+//
+// Stamped.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Stamped.Get/read-after-write: Get returns what Store stored before it.
+//
+// Stamped.Get/writes-follow-reads: a Store after Get has a version above
+// the version that Get returned.
+
+// The derived checks of Stamped that witness their laws at the shallow
+// end:
+//
+// Stamped.Store/smoke
+//
+// Stamped.Get/smoke
+//
+// Stamped.Get/read-after-write
+//
+// Stamped.Get/writes-follow-reads
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Stamped writes.
+type (
+	StampedHandle = conform.Handle[Stamped]
+	StampedCheck  = conform.Check[Stamped]
+	StampedOption = conform.Option[Stamped]
+)
+
+// StampedChecks contains the name of each callable of Stamped, with the
+// identities of its checks.
+var StampedChecks = struct {
+	Store stampedStore
+	Get   stampedGet
+}{
+	Store: stampedStore{"Stamped.Store"},
+	Get:   stampedGet{"Stamped.Get"},
+}
+
+// stampedStore is the name of Stamped.Store, with the identities of its
+// checks.
+type stampedStore struct {
+	conform.Callable[Stamped]
+}
+
+// Smoke returns the identity of the check that Store returns without a
+// panic for derived inputs.
+func (c stampedStore) Smoke() conform.ID[Stamped] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Store returns an error for
+// a cancelled context.
+func (c stampedStore) Cancel() conform.ID[Stamped] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Store returns the
+// zero value beside an error.
+func (c stampedStore) ZeroOnError() conform.ID[Stamped] {
+	return c.Check("zero-on-error")
+}
+
+// stampedGet is the name of Stamped.Get, with the identities of its
+// checks.
+type stampedGet struct {
+	conform.Callable[Stamped]
+}
+
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c stampedGet) Smoke() conform.ID[Stamped] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c stampedGet) Cancel() conform.ID[Stamped] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c stampedGet) ZeroOnError() conform.ID[Stamped] {
+	return c.Check("zero-on-error")
+}
+
+// ReadAfterWrite returns the identity of the check that Get returns what
+// Store stored before it.
+func (c stampedGet) ReadAfterWrite() conform.ID[Stamped] {
+	return c.Check("read-after-write")
+}
+
+// WritesFollowReads returns the identity of the check that a Store after
+// Get has a version above the version that Get returned.
+func (c stampedGet) WritesFollowReads() conform.ID[Stamped] {
+	return c.Check("writes-follow-reads")
+}
+
+// StampedSuite returns the checks of Stamped, and the calls and the
+// budgets of its callables.
+func StampedSuite() conform.Suite[Stamped] {
+	return conform.Suite[Stamped]{
+		Declaration: "Stamped",
+		Checks: []conform.Check[Stamped]{
+			{
+				ID:          StampedChecks.Store.Smoke(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StampedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Store(ctx, Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: stampedStorePanics,
+			},
+			{
+				ID:          StampedChecks.Store.Cancel(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StampedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Store(ctx, Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: stampedStoreIgnoresCancel,
+			},
+			{
+				ID:          StampedChecks.Store.ZeroOnError(),
+				Statement:   "Store returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StampedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
+						return h.Subject().Store(ctx, Value{Key: "Key-a"})
+					}, Value{})
+				},
+				Defect: stampedStoreValueBeside,
+			},
+			{
+				ID:          StampedChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StampedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: stampedGetPanics,
+			},
+			{
+				ID:          StampedChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StampedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: stampedGetIgnoresCancel,
+			},
+			{
+				ID:          StampedChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StampedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, Value{})
+				},
+				Defect: stampedGetValueBeside,
+			},
+			{
+				ID:          StampedChecks.Get.ReadAfterWrite(),
+				Statement:   "Get returns what Store stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StampedHandle) {
+					probe.WriteThenRead(h, func(ctx context.Context) (Value, error) {
+						return h.Subject().Get(ctx, (Value{Key: "Key-a"}).Key)
+					}, func(ctx context.Context) (Value, error) {
+						w := Value{Key: "Key-a"}
+						return h.Subject().Store(ctx, w)
+					})
+				},
+				Defect: stampedGetReadsAnotherValue,
+			},
+			{
+				ID:          StampedChecks.Get.WritesFollowReads(),
+				Statement:   "a Store after Get has a version above the version that Get returned",
+				Claim:       spec.WritesFollowReads,
+				Probe:       spec.WritesAdvance,
+				Reason:      spec.UnorderedWrite,
+				Law:         spec.WriteFollowsTheReadBeforeIt,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StampedHandle) {
+					probe.WritesAdvance(h, func(ctx context.Context) (Value, error) {
+						return h.Subject().Get(ctx, (Value{Key: "Key-a"}).Key)
+					}, func(ctx context.Context) (Value, error) {
+						return h.Subject().Store(ctx, Value{Key: "Key-a"})
+					}, func(v Value) int64 { return v.Rev })
+				},
+				Defect: stampedStoreStampsThePast,
+			},
+		},
+		Calls: []conform.Call[Stamped]{
+			{
+				Calls:    stampedStoreCalls,
+				Over:     newStampedOver,
+				Callable: StampedChecks.Store.Callable,
+			},
+			{
+				Calls:    stampedGetCalls,
+				Over:     newStampedOver,
+				Callable: StampedChecks.Get.Callable,
+			},
+		},
+	}
+}
+
+// RunStampedSuite applies the checks of Stamped, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunStampedSuite[T Stamped](t *testing.T, newSubject func() T, opts ...StampedOption) {
+	t.Helper()
+	RunStampedSuiteFromHandle(t, func(*StampedHandle) T { return newSubject() }, opts...)
+}
+
+// RunStampedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStampedSuiteFromHandle[T Stamped](
+	t *testing.T,
+	newSubject func(h *StampedHandle) T,
+	opts ...StampedOption,
+) {
+	t.Helper()
+	conform.Run(t, StampedSuite(), stampedSubjects(newSubject), opts...)
+}
+
+// FuzzStampedSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzStampedSuite[T Stamped](
+	f *testing.F,
+	callable conform.Callable[Stamped],
+	newSubject func(h *StampedHandle) T,
+	opts ...StampedOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, StampedSuite(), callable, stampedSubjects(newSubject), opts...)
+}
+
+// RunStampedBudgets applies the allocation ceilings of Stamped and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunStampedBudgets[T Stamped](
+	t *testing.T,
+	newSubject func(h *StampedHandle) T,
+	opts ...StampedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, StampedSuite(), stampedSubjects(newSubject), opts...)
+}
+
+// BenchStampedSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchStampedSuite[T Stamped](
+	b conform.B,
+	callable conform.Callable[Stamped],
+	newSubject func(h *StampedHandle) T,
+	opts ...StampedOption,
+) {
+	b.Helper()
+	conform.Bench(b, StampedSuite(), callable, stampedSubjects(newSubject), opts...)
+}
+
+// stampedSubjects returns the factory of the subjects of Stamped that
+// calls newSubject with the handle of each check.
+func stampedSubjects[T Stamped](
+	newSubject func(h *StampedHandle) T,
+) func(h *StampedHandle) Stamped {
+	return func(h *StampedHandle) Stamped { return newSubject(h) }
+}
+
+// stampedStoreCalls generates the calls of Stamped.Store with the inputs
+// that each case draws.
+var stampedStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, Stamped) error {
+	v := c.Draw(prop.Of[Value](), "v")
+	return func(ctx context.Context, subject Stamped) error {
+		_, err := subject.Store(ctx, v)
+		return err
+	}
+})
+
+// stampedGetCalls generates the calls of Stamped.Get with the inputs that
+// each case draws.
+var stampedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Stamped) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Stamped) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// stampedOverEmbedded is Stamped under the name of the field that
+// stampedOver embeds.
+type stampedOverEmbedded = Stamped
+
+// stampedOver is a subject of Stamped whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type stampedOver struct {
+	stampedOverEmbedded
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o stampedOver) Store(context.Context, Value) (r0 Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Get calls spend and returns its zero results.
+func (o stampedOver) Get(context.Context, string) (r0 Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newStampedOver returns the planted defect of a ceiling of Stamped, whose
+// callables call spend.
+func newStampedOver(_ *StampedHandle, spend func()) Stamped {
+	return stampedOver{spend: spend}
+}
+
+// stampedStorePanicsDefect is the planted defect of a Stamped whose Store
+// panics.
+type stampedStorePanicsDefect struct {
+	stampedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*stampedStorePanicsDefect) Store(p0 context.Context, p1 Value) (r0 Value, r1 error) {
+	panic("the planted defect of a Stamped whose Store panics")
+}
+
+// stampedStorePanics returns the planted defect of a Stamped whose Store
+// panics over a fresh subject.
+func stampedStorePanics(h *StampedHandle) Stamped {
+	return &stampedStorePanicsDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedStoreIgnoresCancelDefect is the planted defect of a Stamped whose
+// Store ignores the context.
+type stampedStoreIgnoresCancelDefect struct {
+	stampedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (d *stampedStoreIgnoresCancelDefect) Store(p0 context.Context, p1 Value) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.stampedOverEmbedded.Store(p0, p1)
+}
+
+// stampedStoreIgnoresCancel returns the planted defect of a Stamped whose
+// Store ignores the context over a fresh subject.
+func stampedStoreIgnoresCancel(h *StampedHandle) Stamped {
+	return &stampedStoreIgnoresCancelDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedStoreValueBesideDefect is the planted defect of a Stamped whose
+// Store returns a value beside an error.
+type stampedStoreValueBesideDefect struct {
+	stampedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (d *stampedStoreValueBesideDefect) Store(p0 context.Context, p1 Value) (r0 Value, r1 error) {
+	r0, r1 = d.stampedOverEmbedded.Store(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
+	return r0, r1
+}
+
+// stampedStoreValueBeside returns the planted defect of a Stamped whose
+// Store returns a value beside an error over a fresh subject.
+func stampedStoreValueBeside(h *StampedHandle) Stamped {
+	return &stampedStoreValueBesideDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedGetPanicsDefect is the planted defect of a Stamped whose Get
+// panics.
+type stampedGetPanicsDefect struct {
+	stampedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*stampedGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	panic("the planted defect of a Stamped whose Get panics")
+}
+
+// stampedGetPanics returns the planted defect of a Stamped whose Get
+// panics over a fresh subject.
+func stampedGetPanics(h *StampedHandle) Stamped {
+	return &stampedGetPanicsDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedGetIgnoresCancelDefect is the planted defect of a Stamped whose
+// Get ignores the context.
+type stampedGetIgnoresCancelDefect struct {
+	stampedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (d *stampedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.stampedOverEmbedded.Get(p0, p1)
+}
+
+// stampedGetIgnoresCancel returns the planted defect of a Stamped whose
+// Get ignores the context over a fresh subject.
+func stampedGetIgnoresCancel(h *StampedHandle) Stamped {
+	return &stampedGetIgnoresCancelDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedGetValueBesideDefect is the planted defect of a Stamped whose Get
+// returns a value beside an error.
+type stampedGetValueBesideDefect struct {
+	stampedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (d *stampedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.stampedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
+	return r0, r1
+}
+
+// stampedGetValueBeside returns the planted defect of a Stamped whose Get
+// returns a value beside an error over a fresh subject.
+func stampedGetValueBeside(h *StampedHandle) Stamped {
+	return &stampedGetValueBesideDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedGetReadsAnotherValueDefect is the planted defect of a Stamped
+// whose Get returns a value that Store did not write.
+type stampedGetReadsAnotherValueDefect struct {
+	stampedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (d *stampedGetReadsAnotherValueDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.stampedOverEmbedded.Get(p0, p1)
+	if r1 == nil {
+		r0 = Value{Key: "Key-b"}
+	}
+	return r0, r1
+}
+
+// stampedGetReadsAnotherValue returns the planted defect of a Stamped
+// whose Get returns a value that Store did not write over a fresh subject.
+func stampedGetReadsAnotherValue(h *StampedHandle) Stamped {
+	return &stampedGetReadsAnotherValueDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedStoreStampsThePastDefect is the planted defect of a Stamped whose
+// Store is not ordered after the read before it.
+type stampedStoreStampsThePastDefect struct {
+	stampedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (d *stampedStoreStampsThePastDefect) Store(p0 context.Context, p1 Value) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.stampedOverEmbedded.Store(p0, p1)
+	r0.Rev = 0
+	return r0, r1
+}
+
+// stampedStoreStampsThePast returns the planted defect of a Stamped whose
+// Store is not ordered after the read before it over a fresh subject.
+func stampedStoreStampsThePast(h *StampedHandle) Stamped {
+	return &stampedStoreStampsThePastDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// The derived checks of Decoded:
+//
+// Decoded.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Decoded.Put/cancel: Put returns an error for a cancelled context.
+//
+// Decoded.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Decoded.Get/cancel: Get returns an error for a cancelled context.
+//
+// Decoded.Get/read-after-write: Get returns what Put stored before it.
+
+// The derived checks of Decoded that witness their laws at the shallow
+// end:
+//
+// Decoded.Put/smoke
+//
+// Decoded.Get/smoke
+//
+// Decoded.Get/read-after-write
+
+// The unclaimed classifications of Decoded:
+//
+// The shape:composite-writer of Decoded.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Decoded writes.
+type (
+	DecodedHandle = conform.Handle[Decoded]
+	DecodedCheck  = conform.Check[Decoded]
+	DecodedOption = conform.Option[Decoded]
+)
+
+// DecodedChecks contains the name of each callable of Decoded, with the
+// identities of its checks.
+var DecodedChecks = struct {
+	Put decodedPut
+	Get decodedGet
+}{
+	Put: decodedPut{"Decoded.Put"},
+	Get: decodedGet{"Decoded.Get"},
+}
+
+// decodedPut is the name of Decoded.Put, with the identities of its
+// checks.
+type decodedPut struct {
+	conform.Callable[Decoded]
+}
+
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c decodedPut) Smoke() conform.ID[Decoded] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c decodedPut) Cancel() conform.ID[Decoded] {
+	return c.Check("cancel")
+}
+
+// decodedGet is the name of Decoded.Get, with the identities of its
+// checks.
+type decodedGet struct {
+	conform.Callable[Decoded]
+}
+
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c decodedGet) Smoke() conform.ID[Decoded] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c decodedGet) Cancel() conform.ID[Decoded] {
+	return c.Check("cancel")
+}
+
+// ReadAfterWrite returns the identity of the check that Get returns what
+// Put stored before it.
+func (c decodedGet) ReadAfterWrite() conform.ID[Decoded] {
+	return c.Check("read-after-write")
+}
+
+// DecodedSuite returns the checks of Decoded, and the calls and the
+// budgets of its callables.
+func DecodedSuite() conform.Suite[Decoded] {
+	return conform.Suite[Decoded]{
+		Declaration: "Decoded",
+		Checks: []conform.Check[Decoded]{
+			{
+				ID:          DecodedChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DecodedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), Value{Key: "Key-a"})
+					})
+				},
+				Defect: decodedPutPanics,
+			},
+			{
+				ID:          DecodedChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *DecodedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), Value{Key: "Key-a"})
+					})
+				},
+				Defect: decodedPutIgnoresCancel,
+			},
+			{
+				ID:          DecodedChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DecodedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().
+							Get(ctx, string("key-a"), func(Value) Value { return Value{} })
+						return err
+					})
+				},
+				Defect: decodedGetPanics,
+			},
+			{
+				ID:          DecodedChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *DecodedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().
+							Get(ctx, string("key-a"), func(Value) Value { return Value{} })
+						return err
+					})
+				},
+				Defect: decodedGetIgnoresCancel,
+			},
+			{
+				ID:          DecodedChecks.Get.ReadAfterWrite(),
+				Statement:   "Get returns what Put stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DecodedHandle) {
+					probe.WriteThenRead(h, func(ctx context.Context) (Value, error) {
+						return h.Subject().
+							Get(ctx, string("key-a"), func(Value) Value { return Value{} })
+					}, func(ctx context.Context) (Value, error) {
+						w := Value{Key: "Key-a"}
+						err := h.Subject().Put(ctx, string("key-a"), w)
+						return w, err
+					})
+				},
+				Defect: decodedGetReadsAnotherValue,
+			},
+		},
+		Calls: []conform.Call[Decoded]{
+			{
+				Calls:    decodedPutCalls,
+				Over:     newDecodedOver,
+				Callable: DecodedChecks.Put.Callable,
+			},
+			{
+				Calls:    decodedGetCalls,
+				Over:     newDecodedOver,
+				Callable: DecodedChecks.Get.Callable,
+			},
+		},
+	}
+}
+
+// RunDecodedSuite applies the checks of Decoded, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunDecodedSuite[T Decoded](t *testing.T, newSubject func() T, opts ...DecodedOption) {
+	t.Helper()
+	RunDecodedSuiteFromHandle(t, func(*DecodedHandle) T { return newSubject() }, opts...)
+}
+
+// RunDecodedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunDecodedSuiteFromHandle[T Decoded](
+	t *testing.T,
+	newSubject func(h *DecodedHandle) T,
+	opts ...DecodedOption,
+) {
+	t.Helper()
+	conform.Run(t, DecodedSuite(), decodedSubjects(newSubject), opts...)
+}
+
+// FuzzDecodedSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzDecodedSuite[T Decoded](
+	f *testing.F,
+	callable conform.Callable[Decoded],
+	newSubject func(h *DecodedHandle) T,
+	opts ...DecodedOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, DecodedSuite(), callable, decodedSubjects(newSubject), opts...)
+}
+
+// RunDecodedBudgets applies the allocation ceilings of Decoded and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunDecodedBudgets[T Decoded](
+	t *testing.T,
+	newSubject func(h *DecodedHandle) T,
+	opts ...DecodedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, DecodedSuite(), decodedSubjects(newSubject), opts...)
+}
+
+// BenchDecodedSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchDecodedSuite[T Decoded](
+	b conform.B,
+	callable conform.Callable[Decoded],
+	newSubject func(h *DecodedHandle) T,
+	opts ...DecodedOption,
+) {
+	b.Helper()
+	conform.Bench(b, DecodedSuite(), callable, decodedSubjects(newSubject), opts...)
+}
+
+// decodedSubjects returns the factory of the subjects of Decoded that
+// calls newSubject with the handle of each check.
+func decodedSubjects[T Decoded](
+	newSubject func(h *DecodedHandle) T,
+) func(h *DecodedHandle) Decoded {
+	return func(h *DecodedHandle) Decoded { return newSubject(h) }
+}
+
+// decodedPutCalls generates the calls of Decoded.Put with the inputs that
+// each case draws.
+var decodedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, Decoded) error {
+	key := c.Draw(prop.Of[string](), "key")
+	v := c.Draw(prop.Of[Value](), "v")
+	return func(ctx context.Context, subject Decoded) error {
+		return subject.Put(ctx, key, v)
+	}
+})
+
+// decodedGetCalls generates the calls of Decoded.Get with the inputs that
+// each case draws.
+var decodedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Decoded) error {
+	key := c.Draw(prop.Of[string](), "key")
+	decodeResults := c.Draw(prop.List(prop.Of[Value]()), "decode")
+	var decodeAt atomic.Int64
+	decode := func(Value) (r0 Value) {
+		i := int(decodeAt.Add(1) - 1)
+		if i >= len(decodeResults) {
+			return r0
+		}
+		return decodeResults[i]
+	}
+	return func(ctx context.Context, subject Decoded) error {
+		_, err := subject.Get(ctx, key, decode)
+		return err
+	}
+})
+
+// decodedOverEmbedded is Decoded under the name of the field that
+// decodedOver embeds.
+type decodedOverEmbedded = Decoded
+
+// decodedOver is a subject of Decoded whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type decodedOver struct {
+	decodedOverEmbedded
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o decodedOver) Put(context.Context, string, Value) (r0 error) {
+	o.spend()
 	return r0
 }
 
-// keyedDeleteSucceedsAlways returns the planted defect of a Keyed whose
-// Delete ignores the context over a fresh subject.
-func keyedDeleteSucceedsAlways(h *KeyedHandle) Keyed {
-	return &keyedDeleteSucceedsAlwaysDefect{keyedOverEmbedded: h.Fresh()}
+// Get calls spend and returns its zero results.
+func (o decodedOver) Get(context.Context, string, func(Value) Value) (r0 Value, r1 error) {
+	o.spend()
+	return r0, r1
 }
+
+// newDecodedOver returns the planted defect of a ceiling of Decoded, whose
+// callables call spend.
+func newDecodedOver(_ *DecodedHandle, spend func()) Decoded {
+	return decodedOver{spend: spend}
+}
+
+// decodedPutPanicsDefect is the planted defect of a Decoded whose Put
+// panics.
+type decodedPutPanicsDefect struct {
+	decodedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*decodedPutPanicsDefect) Put(p0 context.Context, p1 string, p2 Value) (r0 error) {
+	panic("the planted defect of a Decoded whose Put panics")
+}
+
+// decodedPutPanics returns the planted defect of a Decoded whose Put
+// panics over a fresh subject.
+func decodedPutPanics(h *DecodedHandle) Decoded {
+	return &decodedPutPanicsDefect{decodedOverEmbedded: h.Fresh()}
+}
+
+// decodedPutIgnoresCancelDefect is the planted defect of a Decoded whose
+// Put ignores the context.
+type decodedPutIgnoresCancelDefect struct {
+	decodedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (d *decodedPutIgnoresCancelDefect) Put(p0 context.Context, p1 string, p2 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.decodedOverEmbedded.Put(p0, p1, p2)
+}
+
+// decodedPutIgnoresCancel returns the planted defect of a Decoded whose
+// Put ignores the context over a fresh subject.
+func decodedPutIgnoresCancel(h *DecodedHandle) Decoded {
+	return &decodedPutIgnoresCancelDefect{decodedOverEmbedded: h.Fresh()}
+}
+
+// decodedGetPanicsDefect is the planted defect of a Decoded whose Get
+// panics.
+type decodedGetPanicsDefect struct {
+	decodedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*decodedGetPanicsDefect) Get(
+	p0 context.Context,
+	p1 string,
+	p2 func(Value) Value,
+) (r0 Value, r1 error) {
+	panic("the planted defect of a Decoded whose Get panics")
+}
+
+// decodedGetPanics returns the planted defect of a Decoded whose Get
+// panics over a fresh subject.
+func decodedGetPanics(h *DecodedHandle) Decoded {
+	return &decodedGetPanicsDefect{decodedOverEmbedded: h.Fresh()}
+}
+
+// decodedGetIgnoresCancelDefect is the planted defect of a Decoded whose
+// Get ignores the context.
+type decodedGetIgnoresCancelDefect struct {
+	decodedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (d *decodedGetIgnoresCancelDefect) Get(
+	p0 context.Context,
+	p1 string,
+	p2 func(Value) Value,
+) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.decodedOverEmbedded.Get(p0, p1, p2)
+}
+
+// decodedGetIgnoresCancel returns the planted defect of a Decoded whose
+// Get ignores the context over a fresh subject.
+func decodedGetIgnoresCancel(h *DecodedHandle) Decoded {
+	return &decodedGetIgnoresCancelDefect{decodedOverEmbedded: h.Fresh()}
+}
+
+// decodedGetReadsAnotherValueDefect is the planted defect of a Decoded
+// whose Get returns a value that Put did not write.
+type decodedGetReadsAnotherValueDefect struct {
+	decodedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (d *decodedGetReadsAnotherValueDefect) Get(
+	p0 context.Context,
+	p1 string,
+	p2 func(Value) Value,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.decodedOverEmbedded.Get(p0, p1, p2)
+	if r1 == nil {
+		r0 = Value{Key: "Key-b"}
+	}
+	return r0, r1
+}
+
+// decodedGetReadsAnotherValue returns the planted defect of a Decoded
+// whose Get returns a value that Put did not write over a fresh subject.
+func decodedGetReadsAnotherValue(h *DecodedHandle) Decoded {
+	return &decodedGetReadsAnotherValueDefect{decodedOverEmbedded: h.Fresh()}
+}
+
+// The derived checks of Expiring:
+//
+// Expiring.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Expiring.Put/cancel: Put returns an error for a cancelled context.
+//
+// Expiring.Read/smoke: Read returns without a panic for derived inputs.
+//
+// Expiring.Read/cancel: Read returns an error for a cancelled context.
+//
+// Expiring.Read/zero-on-error: Read returns the zero value beside an
+// error.
+//
+// Expiring.Read/expires: Read fails with the declared sentinel once the
+// clock passes the declared lifetime.
+
+// The derived checks of Expiring that witness their laws at the shallow
+// end:
+//
+// Expiring.Put/smoke
+//
+// Expiring.Read/smoke
+
+// The unclaimed classifications of Expiring:
+//
+// The shape:writer of Expiring.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -1859,7 +3108,7 @@ func ExpiringSuite() conform.Suite[Expiring] {
 						return h.Subject().Put(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: expiringPutSucceedsAlways,
+				Defect: expiringPutIgnoresCancel,
 			},
 			{
 				ID:          ExpiringChecks.Read.Smoke(),
@@ -1892,7 +3141,7 @@ func ExpiringSuite() conform.Suite[Expiring] {
 						return err
 					})
 				},
-				Defect: expiringReadSucceedsAlways,
+				Defect: expiringReadIgnoresCancel,
 			},
 			{
 				ID:          ExpiringChecks.Read.ZeroOnError(),
@@ -2072,21 +3321,24 @@ func expiringPutPanics(h *ExpiringHandle) Expiring {
 	return &expiringPutPanicsDefect{expiringOverEmbedded: h.Fresh()}
 }
 
-// expiringPutSucceedsAlwaysDefect is the planted defect of a Expiring
-// whose Put ignores the context.
-type expiringPutSucceedsAlwaysDefect struct {
+// expiringPutIgnoresCancelDefect is the planted defect of a Expiring whose
+// Put ignores the context.
+type expiringPutIgnoresCancelDefect struct {
 	expiringOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*expiringPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *expiringPutIgnoresCancelDefect) Put(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.expiringOverEmbedded.Put(p0, p1)
 }
 
-// expiringPutSucceedsAlways returns the planted defect of a Expiring whose
+// expiringPutIgnoresCancel returns the planted defect of a Expiring whose
 // Put ignores the context over a fresh subject.
-func expiringPutSucceedsAlways(h *ExpiringHandle) Expiring {
-	return &expiringPutSucceedsAlwaysDefect{expiringOverEmbedded: h.Fresh()}
+func expiringPutIgnoresCancel(h *ExpiringHandle) Expiring {
+	return &expiringPutIgnoresCancelDefect{expiringOverEmbedded: h.Fresh()}
 }
 
 // expiringReadPanicsDefect is the planted defect of a Expiring whose Read
@@ -2106,21 +3358,24 @@ func expiringReadPanics(h *ExpiringHandle) Expiring {
 	return &expiringReadPanicsDefect{expiringOverEmbedded: h.Fresh()}
 }
 
-// expiringReadSucceedsAlwaysDefect is the planted defect of a Expiring
+// expiringReadIgnoresCancelDefect is the planted defect of a Expiring
 // whose Read ignores the context.
-type expiringReadSucceedsAlwaysDefect struct {
+type expiringReadIgnoresCancelDefect struct {
 	expiringOverEmbedded
 }
 
 // Read is the override of the planted defect.
-func (*expiringReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *expiringReadIgnoresCancelDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.expiringOverEmbedded.Read(p0, p1)
 }
 
-// expiringReadSucceedsAlways returns the planted defect of a Expiring
-// whose Read ignores the context over a fresh subject.
-func expiringReadSucceedsAlways(h *ExpiringHandle) Expiring {
-	return &expiringReadSucceedsAlwaysDefect{expiringOverEmbedded: h.Fresh()}
+// expiringReadIgnoresCancel returns the planted defect of a Expiring whose
+// Read ignores the context over a fresh subject.
+func expiringReadIgnoresCancel(h *ExpiringHandle) Expiring {
+	return &expiringReadIgnoresCancelDefect{expiringOverEmbedded: h.Fresh()}
 }
 
 // expiringReadValueBesideDefect is the planted defect of a Expiring whose
@@ -2130,9 +3385,11 @@ type expiringReadValueBesideDefect struct {
 }
 
 // Read is the override of the planted defect.
-func (*expiringReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *expiringReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.expiringOverEmbedded.Read(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -2150,6 +3407,10 @@ type expiringReadAnswersASampleDefect struct {
 
 // Read is the override of the planted defect.
 func (*expiringReadAnswersASampleDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0 = Value{Key: "Key-b"}
 	return r0, r1
 }
@@ -2159,6 +3420,42 @@ func (*expiringReadAnswersASampleDefect) Read(p0 context.Context, p1 string) (r0
 func expiringReadAnswersASample(h *ExpiringHandle) Expiring {
 	return &expiringReadAnswersASampleDefect{expiringOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Cached:
+//
+// Cached.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Cached.Get/cancel: Get returns an error for a cancelled context.
+//
+// Cached.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Cached.Get/cache: Get returns what Fetch returns.
+//
+// Cached.Fetch/smoke: Fetch returns without a panic for derived inputs.
+//
+// Cached.Fetch/cancel: Fetch returns an error for a cancelled context.
+//
+// Cached.Fetch/zero-on-error: Fetch returns the zero value beside an
+// error.
+//
+// Cached.Store/smoke: Store returns without a panic for derived inputs.
+//
+// Cached.Store/cancel: Store returns an error for a cancelled context.
+
+// The derived checks of Cached that witness their laws at the shallow end:
+//
+// Cached.Get/smoke
+//
+// Cached.Get/cache
+//
+// Cached.Fetch/smoke
+//
+// Cached.Store/smoke
+
+// The unclaimed classifications of Cached:
+//
+// The shape:writer of Cached.Store has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -2290,7 +3587,7 @@ func CachedSuite() conform.Suite[Cached] {
 						return err
 					})
 				},
-				Defect: cachedGetSucceedsAlways,
+				Defect: cachedGetIgnoresCancel,
 			},
 			{
 				ID:          CachedChecks.Get.ZeroOnError(),
@@ -2358,7 +3655,7 @@ func CachedSuite() conform.Suite[Cached] {
 						return err
 					})
 				},
-				Defect: cachedFetchSucceedsAlways,
+				Defect: cachedFetchIgnoresCancel,
 			},
 			{
 				ID:          CachedChecks.Fetch.ZeroOnError(),
@@ -2404,7 +3701,7 @@ func CachedSuite() conform.Suite[Cached] {
 						return h.Subject().Store(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: cachedStoreSucceedsAlways,
+				Defect: cachedStoreIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[Cached]{
@@ -2570,21 +3867,24 @@ func cachedGetPanics(h *CachedHandle) Cached {
 	return &cachedGetPanicsDefect{cachedOverEmbedded: h.Fresh()}
 }
 
-// cachedGetSucceedsAlwaysDefect is the planted defect of a Cached whose
-// Get ignores the context.
-type cachedGetSucceedsAlwaysDefect struct {
+// cachedGetIgnoresCancelDefect is the planted defect of a Cached whose Get
+// ignores the context.
+type cachedGetIgnoresCancelDefect struct {
 	cachedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*cachedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *cachedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.cachedOverEmbedded.Get(p0, p1)
 }
 
-// cachedGetSucceedsAlways returns the planted defect of a Cached whose Get
+// cachedGetIgnoresCancel returns the planted defect of a Cached whose Get
 // ignores the context over a fresh subject.
-func cachedGetSucceedsAlways(h *CachedHandle) Cached {
-	return &cachedGetSucceedsAlwaysDefect{cachedOverEmbedded: h.Fresh()}
+func cachedGetIgnoresCancel(h *CachedHandle) Cached {
+	return &cachedGetIgnoresCancelDefect{cachedOverEmbedded: h.Fresh()}
 }
 
 // cachedGetValueBesideDefect is the planted defect of a Cached whose Get
@@ -2594,9 +3894,11 @@ type cachedGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*cachedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *cachedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.cachedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -2614,6 +3916,10 @@ type cachedGetAnswersASampleDefect struct {
 
 // Get is the override of the planted defect.
 func (*cachedGetAnswersASampleDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0 = Value{Key: "Key-b"}
 	return r0, r1
 }
@@ -2641,21 +3947,24 @@ func cachedFetchPanics(h *CachedHandle) Cached {
 	return &cachedFetchPanicsDefect{cachedOverEmbedded: h.Fresh()}
 }
 
-// cachedFetchSucceedsAlwaysDefect is the planted defect of a Cached whose
+// cachedFetchIgnoresCancelDefect is the planted defect of a Cached whose
 // Fetch ignores the context.
-type cachedFetchSucceedsAlwaysDefect struct {
+type cachedFetchIgnoresCancelDefect struct {
 	cachedOverEmbedded
 }
 
 // Fetch is the override of the planted defect.
-func (*cachedFetchSucceedsAlwaysDefect) Fetch(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *cachedFetchIgnoresCancelDefect) Fetch(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.cachedOverEmbedded.Fetch(p0, p1)
 }
 
-// cachedFetchSucceedsAlways returns the planted defect of a Cached whose
+// cachedFetchIgnoresCancel returns the planted defect of a Cached whose
 // Fetch ignores the context over a fresh subject.
-func cachedFetchSucceedsAlways(h *CachedHandle) Cached {
-	return &cachedFetchSucceedsAlwaysDefect{cachedOverEmbedded: h.Fresh()}
+func cachedFetchIgnoresCancel(h *CachedHandle) Cached {
+	return &cachedFetchIgnoresCancelDefect{cachedOverEmbedded: h.Fresh()}
 }
 
 // cachedFetchValueBesideDefect is the planted defect of a Cached whose
@@ -2665,9 +3974,11 @@ type cachedFetchValueBesideDefect struct {
 }
 
 // Fetch is the override of the planted defect.
-func (*cachedFetchValueBesideDefect) Fetch(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *cachedFetchValueBesideDefect) Fetch(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.cachedOverEmbedded.Fetch(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -2694,22 +4005,52 @@ func cachedStorePanics(h *CachedHandle) Cached {
 	return &cachedStorePanicsDefect{cachedOverEmbedded: h.Fresh()}
 }
 
-// cachedStoreSucceedsAlwaysDefect is the planted defect of a Cached whose
+// cachedStoreIgnoresCancelDefect is the planted defect of a Cached whose
 // Store ignores the context.
-type cachedStoreSucceedsAlwaysDefect struct {
+type cachedStoreIgnoresCancelDefect struct {
 	cachedOverEmbedded
 }
 
 // Store is the override of the planted defect.
-func (*cachedStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *cachedStoreIgnoresCancelDefect) Store(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.cachedOverEmbedded.Store(p0, p1)
 }
 
-// cachedStoreSucceedsAlways returns the planted defect of a Cached whose
+// cachedStoreIgnoresCancel returns the planted defect of a Cached whose
 // Store ignores the context over a fresh subject.
-func cachedStoreSucceedsAlways(h *CachedHandle) Cached {
-	return &cachedStoreSucceedsAlwaysDefect{cachedOverEmbedded: h.Fresh()}
+func cachedStoreIgnoresCancel(h *CachedHandle) Cached {
+	return &cachedStoreIgnoresCancelDefect{cachedOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Tagged:
+//
+// Tagged.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Tagged.Put/cancel: Put returns an error for a cancelled context.
+//
+// Tagged.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Tagged.Get/cancel: Get returns an error for a cancelled context.
+//
+// Tagged.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Tagged.Get/read-after-write: Get returns what Put stored before it.
+
+// The derived checks of Tagged that witness their laws at the shallow end:
+//
+// Tagged.Put/smoke
+//
+// Tagged.Get/smoke
+//
+// Tagged.Get/read-after-write
+
+// The unclaimed classifications of Tagged:
+//
+// The shape:composite-writer of Tagged.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -2812,7 +4153,7 @@ func TaggedSuite() conform.Suite[Tagged] {
 						return h.Subject().Put(ctx, Value{Key: "Key-a"}, string("tag-a"))
 					})
 				},
-				Defect: taggedPutSucceedsAlways,
+				Defect: taggedPutIgnoresCancel,
 			},
 			{
 				ID:          TaggedChecks.Get.Smoke(),
@@ -2845,7 +4186,7 @@ func TaggedSuite() conform.Suite[Tagged] {
 						return err
 					})
 				},
-				Defect: taggedGetSucceedsAlways,
+				Defect: taggedGetIgnoresCancel,
 			},
 			{
 				ID:          TaggedChecks.Get.ZeroOnError(),
@@ -2880,7 +4221,7 @@ func TaggedSuite() conform.Suite[Tagged] {
 						return w, err
 					})
 				},
-				Defect: taggedPutForgetsWrites,
+				Defect: taggedGetReadsAnotherValue,
 			},
 		},
 		Calls: []conform.Call[Tagged]{
@@ -3026,21 +4367,24 @@ func taggedPutPanics(h *TaggedHandle) Tagged {
 	return &taggedPutPanicsDefect{taggedOverEmbedded: h.Fresh()}
 }
 
-// taggedPutSucceedsAlwaysDefect is the planted defect of a Tagged whose
-// Put ignores the context.
-type taggedPutSucceedsAlwaysDefect struct {
+// taggedPutIgnoresCancelDefect is the planted defect of a Tagged whose Put
+// ignores the context.
+type taggedPutIgnoresCancelDefect struct {
 	taggedOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*taggedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Value, p2 string) (r0 error) {
-	return r0
+func (d *taggedPutIgnoresCancelDefect) Put(p0 context.Context, p1 Value, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.taggedOverEmbedded.Put(p0, p1, p2)
 }
 
-// taggedPutSucceedsAlways returns the planted defect of a Tagged whose Put
+// taggedPutIgnoresCancel returns the planted defect of a Tagged whose Put
 // ignores the context over a fresh subject.
-func taggedPutSucceedsAlways(h *TaggedHandle) Tagged {
-	return &taggedPutSucceedsAlwaysDefect{taggedOverEmbedded: h.Fresh()}
+func taggedPutIgnoresCancel(h *TaggedHandle) Tagged {
+	return &taggedPutIgnoresCancelDefect{taggedOverEmbedded: h.Fresh()}
 }
 
 // taggedGetPanicsDefect is the planted defect of a Tagged whose Get
@@ -3060,21 +4404,24 @@ func taggedGetPanics(h *TaggedHandle) Tagged {
 	return &taggedGetPanicsDefect{taggedOverEmbedded: h.Fresh()}
 }
 
-// taggedGetSucceedsAlwaysDefect is the planted defect of a Tagged whose
-// Get ignores the context.
-type taggedGetSucceedsAlwaysDefect struct {
+// taggedGetIgnoresCancelDefect is the planted defect of a Tagged whose Get
+// ignores the context.
+type taggedGetIgnoresCancelDefect struct {
 	taggedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*taggedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *taggedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.taggedOverEmbedded.Get(p0, p1)
 }
 
-// taggedGetSucceedsAlways returns the planted defect of a Tagged whose Get
+// taggedGetIgnoresCancel returns the planted defect of a Tagged whose Get
 // ignores the context over a fresh subject.
-func taggedGetSucceedsAlways(h *TaggedHandle) Tagged {
-	return &taggedGetSucceedsAlwaysDefect{taggedOverEmbedded: h.Fresh()}
+func taggedGetIgnoresCancel(h *TaggedHandle) Tagged {
+	return &taggedGetIgnoresCancelDefect{taggedOverEmbedded: h.Fresh()}
 }
 
 // taggedGetValueBesideDefect is the planted defect of a Tagged whose Get
@@ -3084,9 +4431,11 @@ type taggedGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*taggedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *taggedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.taggedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -3096,22 +4445,59 @@ func taggedGetValueBeside(h *TaggedHandle) Tagged {
 	return &taggedGetValueBesideDefect{taggedOverEmbedded: h.Fresh()}
 }
 
-// taggedPutForgetsWritesDefect is the planted defect of a Tagged whose Put
-// returns success and stores nothing.
-type taggedPutForgetsWritesDefect struct {
+// taggedGetReadsAnotherValueDefect is the planted defect of a Tagged whose
+// Get returns a value that Put did not write.
+type taggedGetReadsAnotherValueDefect struct {
 	taggedOverEmbedded
 }
 
-// Put is the override of the planted defect.
-func (*taggedPutForgetsWritesDefect) Put(p0 context.Context, p1 Value, p2 string) (r0 error) {
-	return r0
+// Get is the override of the planted defect.
+func (d *taggedGetReadsAnotherValueDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.taggedOverEmbedded.Get(p0, p1)
+	if r1 == nil {
+		r0 = Value{Key: "Key-b"}
+	}
+	return r0, r1
 }
 
-// taggedPutForgetsWrites returns the planted defect of a Tagged whose Put
-// returns success and stores nothing over a fresh subject.
-func taggedPutForgetsWrites(h *TaggedHandle) Tagged {
-	return &taggedPutForgetsWritesDefect{taggedOverEmbedded: h.Fresh()}
+// taggedGetReadsAnotherValue returns the planted defect of a Tagged whose
+// Get returns a value that Put did not write over a fresh subject.
+func taggedGetReadsAnotherValue(h *TaggedHandle) Tagged {
+	return &taggedGetReadsAnotherValueDefect{taggedOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Snapshots:
+//
+// Snapshots.Store/smoke: Store returns without a panic for derived inputs.
+//
+// Snapshots.Store/cancel: Store returns an error for a cancelled context.
+//
+// Snapshots.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Snapshots.Get/cancel: Get returns an error for a cancelled context.
+//
+// Snapshots.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Snapshots.Get/point-in-time: Get returns the same value twice across a
+// Store between the reads.
+
+// The derived checks of Snapshots that witness their laws at the shallow
+// end:
+//
+// Snapshots.Store/smoke
+//
+// Snapshots.Get/smoke
+//
+// Snapshots.Get/point-in-time
+
+// The unclaimed classifications of Snapshots:
+//
+// The shape:writer of Snapshots.Store has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -3216,7 +4602,7 @@ func SnapshotsSuite() conform.Suite[Snapshots] {
 						return h.Subject().Store(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: snapshotsStoreSucceedsAlways,
+				Defect: snapshotsStoreIgnoresCancel,
 			},
 			{
 				ID:          SnapshotsChecks.Get.Smoke(),
@@ -3249,7 +4635,7 @@ func SnapshotsSuite() conform.Suite[Snapshots] {
 						return err
 					})
 				},
-				Defect: snapshotsGetSucceedsAlways,
+				Defect: snapshotsGetIgnoresCancel,
 			},
 			{
 				ID:          SnapshotsChecks.Get.ZeroOnError(),
@@ -3431,21 +4817,24 @@ func snapshotsStorePanics(h *SnapshotsHandle) Snapshots {
 	return &snapshotsStorePanicsDefect{snapshotsOverEmbedded: h.Fresh()}
 }
 
-// snapshotsStoreSucceedsAlwaysDefect is the planted defect of a Snapshots
+// snapshotsStoreIgnoresCancelDefect is the planted defect of a Snapshots
 // whose Store ignores the context.
-type snapshotsStoreSucceedsAlwaysDefect struct {
+type snapshotsStoreIgnoresCancelDefect struct {
 	snapshotsOverEmbedded
 }
 
 // Store is the override of the planted defect.
-func (*snapshotsStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *snapshotsStoreIgnoresCancelDefect) Store(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.snapshotsOverEmbedded.Store(p0, p1)
 }
 
-// snapshotsStoreSucceedsAlways returns the planted defect of a Snapshots
+// snapshotsStoreIgnoresCancel returns the planted defect of a Snapshots
 // whose Store ignores the context over a fresh subject.
-func snapshotsStoreSucceedsAlways(h *SnapshotsHandle) Snapshots {
-	return &snapshotsStoreSucceedsAlwaysDefect{snapshotsOverEmbedded: h.Fresh()}
+func snapshotsStoreIgnoresCancel(h *SnapshotsHandle) Snapshots {
+	return &snapshotsStoreIgnoresCancelDefect{snapshotsOverEmbedded: h.Fresh()}
 }
 
 // snapshotsGetPanicsDefect is the planted defect of a Snapshots whose Get
@@ -3465,21 +4854,24 @@ func snapshotsGetPanics(h *SnapshotsHandle) Snapshots {
 	return &snapshotsGetPanicsDefect{snapshotsOverEmbedded: h.Fresh()}
 }
 
-// snapshotsGetSucceedsAlwaysDefect is the planted defect of a Snapshots
+// snapshotsGetIgnoresCancelDefect is the planted defect of a Snapshots
 // whose Get ignores the context.
-type snapshotsGetSucceedsAlwaysDefect struct {
+type snapshotsGetIgnoresCancelDefect struct {
 	snapshotsOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*snapshotsGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *snapshotsGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.snapshotsOverEmbedded.Get(p0, p1)
 }
 
-// snapshotsGetSucceedsAlways returns the planted defect of a Snapshots
+// snapshotsGetIgnoresCancel returns the planted defect of a Snapshots
 // whose Get ignores the context over a fresh subject.
-func snapshotsGetSucceedsAlways(h *SnapshotsHandle) Snapshots {
-	return &snapshotsGetSucceedsAlwaysDefect{snapshotsOverEmbedded: h.Fresh()}
+func snapshotsGetIgnoresCancel(h *SnapshotsHandle) Snapshots {
+	return &snapshotsGetIgnoresCancelDefect{snapshotsOverEmbedded: h.Fresh()}
 }
 
 // snapshotsGetValueBesideDefect is the planted defect of a Snapshots whose
@@ -3489,9 +4881,11 @@ type snapshotsGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*snapshotsGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *snapshotsGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.snapshotsOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -3510,6 +4904,10 @@ type snapshotsGetDriftsDefect struct {
 
 // Get is the override of the planted defect.
 func (d *snapshotsGetDriftsDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = Value{Key: "Key-b"}
@@ -3522,6 +4920,38 @@ func (d *snapshotsGetDriftsDefect) Get(p0 context.Context, p1 string) (r0 Value,
 func snapshotsGetDrifts(h *SnapshotsHandle) Snapshots {
 	return &snapshotsGetDriftsDefect{snapshotsOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Bag:
+//
+// Bag.Add/smoke: Add returns without a panic for derived inputs.
+//
+// Bag.Add/cancel: Add returns an error for a cancelled context.
+//
+// Bag.Items/smoke: Items returns without a panic for derived inputs.
+//
+// Bag.Items/cancel: Items returns an error for a cancelled context.
+//
+// Bag.Items/zero-on-error: Items returns the zero value beside an error.
+//
+// Bag.Items/no-duplicates: no element appears twice in one Items.
+//
+// Bag.Items/stable-order: two calls of Items return the elements in the
+// same order.
+
+// The derived checks of Bag that witness their laws at the shallow end:
+//
+// Bag.Add/smoke
+//
+// Bag.Items/smoke
+//
+// Bag.Items/no-duplicates
+//
+// Bag.Items/stable-order
+
+// The unclaimed classifications of Bag:
+//
+// The shape:writer of Bag.Add has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -3630,7 +5060,7 @@ func BagSuite() conform.Suite[Bag] {
 						return h.Subject().Add(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: bagAddSucceedsAlways,
+				Defect: bagAddIgnoresCancel,
 			},
 			{
 				ID:          BagChecks.Items.Smoke(),
@@ -3663,7 +5093,7 @@ func BagSuite() conform.Suite[Bag] {
 						return err
 					})
 				},
-				Defect: bagItemsSucceedsAlways,
+				Defect: bagItemsIgnoresCancel,
 			},
 			{
 				ID:          BagChecks.Items.ZeroOnError(),
@@ -3868,21 +5298,24 @@ func bagAddPanics(h *BagHandle) Bag {
 	return &bagAddPanicsDefect{bagOverEmbedded: h.Fresh()}
 }
 
-// bagAddSucceedsAlwaysDefect is the planted defect of a Bag whose Add
+// bagAddIgnoresCancelDefect is the planted defect of a Bag whose Add
 // ignores the context.
-type bagAddSucceedsAlwaysDefect struct {
+type bagAddIgnoresCancelDefect struct {
 	bagOverEmbedded
 }
 
 // Add is the override of the planted defect.
-func (*bagAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *bagAddIgnoresCancelDefect) Add(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.bagOverEmbedded.Add(p0, p1)
 }
 
-// bagAddSucceedsAlways returns the planted defect of a Bag whose Add
+// bagAddIgnoresCancel returns the planted defect of a Bag whose Add
 // ignores the context over a fresh subject.
-func bagAddSucceedsAlways(h *BagHandle) Bag {
-	return &bagAddSucceedsAlwaysDefect{bagOverEmbedded: h.Fresh()}
+func bagAddIgnoresCancel(h *BagHandle) Bag {
+	return &bagAddIgnoresCancelDefect{bagOverEmbedded: h.Fresh()}
 }
 
 // bagItemsPanicsDefect is the planted defect of a Bag whose Items panics.
@@ -3901,21 +5334,24 @@ func bagItemsPanics(h *BagHandle) Bag {
 	return &bagItemsPanicsDefect{bagOverEmbedded: h.Fresh()}
 }
 
-// bagItemsSucceedsAlwaysDefect is the planted defect of a Bag whose Items
+// bagItemsIgnoresCancelDefect is the planted defect of a Bag whose Items
 // ignores the context.
-type bagItemsSucceedsAlwaysDefect struct {
+type bagItemsIgnoresCancelDefect struct {
 	bagOverEmbedded
 }
 
 // Items is the override of the planted defect.
-func (*bagItemsSucceedsAlwaysDefect) Items(p0 context.Context) (r0 []Value, r1 error) {
-	return r0, r1
+func (d *bagItemsIgnoresCancelDefect) Items(p0 context.Context) (r0 []Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.bagOverEmbedded.Items(p0)
 }
 
-// bagItemsSucceedsAlways returns the planted defect of a Bag whose Items
+// bagItemsIgnoresCancel returns the planted defect of a Bag whose Items
 // ignores the context over a fresh subject.
-func bagItemsSucceedsAlways(h *BagHandle) Bag {
-	return &bagItemsSucceedsAlwaysDefect{bagOverEmbedded: h.Fresh()}
+func bagItemsIgnoresCancel(h *BagHandle) Bag {
+	return &bagItemsIgnoresCancelDefect{bagOverEmbedded: h.Fresh()}
 }
 
 // bagItemsValueBesideDefect is the planted defect of a Bag whose Items
@@ -3925,9 +5361,11 @@ type bagItemsValueBesideDefect struct {
 }
 
 // Items is the override of the planted defect.
-func (*bagItemsValueBesideDefect) Items(p0 context.Context) (r0 []Value, r1 error) {
-	r0 = []Value{{Key: "Key-b"}}
-	r1 = conform.ErrGenerated
+func (d *bagItemsValueBesideDefect) Items(p0 context.Context) (r0 []Value, r1 error) {
+	r0, r1 = d.bagOverEmbedded.Items(p0)
+	if r1 != nil {
+		r0 = []Value{{Key: "Key-b"}}
+	}
 	return r0, r1
 }
 
@@ -3945,6 +5383,10 @@ type bagItemsDrainsTwiceDefect struct {
 
 // Items is the override of the planted defect.
 func (d *bagItemsDrainsTwiceDefect) Items(p0 context.Context) (r0 []Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0, r1 = d.bagOverEmbedded.Items(p0)
 	if len(r0) > 0 {
 		r0 = append(r0[:1:1], r0...)
@@ -3967,6 +5409,10 @@ type bagItemsReordersDrainDefect struct {
 
 // Items is the override of the planted defect.
 func (d *bagItemsReordersDrainDefect) Items(p0 context.Context) (r0 []Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0, r1 = d.bagOverEmbedded.Items(p0)
 	d.calls++
 	if d.calls > 1 {
@@ -3980,6 +5426,32 @@ func (d *bagItemsReordersDrainDefect) Items(p0 context.Context) (r0 []Value, r1 
 func bagItemsReordersDrain(h *BagHandle) Bag {
 	return &bagItemsReordersDrainDefect{bagOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Updater:
+//
+// Updater.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Updater.Put/cancel: Put returns an error for a cancelled context.
+//
+// Updater.Put/updater: a second Put for one key replaces the first.
+//
+// Updater.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Updater.Get/cancel: Get returns an error for a cancelled context.
+//
+// Updater.Get/zero-on-error: Get returns the zero value beside an error.
+
+// The derived checks of Updater that witness their laws at the shallow
+// end:
+//
+// Updater.Put/smoke
+//
+// Updater.Get/smoke
+
+// The unclaimed classifications of Updater:
+//
+// The shape:writer of Updater.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -4084,7 +5556,7 @@ func UpdaterSuite() conform.Suite[Updater] {
 						return h.Subject().Put(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: updaterPutSucceedsAlways,
+				Defect: updaterPutIgnoresCancel,
 			},
 			{
 				ID:          UpdaterChecks.Put.Updater(),
@@ -4144,7 +5616,7 @@ func UpdaterSuite() conform.Suite[Updater] {
 						return err
 					})
 				},
-				Defect: updaterGetSucceedsAlways,
+				Defect: updaterGetIgnoresCancel,
 			},
 			{
 				ID:          UpdaterChecks.Get.ZeroOnError(),
@@ -4306,21 +5778,24 @@ func updaterPutPanics(h *UpdaterHandle) Updater {
 	return &updaterPutPanicsDefect{updaterOverEmbedded: h.Fresh()}
 }
 
-// updaterPutSucceedsAlwaysDefect is the planted defect of a Updater whose
+// updaterPutIgnoresCancelDefect is the planted defect of a Updater whose
 // Put ignores the context.
-type updaterPutSucceedsAlwaysDefect struct {
+type updaterPutIgnoresCancelDefect struct {
 	updaterOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*updaterPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *updaterPutIgnoresCancelDefect) Put(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.updaterOverEmbedded.Put(p0, p1)
 }
 
-// updaterPutSucceedsAlways returns the planted defect of a Updater whose
+// updaterPutIgnoresCancel returns the planted defect of a Updater whose
 // Put ignores the context over a fresh subject.
-func updaterPutSucceedsAlways(h *UpdaterHandle) Updater {
-	return &updaterPutSucceedsAlwaysDefect{updaterOverEmbedded: h.Fresh()}
+func updaterPutIgnoresCancel(h *UpdaterHandle) Updater {
+	return &updaterPutIgnoresCancelDefect{updaterOverEmbedded: h.Fresh()}
 }
 
 // updaterPutStoresNothingDefect is the planted defect of a Updater whose
@@ -4331,6 +5806,10 @@ type updaterPutStoresNothingDefect struct {
 
 // Put is the override of the planted defect.
 func (*updaterPutStoresNothingDefect) Put(p0 context.Context, p1 Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
@@ -4357,21 +5836,24 @@ func updaterGetPanics(h *UpdaterHandle) Updater {
 	return &updaterGetPanicsDefect{updaterOverEmbedded: h.Fresh()}
 }
 
-// updaterGetSucceedsAlwaysDefect is the planted defect of a Updater whose
+// updaterGetIgnoresCancelDefect is the planted defect of a Updater whose
 // Get ignores the context.
-type updaterGetSucceedsAlwaysDefect struct {
+type updaterGetIgnoresCancelDefect struct {
 	updaterOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*updaterGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *updaterGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.updaterOverEmbedded.Get(p0, p1)
 }
 
-// updaterGetSucceedsAlways returns the planted defect of a Updater whose
+// updaterGetIgnoresCancel returns the planted defect of a Updater whose
 // Get ignores the context over a fresh subject.
-func updaterGetSucceedsAlways(h *UpdaterHandle) Updater {
-	return &updaterGetSucceedsAlwaysDefect{updaterOverEmbedded: h.Fresh()}
+func updaterGetIgnoresCancel(h *UpdaterHandle) Updater {
+	return &updaterGetIgnoresCancelDefect{updaterOverEmbedded: h.Fresh()}
 }
 
 // updaterGetValueBesideDefect is the planted defect of a Updater whose Get
@@ -4381,9 +5863,11 @@ type updaterGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*updaterGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *updaterGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.updaterOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -4392,6 +5876,33 @@ func (*updaterGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value
 func updaterGetValueBeside(h *UpdaterHandle) Updater {
 	return &updaterGetValueBesideDefect{updaterOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of KeyedUpdater:
+//
+// KeyedUpdater.Put/smoke: Put returns without a panic for derived inputs.
+//
+// KeyedUpdater.Put/cancel: Put returns an error for a cancelled context.
+//
+// KeyedUpdater.Put/updater: a second Put for one key replaces the first.
+//
+// KeyedUpdater.Get/smoke: Get returns without a panic for derived inputs.
+//
+// KeyedUpdater.Get/cancel: Get returns an error for a cancelled context.
+//
+// KeyedUpdater.Get/zero-on-error: Get returns the zero value beside an
+// error.
+
+// The derived checks of KeyedUpdater that witness their laws at the
+// shallow end:
+//
+// KeyedUpdater.Put/smoke
+//
+// KeyedUpdater.Get/smoke
+
+// The unclaimed classifications of KeyedUpdater:
+//
+// The shape:composite-writer of KeyedUpdater.Put has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -4496,7 +6007,7 @@ func KeyedUpdaterSuite() conform.Suite[KeyedUpdater] {
 						return h.Subject().Put(ctx, string("key-a"), Value{Key: "Key-a"})
 					})
 				},
-				Defect: keyedUpdaterPutSucceedsAlways,
+				Defect: keyedUpdaterPutIgnoresCancel,
 			},
 			{
 				ID:          KeyedUpdaterChecks.Put.Updater(),
@@ -4556,7 +6067,7 @@ func KeyedUpdaterSuite() conform.Suite[KeyedUpdater] {
 						return err
 					})
 				},
-				Defect: keyedUpdaterGetSucceedsAlways,
+				Defect: keyedUpdaterGetIgnoresCancel,
 			},
 			{
 				ID:          KeyedUpdaterChecks.Get.ZeroOnError(),
@@ -4727,25 +6238,28 @@ func keyedUpdaterPutPanics(h *KeyedUpdaterHandle) KeyedUpdater {
 	return &keyedUpdaterPutPanicsDefect{keyedUpdaterOverEmbedded: h.Fresh()}
 }
 
-// keyedUpdaterPutSucceedsAlwaysDefect is the planted defect of a
+// keyedUpdaterPutIgnoresCancelDefect is the planted defect of a
 // KeyedUpdater whose Put ignores the context.
-type keyedUpdaterPutSucceedsAlwaysDefect struct {
+type keyedUpdaterPutIgnoresCancelDefect struct {
 	keyedUpdaterOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*keyedUpdaterPutSucceedsAlwaysDefect) Put(
+func (d *keyedUpdaterPutIgnoresCancelDefect) Put(
 	p0 context.Context,
 	p1 string,
 	p2 Value,
 ) (r0 error) {
-	return r0
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.keyedUpdaterOverEmbedded.Put(p0, p1, p2)
 }
 
-// keyedUpdaterPutSucceedsAlways returns the planted defect of a
+// keyedUpdaterPutIgnoresCancel returns the planted defect of a
 // KeyedUpdater whose Put ignores the context over a fresh subject.
-func keyedUpdaterPutSucceedsAlways(h *KeyedUpdaterHandle) KeyedUpdater {
-	return &keyedUpdaterPutSucceedsAlwaysDefect{keyedUpdaterOverEmbedded: h.Fresh()}
+func keyedUpdaterPutIgnoresCancel(h *KeyedUpdaterHandle) KeyedUpdater {
+	return &keyedUpdaterPutIgnoresCancelDefect{keyedUpdaterOverEmbedded: h.Fresh()}
 }
 
 // keyedUpdaterPutStoresNothingDefect is the planted defect of a
@@ -4756,6 +6270,10 @@ type keyedUpdaterPutStoresNothingDefect struct {
 
 // Put is the override of the planted defect.
 func (*keyedUpdaterPutStoresNothingDefect) Put(p0 context.Context, p1 string, p2 Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
@@ -4782,24 +6300,27 @@ func keyedUpdaterGetPanics(h *KeyedUpdaterHandle) KeyedUpdater {
 	return &keyedUpdaterGetPanicsDefect{keyedUpdaterOverEmbedded: h.Fresh()}
 }
 
-// keyedUpdaterGetSucceedsAlwaysDefect is the planted defect of a
+// keyedUpdaterGetIgnoresCancelDefect is the planted defect of a
 // KeyedUpdater whose Get ignores the context.
-type keyedUpdaterGetSucceedsAlwaysDefect struct {
+type keyedUpdaterGetIgnoresCancelDefect struct {
 	keyedUpdaterOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*keyedUpdaterGetSucceedsAlwaysDefect) Get(
+func (d *keyedUpdaterGetIgnoresCancelDefect) Get(
 	p0 context.Context,
 	p1 string,
 ) (r0 Value, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.keyedUpdaterOverEmbedded.Get(p0, p1)
 }
 
-// keyedUpdaterGetSucceedsAlways returns the planted defect of a
+// keyedUpdaterGetIgnoresCancel returns the planted defect of a
 // KeyedUpdater whose Get ignores the context over a fresh subject.
-func keyedUpdaterGetSucceedsAlways(h *KeyedUpdaterHandle) KeyedUpdater {
-	return &keyedUpdaterGetSucceedsAlwaysDefect{keyedUpdaterOverEmbedded: h.Fresh()}
+func keyedUpdaterGetIgnoresCancel(h *KeyedUpdaterHandle) KeyedUpdater {
+	return &keyedUpdaterGetIgnoresCancelDefect{keyedUpdaterOverEmbedded: h.Fresh()}
 }
 
 // keyedUpdaterGetValueBesideDefect is the planted defect of a KeyedUpdater
@@ -4809,9 +6330,11 @@ type keyedUpdaterGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*keyedUpdaterGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *keyedUpdaterGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.keyedUpdaterOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -4820,6 +6343,32 @@ func (*keyedUpdaterGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 
 func keyedUpdaterGetValueBeside(h *KeyedUpdaterHandle) KeyedUpdater {
 	return &keyedUpdaterGetValueBesideDefect{keyedUpdaterOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Codec:
+//
+// Codec.Encode/smoke: Encode returns without a panic for derived inputs.
+//
+// Codec.Encode/cancel: Encode returns an error for a cancelled context.
+//
+// Codec.Encode/zero-on-error: Encode returns the zero value beside an
+// error.
+//
+// Codec.Encode/codec: Decode returns what went into Encode.
+//
+// Codec.Decode/smoke: Decode returns without a panic for derived inputs.
+//
+// Codec.Decode/cancel: Decode returns an error for a cancelled context.
+//
+// Codec.Decode/zero-on-error: Decode returns the zero value beside an
+// error.
+
+// The derived checks of Codec that witness their laws at the shallow end:
+//
+// Codec.Encode/smoke
+//
+// Codec.Encode/codec
+//
+// Codec.Decode/smoke
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -4932,7 +6481,7 @@ func CodecSuite() conform.Suite[Codec] {
 						return err
 					})
 				},
-				Defect: codecEncodeSucceedsAlways,
+				Defect: codecEncodeIgnoresCancel,
 			},
 			{
 				ID:          CodecChecks.Encode.ZeroOnError(),
@@ -5004,7 +6553,7 @@ func CodecSuite() conform.Suite[Codec] {
 						return err
 					})
 				},
-				Defect: codecDecodeSucceedsAlways,
+				Defect: codecDecodeIgnoresCancel,
 			},
 			{
 				ID:          CodecChecks.Decode.ZeroOnError(),
@@ -5165,24 +6714,27 @@ func codecEncodePanics(h *CodecHandle) Codec {
 	return &codecEncodePanicsDefect{codecOverEmbedded: h.Fresh()}
 }
 
-// codecEncodeSucceedsAlwaysDefect is the planted defect of a Codec whose
+// codecEncodeIgnoresCancelDefect is the planted defect of a Codec whose
 // Encode ignores the context.
-type codecEncodeSucceedsAlwaysDefect struct {
+type codecEncodeIgnoresCancelDefect struct {
 	codecOverEmbedded
 }
 
 // Encode is the override of the planted defect.
-func (*codecEncodeSucceedsAlwaysDefect) Encode(
+func (d *codecEncodeIgnoresCancelDefect) Encode(
 	p0 context.Context,
 	p1 string,
 ) (r0 string, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.codecOverEmbedded.Encode(p0, p1)
 }
 
-// codecEncodeSucceedsAlways returns the planted defect of a Codec whose
+// codecEncodeIgnoresCancel returns the planted defect of a Codec whose
 // Encode ignores the context over a fresh subject.
-func codecEncodeSucceedsAlways(h *CodecHandle) Codec {
-	return &codecEncodeSucceedsAlwaysDefect{codecOverEmbedded: h.Fresh()}
+func codecEncodeIgnoresCancel(h *CodecHandle) Codec {
+	return &codecEncodeIgnoresCancelDefect{codecOverEmbedded: h.Fresh()}
 }
 
 // codecEncodeValueBesideDefect is the planted defect of a Codec whose
@@ -5192,9 +6744,11 @@ type codecEncodeValueBesideDefect struct {
 }
 
 // Encode is the override of the planted defect.
-func (*codecEncodeValueBesideDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *codecEncodeValueBesideDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.codecOverEmbedded.Encode(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -5213,6 +6767,10 @@ type codecEncodeDriftsDefect struct {
 
 // Encode is the override of the planted defect.
 func (d *codecEncodeDriftsDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = string("sample-b")
@@ -5243,24 +6801,27 @@ func codecDecodePanics(h *CodecHandle) Codec {
 	return &codecDecodePanicsDefect{codecOverEmbedded: h.Fresh()}
 }
 
-// codecDecodeSucceedsAlwaysDefect is the planted defect of a Codec whose
+// codecDecodeIgnoresCancelDefect is the planted defect of a Codec whose
 // Decode ignores the context.
-type codecDecodeSucceedsAlwaysDefect struct {
+type codecDecodeIgnoresCancelDefect struct {
 	codecOverEmbedded
 }
 
 // Decode is the override of the planted defect.
-func (*codecDecodeSucceedsAlwaysDefect) Decode(
+func (d *codecDecodeIgnoresCancelDefect) Decode(
 	p0 context.Context,
 	p1 string,
 ) (r0 string, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.codecOverEmbedded.Decode(p0, p1)
 }
 
-// codecDecodeSucceedsAlways returns the planted defect of a Codec whose
+// codecDecodeIgnoresCancel returns the planted defect of a Codec whose
 // Decode ignores the context over a fresh subject.
-func codecDecodeSucceedsAlways(h *CodecHandle) Codec {
-	return &codecDecodeSucceedsAlwaysDefect{codecOverEmbedded: h.Fresh()}
+func codecDecodeIgnoresCancel(h *CodecHandle) Codec {
+	return &codecDecodeIgnoresCancelDefect{codecOverEmbedded: h.Fresh()}
 }
 
 // codecDecodeValueBesideDefect is the planted defect of a Codec whose
@@ -5270,9 +6831,11 @@ type codecDecodeValueBesideDefect struct {
 }
 
 // Decode is the override of the planted defect.
-func (*codecDecodeValueBesideDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *codecDecodeValueBesideDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.codecOverEmbedded.Decode(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -5281,6 +6844,20 @@ func (*codecDecodeValueBesideDefect) Decode(p0 context.Context, p1 string) (r0 s
 func codecDecodeValueBeside(h *CodecHandle) Codec {
 	return &codecDecodeValueBesideDefect{codecOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Pager:
+//
+// Pager.Fetch/smoke: Fetch returns without a panic for derived inputs.
+//
+// Pager.Fetch/cancel: Fetch returns an error for a cancelled context.
+//
+// Pager.Fetch/zero-on-error: Fetch returns the zero value beside an error.
+//
+// Pager.Fetch/pagination: Fetch resumes from the cursor of its own page.
+
+// The derived checks of Pager that witness their laws at the shallow end:
+//
+// Pager.Fetch/smoke
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -5367,7 +6944,7 @@ func PagerSuite() conform.Suite[Pager] {
 						return err
 					})
 				},
-				Defect: pagerFetchSucceedsAlways,
+				Defect: pagerFetchIgnoresCancel,
 			},
 			{
 				ID:          PagerChecks.Fetch.ZeroOnError(),
@@ -5526,21 +7103,24 @@ func pagerFetchPanics(h *PagerHandle) Pager {
 	return &pagerFetchPanicsDefect{pagerOverEmbedded: h.Fresh()}
 }
 
-// pagerFetchSucceedsAlwaysDefect is the planted defect of a Pager whose
+// pagerFetchIgnoresCancelDefect is the planted defect of a Pager whose
 // Fetch ignores the context.
-type pagerFetchSucceedsAlwaysDefect struct {
+type pagerFetchIgnoresCancelDefect struct {
 	pagerOverEmbedded
 }
 
 // Fetch is the override of the planted defect.
-func (*pagerFetchSucceedsAlwaysDefect) Fetch(p0 context.Context, p1 int) (r0 *Page, r1 error) {
-	return r0, r1
+func (d *pagerFetchIgnoresCancelDefect) Fetch(p0 context.Context, p1 int) (r0 *Page, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.pagerOverEmbedded.Fetch(p0, p1)
 }
 
-// pagerFetchSucceedsAlways returns the planted defect of a Pager whose
+// pagerFetchIgnoresCancel returns the planted defect of a Pager whose
 // Fetch ignores the context over a fresh subject.
-func pagerFetchSucceedsAlways(h *PagerHandle) Pager {
-	return &pagerFetchSucceedsAlwaysDefect{pagerOverEmbedded: h.Fresh()}
+func pagerFetchIgnoresCancel(h *PagerHandle) Pager {
+	return &pagerFetchIgnoresCancelDefect{pagerOverEmbedded: h.Fresh()}
 }
 
 // pagerFetchValueBesideDefect is the planted defect of a Pager whose Fetch
@@ -5550,9 +7130,11 @@ type pagerFetchValueBesideDefect struct {
 }
 
 // Fetch is the override of the planted defect.
-func (*pagerFetchValueBesideDefect) Fetch(p0 context.Context, p1 int) (r0 *Page, r1 error) {
-	r0 = &Page{Next: 7}
-	r1 = conform.ErrGenerated
+func (d *pagerFetchValueBesideDefect) Fetch(p0 context.Context, p1 int) (r0 *Page, r1 error) {
+	r0, r1 = d.pagerOverEmbedded.Fetch(p0, p1)
+	if r1 != nil {
+		r0 = &Page{Next: 7}
+	}
 	return r0, r1
 }
 
@@ -5570,6 +7152,10 @@ type pagerFetchServesOnePageDefect struct {
 
 // Fetch is the override of the planted defect.
 func (d *pagerFetchServesOnePageDefect) Fetch(p0 context.Context, p1 int) (r0 *Page, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	p1 = *new(int)
 	return d.pagerOverEmbedded.Fetch(p0, p1)
 }
@@ -5579,6 +7165,41 @@ func (d *pagerFetchServesOnePageDefect) Fetch(p0 context.Context, p1 int) (r0 *P
 func pagerFetchServesOnePage(h *PagerHandle) Pager {
 	return &pagerFetchServesOnePageDefect{pagerOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Log:
+//
+// Log.Append/smoke: Append returns without a panic for derived inputs.
+//
+// Log.Append/cancel: Append returns an error for a cancelled context.
+//
+// Log.Append/chain-causal: Replay returns the entries of Append in the
+// order of their stamps.
+//
+// Log.Append/chain: Append grows Replay by the entry that it admits.
+//
+// Log.Replay/smoke: Replay returns without a panic for derived inputs.
+//
+// Log.Replay/cancel: Replay returns an error for a cancelled context.
+//
+// Log.Replay/zero-on-error: Replay returns the zero value beside an error.
+
+// The derived checks of Log that witness their laws at the shallow end:
+//
+// Log.Append/smoke
+//
+// Log.Append/chain-causal
+//
+// Log.Replay/smoke
+
+// The refused claims of Log:
+//
+// Log.Append/causal: Append does not return exactly one value. The remedy
+// is to return one value from Append.
+
+// The unclaimed classifications of Log:
+//
+// The shape:writer of Log.Append has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -5687,7 +7308,7 @@ func LogSuite() conform.Suite[Log] {
 						return h.Subject().Append(ctx, Entry{ID: "ID-a"})
 					})
 				},
-				Defect: logAppendSucceedsAlways,
+				Defect: logAppendIgnoresCancel,
 			},
 			{
 				ID:          LogChecks.Append.ChainCausal(),
@@ -5698,7 +7319,6 @@ func LogSuite() conform.Suite[Log] {
 				Law:         spec.HistoryReplaysInItsStampedOrder,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
-				Entails:     []conform.ID[Log]{LogChecks.Append.Chain()},
 				Apply: func(h *LogHandle) {
 					probe.ReplaysInStampOrder(h, func() func(ctx context.Context) error {
 						calls := 0
@@ -5769,7 +7389,7 @@ func LogSuite() conform.Suite[Log] {
 						return err
 					})
 				},
-				Defect: logReplaySucceedsAlways,
+				Defect: logReplayIgnoresCancel,
 			},
 			{
 				ID:          LogChecks.Replay.ZeroOnError(),
@@ -5923,21 +7543,24 @@ func logAppendPanics(h *LogHandle) Log {
 	return &logAppendPanicsDefect{logOverEmbedded: h.Fresh()}
 }
 
-// logAppendSucceedsAlwaysDefect is the planted defect of a Log whose
-// Append ignores the context.
-type logAppendSucceedsAlwaysDefect struct {
+// logAppendIgnoresCancelDefect is the planted defect of a Log whose Append
+// ignores the context.
+type logAppendIgnoresCancelDefect struct {
 	logOverEmbedded
 }
 
 // Append is the override of the planted defect.
-func (*logAppendSucceedsAlwaysDefect) Append(p0 context.Context, p1 Entry) (r0 error) {
-	return r0
+func (d *logAppendIgnoresCancelDefect) Append(p0 context.Context, p1 Entry) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.logOverEmbedded.Append(p0, p1)
 }
 
-// logAppendSucceedsAlways returns the planted defect of a Log whose Append
+// logAppendIgnoresCancel returns the planted defect of a Log whose Append
 // ignores the context over a fresh subject.
-func logAppendSucceedsAlways(h *LogHandle) Log {
-	return &logAppendSucceedsAlwaysDefect{logOverEmbedded: h.Fresh()}
+func logAppendIgnoresCancel(h *LogHandle) Log {
+	return &logAppendIgnoresCancelDefect{logOverEmbedded: h.Fresh()}
 }
 
 // logReplayReplaysReversedDefect is the planted defect of a Log whose
@@ -5948,6 +7571,10 @@ type logReplayReplaysReversedDefect struct {
 
 // Replay is the override of the planted defect.
 func (d *logReplayReplaysReversedDefect) Replay(p0 context.Context) (r0 []Entry, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0, r1 = d.logOverEmbedded.Replay(p0)
 	slices.Reverse(r0)
 	return r0, r1
@@ -5957,6 +7584,27 @@ func (d *logReplayReplaysReversedDefect) Replay(p0 context.Context) (r0 []Entry,
 // Replay returns the history of Append reversed over a fresh subject.
 func logReplayReplaysReversed(h *LogHandle) Log {
 	return &logReplayReplaysReversedDefect{logOverEmbedded: h.Fresh()}
+}
+
+// logAppendSucceedsAlwaysDefect is the planted defect of a Log whose
+// Append returns success and appends nothing.
+type logAppendSucceedsAlwaysDefect struct {
+	logOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (*logAppendSucceedsAlwaysDefect) Append(p0 context.Context, p1 Entry) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	return r0
+}
+
+// logAppendSucceedsAlways returns the planted defect of a Log whose Append
+// returns success and appends nothing over a fresh subject.
+func logAppendSucceedsAlways(h *LogHandle) Log {
+	return &logAppendSucceedsAlwaysDefect{logOverEmbedded: h.Fresh()}
 }
 
 // logReplayPanicsDefect is the planted defect of a Log whose Replay
@@ -5976,21 +7624,24 @@ func logReplayPanics(h *LogHandle) Log {
 	return &logReplayPanicsDefect{logOverEmbedded: h.Fresh()}
 }
 
-// logReplaySucceedsAlwaysDefect is the planted defect of a Log whose
-// Replay ignores the context.
-type logReplaySucceedsAlwaysDefect struct {
+// logReplayIgnoresCancelDefect is the planted defect of a Log whose Replay
+// ignores the context.
+type logReplayIgnoresCancelDefect struct {
 	logOverEmbedded
 }
 
 // Replay is the override of the planted defect.
-func (*logReplaySucceedsAlwaysDefect) Replay(p0 context.Context) (r0 []Entry, r1 error) {
-	return r0, r1
+func (d *logReplayIgnoresCancelDefect) Replay(p0 context.Context) (r0 []Entry, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.logOverEmbedded.Replay(p0)
 }
 
-// logReplaySucceedsAlways returns the planted defect of a Log whose Replay
+// logReplayIgnoresCancel returns the planted defect of a Log whose Replay
 // ignores the context over a fresh subject.
-func logReplaySucceedsAlways(h *LogHandle) Log {
-	return &logReplaySucceedsAlwaysDefect{logOverEmbedded: h.Fresh()}
+func logReplayIgnoresCancel(h *LogHandle) Log {
+	return &logReplayIgnoresCancelDefect{logOverEmbedded: h.Fresh()}
 }
 
 // logReplayValueBesideDefect is the planted defect of a Log whose Replay
@@ -6000,9 +7651,11 @@ type logReplayValueBesideDefect struct {
 }
 
 // Replay is the override of the planted defect.
-func (*logReplayValueBesideDefect) Replay(p0 context.Context) (r0 []Entry, r1 error) {
-	r0 = []Entry{{ID: "ID-b"}}
-	r1 = conform.ErrGenerated
+func (d *logReplayValueBesideDefect) Replay(p0 context.Context) (r0 []Entry, r1 error) {
+	r0, r1 = d.logOverEmbedded.Replay(p0)
+	if r1 != nil {
+		r0 = []Entry{{ID: "ID-b"}}
+	}
 	return r0, r1
 }
 
@@ -6011,6 +7664,25 @@ func (*logReplayValueBesideDefect) Replay(p0 context.Context) (r0 []Entry, r1 er
 func logReplayValueBeside(h *LogHandle) Log {
 	return &logReplayValueBesideDefect{logOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Opener:
+//
+// Opener.Open/smoke: Open returns without a panic for derived inputs.
+//
+// Opener.Open/cancel: Open returns an error for a cancelled context.
+//
+// Opener.Open/cursor-open: the cursor of Open fails with the declared
+// sentinel once it is closed.
+
+// The derived checks of Opener that witness their laws at the shallow end:
+//
+// Opener.Open/smoke
+
+// The refused claims of Opener:
+//
+// Opener.Open/zero-on-error: eidos derives no sample of a result of Open.
+// The remedy is to author a sample of the result type with the directive
+// sample.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -6091,7 +7763,7 @@ func OpenerSuite() conform.Suite[Opener] {
 						return err
 					})
 				},
-				Defect: openerOpenSucceedsAlways,
+				Defect: openerOpenIgnoresCancel,
 			},
 			{
 				ID:          OpenerChecks.Open.CursorOpen(),
@@ -6235,21 +7907,24 @@ func openerOpenPanics(h *OpenerHandle) Opener {
 	return &openerOpenPanicsDefect{openerOverEmbedded: h.Fresh()}
 }
 
-// openerOpenSucceedsAlwaysDefect is the planted defect of a Opener whose
+// openerOpenIgnoresCancelDefect is the planted defect of a Opener whose
 // Open ignores the context.
-type openerOpenSucceedsAlwaysDefect struct {
+type openerOpenIgnoresCancelDefect struct {
 	openerOverEmbedded
 }
 
 // Open is the override of the planted defect.
-func (*openerOpenSucceedsAlwaysDefect) Open(p0 context.Context) (r0 Cursor, r1 error) {
-	return r0, r1
+func (d *openerOpenIgnoresCancelDefect) Open(p0 context.Context) (r0 Cursor, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.openerOverEmbedded.Open(p0)
 }
 
-// openerOpenSucceedsAlways returns the planted defect of a Opener whose
+// openerOpenIgnoresCancel returns the planted defect of a Opener whose
 // Open ignores the context over a fresh subject.
-func openerOpenSucceedsAlways(h *OpenerHandle) Opener {
-	return &openerOpenSucceedsAlwaysDefect{openerOverEmbedded: h.Fresh()}
+func openerOpenIgnoresCancel(h *OpenerHandle) Opener {
+	return &openerOpenIgnoresCancelDefect{openerOverEmbedded: h.Fresh()}
 }
 
 // openerOpenOpensALiveHandleDefect is the planted defect of a Opener whose
@@ -6260,6 +7935,10 @@ type openerOpenOpensALiveHandleDefect struct {
 
 // Open is the override of the planted defect.
 func (d *openerOpenOpensALiveHandleDefect) Open(p0 context.Context) (r0 Cursor, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0, r1 = d.openerOverEmbedded.Open(p0)
 	r0 = openerOpenOpensALiveHandleHandle{r0}
 	return r0, r1
@@ -6281,6 +7960,44 @@ func (openerOpenOpensALiveHandleHandle) Next(p0 context.Context) (r0 Value, r1 b
 func openerOpenOpensALiveHandle(h *OpenerHandle) Opener {
 	return &openerOpenOpensALiveHandleDefect{openerOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Ledger:
+//
+// Ledger.Begin/smoke: Begin returns without a panic for derived inputs.
+//
+// Ledger.Begin/cancel: Begin returns an error for a cancelled context.
+//
+// Ledger.Begin/zero-on-error: Begin returns the zero value beside an
+// error.
+//
+// Ledger.Begin/tx: Rollback of a transaction that Begin opened and Commit
+// settled fails with the declared sentinel.
+//
+// Ledger.Commit/smoke: Commit returns without a panic for derived inputs.
+//
+// Ledger.Commit/cancel: Commit returns an error for a cancelled context.
+//
+// Ledger.Rollback/smoke: Rollback returns without a panic for derived
+// inputs.
+//
+// Ledger.Rollback/cancel: Rollback returns an error for a cancelled
+// context.
+
+// The derived checks of Ledger that witness their laws at the shallow end:
+//
+// Ledger.Begin/smoke
+//
+// Ledger.Commit/smoke
+//
+// Ledger.Rollback/smoke
+
+// The unclaimed classifications of Ledger:
+//
+// The shape:writer of Ledger.Commit has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Ledger.Rollback has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -6407,7 +8124,7 @@ func LedgerSuite() conform.Suite[Ledger] {
 						return err
 					})
 				},
-				Defect: ledgerBeginSucceedsAlways,
+				Defect: ledgerBeginIgnoresCancel,
 			},
 			{
 				ID:          LedgerChecks.Begin.ZeroOnError(),
@@ -6472,7 +8189,7 @@ func LedgerSuite() conform.Suite[Ledger] {
 						return h.Subject().Commit(ctx, Tx{ID: 42})
 					})
 				},
-				Defect: ledgerCommitSucceedsAlways,
+				Defect: ledgerCommitIgnoresCancel,
 			},
 			{
 				ID:          LedgerChecks.Rollback.Smoke(),
@@ -6503,7 +8220,7 @@ func LedgerSuite() conform.Suite[Ledger] {
 						return h.Subject().Rollback(ctx, Tx{ID: 42})
 					})
 				},
-				Defect: ledgerRollbackSucceedsAlways,
+				Defect: ledgerRollbackIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[Ledger]{
@@ -6667,21 +8384,24 @@ func ledgerBeginPanics(h *LedgerHandle) Ledger {
 	return &ledgerBeginPanicsDefect{ledgerOverEmbedded: h.Fresh()}
 }
 
-// ledgerBeginSucceedsAlwaysDefect is the planted defect of a Ledger whose
+// ledgerBeginIgnoresCancelDefect is the planted defect of a Ledger whose
 // Begin ignores the context.
-type ledgerBeginSucceedsAlwaysDefect struct {
+type ledgerBeginIgnoresCancelDefect struct {
 	ledgerOverEmbedded
 }
 
 // Begin is the override of the planted defect.
-func (*ledgerBeginSucceedsAlwaysDefect) Begin(p0 context.Context) (r0 Tx, r1 error) {
-	return r0, r1
+func (d *ledgerBeginIgnoresCancelDefect) Begin(p0 context.Context) (r0 Tx, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.ledgerOverEmbedded.Begin(p0)
 }
 
-// ledgerBeginSucceedsAlways returns the planted defect of a Ledger whose
+// ledgerBeginIgnoresCancel returns the planted defect of a Ledger whose
 // Begin ignores the context over a fresh subject.
-func ledgerBeginSucceedsAlways(h *LedgerHandle) Ledger {
-	return &ledgerBeginSucceedsAlwaysDefect{ledgerOverEmbedded: h.Fresh()}
+func ledgerBeginIgnoresCancel(h *LedgerHandle) Ledger {
+	return &ledgerBeginIgnoresCancelDefect{ledgerOverEmbedded: h.Fresh()}
 }
 
 // ledgerBeginValueBesideDefect is the planted defect of a Ledger whose
@@ -6691,9 +8411,11 @@ type ledgerBeginValueBesideDefect struct {
 }
 
 // Begin is the override of the planted defect.
-func (*ledgerBeginValueBesideDefect) Begin(p0 context.Context) (r0 Tx, r1 error) {
-	r0 = Tx{ID: 7}
-	r1 = conform.ErrGenerated
+func (d *ledgerBeginValueBesideDefect) Begin(p0 context.Context) (r0 Tx, r1 error) {
+	r0, r1 = d.ledgerOverEmbedded.Begin(p0)
+	if r1 != nil {
+		r0 = Tx{ID: 7}
+	}
 	return r0, r1
 }
 
@@ -6711,6 +8433,10 @@ type ledgerRollbackSettlesTwiceDefect struct {
 
 // Rollback is the override of the planted defect.
 func (*ledgerRollbackSettlesTwiceDefect) Rollback(p0 context.Context, p1 Tx) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
@@ -6737,21 +8463,24 @@ func ledgerCommitPanics(h *LedgerHandle) Ledger {
 	return &ledgerCommitPanicsDefect{ledgerOverEmbedded: h.Fresh()}
 }
 
-// ledgerCommitSucceedsAlwaysDefect is the planted defect of a Ledger whose
+// ledgerCommitIgnoresCancelDefect is the planted defect of a Ledger whose
 // Commit ignores the context.
-type ledgerCommitSucceedsAlwaysDefect struct {
+type ledgerCommitIgnoresCancelDefect struct {
 	ledgerOverEmbedded
 }
 
 // Commit is the override of the planted defect.
-func (*ledgerCommitSucceedsAlwaysDefect) Commit(p0 context.Context, p1 Tx) (r0 error) {
-	return r0
+func (d *ledgerCommitIgnoresCancelDefect) Commit(p0 context.Context, p1 Tx) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.ledgerOverEmbedded.Commit(p0, p1)
 }
 
-// ledgerCommitSucceedsAlways returns the planted defect of a Ledger whose
+// ledgerCommitIgnoresCancel returns the planted defect of a Ledger whose
 // Commit ignores the context over a fresh subject.
-func ledgerCommitSucceedsAlways(h *LedgerHandle) Ledger {
-	return &ledgerCommitSucceedsAlwaysDefect{ledgerOverEmbedded: h.Fresh()}
+func ledgerCommitIgnoresCancel(h *LedgerHandle) Ledger {
+	return &ledgerCommitIgnoresCancelDefect{ledgerOverEmbedded: h.Fresh()}
 }
 
 // ledgerRollbackPanicsDefect is the planted defect of a Ledger whose
@@ -6771,22 +8500,49 @@ func ledgerRollbackPanics(h *LedgerHandle) Ledger {
 	return &ledgerRollbackPanicsDefect{ledgerOverEmbedded: h.Fresh()}
 }
 
-// ledgerRollbackSucceedsAlwaysDefect is the planted defect of a Ledger
+// ledgerRollbackIgnoresCancelDefect is the planted defect of a Ledger
 // whose Rollback ignores the context.
-type ledgerRollbackSucceedsAlwaysDefect struct {
+type ledgerRollbackIgnoresCancelDefect struct {
 	ledgerOverEmbedded
 }
 
 // Rollback is the override of the planted defect.
-func (*ledgerRollbackSucceedsAlwaysDefect) Rollback(p0 context.Context, p1 Tx) (r0 error) {
-	return r0
+func (d *ledgerRollbackIgnoresCancelDefect) Rollback(p0 context.Context, p1 Tx) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.ledgerOverEmbedded.Rollback(p0, p1)
 }
 
-// ledgerRollbackSucceedsAlways returns the planted defect of a Ledger
-// whose Rollback ignores the context over a fresh subject.
-func ledgerRollbackSucceedsAlways(h *LedgerHandle) Ledger {
-	return &ledgerRollbackSucceedsAlwaysDefect{ledgerOverEmbedded: h.Fresh()}
+// ledgerRollbackIgnoresCancel returns the planted defect of a Ledger whose
+// Rollback ignores the context over a fresh subject.
+func ledgerRollbackIgnoresCancel(h *LedgerHandle) Ledger {
+	return &ledgerRollbackIgnoresCancelDefect{ledgerOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Guarded:
+//
+// Guarded.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Guarded.Put/cancel: Put returns an error for a cancelled context.
+//
+// Guarded.Put/if-match: Put refuses a value that Match rejects.
+//
+// Guarded.Match/smoke: Match returns without a panic for derived inputs.
+//
+// Guarded.Match/cancel: Match returns an error for a cancelled context.
+
+// The derived checks of Guarded that witness their laws at the shallow
+// end:
+//
+// Guarded.Put/smoke
+//
+// Guarded.Match/smoke
+
+// The unclaimed classifications of Guarded:
+//
+// The shape:composite-writer of Guarded.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -6885,7 +8641,7 @@ func GuardedSuite() conform.Suite[Guarded] {
 						return h.Subject().Put(ctx, Meta{Revision: 42}, &Value{Key: "Key-a"})
 					})
 				},
-				Defect: guardedPutSucceedsAlways,
+				Defect: guardedPutIgnoresCancel,
 			},
 			{
 				ID:          GuardedChecks.Put.IfMatch(),
@@ -6946,7 +8702,7 @@ func GuardedSuite() conform.Suite[Guarded] {
 						return err
 					})
 				},
-				Defect: guardedMatchSucceedsAlways,
+				Defect: guardedMatchIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[Guarded]{
@@ -7095,21 +8851,24 @@ func guardedPutPanics(h *GuardedHandle) Guarded {
 	return &guardedPutPanicsDefect{guardedOverEmbedded: h.Fresh()}
 }
 
-// guardedPutSucceedsAlwaysDefect is the planted defect of a Guarded whose
+// guardedPutIgnoresCancelDefect is the planted defect of a Guarded whose
 // Put ignores the context.
-type guardedPutSucceedsAlwaysDefect struct {
+type guardedPutIgnoresCancelDefect struct {
 	guardedOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*guardedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Meta, p2 *Value) (r0 error) {
-	return r0
+func (d *guardedPutIgnoresCancelDefect) Put(p0 context.Context, p1 Meta, p2 *Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.guardedOverEmbedded.Put(p0, p1, p2)
 }
 
-// guardedPutSucceedsAlways returns the planted defect of a Guarded whose
+// guardedPutIgnoresCancel returns the planted defect of a Guarded whose
 // Put ignores the context over a fresh subject.
-func guardedPutSucceedsAlways(h *GuardedHandle) Guarded {
-	return &guardedPutSucceedsAlwaysDefect{guardedOverEmbedded: h.Fresh()}
+func guardedPutIgnoresCancel(h *GuardedHandle) Guarded {
+	return &guardedPutIgnoresCancelDefect{guardedOverEmbedded: h.Fresh()}
 }
 
 // guardedPutIgnoresThePredicateDefect is the planted defect of a Guarded
@@ -7125,6 +8884,10 @@ func (d *guardedPutIgnoresThePredicateDefect) Put(
 	p1 Meta,
 	p2 *Value,
 ) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.calls++
 	if d.calls > 1 {
 		return r0
@@ -7155,26 +8918,64 @@ func guardedMatchPanics(h *GuardedHandle) Guarded {
 	return &guardedMatchPanicsDefect{guardedOverEmbedded: h.Fresh()}
 }
 
-// guardedMatchSucceedsAlwaysDefect is the planted defect of a Guarded
-// whose Match ignores the context.
-type guardedMatchSucceedsAlwaysDefect struct {
+// guardedMatchIgnoresCancelDefect is the planted defect of a Guarded whose
+// Match ignores the context.
+type guardedMatchIgnoresCancelDefect struct {
 	guardedOverEmbedded
 }
 
 // Match is the override of the planted defect.
-func (*guardedMatchSucceedsAlwaysDefect) Match(
+func (d *guardedMatchIgnoresCancelDefect) Match(
 	p0 context.Context,
 	p1 Meta,
 	p2 *Value,
 ) (r0 bool, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.guardedOverEmbedded.Match(p0, p1, p2)
 }
 
-// guardedMatchSucceedsAlways returns the planted defect of a Guarded whose
+// guardedMatchIgnoresCancel returns the planted defect of a Guarded whose
 // Match ignores the context over a fresh subject.
-func guardedMatchSucceedsAlways(h *GuardedHandle) Guarded {
-	return &guardedMatchSucceedsAlwaysDefect{guardedOverEmbedded: h.Fresh()}
+func guardedMatchIgnoresCancel(h *GuardedHandle) Guarded {
+	return &guardedMatchIgnoresCancelDefect{guardedOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Scope:
+//
+// Scope.Run/smoke: Run returns without a panic for derived inputs.
+//
+// Scope.Run/cancel: Run returns an error for a cancelled context.
+//
+// Scope.Run/transaction: Get finds nothing that a failed Run wrote through
+// Put.
+//
+// Scope.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Scope.Put/cancel: Put returns an error for a cancelled context.
+//
+// Scope.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Scope.Get/cancel: Get returns an error for a cancelled context.
+//
+// Scope.Get/zero-on-error: Get returns the zero value beside an error.
+
+// The derived checks of Scope that witness their laws at the shallow end:
+//
+// Scope.Run/smoke
+//
+// Scope.Put/smoke
+//
+// Scope.Get/smoke
+
+// The unclaimed classifications of Scope:
+//
+// The shape:writer of Scope.Run has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Scope.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -7201,6 +9002,24 @@ var ScopeChecks = struct {
 // scopeRun is the name of Scope.Run, with the identities of its checks.
 type scopeRun struct {
 	conform.Callable[Scope]
+}
+
+// Smoke returns the identity of the check that Run returns without a panic
+// for derived inputs.
+func (c scopeRun) Smoke() conform.ID[Scope] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Run returns an error for a
+// cancelled context.
+func (c scopeRun) Cancel() conform.ID[Scope] {
+	return c.Check("cancel")
+}
+
+// Transaction returns the identity of the check that Get finds nothing
+// that a failed Run wrote through Put.
+func (c scopeRun) Transaction() conform.ID[Scope] {
+	return c.Check("transaction")
 }
 
 // scopePut is the name of Scope.Put, with the identities of its checks.
@@ -7250,6 +9069,57 @@ func ScopeSuite() conform.Suite[Scope] {
 		Declaration: "Scope",
 		Checks: []conform.Check[Scope]{
 			{
+				ID:          ScopeChecks.Run.Smoke(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ScopeHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, func(ctx context.Context) error { return nil })
+					})
+				},
+				Defect: scopeRunPanics,
+			},
+			{
+				ID:          ScopeChecks.Run.Cancel(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ScopeHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, func(ctx context.Context) error { return nil })
+					})
+				},
+				Defect: scopeRunIgnoresCancel,
+			},
+			{
+				ID:          ScopeChecks.Run.Transaction(),
+				Statement:   "Get finds nothing that a failed Run wrote through Put",
+				Claim:       spec.Transaction,
+				Probe:       spec.RollsBackOnFailure,
+				Reason:      spec.NotRolledBack,
+				Law:         spec.FailedScopeLeavesNothing,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ScopeHandle) {
+					probe.RollsBackOnFailure(h, func(ctx context.Context, body probe.Act) error {
+						return h.Subject().Run(ctx, body)
+					}, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), Value{Key: "Key-a"})
+					}, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					}, ErrMissing)
+				},
+				Defect: scopeGetKeepsFailedWrites,
+			},
+			{
 				ID:          ScopeChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -7278,7 +9148,7 @@ func ScopeSuite() conform.Suite[Scope] {
 						return h.Subject().Put(ctx, string("key-a"), Value{Key: "Key-a"})
 					})
 				},
-				Defect: scopePutSucceedsAlways,
+				Defect: scopePutIgnoresCancel,
 			},
 			{
 				ID:          ScopeChecks.Get.Smoke(),
@@ -7311,7 +9181,7 @@ func ScopeSuite() conform.Suite[Scope] {
 						return err
 					})
 				},
-				Defect: scopeGetSucceedsAlways,
+				Defect: scopeGetIgnoresCancel,
 			},
 			{
 				ID:          ScopeChecks.Get.ZeroOnError(),
@@ -7484,6 +9354,69 @@ func newScopeOver(_ *ScopeHandle, spend func()) Scope {
 	return scopeOver{spend: spend}
 }
 
+// scopeRunPanicsDefect is the planted defect of a Scope whose Run panics.
+type scopeRunPanicsDefect struct {
+	scopeOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*scopeRunPanicsDefect) Run(
+	p0 context.Context,
+	p1 func(ctx context.Context) error,
+) (r0 error) {
+	panic("the planted defect of a Scope whose Run panics")
+}
+
+// scopeRunPanics returns the planted defect of a Scope whose Run panics
+// over a fresh subject.
+func scopeRunPanics(h *ScopeHandle) Scope {
+	return &scopeRunPanicsDefect{scopeOverEmbedded: h.Fresh()}
+}
+
+// scopeRunIgnoresCancelDefect is the planted defect of a Scope whose Run
+// ignores the context.
+type scopeRunIgnoresCancelDefect struct {
+	scopeOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (d *scopeRunIgnoresCancelDefect) Run(
+	p0 context.Context,
+	p1 func(ctx context.Context) error,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.scopeOverEmbedded.Run(p0, p1)
+}
+
+// scopeRunIgnoresCancel returns the planted defect of a Scope whose Run
+// ignores the context over a fresh subject.
+func scopeRunIgnoresCancel(h *ScopeHandle) Scope {
+	return &scopeRunIgnoresCancelDefect{scopeOverEmbedded: h.Fresh()}
+}
+
+// scopeGetKeepsFailedWritesDefect is the planted defect of a Scope whose
+// Run keeps what a failed body wrote.
+type scopeGetKeepsFailedWritesDefect struct {
+	scopeOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*scopeGetKeepsFailedWritesDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	return r0, r1
+}
+
+// scopeGetKeepsFailedWrites returns the planted defect of a Scope whose
+// Run keeps what a failed body wrote over a fresh subject.
+func scopeGetKeepsFailedWrites(h *ScopeHandle) Scope {
+	return &scopeGetKeepsFailedWritesDefect{scopeOverEmbedded: h.Fresh()}
+}
+
 // scopePutPanicsDefect is the planted defect of a Scope whose Put panics.
 type scopePutPanicsDefect struct {
 	scopeOverEmbedded
@@ -7500,21 +9433,24 @@ func scopePutPanics(h *ScopeHandle) Scope {
 	return &scopePutPanicsDefect{scopeOverEmbedded: h.Fresh()}
 }
 
-// scopePutSucceedsAlwaysDefect is the planted defect of a Scope whose Put
+// scopePutIgnoresCancelDefect is the planted defect of a Scope whose Put
 // ignores the context.
-type scopePutSucceedsAlwaysDefect struct {
+type scopePutIgnoresCancelDefect struct {
 	scopeOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*scopePutSucceedsAlwaysDefect) Put(p0 context.Context, p1 string, p2 Value) (r0 error) {
-	return r0
+func (d *scopePutIgnoresCancelDefect) Put(p0 context.Context, p1 string, p2 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.scopeOverEmbedded.Put(p0, p1, p2)
 }
 
-// scopePutSucceedsAlways returns the planted defect of a Scope whose Put
+// scopePutIgnoresCancel returns the planted defect of a Scope whose Put
 // ignores the context over a fresh subject.
-func scopePutSucceedsAlways(h *ScopeHandle) Scope {
-	return &scopePutSucceedsAlwaysDefect{scopeOverEmbedded: h.Fresh()}
+func scopePutIgnoresCancel(h *ScopeHandle) Scope {
+	return &scopePutIgnoresCancelDefect{scopeOverEmbedded: h.Fresh()}
 }
 
 // scopeGetPanicsDefect is the planted defect of a Scope whose Get panics.
@@ -7533,21 +9469,24 @@ func scopeGetPanics(h *ScopeHandle) Scope {
 	return &scopeGetPanicsDefect{scopeOverEmbedded: h.Fresh()}
 }
 
-// scopeGetSucceedsAlwaysDefect is the planted defect of a Scope whose Get
+// scopeGetIgnoresCancelDefect is the planted defect of a Scope whose Get
 // ignores the context.
-type scopeGetSucceedsAlwaysDefect struct {
+type scopeGetIgnoresCancelDefect struct {
 	scopeOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*scopeGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *scopeGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.scopeOverEmbedded.Get(p0, p1)
 }
 
-// scopeGetSucceedsAlways returns the planted defect of a Scope whose Get
+// scopeGetIgnoresCancel returns the planted defect of a Scope whose Get
 // ignores the context over a fresh subject.
-func scopeGetSucceedsAlways(h *ScopeHandle) Scope {
-	return &scopeGetSucceedsAlwaysDefect{scopeOverEmbedded: h.Fresh()}
+func scopeGetIgnoresCancel(h *ScopeHandle) Scope {
+	return &scopeGetIgnoresCancelDefect{scopeOverEmbedded: h.Fresh()}
 }
 
 // scopeGetValueBesideDefect is the planted defect of a Scope whose Get
@@ -7557,9 +9496,11 @@ type scopeGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*scopeGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *scopeGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.scopeOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -7568,6 +9509,31 @@ func (*scopeGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, 
 func scopeGetValueBeside(h *ScopeHandle) Scope {
 	return &scopeGetValueBesideDefect{scopeOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Events:
+//
+// Events.Fire/smoke: Fire returns without a panic for derived inputs.
+//
+// Events.Fire/cancel: Fire returns an error for a cancelled context.
+//
+// Events.Fire/hooks: Fire runs a hook that OnEvent installed.
+//
+// Events.OnEvent/smoke: OnEvent returns without a panic for derived
+// inputs.
+
+// The derived checks of Events that witness their laws at the shallow end:
+//
+// Events.Fire/smoke
+//
+// Events.OnEvent/smoke
+
+// The unclaimed classifications of Events:
+//
+// The shape:lifecycle of Events.Fire has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The shape:mutator of Events.OnEvent has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -7619,6 +9585,12 @@ type eventsOnEvent struct {
 	conform.Callable[Events]
 }
 
+// Smoke returns the identity of the check that OnEvent returns without a
+// panic for derived inputs.
+func (c eventsOnEvent) Smoke() conform.ID[Events] {
+	return c.Check("smoke")
+}
+
 // EventsSuite returns the checks of Events, and the calls and the budgets
 // of its callables.
 func EventsSuite() conform.Suite[Events] {
@@ -7654,7 +9626,7 @@ func EventsSuite() conform.Suite[Events] {
 						return h.Subject().Fire(ctx)
 					})
 				},
-				Defect: eventsFireSucceedsAlways,
+				Defect: eventsFireIgnoresCancel,
 			},
 			{
 				ID:          EventsChecks.Fire.Hooks(),
@@ -7673,6 +9645,23 @@ func EventsSuite() conform.Suite[Events] {
 					})
 				},
 				Defect: eventsOnEventSwallowsHooks,
+			},
+			{
+				ID:          EventsChecks.OnEvent.Smoke(),
+				Statement:   "OnEvent returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *EventsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().OnEvent(func(event string) {})
+						return nil
+					})
+				},
+				Defect: eventsOnEventPanics,
 			},
 		},
 		Calls: []conform.Call[Events]{
@@ -7815,21 +9804,24 @@ func eventsFirePanics(h *EventsHandle) Events {
 	return &eventsFirePanicsDefect{eventsOverEmbedded: h.Fresh()}
 }
 
-// eventsFireSucceedsAlwaysDefect is the planted defect of a Events whose
+// eventsFireIgnoresCancelDefect is the planted defect of a Events whose
 // Fire ignores the context.
-type eventsFireSucceedsAlwaysDefect struct {
+type eventsFireIgnoresCancelDefect struct {
 	eventsOverEmbedded
 }
 
 // Fire is the override of the planted defect.
-func (*eventsFireSucceedsAlwaysDefect) Fire(p0 context.Context) (r0 error) {
-	return r0
+func (d *eventsFireIgnoresCancelDefect) Fire(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.eventsOverEmbedded.Fire(p0)
 }
 
-// eventsFireSucceedsAlways returns the planted defect of a Events whose
+// eventsFireIgnoresCancel returns the planted defect of a Events whose
 // Fire ignores the context over a fresh subject.
-func eventsFireSucceedsAlways(h *EventsHandle) Events {
-	return &eventsFireSucceedsAlwaysDefect{eventsOverEmbedded: h.Fresh()}
+func eventsFireIgnoresCancel(h *EventsHandle) Events {
+	return &eventsFireIgnoresCancelDefect{eventsOverEmbedded: h.Fresh()}
 }
 
 // eventsOnEventSwallowsHooksDefect is the planted defect of a Events whose
@@ -7848,6 +9840,62 @@ func (*eventsOnEventSwallowsHooksDefect) OnEvent(p0 func(event string)) {
 func eventsOnEventSwallowsHooks(h *EventsHandle) Events {
 	return &eventsOnEventSwallowsHooksDefect{eventsOverEmbedded: h.Fresh()}
 }
+
+// eventsOnEventPanicsDefect is the planted defect of a Events whose
+// OnEvent panics.
+type eventsOnEventPanicsDefect struct {
+	eventsOverEmbedded
+}
+
+// OnEvent is the override of the planted defect.
+func (*eventsOnEventPanicsDefect) OnEvent(p0 func(event string)) {
+	panic("the planted defect of a Events whose OnEvent panics")
+}
+
+// eventsOnEventPanics returns the planted defect of a Events whose OnEvent
+// panics over a fresh subject.
+func eventsOnEventPanics(h *EventsHandle) Events {
+	return &eventsOnEventPanicsDefect{eventsOverEmbedded: h.Fresh()}
+}
+
+// The derived checks of Timers:
+//
+// Timers.At/smoke: At returns without a panic for derived inputs.
+//
+// Timers.At/cancel: At returns an error for a cancelled context.
+//
+// Timers.At/scheduled: a task that At registers runs once the clock passes
+// its instant, and not before.
+//
+// Timers.Fired/smoke: Fired returns without a panic for derived inputs.
+//
+// Timers.Fired/cancel: Fired returns an error for a cancelled context.
+//
+// Timers.Fired/zero-on-error: Fired returns the zero value beside an
+// error.
+//
+// Timers.Slow/smoke: Slow returns without a panic for derived inputs.
+//
+// Timers.Slow/cancel: Slow returns an error for a cancelled context.
+//
+// Timers.Slow/within: Slow returns before the clock passes the declared
+// budget.
+
+// The derived checks of Timers that witness their laws at the shallow end:
+//
+// Timers.At/smoke
+//
+// Timers.Fired/smoke
+//
+// Timers.Slow/smoke
+
+// The unclaimed classifications of Timers:
+//
+// The shape:writer of Timers.At has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:writer of Timers.Slow has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -7977,7 +10025,7 @@ func TimersSuite() conform.Suite[Timers] {
 						return h.Subject().At(ctx, time.Duration(1))
 					})
 				},
-				Defect: timersAtSucceedsAlways,
+				Defect: timersAtIgnoresCancel,
 			},
 			{
 				ID:          TimersChecks.At.Scheduled(),
@@ -8030,7 +10078,7 @@ func TimersSuite() conform.Suite[Timers] {
 						return err
 					})
 				},
-				Defect: timersFiredSucceedsAlways,
+				Defect: timersFiredIgnoresCancel,
 			},
 			{
 				ID:          TimersChecks.Fired.ZeroOnError(),
@@ -8076,7 +10124,7 @@ func TimersSuite() conform.Suite[Timers] {
 						return h.Subject().Slow(ctx, string("key-a"))
 					})
 				},
-				Defect: timersSlowSucceedsAlways,
+				Defect: timersSlowIgnoresCancel,
 			},
 			{
 				ID:          TimersChecks.Slow.Within(),
@@ -8256,21 +10304,24 @@ func timersAtPanics(h *TimersHandle) Timers {
 	return &timersAtPanicsDefect{timersOverEmbedded: h.Fresh()}
 }
 
-// timersAtSucceedsAlwaysDefect is the planted defect of a Timers whose At
+// timersAtIgnoresCancelDefect is the planted defect of a Timers whose At
 // ignores the context.
-type timersAtSucceedsAlwaysDefect struct {
+type timersAtIgnoresCancelDefect struct {
 	timersOverEmbedded
 }
 
 // At is the override of the planted defect.
-func (*timersAtSucceedsAlwaysDefect) At(p0 context.Context, p1 time.Duration) (r0 error) {
-	return r0
+func (d *timersAtIgnoresCancelDefect) At(p0 context.Context, p1 time.Duration) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.timersOverEmbedded.At(p0, p1)
 }
 
-// timersAtSucceedsAlways returns the planted defect of a Timers whose At
+// timersAtIgnoresCancel returns the planted defect of a Timers whose At
 // ignores the context over a fresh subject.
-func timersAtSucceedsAlways(h *TimersHandle) Timers {
-	return &timersAtSucceedsAlwaysDefect{timersOverEmbedded: h.Fresh()}
+func timersAtIgnoresCancel(h *TimersHandle) Timers {
+	return &timersAtIgnoresCancelDefect{timersOverEmbedded: h.Fresh()}
 }
 
 // timersFiredCountDriftsDefect is the planted defect of a Timers that runs
@@ -8285,6 +10336,10 @@ func (d *timersFiredCountDriftsDefect) Fired(
 	p0 context.Context,
 	p1 time.Duration,
 ) (r0 int, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = int(7)
@@ -8315,24 +10370,27 @@ func timersFiredPanics(h *TimersHandle) Timers {
 	return &timersFiredPanicsDefect{timersOverEmbedded: h.Fresh()}
 }
 
-// timersFiredSucceedsAlwaysDefect is the planted defect of a Timers whose
+// timersFiredIgnoresCancelDefect is the planted defect of a Timers whose
 // Fired ignores the context.
-type timersFiredSucceedsAlwaysDefect struct {
+type timersFiredIgnoresCancelDefect struct {
 	timersOverEmbedded
 }
 
 // Fired is the override of the planted defect.
-func (*timersFiredSucceedsAlwaysDefect) Fired(
+func (d *timersFiredIgnoresCancelDefect) Fired(
 	p0 context.Context,
 	p1 time.Duration,
 ) (r0 int, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.timersOverEmbedded.Fired(p0, p1)
 }
 
-// timersFiredSucceedsAlways returns the planted defect of a Timers whose
+// timersFiredIgnoresCancel returns the planted defect of a Timers whose
 // Fired ignores the context over a fresh subject.
-func timersFiredSucceedsAlways(h *TimersHandle) Timers {
-	return &timersFiredSucceedsAlwaysDefect{timersOverEmbedded: h.Fresh()}
+func timersFiredIgnoresCancel(h *TimersHandle) Timers {
+	return &timersFiredIgnoresCancelDefect{timersOverEmbedded: h.Fresh()}
 }
 
 // timersFiredValueBesideDefect is the planted defect of a Timers whose
@@ -8342,12 +10400,14 @@ type timersFiredValueBesideDefect struct {
 }
 
 // Fired is the override of the planted defect.
-func (*timersFiredValueBesideDefect) Fired(
+func (d *timersFiredValueBesideDefect) Fired(
 	p0 context.Context,
 	p1 time.Duration,
 ) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+	r0, r1 = d.timersOverEmbedded.Fired(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -8374,21 +10434,24 @@ func timersSlowPanics(h *TimersHandle) Timers {
 	return &timersSlowPanicsDefect{timersOverEmbedded: h.Fresh()}
 }
 
-// timersSlowSucceedsAlwaysDefect is the planted defect of a Timers whose
+// timersSlowIgnoresCancelDefect is the planted defect of a Timers whose
 // Slow ignores the context.
-type timersSlowSucceedsAlwaysDefect struct {
+type timersSlowIgnoresCancelDefect struct {
 	timersOverEmbedded
 }
 
 // Slow is the override of the planted defect.
-func (*timersSlowSucceedsAlwaysDefect) Slow(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *timersSlowIgnoresCancelDefect) Slow(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.timersOverEmbedded.Slow(p0, p1)
 }
 
-// timersSlowSucceedsAlways returns the planted defect of a Timers whose
+// timersSlowIgnoresCancel returns the planted defect of a Timers whose
 // Slow ignores the context over a fresh subject.
-func timersSlowSucceedsAlways(h *TimersHandle) Timers {
-	return &timersSlowSucceedsAlwaysDefect{timersOverEmbedded: h.Fresh()}
+func timersSlowIgnoresCancel(h *TimersHandle) Timers {
+	return &timersSlowIgnoresCancelDefect{timersOverEmbedded: h.Fresh()}
 }
 
 // timersSlowSlowDefect is the planted defect of a Timers whose Slow waits
@@ -8400,6 +10463,10 @@ type timersSlowSlowDefect struct {
 
 // Slow is the override of the planted defect.
 func (d *timersSlowSlowDefect) Slow(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.clock.Sleep(10 * time.Second)
 	return d.timersOverEmbedded.Slow(p0, p1)
 }
@@ -8409,6 +10476,50 @@ func (d *timersSlowSlowDefect) Slow(p0 context.Context, p1 string) (r0 error) {
 func timersSlowSlow(h *TimersHandle) Timers {
 	return &timersSlowSlowDefect{timersOverEmbedded: h.Fresh(), clock: h.Clock()}
 }
+
+// The derived checks of Election:
+//
+// Election.Campaign/smoke: Campaign returns without a panic for derived
+// inputs.
+//
+// Election.Campaign/cancel: Campaign returns an error for a cancelled
+// context.
+//
+// Election.Campaign/leader-election: IsLeader reports no leadership that
+// Campaign took once Resign has run.
+//
+// Election.Resign/smoke: Resign returns without a panic for derived
+// inputs.
+//
+// Election.Resign/cancel: Resign returns an error for a cancelled context.
+//
+// Election.IsLeader/smoke: IsLeader returns without a panic for derived
+// inputs.
+
+// The derived checks of Election that witness their laws at the shallow
+// end:
+//
+// Election.Campaign/smoke
+//
+// Election.Resign/smoke
+//
+// Election.IsLeader/smoke
+
+// The refused claims of Election:
+//
+// Election.IsLeader/cancel: IsLeader cannot fail. The remedy is to give
+// IsLeader an error result.
+//
+// Election.IsLeader/zero-on-error: IsLeader cannot fail. The remedy is to
+// give IsLeader an error result.
+
+// The unclaimed classifications of Election:
+//
+// The shape:lifecycle of Election.Campaign has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
+//
+// The shape:lifecycle of Election.Resign has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -8521,7 +10632,7 @@ func ElectionSuite() conform.Suite[Election] {
 						return h.Subject().Campaign(ctx)
 					})
 				},
-				Defect: electionCampaignSucceedsAlways,
+				Defect: electionCampaignIgnoresCancel,
 			},
 			{
 				ID:          ElectionChecks.Campaign.LeaderElection(),
@@ -8572,7 +10683,7 @@ func ElectionSuite() conform.Suite[Election] {
 						return h.Subject().Resign(ctx)
 					})
 				},
-				Defect: electionResignSucceedsAlways,
+				Defect: electionResignIgnoresCancel,
 			},
 			{
 				ID:          ElectionChecks.IsLeader.Smoke(),
@@ -8753,21 +10864,24 @@ func electionCampaignPanics(h *ElectionHandle) Election {
 	return &electionCampaignPanicsDefect{electionOverEmbedded: h.Fresh()}
 }
 
-// electionCampaignSucceedsAlwaysDefect is the planted defect of a Election
+// electionCampaignIgnoresCancelDefect is the planted defect of a Election
 // whose Campaign ignores the context.
-type electionCampaignSucceedsAlwaysDefect struct {
+type electionCampaignIgnoresCancelDefect struct {
 	electionOverEmbedded
 }
 
 // Campaign is the override of the planted defect.
-func (*electionCampaignSucceedsAlwaysDefect) Campaign(p0 context.Context) (r0 error) {
-	return r0
+func (d *electionCampaignIgnoresCancelDefect) Campaign(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.electionOverEmbedded.Campaign(p0)
 }
 
-// electionCampaignSucceedsAlways returns the planted defect of a Election
+// electionCampaignIgnoresCancel returns the planted defect of a Election
 // whose Campaign ignores the context over a fresh subject.
-func electionCampaignSucceedsAlways(h *ElectionHandle) Election {
-	return &electionCampaignSucceedsAlwaysDefect{electionOverEmbedded: h.Fresh()}
+func electionCampaignIgnoresCancel(h *ElectionHandle) Election {
+	return &electionCampaignIgnoresCancelDefect{electionOverEmbedded: h.Fresh()}
 }
 
 // electionIsLeaderLeadsOnDefect is the planted defect of a Election whose
@@ -8805,21 +10919,24 @@ func electionResignPanics(h *ElectionHandle) Election {
 	return &electionResignPanicsDefect{electionOverEmbedded: h.Fresh()}
 }
 
-// electionResignSucceedsAlwaysDefect is the planted defect of a Election
+// electionResignIgnoresCancelDefect is the planted defect of a Election
 // whose Resign ignores the context.
-type electionResignSucceedsAlwaysDefect struct {
+type electionResignIgnoresCancelDefect struct {
 	electionOverEmbedded
 }
 
 // Resign is the override of the planted defect.
-func (*electionResignSucceedsAlwaysDefect) Resign(p0 context.Context) (r0 error) {
-	return r0
+func (d *electionResignIgnoresCancelDefect) Resign(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.electionOverEmbedded.Resign(p0)
 }
 
-// electionResignSucceedsAlways returns the planted defect of a Election
+// electionResignIgnoresCancel returns the planted defect of a Election
 // whose Resign ignores the context over a fresh subject.
-func electionResignSucceedsAlways(h *ElectionHandle) Election {
-	return &electionResignSucceedsAlwaysDefect{electionOverEmbedded: h.Fresh()}
+func electionResignIgnoresCancel(h *ElectionHandle) Election {
+	return &electionResignIgnoresCancelDefect{electionOverEmbedded: h.Fresh()}
 }
 
 // electionIsLeaderPanicsDefect is the planted defect of a Election whose
@@ -8838,6 +10955,31 @@ func (*electionIsLeaderPanicsDefect) IsLeader(p0 context.Context) (r0 bool) {
 func electionIsLeaderPanics(h *ElectionHandle) Election {
 	return &electionIsLeaderPanicsDefect{electionOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Pool:
+//
+// Pool.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Pool.Get/cancel: Get returns an error for a cancelled context.
+//
+// Pool.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Pool.Get/pool: Put takes back what Get lent.
+//
+// Pool.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Pool.Put/cancel: Put returns an error for a cancelled context.
+
+// The derived checks of Pool that witness their laws at the shallow end:
+//
+// Pool.Get/smoke
+//
+// Pool.Put/smoke
+
+// The unclaimed classifications of Pool:
+//
+// The shape:writer of Pool.Put has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -8942,7 +11084,7 @@ func PoolSuite() conform.Suite[Pool] {
 						return err
 					})
 				},
-				Defect: poolGetSucceedsAlways,
+				Defect: poolGetIgnoresCancel,
 			},
 			{
 				ID:          PoolChecks.Get.ZeroOnError(),
@@ -9005,7 +11147,7 @@ func PoolSuite() conform.Suite[Pool] {
 						return h.Subject().Put(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: poolPutSucceedsAlways,
+				Defect: poolPutIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[Pool]{
@@ -9144,21 +11286,24 @@ func poolGetPanics(h *PoolHandle) Pool {
 	return &poolGetPanicsDefect{poolOverEmbedded: h.Fresh()}
 }
 
-// poolGetSucceedsAlwaysDefect is the planted defect of a Pool whose Get
+// poolGetIgnoresCancelDefect is the planted defect of a Pool whose Get
 // ignores the context.
-type poolGetSucceedsAlwaysDefect struct {
+type poolGetIgnoresCancelDefect struct {
 	poolOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*poolGetSucceedsAlwaysDefect) Get(p0 context.Context) (r0 Value, r1 error) {
-	return r0, r1
+func (d *poolGetIgnoresCancelDefect) Get(p0 context.Context) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.poolOverEmbedded.Get(p0)
 }
 
-// poolGetSucceedsAlways returns the planted defect of a Pool whose Get
+// poolGetIgnoresCancel returns the planted defect of a Pool whose Get
 // ignores the context over a fresh subject.
-func poolGetSucceedsAlways(h *PoolHandle) Pool {
-	return &poolGetSucceedsAlwaysDefect{poolOverEmbedded: h.Fresh()}
+func poolGetIgnoresCancel(h *PoolHandle) Pool {
+	return &poolGetIgnoresCancelDefect{poolOverEmbedded: h.Fresh()}
 }
 
 // poolGetValueBesideDefect is the planted defect of a Pool whose Get
@@ -9168,9 +11313,11 @@ type poolGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*poolGetValueBesideDefect) Get(p0 context.Context) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *poolGetValueBesideDefect) Get(p0 context.Context) (r0 Value, r1 error) {
+	r0, r1 = d.poolOverEmbedded.Get(p0)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -9188,6 +11335,10 @@ type poolPutPutRefusesDefect struct {
 
 // Put is the override of the planted defect.
 func (*poolPutPutRefusesDefect) Put(p0 context.Context, p1 Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	r0 = conform.ErrGenerated
 	return r0
 }
@@ -9214,22 +11365,51 @@ func poolPutPanics(h *PoolHandle) Pool {
 	return &poolPutPanicsDefect{poolOverEmbedded: h.Fresh()}
 }
 
-// poolPutSucceedsAlwaysDefect is the planted defect of a Pool whose Put
+// poolPutIgnoresCancelDefect is the planted defect of a Pool whose Put
 // ignores the context.
-type poolPutSucceedsAlwaysDefect struct {
+type poolPutIgnoresCancelDefect struct {
 	poolOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*poolPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *poolPutIgnoresCancelDefect) Put(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.poolOverEmbedded.Put(p0, p1)
 }
 
-// poolPutSucceedsAlways returns the planted defect of a Pool whose Put
+// poolPutIgnoresCancel returns the planted defect of a Pool whose Put
 // ignores the context over a fresh subject.
-func poolPutSucceedsAlways(h *PoolHandle) Pool {
-	return &poolPutSucceedsAlwaysDefect{poolOverEmbedded: h.Fresh()}
+func poolPutIgnoresCancel(h *PoolHandle) Pool {
+	return &poolPutIgnoresCancelDefect{poolOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Batch:
+//
+// Batch.Write/smoke: Write returns without a panic for derived inputs.
+//
+// Batch.Write/cancel: Write returns an error for a cancelled context.
+//
+// Batch.Write/batch-writer: Read finds no part of a value that Write
+// refuses.
+//
+// Batch.Read/smoke: Read returns without a panic for derived inputs.
+//
+// Batch.Read/cancel: Read returns an error for a cancelled context.
+//
+// Batch.Read/zero-on-error: Read returns the zero value beside an error.
+
+// The derived checks of Batch that witness their laws at the shallow end:
+//
+// Batch.Write/smoke
+//
+// Batch.Read/smoke
+
+// The unclaimed classifications of Batch:
+//
+// The shape:writer of Batch.Write has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -9333,7 +11513,7 @@ func BatchSuite() conform.Suite[Batch] {
 						return h.Subject().Write(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: batchWriteSucceedsAlways,
+				Defect: batchWriteIgnoresCancel,
 			},
 			{
 				ID:          BatchChecks.Write.BatchWriter(),
@@ -9383,7 +11563,7 @@ func BatchSuite() conform.Suite[Batch] {
 						return err
 					})
 				},
-				Defect: batchReadSucceedsAlways,
+				Defect: batchReadIgnoresCancel,
 			},
 			{
 				ID:          BatchChecks.Read.ZeroOnError(),
@@ -9543,21 +11723,24 @@ func batchWritePanics(h *BatchHandle) Batch {
 	return &batchWritePanicsDefect{batchOverEmbedded: h.Fresh()}
 }
 
-// batchWriteSucceedsAlwaysDefect is the planted defect of a Batch whose
+// batchWriteIgnoresCancelDefect is the planted defect of a Batch whose
 // Write ignores the context.
-type batchWriteSucceedsAlwaysDefect struct {
+type batchWriteIgnoresCancelDefect struct {
 	batchOverEmbedded
 }
 
 // Write is the override of the planted defect.
-func (*batchWriteSucceedsAlwaysDefect) Write(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *batchWriteIgnoresCancelDefect) Write(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.batchOverEmbedded.Write(p0, p1)
 }
 
-// batchWriteSucceedsAlways returns the planted defect of a Batch whose
+// batchWriteIgnoresCancel returns the planted defect of a Batch whose
 // Write ignores the context over a fresh subject.
-func batchWriteSucceedsAlways(h *BatchHandle) Batch {
-	return &batchWriteSucceedsAlwaysDefect{batchOverEmbedded: h.Fresh()}
+func batchWriteIgnoresCancel(h *BatchHandle) Batch {
+	return &batchWriteIgnoresCancelDefect{batchOverEmbedded: h.Fresh()}
 }
 
 // batchReadFilesRefusedWriteDefect is the planted defect of a Batch whose
@@ -9568,6 +11751,10 @@ type batchReadFilesRefusedWriteDefect struct {
 
 // Read is the override of the planted defect.
 func (*batchReadFilesRefusedWriteDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0 = Value{Key: "Key-b"}
 	return r0, r1
 }
@@ -9595,21 +11782,24 @@ func batchReadPanics(h *BatchHandle) Batch {
 	return &batchReadPanicsDefect{batchOverEmbedded: h.Fresh()}
 }
 
-// batchReadSucceedsAlwaysDefect is the planted defect of a Batch whose
-// Read ignores the context.
-type batchReadSucceedsAlwaysDefect struct {
+// batchReadIgnoresCancelDefect is the planted defect of a Batch whose Read
+// ignores the context.
+type batchReadIgnoresCancelDefect struct {
 	batchOverEmbedded
 }
 
 // Read is the override of the planted defect.
-func (*batchReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *batchReadIgnoresCancelDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.batchOverEmbedded.Read(p0, p1)
 }
 
-// batchReadSucceedsAlways returns the planted defect of a Batch whose Read
+// batchReadIgnoresCancel returns the planted defect of a Batch whose Read
 // ignores the context over a fresh subject.
-func batchReadSucceedsAlways(h *BatchHandle) Batch {
-	return &batchReadSucceedsAlwaysDefect{batchOverEmbedded: h.Fresh()}
+func batchReadIgnoresCancel(h *BatchHandle) Batch {
+	return &batchReadIgnoresCancelDefect{batchOverEmbedded: h.Fresh()}
 }
 
 // batchReadValueBesideDefect is the planted defect of a Batch whose Read
@@ -9619,9 +11809,11 @@ type batchReadValueBesideDefect struct {
 }
 
 // Read is the override of the planted defect.
-func (*batchReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *batchReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.batchOverEmbedded.Read(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -9630,6 +11822,34 @@ func (*batchReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 Value
 func batchReadValueBeside(h *BatchHandle) Batch {
 	return &batchReadValueBesideDefect{batchOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Screened:
+//
+// Screened.Store/smoke: Store returns without a panic for derived inputs.
+//
+// Screened.Store/cancel: Store returns an error for a cancelled context.
+//
+// Screened.Store/validates: Store refuses the value that Validate refuses.
+//
+// Screened.Validate/smoke: Validate returns without a panic for derived
+// inputs.
+
+// The derived checks of Screened that witness their laws at the shallow
+// end:
+//
+// Screened.Store/smoke
+//
+// Screened.Store/validates
+//
+// Screened.Validate/smoke
+
+// The unclaimed classifications of Screened:
+//
+// The shape:writer of Screened.Store has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Screened.Validate has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -9722,7 +11942,7 @@ func ScreenedSuite() conform.Suite[Screened] {
 						return h.Subject().Store(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: screenedStoreSucceedsAlways,
+				Defect: screenedStoreIgnoresCancel,
 			},
 			{
 				ID:          ScreenedChecks.Store.Validates(),
@@ -9904,21 +12124,24 @@ func screenedStorePanics(h *ScreenedHandle) Screened {
 	return &screenedStorePanicsDefect{screenedOverEmbedded: h.Fresh()}
 }
 
-// screenedStoreSucceedsAlwaysDefect is the planted defect of a Screened
+// screenedStoreIgnoresCancelDefect is the planted defect of a Screened
 // whose Store ignores the context.
-type screenedStoreSucceedsAlwaysDefect struct {
+type screenedStoreIgnoresCancelDefect struct {
 	screenedOverEmbedded
 }
 
 // Store is the override of the planted defect.
-func (*screenedStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 Value) (r0 error) {
-	return r0
+func (d *screenedStoreIgnoresCancelDefect) Store(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.screenedOverEmbedded.Store(p0, p1)
 }
 
-// screenedStoreSucceedsAlways returns the planted defect of a Screened
+// screenedStoreIgnoresCancel returns the planted defect of a Screened
 // whose Store ignores the context over a fresh subject.
-func screenedStoreSucceedsAlways(h *ScreenedHandle) Screened {
-	return &screenedStoreSucceedsAlwaysDefect{screenedOverEmbedded: h.Fresh()}
+func screenedStoreIgnoresCancel(h *ScreenedHandle) Screened {
+	return &screenedStoreIgnoresCancelDefect{screenedOverEmbedded: h.Fresh()}
 }
 
 // screenedStoreAcceptsTheInvalidDefect is the planted defect of a Screened
@@ -9929,6 +12152,10 @@ type screenedStoreAcceptsTheInvalidDefect struct {
 
 // Store is the override of the planted defect.
 func (*screenedStoreAcceptsTheInvalidDefect) Store(p0 context.Context, p1 Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
@@ -9954,6 +12181,25 @@ func (*screenedValidatePanicsDefect) Validate(p0 Value) (r0 error) {
 func screenedValidatePanics(h *ScreenedHandle) Screened {
 	return &screenedValidatePanicsDefect{screenedOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Limiter:
+//
+// Limiter.Run/smoke: Run returns without a panic for derived inputs.
+//
+// Limiter.Run/cancel: Run returns an error for a cancelled context.
+//
+// Limiter.Run/rate-limit: Run admits its declared burst and refuses the
+// call after it.
+
+// The derived checks of Limiter that witness their laws at the shallow
+// end:
+//
+// Limiter.Run/smoke
+
+// The unclaimed classifications of Limiter:
+//
+// The shape:writer of Limiter.Run has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -10032,7 +12278,7 @@ func LimiterSuite() conform.Suite[Limiter] {
 						return h.Subject().Run(ctx, string("key-a"))
 					})
 				},
-				Defect: limiterRunSucceedsAlways,
+				Defect: limiterRunIgnoresCancel,
 			},
 			{
 				ID:          LimiterChecks.Run.RateLimit(),
@@ -10173,22 +12419,82 @@ func limiterRunPanics(h *LimiterHandle) Limiter {
 	return &limiterRunPanicsDefect{limiterOverEmbedded: h.Fresh()}
 }
 
-// limiterRunSucceedsAlwaysDefect is the planted defect of a Limiter whose
+// limiterRunIgnoresCancelDefect is the planted defect of a Limiter whose
 // Run ignores the context.
+type limiterRunIgnoresCancelDefect struct {
+	limiterOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (d *limiterRunIgnoresCancelDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.limiterOverEmbedded.Run(p0, p1)
+}
+
+// limiterRunIgnoresCancel returns the planted defect of a Limiter whose
+// Run ignores the context over a fresh subject.
+func limiterRunIgnoresCancel(h *LimiterHandle) Limiter {
+	return &limiterRunIgnoresCancelDefect{limiterOverEmbedded: h.Fresh()}
+}
+
+// limiterRunSucceedsAlwaysDefect is the planted defect of a Limiter whose
+// Run admits calls past the declared burst.
 type limiterRunSucceedsAlwaysDefect struct {
 	limiterOverEmbedded
 }
 
 // Run is the override of the planted defect.
 func (*limiterRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // limiterRunSucceedsAlways returns the planted defect of a Limiter whose
-// Run ignores the context over a fresh subject.
+// Run admits calls past the declared burst over a fresh subject.
 func limiterRunSucceedsAlways(h *LimiterHandle) Limiter {
 	return &limiterRunSucceedsAlwaysDefect{limiterOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Renderer:
+//
+// Renderer.Render/smoke: Render returns without a panic for derived
+// inputs.
+//
+// Renderer.Render/cancel: Render returns an error for a cancelled context.
+//
+// Renderer.Render/zero-on-error: Render returns the zero value beside an
+// error.
+//
+// Renderer.Render/xss-safe: Render does not return the value that its
+// directive declares unsafe.
+//
+// Renderer.Classify/smoke: Classify returns without a panic for derived
+// inputs.
+//
+// Renderer.Classify/cancel: Classify returns an error for a cancelled
+// context.
+//
+// Renderer.Classify/zero-on-error: Classify returns the zero value beside
+// an error.
+//
+// Renderer.Classify/total: Classify succeeds for the input that its
+// directive declares at the edge of the domain.
+
+// The derived checks of Renderer that witness their laws at the shallow
+// end:
+//
+// Renderer.Render/smoke
+//
+// Renderer.Render/xss-safe
+//
+// Renderer.Classify/smoke
+//
+// Renderer.Classify/total
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -10307,7 +12613,7 @@ func RendererSuite() conform.Suite[Renderer] {
 						return err
 					})
 				},
-				Defect: rendererRenderSucceedsAlways,
+				Defect: rendererRenderIgnoresCancel,
 			},
 			{
 				ID:          RendererChecks.Render.ZeroOnError(),
@@ -10371,7 +12677,7 @@ func RendererSuite() conform.Suite[Renderer] {
 						return err
 					})
 				},
-				Defect: rendererClassifySucceedsAlways,
+				Defect: rendererClassifyIgnoresCancel,
 			},
 			{
 				ID:          RendererChecks.Classify.ZeroOnError(),
@@ -10553,24 +12859,27 @@ func rendererRenderPanics(h *RendererHandle) Renderer {
 	return &rendererRenderPanicsDefect{rendererOverEmbedded: h.Fresh()}
 }
 
-// rendererRenderSucceedsAlwaysDefect is the planted defect of a Renderer
+// rendererRenderIgnoresCancelDefect is the planted defect of a Renderer
 // whose Render ignores the context.
-type rendererRenderSucceedsAlwaysDefect struct {
+type rendererRenderIgnoresCancelDefect struct {
 	rendererOverEmbedded
 }
 
 // Render is the override of the planted defect.
-func (*rendererRenderSucceedsAlwaysDefect) Render(
+func (d *rendererRenderIgnoresCancelDefect) Render(
 	p0 context.Context,
 	p1 string,
 ) (r0 string, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.rendererOverEmbedded.Render(p0, p1)
 }
 
-// rendererRenderSucceedsAlways returns the planted defect of a Renderer
+// rendererRenderIgnoresCancel returns the planted defect of a Renderer
 // whose Render ignores the context over a fresh subject.
-func rendererRenderSucceedsAlways(h *RendererHandle) Renderer {
-	return &rendererRenderSucceedsAlwaysDefect{rendererOverEmbedded: h.Fresh()}
+func rendererRenderIgnoresCancel(h *RendererHandle) Renderer {
+	return &rendererRenderIgnoresCancelDefect{rendererOverEmbedded: h.Fresh()}
 }
 
 // rendererRenderValueBesideDefect is the planted defect of a Renderer
@@ -10580,12 +12889,14 @@ type rendererRenderValueBesideDefect struct {
 }
 
 // Render is the override of the planted defect.
-func (*rendererRenderValueBesideDefect) Render(
+func (d *rendererRenderValueBesideDefect) Render(
 	p0 context.Context,
 	p1 string,
 ) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+	r0, r1 = d.rendererOverEmbedded.Render(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -10603,6 +12914,10 @@ type rendererRenderEchoesDefect struct {
 
 // Render is the override of the planted defect.
 func (*rendererRenderEchoesDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0 = p1
 	return r0, r1
 }
@@ -10630,24 +12945,27 @@ func rendererClassifyPanics(h *RendererHandle) Renderer {
 	return &rendererClassifyPanicsDefect{rendererOverEmbedded: h.Fresh()}
 }
 
-// rendererClassifySucceedsAlwaysDefect is the planted defect of a Renderer
+// rendererClassifyIgnoresCancelDefect is the planted defect of a Renderer
 // whose Classify ignores the context.
-type rendererClassifySucceedsAlwaysDefect struct {
+type rendererClassifyIgnoresCancelDefect struct {
 	rendererOverEmbedded
 }
 
 // Classify is the override of the planted defect.
-func (*rendererClassifySucceedsAlwaysDefect) Classify(
+func (d *rendererClassifyIgnoresCancelDefect) Classify(
 	p0 context.Context,
 	p1 string,
 ) (r0 string, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.rendererOverEmbedded.Classify(p0, p1)
 }
 
-// rendererClassifySucceedsAlways returns the planted defect of a Renderer
+// rendererClassifyIgnoresCancel returns the planted defect of a Renderer
 // whose Classify ignores the context over a fresh subject.
-func rendererClassifySucceedsAlways(h *RendererHandle) Renderer {
-	return &rendererClassifySucceedsAlwaysDefect{rendererOverEmbedded: h.Fresh()}
+func rendererClassifyIgnoresCancel(h *RendererHandle) Renderer {
+	return &rendererClassifyIgnoresCancelDefect{rendererOverEmbedded: h.Fresh()}
 }
 
 // rendererClassifyValueBesideDefect is the planted defect of a Renderer
@@ -10657,12 +12975,14 @@ type rendererClassifyValueBesideDefect struct {
 }
 
 // Classify is the override of the planted defect.
-func (*rendererClassifyValueBesideDefect) Classify(
+func (d *rendererClassifyValueBesideDefect) Classify(
 	p0 context.Context,
 	p1 string,
 ) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+	r0, r1 = d.rendererOverEmbedded.Classify(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -10679,11 +12999,19 @@ type rendererClassifyFailsAlwaysDefect struct {
 }
 
 // Classify is the override of the planted defect.
-func (*rendererClassifyFailsAlwaysDefect) Classify(
+func (d *rendererClassifyFailsAlwaysDefect) Classify(
 	p0 context.Context,
 	p1 string,
 ) (r0 string, r1 error) {
-	r1 = conform.ErrGenerated
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.rendererOverEmbedded.Classify(p0, p1)
+	if r1 == nil {
+		r0 = *new(string)
+		r1 = conform.ErrGenerated
+	}
 	return r0, r1
 }
 
@@ -10692,6 +13020,46 @@ func (*rendererClassifyFailsAlwaysDefect) Classify(
 func rendererClassifyFailsAlways(h *RendererHandle) Renderer {
 	return &rendererClassifyFailsAlwaysDefect{rendererOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Lifecycle:
+//
+// Lifecycle.Stop/smoke: Stop returns without a panic for derived inputs.
+//
+// Lifecycle.Stop/repeat-survives: Stop returns without a panic when it is
+// called twice.
+//
+// Lifecycle.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Lifecycle.Put/cancel: Put returns an error for a cancelled context.
+//
+// Lifecycle.Put/idempotent: a second identical Put succeeds after the
+// first.
+//
+// Lifecycle.Sync/smoke: Sync returns without a panic for derived inputs.
+//
+// Lifecycle.Sync/cancel: Sync returns an error for a cancelled context.
+//
+// Lifecycle.Sync/retry-succeeds: Sync succeeds within the declared
+// attempts.
+
+// The derived checks of Lifecycle that witness their laws at the shallow
+// end:
+//
+// Lifecycle.Stop/smoke
+//
+// Lifecycle.Put/smoke
+//
+// Lifecycle.Sync/smoke
+//
+// Lifecycle.Sync/retry-succeeds
+
+// The unclaimed classifications of Lifecycle:
+//
+// The shape:composite-writer of Lifecycle.Put has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:lifecycle of Lifecycle.Sync has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -10812,7 +13180,6 @@ func LifecycleSuite() conform.Suite[Lifecycle] {
 				Reason:      spec.PanickedRepeat,
 				Law:         spec.RepeatedCallSurvives,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Entails:     []conform.ID[Lifecycle]{LifecycleChecks.Stop.Smoke()},
 				Apply: func(h *LifecycleHandle) {
 					probe.SurvivesRepeat(h, func(ctx context.Context) error {
 						h.Subject().Stop()
@@ -10850,7 +13217,7 @@ func LifecycleSuite() conform.Suite[Lifecycle] {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
 					})
 				},
-				Defect: lifecyclePutSucceedsAlways,
+				Defect: lifecyclePutIgnoresCancel,
 			},
 			{
 				ID:          LifecycleChecks.Put.Idempotent(),
@@ -10896,7 +13263,7 @@ func LifecycleSuite() conform.Suite[Lifecycle] {
 						return h.Subject().Sync(ctx)
 					})
 				},
-				Defect: lifecycleSyncSucceedsAlways,
+				Defect: lifecycleSyncIgnoresCancel,
 			},
 			{
 				ID:          LifecycleChecks.Sync.RetrySucceeds(),
@@ -11116,21 +13483,24 @@ func lifecyclePutPanics(h *LifecycleHandle) Lifecycle {
 	return &lifecyclePutPanicsDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
-// lifecyclePutSucceedsAlwaysDefect is the planted defect of a Lifecycle
+// lifecyclePutIgnoresCancelDefect is the planted defect of a Lifecycle
 // whose Put ignores the context.
-type lifecyclePutSucceedsAlwaysDefect struct {
+type lifecyclePutIgnoresCancelDefect struct {
 	lifecycleOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*lifecyclePutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
-	return r0
+func (d *lifecyclePutIgnoresCancelDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.lifecycleOverEmbedded.Put(p0, p1, p2)
 }
 
-// lifecyclePutSucceedsAlways returns the planted defect of a Lifecycle
+// lifecyclePutIgnoresCancel returns the planted defect of a Lifecycle
 // whose Put ignores the context over a fresh subject.
-func lifecyclePutSucceedsAlways(h *LifecycleHandle) Lifecycle {
-	return &lifecyclePutSucceedsAlwaysDefect{lifecycleOverEmbedded: h.Fresh()}
+func lifecyclePutIgnoresCancel(h *LifecycleHandle) Lifecycle {
+	return &lifecyclePutIgnoresCancelDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
 // lifecyclePutRefusesRepeatDefect is the planted defect of a Lifecycle
@@ -11142,6 +13512,10 @@ type lifecyclePutRefusesRepeatDefect struct {
 
 // Put is the override of the planted defect.
 func (d *lifecyclePutRefusesRepeatDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = conform.ErrGenerated
@@ -11173,21 +13547,24 @@ func lifecycleSyncPanics(h *LifecycleHandle) Lifecycle {
 	return &lifecycleSyncPanicsDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
-// lifecycleSyncSucceedsAlwaysDefect is the planted defect of a Lifecycle
+// lifecycleSyncIgnoresCancelDefect is the planted defect of a Lifecycle
 // whose Sync ignores the context.
-type lifecycleSyncSucceedsAlwaysDefect struct {
+type lifecycleSyncIgnoresCancelDefect struct {
 	lifecycleOverEmbedded
 }
 
 // Sync is the override of the planted defect.
-func (*lifecycleSyncSucceedsAlwaysDefect) Sync(p0 context.Context) (r0 error) {
-	return r0
+func (d *lifecycleSyncIgnoresCancelDefect) Sync(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.lifecycleOverEmbedded.Sync(p0)
 }
 
-// lifecycleSyncSucceedsAlways returns the planted defect of a Lifecycle
+// lifecycleSyncIgnoresCancel returns the planted defect of a Lifecycle
 // whose Sync ignores the context over a fresh subject.
-func lifecycleSyncSucceedsAlways(h *LifecycleHandle) Lifecycle {
-	return &lifecycleSyncSucceedsAlwaysDefect{lifecycleOverEmbedded: h.Fresh()}
+func lifecycleSyncIgnoresCancel(h *LifecycleHandle) Lifecycle {
+	return &lifecycleSyncIgnoresCancelDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
 // lifecycleSyncFailsAlwaysDefect is the planted defect of a Lifecycle
@@ -11197,8 +13574,15 @@ type lifecycleSyncFailsAlwaysDefect struct {
 }
 
 // Sync is the override of the planted defect.
-func (*lifecycleSyncFailsAlwaysDefect) Sync(p0 context.Context) (r0 error) {
-	r0 = conform.ErrGenerated
+func (d *lifecycleSyncFailsAlwaysDefect) Sync(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	r0 = d.lifecycleOverEmbedded.Sync(p0)
+	if r0 == nil {
+		r0 = conform.ErrGenerated
+	}
 	return r0
 }
 
@@ -11207,6 +13591,32 @@ func (*lifecycleSyncFailsAlwaysDefect) Sync(p0 context.Context) (r0 error) {
 func lifecycleSyncFailsAlways(h *LifecycleHandle) Lifecycle {
 	return &lifecycleSyncFailsAlwaysDefect{lifecycleOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Shards:
+//
+// Shards.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Shards.Put/cancel: Put returns an error for a cancelled context.
+//
+// Shards.Put/partition: Get does not return in one partition what Put
+// wrote in another.
+//
+// Shards.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Shards.Get/cancel: Get returns an error for a cancelled context.
+//
+// Shards.Get/zero-on-error: Get returns the zero value beside an error.
+
+// The derived checks of Shards that witness their laws at the shallow end:
+//
+// Shards.Put/smoke
+//
+// Shards.Get/smoke
+
+// The unclaimed classifications of Shards:
+//
+// The shape:writer of Shards.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -11309,7 +13719,7 @@ func ShardsSuite() conform.Suite[Shards] {
 						return h.Subject().Put(ctx, Value{Key: "Key-a"})
 					})
 				},
-				Defect: shardsPutSucceedsAlways,
+				Defect: shardsPutIgnoresCancel,
 			},
 			{
 				ID:          ShardsChecks.Put.Partition(),
@@ -11368,7 +13778,7 @@ func ShardsSuite() conform.Suite[Shards] {
 						return err
 					})
 				},
-				Defect: shardsGetSucceedsAlways,
+				Defect: shardsGetIgnoresCancel,
 			},
 			{
 				ID:          ShardsChecks.Get.ZeroOnError(),
@@ -11528,19 +13938,43 @@ func shardsPutPanics(h *ShardsHandle) Shards {
 	return &shardsPutPanicsDefect{shardsOverEmbedded: h.Fresh()}
 }
 
+// shardsPutIgnoresCancelDefect is the planted defect of a Shards whose Put
+// ignores the context.
+type shardsPutIgnoresCancelDefect struct {
+	shardsOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (d *shardsPutIgnoresCancelDefect) Put(p0 context.Context, p1 Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.shardsOverEmbedded.Put(p0, p1)
+}
+
+// shardsPutIgnoresCancel returns the planted defect of a Shards whose Put
+// ignores the context over a fresh subject.
+func shardsPutIgnoresCancel(h *ShardsHandle) Shards {
+	return &shardsPutIgnoresCancelDefect{shardsOverEmbedded: h.Fresh()}
+}
+
 // shardsPutSucceedsAlwaysDefect is the planted defect of a Shards whose
-// Put ignores the context.
+// Put keeps no partition.
 type shardsPutSucceedsAlwaysDefect struct {
 	shardsOverEmbedded
 }
 
 // Put is the override of the planted defect.
 func (*shardsPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // shardsPutSucceedsAlways returns the planted defect of a Shards whose Put
-// ignores the context over a fresh subject.
+// keeps no partition over a fresh subject.
 func shardsPutSucceedsAlways(h *ShardsHandle) Shards {
 	return &shardsPutSucceedsAlwaysDefect{shardsOverEmbedded: h.Fresh()}
 }
@@ -11562,21 +13996,24 @@ func shardsGetPanics(h *ShardsHandle) Shards {
 	return &shardsGetPanicsDefect{shardsOverEmbedded: h.Fresh()}
 }
 
-// shardsGetSucceedsAlwaysDefect is the planted defect of a Shards whose
-// Get ignores the context.
-type shardsGetSucceedsAlwaysDefect struct {
+// shardsGetIgnoresCancelDefect is the planted defect of a Shards whose Get
+// ignores the context.
+type shardsGetIgnoresCancelDefect struct {
 	shardsOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*shardsGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *shardsGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.shardsOverEmbedded.Get(p0, p1)
 }
 
-// shardsGetSucceedsAlways returns the planted defect of a Shards whose Get
+// shardsGetIgnoresCancel returns the planted defect of a Shards whose Get
 // ignores the context over a fresh subject.
-func shardsGetSucceedsAlways(h *ShardsHandle) Shards {
-	return &shardsGetSucceedsAlwaysDefect{shardsOverEmbedded: h.Fresh()}
+func shardsGetIgnoresCancel(h *ShardsHandle) Shards {
+	return &shardsGetIgnoresCancelDefect{shardsOverEmbedded: h.Fresh()}
 }
 
 // shardsGetValueBesideDefect is the planted defect of a Shards whose Get
@@ -11586,9 +14023,11 @@ type shardsGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*shardsGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *shardsGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.shardsOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -11597,6 +14036,30 @@ func (*shardsGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value,
 func shardsGetValueBeside(h *ShardsHandle) Shards {
 	return &shardsGetValueBesideDefect{shardsOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Scoped:
+//
+// Scoped.Set/smoke: Set returns without a panic for derived inputs.
+//
+// Scoped.Set/cancel: Set returns an error for a cancelled context.
+//
+// Scoped.Set/partition: Get does not return in one partition what Set
+// wrote in another.
+//
+// Scoped.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Scoped.Get/cancel: Get returns an error for a cancelled context.
+
+// The derived checks of Scoped that witness their laws at the shallow end:
+//
+// Scoped.Set/smoke
+//
+// Scoped.Get/smoke
+
+// The unclaimed classifications of Scoped:
+//
+// The shape:multi-arg-writer of Scoped.Set has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -11695,7 +14158,7 @@ func ScopedSuite() conform.Suite[Scoped] {
 							Set(ctx, string("scope-a"), string("key-a"), string("value-a"))
 					})
 				},
-				Defect: scopedSetSucceedsAlways,
+				Defect: scopedSetIgnoresCancel,
 			},
 			{
 				ID:          ScopedChecks.Set.Partition(),
@@ -11758,7 +14221,7 @@ func ScopedSuite() conform.Suite[Scoped] {
 						return err
 					})
 				},
-				Defect: scopedGetSucceedsAlways,
+				Defect: scopedGetIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[Scoped]{
@@ -11906,19 +14369,43 @@ func scopedSetPanics(h *ScopedHandle) Scoped {
 	return &scopedSetPanicsDefect{scopedOverEmbedded: h.Fresh()}
 }
 
+// scopedSetIgnoresCancelDefect is the planted defect of a Scoped whose Set
+// ignores the context.
+type scopedSetIgnoresCancelDefect struct {
+	scopedOverEmbedded
+}
+
+// Set is the override of the planted defect.
+func (d *scopedSetIgnoresCancelDefect) Set(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.scopedOverEmbedded.Set(p0, p1, p2, p3)
+}
+
+// scopedSetIgnoresCancel returns the planted defect of a Scoped whose Set
+// ignores the context over a fresh subject.
+func scopedSetIgnoresCancel(h *ScopedHandle) Scoped {
+	return &scopedSetIgnoresCancelDefect{scopedOverEmbedded: h.Fresh()}
+}
+
 // scopedSetSucceedsAlwaysDefect is the planted defect of a Scoped whose
-// Set ignores the context.
+// Set keeps no partition.
 type scopedSetSucceedsAlwaysDefect struct {
 	scopedOverEmbedded
 }
 
 // Set is the override of the planted defect.
 func (*scopedSetSucceedsAlwaysDefect) Set(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // scopedSetSucceedsAlways returns the planted defect of a Scoped whose Set
-// ignores the context over a fresh subject.
+// keeps no partition over a fresh subject.
 func scopedSetSucceedsAlways(h *ScopedHandle) Scoped {
 	return &scopedSetSucceedsAlwaysDefect{scopedOverEmbedded: h.Fresh()}
 }
@@ -11940,22 +14427,72 @@ func scopedGetPanics(h *ScopedHandle) Scoped {
 	return &scopedGetPanicsDefect{scopedOverEmbedded: h.Fresh()}
 }
 
-// scopedGetSucceedsAlwaysDefect is the planted defect of a Scoped whose
-// Get ignores the context.
-type scopedGetSucceedsAlwaysDefect struct {
+// scopedGetIgnoresCancelDefect is the planted defect of a Scoped whose Get
+// ignores the context.
+type scopedGetIgnoresCancelDefect struct {
 	scopedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*scopedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *scopedGetIgnoresCancelDefect) Get(
+	p0 context.Context,
+	p1, p2 string,
+) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.scopedOverEmbedded.Get(p0, p1, p2)
 }
 
-// scopedGetSucceedsAlways returns the planted defect of a Scoped whose Get
+// scopedGetIgnoresCancel returns the planted defect of a Scoped whose Get
 // ignores the context over a fresh subject.
-func scopedGetSucceedsAlways(h *ScopedHandle) Scoped {
-	return &scopedGetSucceedsAlwaysDefect{scopedOverEmbedded: h.Fresh()}
+func scopedGetIgnoresCancel(h *ScopedHandle) Scoped {
+	return &scopedGetIgnoresCancelDefect{scopedOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Plain:
+//
+// Plain.Set/smoke: Set returns without a panic for derived inputs.
+//
+// Plain.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Plain.Get/cancel: Get returns an error for a cancelled context.
+//
+// Plain.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Plain.Get/read-after-write: Get returns what Set stored before it.
+//
+// Plain.Watch/smoke: Watch returns without a panic for derived inputs.
+//
+// Plain.Watch/cancel: Watch returns an error for a cancelled context.
+//
+// Plain.All/smoke: All returns without a panic for derived inputs.
+
+// The derived checks of Plain that witness their laws at the shallow end:
+//
+// Plain.Set/smoke
+//
+// Plain.Get/smoke
+//
+// Plain.Get/read-after-write
+//
+// Plain.Watch/smoke
+//
+// Plain.All/smoke
+
+// The refused claims of Plain:
+//
+// Plain.Watch/zero-on-error: eidos derives no sample of a result of Watch.
+// The remedy is to author a sample of the result type with the directive
+// sample.
+
+// The unclaimed classifications of Plain:
+//
+// The shape:mutator of Plain.Set has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:stream-reader of Plain.All has the stance gap. No claim states
+// what a stream returns after its end.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -12104,7 +14641,7 @@ func PlainSuite() conform.Suite[Plain] {
 						return err
 					})
 				},
-				Defect: plainGetSucceedsAlways,
+				Defect: plainGetIgnoresCancel,
 			},
 			{
 				ID:          PlainChecks.Get.ZeroOnError(),
@@ -12139,7 +14676,7 @@ func PlainSuite() conform.Suite[Plain] {
 						return w, nil
 					})
 				},
-				Defect: plainSetForgetsWrites,
+				Defect: plainGetReadsAnotherValue,
 			},
 			{
 				ID:          PlainChecks.Watch.Smoke(),
@@ -12172,7 +14709,7 @@ func PlainSuite() conform.Suite[Plain] {
 						return err
 					})
 				},
-				Defect: plainWatchSucceedsAlways,
+				Defect: plainWatchIgnoresCancel,
 			},
 			{
 				ID:          PlainChecks.All.Smoke(),
@@ -12389,21 +14926,24 @@ func plainGetPanics(h *PlainHandle) Plain {
 	return &plainGetPanicsDefect{plainOverEmbedded: h.Fresh()}
 }
 
-// plainGetSucceedsAlwaysDefect is the planted defect of a Plain whose Get
+// plainGetIgnoresCancelDefect is the planted defect of a Plain whose Get
 // ignores the context.
-type plainGetSucceedsAlwaysDefect struct {
+type plainGetIgnoresCancelDefect struct {
 	plainOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*plainGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	return r0, r1
+func (d *plainGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.plainOverEmbedded.Get(p0, p1)
 }
 
-// plainGetSucceedsAlways returns the planted defect of a Plain whose Get
+// plainGetIgnoresCancel returns the planted defect of a Plain whose Get
 // ignores the context over a fresh subject.
-func plainGetSucceedsAlways(h *PlainHandle) Plain {
-	return &plainGetSucceedsAlwaysDefect{plainOverEmbedded: h.Fresh()}
+func plainGetIgnoresCancel(h *PlainHandle) Plain {
+	return &plainGetIgnoresCancelDefect{plainOverEmbedded: h.Fresh()}
 }
 
 // plainGetValueBesideDefect is the planted defect of a Plain whose Get
@@ -12413,9 +14953,11 @@ type plainGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*plainGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
-	r0 = Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *plainGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	r0, r1 = d.plainOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -12425,21 +14967,29 @@ func plainGetValueBeside(h *PlainHandle) Plain {
 	return &plainGetValueBesideDefect{plainOverEmbedded: h.Fresh()}
 }
 
-// plainSetForgetsWritesDefect is the planted defect of a Plain whose Set
-// returns success and stores nothing.
-type plainSetForgetsWritesDefect struct {
+// plainGetReadsAnotherValueDefect is the planted defect of a Plain whose
+// Get returns a value that Set did not write.
+type plainGetReadsAnotherValueDefect struct {
 	plainOverEmbedded
 }
 
-// Set is the override of the planted defect.
-func (*plainSetForgetsWritesDefect) Set(p0 Value) {
-	return
+// Get is the override of the planted defect.
+func (d *plainGetReadsAnotherValueDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.plainOverEmbedded.Get(p0, p1)
+	if r1 == nil {
+		r0 = Value{Key: "Key-b"}
+	}
+	return r0, r1
 }
 
-// plainSetForgetsWrites returns the planted defect of a Plain whose Set
-// returns success and stores nothing over a fresh subject.
-func plainSetForgetsWrites(h *PlainHandle) Plain {
-	return &plainSetForgetsWritesDefect{plainOverEmbedded: h.Fresh()}
+// plainGetReadsAnotherValue returns the planted defect of a Plain whose
+// Get returns a value that Set did not write over a fresh subject.
+func plainGetReadsAnotherValue(h *PlainHandle) Plain {
+	return &plainGetReadsAnotherValueDefect{plainOverEmbedded: h.Fresh()}
 }
 
 // plainWatchPanicsDefect is the planted defect of a Plain whose Watch
@@ -12459,21 +15009,24 @@ func plainWatchPanics(h *PlainHandle) Plain {
 	return &plainWatchPanicsDefect{plainOverEmbedded: h.Fresh()}
 }
 
-// plainWatchSucceedsAlwaysDefect is the planted defect of a Plain whose
+// plainWatchIgnoresCancelDefect is the planted defect of a Plain whose
 // Watch ignores the context.
-type plainWatchSucceedsAlwaysDefect struct {
+type plainWatchIgnoresCancelDefect struct {
 	plainOverEmbedded
 }
 
 // Watch is the override of the planted defect.
-func (*plainWatchSucceedsAlwaysDefect) Watch(p0 context.Context) (r0 <-chan Value, r1 error) {
-	return r0, r1
+func (d *plainWatchIgnoresCancelDefect) Watch(p0 context.Context) (r0 <-chan Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.plainOverEmbedded.Watch(p0)
 }
 
-// plainWatchSucceedsAlways returns the planted defect of a Plain whose
+// plainWatchIgnoresCancel returns the planted defect of a Plain whose
 // Watch ignores the context over a fresh subject.
-func plainWatchSucceedsAlways(h *PlainHandle) Plain {
-	return &plainWatchSucceedsAlwaysDefect{plainOverEmbedded: h.Fresh()}
+func plainWatchIgnoresCancel(h *PlainHandle) Plain {
+	return &plainWatchIgnoresCancelDefect{plainOverEmbedded: h.Fresh()}
 }
 
 // plainAllPanicsDefect is the planted defect of a Plain whose All panics.
@@ -12491,6 +15044,26 @@ func (*plainAllPanicsDefect) All() (r0 iter.Seq[Value]) {
 func plainAllPanics(h *PlainHandle) Plain {
 	return &plainAllPanicsDefect{plainOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Sessions:
+//
+// Sessions.Open/smoke: Open returns without a panic for derived inputs.
+//
+// Sessions.Open/cancel: Open returns an error for a cancelled context.
+//
+// Sessions.Open/zero-on-error: Open returns the zero value beside an
+// error.
+
+// The derived checks of Sessions that witness their laws at the shallow
+// end:
+//
+// Sessions.Open/smoke
+
+// The refused claims of Sessions:
+//
+// Sessions.Open/cursor-open: the handle that Open returns is not an
+// interface, so no planted handle can replace it. The remedy is to return
+// the handle of Open as an interface.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -12571,7 +15144,7 @@ func SessionsSuite() conform.Suite[Sessions] {
 						return err
 					})
 				},
-				Defect: sessionsOpenSucceedsAlways,
+				Defect: sessionsOpenIgnoresCancel,
 			},
 			{
 				ID:          SessionsChecks.Open.ZeroOnError(),
@@ -12712,21 +15285,24 @@ func sessionsOpenPanics(h *SessionsHandle) Sessions {
 	return &sessionsOpenPanicsDefect{sessionsOverEmbedded: h.Fresh()}
 }
 
-// sessionsOpenSucceedsAlwaysDefect is the planted defect of a Sessions
+// sessionsOpenIgnoresCancelDefect is the planted defect of a Sessions
 // whose Open ignores the context.
-type sessionsOpenSucceedsAlwaysDefect struct {
+type sessionsOpenIgnoresCancelDefect struct {
 	sessionsOverEmbedded
 }
 
 // Open is the override of the planted defect.
-func (*sessionsOpenSucceedsAlwaysDefect) Open(p0 context.Context) (r0 *Session, r1 error) {
-	return r0, r1
+func (d *sessionsOpenIgnoresCancelDefect) Open(p0 context.Context) (r0 *Session, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.sessionsOverEmbedded.Open(p0)
 }
 
-// sessionsOpenSucceedsAlways returns the planted defect of a Sessions
-// whose Open ignores the context over a fresh subject.
-func sessionsOpenSucceedsAlways(h *SessionsHandle) Sessions {
-	return &sessionsOpenSucceedsAlwaysDefect{sessionsOverEmbedded: h.Fresh()}
+// sessionsOpenIgnoresCancel returns the planted defect of a Sessions whose
+// Open ignores the context over a fresh subject.
+func sessionsOpenIgnoresCancel(h *SessionsHandle) Sessions {
+	return &sessionsOpenIgnoresCancelDefect{sessionsOverEmbedded: h.Fresh()}
 }
 
 // sessionsOpenValueBesideDefect is the planted defect of a Sessions whose
@@ -12736,9 +15312,11 @@ type sessionsOpenValueBesideDefect struct {
 }
 
 // Open is the override of the planted defect.
-func (*sessionsOpenValueBesideDefect) Open(p0 context.Context) (r0 *Session, r1 error) {
-	r0 = &Session{ID: 7}
-	r1 = conform.ErrGenerated
+func (d *sessionsOpenValueBesideDefect) Open(p0 context.Context) (r0 *Session, r1 error) {
+	r0, r1 = d.sessionsOverEmbedded.Open(p0)
+	if r1 != nil {
+		r0 = &Session{ID: 7}
+	}
 	return r0, r1
 }
 

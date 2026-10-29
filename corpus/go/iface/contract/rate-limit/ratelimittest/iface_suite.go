@@ -15,6 +15,25 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Run/smoke: Run returns without a panic for derived inputs.
+//
+// Contract.Run/cancel: Run returns an error for a cancelled context.
+//
+// Contract.Run/rate-limit: Run admits its declared burst and refuses the
+// call after it.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Run/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Run has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,7 +111,7 @@ func ContractSuite() conform.Suite[ratelimit.Contract] {
 						return h.Subject().Run(ctx, string("key-a"))
 					})
 				},
-				Defect: contractRunSucceedsAlways,
+				Defect: contractRunIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Run.RateLimit(),
@@ -233,21 +252,45 @@ func contractRunPanics(h *ContractHandle) ratelimit.Contract {
 	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractRunIgnoresCancelDefect is the planted defect of a Contract whose
+// Run ignores the context.
+type contractRunIgnoresCancelDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (d *contractRunIgnoresCancelDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Run(p0, p1)
+}
+
+// contractRunIgnoresCancel returns the planted defect of a Contract whose
+// Run ignores the context over a fresh subject.
+func contractRunIgnoresCancel(h *ContractHandle) ratelimit.Contract {
+	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractRunSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Run ignores the context.
+// whose Run admits calls past the declared burst.
 type contractRunSucceedsAlwaysDefect struct {
 	contractOverEmbedded
 }
 
 // Run is the override of the planted defect.
 func (*contractRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	return r0
 }
 
 // contractRunSucceedsAlways returns the planted defect of a Contract whose
-// Run ignores the context over a fresh subject.
+// Run admits calls past the declared burst over a fresh subject.
 func contractRunSucceedsAlways(h *ContractHandle) ratelimit.Contract {
 	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f338eb80d335daf41693908396b4a6cc2aa0e13c3b4997dbf16aab6600be2814
+// dokimi:provenance sha256:5f333e33540466eca60198d5fc42074fdfb933b9e2dd8da95a25ce2a5337b956

@@ -7,6 +7,8 @@ package puretest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pure"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pure/puretest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToPure(t *testing.T) {
 	t.Parallel()
 
-	puretest.RunPureSuite(t, puretest.NewInMemory)
+	puretest.RunPureSuite(
+		t,
+		puretest.NewInMemory,
+		conform.Isolate[pure.Pure](),
+	)
 }
 
 // BenchmarkInMemoryConformsToPure measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToPureDescribe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:89b61ac91ec4cb60f0a8a85141be2a725c0cf01cca36cee04be61f830a9848fb
+// dokimi:provenance sha256:3548b0f30c77861f2008f3b132c3edb9f0ce6ae126dcb85bff40b5248c4728f5

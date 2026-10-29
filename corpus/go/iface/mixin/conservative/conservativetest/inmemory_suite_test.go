@@ -7,6 +7,8 @@ package conservativetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/conservative"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/conservative/conservativetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	conservativetest.RunMixedSuite(t, conservativetest.NewInMemory)
+	conservativetest.RunMixedSuite(
+		t,
+		conservativetest.NewInMemory,
+		conform.Isolate[conservative.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedTotal(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:218a09a7d4ef508429fe8320a2d8caf9fa53b225cb36ea0dc140fea3d86caec0
+// dokimi:provenance sha256:14bd0c465d438a33fe228de25c6313b6bf31096fbd64376cb2ced027500c38b5

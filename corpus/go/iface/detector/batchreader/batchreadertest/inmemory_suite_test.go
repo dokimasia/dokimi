@@ -7,6 +7,8 @@ package batchreadertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader/batchreadertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToBatchReader(t *testing.T) {
 	t.Parallel()
 
-	batchreadertest.RunBatchReaderSuite(t, batchreadertest.NewInMemory)
+	batchreadertest.RunBatchReaderSuite(
+		t,
+		batchreadertest.NewInMemory,
+		conform.Isolate[batchreader.BatchReader](),
+	)
 }
 
 // BenchmarkInMemoryConformsToBatchReader measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToBatchReaderGetAll(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:551c741b2e5e103448b450aca8ccfc9367b7619d0f5d7e5e87571d2d9630de04
+// dokimi:provenance sha256:7e565d569dbcd714038d1d537d865869f6357289742b83f031cc997ba72e6eae

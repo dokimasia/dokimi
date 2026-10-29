@@ -7,6 +7,8 @@ package noduplicatestest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/noduplicates"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/noduplicates/noduplicatestest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	noduplicatestest.RunMixedSuite(t, noduplicatestest.NewInMemory)
+	noduplicatestest.RunMixedSuite(
+		t,
+		noduplicatestest.NewInMemory,
+		conform.Isolate[noduplicates.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ee9e02d3871db7f37fd71568e07628d298d1bc83b4969c6adce4eca66440e321
+// dokimi:provenance sha256:37da25742b2e657334617a7cbe141f3ba058808f196190cf3bd1aa627c6a55c7

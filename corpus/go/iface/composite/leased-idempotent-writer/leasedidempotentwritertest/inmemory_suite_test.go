@@ -7,6 +7,8 @@ package leasedidempotentwritertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	leasedidempotentwriter "go.dokimi.dev/dokimi/corpus/go/iface/composite/leased-idempotent-writer"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/leased-idempotent-writer/leasedidempotentwritertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToLeasedWriter(t *testing.T) {
 	t.Parallel()
 
-	leasedidempotentwritertest.RunLeasedWriterSuite(t, leasedidempotentwritertest.NewInMemory)
+	leasedidempotentwritertest.RunLeasedWriterSuite(
+		t,
+		leasedidempotentwritertest.NewInMemory,
+		conform.Isolate[leasedidempotentwriter.LeasedWriter](),
+	)
 }
 
 // BenchmarkInMemoryConformsToLeasedWriter measures each callable of the
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToLeasedWriterRelease(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5605672c8a1148c90de5cd4e6ec0280e793cc803d50b136482eca11a25bcb864
+// dokimi:provenance sha256:fb7c08c63c4078d5fd55b562f8b33b9b9ac6139f0af85db2eab080e3a51ebc2d

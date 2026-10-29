@@ -7,6 +7,8 @@ package publisheratleastoncetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	publisheratleastonce "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atleastonce"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atleastonce/publisheratleastoncetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	publisheratleastoncetest.RunContractSuite(t, publisheratleastoncetest.NewInMemory)
+	publisheratleastoncetest.RunContractSuite(
+		t,
+		publisheratleastoncetest.NewInMemory,
+		conform.Isolate[publisheratleastonce.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToContractSubscribe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:569874385f9bd3bc94e7a7dfa9673cfa8460bd8c539a3bdeb7262b76cb93e4ba
+// dokimi:provenance sha256:a9b01a396e165268b467aa0725b4215239a4c5d1deaff24078bbd04ec41f0d68

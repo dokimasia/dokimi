@@ -15,6 +15,36 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Lock:
+//
+// Lock.Acquire/cancel: Acquire returns an error for a cancelled context.
+//
+// Lock.Release/smoke: Release returns without a panic for derived inputs.
+//
+// Lock.Release/repeat-survives: Release returns without a panic when it is
+// called twice.
+//
+// Lock.Held/smoke: Held returns without a panic for derived inputs.
+//
+// Lock.Held/predicate: Held returns the same answer twice for an unchanged
+// subject.
+
+// The derived checks of Lock that witness their laws at the shallow end:
+//
+// Lock.Release/smoke
+//
+// Lock.Held/smoke
+//
+// Lock.Held/predicate
+
+// The unclaimed classifications of Lock:
+//
+// The shape:lifecycle of Lock.Acquire has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The mixin:waits of Lock.Acquire has the stance silent. The mixin
+// documents that the callable can wait for another call.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -103,7 +133,7 @@ func LockSuite() conform.Suite[waits.Lock] {
 						return h.Subject().Acquire(ctx)
 					})
 				},
-				Defect: lockAcquireSucceedsAlways,
+				Defect: lockAcquireIgnoresCancel,
 			},
 			{
 				ID:          LockChecks.Release.Smoke(),
@@ -130,7 +160,6 @@ func LockSuite() conform.Suite[waits.Lock] {
 				Reason:      spec.PanickedRepeat,
 				Law:         spec.RepeatedCallSurvives,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Entails:     []conform.ID[waits.Lock]{LockChecks.Release.Smoke()},
 				Apply: func(h *LockHandle) {
 					probe.SurvivesRepeat(h, func(ctx context.Context) error {
 						h.Subject().Release()
@@ -309,21 +338,24 @@ func newLockOver(_ *LockHandle, spend func()) waits.Lock {
 	return lockOver{spend: spend}
 }
 
-// lockAcquireSucceedsAlwaysDefect is the planted defect of a Lock whose
+// lockAcquireIgnoresCancelDefect is the planted defect of a Lock whose
 // Acquire ignores the context.
-type lockAcquireSucceedsAlwaysDefect struct {
+type lockAcquireIgnoresCancelDefect struct {
 	lockOverEmbedded
 }
 
 // Acquire is the override of the planted defect.
-func (*lockAcquireSucceedsAlwaysDefect) Acquire(p0 context.Context) (r0 error) {
-	return r0
+func (d *lockAcquireIgnoresCancelDefect) Acquire(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.lockOverEmbedded.Acquire(p0)
 }
 
-// lockAcquireSucceedsAlways returns the planted defect of a Lock whose
+// lockAcquireIgnoresCancel returns the planted defect of a Lock whose
 // Acquire ignores the context over a fresh subject.
-func lockAcquireSucceedsAlways(h *LockHandle) waits.Lock {
-	return &lockAcquireSucceedsAlwaysDefect{lockOverEmbedded: h.Fresh()}
+func lockAcquireIgnoresCancel(h *LockHandle) waits.Lock {
+	return &lockAcquireIgnoresCancelDefect{lockOverEmbedded: h.Fresh()}
 }
 
 // lockReleasePanicsDefect is the planted defect of a Lock whose Release
@@ -403,4 +435,4 @@ func lockHeldDrifts(h *LockHandle) waits.Lock {
 	return &lockHeldDriftsDefect{lockOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:bd8104885bae7ab18ee7ccb704c2b9c80760f8ac87f3d2fcd6659d09d1ebdeba
+// dokimi:provenance sha256:758ce3de02e765c0e2520d0fc6bf7da2f733b078f7a3731b6f6b73f90fd88b6b

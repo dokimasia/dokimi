@@ -7,6 +7,8 @@ package updatertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/updater"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/updater/updatertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	updatertest.RunContractSuite(t, updatertest.NewInMemory)
+	updatertest.RunContractSuite(
+		t,
+		updatertest.NewInMemory,
+		conform.Isolate[updater.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:751d68aa17ad172ba3a3282f9a9f3e7f600b474882b33c7b52607132e000a1da
+// dokimi:provenance sha256:a990baa2217d245157e8ce9603902d129f6176a1cc3d4579f7f86b1f4d961841

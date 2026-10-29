@@ -7,6 +7,8 @@ package boundedtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/bounded"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/bounded/boundedtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	boundedtest.RunMixedSuite(t, boundedtest.NewInMemory)
+	boundedtest.RunMixedSuite(
+		t,
+		boundedtest.NewInMemory,
+		conform.Isolate[bounded.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedList(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:fd7d0b2d4b4c343b05fb423d1833270c8eecebbbd07fefc668cdf326bcc7e825
+// dokimi:provenance sha256:2187f850eacda11ac520c8ceb80505199f180d91135c933f54af6a1ed08622a8

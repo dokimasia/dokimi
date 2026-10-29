@@ -7,6 +7,8 @@ package circuitbreakertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	circuitbreaker "go.dokimi.dev/dokimi/corpus/go/iface/contract/circuit-breaker"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/circuit-breaker/circuitbreakertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	circuitbreakertest.RunContractSuite(t, circuitbreakertest.NewInMemory)
+	circuitbreakertest.RunContractSuite(
+		t,
+		circuitbreakertest.NewInMemory,
+		conform.Isolate[circuitbreaker.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToContractRun(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b6d5fb7f51a6caf98d88dfddb9c6a7299ac82a3607fc8d25a7b2e602eb1de898
+// dokimi:provenance sha256:1068fe3638b4de948041d4c6ec68f22dc0b8a9c5797590a1bb2479a3ab09c1ce

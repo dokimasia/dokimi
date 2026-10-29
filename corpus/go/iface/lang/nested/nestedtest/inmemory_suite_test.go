@@ -7,6 +7,8 @@ package nestedtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nested"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nested/nestedtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToDispatcher(t *testing.T) {
 	t.Parallel()
 
-	nestedtest.RunDispatcherSuite(t, nestedtest.NewInMemory)
+	nestedtest.RunDispatcherSuite(
+		t,
+		nestedtest.NewInMemory,
+		conform.Isolate[nested.Dispatcher](),
+	)
 }
 
 // TestInMemoryConformsToDispatcherAllocs applies the allocation ceilings
@@ -84,4 +90,4 @@ func FuzzInMemoryConformsToDispatcherWeight(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:676708b115ff96ddd538df551657c67916949be5718ec5cf048615d6871fa879
+// dokimi:provenance sha256:22f4e8d91ebe4356cf41bfde319450d470910b91e15029bc755204aa46f12465

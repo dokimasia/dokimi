@@ -15,6 +15,25 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Run/smoke: Run returns without a panic for derived inputs.
+//
+// Contract.Run/cancel: Run returns an error for a cancelled context.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Run/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Run has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The contract:circuit-breaker/fn of Contract.Run has the stance needs.
+// The claims of the contract need a call that fails on demand.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -86,7 +105,7 @@ func ContractSuite() conform.Suite[circuitbreaker.Contract] {
 						return h.Subject().Run(ctx, string("key-a"))
 					})
 				},
-				Defect: contractRunSucceedsAlways,
+				Defect: contractRunIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[circuitbreaker.Contract]{
@@ -212,21 +231,24 @@ func contractRunPanics(h *ContractHandle) circuitbreaker.Contract {
 	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractRunSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Run ignores the context.
-type contractRunSucceedsAlwaysDefect struct {
+// contractRunIgnoresCancelDefect is the planted defect of a Contract whose
+// Run ignores the context.
+type contractRunIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Run is the override of the planted defect.
-func (*contractRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *contractRunIgnoresCancelDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Run(p0, p1)
 }
 
-// contractRunSucceedsAlways returns the planted defect of a Contract whose
+// contractRunIgnoresCancel returns the planted defect of a Contract whose
 // Run ignores the context over a fresh subject.
-func contractRunSucceedsAlways(h *ContractHandle) circuitbreaker.Contract {
-	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractRunIgnoresCancel(h *ContractHandle) circuitbreaker.Contract {
+	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c2eea71ac83d8113b079f38413aa74fa7f0a26603812bd4b672373a3e880ff0b
+// dokimi:provenance sha256:9bff414fe27dcb0ba4cb924ac35ebf498067d542281dfea75d58b83e50388b4b

@@ -10,6 +10,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Ledger:
+//
+// Ledger.Credit/smoke: Credit returns without a panic for derived inputs.
+//
+// Ledger.Balance/smoke: Balance returns without a panic for derived
+// inputs.
+//
+// Ledger.Balance/deterministic: Balance returns the same value for the
+// same inputs.
+
+// The derived checks of Ledger that witness their laws at the shallow end:
+//
+// Ledger.Credit/smoke
+//
+// Ledger.Balance/smoke
+//
+// Ledger.Balance/deterministic
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -109,6 +127,7 @@ func LedgerSuite() conform.Suite[Ledger] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[Ledger]{LedgerChecks.Balance.Smoke()},
 				Apply: func(h *LedgerHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Balance(string("account-a"))

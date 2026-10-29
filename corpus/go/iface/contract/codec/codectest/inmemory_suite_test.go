@@ -7,6 +7,8 @@ package codectest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/codec"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/codec/codectest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	codectest.RunContractSuite(t, codectest.NewInMemory)
+	codectest.RunContractSuite(
+		t,
+		codectest.NewInMemory,
+		conform.Isolate[codec.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractDecode(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:bbde0527d25743335fe19ede5b6bc2c56511c15a40d46ca30318401d22a0a04f
+// dokimi:provenance sha256:f59fc5170e36d5d0b2ccbd27e0f3c2ff43eb5b4d11e8c614ca24b318d8645e6f

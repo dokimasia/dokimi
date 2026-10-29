@@ -109,8 +109,9 @@ The probe calls the licensed callable and its partner on one state, so the read 
 1. A parameter that both callables take, with the same name and the same type, takes one sample in both calls.
 2. Each other parameter of the read takes the field of the written value with its name and its type, such as the argument `id` of `Get(ctx, id)` from the field `ID` of the session that `Put(ctx, s)` stored.
 3. A parameter in the role context takes the context of the check.
+4. A parameter of a function type takes the function that the probe supplies, such as the body of a scope, and its own sample where the probe supplies none. Each parameter of a read whose write takes no input, such as `Close(ctx)`, takes its own sample, because nothing of the write selects it.
 
-A read parameter that neither rule binds refuses the claim with the gate `partner-arguments`, whose remedy is to align the name of the parameter with the write. The read is the licensed callable in the modes `named`, `derived` and `interposed`, and the partner in the modes `reader`, `rewriter` and `establishing`. For a partner of the mode `role`, the read is the role that returns a value and the write the role that returns none. Where both roles return a value or neither does, as the roles `cache` and `backing` of the contract `cache`, the rule binds nothing and the probe passes the result of one call to the other.
+A read parameter that the rules do not bind refuses the claim with the gate `partner-arguments`, whose remedy is to align the name of the parameter with the write. The read is the licensed callable in the modes `named`, `derived` and `interposed`, and the partner in the modes `reader`, `rewriter` and `establishing`. For a partner of the mode `role`, the read is the role that returns a value and the write the role that returns none. Where both roles return a value or neither does, as the roles `cache` and `backing` of the contract `cache`, the rule binds nothing and the probe passes the result of one call to the other.
 
 ### The reason on the handle
 
@@ -140,20 +141,29 @@ A probe that compares two results for two reasons calls `Expect` before each com
 			func(ctx context.Context) error { return h.Subject().Put(ctx, "a", catalog.Item{Name: "b"}) })
 	},
 	Defect: func(h *StoreHandle) catalog.Store {
-		return storeForgetsWrites{Store: h.Fresh()}
+		return storeReadsAnotherValue{Store: h.Fresh()}
 	},
 },
 ```
 
-The defect form `forgets-writes` writes a type that embeds the subject type and overrides the callable of the form:
+The defect form `reads-another-value` writes a type that embeds the subject type and overrides the callable of the form:
 
 ```go
-// storeForgetsWrites is the planted defect of Store.Read/read-after-write: a
-// Store whose Put returns success and stores nothing.
-type storeForgetsWrites struct{ catalog.Store }
+// storeReadsAnotherValue is the planted defect of Store.Read/read-after-write:
+// a Store whose Read returns another item wherever the fresh Read succeeds.
+type storeReadsAnotherValue struct{ catalog.Store }
 
-// Put returns success and stores nothing.
-func (storeForgetsWrites) Put(context.Context, string, catalog.Item) error { return nil }
+// Read returns another item wherever the fresh Read succeeds.
+func (s storeReadsAnotherValue) Read(ctx context.Context, key string) (catalog.Item, error) {
+	if err := ctx.Err(); err != nil {
+		return catalog.Item{}, err
+	}
+	item, err := s.Store.Read(ctx, key)
+	if err == nil {
+		item = catalog.Item{Name: "c"}
+	}
+	return item, err
+}
 ```
 
 `Fresh` returns a fresh subject from the factory of the application, also under falsification:
@@ -170,9 +180,11 @@ func (h *Handle[S]) Fresh() S
 `conform.Run` falsifies each derived check before it applies the check to the subject:
 
 1. It runs the check on its planted defect over a fresh subject. A failure with the reason of the claim proves the check. Another reason is `wrong-reason`, and a pass is `passed`.
-2. Under `conform.Isolate`, it runs every other check on the same defect. Each of them must pass, apart from the checks that share the defect and the deeper checks of an edge of the check, as RFC-0003 states.
+2. Under `conform.Isolate`, it runs every other derived check on the same defect. Each of them must pass, apart from the checks that share the defect and the checks of an edge of the check, as RFC-0003 states.
 3. Under `conform.Isolate`, it runs each edge of the check in both directions, as RFC-0003 states.
 4. It applies the check to the subject.
+
+The planted defect of a check of the reason `panicked` panics on every call, and the defect of a check of the reason `overran-budget` waits past the budget on every call. A check that calls the callable fails on such a defect, so isolation leaves the defect out.
 
 A failure of falsification fails the test of the check before the check runs on the subject. `Run` writes the falsification record and the record of the subject. `conform.Falsify` in the generated test of the suite falsifies the checks of the consumer and the ceilings, whose defects need no subject. It also isolates their defects and checks their edges.
 
@@ -185,7 +197,7 @@ func Isolate[S any]() Option[S]
 
 Isolation proves that the template of a defect form breaks one law alone, and a correct subject is the condition of that proof. The controls of the corpus are correct subjects, so the corpus proves every defect form of every claim that it binds. The subject of a consumer is not known to be correct. A subject that fails one check fails it again under every planted defect that wraps the subject, so isolation over that subject reports N−1 failures of planted defects before the application reports the defect of the subject. Isolation also costs N×N runs of checks for a suite of N derived checks, such as 900 runs for 30 checks.
 
-A defect that overrides a partner, such as `forgets-writes` on `Put`, also fails the other checks whose law needs that partner, such as a check of `Put` itself. The derivation gives each such check the same defect, so the exemption of the checks that share a defect covers them.
+A planted defect calls the fresh subject wherever its form keeps the behaviour of the callable, so it breaks one law alone. A defect of a callable with a context and an error returns the error of a cancelled context first. The defect of `cancel` answers a cancelled context with success, and the defect of `zero-on-error` returns a sample beside the error of a call that fails.
 
 ### The runtime
 

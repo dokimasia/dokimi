@@ -15,6 +15,21 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Reader:
+//
+// Reader.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Reader.Get/cancel: Get returns an error for a cancelled context.
+//
+// Reader.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Reader.Get/miss: Get fails with the declared sentinel for an input that
+// nothing stored.
+
+// The derived checks of Reader that witness their laws at the shallow end:
+//
+// Reader.Get/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -99,7 +114,7 @@ func ReaderSuite() conform.Suite[reader.Reader] {
 						return err
 					})
 				},
-				Defect: readerGetSucceedsAlways,
+				Defect: readerGetIgnoresCancel,
 			},
 			{
 				ID:          ReaderChecks.Get.ZeroOnError(),
@@ -246,21 +261,24 @@ func readerGetPanics(h *ReaderHandle) reader.Reader {
 	return &readerGetPanicsDefect{readerOverEmbedded: h.Fresh()}
 }
 
-// readerGetSucceedsAlwaysDefect is the planted defect of a Reader whose
-// Get ignores the context.
-type readerGetSucceedsAlwaysDefect struct {
+// readerGetIgnoresCancelDefect is the planted defect of a Reader whose Get
+// ignores the context.
+type readerGetIgnoresCancelDefect struct {
 	readerOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*readerGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
-	return r0, r1
+func (d *readerGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.readerOverEmbedded.Get(p0, p1)
 }
 
-// readerGetSucceedsAlways returns the planted defect of a Reader whose Get
+// readerGetIgnoresCancel returns the planted defect of a Reader whose Get
 // ignores the context over a fresh subject.
-func readerGetSucceedsAlways(h *ReaderHandle) reader.Reader {
-	return &readerGetSucceedsAlwaysDefect{readerOverEmbedded: h.Fresh()}
+func readerGetIgnoresCancel(h *ReaderHandle) reader.Reader {
+	return &readerGetIgnoresCancelDefect{readerOverEmbedded: h.Fresh()}
 }
 
 // readerGetValueBesideDefect is the planted defect of a Reader whose Get
@@ -270,9 +288,11 @@ type readerGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*readerGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
-	r0 = reader.Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *readerGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
+	r0, r1 = d.readerOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = reader.Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -290,6 +310,10 @@ type readerGetReportsAnotherErrorDefect struct {
 
 // Get is the override of the planted defect.
 func (*readerGetReportsAnotherErrorDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r1 = conform.ErrGenerated
 	return r0, r1
 }
@@ -300,4 +324,4 @@ func readerGetReportsAnotherError(h *ReaderHandle) reader.Reader {
 	return &readerGetReportsAnotherErrorDefect{readerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:06d481cb1224fcc4821e0e5932bba25edc1990258839dac12eee11e20ad2f85b
+// dokimi:provenance sha256:1dd31a558d98fd6003b8244b9cdd85ddebb6fc5fe07f9295ab972057c8969bf1

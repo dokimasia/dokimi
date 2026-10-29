@@ -15,6 +15,25 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Lifecycle:
+//
+// Lifecycle.Close/smoke: Close returns without a panic for derived inputs.
+//
+// Lifecycle.Close/cancel: Close returns an error for a cancelled context.
+//
+// Lifecycle.Close/idempotent: a second identical Close succeeds after the
+// first.
+
+// The derived checks of Lifecycle that witness their laws at the shallow
+// end:
+//
+// Lifecycle.Close/smoke
+
+// The unclaimed classifications of Lifecycle:
+//
+// The shape:lifecycle of Lifecycle.Close has the stance silent. A
+// lifecycle call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,7 +111,7 @@ func LifecycleSuite() conform.Suite[lifecycle.Lifecycle] {
 						return h.Subject().Close(ctx)
 					})
 				},
-				Defect: lifecycleCloseSucceedsAlways,
+				Defect: lifecycleCloseIgnoresCancel,
 			},
 			{
 				ID:          LifecycleChecks.Close.Idempotent(),
@@ -232,21 +251,24 @@ func lifecycleClosePanics(h *LifecycleHandle) lifecycle.Lifecycle {
 	return &lifecycleClosePanicsDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
-// lifecycleCloseSucceedsAlwaysDefect is the planted defect of a Lifecycle
+// lifecycleCloseIgnoresCancelDefect is the planted defect of a Lifecycle
 // whose Close ignores the context.
-type lifecycleCloseSucceedsAlwaysDefect struct {
+type lifecycleCloseIgnoresCancelDefect struct {
 	lifecycleOverEmbedded
 }
 
 // Close is the override of the planted defect.
-func (*lifecycleCloseSucceedsAlwaysDefect) Close(p0 context.Context) (r0 error) {
-	return r0
+func (d *lifecycleCloseIgnoresCancelDefect) Close(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.lifecycleOverEmbedded.Close(p0)
 }
 
-// lifecycleCloseSucceedsAlways returns the planted defect of a Lifecycle
+// lifecycleCloseIgnoresCancel returns the planted defect of a Lifecycle
 // whose Close ignores the context over a fresh subject.
-func lifecycleCloseSucceedsAlways(h *LifecycleHandle) lifecycle.Lifecycle {
-	return &lifecycleCloseSucceedsAlwaysDefect{lifecycleOverEmbedded: h.Fresh()}
+func lifecycleCloseIgnoresCancel(h *LifecycleHandle) lifecycle.Lifecycle {
+	return &lifecycleCloseIgnoresCancelDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
 // lifecycleCloseRefusesRepeatDefect is the planted defect of a Lifecycle
@@ -258,6 +280,10 @@ type lifecycleCloseRefusesRepeatDefect struct {
 
 // Close is the override of the planted defect.
 func (d *lifecycleCloseRefusesRepeatDefect) Close(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	d.calls++
 	if d.calls > 1 {
 		r0 = conform.ErrGenerated
@@ -272,4 +298,4 @@ func lifecycleCloseRefusesRepeat(h *LifecycleHandle) lifecycle.Lifecycle {
 	return &lifecycleCloseRefusesRepeatDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ec8a7832db7cdfb89ee04cfad818787156037cbfb9488768c8cdf0e69735c523
+// dokimi:provenance sha256:a420a65b12e65fbe5dfa681ae5044874e23363f15c84540b65d13124d88e0791

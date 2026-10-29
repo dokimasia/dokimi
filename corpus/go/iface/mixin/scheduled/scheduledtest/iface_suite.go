@@ -7,6 +7,7 @@ package scheduledtest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"go.dokimi.dev/assert/prop"
@@ -15,6 +16,32 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/scheduled"
 	"go.dokimi.dev/spec"
 )
+
+// The derived checks of Mixed:
+//
+// Mixed.At/smoke: At returns without a panic for derived inputs.
+//
+// Mixed.At/cancel: At returns an error for a cancelled context.
+//
+// Mixed.At/scheduled: a task that At registers runs once the clock passes
+// its instant, and not before.
+//
+// Mixed.Fired/smoke: Fired returns without a panic for derived inputs.
+//
+// Mixed.Fired/cancel: Fired returns an error for a cancelled context.
+//
+// Mixed.Fired/zero-on-error: Fired returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.At/smoke
+//
+// Mixed.Fired/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.At has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -51,6 +78,12 @@ func (c mixedAt) Smoke() conform.ID[scheduled.Mixed] {
 // cancelled context.
 func (c mixedAt) Cancel() conform.ID[scheduled.Mixed] {
 	return c.Check("cancel")
+}
+
+// Scheduled returns the identity of the check that a task that At
+// registers runs once the clock passes its instant, and not before.
+func (c mixedAt) Scheduled() conform.ID[scheduled.Mixed] {
+	return c.Check("scheduled")
 }
 
 // mixedFired is the name of Mixed.Fired, with the identities of its
@@ -112,7 +145,27 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 						return h.Subject().At(ctx, time.Duration(1))
 					})
 				},
-				Defect: mixedAtSucceedsAlways,
+				Defect: mixedAtIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.At.Scheduled(),
+				Statement:   "a task that At registers runs once the clock passes its instant, and not before",
+				Claim:       spec.Scheduled,
+				Probe:       spec.RunsOnSchedule,
+				Reason:      spec.OffSchedule,
+				Law:         spec.TaskRunsOnceItsInstantPasses,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances},
+				Apply: func(h *MixedHandle) {
+					probe.RunsOnSchedule(h, func(ctx context.Context) (time.Duration, error) {
+						d := time.Duration(1)
+						err := h.Subject().At(ctx, d)
+						return d, err
+					}, func(ctx context.Context) (int, error) {
+						return h.Subject().Fired(ctx)
+					})
+				},
+				Defect: mixedFiredCountDrifts,
+				Around: synctest.Test,
 			},
 			{
 				ID:          MixedChecks.Fired.Smoke(),
@@ -145,7 +198,7 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedFiredSucceedsAlways,
+				Defect: mixedFiredIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Fired.ZeroOnError(),
@@ -295,21 +348,50 @@ func mixedAtPanics(h *MixedHandle) scheduled.Mixed {
 	return &mixedAtPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedAtSucceedsAlwaysDefect is the planted defect of a Mixed whose At
+// mixedAtIgnoresCancelDefect is the planted defect of a Mixed whose At
 // ignores the context.
-type mixedAtSucceedsAlwaysDefect struct {
+type mixedAtIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // At is the override of the planted defect.
-func (*mixedAtSucceedsAlwaysDefect) At(p0 context.Context, p1 time.Duration) (r0 error) {
-	return r0
+func (d *mixedAtIgnoresCancelDefect) At(p0 context.Context, p1 time.Duration) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.At(p0, p1)
 }
 
-// mixedAtSucceedsAlways returns the planted defect of a Mixed whose At
+// mixedAtIgnoresCancel returns the planted defect of a Mixed whose At
 // ignores the context over a fresh subject.
-func mixedAtSucceedsAlways(h *MixedHandle) scheduled.Mixed {
-	return &mixedAtSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedAtIgnoresCancel(h *MixedHandle) scheduled.Mixed {
+	return &mixedAtIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedFiredCountDriftsDefect is the planted defect of a Mixed that runs
+// each task of At the moment it registers.
+type mixedFiredCountDriftsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Fired is the override of the planted defect.
+func (d *mixedFiredCountDriftsDefect) Fired(p0 context.Context) (r0 int, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0, r1
+}
+
+// mixedFiredCountDrifts returns the planted defect of a Mixed that runs
+// each task of At the moment it registers over a fresh subject.
+func mixedFiredCountDrifts(h *MixedHandle) scheduled.Mixed {
+	return &mixedFiredCountDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedFiredPanicsDefect is the planted defect of a Mixed whose Fired
@@ -329,21 +411,24 @@ func mixedFiredPanics(h *MixedHandle) scheduled.Mixed {
 	return &mixedFiredPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedFiredSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedFiredIgnoresCancelDefect is the planted defect of a Mixed whose
 // Fired ignores the context.
-type mixedFiredSucceedsAlwaysDefect struct {
+type mixedFiredIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Fired is the override of the planted defect.
-func (*mixedFiredSucceedsAlwaysDefect) Fired(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *mixedFiredIgnoresCancelDefect) Fired(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Fired(p0)
 }
 
-// mixedFiredSucceedsAlways returns the planted defect of a Mixed whose
+// mixedFiredIgnoresCancel returns the planted defect of a Mixed whose
 // Fired ignores the context over a fresh subject.
-func mixedFiredSucceedsAlways(h *MixedHandle) scheduled.Mixed {
-	return &mixedFiredSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedFiredIgnoresCancel(h *MixedHandle) scheduled.Mixed {
+	return &mixedFiredIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedFiredValueBesideDefect is the planted defect of a Mixed whose Fired
@@ -353,9 +438,11 @@ type mixedFiredValueBesideDefect struct {
 }
 
 // Fired is the override of the planted defect.
-func (*mixedFiredValueBesideDefect) Fired(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *mixedFiredValueBesideDefect) Fired(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Fired(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -365,4 +452,4 @@ func mixedFiredValueBeside(h *MixedHandle) scheduled.Mixed {
 	return &mixedFiredValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5ace6b031814bec07910dc8790efffe498523b035ea15170aecc2afd5e59cc90
+// dokimi:provenance sha256:7aac8ebc550fb2d15524987abf5935b1280cc342dbbafb1976052ac369aea2f5

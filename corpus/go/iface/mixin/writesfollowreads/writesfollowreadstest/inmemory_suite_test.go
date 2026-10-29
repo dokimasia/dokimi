@@ -7,6 +7,8 @@ package writesfollowreadstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/writesfollowreads"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/writesfollowreads/writesfollowreadstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	writesfollowreadstest.RunMixedSuite(t, writesfollowreadstest.NewInMemory)
+	writesfollowreadstest.RunMixedSuite(
+		t,
+		writesfollowreadstest.NewInMemory,
+		conform.Isolate[writesfollowreads.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -65,4 +71,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:d88a2ac9e43c28d6eaabbcc5ae787a107141b0c6e71743f3ffba62e25295421e
+// dokimi:provenance sha256:b7ad7809ccb6ae991a9d48c61f0f10abd048b0746ad8908e109122db2da00b3e

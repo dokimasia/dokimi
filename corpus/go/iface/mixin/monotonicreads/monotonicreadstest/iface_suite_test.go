@@ -68,6 +68,10 @@ func TestMixedSuite(t *testing.T) {
 				monotonicreadstest.MixedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				monotonicreadstest.MixedChecks.Get.MonotonicReads(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -107,6 +111,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				monotonicreadstest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				monotonicreadstest.MixedChecks.Get.MonotonicReads(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -149,6 +157,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			monotonicreadstest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			monotonicreadstest.MixedChecks.Get.MonotonicReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -177,6 +189,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			monotonicreadstest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			monotonicreadstest.MixedChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -209,6 +225,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			monotonicreadstest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			monotonicreadstest.MixedChecks.Get.MonotonicReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -223,4 +243,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:41a4fcfc1ce783e9eef27a823a38d9da2f6c7a345b4ed4476aef2efecdefd73e
+// dokimi:provenance sha256:d39cb979ac52da17dc202ca040b60b711b4a51fe861ed8a5ffbeb30286e3b6af

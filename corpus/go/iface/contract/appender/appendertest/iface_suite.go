@@ -15,6 +15,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Run/smoke: Run returns without a panic for derived inputs.
+//
+// Contract.Run/cancel: Run returns an error for a cancelled context.
+//
+// Contract.Run/zero-on-error: Run returns the zero value beside an error.
+//
+// Contract.Run/appender: Run returns a position above the position of the
+// append before it.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Run/smoke
+//
+// Contract.Run/appender
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -100,7 +118,7 @@ func ContractSuite() conform.Suite[appender.Contract] {
 						return err
 					})
 				},
-				Defect: contractRunSucceedsAlways,
+				Defect: contractRunIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Run.ZeroOnError(),
@@ -258,21 +276,24 @@ func contractRunPanics(h *ContractHandle) appender.Contract {
 	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractRunSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Run ignores the context.
-type contractRunSucceedsAlwaysDefect struct {
+// contractRunIgnoresCancelDefect is the planted defect of a Contract whose
+// Run ignores the context.
+type contractRunIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Run is the override of the planted defect.
-func (*contractRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
-	return r0, r1
+func (d *contractRunIgnoresCancelDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Run(p0, p1)
 }
 
-// contractRunSucceedsAlways returns the planted defect of a Contract whose
+// contractRunIgnoresCancel returns the planted defect of a Contract whose
 // Run ignores the context over a fresh subject.
-func contractRunSucceedsAlways(h *ContractHandle) appender.Contract {
-	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractRunIgnoresCancel(h *ContractHandle) appender.Contract {
+	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractRunValueBesideDefect is the planted defect of a Contract whose
@@ -282,9 +303,11 @@ type contractRunValueBesideDefect struct {
 }
 
 // Run is the override of the planted defect.
-func (*contractRunValueBesideDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
-	r0 = int64(7)
-	r1 = conform.ErrGenerated
+func (d *contractRunValueBesideDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Run(p0, p1)
+	if r1 != nil {
+		r0 = int64(7)
+	}
 	return r0, r1
 }
 
@@ -303,6 +326,10 @@ type contractRunDescendsDefect struct {
 
 // Run is the override of the planted defect.
 func (d *contractRunDescendsDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	d.calls++
 	if d.calls == 1 {
 		r0 = int64(7)
@@ -316,4 +343,4 @@ func contractRunDescends(h *ContractHandle) appender.Contract {
 	return &contractRunDescendsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e6549974f3bd161251db1a51c6d709470c34c2fb401b01af7d17df1366ee7578
+// dokimi:provenance sha256:44dd4a888a3dc771c80550dc80a1724544639fc4a335e5f4029b869f801d2e79

@@ -72,8 +72,8 @@ func TestDerived(t *testing.T) {
 			expect.Equal(
 				t,
 				raw.Defect,
-				"StorePutForgetsWrites",
-				"the defect of read-after-write breaks the partner Put",
+				"StoreGetReadsAnotherValue",
+				"the defect of read-after-write breaks the read Get",
 			)
 		})
 

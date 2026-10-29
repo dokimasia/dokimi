@@ -72,6 +72,10 @@ func TestMixedSuite(t *testing.T) {
 				writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -115,6 +119,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -161,6 +169,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -193,6 +205,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -229,6 +245,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -243,4 +263,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1fb5689a9ea7367ea2c66cb1361056f2989a75c88d46cb9505988e4999d72d42
+// dokimi:provenance sha256:849349770df0547a8496b83844ec9f900e1d9424b1c8f795096c56df95de0056

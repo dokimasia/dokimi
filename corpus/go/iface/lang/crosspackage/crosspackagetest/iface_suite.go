@@ -17,6 +17,39 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Fitter:
+//
+// Fitter.Fit/smoke: Fit returns without a panic for derived inputs.
+//
+// Fitter.Fit/cancel: Fit returns an error for a cancelled context.
+//
+// Fitter.Limit/smoke: Limit returns without a panic for derived inputs.
+//
+// Fitter.Limit/cancel: Limit returns an error for a cancelled context.
+
+// The derived checks of Fitter that witness their laws at the shallow end:
+//
+// Fitter.Fit/smoke
+//
+// Fitter.Limit/smoke
+
+// The refused claims of Fitter:
+//
+// Fitter.Sense/cancel: eidos derives no sample of the parameter s of
+// Sense. The remedy is to author a sample of the parameter s with the
+// directive sample.
+
+// The unclaimed classifications of Fitter:
+//
+// The shape:writer of Fitter.Fit has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Fitter.Limit has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Fitter.Sense has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -115,7 +148,7 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 						return h.Subject().Fit(ctx, part.Part{Name: "Name-a"})
 					})
 				},
-				Defect: fitterFitSucceedsAlways,
+				Defect: fitterFitIgnoresCancel,
 			},
 			{
 				ID:          FitterChecks.Limit.Smoke(),
@@ -146,7 +179,7 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 						return h.Subject().Limit(ctx, part.Limits{Count: 2})
 					})
 				},
-				Defect: fitterLimitSucceedsAlways,
+				Defect: fitterLimitIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[crosspackage.Fitter]{
@@ -352,21 +385,24 @@ func fitterFitPanics(h *FitterHandle) crosspackage.Fitter {
 	return &fitterFitPanicsDefect{fitterOverEmbedded: h.Fresh()}
 }
 
-// fitterFitSucceedsAlwaysDefect is the planted defect of a Fitter whose
-// Fit ignores the context.
-type fitterFitSucceedsAlwaysDefect struct {
+// fitterFitIgnoresCancelDefect is the planted defect of a Fitter whose Fit
+// ignores the context.
+type fitterFitIgnoresCancelDefect struct {
 	fitterOverEmbedded
 }
 
 // Fit is the override of the planted defect.
-func (*fitterFitSucceedsAlwaysDefect) Fit(p0 context.Context, p1 part.Part) (r0 error) {
-	return r0
+func (d *fitterFitIgnoresCancelDefect) Fit(p0 context.Context, p1 part.Part) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.fitterOverEmbedded.Fit(p0, p1)
 }
 
-// fitterFitSucceedsAlways returns the planted defect of a Fitter whose Fit
+// fitterFitIgnoresCancel returns the planted defect of a Fitter whose Fit
 // ignores the context over a fresh subject.
-func fitterFitSucceedsAlways(h *FitterHandle) crosspackage.Fitter {
-	return &fitterFitSucceedsAlwaysDefect{fitterOverEmbedded: h.Fresh()}
+func fitterFitIgnoresCancel(h *FitterHandle) crosspackage.Fitter {
+	return &fitterFitIgnoresCancelDefect{fitterOverEmbedded: h.Fresh()}
 }
 
 // fitterLimitPanicsDefect is the planted defect of a Fitter whose Limit
@@ -386,21 +422,24 @@ func fitterLimitPanics(h *FitterHandle) crosspackage.Fitter {
 	return &fitterLimitPanicsDefect{fitterOverEmbedded: h.Fresh()}
 }
 
-// fitterLimitSucceedsAlwaysDefect is the planted defect of a Fitter whose
+// fitterLimitIgnoresCancelDefect is the planted defect of a Fitter whose
 // Limit ignores the context.
-type fitterLimitSucceedsAlwaysDefect struct {
+type fitterLimitIgnoresCancelDefect struct {
 	fitterOverEmbedded
 }
 
 // Limit is the override of the planted defect.
-func (*fitterLimitSucceedsAlwaysDefect) Limit(p0 context.Context, p1 part.Limits) (r0 error) {
-	return r0
+func (d *fitterLimitIgnoresCancelDefect) Limit(p0 context.Context, p1 part.Limits) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.fitterOverEmbedded.Limit(p0, p1)
 }
 
-// fitterLimitSucceedsAlways returns the planted defect of a Fitter whose
+// fitterLimitIgnoresCancel returns the planted defect of a Fitter whose
 // Limit ignores the context over a fresh subject.
-func fitterLimitSucceedsAlways(h *FitterHandle) crosspackage.Fitter {
-	return &fitterLimitSucceedsAlwaysDefect{fitterOverEmbedded: h.Fresh()}
+func fitterLimitIgnoresCancel(h *FitterHandle) crosspackage.Fitter {
+	return &fitterLimitIgnoresCancelDefect{fitterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:cbae1847d80252ed9eacfd1bb4402926f56832e1a36e31f78caa346c0c6e2d61
+// dokimi:provenance sha256:d0c94a3723f1cfbcc882ae35e14cf9fabb761017bb9780dd72d04f91f9ee9de2

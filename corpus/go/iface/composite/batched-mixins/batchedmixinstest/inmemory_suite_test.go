@@ -7,6 +7,8 @@ package batchedmixinstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	batchedmixins "go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins/batchedmixinstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToBatched(t *testing.T) {
 	t.Parallel()
 
-	batchedmixinstest.RunBatchedSuite(t, batchedmixinstest.NewInMemory)
+	batchedmixinstest.RunBatchedSuite(
+		t,
+		batchedmixinstest.NewInMemory,
+		conform.Isolate[batchedmixins.Batched](),
+	)
 }
 
 // BenchmarkInMemoryConformsToBatched measures each callable of the suite
@@ -101,4 +107,4 @@ func FuzzInMemoryConformsToBatchedList(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:8a0327f6ef6dcb5fc9e4f50eec3557a808f039bc5098189f725ca60527637856
+// dokimi:provenance sha256:a7291cab9797260369bd545a772242c5c412a161c95a9461a8f9d4dde5aa9822

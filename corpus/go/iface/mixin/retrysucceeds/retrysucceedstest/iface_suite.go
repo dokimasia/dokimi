@@ -15,6 +15,36 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Call/smoke: Call returns without a panic for derived inputs.
+//
+// Mixed.Call/cancel: Call returns an error for a cancelled context.
+//
+// Mixed.Call/retry-succeeds: Call succeeds within the declared attempts.
+//
+// Mixed.Attempts/smoke: Attempts returns without a panic for derived
+// inputs.
+//
+// Mixed.Attempts/cancel: Attempts returns an error for a cancelled
+// context.
+//
+// Mixed.Attempts/zero-on-error: Attempts returns the zero value beside an
+// error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Call/smoke
+//
+// Mixed.Call/retry-succeeds
+//
+// Mixed.Attempts/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Call has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -117,7 +147,7 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 						return h.Subject().Call(ctx, string("key-a"))
 					})
 				},
-				Defect: mixedCallSucceedsAlways,
+				Defect: mixedCallIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Call.RetrySucceeds(),
@@ -166,7 +196,7 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedAttemptsSucceedsAlways,
+				Defect: mixedAttemptsIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Attempts.ZeroOnError(),
@@ -321,21 +351,24 @@ func mixedCallPanics(h *MixedHandle) retrysucceeds.Mixed {
 	return &mixedCallPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCallSucceedsAlwaysDefect is the planted defect of a Mixed whose
-// Call ignores the context.
-type mixedCallSucceedsAlwaysDefect struct {
+// mixedCallIgnoresCancelDefect is the planted defect of a Mixed whose Call
+// ignores the context.
+type mixedCallIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Call is the override of the planted defect.
-func (*mixedCallSucceedsAlwaysDefect) Call(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedCallIgnoresCancelDefect) Call(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Call(p0, p1)
 }
 
-// mixedCallSucceedsAlways returns the planted defect of a Mixed whose Call
+// mixedCallIgnoresCancel returns the planted defect of a Mixed whose Call
 // ignores the context over a fresh subject.
-func mixedCallSucceedsAlways(h *MixedHandle) retrysucceeds.Mixed {
-	return &mixedCallSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedCallIgnoresCancel(h *MixedHandle) retrysucceeds.Mixed {
+	return &mixedCallIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedCallFailsAlwaysDefect is the planted defect of a Mixed whose Call
@@ -345,8 +378,15 @@ type mixedCallFailsAlwaysDefect struct {
 }
 
 // Call is the override of the planted defect.
-func (*mixedCallFailsAlwaysDefect) Call(p0 context.Context, p1 string) (r0 error) {
-	r0 = conform.ErrGenerated
+func (d *mixedCallFailsAlwaysDefect) Call(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	r0 = d.mixedOverEmbedded.Call(p0, p1)
+	if r0 == nil {
+		r0 = conform.ErrGenerated
+	}
 	return r0
 }
 
@@ -373,21 +413,24 @@ func mixedAttemptsPanics(h *MixedHandle) retrysucceeds.Mixed {
 	return &mixedAttemptsPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedAttemptsSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedAttemptsIgnoresCancelDefect is the planted defect of a Mixed whose
 // Attempts ignores the context.
-type mixedAttemptsSucceedsAlwaysDefect struct {
+type mixedAttemptsIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Attempts is the override of the planted defect.
-func (*mixedAttemptsSucceedsAlwaysDefect) Attempts(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *mixedAttemptsIgnoresCancelDefect) Attempts(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Attempts(p0)
 }
 
-// mixedAttemptsSucceedsAlways returns the planted defect of a Mixed whose
+// mixedAttemptsIgnoresCancel returns the planted defect of a Mixed whose
 // Attempts ignores the context over a fresh subject.
-func mixedAttemptsSucceedsAlways(h *MixedHandle) retrysucceeds.Mixed {
-	return &mixedAttemptsSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedAttemptsIgnoresCancel(h *MixedHandle) retrysucceeds.Mixed {
+	return &mixedAttemptsIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedAttemptsValueBesideDefect is the planted defect of a Mixed whose
@@ -397,9 +440,11 @@ type mixedAttemptsValueBesideDefect struct {
 }
 
 // Attempts is the override of the planted defect.
-func (*mixedAttemptsValueBesideDefect) Attempts(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *mixedAttemptsValueBesideDefect) Attempts(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Attempts(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -409,4 +454,4 @@ func mixedAttemptsValueBeside(h *MixedHandle) retrysucceeds.Mixed {
 	return &mixedAttemptsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d9d982ac637d35d2ad04dc37bd289d11415a1fbea7874b77c53e4305381e9188
+// dokimi:provenance sha256:56927dfa3ab5c375bb75c11592bffd6c7701b860ed4f50ceb9be910e683c26c2

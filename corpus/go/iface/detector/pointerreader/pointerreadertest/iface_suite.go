@@ -15,6 +15,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of PointerReader:
+//
+// PointerReader.Find/smoke: Find returns without a panic for derived
+// inputs.
+//
+// PointerReader.Find/nil-on-miss: Find returns nil for an input that
+// nothing stored.
+
+// The derived checks of PointerReader that witness their laws at the
+// shallow end:
+//
+// PointerReader.Find/smoke
+
+// The refused claims of PointerReader:
+//
+// PointerReader.Find/cancel: Find cannot fail. The remedy is to give Find
+// an error result.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -241,4 +259,4 @@ func pointerReaderFindInventsAPointer(h *PointerReaderHandle) pointerreader.Poin
 	return &pointerReaderFindInventsAPointerDefect{pointerReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:64b4ec5ea863b6633be0a50728e58d981a138f16fa508913ab255848c2285f59
+// dokimi:provenance sha256:df3e00a532f00c861fa92274d50bc99bd6714b5758b742317188f86696eb3357

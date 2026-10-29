@@ -30,6 +30,10 @@ const (
 	// ArgField is the field of the written value with the name and the type
 	// of the parameter.
 	ArgField
+	// ArgOwn is the sample of the parameter of the read: a function, which
+	// the probe replaces with the function that it supplies, such as the
+	// body of a scope, or a parameter of a read whose write takes no input.
+	ArgOwn
 )
 
 // Argument is one argument of the read of a pair.
@@ -93,12 +97,14 @@ func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 		}
 		return paired(p.Mode, partner, partner, f)
 	case spec.ModeDerived:
-		field := fieldOf(p.Param, f)
-		if field == nil {
+		if fieldOf(p.Param, f) == nil {
 			return nil, gateOf(spec.PartnerFound)
 		}
+		// The write takes the value whose field the param names, as Put
+		// takes the Item whose field Rev the reads compare.
+		value := f.Results[0].Shape
 		partner, gate := one(f, decl, func(c *Facts) bool {
-			return slices.ContainsFunc(c.Inputs, func(v Value) bool { return reflect.DeepEqual(v.Shape, field.Shape) })
+			return slices.ContainsFunc(c.Inputs, func(v Value) bool { return reflect.DeepEqual(v.Shape, value) })
 		})
 		if gate != nil {
 			return nil, gate
@@ -291,8 +297,13 @@ func paired(mode spec.PartnerMode, partner, read, write *Facts) (*Pair, *spec.Ga
 }
 
 // argumentOf binds the input value of the read. The inputs of a callable
-// are its parameters in the role input, in the order of its parameters.
+// are its parameters in the role input, in the order of its parameters. A
+// value of a function type, and any value of a read whose write takes no
+// input, takes its own sample, because nothing of the write selects it.
 func argumentOf(value *Value, write *Facts, written int) (Argument, bool) {
+	if value.Shape.Form == symbol.FormFunc || len(write.Inputs) == 0 {
+		return Argument{Name: value.Name, Kind: ArgOwn}, true
+	}
 	shared := slices.IndexFunc(write.Inputs, func(v Value) bool {
 		return v.Name == value.Name && reflect.DeepEqual(v.Shape, value.Shape)
 	})

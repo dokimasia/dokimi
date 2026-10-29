@@ -15,6 +15,48 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Mixed.Put/cancel: Put returns an error for a cancelled context.
+//
+// Mixed.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Mixed.Get/zero-on-miss: Get returns the zero value beside a false
+// presence flag.
+//
+// Mixed.Get/cacheable: Get returns the same value on a repeat.
+//
+// Mixed.Len/smoke: Len returns without a panic for derived inputs.
+//
+// Mixed.Len/cancel: Len returns an error for a cancelled context.
+//
+// Mixed.Len/zero-on-error: Len returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Put/smoke
+//
+// Mixed.Get/smoke
+//
+// Mixed.Get/cacheable
+//
+// Mixed.Len/smoke
+
+// The refused claims of Mixed:
+//
+// Mixed.Get/cancel: Get cannot fail. The remedy is to give Get an error
+// result.
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:composite-writer of Mixed.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The mixin:bounded of Mixed.Len has the stance needs. The claims of the
+// mixin need generated sequences.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -137,7 +179,7 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 							Put(ctx, boundedcache.Key("test-key"), boundedcache.Value{Body: "test-value"})
 					})
 				},
-				Defect: mixedPutSucceedsAlways,
+				Defect: mixedPutIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Get.Smoke(),
@@ -219,7 +261,7 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedLenSucceedsAlways,
+				Defect: mixedLenIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Len.ZeroOnError(),
@@ -420,21 +462,24 @@ func mixedPutPanics(h *MixedHandle) boundedcache.Mixed {
 	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancelDefect is the planted defect of a Mixed whose Put
 // ignores the context.
-type mixedPutSucceedsAlwaysDefect struct {
+type mixedPutIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*mixedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 boundedcache.Key, p2 boundedcache.Value) (r0 error) {
-	return r0
+func (d *mixedPutIgnoresCancelDefect) Put(p0 context.Context, p1 boundedcache.Key, p2 boundedcache.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Put(p0, p1, p2)
 }
 
-// mixedPutSucceedsAlways returns the planted defect of a Mixed whose Put
+// mixedPutIgnoresCancel returns the planted defect of a Mixed whose Put
 // ignores the context over a fresh subject.
-func mixedPutSucceedsAlways(h *MixedHandle) boundedcache.Mixed {
-	return &mixedPutSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedPutIgnoresCancel(h *MixedHandle) boundedcache.Mixed {
+	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
@@ -516,21 +561,24 @@ func mixedLenPanics(h *MixedHandle) boundedcache.Mixed {
 	return &mixedLenPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedLenSucceedsAlwaysDefect is the planted defect of a Mixed whose Len
+// mixedLenIgnoresCancelDefect is the planted defect of a Mixed whose Len
 // ignores the context.
-type mixedLenSucceedsAlwaysDefect struct {
+type mixedLenIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Len is the override of the planted defect.
-func (*mixedLenSucceedsAlwaysDefect) Len(p0 context.Context) (r0 int, r1 error) {
-	return r0, r1
+func (d *mixedLenIgnoresCancelDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Len(p0)
 }
 
-// mixedLenSucceedsAlways returns the planted defect of a Mixed whose Len
+// mixedLenIgnoresCancel returns the planted defect of a Mixed whose Len
 // ignores the context over a fresh subject.
-func mixedLenSucceedsAlways(h *MixedHandle) boundedcache.Mixed {
-	return &mixedLenSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedLenIgnoresCancel(h *MixedHandle) boundedcache.Mixed {
+	return &mixedLenIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedLenValueBesideDefect is the planted defect of a Mixed whose Len
@@ -540,9 +588,11 @@ type mixedLenValueBesideDefect struct {
 }
 
 // Len is the override of the planted defect.
-func (*mixedLenValueBesideDefect) Len(p0 context.Context) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *mixedLenValueBesideDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Len(p0)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -552,4 +602,4 @@ func mixedLenValueBeside(h *MixedHandle) boundedcache.Mixed {
 	return &mixedLenValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:57e06ec1dfa9703a5fa253a97487ca245b0f72aac3521dbf835669cea2107e04
+// dokimi:provenance sha256:b88accf8116f96fa0ed4b611d6e0531ff0278c93076d4e7321460aa6beff2f28

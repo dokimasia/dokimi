@@ -32,7 +32,7 @@ claims:
     inputs:
       call: {from: callable}
     defect:
-      form: succeeds-always
+      form: ignores-cancel
       clause: "a {declaration} whose {callable} ignores the context"
       reason: ignored-cancel
     since: 1.0.0
@@ -157,6 +157,7 @@ claims:
       form: drifts
       clause: "a {declaration} whose {callable} returns another value on the repeat"
       reason: unstable-repeat
+    entails: [smoke]
     since: 1.0.0
   predicate:
     generator: suite
@@ -189,7 +190,6 @@ claims:
       form: panics-on-repeat
       clause: "a {declaration} whose {callable} panics on the repeat"
       reason: panicked-repeat
-    entails: [smoke]
     since: 1.0.0
   miss:
     generator: suite
@@ -271,8 +271,8 @@ claims:
       read: {from: callable}
       write: {from: partner, partner: write}
     defect:
-      form: forgets-writes
-      clause: "a {declaration} whose {write} returns success and stores nothing"
+      form: reads-another-value
+      clause: "a {declaration} whose {callable} returns a value that {write} did not write"
       reason: unobserved-write
     since: 1.0.0
   causal:
@@ -290,8 +290,8 @@ claims:
       read: {from: callable}
       write: {from: partner, partner: write}
     defect:
-      form: forgets-writes
-      clause: "a {declaration} whose {write} returns success and stores nothing"
+      form: reads-another-value
+      clause: "a {declaration} whose {callable} returns a value that {write} did not write"
       reason: unobserved-write
     since: 1.0.0
   read-your-writes:
@@ -309,8 +309,8 @@ claims:
       read: {from: callable}
       write: {from: partner, partner: write}
     defect:
-      form: forgets-writes
-      clause: "a {declaration} whose {write} returns success and stores nothing"
+      form: reads-another-value
+      clause: "a {declaration} whose {callable} returns a value that {write} did not write"
       reason: unobserved-write
     since: 1.0.0
   monotonic-writes:
@@ -328,8 +328,8 @@ claims:
       read: {from: callable}
       write: {from: partner, partner: write}
     defect:
-      form: forgets-writes
-      clause: "a {declaration} whose {write} returns success and stores nothing"
+      form: reads-another-value
+      clause: "a {declaration} whose {callable} returns a value that {write} did not write"
       reason: unobserved-write
     since: 1.0.0
   point-in-time:
@@ -479,7 +479,7 @@ claims:
       write: {from: partner, partner: write}
       version: {from: param, param: version}
     defect:
-      form: answers-a-sample
+      form: stamps-the-past
       clause: "a {declaration} whose {write} is not ordered after the read before it"
       reason: unordered-write
     since: 1.0.0
@@ -990,7 +990,6 @@ claims:
       form: replays-reversed
       clause: "a {declaration} whose {replay} returns the history of {callable} reversed"
       reason: unordered-history
-    entails: [chain]
     since: 1.0.0
   chain:
     generator: suite

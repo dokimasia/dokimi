@@ -7,6 +7,8 @@ package streamconsumertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamconsumer"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamconsumer/streamconsumertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToStreamConsumer(t *testing.T) {
 	t.Parallel()
 
-	streamconsumertest.RunStreamConsumerSuite(t, streamconsumertest.NewInMemory)
+	streamconsumertest.RunStreamConsumerSuite(
+		t,
+		streamconsumertest.NewInMemory,
+		conform.Isolate[streamconsumer.StreamConsumer](),
+	)
 }
 
 // BenchmarkInMemoryConformsToStreamConsumer measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToStreamConsumerIngest(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:90158a374bfdd46e98b62864af024c48b8cf6c31fb39a1a0a4642778f7a60844
+// dokimi:provenance sha256:d28429ec6aed92d53384ee19e56b8e7ee82b4b0e6ac2f889ce47f75419b408d9

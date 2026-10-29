@@ -13,6 +13,109 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Board:
+//
+// Board.Place/smoke: Place returns without a panic for derived inputs.
+//
+// Board.Clash/smoke: Clash returns without a panic for derived inputs.
+//
+// Board.Clash/cancel: Clash returns an error for a cancelled context.
+//
+// Board.Blank/smoke: Blank returns without a panic for derived inputs.
+//
+// Board.Index/smoke: Index returns without a panic for derived inputs.
+//
+// Board.Index/deterministic: Index returns the same value for the same
+// inputs.
+//
+// Board.Label/smoke: Label returns without a panic for derived inputs.
+//
+// Board.Wait/smoke: Wait returns without a panic for derived inputs.
+//
+// Board.Hold/smoke: Hold returns without a panic for derived inputs.
+//
+// Board.Swap/smoke: Swap returns without a panic for derived inputs.
+//
+// Board.Swap/deterministic: Swap returns the same value for the same
+// inputs.
+//
+// Board.Mark/smoke: Mark returns without a panic for derived inputs.
+//
+// Board.Paint/smoke: Paint returns without a panic for derived inputs.
+//
+// Board.Repeat/smoke: Repeat returns without a panic for derived inputs.
+//
+// Board.Keep/smoke: Keep returns without a panic for derived inputs.
+//
+// Board.Stock/smoke: Stock returns without a panic for derived inputs.
+//
+// Board.Discard/smoke: Discard returns without a panic for derived inputs.
+//
+// Board.Twice/smoke: Twice returns without a panic for derived inputs.
+//
+// Board.Gather/smoke: Gather returns without a panic for derived inputs.
+
+// The derived checks of Board that witness their laws at the shallow end:
+//
+// Board.Place/smoke
+//
+// Board.Clash/smoke
+//
+// Board.Blank/smoke
+//
+// Board.Index/smoke
+//
+// Board.Index/deterministic
+//
+// Board.Label/smoke
+//
+// Board.Wait/smoke
+//
+// Board.Hold/smoke
+//
+// Board.Swap/smoke
+//
+// Board.Swap/deterministic
+//
+// Board.Mark/smoke
+//
+// Board.Paint/smoke
+//
+// Board.Repeat/smoke
+//
+// Board.Keep/smoke
+//
+// Board.Stock/smoke
+//
+// Board.Discard/smoke
+//
+// Board.Twice/smoke
+//
+// Board.Gather/smoke
+
+// The unclaimed classifications of Board:
+//
+// The shape:writer of Board.Place has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:multi-arg-writer of Board.Clash has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Board.Label has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Board.Mark has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Board.Paint has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Board.Repeat has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Board.Discard has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -268,6 +371,12 @@ type boardGather struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Gather returns without a
+// panic for derived inputs.
+func (c boardGather) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // BoardSuite returns the checks of Board, and the calls and the budgets of
 // its callables.
 func BoardSuite() conform.Suite[Board] {
@@ -321,7 +430,7 @@ func BoardSuite() conform.Suite[Board] {
 							Clash(ctx, string("c-a"), string("subject-a"), string("err-a"), int(42))
 					})
 				},
-				Defect: boardClashSucceedsAlways,
+				Defect: boardClashIgnoresCancel,
 			},
 			{
 				ID:          BoardChecks.Blank.Smoke(),
@@ -366,6 +475,7 @@ func BoardSuite() conform.Suite[Board] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[Board]{BoardChecks.Index.Smoke()},
 				Apply: func(h *BoardHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Index(map[Shape][]Point{Shape(1): {{X: 42}}})
@@ -451,6 +561,7 @@ func BoardSuite() conform.Suite[Board] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[Board]{BoardChecks.Swap.Smoke()},
 				Apply: func(h *BoardHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (Pair[Tint], error) {
 						r0 := h.Subject().Swap(Pair[Tint]{First: Tint(1)})
@@ -576,6 +687,23 @@ func BoardSuite() conform.Suite[Board] {
 					})
 				},
 				Defect: boardTwicePanics,
+			},
+			{
+				ID:          BoardChecks.Gather.Smoke(),
+				Statement:   "Gather returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Gather(func() int { return 0 }, int(42), int(42))
+						return nil
+					})
+				},
+				Defect: boardGatherPanics,
 			},
 		},
 		Calls: []conform.Call[Board]{
@@ -1071,25 +1199,28 @@ func boardClashPanics(h *BoardHandle) Board {
 	return &boardClashPanicsDefect{boardOverEmbedded: h.Fresh()}
 }
 
-// boardClashSucceedsAlwaysDefect is the planted defect of a Board whose
+// boardClashIgnoresCancelDefect is the planted defect of a Board whose
 // Clash ignores the context.
-type boardClashSucceedsAlwaysDefect struct {
+type boardClashIgnoresCancelDefect struct {
 	boardOverEmbedded
 }
 
 // Clash is the override of the planted defect.
-func (*boardClashSucceedsAlwaysDefect) Clash(
+func (d *boardClashIgnoresCancelDefect) Clash(
 	p0 context.Context,
 	p1, p2, p3 string,
 	p4 int,
 ) (r0 error) {
-	return r0
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.boardOverEmbedded.Clash(p0, p1, p2, p3, p4)
 }
 
-// boardClashSucceedsAlways returns the planted defect of a Board whose
+// boardClashIgnoresCancel returns the planted defect of a Board whose
 // Clash ignores the context over a fresh subject.
-func boardClashSucceedsAlways(h *BoardHandle) Board {
-	return &boardClashSucceedsAlwaysDefect{boardOverEmbedded: h.Fresh()}
+func boardClashIgnoresCancel(h *BoardHandle) Board {
+	return &boardClashIgnoresCancelDefect{boardOverEmbedded: h.Fresh()}
 }
 
 // boardBlankPanicsDefect is the planted defect of a Board whose Blank
@@ -1355,4 +1486,21 @@ func (*boardTwicePanicsDefect) Twice(p0, p1 string) {
 // panics over a fresh subject.
 func boardTwicePanics(h *BoardHandle) Board {
 	return &boardTwicePanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardGatherPanicsDefect is the planted defect of a Board whose Gather
+// panics.
+type boardGatherPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Gather is the override of the planted defect.
+func (*boardGatherPanicsDefect) Gather(p0 func() int, p1, p2 int) {
+	panic("the planted defect of a Board whose Gather panics")
+}
+
+// boardGatherPanics returns the planted defect of a Board whose Gather
+// panics over a fresh subject.
+func boardGatherPanics(h *BoardHandle) Board {
+	return &boardGatherPanicsDefect{boardOverEmbedded: h.Fresh()}
 }

@@ -7,6 +7,8 @@ package dynamictest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/dynamic"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/dynamic/dynamictest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToDiary(t *testing.T) {
 	t.Parallel()
 
-	dynamictest.RunDiarySuite(t, dynamictest.NewInMemory)
+	dynamictest.RunDiarySuite(
+		t,
+		dynamictest.NewInMemory,
+		conform.Isolate[dynamic.Diary](),
+	)
 }
 
 // BenchmarkInMemoryConformsToDiary measures each callable of the suite of
@@ -108,4 +114,4 @@ func FuzzInMemoryConformsToDiaryCount(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:76547c38b8f3e7e27fc20049ef5a6838a9ab10a39f799bc5fd54a2065fce653d
+// dokimi:provenance sha256:ce64cf98d4ad496c3131cbd8cdee2b27003b544fe28ca33a8d9086928f0c3373

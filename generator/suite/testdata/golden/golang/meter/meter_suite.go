@@ -11,6 +11,50 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Meter:
+//
+// Meter.Count/smoke: Count returns without a panic for derived inputs.
+//
+// Meter.Count/cancel: Count returns an error for a cancelled context.
+//
+// Meter.Count/zero-on-error: Count returns the zero value beside an error.
+//
+// Meter.Record/smoke: Record returns without a panic for derived inputs.
+//
+// Meter.Record/cancel: Record returns an error for a cancelled context.
+//
+// Meter.Merge/smoke: Merge returns without a panic for derived inputs.
+//
+// Meter.Merge/nil-safe: Merge returns without a panic for a nil argument.
+//
+// Meter.Total/smoke: Total returns without a panic for derived inputs.
+//
+// Meter.Total/deterministic: Total returns the same value for the same
+// inputs.
+
+// The derived checks of Meter that witness their laws at the shallow end:
+//
+// Meter.Count/smoke
+//
+// Meter.Record/smoke
+//
+// Meter.Merge/smoke
+//
+// Meter.Total/smoke
+//
+// Meter.Total/deterministic
+
+// The unclaimed classifications of Meter:
+//
+// The mixin:concurrent of Meter.Count has the stance needs. The claims of
+// the mixin need concurrent callers.
+//
+// The shape:writer of Meter.Record has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Meter.Merge has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -179,7 +223,7 @@ func MeterSuite() conform.Suite[Meter] {
 						return err
 					})
 				},
-				Defect: meterCountSucceedsAlways,
+				Defect: meterCountIgnoresCancel,
 			},
 			{
 				ID:          MeterChecks.Count.ZeroOnError(),
@@ -225,7 +269,7 @@ func MeterSuite() conform.Suite[Meter] {
 						return h.Subject().Record(ctx, Sample{ID: "ID-a"})
 					})
 				},
-				Defect: meterRecordSucceedsAlways,
+				Defect: meterRecordIgnoresCancel,
 			},
 			{
 				ID:          MeterChecks.Merge.Smoke(),
@@ -286,6 +330,7 @@ func MeterSuite() conform.Suite[Meter] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[Meter]{MeterChecks.Total.Smoke()},
 				Apply: func(h *MeterHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Total()
@@ -503,21 +548,24 @@ func meterCountPanics(h *MeterHandle) Meter {
 	return &meterCountPanicsDefect{meterOverEmbedded: h.Fresh()}
 }
 
-// meterCountSucceedsAlwaysDefect is the planted defect of a Meter whose
+// meterCountIgnoresCancelDefect is the planted defect of a Meter whose
 // Count ignores the context.
-type meterCountSucceedsAlwaysDefect struct {
+type meterCountIgnoresCancelDefect struct {
 	meterOverEmbedded
 }
 
 // Count is the override of the planted defect.
-func (*meterCountSucceedsAlwaysDefect) Count(p0 context.Context, p1 Unit) (r0 int, r1 error) {
-	return r0, r1
+func (d *meterCountIgnoresCancelDefect) Count(p0 context.Context, p1 Unit) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.meterOverEmbedded.Count(p0, p1)
 }
 
-// meterCountSucceedsAlways returns the planted defect of a Meter whose
+// meterCountIgnoresCancel returns the planted defect of a Meter whose
 // Count ignores the context over a fresh subject.
-func meterCountSucceedsAlways(h *MeterHandle) Meter {
-	return &meterCountSucceedsAlwaysDefect{meterOverEmbedded: h.Fresh()}
+func meterCountIgnoresCancel(h *MeterHandle) Meter {
+	return &meterCountIgnoresCancelDefect{meterOverEmbedded: h.Fresh()}
 }
 
 // meterCountValueBesideDefect is the planted defect of a Meter whose Count
@@ -527,9 +575,11 @@ type meterCountValueBesideDefect struct {
 }
 
 // Count is the override of the planted defect.
-func (*meterCountValueBesideDefect) Count(p0 context.Context, p1 Unit) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *meterCountValueBesideDefect) Count(p0 context.Context, p1 Unit) (r0 int, r1 error) {
+	r0, r1 = d.meterOverEmbedded.Count(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -556,21 +606,24 @@ func meterRecordPanics(h *MeterHandle) Meter {
 	return &meterRecordPanicsDefect{meterOverEmbedded: h.Fresh()}
 }
 
-// meterRecordSucceedsAlwaysDefect is the planted defect of a Meter whose
+// meterRecordIgnoresCancelDefect is the planted defect of a Meter whose
 // Record ignores the context.
-type meterRecordSucceedsAlwaysDefect struct {
+type meterRecordIgnoresCancelDefect struct {
 	meterOverEmbedded
 }
 
 // Record is the override of the planted defect.
-func (*meterRecordSucceedsAlwaysDefect) Record(p0 context.Context, p1 ...Sample) (r0 error) {
-	return r0
+func (d *meterRecordIgnoresCancelDefect) Record(p0 context.Context, p1 ...Sample) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.meterOverEmbedded.Record(p0, p1...)
 }
 
-// meterRecordSucceedsAlways returns the planted defect of a Meter whose
+// meterRecordIgnoresCancel returns the planted defect of a Meter whose
 // Record ignores the context over a fresh subject.
-func meterRecordSucceedsAlways(h *MeterHandle) Meter {
-	return &meterRecordSucceedsAlwaysDefect{meterOverEmbedded: h.Fresh()}
+func meterRecordIgnoresCancel(h *MeterHandle) Meter {
+	return &meterRecordIgnoresCancelDefect{meterOverEmbedded: h.Fresh()}
 }
 
 // meterMergePanicsDefect is the planted defect of a Meter whose Merge
@@ -628,6 +681,23 @@ func (d *meterTotalDriftsDefect) Total() (r0 int) {
 func meterTotalDrifts(h *MeterHandle) Meter {
 	return &meterTotalDriftsDefect{meterOverEmbedded: h.Fresh()}
 }
+
+// The derived checks of Weigh:
+//
+// Weigh/smoke: Weigh returns without a panic for derived inputs.
+//
+// Weigh/deterministic: Weigh returns the same value for the same inputs.
+
+// The derived checks of Weigh that witness their laws at the shallow end:
+//
+// Weigh/smoke
+//
+// Weigh/deterministic
+
+// The unclaimed classifications of Weigh:
+//
+// The mixin:concurrent of Weigh has the stance needs. The claims of the
+// mixin need concurrent callers.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -707,6 +777,7 @@ func WeighSuite() conform.Suite[WeighFunc] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[WeighFunc]{WeighChecks.Smoke()},
 				Apply: func(h *WeighHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (float64, error) {
 						r0 := h.Subject()(Sample{ID: "ID-a"}, float64(1.5))

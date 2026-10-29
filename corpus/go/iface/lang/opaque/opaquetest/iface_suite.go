@@ -15,6 +15,21 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Store:
+//
+// Store.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Store.Put/cancel: Put returns an error for a cancelled context.
+
+// The derived checks of Store that witness their laws at the shallow end:
+//
+// Store.Put/smoke
+
+// The unclaimed classifications of Store:
+//
+// The shape:writer of Store.Put has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -91,7 +106,7 @@ func StoreSuite() conform.Suite[opaque.Store] {
 						return h.Subject().Put(ctx, &opaque.PutRequest{Key: "Key-a"})
 					})
 				},
-				Defect: storePutSucceedsAlways,
+				Defect: storePutIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[opaque.Store]{
@@ -218,21 +233,24 @@ func storePutPanics(h *StoreHandle) opaque.Store {
 	return &storePutPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storePutSucceedsAlwaysDefect is the planted defect of a Store whose Put
+// storePutIgnoresCancelDefect is the planted defect of a Store whose Put
 // ignores the context.
-type storePutSucceedsAlwaysDefect struct {
+type storePutIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*storePutSucceedsAlwaysDefect) Put(p0 context.Context, p1 *opaque.PutRequest) (r0 error) {
-	return r0
+func (d *storePutIgnoresCancelDefect) Put(p0 context.Context, p1 *opaque.PutRequest) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Put(p0, p1)
 }
 
-// storePutSucceedsAlways returns the planted defect of a Store whose Put
+// storePutIgnoresCancel returns the planted defect of a Store whose Put
 // ignores the context over a fresh subject.
-func storePutSucceedsAlways(h *StoreHandle) opaque.Store {
-	return &storePutSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storePutIgnoresCancel(h *StoreHandle) opaque.Store {
+	return &storePutIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0cdddba426f1658b6625908ca9a3f90c3b5dd157f860224ae8b49f284f422c0c
+// dokimi:provenance sha256:6bc436cea9b429b866f7341751ce425c9461806d33b3a7793bde337faeaef69a

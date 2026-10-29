@@ -7,6 +7,8 @@ package snapshotisolationtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation/snapshotisolationtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	snapshotisolationtest.RunMixedSuite(t, snapshotisolationtest.NewInMemory)
+	snapshotisolationtest.RunMixedSuite(
+		t,
+		snapshotisolationtest.NewInMemory,
+		conform.Isolate[snapshotisolation.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9d7a7146eb5e6d5a72fa498663ff8be8d2f65359efaac7059e4f26cf1ac389f3
+// dokimi:provenance sha256:8f6871f72941e35392530b46a6ddc021ba4c0c95fd8f6e41d8e2d268f46dc487

@@ -15,6 +15,30 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Hasher:
+//
+// Hasher.HashTagged/smoke: HashTagged returns without a panic for derived
+// inputs.
+//
+// Hasher.HashTagged/deterministic: HashTagged returns the same value for
+// the same inputs.
+//
+// Hasher.CombineTagged/smoke: CombineTagged returns without a panic for
+// derived inputs.
+//
+// Hasher.CombineTagged/deterministic: CombineTagged returns the same value
+// for the same inputs.
+
+// The derived checks of Hasher that witness their laws at the shallow end:
+//
+// Hasher.HashTagged/smoke
+//
+// Hasher.HashTagged/deterministic
+//
+// Hasher.CombineTagged/smoke
+//
+// Hasher.CombineTagged/deterministic
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -115,6 +139,7 @@ func HasherSuite() conform.Suite[sampledparam.Hasher] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[sampledparam.Hasher]{HasherChecks.HashTagged.Smoke()},
 				Apply: func(h *HasherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
 						r0 := h.Subject().HashTagged(sampledparam.Role(1), []byte{1})
@@ -149,6 +174,7 @@ func HasherSuite() conform.Suite[sampledparam.Hasher] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[sampledparam.Hasher]{HasherChecks.CombineTagged.Smoke()},
 				Apply: func(h *HasherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
 						r0 := h.Subject().CombineTagged(sampledparam.Role(129), [32]byte{1}, [32]byte{1})
@@ -369,4 +395,4 @@ func hasherCombineTaggedDrifts(h *HasherHandle) sampledparam.Hasher {
 	return &hasherCombineTaggedDriftsDefect{hasherOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:814a1b5f2d26de14810352a967e5b5946dcf322f48529a8040e0350be371c6a2
+// dokimi:provenance sha256:4fff17e33143f5125651655b96778ea00b01e933e334d8695f7d290737474252

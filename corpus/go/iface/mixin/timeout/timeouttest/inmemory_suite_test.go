@@ -7,6 +7,8 @@ package timeouttest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeout"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeout/timeouttest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	timeouttest.RunMixedSuiteFromHandle(t, timeouttest.NewInMemoryFromHandle)
+	timeouttest.RunMixedSuiteFromHandle(
+		t,
+		timeouttest.NewInMemoryFromHandle,
+		conform.Isolate[timeout.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -32,4 +38,4 @@ func FuzzInMemoryConformsToMixedSlow(f *testing.F) {
 	timeouttest.FuzzMixedSuite(f, timeouttest.MixedChecks.Slow.Callable, timeouttest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:2f324d5398e3c51c3eae5d9707a0da2f377b55eec699eadd38cf2ec532da638b
+// dokimi:provenance sha256:14a8a977c49d3bd079c504e5c93607dc70d3de139b11a3181ca0217cec67c040

@@ -7,6 +7,8 @@ package mutatortest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator/mutatortest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMutator(t *testing.T) {
 	t.Parallel()
 
-	mutatortest.RunMutatorSuite(t, mutatortest.NewInMemory)
+	mutatortest.RunMutatorSuite(
+		t,
+		mutatortest.NewInMemory,
+		conform.Isolate[mutator.Mutator](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMutator measures each callable of the suite
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToMutatorTouch(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c9e2f4bd9731fdba2d62ef3859dc90d4332331da9202fcabb7c26bb96c4dbcb2
+// dokimi:provenance sha256:ef4b521740eb5b351fcf4f3b0259acbc2009eebbd09e25e11d6b3952fb436183

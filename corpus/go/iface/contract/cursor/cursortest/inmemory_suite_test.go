@@ -7,6 +7,8 @@ package cursortest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cursor"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cursor/cursortest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	cursortest.RunContractSuite(t, cursortest.NewInMemory)
+	cursortest.RunContractSuite(
+		t,
+		cursortest.NewInMemory,
+		conform.Isolate[cursor.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:80401d22d524e41895e68deed1b8db06d4f85754ba999d85f244406979af8f10
+// dokimi:provenance sha256:a79eee448837a057503bac0365aa4475614b73432fd55c065db246b9a7e44c73

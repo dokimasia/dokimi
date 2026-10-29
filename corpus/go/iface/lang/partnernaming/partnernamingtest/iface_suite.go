@@ -15,6 +15,111 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Store:
+//
+// Store.Touch/smoke: Touch returns without a panic for derived inputs.
+//
+// Store.Touch/cancel: Touch returns an error for a cancelled context.
+//
+// Store.Seen/smoke: Seen returns without a panic for derived inputs.
+//
+// Store.Seen/cancel: Seen returns an error for a cancelled context.
+//
+// Store.Seen/zero-on-error: Seen returns the zero value beside an error.
+//
+// Store.Move/smoke: Move returns without a panic for derived inputs.
+//
+// Store.Move/cancel: Move returns an error for a cancelled context.
+//
+// Store.At/smoke: At returns without a panic for derived inputs.
+//
+// Store.At/cancel: At returns an error for a cancelled context.
+//
+// Store.At/zero-on-error: At returns the zero value beside an error.
+//
+// Store.Emit/smoke: Emit returns without a panic for derived inputs.
+//
+// Store.Emit/cancel: Emit returns an error for a cancelled context.
+//
+// Store.Count/smoke: Count returns without a panic for derived inputs.
+//
+// Store.Count/cancel: Count returns an error for a cancelled context.
+//
+// Store.Count/zero-on-error: Count returns the zero value beside an error.
+//
+// Store.Version/smoke: Version returns without a panic for derived inputs.
+//
+// Store.Version/cancel: Version returns an error for a cancelled context.
+//
+// Store.Version/zero-on-error: Version returns the zero value beside an
+// error.
+//
+// Store.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Store.Put/cancel: Put returns an error for a cancelled context.
+//
+// Store.Replace/smoke: Replace returns without a panic for derived inputs.
+//
+// Store.Replace/cancel: Replace returns an error for a cancelled context.
+
+// The derived checks of Store that witness their laws at the shallow end:
+//
+// Store.Touch/smoke
+//
+// Store.Seen/smoke
+//
+// Store.Move/smoke
+//
+// Store.At/smoke
+//
+// Store.Emit/smoke
+//
+// Store.Count/smoke
+//
+// Store.Version/smoke
+//
+// Store.Put/smoke
+//
+// Store.Replace/smoke
+
+// The refused claims of Store:
+//
+// Store.Touch/side-effect: a parameter of the read of Touch selects
+// neither a value that observe takes nor a field of the written value. The
+// remedy is to align the name of the parameter of the read with a
+// parameter or a field of the write.
+//
+// Store.Move/side-effect: a parameter of the read of Move selects neither
+// a value that observe takes nor a field of the written value. The remedy
+// is to align the name of the parameter of the read with a parameter or a
+// field of the write.
+//
+// Store.Emit/side-effect: a parameter of the read of Emit selects neither
+// a value that observe takes nor a field of the written value. The remedy
+// is to align the name of the parameter of the read with a parameter or a
+// field of the write.
+//
+// Store.Version/monotonic-reads: two callables of the declaration can be
+// the partner write of Version. The remedy is to name the partner of
+// Version with the param of the classification.
+
+// The unclaimed classifications of Store:
+//
+// The shape:composite-writer of Store.Touch has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Store.Move has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Store.Emit has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Store.Put has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:writer of Store.Replace has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -28,19 +133,25 @@ type (
 // StoreChecks contains the name of each callable of Store, with the
 // identities of its checks.
 var StoreChecks = struct {
-	Touch storeTouch
-	Seen  storeSeen
-	Move  storeMove
-	At    storeAt
-	Emit  storeEmit
-	Count storeCount
+	Touch   storeTouch
+	Seen    storeSeen
+	Move    storeMove
+	At      storeAt
+	Emit    storeEmit
+	Count   storeCount
+	Version storeVersion
+	Put     storePut
+	Replace storeReplace
 }{
-	Touch: storeTouch{"Store.Touch"},
-	Seen:  storeSeen{"Store.Seen"},
-	Move:  storeMove{"Store.Move"},
-	At:    storeAt{"Store.At"},
-	Emit:  storeEmit{"Store.Emit"},
-	Count: storeCount{"Store.Count"},
+	Touch:   storeTouch{"Store.Touch"},
+	Seen:    storeSeen{"Store.Seen"},
+	Move:    storeMove{"Store.Move"},
+	At:      storeAt{"Store.At"},
+	Emit:    storeEmit{"Store.Emit"},
+	Count:   storeCount{"Store.Count"},
+	Version: storeVersion{"Store.Version"},
+	Put:     storePut{"Store.Put"},
+	Replace: storeReplace{"Store.Replace"},
 }
 
 // storeTouch is the name of Store.Touch, with the identities of its
@@ -165,6 +276,65 @@ func (c storeCount) ZeroOnError() conform.ID[partnernaming.Store] {
 	return c.Check("zero-on-error")
 }
 
+// storeVersion is the name of Store.Version, with the identities of its
+// checks.
+type storeVersion struct {
+	conform.Callable[partnernaming.Store]
+}
+
+// Smoke returns the identity of the check that Version returns without a
+// panic for derived inputs.
+func (c storeVersion) Smoke() conform.ID[partnernaming.Store] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Version returns an error
+// for a cancelled context.
+func (c storeVersion) Cancel() conform.ID[partnernaming.Store] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Version returns the
+// zero value beside an error.
+func (c storeVersion) ZeroOnError() conform.ID[partnernaming.Store] {
+	return c.Check("zero-on-error")
+}
+
+// storePut is the name of Store.Put, with the identities of its checks.
+type storePut struct {
+	conform.Callable[partnernaming.Store]
+}
+
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c storePut) Smoke() conform.ID[partnernaming.Store] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c storePut) Cancel() conform.ID[partnernaming.Store] {
+	return c.Check("cancel")
+}
+
+// storeReplace is the name of Store.Replace, with the identities of its
+// checks.
+type storeReplace struct {
+	conform.Callable[partnernaming.Store]
+}
+
+// Smoke returns the identity of the check that Replace returns without a
+// panic for derived inputs.
+func (c storeReplace) Smoke() conform.ID[partnernaming.Store] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Replace returns an error
+// for a cancelled context.
+func (c storeReplace) Cancel() conform.ID[partnernaming.Store] {
+	return c.Check("cancel")
+}
+
 // StoreSuite returns the checks of Store, and the calls and the budgets of
 // its callables.
 func StoreSuite() conform.Suite[partnernaming.Store] {
@@ -200,7 +370,7 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 						return h.Subject().Touch(ctx, string("key-a"), int(42))
 					})
 				},
-				Defect: storeTouchSucceedsAlways,
+				Defect: storeTouchIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Seen.Smoke(),
@@ -233,7 +403,7 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 						return err
 					})
 				},
-				Defect: storeSeenSucceedsAlways,
+				Defect: storeSeenIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Seen.ZeroOnError(),
@@ -279,7 +449,7 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 						return h.Subject().Move(ctx, string("from-a"), string("to-a"))
 					})
 				},
-				Defect: storeMoveSucceedsAlways,
+				Defect: storeMoveIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.At.Smoke(),
@@ -312,7 +482,7 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 						return err
 					})
 				},
-				Defect: storeAtSucceedsAlways,
+				Defect: storeAtIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.At.ZeroOnError(),
@@ -358,7 +528,7 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 						return h.Subject().Emit(ctx, string("id-a"))
 					})
 				},
-				Defect: storeEmitSucceedsAlways,
+				Defect: storeEmitIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Count.Smoke(),
@@ -391,7 +561,7 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 						return err
 					})
 				},
-				Defect: storeCountSucceedsAlways,
+				Defect: storeCountIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Count.ZeroOnError(),
@@ -407,6 +577,116 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 					}, int(0))
 				},
 				Defect: storeCountValueBeside,
+			},
+			{
+				ID:          StoreChecks.Version.Smoke(),
+				Statement:   "Version returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StoreHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Version(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: storeVersionPanics,
+			},
+			{
+				ID:          StoreChecks.Version.Cancel(),
+				Statement:   "Version returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Version(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: storeVersionIgnoresCancel,
+			},
+			{
+				ID:          StoreChecks.Version.ZeroOnError(),
+				Statement:   "Version returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (partnernaming.Rec, error) {
+						return h.Subject().Version(ctx, string("key-a"))
+					}, partnernaming.Rec{})
+				},
+				Defect: storeVersionValueBeside,
+			},
+			{
+				ID:          StoreChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StoreHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, partnernaming.Rec{Key: "Key-a"})
+					})
+				},
+				Defect: storePutPanics,
+			},
+			{
+				ID:          StoreChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, partnernaming.Rec{Key: "Key-a"})
+					})
+				},
+				Defect: storePutIgnoresCancel,
+			},
+			{
+				ID:          StoreChecks.Replace.Smoke(),
+				Statement:   "Replace returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StoreHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Replace(ctx, partnernaming.Rec{Key: "Key-a"})
+					})
+				},
+				Defect: storeReplacePanics,
+			},
+			{
+				ID:          StoreChecks.Replace.Cancel(),
+				Statement:   "Replace returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Replace(ctx, partnernaming.Rec{Key: "Key-a"})
+					})
+				},
+				Defect: storeReplaceIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[partnernaming.Store]{
@@ -439,6 +719,21 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 				Calls:    storeCountCalls,
 				Over:     newStoreOver,
 				Callable: StoreChecks.Count.Callable,
+			},
+			{
+				Calls:    storeVersionCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Version.Callable,
+			},
+			{
+				Calls:    storePutCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Put.Callable,
+			},
+			{
+				Calls:    storeReplaceCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Replace.Callable,
 			},
 		},
 	}
@@ -560,6 +855,34 @@ var storeCountCalls = prop.Composite(func(c *prop.Case) func(context.Context, pa
 	}
 })
 
+// storeVersionCalls generates the calls of Store.Version with the inputs
+// that each case draws.
+var storeVersionCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		_, err := subject.Version(ctx, key)
+		return err
+	}
+})
+
+// storePutCalls generates the calls of Store.Put with the inputs that each
+// case draws.
+var storePutCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	r := c.Draw(prop.Of[partnernaming.Rec](), "r")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		return subject.Put(ctx, r)
+	}
+})
+
+// storeReplaceCalls generates the calls of Store.Replace with the inputs
+// that each case draws.
+var storeReplaceCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	r := c.Draw(prop.Of[partnernaming.Rec](), "r")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		return subject.Replace(ctx, r)
+	}
+})
+
 // storeOverEmbedded is partnernaming.Store under the name of the field
 // that storeOver embeds.
 type storeOverEmbedded = partnernaming.Store
@@ -608,6 +931,24 @@ func (o storeOver) Count(context.Context, int) (r0 int, r1 error) {
 	return r0, r1
 }
 
+// Version calls spend and returns its zero results.
+func (o storeOver) Version(context.Context, string) (r0 partnernaming.Rec, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Put calls spend and returns its zero results.
+func (o storeOver) Put(context.Context, partnernaming.Rec) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Replace calls spend and returns its zero results.
+func (o storeOver) Replace(context.Context, partnernaming.Rec) (r0 error) {
+	o.spend()
+	return r0
+}
+
 // newStoreOver returns the planted defect of a ceiling of Store, whose
 // callables call spend.
 func newStoreOver(_ *StoreHandle, spend func()) partnernaming.Store {
@@ -631,21 +972,24 @@ func storeTouchPanics(h *StoreHandle) partnernaming.Store {
 	return &storeTouchPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeTouchSucceedsAlwaysDefect is the planted defect of a Store whose
+// storeTouchIgnoresCancelDefect is the planted defect of a Store whose
 // Touch ignores the context.
-type storeTouchSucceedsAlwaysDefect struct {
+type storeTouchIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Touch is the override of the planted defect.
-func (*storeTouchSucceedsAlwaysDefect) Touch(p0 context.Context, p1 string, p2 int) (r0 error) {
-	return r0
+func (d *storeTouchIgnoresCancelDefect) Touch(p0 context.Context, p1 string, p2 int) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Touch(p0, p1, p2)
 }
 
-// storeTouchSucceedsAlways returns the planted defect of a Store whose
+// storeTouchIgnoresCancel returns the planted defect of a Store whose
 // Touch ignores the context over a fresh subject.
-func storeTouchSucceedsAlways(h *StoreHandle) partnernaming.Store {
-	return &storeTouchSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeTouchIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storeTouchIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeSeenPanicsDefect is the planted defect of a Store whose Seen
@@ -665,21 +1009,24 @@ func storeSeenPanics(h *StoreHandle) partnernaming.Store {
 	return &storeSeenPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeSeenSucceedsAlwaysDefect is the planted defect of a Store whose
-// Seen ignores the context.
-type storeSeenSucceedsAlwaysDefect struct {
+// storeSeenIgnoresCancelDefect is the planted defect of a Store whose Seen
+// ignores the context.
+type storeSeenIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Seen is the override of the planted defect.
-func (*storeSeenSucceedsAlwaysDefect) Seen(p0 context.Context, p1 string) (r0 int, r1 error) {
-	return r0, r1
+func (d *storeSeenIgnoresCancelDefect) Seen(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.storeOverEmbedded.Seen(p0, p1)
 }
 
-// storeSeenSucceedsAlways returns the planted defect of a Store whose Seen
+// storeSeenIgnoresCancel returns the planted defect of a Store whose Seen
 // ignores the context over a fresh subject.
-func storeSeenSucceedsAlways(h *StoreHandle) partnernaming.Store {
-	return &storeSeenSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeSeenIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storeSeenIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeSeenValueBesideDefect is the planted defect of a Store whose Seen
@@ -689,9 +1036,11 @@ type storeSeenValueBesideDefect struct {
 }
 
 // Seen is the override of the planted defect.
-func (*storeSeenValueBesideDefect) Seen(p0 context.Context, p1 string) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *storeSeenValueBesideDefect) Seen(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0, r1 = d.storeOverEmbedded.Seen(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -718,21 +1067,24 @@ func storeMovePanics(h *StoreHandle) partnernaming.Store {
 	return &storeMovePanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeMoveSucceedsAlwaysDefect is the planted defect of a Store whose
-// Move ignores the context.
-type storeMoveSucceedsAlwaysDefect struct {
+// storeMoveIgnoresCancelDefect is the planted defect of a Store whose Move
+// ignores the context.
+type storeMoveIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Move is the override of the planted defect.
-func (*storeMoveSucceedsAlwaysDefect) Move(p0 context.Context, p1, p2 string) (r0 error) {
-	return r0
+func (d *storeMoveIgnoresCancelDefect) Move(p0 context.Context, p1, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Move(p0, p1, p2)
 }
 
-// storeMoveSucceedsAlways returns the planted defect of a Store whose Move
+// storeMoveIgnoresCancel returns the planted defect of a Store whose Move
 // ignores the context over a fresh subject.
-func storeMoveSucceedsAlways(h *StoreHandle) partnernaming.Store {
-	return &storeMoveSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeMoveIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storeMoveIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeAtPanicsDefect is the planted defect of a Store whose At panics.
@@ -751,21 +1103,24 @@ func storeAtPanics(h *StoreHandle) partnernaming.Store {
 	return &storeAtPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeAtSucceedsAlwaysDefect is the planted defect of a Store whose At
+// storeAtIgnoresCancelDefect is the planted defect of a Store whose At
 // ignores the context.
-type storeAtSucceedsAlwaysDefect struct {
+type storeAtIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // At is the override of the planted defect.
-func (*storeAtSucceedsAlwaysDefect) At(p0 context.Context, p1 string) (r0 int, r1 error) {
-	return r0, r1
+func (d *storeAtIgnoresCancelDefect) At(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.storeOverEmbedded.At(p0, p1)
 }
 
-// storeAtSucceedsAlways returns the planted defect of a Store whose At
+// storeAtIgnoresCancel returns the planted defect of a Store whose At
 // ignores the context over a fresh subject.
-func storeAtSucceedsAlways(h *StoreHandle) partnernaming.Store {
-	return &storeAtSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeAtIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storeAtIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeAtValueBesideDefect is the planted defect of a Store whose At
@@ -775,9 +1130,11 @@ type storeAtValueBesideDefect struct {
 }
 
 // At is the override of the planted defect.
-func (*storeAtValueBesideDefect) At(p0 context.Context, p1 string) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *storeAtValueBesideDefect) At(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0, r1 = d.storeOverEmbedded.At(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -804,21 +1161,24 @@ func storeEmitPanics(h *StoreHandle) partnernaming.Store {
 	return &storeEmitPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeEmitSucceedsAlwaysDefect is the planted defect of a Store whose
-// Emit ignores the context.
-type storeEmitSucceedsAlwaysDefect struct {
+// storeEmitIgnoresCancelDefect is the planted defect of a Store whose Emit
+// ignores the context.
+type storeEmitIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Emit is the override of the planted defect.
-func (*storeEmitSucceedsAlwaysDefect) Emit(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *storeEmitIgnoresCancelDefect) Emit(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Emit(p0, p1)
 }
 
-// storeEmitSucceedsAlways returns the planted defect of a Store whose Emit
+// storeEmitIgnoresCancel returns the planted defect of a Store whose Emit
 // ignores the context over a fresh subject.
-func storeEmitSucceedsAlways(h *StoreHandle) partnernaming.Store {
-	return &storeEmitSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeEmitIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storeEmitIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeCountPanicsDefect is the planted defect of a Store whose Count
@@ -838,21 +1198,24 @@ func storeCountPanics(h *StoreHandle) partnernaming.Store {
 	return &storeCountPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeCountSucceedsAlwaysDefect is the planted defect of a Store whose
+// storeCountIgnoresCancelDefect is the planted defect of a Store whose
 // Count ignores the context.
-type storeCountSucceedsAlwaysDefect struct {
+type storeCountIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Count is the override of the planted defect.
-func (*storeCountSucceedsAlwaysDefect) Count(p0 context.Context, p1 int) (r0 int, r1 error) {
-	return r0, r1
+func (d *storeCountIgnoresCancelDefect) Count(p0 context.Context, p1 int) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.storeOverEmbedded.Count(p0, p1)
 }
 
-// storeCountSucceedsAlways returns the planted defect of a Store whose
+// storeCountIgnoresCancel returns the planted defect of a Store whose
 // Count ignores the context over a fresh subject.
-func storeCountSucceedsAlways(h *StoreHandle) partnernaming.Store {
-	return &storeCountSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeCountIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storeCountIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeCountValueBesideDefect is the planted defect of a Store whose Count
@@ -862,9 +1225,11 @@ type storeCountValueBesideDefect struct {
 }
 
 // Count is the override of the planted defect.
-func (*storeCountValueBesideDefect) Count(p0 context.Context, p1 int) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *storeCountValueBesideDefect) Count(p0 context.Context, p1 int) (r0 int, r1 error) {
+	r0, r1 = d.storeOverEmbedded.Count(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -874,4 +1239,135 @@ func storeCountValueBeside(h *StoreHandle) partnernaming.Store {
 	return &storeCountValueBesideDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0a89962b00393ed9a497a43c51186dc8c79e40067723f70ddf05c50f41d414fa
+// storeVersionPanicsDefect is the planted defect of a Store whose Version
+// panics.
+type storeVersionPanicsDefect struct {
+	storeOverEmbedded
+}
+
+// Version is the override of the planted defect.
+func (*storeVersionPanicsDefect) Version(p0 context.Context, p1 string) (r0 partnernaming.Rec, r1 error) {
+	panic("the planted defect of a Store whose Version panics")
+}
+
+// storeVersionPanics returns the planted defect of a Store whose Version
+// panics over a fresh subject.
+func storeVersionPanics(h *StoreHandle) partnernaming.Store {
+	return &storeVersionPanicsDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeVersionIgnoresCancelDefect is the planted defect of a Store whose
+// Version ignores the context.
+type storeVersionIgnoresCancelDefect struct {
+	storeOverEmbedded
+}
+
+// Version is the override of the planted defect.
+func (d *storeVersionIgnoresCancelDefect) Version(p0 context.Context, p1 string) (r0 partnernaming.Rec, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.storeOverEmbedded.Version(p0, p1)
+}
+
+// storeVersionIgnoresCancel returns the planted defect of a Store whose
+// Version ignores the context over a fresh subject.
+func storeVersionIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storeVersionIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeVersionValueBesideDefect is the planted defect of a Store whose
+// Version returns a value beside an error.
+type storeVersionValueBesideDefect struct {
+	storeOverEmbedded
+}
+
+// Version is the override of the planted defect.
+func (d *storeVersionValueBesideDefect) Version(p0 context.Context, p1 string) (r0 partnernaming.Rec, r1 error) {
+	r0, r1 = d.storeOverEmbedded.Version(p0, p1)
+	if r1 != nil {
+		r0 = partnernaming.Rec{Key: "Key-b"}
+	}
+	return r0, r1
+}
+
+// storeVersionValueBeside returns the planted defect of a Store whose
+// Version returns a value beside an error over a fresh subject.
+func storeVersionValueBeside(h *StoreHandle) partnernaming.Store {
+	return &storeVersionValueBesideDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storePutPanicsDefect is the planted defect of a Store whose Put panics.
+type storePutPanicsDefect struct {
+	storeOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*storePutPanicsDefect) Put(p0 context.Context, p1 partnernaming.Rec) (r0 error) {
+	panic("the planted defect of a Store whose Put panics")
+}
+
+// storePutPanics returns the planted defect of a Store whose Put panics
+// over a fresh subject.
+func storePutPanics(h *StoreHandle) partnernaming.Store {
+	return &storePutPanicsDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storePutIgnoresCancelDefect is the planted defect of a Store whose Put
+// ignores the context.
+type storePutIgnoresCancelDefect struct {
+	storeOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (d *storePutIgnoresCancelDefect) Put(p0 context.Context, p1 partnernaming.Rec) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Put(p0, p1)
+}
+
+// storePutIgnoresCancel returns the planted defect of a Store whose Put
+// ignores the context over a fresh subject.
+func storePutIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storePutIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeReplacePanicsDefect is the planted defect of a Store whose Replace
+// panics.
+type storeReplacePanicsDefect struct {
+	storeOverEmbedded
+}
+
+// Replace is the override of the planted defect.
+func (*storeReplacePanicsDefect) Replace(p0 context.Context, p1 partnernaming.Rec) (r0 error) {
+	panic("the planted defect of a Store whose Replace panics")
+}
+
+// storeReplacePanics returns the planted defect of a Store whose Replace
+// panics over a fresh subject.
+func storeReplacePanics(h *StoreHandle) partnernaming.Store {
+	return &storeReplacePanicsDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeReplaceIgnoresCancelDefect is the planted defect of a Store whose
+// Replace ignores the context.
+type storeReplaceIgnoresCancelDefect struct {
+	storeOverEmbedded
+}
+
+// Replace is the override of the planted defect.
+func (d *storeReplaceIgnoresCancelDefect) Replace(p0 context.Context, p1 partnernaming.Rec) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Replace(p0, p1)
+}
+
+// storeReplaceIgnoresCancel returns the planted defect of a Store whose
+// Replace ignores the context over a fresh subject.
+func storeReplaceIgnoresCancel(h *StoreHandle) partnernaming.Store {
+	return &storeReplaceIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:980d7ce4fef5903cc9c8eb3b990178b501a91ae114b0bcb31f5decaf23e40893

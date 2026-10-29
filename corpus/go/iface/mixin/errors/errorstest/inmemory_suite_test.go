@@ -7,6 +7,8 @@ package errorstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/errors"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/errors/errorstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	errorstest.RunMixedSuite(t, errorstest.NewInMemory)
+	errorstest.RunMixedSuite(
+		t,
+		errorstest.NewInMemory,
+		conform.Isolate[errors.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b3b13424b960697bae07fc08b7a4979e7f8159b7e90a9e9f85179b1057c4c01f
+// dokimi:provenance sha256:bcc976b01c7b2348f016910c96f5b3b1c9bbaf04e2effc6fab437f013357c24f

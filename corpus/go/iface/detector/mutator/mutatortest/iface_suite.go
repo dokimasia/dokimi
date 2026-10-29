@@ -15,6 +15,25 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mutator:
+//
+// Mutator.Touch/smoke: Touch returns without a panic for derived inputs.
+
+// The derived checks of Mutator that witness their laws at the shallow
+// end:
+//
+// Mutator.Touch/smoke
+
+// The refused claims of Mutator:
+//
+// Mutator.Touch/cancel: Touch cannot fail. The remedy is to give Touch an
+// error result.
+
+// The unclaimed classifications of Mutator:
+//
+// The shape:mutator of Mutator.Touch has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -186,4 +205,4 @@ func mutatorTouchPanics(h *MutatorHandle) mutator.Mutator {
 	return &mutatorTouchPanicsDefect{mutatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3ac85ed8c3c9f3418b7c00421774e1b16578f0d40ce26449e677cec430e4ce38
+// dokimi:provenance sha256:936bb995d1a2b0484fcf646e563017fba42c586028a4ae2025bb863a3c53dc87

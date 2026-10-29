@@ -7,6 +7,8 @@ package readernoerrortest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror/readernoerrortest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToReaderNoError(t *testing.T) {
 	t.Parallel()
 
-	readernoerrortest.RunReaderNoErrorSuite(t, readernoerrortest.NewInMemory)
+	readernoerrortest.RunReaderNoErrorSuite(
+		t,
+		readernoerrortest.NewInMemory,
+		conform.Isolate[readernoerror.ReaderNoError](),
+	)
 }
 
 // BenchmarkInMemoryConformsToReaderNoError measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToReaderNoErrorLookup(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:e4d1779600734c90baaf7b790b7daaa845c46442b99b2f4b0946f5105a5138c5
+// dokimi:provenance sha256:253ccb062f22ae43b3e59ed9afa1e864509232bbca1d9af3bfcec208f901e43d

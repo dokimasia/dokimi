@@ -15,6 +15,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Render/smoke: Render returns without a panic for derived inputs.
+//
+// Mixed.Render/cancel: Render returns an error for a cancelled context.
+//
+// Mixed.Render/zero-on-error: Render returns the zero value beside an
+// error.
+//
+// Mixed.Render/xss-safe: Render does not return the value that its
+// directive declares unsafe.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Render/smoke
+//
+// Mixed.Render/xss-safe
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -100,7 +118,7 @@ func MixedSuite() conform.Suite[xsssafe.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedRenderSucceedsAlways,
+				Defect: mixedRenderIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Render.ZeroOnError(),
@@ -248,21 +266,24 @@ func mixedRenderPanics(h *MixedHandle) xsssafe.Mixed {
 	return &mixedRenderPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedRenderSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedRenderIgnoresCancelDefect is the planted defect of a Mixed whose
 // Render ignores the context.
-type mixedRenderSucceedsAlwaysDefect struct {
+type mixedRenderIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Render is the override of the planted defect.
-func (*mixedRenderSucceedsAlwaysDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *mixedRenderIgnoresCancelDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Render(p0, p1)
 }
 
-// mixedRenderSucceedsAlways returns the planted defect of a Mixed whose
+// mixedRenderIgnoresCancel returns the planted defect of a Mixed whose
 // Render ignores the context over a fresh subject.
-func mixedRenderSucceedsAlways(h *MixedHandle) xsssafe.Mixed {
-	return &mixedRenderSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedRenderIgnoresCancel(h *MixedHandle) xsssafe.Mixed {
+	return &mixedRenderIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedRenderValueBesideDefect is the planted defect of a Mixed whose
@@ -272,9 +293,11 @@ type mixedRenderValueBesideDefect struct {
 }
 
 // Render is the override of the planted defect.
-func (*mixedRenderValueBesideDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *mixedRenderValueBesideDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Render(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -292,6 +315,10 @@ type mixedRenderEchoesDefect struct {
 
 // Render is the override of the planted defect.
 func (*mixedRenderEchoesDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	r0 = p1
 	return r0, r1
 }
@@ -302,4 +329,4 @@ func mixedRenderEchoes(h *MixedHandle) xsssafe.Mixed {
 	return &mixedRenderEchoesDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d3b7950f61a5b5ae51ace1a8b9693c4cf7b52b9dd802d7796c2c38dd5ca3cd1d
+// dokimi:provenance sha256:49deeea44b5562a262d0c1b633df1bdbf8f63ca88f68707e3fde11dc2cbe02fc

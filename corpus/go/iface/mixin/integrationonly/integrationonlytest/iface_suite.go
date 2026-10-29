@@ -15,6 +15,24 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Connect/smoke: Connect returns without a panic for derived inputs.
+//
+// Mixed.Connect/cancel: Connect returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Connect/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Connect has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The mixin:integration-only of Mixed.Connect has the stance silent. The
+// mixin documents that the callable needs a real dependency.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -86,7 +104,7 @@ func MixedSuite() conform.Suite[integrationonly.Mixed] {
 						return h.Subject().Connect(ctx, string("dsn-a"))
 					})
 				},
-				Defect: mixedConnectSucceedsAlways,
+				Defect: mixedConnectIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[integrationonly.Mixed]{
@@ -208,21 +226,24 @@ func mixedConnectPanics(h *MixedHandle) integrationonly.Mixed {
 	return &mixedConnectPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedConnectSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedConnectIgnoresCancelDefect is the planted defect of a Mixed whose
 // Connect ignores the context.
-type mixedConnectSucceedsAlwaysDefect struct {
+type mixedConnectIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Connect is the override of the planted defect.
-func (*mixedConnectSucceedsAlwaysDefect) Connect(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedConnectIgnoresCancelDefect) Connect(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Connect(p0, p1)
 }
 
-// mixedConnectSucceedsAlways returns the planted defect of a Mixed whose
+// mixedConnectIgnoresCancel returns the planted defect of a Mixed whose
 // Connect ignores the context over a fresh subject.
-func mixedConnectSucceedsAlways(h *MixedHandle) integrationonly.Mixed {
-	return &mixedConnectSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedConnectIgnoresCancel(h *MixedHandle) integrationonly.Mixed {
+	return &mixedConnectIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2743d980986e255187f9ee9eb7757f91efdbefeea4e1a9b2b2a085e9a17a2ff4
+// dokimi:provenance sha256:a9acb0347930c913ee373d26ef2d73b57971b7153cdccdd405af25606d690985

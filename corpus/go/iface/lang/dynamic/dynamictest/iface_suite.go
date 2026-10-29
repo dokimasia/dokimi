@@ -17,6 +17,35 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Diary:
+//
+// Diary.Print/smoke: Print returns without a panic for derived inputs.
+//
+// Diary.Field/smoke: Field returns without a panic for derived inputs.
+//
+// Diary.Count/smoke: Count returns without a panic for derived inputs.
+//
+// Diary.Count/deterministic: Count returns the same value for the same
+// inputs.
+
+// The derived checks of Diary that witness their laws at the shallow end:
+//
+// Diary.Print/smoke
+//
+// Diary.Field/smoke
+//
+// Diary.Count/smoke
+//
+// Diary.Count/deterministic
+
+// The unclaimed classifications of Diary:
+//
+// The shape:mutator of Diary.In has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Diary.Scale has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -162,6 +191,7 @@ func DiarySuite() conform.Suite[dynamic.Diary] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[dynamic.Diary]{DiaryChecks.Count.Smoke()},
 				Apply: func(h *DiaryHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Count()
@@ -433,4 +463,4 @@ func diaryCountDrifts(h *DiaryHandle) dynamic.Diary {
 	return &diaryCountDriftsDefect{diaryOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8b393fddbf2b55893d5ada94034e6947b10b0f8d0059b714230e5314b4fc0e80
+// dokimi:provenance sha256:3833bfb3ea51efbb0d7c1079da348e8b0af977e5aa67bf7c4f4c91b97111cee9

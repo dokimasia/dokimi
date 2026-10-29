@@ -7,6 +7,8 @@ package lookuptest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup/lookuptest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToLookup(t *testing.T) {
 	t.Parallel()
 
-	lookuptest.RunLookupSuite(t, lookuptest.NewInMemory)
+	lookuptest.RunLookupSuite(
+		t,
+		lookuptest.NewInMemory,
+		conform.Isolate[lookup.Lookup](),
+	)
 }
 
 // BenchmarkInMemoryConformsToLookup measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToLookupInspect(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:36a828ec96d13b753caf8fa7b8155883ebd08014a9ab118b166ad864883bf759
+// dokimi:provenance sha256:0def8fb94b5f0c68c540d5f69e7ddeeba121f2b61094335bf4eeb677a09634bb

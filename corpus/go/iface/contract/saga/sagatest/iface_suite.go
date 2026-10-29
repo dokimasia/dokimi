@@ -15,6 +15,66 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Step/smoke: Step returns without a panic for derived inputs.
+//
+// Contract.Step/cancel: Step returns an error for a cancelled context.
+//
+// Contract.Step/saga: Compensate accepts what Step applied.
+//
+// Contract.Compensate/smoke: Compensate returns without a panic for
+// derived inputs.
+//
+// Contract.Compensate/cancel: Compensate returns an error for a cancelled
+// context.
+//
+// Contract.Ship/smoke: Ship returns without a panic for derived inputs.
+//
+// Contract.Ship/cancel: Ship returns an error for a cancelled context.
+//
+// Contract.Ship/saga: UndoShip accepts what Ship applied.
+//
+// Contract.UndoShip/smoke: UndoShip returns without a panic for derived
+// inputs.
+//
+// Contract.UndoShip/cancel: UndoShip returns an error for a cancelled
+// context.
+//
+// Contract.State/smoke: State returns without a panic for derived inputs.
+//
+// Contract.State/cancel: State returns an error for a cancelled context.
+//
+// Contract.State/zero-on-error: State returns the zero value beside an
+// error.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Step/smoke
+//
+// Contract.Compensate/smoke
+//
+// Contract.Ship/smoke
+//
+// Contract.UndoShip/smoke
+//
+// Contract.State/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Step has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Contract.Compensate has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Contract.Ship has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Contract.UndoShip has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -184,7 +244,7 @@ func ContractSuite() conform.Suite[saga.Contract] {
 						return h.Subject().Step(ctx, saga.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractStepSucceedsAlways,
+				Defect: contractStepIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Step.Saga(),
@@ -232,7 +292,7 @@ func ContractSuite() conform.Suite[saga.Contract] {
 						return h.Subject().Compensate(ctx, saga.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractCompensateSucceedsAlways,
+				Defect: contractCompensateIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Ship.Smoke(),
@@ -263,7 +323,7 @@ func ContractSuite() conform.Suite[saga.Contract] {
 						return h.Subject().Ship(ctx, saga.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractShipSucceedsAlways,
+				Defect: contractShipIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Ship.Saga(),
@@ -311,7 +371,7 @@ func ContractSuite() conform.Suite[saga.Contract] {
 						return h.Subject().UndoShip(ctx, saga.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractUndoShipSucceedsAlways,
+				Defect: contractUndoShipIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.State.Smoke(),
@@ -344,7 +404,7 @@ func ContractSuite() conform.Suite[saga.Contract] {
 						return err
 					})
 				},
-				Defect: contractStateSucceedsAlways,
+				Defect: contractStateIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.State.ZeroOnError(),
@@ -559,21 +619,24 @@ func contractStepPanics(h *ContractHandle) saga.Contract {
 	return &contractStepPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractStepSucceedsAlwaysDefect is the planted defect of a Contract
+// contractStepIgnoresCancelDefect is the planted defect of a Contract
 // whose Step ignores the context.
-type contractStepSucceedsAlwaysDefect struct {
+type contractStepIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Step is the override of the planted defect.
-func (*contractStepSucceedsAlwaysDefect) Step(p0 context.Context, p1 saga.Value) (r0 error) {
-	return r0
+func (d *contractStepIgnoresCancelDefect) Step(p0 context.Context, p1 saga.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Step(p0, p1)
 }
 
-// contractStepSucceedsAlways returns the planted defect of a Contract
-// whose Step ignores the context over a fresh subject.
-func contractStepSucceedsAlways(h *ContractHandle) saga.Contract {
-	return &contractStepSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+// contractStepIgnoresCancel returns the planted defect of a Contract whose
+// Step ignores the context over a fresh subject.
+func contractStepIgnoresCancel(h *ContractHandle) saga.Contract {
+	return &contractStepIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractCompensateCompensationRefusesDefect is the planted defect of a
@@ -584,6 +647,10 @@ type contractCompensateCompensationRefusesDefect struct {
 
 // Compensate is the override of the planted defect.
 func (*contractCompensateCompensationRefusesDefect) Compensate(p0 context.Context, p1 saga.Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	r0 = conform.ErrGenerated
 	return r0
 }
@@ -611,21 +678,24 @@ func contractCompensatePanics(h *ContractHandle) saga.Contract {
 	return &contractCompensatePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractCompensateSucceedsAlwaysDefect is the planted defect of a
+// contractCompensateIgnoresCancelDefect is the planted defect of a
 // Contract whose Compensate ignores the context.
-type contractCompensateSucceedsAlwaysDefect struct {
+type contractCompensateIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Compensate is the override of the planted defect.
-func (*contractCompensateSucceedsAlwaysDefect) Compensate(p0 context.Context, p1 saga.Value) (r0 error) {
-	return r0
+func (d *contractCompensateIgnoresCancelDefect) Compensate(p0 context.Context, p1 saga.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Compensate(p0, p1)
 }
 
-// contractCompensateSucceedsAlways returns the planted defect of a
-// Contract whose Compensate ignores the context over a fresh subject.
-func contractCompensateSucceedsAlways(h *ContractHandle) saga.Contract {
-	return &contractCompensateSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+// contractCompensateIgnoresCancel returns the planted defect of a Contract
+// whose Compensate ignores the context over a fresh subject.
+func contractCompensateIgnoresCancel(h *ContractHandle) saga.Contract {
+	return &contractCompensateIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractShipPanicsDefect is the planted defect of a Contract whose Ship
@@ -645,21 +715,24 @@ func contractShipPanics(h *ContractHandle) saga.Contract {
 	return &contractShipPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractShipSucceedsAlwaysDefect is the planted defect of a Contract
+// contractShipIgnoresCancelDefect is the planted defect of a Contract
 // whose Ship ignores the context.
-type contractShipSucceedsAlwaysDefect struct {
+type contractShipIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Ship is the override of the planted defect.
-func (*contractShipSucceedsAlwaysDefect) Ship(p0 context.Context, p1 saga.Value) (r0 error) {
-	return r0
+func (d *contractShipIgnoresCancelDefect) Ship(p0 context.Context, p1 saga.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Ship(p0, p1)
 }
 
-// contractShipSucceedsAlways returns the planted defect of a Contract
-// whose Ship ignores the context over a fresh subject.
-func contractShipSucceedsAlways(h *ContractHandle) saga.Contract {
-	return &contractShipSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+// contractShipIgnoresCancel returns the planted defect of a Contract whose
+// Ship ignores the context over a fresh subject.
+func contractShipIgnoresCancel(h *ContractHandle) saga.Contract {
+	return &contractShipIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractUndoShipCompensationRefusesDefect is the planted defect of a
@@ -670,6 +743,10 @@ type contractUndoShipCompensationRefusesDefect struct {
 
 // UndoShip is the override of the planted defect.
 func (*contractUndoShipCompensationRefusesDefect) UndoShip(p0 context.Context, p1 saga.Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
 	r0 = conform.ErrGenerated
 	return r0
 }
@@ -697,21 +774,24 @@ func contractUndoShipPanics(h *ContractHandle) saga.Contract {
 	return &contractUndoShipPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractUndoShipSucceedsAlwaysDefect is the planted defect of a Contract
+// contractUndoShipIgnoresCancelDefect is the planted defect of a Contract
 // whose UndoShip ignores the context.
-type contractUndoShipSucceedsAlwaysDefect struct {
+type contractUndoShipIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // UndoShip is the override of the planted defect.
-func (*contractUndoShipSucceedsAlwaysDefect) UndoShip(p0 context.Context, p1 saga.Value) (r0 error) {
-	return r0
+func (d *contractUndoShipIgnoresCancelDefect) UndoShip(p0 context.Context, p1 saga.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.UndoShip(p0, p1)
 }
 
-// contractUndoShipSucceedsAlways returns the planted defect of a Contract
+// contractUndoShipIgnoresCancel returns the planted defect of a Contract
 // whose UndoShip ignores the context over a fresh subject.
-func contractUndoShipSucceedsAlways(h *ContractHandle) saga.Contract {
-	return &contractUndoShipSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractUndoShipIgnoresCancel(h *ContractHandle) saga.Contract {
+	return &contractUndoShipIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractStatePanicsDefect is the planted defect of a Contract whose
@@ -731,21 +811,24 @@ func contractStatePanics(h *ContractHandle) saga.Contract {
 	return &contractStatePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractStateSucceedsAlwaysDefect is the planted defect of a Contract
+// contractStateIgnoresCancelDefect is the planted defect of a Contract
 // whose State ignores the context.
-type contractStateSucceedsAlwaysDefect struct {
+type contractStateIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // State is the override of the planted defect.
-func (*contractStateSucceedsAlwaysDefect) State(p0 context.Context) (r0 string, r1 error) {
-	return r0, r1
+func (d *contractStateIgnoresCancelDefect) State(p0 context.Context) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.State(p0)
 }
 
-// contractStateSucceedsAlways returns the planted defect of a Contract
+// contractStateIgnoresCancel returns the planted defect of a Contract
 // whose State ignores the context over a fresh subject.
-func contractStateSucceedsAlways(h *ContractHandle) saga.Contract {
-	return &contractStateSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractStateIgnoresCancel(h *ContractHandle) saga.Contract {
+	return &contractStateIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractStateValueBesideDefect is the planted defect of a Contract whose
@@ -755,9 +838,11 @@ type contractStateValueBesideDefect struct {
 }
 
 // State is the override of the planted defect.
-func (*contractStateValueBesideDefect) State(p0 context.Context) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *contractStateValueBesideDefect) State(p0 context.Context) (r0 string, r1 error) {
+	r0, r1 = d.contractOverEmbedded.State(p0)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -767,4 +852,4 @@ func contractStateValueBeside(h *ContractHandle) saga.Contract {
 	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1a2edd918511f148ddc7019d96e41397380e7efba53b881eec60b3741db59981
+// dokimi:provenance sha256:8e26badf640173a37053a47a6400f815574b9d41adf4e2e08dd3cdb8780f8262

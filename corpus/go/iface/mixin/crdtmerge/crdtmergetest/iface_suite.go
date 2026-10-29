@@ -16,6 +16,41 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Add/smoke: Add returns without a panic for derived inputs.
+//
+// Mixed.Add/cancel: Add returns an error for a cancelled context.
+//
+// Mixed.Items/smoke: Items returns without a panic for derived inputs.
+//
+// Mixed.Items/cancel: Items returns an error for a cancelled context.
+//
+// Mixed.Items/zero-on-error: Items returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Add/smoke
+//
+// Mixed.Items/smoke
+
+// The refused claims of Mixed:
+//
+// Mixed.Merge/cancel: eidos derives no sample of the parameter peer of
+// Merge. The remedy is to author a sample of the parameter peer with the
+// directive sample.
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Merge has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The mixin:crdt-merge of Mixed.Merge has the stance needs. The claims of
+// the mixin need generated sequences.
+//
+// The shape:writer of Mixed.Add has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -120,7 +155,7 @@ func MixedSuite() conform.Suite[crdtmerge.Mixed] {
 						return h.Subject().Add(ctx, string("item-a"))
 					})
 				},
-				Defect: mixedAddSucceedsAlways,
+				Defect: mixedAddIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Items.Smoke(),
@@ -153,7 +188,7 @@ func MixedSuite() conform.Suite[crdtmerge.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedItemsSucceedsAlways,
+				Defect: mixedItemsIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Items.ZeroOnError(),
@@ -359,21 +394,24 @@ func mixedAddPanics(h *MixedHandle) crdtmerge.Mixed {
 	return &mixedAddPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedAddSucceedsAlwaysDefect is the planted defect of a Mixed whose Add
+// mixedAddIgnoresCancelDefect is the planted defect of a Mixed whose Add
 // ignores the context.
-type mixedAddSucceedsAlwaysDefect struct {
+type mixedAddIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Add is the override of the planted defect.
-func (*mixedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *mixedAddIgnoresCancelDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Add(p0, p1)
 }
 
-// mixedAddSucceedsAlways returns the planted defect of a Mixed whose Add
+// mixedAddIgnoresCancel returns the planted defect of a Mixed whose Add
 // ignores the context over a fresh subject.
-func mixedAddSucceedsAlways(h *MixedHandle) crdtmerge.Mixed {
-	return &mixedAddSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedAddIgnoresCancel(h *MixedHandle) crdtmerge.Mixed {
+	return &mixedAddIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedItemsPanicsDefect is the planted defect of a Mixed whose Items
@@ -393,21 +431,24 @@ func mixedItemsPanics(h *MixedHandle) crdtmerge.Mixed {
 	return &mixedItemsPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedItemsSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedItemsIgnoresCancelDefect is the planted defect of a Mixed whose
 // Items ignores the context.
-type mixedItemsSucceedsAlwaysDefect struct {
+type mixedItemsIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Items is the override of the planted defect.
-func (*mixedItemsSucceedsAlwaysDefect) Items(p0 context.Context) (r0 []string, r1 error) {
-	return r0, r1
+func (d *mixedItemsIgnoresCancelDefect) Items(p0 context.Context) (r0 []string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Items(p0)
 }
 
-// mixedItemsSucceedsAlways returns the planted defect of a Mixed whose
+// mixedItemsIgnoresCancel returns the planted defect of a Mixed whose
 // Items ignores the context over a fresh subject.
-func mixedItemsSucceedsAlways(h *MixedHandle) crdtmerge.Mixed {
-	return &mixedItemsSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedItemsIgnoresCancel(h *MixedHandle) crdtmerge.Mixed {
+	return &mixedItemsIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedItemsValueBesideDefect is the planted defect of a Mixed whose Items
@@ -417,9 +458,11 @@ type mixedItemsValueBesideDefect struct {
 }
 
 // Items is the override of the planted defect.
-func (*mixedItemsValueBesideDefect) Items(p0 context.Context) (r0 []string, r1 error) {
-	r0 = []string{"sample-b"}
-	r1 = conform.ErrGenerated
+func (d *mixedItemsValueBesideDefect) Items(p0 context.Context) (r0 []string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Items(p0)
+	if r1 != nil {
+		r0 = []string{"sample-b"}
+	}
 	return r0, r1
 }
 
@@ -429,4 +472,4 @@ func mixedItemsValueBeside(h *MixedHandle) crdtmerge.Mixed {
 	return &mixedItemsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7f597003cb881fe98c88d663ea4e77d852da3f46f2131c9b80bad2c7a32efdaf
+// dokimi:provenance sha256:fb327a010484cb66cd46a69f685bcb115925ff4670a1e6998baf95b142523cec

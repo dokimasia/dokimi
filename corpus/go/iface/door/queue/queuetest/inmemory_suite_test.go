@@ -7,6 +7,8 @@ package queuetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/door/queue"
 	"go.dokimi.dev/dokimi/corpus/go/iface/door/queue/queuetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToQueue(t *testing.T) {
 	t.Parallel()
 
-	queuetest.RunQueueSuite(t, queuetest.NewInMemory)
+	queuetest.RunQueueSuite(
+		t,
+		queuetest.NewInMemory,
+		conform.Isolate[queue.Queue](),
+	)
 }
 
 // BenchmarkInMemoryConformsToQueue measures each callable of the suite of
@@ -60,4 +66,4 @@ func FuzzInMemoryConformsToQueueClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:95607b4dd6211d6f09e7c84138a28d579ce376526ae5df04535d8e901f268274
+// dokimi:provenance sha256:f18a93c0f30c5f876328a9395d740a83ed4b842ad05b6cea8eb41d61b530011a

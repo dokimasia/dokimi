@@ -7,6 +7,8 @@ package totaltest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/total"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/total/totaltest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	totaltest.RunMixedSuite(t, totaltest.NewInMemory)
+	totaltest.RunMixedSuite(
+		t,
+		totaltest.NewInMemory,
+		conform.Isolate[total.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToMixedNormalize(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:88e75e5114410501744c047ed41b161a72046c9d13d395d9d41850d349d39018
+// dokimi:provenance sha256:f97e86cfc22b64ce19769c25831177cdc289b70f9a7227cdcb67a296720c2b28

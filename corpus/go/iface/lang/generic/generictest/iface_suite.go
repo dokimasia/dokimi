@@ -15,6 +15,29 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Store:
+//
+// Store.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Store.Get/cancel: Get returns an error for a cancelled context.
+//
+// Store.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Store.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Store.Put/cancel: Put returns an error for a cancelled context.
+
+// The derived checks of Store that witness their laws at the shallow end:
+//
+// Store.Get/smoke
+//
+// Store.Put/smoke
+
+// The unclaimed classifications of Store:
+//
+// The shape:composite-writer of Store.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,7 +135,7 @@ func StoreSuite() conform.Suite[generic.Store[int, int]] {
 						return err
 					})
 				},
-				Defect: storeGetSucceedsAlways,
+				Defect: storeGetIgnoresCancel,
 			},
 			{
 				ID:          StoreChecks.Get.ZeroOnError(),
@@ -158,7 +181,7 @@ func StoreSuite() conform.Suite[generic.Store[int, int]] {
 						return h.Subject().Put(ctx, int(42), int(42))
 					})
 				},
-				Defect: storePutSucceedsAlways,
+				Defect: storePutIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[generic.Store[int, int]]{
@@ -301,21 +324,24 @@ func storeGetPanics(h *StoreHandle) generic.Store[int, int] {
 	return &storeGetPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storeGetSucceedsAlwaysDefect is the planted defect of a Store whose Get
+// storeGetIgnoresCancelDefect is the planted defect of a Store whose Get
 // ignores the context.
-type storeGetSucceedsAlwaysDefect struct {
+type storeGetIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*storeGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 int) (r0 int, r1 error) {
-	return r0, r1
+func (d *storeGetIgnoresCancelDefect) Get(p0 context.Context, p1 int) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.storeOverEmbedded.Get(p0, p1)
 }
 
-// storeGetSucceedsAlways returns the planted defect of a Store whose Get
+// storeGetIgnoresCancel returns the planted defect of a Store whose Get
 // ignores the context over a fresh subject.
-func storeGetSucceedsAlways(h *StoreHandle) generic.Store[int, int] {
-	return &storeGetSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storeGetIgnoresCancel(h *StoreHandle) generic.Store[int, int] {
+	return &storeGetIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeGetValueBesideDefect is the planted defect of a Store whose Get
@@ -325,9 +351,11 @@ type storeGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*storeGetValueBesideDefect) Get(p0 context.Context, p1 int) (r0 int, r1 error) {
-	r0 = int(7)
-	r1 = conform.ErrGenerated
+func (d *storeGetValueBesideDefect) Get(p0 context.Context, p1 int) (r0 int, r1 error) {
+	r0, r1 = d.storeOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
 	return r0, r1
 }
 
@@ -353,21 +381,24 @@ func storePutPanics(h *StoreHandle) generic.Store[int, int] {
 	return &storePutPanicsDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// storePutSucceedsAlwaysDefect is the planted defect of a Store whose Put
+// storePutIgnoresCancelDefect is the planted defect of a Store whose Put
 // ignores the context.
-type storePutSucceedsAlwaysDefect struct {
+type storePutIgnoresCancelDefect struct {
 	storeOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*storePutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 int) (r0 error) {
-	return r0
+func (d *storePutIgnoresCancelDefect) Put(p0 context.Context, p1, p2 int) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.storeOverEmbedded.Put(p0, p1, p2)
 }
 
-// storePutSucceedsAlways returns the planted defect of a Store whose Put
+// storePutIgnoresCancel returns the planted defect of a Store whose Put
 // ignores the context over a fresh subject.
-func storePutSucceedsAlways(h *StoreHandle) generic.Store[int, int] {
-	return &storePutSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+func storePutIgnoresCancel(h *StoreHandle) generic.Store[int, int] {
+	return &storePutIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c23c0693fb5fd2c0d3562d4f43220f07be4d4a60fec923dc340e277aaf765dc4
+// dokimi:provenance sha256:ce24036aa411ca0ea9471aa7576e7bacdea46ed4b97b5f0379c3653b7b3adfe5

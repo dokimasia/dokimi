@@ -15,6 +15,31 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Contract.Put/cancel: Put returns an error for a cancelled context.
+//
+// Contract.Put/zero-on-error: Put returns the zero value beside an error.
+//
+// Contract.Put/persister: Get returns what Put stored.
+//
+// Contract.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Contract.Get/cancel: Get returns an error for a cancelled context.
+//
+// Contract.Get/zero-on-error: Get returns the zero value beside an error.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Put/smoke
+//
+// Contract.Put/persister
+//
+// Contract.Get/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -126,7 +151,7 @@ func ContractSuite() conform.Suite[persister.Contract] {
 						return err
 					})
 				},
-				Defect: contractPutSucceedsAlways,
+				Defect: contractPutIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Put.ZeroOnError(),
@@ -157,8 +182,7 @@ func ContractSuite() conform.Suite[persister.Contract] {
 						return h.Subject().Get(ctx, (persister.Value{Key: "test-key", Body: "test-body"}).Key)
 					}, func(ctx context.Context) (persister.Value, error) {
 						w := persister.Value{Key: "test-key", Body: "test-body"}
-						_, err := h.Subject().Put(ctx, w)
-						return w, err
+						return h.Subject().Put(ctx, w)
 					})
 				},
 				Defect: contractPutStoresNothing,
@@ -194,7 +218,7 @@ func ContractSuite() conform.Suite[persister.Contract] {
 						return err
 					})
 				},
-				Defect: contractGetSucceedsAlways,
+				Defect: contractGetIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Get.ZeroOnError(),
@@ -374,21 +398,24 @@ func contractPutPanics(h *ContractHandle) persister.Contract {
 	return &contractPutPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractPutSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Put ignores the context.
-type contractPutSucceedsAlwaysDefect struct {
+// contractPutIgnoresCancelDefect is the planted defect of a Contract whose
+// Put ignores the context.
+type contractPutIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*contractPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 persister.Value) (r0 persister.Value, r1 error) {
-	return r0, r1
+func (d *contractPutIgnoresCancelDefect) Put(p0 context.Context, p1 persister.Value) (r0 persister.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Put(p0, p1)
 }
 
-// contractPutSucceedsAlways returns the planted defect of a Contract whose
+// contractPutIgnoresCancel returns the planted defect of a Contract whose
 // Put ignores the context over a fresh subject.
-func contractPutSucceedsAlways(h *ContractHandle) persister.Contract {
-	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractPutIgnoresCancel(h *ContractHandle) persister.Contract {
+	return &contractPutIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractPutValueBesideDefect is the planted defect of a Contract whose
@@ -398,9 +425,11 @@ type contractPutValueBesideDefect struct {
 }
 
 // Put is the override of the planted defect.
-func (*contractPutValueBesideDefect) Put(p0 context.Context, p1 persister.Value) (r0 persister.Value, r1 error) {
-	r0 = persister.Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *contractPutValueBesideDefect) Put(p0 context.Context, p1 persister.Value) (r0 persister.Value, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Put(p0, p1)
+	if r1 != nil {
+		r0 = persister.Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -418,6 +447,10 @@ type contractPutStoresNothingDefect struct {
 
 // Put is the override of the planted defect.
 func (*contractPutStoresNothingDefect) Put(p0 context.Context, p1 persister.Value) (r0 persister.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	return r0, r1
 }
 
@@ -444,21 +477,24 @@ func contractGetPanics(h *ContractHandle) persister.Contract {
 	return &contractGetPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractGetSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Get ignores the context.
-type contractGetSucceedsAlwaysDefect struct {
+// contractGetIgnoresCancelDefect is the planted defect of a Contract whose
+// Get ignores the context.
+type contractGetIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*contractGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 persister.Value, r1 error) {
-	return r0, r1
+func (d *contractGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 persister.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Get(p0, p1)
 }
 
-// contractGetSucceedsAlways returns the planted defect of a Contract whose
+// contractGetIgnoresCancel returns the planted defect of a Contract whose
 // Get ignores the context over a fresh subject.
-func contractGetSucceedsAlways(h *ContractHandle) persister.Contract {
-	return &contractGetSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractGetIgnoresCancel(h *ContractHandle) persister.Contract {
+	return &contractGetIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractGetValueBesideDefect is the planted defect of a Contract whose
@@ -468,9 +504,11 @@ type contractGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*contractGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 persister.Value, r1 error) {
-	r0 = persister.Value{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *contractGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 persister.Value, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = persister.Value{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -480,4 +518,4 @@ func contractGetValueBeside(h *ContractHandle) persister.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1603b52202b20c9a0b0d7fb9b371e33ebe183fa0a97ecf5dfc57173fdc5b9aea
+// dokimi:provenance sha256:da677466d3ad3976d47f74b997ca0a93ad72a4cb1702964eaf056be65c750310

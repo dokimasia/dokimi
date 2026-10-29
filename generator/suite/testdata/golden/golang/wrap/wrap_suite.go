@@ -12,6 +12,50 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Reach:
+//
+// Reach.Current/smoke: Current returns without a panic for derived inputs.
+//
+// Reach.Current/cancel: Current returns an error for a cancelled context.
+//
+// Reach.Current/zero-on-error: Current returns the zero value beside an
+// error.
+
+// The derived checks of Reach that witness their laws at the shallow end:
+//
+// Reach.Current/smoke
+
+// The refused claims of Reach:
+//
+// Reach.Store/smoke: a sample of the check refers to a declaration that
+// the file of the suite cannot import. The remedy is to author a sample of
+// each input of Store with the directive sample.
+//
+// Reach.Store/cancel: a sample of the check refers to a declaration that
+// the file of the suite cannot import. The remedy is to author a sample of
+// each input of Store with the directive sample.
+//
+// Reach.Current/read-after-write: a sample of the check refers to a
+// declaration that the file of the suite cannot import. The remedy is to
+// author a sample of each input of Current with the directive sample.
+//
+// Reach.Gear/smoke: a sample of the check refers to a declaration that the
+// file of the suite cannot import. The remedy is to author a sample of
+// each input of Gear with the directive sample.
+//
+// Reach.Gear/cancel: a sample of the check refers to a declaration that
+// the file of the suite cannot import. The remedy is to author a sample of
+// each input of Gear with the directive sample.
+//
+// Reach.Gear/zero-on-error: a sample of the check refers to a declaration
+// that the file of the suite cannot import. The remedy is to author a
+// sample of each input of Gear with the directive sample.
+
+// The unclaimed classifications of Reach:
+//
+// The shape:writer of Reach.Store has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -106,7 +150,7 @@ func ReachSuite() conform.Suite[Reach] {
 						return err
 					})
 				},
-				Defect: reachCurrentSucceedsAlways,
+				Defect: reachCurrentIgnoresCancel,
 			},
 			{
 				ID:          ReachChecks.Current.ZeroOnError(),
@@ -285,21 +329,24 @@ func reachCurrentPanics(h *ReachHandle) Reach {
 	return &reachCurrentPanicsDefect{reachOverEmbedded: h.Fresh()}
 }
 
-// reachCurrentSucceedsAlwaysDefect is the planted defect of a Reach whose
+// reachCurrentIgnoresCancelDefect is the planted defect of a Reach whose
 // Current ignores the context.
-type reachCurrentSucceedsAlwaysDefect struct {
+type reachCurrentIgnoresCancelDefect struct {
 	reachOverEmbedded
 }
 
 // Current is the override of the planted defect.
-func (*reachCurrentSucceedsAlwaysDefect) Current(p0 context.Context) (r0 tool.Pitch, r1 error) {
-	return r0, r1
+func (d *reachCurrentIgnoresCancelDefect) Current(p0 context.Context) (r0 tool.Pitch, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.reachOverEmbedded.Current(p0)
 }
 
-// reachCurrentSucceedsAlways returns the planted defect of a Reach whose
+// reachCurrentIgnoresCancel returns the planted defect of a Reach whose
 // Current ignores the context over a fresh subject.
-func reachCurrentSucceedsAlways(h *ReachHandle) Reach {
-	return &reachCurrentSucceedsAlwaysDefect{reachOverEmbedded: h.Fresh()}
+func reachCurrentIgnoresCancel(h *ReachHandle) Reach {
+	return &reachCurrentIgnoresCancelDefect{reachOverEmbedded: h.Fresh()}
 }
 
 // reachCurrentValueBesideDefect is the planted defect of a Reach whose
@@ -309,9 +356,11 @@ type reachCurrentValueBesideDefect struct {
 }
 
 // Current is the override of the planted defect.
-func (*reachCurrentValueBesideDefect) Current(p0 context.Context) (r0 tool.Pitch, r1 error) {
-	r0 = tool.Pitch(7)
-	r1 = conform.ErrGenerated
+func (d *reachCurrentValueBesideDefect) Current(p0 context.Context) (r0 tool.Pitch, r1 error) {
+	r0, r1 = d.reachOverEmbedded.Current(p0)
+	if r1 != nil {
+		r0 = tool.Pitch(7)
+	}
 	return r0, r1
 }
 
@@ -320,6 +369,23 @@ func (*reachCurrentValueBesideDefect) Current(p0 context.Context) (r0 tool.Pitch
 func reachCurrentValueBeside(h *ReachHandle) Reach {
 	return &reachCurrentValueBesideDefect{reachOverEmbedded: h.Fresh()}
 }
+
+// The refused claims of Tuned:
+//
+// Tuned.Tune/smoke: a sample of the check refers to a declaration that the
+// file of the suite cannot import. The remedy is to author a sample of
+// each input of Tune with the directive sample.
+
+// The unclaimed classifications of Tuned:
+//
+// The shape:writer of Tuned.Tune has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Tuned.Watch has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Tuned.Turn has the stance silent. A mutation is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -555,6 +621,70 @@ func (o tunedOver) Turn(tool.Dial) {
 func newTunedOver(_ *TunedHandle, spend func()) Tuned {
 	return tunedOver{spend: spend}
 }
+
+// The derived checks of Limited:
+//
+// Limited.Limit/smoke: Limit returns without a panic for derived inputs.
+//
+// Limited.Measure/smoke: Measure returns without a panic for derived
+// inputs.
+//
+// Limited.Phase/smoke: Phase returns without a panic for derived inputs.
+
+// The derived checks of Limited that witness their laws at the shallow
+// end:
+//
+// Limited.Limit/smoke
+//
+// Limited.Measure/smoke
+//
+// Limited.Phase/smoke
+
+// The refused claims of Limited:
+//
+// Limited.Grip/smoke: a sample of the check refers to a declaration that
+// the file of the suite cannot import. The remedy is to author a sample of
+// each input of Grip with the directive sample.
+//
+// Limited.Span/smoke: a sample of the check refers to a declaration that
+// the file of the suite cannot import. The remedy is to author a sample of
+// each input of Span with the directive sample.
+//
+// Limited.Pitch/smoke: a sample of the check refers to a declaration that
+// the file of the suite cannot import. The remedy is to author a sample of
+// each input of Pitch with the directive sample.
+
+// The unclaimed classifications of Limited:
+//
+// The shape:mutator of Limited.Limit has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Limited.Grip has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Limited.Clamp has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Limited.Frame has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Limited.Mount has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Limited.Span has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Limited.Pitch has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Limited.Measure has the stance silent. A mutation
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:mutator of Limited.Phase has the stance silent. A mutation is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Limited.Sense has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -1192,6 +1322,19 @@ func limitedPhasePanics(h *LimitedHandle) Limited {
 	return &limitedPhasePanicsDefect{limitedOverEmbedded: h.Fresh()}
 }
 
+// The derived checks of Plain:
+//
+// Plain.Name/smoke: Name returns without a panic for derived inputs.
+//
+// Plain.Name/deterministic: Name returns the same value for the same
+// inputs.
+
+// The derived checks of Plain that witness their laws at the shallow end:
+//
+// Plain.Name/smoke
+//
+// Plain.Name/deterministic
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1265,6 +1408,7 @@ func PlainSuite() conform.Suite[PlainMethods] {
 				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
+				Entails:     []conform.ID[PlainMethods]{PlainChecks.Name.Smoke()},
 				Apply: func(h *PlainHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
 						r0 := h.Subject().Name()

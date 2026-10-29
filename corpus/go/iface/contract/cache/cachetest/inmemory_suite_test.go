@@ -7,6 +7,8 @@ package cachetest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cache"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cache/cachetest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	cachetest.RunContractSuite(t, cachetest.NewInMemory)
+	cachetest.RunContractSuite(
+		t,
+		cachetest.NewInMemory,
+		conform.Isolate[cache.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToContractFetch(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:32d72f3f44c1d6f656876f2cc6308a7e0c6e48cba923986a11d6628bbe46ee81
+// dokimi:provenance sha256:632eaed3c4e390f1e7b4b898d9cefade7b3a6e778fb9f3df65ef53b3711ad02a

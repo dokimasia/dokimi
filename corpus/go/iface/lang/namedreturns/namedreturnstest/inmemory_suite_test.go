@@ -7,6 +7,8 @@ package namedreturnstest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/namedreturns"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/namedreturns/namedreturnstest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToService(t *testing.T) {
 	t.Parallel()
 
-	namedreturnstest.RunServiceSuite(t, namedreturnstest.NewInMemory)
+	namedreturnstest.RunServiceSuite(
+		t,
+		namedreturnstest.NewInMemory,
+		conform.Isolate[namedreturns.Service](),
+	)
 }
 
 // BenchmarkInMemoryConformsToService measures each callable of the suite
@@ -86,4 +92,4 @@ func FuzzInMemoryConformsToServicePartiallyNamed(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c3d77e45cf7699fa2b5c391fa644ed4175251647e8142972858e01034a599804
+// dokimi:provenance sha256:3bd35cffd3c2ff0ea830852395e89ad82badd806c7dba86af3f1f63a61bc963a

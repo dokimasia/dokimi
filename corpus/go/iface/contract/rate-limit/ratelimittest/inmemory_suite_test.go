@@ -7,6 +7,8 @@ package ratelimittest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	ratelimit "go.dokimi.dev/dokimi/corpus/go/iface/contract/rate-limit"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/rate-limit/ratelimittest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	ratelimittest.RunContractSuite(t, ratelimittest.NewInMemory)
+	ratelimittest.RunContractSuite(
+		t,
+		ratelimittest.NewInMemory,
+		conform.Isolate[ratelimit.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToContractRun(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:32bd9b5060c355513d2b16f0049679205d80e1a451cfd72be743d7af84a77a8f
+// dokimi:provenance sha256:a0139195ce1a9e0b2b9a5764898428f5c9ccc0f7371acec4a609d55cd5ab9dcb

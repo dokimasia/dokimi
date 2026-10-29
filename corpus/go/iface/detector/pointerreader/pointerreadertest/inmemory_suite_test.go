@@ -7,6 +7,8 @@ package pointerreadertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader/pointerreadertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToPointerReader(t *testing.T) {
 	t.Parallel()
 
-	pointerreadertest.RunPointerReaderSuite(t, pointerreadertest.NewInMemory)
+	pointerreadertest.RunPointerReaderSuite(
+		t,
+		pointerreadertest.NewInMemory,
+		conform.Isolate[pointerreader.PointerReader](),
+	)
 }
 
 // BenchmarkInMemoryConformsToPointerReader measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToPointerReaderFind(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ff60980ebe5b4cf1797e1dc8c92fee4331c123eb84b9f7f7412ccd20822b0592
+// dokimi:provenance sha256:6a2a2457a8ca9b07a26821931aa02e8dd3cbb77984593d3394cf6b344f1c2093

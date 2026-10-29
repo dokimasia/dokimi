@@ -15,6 +15,39 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Composed:
+//
+// Composed.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Composed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Composed.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Composed.Ping/smoke: Ping returns without a panic for derived inputs.
+//
+// Composed.Ping/cancel: Ping returns an error for a cancelled context.
+//
+// Composed.Close/smoke: Close returns without a panic for derived inputs.
+//
+// Composed.Close/cancel: Close returns an error for a cancelled context.
+
+// The derived checks of Composed that witness their laws at the shallow
+// end:
+//
+// Composed.Get/smoke
+//
+// Composed.Ping/smoke
+//
+// Composed.Close/smoke
+
+// The unclaimed classifications of Composed:
+//
+// The shape:lifecycle of Composed.Ping has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The shape:lifecycle of Composed.Close has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -134,7 +167,7 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 						return err
 					})
 				},
-				Defect: composedGetSucceedsAlways,
+				Defect: composedGetIgnoresCancel,
 			},
 			{
 				ID:          ComposedChecks.Get.ZeroOnError(),
@@ -180,7 +213,7 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 						return h.Subject().Ping(ctx)
 					})
 				},
-				Defect: composedPingSucceedsAlways,
+				Defect: composedPingIgnoresCancel,
 			},
 			{
 				ID:          ComposedChecks.Close.Smoke(),
@@ -211,7 +244,7 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 						return h.Subject().Close(ctx)
 					})
 				},
-				Defect: composedCloseSucceedsAlways,
+				Defect: composedCloseIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[embedded.Composed]{
@@ -376,21 +409,24 @@ func composedGetPanics(h *ComposedHandle) embedded.Composed {
 	return &composedGetPanicsDefect{composedOverEmbedded: h.Fresh()}
 }
 
-// composedGetSucceedsAlwaysDefect is the planted defect of a Composed
-// whose Get ignores the context.
-type composedGetSucceedsAlwaysDefect struct {
+// composedGetIgnoresCancelDefect is the planted defect of a Composed whose
+// Get ignores the context.
+type composedGetIgnoresCancelDefect struct {
 	composedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*composedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *composedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.composedOverEmbedded.Get(p0, p1)
 }
 
-// composedGetSucceedsAlways returns the planted defect of a Composed whose
+// composedGetIgnoresCancel returns the planted defect of a Composed whose
 // Get ignores the context over a fresh subject.
-func composedGetSucceedsAlways(h *ComposedHandle) embedded.Composed {
-	return &composedGetSucceedsAlwaysDefect{composedOverEmbedded: h.Fresh()}
+func composedGetIgnoresCancel(h *ComposedHandle) embedded.Composed {
+	return &composedGetIgnoresCancelDefect{composedOverEmbedded: h.Fresh()}
 }
 
 // composedGetValueBesideDefect is the planted defect of a Composed whose
@@ -400,9 +436,11 @@ type composedGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*composedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *composedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.composedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -429,21 +467,24 @@ func composedPingPanics(h *ComposedHandle) embedded.Composed {
 	return &composedPingPanicsDefect{composedOverEmbedded: h.Fresh()}
 }
 
-// composedPingSucceedsAlwaysDefect is the planted defect of a Composed
+// composedPingIgnoresCancelDefect is the planted defect of a Composed
 // whose Ping ignores the context.
-type composedPingSucceedsAlwaysDefect struct {
+type composedPingIgnoresCancelDefect struct {
 	composedOverEmbedded
 }
 
 // Ping is the override of the planted defect.
-func (*composedPingSucceedsAlwaysDefect) Ping(p0 context.Context) (r0 error) {
-	return r0
+func (d *composedPingIgnoresCancelDefect) Ping(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.composedOverEmbedded.Ping(p0)
 }
 
-// composedPingSucceedsAlways returns the planted defect of a Composed
-// whose Ping ignores the context over a fresh subject.
-func composedPingSucceedsAlways(h *ComposedHandle) embedded.Composed {
-	return &composedPingSucceedsAlwaysDefect{composedOverEmbedded: h.Fresh()}
+// composedPingIgnoresCancel returns the planted defect of a Composed whose
+// Ping ignores the context over a fresh subject.
+func composedPingIgnoresCancel(h *ComposedHandle) embedded.Composed {
+	return &composedPingIgnoresCancelDefect{composedOverEmbedded: h.Fresh()}
 }
 
 // composedClosePanicsDefect is the planted defect of a Composed whose
@@ -463,21 +504,24 @@ func composedClosePanics(h *ComposedHandle) embedded.Composed {
 	return &composedClosePanicsDefect{composedOverEmbedded: h.Fresh()}
 }
 
-// composedCloseSucceedsAlwaysDefect is the planted defect of a Composed
+// composedCloseIgnoresCancelDefect is the planted defect of a Composed
 // whose Close ignores the context.
-type composedCloseSucceedsAlwaysDefect struct {
+type composedCloseIgnoresCancelDefect struct {
 	composedOverEmbedded
 }
 
 // Close is the override of the planted defect.
-func (*composedCloseSucceedsAlwaysDefect) Close(p0 context.Context) (r0 error) {
-	return r0
+func (d *composedCloseIgnoresCancelDefect) Close(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.composedOverEmbedded.Close(p0)
 }
 
-// composedCloseSucceedsAlways returns the planted defect of a Composed
+// composedCloseIgnoresCancel returns the planted defect of a Composed
 // whose Close ignores the context over a fresh subject.
-func composedCloseSucceedsAlways(h *ComposedHandle) embedded.Composed {
-	return &composedCloseSucceedsAlwaysDefect{composedOverEmbedded: h.Fresh()}
+func composedCloseIgnoresCancel(h *ComposedHandle) embedded.Composed {
+	return &composedCloseIgnoresCancelDefect{composedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a51a7155e1f8d98c89a741152c77c31098b598ddcbaa9554b9cda7deabce275f
+// dokimi:provenance sha256:757ebe5063f18f56e0952d2fe54e4cd830fe6bb412fc8bc6005c0abd0bc23df2

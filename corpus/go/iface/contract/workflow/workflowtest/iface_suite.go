@@ -15,6 +15,34 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Run/smoke: Run returns without a panic for derived inputs.
+//
+// Contract.Run/cancel: Run returns an error for a cancelled context.
+//
+// Contract.State/smoke: State returns without a panic for derived inputs.
+//
+// Contract.State/cancel: State returns an error for a cancelled context.
+//
+// Contract.State/zero-on-error: State returns the zero value beside an
+// error.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Run/smoke
+//
+// Contract.State/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Run has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The contract:workflow/fn of Contract.Run has the stance needs. The
+// claims of the contract need generated sequences.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,7 +140,7 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 						return h.Subject().Run(ctx, string("key-a"))
 					})
 				},
-				Defect: contractRunSucceedsAlways,
+				Defect: contractRunIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.State.Smoke(),
@@ -145,7 +173,7 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 						return err
 					})
 				},
-				Defect: contractStateSucceedsAlways,
+				Defect: contractStateIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.State.ZeroOnError(),
@@ -307,21 +335,24 @@ func contractRunPanics(h *ContractHandle) workflow.Contract {
 	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractRunSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Run ignores the context.
-type contractRunSucceedsAlwaysDefect struct {
+// contractRunIgnoresCancelDefect is the planted defect of a Contract whose
+// Run ignores the context.
+type contractRunIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Run is the override of the planted defect.
-func (*contractRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *contractRunIgnoresCancelDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Run(p0, p1)
 }
 
-// contractRunSucceedsAlways returns the planted defect of a Contract whose
+// contractRunIgnoresCancel returns the planted defect of a Contract whose
 // Run ignores the context over a fresh subject.
-func contractRunSucceedsAlways(h *ContractHandle) workflow.Contract {
-	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractRunIgnoresCancel(h *ContractHandle) workflow.Contract {
+	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractStatePanicsDefect is the planted defect of a Contract whose
@@ -341,21 +372,24 @@ func contractStatePanics(h *ContractHandle) workflow.Contract {
 	return &contractStatePanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractStateSucceedsAlwaysDefect is the planted defect of a Contract
+// contractStateIgnoresCancelDefect is the planted defect of a Contract
 // whose State ignores the context.
-type contractStateSucceedsAlwaysDefect struct {
+type contractStateIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // State is the override of the planted defect.
-func (*contractStateSucceedsAlwaysDefect) State(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *contractStateIgnoresCancelDefect) State(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.State(p0, p1)
 }
 
-// contractStateSucceedsAlways returns the planted defect of a Contract
+// contractStateIgnoresCancel returns the planted defect of a Contract
 // whose State ignores the context over a fresh subject.
-func contractStateSucceedsAlways(h *ContractHandle) workflow.Contract {
-	return &contractStateSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractStateIgnoresCancel(h *ContractHandle) workflow.Contract {
+	return &contractStateIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractStateValueBesideDefect is the planted defect of a Contract whose
@@ -365,9 +399,11 @@ type contractStateValueBesideDefect struct {
 }
 
 // State is the override of the planted defect.
-func (*contractStateValueBesideDefect) State(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *contractStateValueBesideDefect) State(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.contractOverEmbedded.State(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -377,4 +413,4 @@ func contractStateValueBeside(h *ContractHandle) workflow.Contract {
 	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2b8045b9f8da1e8abd01d0eae14267f9cb534ac9556e10333d2f7b707b11e012
+// dokimi:provenance sha256:7f1fd75066625b372af8d9839920fad51a680213c8956e65b3ecf66a7618907c

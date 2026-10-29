@@ -10,6 +10,30 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Sessions:
+//
+// Sessions.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Sessions.Put/cancel: Put returns an error for a cancelled context.
+//
+// Sessions.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Sessions.Get/cancel: Get returns an error for a cancelled context.
+//
+// Sessions.Get/zero-on-error: Get returns the zero value beside an error.
+
+// The derived checks of Sessions that witness their laws at the shallow
+// end:
+//
+// Sessions.Put/smoke
+//
+// Sessions.Get/smoke
+
+// The unclaimed classifications of Sessions:
+//
+// The shape:writer of Sessions.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -107,7 +131,7 @@ func SessionsSuite() conform.Suite[Sessions] {
 						return h.Subject().Put(ctx, Session{ID: "ID-a"})
 					})
 				},
-				Defect: sessionsPutSucceedsAlways,
+				Defect: sessionsPutIgnoresCancel,
 			},
 			{
 				ID:          SessionsChecks.Get.Smoke(),
@@ -140,7 +164,7 @@ func SessionsSuite() conform.Suite[Sessions] {
 						return err
 					})
 				},
-				Defect: sessionsGetSucceedsAlways,
+				Defect: sessionsGetIgnoresCancel,
 			},
 			{
 				ID:          SessionsChecks.Get.ZeroOnError(),
@@ -302,21 +326,24 @@ func sessionsPutPanics(h *SessionsHandle) Sessions {
 	return &sessionsPutPanicsDefect{sessionsOverEmbedded: h.Fresh()}
 }
 
-// sessionsPutSucceedsAlwaysDefect is the planted defect of a Sessions
-// whose Put ignores the context.
-type sessionsPutSucceedsAlwaysDefect struct {
+// sessionsPutIgnoresCancelDefect is the planted defect of a Sessions whose
+// Put ignores the context.
+type sessionsPutIgnoresCancelDefect struct {
 	sessionsOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*sessionsPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Session) (r0 error) {
-	return r0
+func (d *sessionsPutIgnoresCancelDefect) Put(p0 context.Context, p1 Session) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.sessionsOverEmbedded.Put(p0, p1)
 }
 
-// sessionsPutSucceedsAlways returns the planted defect of a Sessions whose
+// sessionsPutIgnoresCancel returns the planted defect of a Sessions whose
 // Put ignores the context over a fresh subject.
-func sessionsPutSucceedsAlways(h *SessionsHandle) Sessions {
-	return &sessionsPutSucceedsAlwaysDefect{sessionsOverEmbedded: h.Fresh()}
+func sessionsPutIgnoresCancel(h *SessionsHandle) Sessions {
+	return &sessionsPutIgnoresCancelDefect{sessionsOverEmbedded: h.Fresh()}
 }
 
 // sessionsGetPanicsDefect is the planted defect of a Sessions whose Get
@@ -336,21 +363,24 @@ func sessionsGetPanics(h *SessionsHandle) Sessions {
 	return &sessionsGetPanicsDefect{sessionsOverEmbedded: h.Fresh()}
 }
 
-// sessionsGetSucceedsAlwaysDefect is the planted defect of a Sessions
-// whose Get ignores the context.
-type sessionsGetSucceedsAlwaysDefect struct {
+// sessionsGetIgnoresCancelDefect is the planted defect of a Sessions whose
+// Get ignores the context.
+type sessionsGetIgnoresCancelDefect struct {
 	sessionsOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*sessionsGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Session, r1 error) {
-	return r0, r1
+func (d *sessionsGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 Session, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.sessionsOverEmbedded.Get(p0, p1)
 }
 
-// sessionsGetSucceedsAlways returns the planted defect of a Sessions whose
+// sessionsGetIgnoresCancel returns the planted defect of a Sessions whose
 // Get ignores the context over a fresh subject.
-func sessionsGetSucceedsAlways(h *SessionsHandle) Sessions {
-	return &sessionsGetSucceedsAlwaysDefect{sessionsOverEmbedded: h.Fresh()}
+func sessionsGetIgnoresCancel(h *SessionsHandle) Sessions {
+	return &sessionsGetIgnoresCancelDefect{sessionsOverEmbedded: h.Fresh()}
 }
 
 // sessionsGetValueBesideDefect is the planted defect of a Sessions whose
@@ -360,9 +390,11 @@ type sessionsGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*sessionsGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Session, r1 error) {
-	r0 = Session{ID: "ID-b"}
-	r1 = conform.ErrGenerated
+func (d *sessionsGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Session, r1 error) {
+	r0, r1 = d.sessionsOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = Session{ID: "ID-b"}
+	}
 	return r0, r1
 }
 

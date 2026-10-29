@@ -7,6 +7,8 @@ package memory_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/generic"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/generic/generictest"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/generic/memory"
 )
@@ -16,7 +18,11 @@ import (
 func TestStoreConformsToStore(t *testing.T) {
 	t.Parallel()
 
-	generictest.RunStoreSuite(t, memory.NewInts)
+	generictest.RunStoreSuite(
+		t,
+		memory.NewInts,
+		conform.Isolate[generic.Store[int, int]](),
+	)
 }
 
 // BenchmarkStoreConformsToStore measures each callable of the suite of
@@ -58,4 +64,4 @@ func FuzzStoreConformsToStorePut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0a3da7c9bf5527497ae991039bd31322c91846701bf22f9b23af1152a45e1fc6
+// dokimi:provenance sha256:e88f2e4fa55e5a0f05272ec87a81a6f1e52ff568c711b8c440f827845eaa2853

@@ -15,6 +15,35 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Version/smoke: Version returns without a panic for derived inputs.
+//
+// Mixed.Version/cancel: Version returns an error for a cancelled context.
+//
+// Mixed.Version/zero-on-error: Version returns the zero value beside an
+// error.
+//
+// Mixed.Version/monotonic: Version never returns less than it returned
+// before.
+//
+// Mixed.Advance/smoke: Advance returns without a panic for derived inputs.
+//
+// Mixed.Advance/cancel: Advance returns an error for a cancelled context.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Version/smoke
+//
+// Mixed.Version/monotonic
+//
+// Mixed.Advance/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:lifecycle of Mixed.Advance has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -120,7 +149,7 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedVersionSucceedsAlways,
+				Defect: mixedVersionIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Version.ZeroOnError(),
@@ -182,7 +211,7 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 						return h.Subject().Advance(ctx)
 					})
 				},
-				Defect: mixedAdvanceSucceedsAlways,
+				Defect: mixedAdvanceIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[monotonic.Mixed]{
@@ -317,21 +346,24 @@ func mixedVersionPanics(h *MixedHandle) monotonic.Mixed {
 	return &mixedVersionPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedVersionSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedVersionIgnoresCancelDefect is the planted defect of a Mixed whose
 // Version ignores the context.
-type mixedVersionSucceedsAlwaysDefect struct {
+type mixedVersionIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Version is the override of the planted defect.
-func (*mixedVersionSucceedsAlwaysDefect) Version(p0 context.Context) (r0 int64, r1 error) {
-	return r0, r1
+func (d *mixedVersionIgnoresCancelDefect) Version(p0 context.Context) (r0 int64, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Version(p0)
 }
 
-// mixedVersionSucceedsAlways returns the planted defect of a Mixed whose
+// mixedVersionIgnoresCancel returns the planted defect of a Mixed whose
 // Version ignores the context over a fresh subject.
-func mixedVersionSucceedsAlways(h *MixedHandle) monotonic.Mixed {
-	return &mixedVersionSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedVersionIgnoresCancel(h *MixedHandle) monotonic.Mixed {
+	return &mixedVersionIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedVersionValueBesideDefect is the planted defect of a Mixed whose
@@ -341,9 +373,11 @@ type mixedVersionValueBesideDefect struct {
 }
 
 // Version is the override of the planted defect.
-func (*mixedVersionValueBesideDefect) Version(p0 context.Context) (r0 int64, r1 error) {
-	r0 = int64(7)
-	r1 = conform.ErrGenerated
+func (d *mixedVersionValueBesideDefect) Version(p0 context.Context) (r0 int64, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Version(p0)
+	if r1 != nil {
+		r0 = int64(7)
+	}
 	return r0, r1
 }
 
@@ -362,6 +396,10 @@ type mixedVersionDescendsDefect struct {
 
 // Version is the override of the planted defect.
 func (d *mixedVersionDescendsDefect) Version(p0 context.Context) (r0 int64, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	d.calls++
 	if d.calls == 1 {
 		r0 = int64(7)
@@ -392,21 +430,24 @@ func mixedAdvancePanics(h *MixedHandle) monotonic.Mixed {
 	return &mixedAdvancePanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedAdvanceSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedAdvanceIgnoresCancelDefect is the planted defect of a Mixed whose
 // Advance ignores the context.
-type mixedAdvanceSucceedsAlwaysDefect struct {
+type mixedAdvanceIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Advance is the override of the planted defect.
-func (*mixedAdvanceSucceedsAlwaysDefect) Advance(p0 context.Context) (r0 error) {
-	return r0
+func (d *mixedAdvanceIgnoresCancelDefect) Advance(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Advance(p0)
 }
 
-// mixedAdvanceSucceedsAlways returns the planted defect of a Mixed whose
+// mixedAdvanceIgnoresCancel returns the planted defect of a Mixed whose
 // Advance ignores the context over a fresh subject.
-func mixedAdvanceSucceedsAlways(h *MixedHandle) monotonic.Mixed {
-	return &mixedAdvanceSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedAdvanceIgnoresCancel(h *MixedHandle) monotonic.Mixed {
+	return &mixedAdvanceIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ab3984ef514e2f23b9082e7cbce33fd2c3d49b6c4ad6aca3e306cde4df1d5913
+// dokimi:provenance sha256:8881807a4e86ca360045f5572246f2f67cf7bf114f25bb49409a560846f4081c

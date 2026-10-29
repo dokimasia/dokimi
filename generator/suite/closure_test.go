@@ -205,6 +205,35 @@ func TestClosure(t *testing.T) {
 			expect.True(t, match.Error, "the predicate returns its verdict beside its error")
 		})
 
+		t.Run("returns the value that a write returns of the type that it writes", func(t *testing.T) {
+			t.Parallel()
+
+			c := closure(t, "Stamped", "Get", "read-after-write", 1)
+			expect.Equal(t, names(c.Lets), []string{"w"}, "the write declares the written value")
+			expect.Length(t, c.Returns, 1, "the write returns one value beside its error")
+			expect.Empty(t, c.Results, "the write returns the value that the call returns")
+		})
+
+		t.Run("passes its own sample to a function parameter of a read", func(t *testing.T) {
+			t.Parallel()
+
+			read := closure(t, "Decoded", "Get", "read-after-write", 0)
+			write := closure(t, "Decoded", "Get", "read-after-write", 1)
+			assert.Length(t, read.Args, 3, "the read takes the context, the key and the function")
+			expect.Equal(t, read.Args[1], write.Args[1], "the read takes the key that the write passes")
+			expect.NotNil(t, read.Args[2].Value, "the function takes a sample")
+			expect.NotEqual(t, read.Args[2], read.Args[1], "the function takes the sample of its own type")
+		})
+
+		t.Run("takes the body of a scope as its parameter", func(t *testing.T) {
+			t.Parallel()
+
+			c := closure(t, "Scope", "Run", "transaction", 0)
+			assert.NotNil(t, c.Param, "the closure takes a parameter")
+			expect.True(t, c.Param.Body, "the parameter is the body of the scope")
+			expect.Equal(t, c.Args[1], suite.Expr{Name: "body"}, "the scope runs the body")
+		})
+
 		t.Run("takes the value of a validator as its parameter", func(t *testing.T) {
 			t.Parallel()
 

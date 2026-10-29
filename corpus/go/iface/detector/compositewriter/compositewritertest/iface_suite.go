@@ -15,6 +15,25 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of CompositeWriter:
+//
+// CompositeWriter.Set/smoke: Set returns without a panic for derived
+// inputs.
+//
+// CompositeWriter.Set/cancel: Set returns an error for a cancelled
+// context.
+
+// The derived checks of CompositeWriter that witness their laws at the
+// shallow end:
+//
+// CompositeWriter.Set/smoke
+
+// The unclaimed classifications of CompositeWriter:
+//
+// The shape:composite-writer of CompositeWriter.Set has the stance silent.
+// A write is an input of the other checks, and its result is an error
+// alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -86,7 +105,7 @@ func CompositeWriterSuite() conform.Suite[compositewriter.CompositeWriter] {
 						return h.Subject().Set(ctx, string("key-a"), compositewriter.Value{Key: "Key-a"})
 					})
 				},
-				Defect: compositeWriterSetSucceedsAlways,
+				Defect: compositeWriterSetIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[compositewriter.CompositeWriter]{
@@ -220,21 +239,28 @@ func compositeWriterSetPanics(h *CompositeWriterHandle) compositewriter.Composit
 	return &compositeWriterSetPanicsDefect{compositeWriterOverEmbedded: h.Fresh()}
 }
 
-// compositeWriterSetSucceedsAlwaysDefect is the planted defect of a
+// compositeWriterSetIgnoresCancelDefect is the planted defect of a
 // CompositeWriter whose Set ignores the context.
-type compositeWriterSetSucceedsAlwaysDefect struct {
+type compositeWriterSetIgnoresCancelDefect struct {
 	compositeWriterOverEmbedded
 }
 
 // Set is the override of the planted defect.
-func (*compositeWriterSetSucceedsAlwaysDefect) Set(p0 context.Context, p1 string, p2 compositewriter.Value) (r0 error) {
-	return r0
+func (d *compositeWriterSetIgnoresCancelDefect) Set(
+	p0 context.Context,
+	p1 string,
+	p2 compositewriter.Value,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.compositeWriterOverEmbedded.Set(p0, p1, p2)
 }
 
-// compositeWriterSetSucceedsAlways returns the planted defect of a
+// compositeWriterSetIgnoresCancel returns the planted defect of a
 // CompositeWriter whose Set ignores the context over a fresh subject.
-func compositeWriterSetSucceedsAlways(h *CompositeWriterHandle) compositewriter.CompositeWriter {
-	return &compositeWriterSetSucceedsAlwaysDefect{compositeWriterOverEmbedded: h.Fresh()}
+func compositeWriterSetIgnoresCancel(h *CompositeWriterHandle) compositewriter.CompositeWriter {
+	return &compositeWriterSetIgnoresCancelDefect{compositeWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b639e86187f24f541316d534ffd554db1c2a2ca7f29cfdb92dd80079b09c6829
+// dokimi:provenance sha256:eed06ab5ddf8d066c5b902c2339acc56ae3997dcc60737218780031238119d2a

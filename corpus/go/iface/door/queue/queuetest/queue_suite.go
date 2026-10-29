@@ -15,6 +15,38 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Queue:
+//
+// Queue.Write/cancel: Write returns an error for a cancelled context.
+//
+// Queue.Read/cancel: Read returns an error for a cancelled context.
+//
+// Queue.Close/smoke: Close returns without a panic for derived inputs.
+
+// The derived checks of Queue that witness their laws at the shallow end:
+//
+// Queue.Close/smoke
+
+// The refused claims of Queue:
+//
+// Queue.Read/zero-on-error: Read waits for the call of another callable on
+// a fresh subject. The remedy is to remove the mixin waits where Read
+// returns on a fresh subject.
+
+// The unclaimed classifications of Queue:
+//
+// The shape:writer of Queue.Write has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The mixin:waits of Queue.Write has the stance silent. The mixin
+// documents that the callable can wait for another call.
+//
+// The mixin:waits of Queue.Read has the stance silent. The mixin documents
+// that the callable can wait for another call.
+//
+// The shape:closer of Queue.Close has the stance silent. A close returns
+// nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -97,7 +129,7 @@ func QueueSuite() conform.Suite[queue.Queue] {
 						return h.Subject().Write(ctx, string("item-a"))
 					})
 				},
-				Defect: queueWriteSucceedsAlways,
+				Defect: queueWriteIgnoresCancel,
 			},
 			{
 				ID:          QueueChecks.Read.Cancel(),
@@ -113,7 +145,7 @@ func QueueSuite() conform.Suite[queue.Queue] {
 						return err
 					})
 				},
-				Defect: queueReadSucceedsAlways,
+				Defect: queueReadIgnoresCancel,
 			},
 			{
 				ID:          QueueChecks.Close.Smoke(),
@@ -276,38 +308,44 @@ func newQueueOver(_ *QueueHandle, spend func()) queue.Queue {
 	return queueOver{spend: spend}
 }
 
-// queueWriteSucceedsAlwaysDefect is the planted defect of a Queue whose
+// queueWriteIgnoresCancelDefect is the planted defect of a Queue whose
 // Write ignores the context.
-type queueWriteSucceedsAlwaysDefect struct {
+type queueWriteIgnoresCancelDefect struct {
 	queueOverEmbedded
 }
 
 // Write is the override of the planted defect.
-func (*queueWriteSucceedsAlwaysDefect) Write(p0 context.Context, p1 string) (r0 error) {
-	return r0
+func (d *queueWriteIgnoresCancelDefect) Write(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.queueOverEmbedded.Write(p0, p1)
 }
 
-// queueWriteSucceedsAlways returns the planted defect of a Queue whose
+// queueWriteIgnoresCancel returns the planted defect of a Queue whose
 // Write ignores the context over a fresh subject.
-func queueWriteSucceedsAlways(h *QueueHandle) queue.Queue {
-	return &queueWriteSucceedsAlwaysDefect{queueOverEmbedded: h.Fresh()}
+func queueWriteIgnoresCancel(h *QueueHandle) queue.Queue {
+	return &queueWriteIgnoresCancelDefect{queueOverEmbedded: h.Fresh()}
 }
 
-// queueReadSucceedsAlwaysDefect is the planted defect of a Queue whose
-// Read ignores the context.
-type queueReadSucceedsAlwaysDefect struct {
+// queueReadIgnoresCancelDefect is the planted defect of a Queue whose Read
+// ignores the context.
+type queueReadIgnoresCancelDefect struct {
 	queueOverEmbedded
 }
 
 // Read is the override of the planted defect.
-func (*queueReadSucceedsAlwaysDefect) Read(p0 context.Context) (r0 string, r1 error) {
-	return r0, r1
+func (d *queueReadIgnoresCancelDefect) Read(p0 context.Context) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.queueOverEmbedded.Read(p0)
 }
 
-// queueReadSucceedsAlways returns the planted defect of a Queue whose Read
+// queueReadIgnoresCancel returns the planted defect of a Queue whose Read
 // ignores the context over a fresh subject.
-func queueReadSucceedsAlways(h *QueueHandle) queue.Queue {
-	return &queueReadSucceedsAlwaysDefect{queueOverEmbedded: h.Fresh()}
+func queueReadIgnoresCancel(h *QueueHandle) queue.Queue {
+	return &queueReadIgnoresCancelDefect{queueOverEmbedded: h.Fresh()}
 }
 
 // queueClosePanicsDefect is the planted defect of a Queue whose Close
@@ -327,4 +365,4 @@ func queueClosePanics(h *QueueHandle) queue.Queue {
 	return &queueClosePanicsDefect{queueOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:803f4a03a7db50b6b7c1ab9cc45cfd93b1e519e3d05f396fdd80fb5c77ed71a1
+// dokimi:provenance sha256:e47e5e58f0774dbd1ac98dde52b25f7c66406f6e75268c49ede13ee885798d2d

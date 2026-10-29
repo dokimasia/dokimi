@@ -15,6 +15,41 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Mixed:
+//
+// Mixed.Record/smoke: Record returns without a panic for derived inputs.
+//
+// Mixed.Record/cancel: Record returns an error for a cancelled context.
+//
+// Mixed.History/smoke: History returns without a panic for derived inputs.
+//
+// Mixed.History/cancel: History returns an error for a cancelled context.
+//
+// Mixed.History/zero-on-error: History returns the zero value beside an
+// error.
+//
+// Mixed.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Mixed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
+
+// The derived checks of Mixed that witness their laws at the shallow end:
+//
+// Mixed.Record/smoke
+//
+// Mixed.History/smoke
+//
+// Mixed.Get/smoke
+
+// The unclaimed classifications of Mixed:
+//
+// The shape:writer of Mixed.Record has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The mixin:serializable of Mixed.History has the stance needs. The claims
+// of the mixin need concurrent callers.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -137,7 +172,7 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 						return h.Subject().Record(ctx, serializable.Entry{Key: "Key-a"})
 					})
 				},
-				Defect: mixedRecordSucceedsAlways,
+				Defect: mixedRecordIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.History.Smoke(),
@@ -170,7 +205,7 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedHistorySucceedsAlways,
+				Defect: mixedHistoryIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.History.ZeroOnError(),
@@ -218,7 +253,7 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 						return err
 					})
 				},
-				Defect: mixedGetSucceedsAlways,
+				Defect: mixedGetIgnoresCancel,
 			},
 			{
 				ID:          MixedChecks.Get.ZeroOnError(),
@@ -394,21 +429,24 @@ func mixedRecordPanics(h *MixedHandle) serializable.Mixed {
 	return &mixedRecordPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedRecordSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedRecordIgnoresCancelDefect is the planted defect of a Mixed whose
 // Record ignores the context.
-type mixedRecordSucceedsAlwaysDefect struct {
+type mixedRecordIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Record is the override of the planted defect.
-func (*mixedRecordSucceedsAlwaysDefect) Record(p0 context.Context, p1 serializable.Entry) (r0 error) {
-	return r0
+func (d *mixedRecordIgnoresCancelDefect) Record(p0 context.Context, p1 serializable.Entry) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Record(p0, p1)
 }
 
-// mixedRecordSucceedsAlways returns the planted defect of a Mixed whose
+// mixedRecordIgnoresCancel returns the planted defect of a Mixed whose
 // Record ignores the context over a fresh subject.
-func mixedRecordSucceedsAlways(h *MixedHandle) serializable.Mixed {
-	return &mixedRecordSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedRecordIgnoresCancel(h *MixedHandle) serializable.Mixed {
+	return &mixedRecordIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedHistoryPanicsDefect is the planted defect of a Mixed whose History
@@ -428,21 +466,24 @@ func mixedHistoryPanics(h *MixedHandle) serializable.Mixed {
 	return &mixedHistoryPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedHistorySucceedsAlwaysDefect is the planted defect of a Mixed whose
+// mixedHistoryIgnoresCancelDefect is the planted defect of a Mixed whose
 // History ignores the context.
-type mixedHistorySucceedsAlwaysDefect struct {
+type mixedHistoryIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // History is the override of the planted defect.
-func (*mixedHistorySucceedsAlwaysDefect) History(p0 context.Context) (r0 []serializable.Entry, r1 error) {
-	return r0, r1
+func (d *mixedHistoryIgnoresCancelDefect) History(p0 context.Context) (r0 []serializable.Entry, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.History(p0)
 }
 
-// mixedHistorySucceedsAlways returns the planted defect of a Mixed whose
+// mixedHistoryIgnoresCancel returns the planted defect of a Mixed whose
 // History ignores the context over a fresh subject.
-func mixedHistorySucceedsAlways(h *MixedHandle) serializable.Mixed {
-	return &mixedHistorySucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedHistoryIgnoresCancel(h *MixedHandle) serializable.Mixed {
+	return &mixedHistoryIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedHistoryValueBesideDefect is the planted defect of a Mixed whose
@@ -452,9 +493,11 @@ type mixedHistoryValueBesideDefect struct {
 }
 
 // History is the override of the planted defect.
-func (*mixedHistoryValueBesideDefect) History(p0 context.Context) (r0 []serializable.Entry, r1 error) {
-	r0 = []serializable.Entry{{Key: "Key-b"}}
-	r1 = conform.ErrGenerated
+func (d *mixedHistoryValueBesideDefect) History(p0 context.Context) (r0 []serializable.Entry, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.History(p0)
+	if r1 != nil {
+		r0 = []serializable.Entry{{Key: "Key-b"}}
+	}
 	return r0, r1
 }
 
@@ -480,21 +523,24 @@ func mixedGetPanics(h *MixedHandle) serializable.Mixed {
 	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedGetSucceedsAlwaysDefect is the planted defect of a Mixed whose Get
+// mixedGetIgnoresCancelDefect is the planted defect of a Mixed whose Get
 // ignores the context.
-type mixedGetSucceedsAlwaysDefect struct {
+type mixedGetIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
 // Get is the override of the planted defect.
-func (*mixedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 serializable.Entry, r1 error) {
-	return r0, r1
+func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 serializable.Entry, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Get(p0, p1)
 }
 
-// mixedGetSucceedsAlways returns the planted defect of a Mixed whose Get
+// mixedGetIgnoresCancel returns the planted defect of a Mixed whose Get
 // ignores the context over a fresh subject.
-func mixedGetSucceedsAlways(h *MixedHandle) serializable.Mixed {
-	return &mixedGetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+func mixedGetIgnoresCancel(h *MixedHandle) serializable.Mixed {
+	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
 // mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
@@ -504,9 +550,11 @@ type mixedGetValueBesideDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 serializable.Entry, r1 error) {
-	r0 = serializable.Entry{Key: "Key-b"}
-	r1 = conform.ErrGenerated
+func (d *mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 serializable.Entry, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = serializable.Entry{Key: "Key-b"}
+	}
 	return r0, r1
 }
 
@@ -516,4 +564,4 @@ func mixedGetValueBeside(h *MixedHandle) serializable.Mixed {
 	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:db5b2295ee48ee6ffa7c839145ef0a71ce7488b4b59979cf0ec854688de6f0f0
+// dokimi:provenance sha256:a5ff9fa098439e474decb0880db7691a8adc0c9404ae51502b87461359265f62

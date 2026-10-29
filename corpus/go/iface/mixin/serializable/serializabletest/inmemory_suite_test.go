@@ -7,6 +7,8 @@ package serializabletest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable/serializabletest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	serializabletest.RunMixedSuite(t, serializabletest.NewInMemory)
+	serializabletest.RunMixedSuite(
+		t,
+		serializabletest.NewInMemory,
+		conform.Isolate[serializable.Mixed](),
+	)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
@@ -74,4 +80,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:07ceba3371d73a3649c6581332aa599e07add7f7c2baa77a96031437b8f1b002
+// dokimi:provenance sha256:08feb73aae9331e86ee2764446739febb309872489abdbf8cccadcb136c0e045

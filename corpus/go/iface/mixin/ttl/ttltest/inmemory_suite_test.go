@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl/ttltest"
 )
 
@@ -17,7 +18,11 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	ttltest.RunMixedSuiteFromHandle(t, ttltest.NewInMemoryFromHandle)
+	ttltest.RunMixedSuiteFromHandle(
+		t,
+		ttltest.NewInMemoryFromHandle,
+		conform.Isolate[ttl.Mixed](),
+	)
 }
 
 // TestInMemoryConformsToMixedAllocs applies the allocation ceilings and
@@ -70,4 +75,4 @@ func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	ttltest.FuzzMixedSuite(f, ttltest.MixedChecks.Read.Callable, ttltest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:04b17bfb16d00399460f04c0c7b743107d6cb99f0ec1d0f203ca9a9cbf3c9a8d
+// dokimi:provenance sha256:0d3264ac1d516dbfc96de3d1afc9e7f99837b0bf8f0083dfff0108df9c70035f

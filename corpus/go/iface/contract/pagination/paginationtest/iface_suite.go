@@ -15,6 +15,34 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Contract:
+//
+// Contract.Fetch/smoke: Fetch returns without a panic for derived inputs.
+//
+// Contract.Fetch/cancel: Fetch returns an error for a cancelled context.
+//
+// Contract.Fetch/zero-on-error: Fetch returns the zero value beside an
+// error.
+//
+// Contract.Fetch/pagination: Fetch resumes from the cursor of its own
+// page.
+//
+// Contract.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Contract.Put/cancel: Put returns an error for a cancelled context.
+
+// The derived checks of Contract that witness their laws at the shallow
+// end:
+//
+// Contract.Fetch/smoke
+//
+// Contract.Put/smoke
+
+// The unclaimed classifications of Contract:
+//
+// The shape:writer of Contract.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -120,7 +148,7 @@ func ContractSuite() conform.Suite[pagination.Contract] {
 						return err
 					})
 				},
-				Defect: contractFetchSucceedsAlways,
+				Defect: contractFetchIgnoresCancel,
 			},
 			{
 				ID:          ContractChecks.Fetch.ZeroOnError(),
@@ -185,7 +213,7 @@ func ContractSuite() conform.Suite[pagination.Contract] {
 						return h.Subject().Put(ctx, pagination.Value{Key: "Key-a"})
 					})
 				},
-				Defect: contractPutSucceedsAlways,
+				Defect: contractPutIgnoresCancel,
 			},
 		},
 		Calls: []conform.Call[pagination.Contract]{
@@ -332,24 +360,27 @@ func contractFetchPanics(h *ContractHandle) pagination.Contract {
 	return &contractFetchPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractFetchSucceedsAlwaysDefect is the planted defect of a Contract
+// contractFetchIgnoresCancelDefect is the planted defect of a Contract
 // whose Fetch ignores the context.
-type contractFetchSucceedsAlwaysDefect struct {
+type contractFetchIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Fetch is the override of the planted defect.
-func (*contractFetchSucceedsAlwaysDefect) Fetch(
+func (d *contractFetchIgnoresCancelDefect) Fetch(
 	p0 context.Context,
 	p1 pagination.Cursor,
 ) (r0 pagination.Page, r1 error) {
-	return r0, r1
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Fetch(p0, p1)
 }
 
-// contractFetchSucceedsAlways returns the planted defect of a Contract
+// contractFetchIgnoresCancel returns the planted defect of a Contract
 // whose Fetch ignores the context over a fresh subject.
-func contractFetchSucceedsAlways(h *ContractHandle) pagination.Contract {
-	return &contractFetchSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractFetchIgnoresCancel(h *ContractHandle) pagination.Contract {
+	return &contractFetchIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractFetchValueBesideDefect is the planted defect of a Contract whose
@@ -359,9 +390,14 @@ type contractFetchValueBesideDefect struct {
 }
 
 // Fetch is the override of the planted defect.
-func (*contractFetchValueBesideDefect) Fetch(p0 context.Context, p1 pagination.Cursor) (r0 pagination.Page, r1 error) {
-	r0 = pagination.Page{Next: pagination.Cursor("Next-b")}
-	r1 = conform.ErrGenerated
+func (d *contractFetchValueBesideDefect) Fetch(
+	p0 context.Context,
+	p1 pagination.Cursor,
+) (r0 pagination.Page, r1 error) {
+	r0, r1 = d.contractOverEmbedded.Fetch(p0, p1)
+	if r1 != nil {
+		r0 = pagination.Page{Next: pagination.Cursor("Next-b")}
+	}
 	return r0, r1
 }
 
@@ -382,6 +418,10 @@ func (d *contractFetchServesOnePageDefect) Fetch(
 	p0 context.Context,
 	p1 pagination.Cursor,
 ) (r0 pagination.Page, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
 	p1 = *new(pagination.Cursor)
 	return d.contractOverEmbedded.Fetch(p0, p1)
 }
@@ -409,21 +449,24 @@ func contractPutPanics(h *ContractHandle) pagination.Contract {
 	return &contractPutPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// contractPutSucceedsAlwaysDefect is the planted defect of a Contract
-// whose Put ignores the context.
-type contractPutSucceedsAlwaysDefect struct {
+// contractPutIgnoresCancelDefect is the planted defect of a Contract whose
+// Put ignores the context.
+type contractPutIgnoresCancelDefect struct {
 	contractOverEmbedded
 }
 
 // Put is the override of the planted defect.
-func (*contractPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 pagination.Value) (r0 error) {
-	return r0
+func (d *contractPutIgnoresCancelDefect) Put(p0 context.Context, p1 pagination.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.contractOverEmbedded.Put(p0, p1)
 }
 
-// contractPutSucceedsAlways returns the planted defect of a Contract whose
+// contractPutIgnoresCancel returns the planted defect of a Contract whose
 // Put ignores the context over a fresh subject.
-func contractPutSucceedsAlways(h *ContractHandle) pagination.Contract {
-	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+func contractPutIgnoresCancel(h *ContractHandle) pagination.Contract {
+	return &contractPutIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4a1d564dde5cd2d78fb0ec77942e35fc48ff0b6aeffe163ebe9eb669d1b64734
+// dokimi:provenance sha256:eae6278147f1803a36d10a67d3cc9e789ac6ac6dbc80c43a7beb5e71ebbe87fd

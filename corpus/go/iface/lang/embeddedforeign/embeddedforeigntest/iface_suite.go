@@ -15,6 +15,27 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of Stream:
+//
+// Stream.Read/smoke: Read returns without a panic for derived inputs.
+//
+// Stream.Read/cancel: Read returns an error for a cancelled context.
+//
+// Stream.Read/zero-on-error: Read returns the zero value beside an error.
+//
+// Stream.Close/smoke: Close returns without a panic for derived inputs.
+
+// The derived checks of Stream that witness their laws at the shallow end:
+//
+// Stream.Read/smoke
+//
+// Stream.Close/smoke
+
+// The unclaimed classifications of Stream:
+//
+// The shape:closer of Stream.Close has the stance silent. A close returns
+// nothing that a check could compare.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -108,7 +129,7 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 						return err
 					})
 				},
-				Defect: streamReadSucceedsAlways,
+				Defect: streamReadIgnoresCancel,
 			},
 			{
 				ID:          StreamChecks.Read.ZeroOnError(),
@@ -285,21 +306,24 @@ func streamReadPanics(h *StreamHandle) embeddedforeign.Stream {
 	return &streamReadPanicsDefect{streamOverEmbedded: h.Fresh()}
 }
 
-// streamReadSucceedsAlwaysDefect is the planted defect of a Stream whose
+// streamReadIgnoresCancelDefect is the planted defect of a Stream whose
 // Read ignores the context.
-type streamReadSucceedsAlwaysDefect struct {
+type streamReadIgnoresCancelDefect struct {
 	streamOverEmbedded
 }
 
 // Read is the override of the planted defect.
-func (*streamReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
-	return r0, r1
+func (d *streamReadIgnoresCancelDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.streamOverEmbedded.Read(p0, p1)
 }
 
-// streamReadSucceedsAlways returns the planted defect of a Stream whose
+// streamReadIgnoresCancel returns the planted defect of a Stream whose
 // Read ignores the context over a fresh subject.
-func streamReadSucceedsAlways(h *StreamHandle) embeddedforeign.Stream {
-	return &streamReadSucceedsAlwaysDefect{streamOverEmbedded: h.Fresh()}
+func streamReadIgnoresCancel(h *StreamHandle) embeddedforeign.Stream {
+	return &streamReadIgnoresCancelDefect{streamOverEmbedded: h.Fresh()}
 }
 
 // streamReadValueBesideDefect is the planted defect of a Stream whose Read
@@ -309,9 +333,11 @@ type streamReadValueBesideDefect struct {
 }
 
 // Read is the override of the planted defect.
-func (*streamReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
-	r0 = string("sample-b")
-	r1 = conform.ErrGenerated
+func (d *streamReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.streamOverEmbedded.Read(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
 	return r0, r1
 }
 
@@ -338,4 +364,4 @@ func streamClosePanics(h *StreamHandle) embeddedforeign.Stream {
 	return &streamClosePanicsDefect{streamOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:357b0753a8657606b218e2ee1e2889f5da460c12b77fc03d79fb002513f5ccd1
+// dokimi:provenance sha256:49e64aadf0a702d287ef09f0f77c492bb58f8db01e002a002bc451aa85dc1161

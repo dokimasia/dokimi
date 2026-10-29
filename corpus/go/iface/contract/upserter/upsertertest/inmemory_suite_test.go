@@ -7,6 +7,8 @@ package upsertertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/contract/upserter"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/upserter/upsertertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	upsertertest.RunContractSuite(t, upsertertest.NewInMemory)
+	upsertertest.RunContractSuite(
+		t,
+		upsertertest.NewInMemory,
+		conform.Isolate[upserter.Contract](),
+	)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:89c2d587587f911f145b1611c149b7e6393a1235b755883a9a36201260cc4353
+// dokimi:provenance sha256:ba8e88aff72a1afc3b1d52dd3253a85c603eb1617510d6c38655e64f1a9389b1

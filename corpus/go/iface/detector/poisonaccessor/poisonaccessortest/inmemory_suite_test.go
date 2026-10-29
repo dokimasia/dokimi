@@ -7,6 +7,8 @@ package poisonaccessortest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/poisonaccessor"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/poisonaccessor/poisonaccessortest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToPoisonAccessor(t *testing.T) {
 	t.Parallel()
 
-	poisonaccessortest.RunPoisonAccessorSuite(t, poisonaccessortest.NewInMemory)
+	poisonaccessortest.RunPoisonAccessorSuite(
+		t,
+		poisonaccessortest.NewInMemory,
+		conform.Isolate[poisonaccessor.PoisonAccessor](),
+	)
 }
 
 // BenchmarkInMemoryConformsToPoisonAccessor measures each callable of the
@@ -44,4 +50,4 @@ func FuzzInMemoryConformsToPoisonAccessorErr(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:34bf94485f557c4574e69ae536eb2faff67558a13e5aa7edbb6af2e02cec7647
+// dokimi:provenance sha256:8e1afe427e17dfaac61b868e8d35d7564fa9c6f3076d6457af0cbbe85d30d20d

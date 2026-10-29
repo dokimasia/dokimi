@@ -15,6 +15,22 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of MultiReader:
+//
+// MultiReader.GetWithMeta/smoke: GetWithMeta returns without a panic for
+// derived inputs.
+//
+// MultiReader.GetWithMeta/cancel: GetWithMeta returns an error for a
+// cancelled context.
+//
+// MultiReader.GetWithMeta/zeroes-on-error: GetWithMeta returns the zero
+// values beside an error.
+
+// The derived checks of MultiReader that witness their laws at the shallow
+// end:
+//
+// MultiReader.GetWithMeta/smoke
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,7 +110,7 @@ func MultiReaderSuite() conform.Suite[multireader.MultiReader] {
 						return err
 					})
 				},
-				Defect: multiReaderGetWithMetaSucceedsAlways,
+				Defect: multiReaderGetWithMetaIgnoresCancel,
 			},
 			{
 				ID:          MultiReaderChecks.GetWithMeta.ZeroesOnError(),
@@ -249,24 +265,27 @@ func multiReaderGetWithMetaPanics(h *MultiReaderHandle) multireader.MultiReader 
 	return &multiReaderGetWithMetaPanicsDefect{multiReaderOverEmbedded: h.Fresh()}
 }
 
-// multiReaderGetWithMetaSucceedsAlwaysDefect is the planted defect of a
+// multiReaderGetWithMetaIgnoresCancelDefect is the planted defect of a
 // MultiReader whose GetWithMeta ignores the context.
-type multiReaderGetWithMetaSucceedsAlwaysDefect struct {
+type multiReaderGetWithMetaIgnoresCancelDefect struct {
 	multiReaderOverEmbedded
 }
 
 // GetWithMeta is the override of the planted defect.
-func (*multiReaderGetWithMetaSucceedsAlwaysDefect) GetWithMeta(
+func (d *multiReaderGetWithMetaIgnoresCancelDefect) GetWithMeta(
 	p0 context.Context,
 	p1 string,
 ) (r0 multireader.Value, r1 multireader.Meta, r2 error) {
-	return r0, r1, r2
+	if p0.Err() != nil {
+		return r0, r1, r2
+	}
+	return d.multiReaderOverEmbedded.GetWithMeta(p0, p1)
 }
 
-// multiReaderGetWithMetaSucceedsAlways returns the planted defect of a
+// multiReaderGetWithMetaIgnoresCancel returns the planted defect of a
 // MultiReader whose GetWithMeta ignores the context over a fresh subject.
-func multiReaderGetWithMetaSucceedsAlways(h *MultiReaderHandle) multireader.MultiReader {
-	return &multiReaderGetWithMetaSucceedsAlwaysDefect{multiReaderOverEmbedded: h.Fresh()}
+func multiReaderGetWithMetaIgnoresCancel(h *MultiReaderHandle) multireader.MultiReader {
+	return &multiReaderGetWithMetaIgnoresCancelDefect{multiReaderOverEmbedded: h.Fresh()}
 }
 
 // multiReaderGetWithMetaValuesBesideDefect is the planted defect of a
@@ -276,13 +295,15 @@ type multiReaderGetWithMetaValuesBesideDefect struct {
 }
 
 // GetWithMeta is the override of the planted defect.
-func (*multiReaderGetWithMetaValuesBesideDefect) GetWithMeta(
+func (d *multiReaderGetWithMetaValuesBesideDefect) GetWithMeta(
 	p0 context.Context,
 	p1 string,
 ) (r0 multireader.Value, r1 multireader.Meta, r2 error) {
-	r0 = multireader.Value{Key: "Key-b"}
-	r1 = multireader.Meta{Revision: 7}
-	r2 = conform.ErrGenerated
+	r0, r1, r2 = d.multiReaderOverEmbedded.GetWithMeta(p0, p1)
+	if r2 != nil {
+		r0 = multireader.Value{Key: "Key-b"}
+		r1 = multireader.Meta{Revision: 7}
+	}
 	return r0, r1, r2
 }
 
@@ -293,4 +314,4 @@ func multiReaderGetWithMetaValuesBeside(h *MultiReaderHandle) multireader.MultiR
 	return &multiReaderGetWithMetaValuesBesideDefect{multiReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7c61dc9d934384fb6d813e004f2b643c74fe9359bba5b9c2e4a9a181be24c3b0
+// dokimi:provenance sha256:2d0edec2e6bc14aadc60e876f9735f4d58bfb3b55f83ed1c72f966372bd4c68c

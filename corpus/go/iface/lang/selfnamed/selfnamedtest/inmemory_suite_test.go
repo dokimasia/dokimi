@@ -7,6 +7,8 @@ package selfnamedtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/selfnamed"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/selfnamed/selfnamedtest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToFilter(t *testing.T) {
 	t.Parallel()
 
-	selfnamedtest.RunFilterSuite(t, selfnamedtest.NewInMemory)
+	selfnamedtest.RunFilterSuite(
+		t,
+		selfnamedtest.NewInMemory,
+		conform.Isolate[selfnamed.Filter](),
+	)
 }
 
 // BenchmarkInMemoryConformsToFilter measures each callable of the suite of
@@ -57,4 +63,4 @@ func FuzzInMemoryConformsToFilterDrain(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:31f8346470c092506a2b8dc906e3adf6dfa916f7a6712b8a1160c69f1ed4a379
+// dokimi:provenance sha256:4bd4749f8f46143726de3585c08ab13f6ffbca0c106320a33999f2243be1fc1b

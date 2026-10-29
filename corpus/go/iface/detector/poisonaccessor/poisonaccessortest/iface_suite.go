@@ -15,6 +15,21 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// The derived checks of PoisonAccessor:
+//
+// PoisonAccessor.Err/smoke: Err returns without a panic for derived
+// inputs.
+
+// The derived checks of PoisonAccessor that witness their laws at the
+// shallow end:
+//
+// PoisonAccessor.Err/smoke
+
+// The unclaimed classifications of PoisonAccessor:
+//
+// The shape:poison-accessor of PoisonAccessor.Err has the stance gap. No
+// claim states what the accessor of a poisoned subject returns.
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -197,4 +212,4 @@ func poisonAccessorErrPanics(h *PoisonAccessorHandle) poisonaccessor.PoisonAcces
 	return &poisonAccessorErrPanicsDefect{poisonAccessorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:49730f9a2cb73ae93776ba930d87b61bc757889b44c7023289d62b29a6b6b4dc
+// dokimi:provenance sha256:cb882d0ca200d26e39e4a6ccdcf33694d405e96fd3c89f9557332d2e161f0396

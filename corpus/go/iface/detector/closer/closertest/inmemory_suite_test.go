@@ -7,6 +7,8 @@ package closertest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/conform"
+	"go.dokimi.dev/dokimi/corpus/go/iface/detector/closer"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/closer/closertest"
 )
 
@@ -15,7 +17,11 @@ import (
 func TestInMemoryConformsToCloser(t *testing.T) {
 	t.Parallel()
 
-	closertest.RunCloserSuite(t, closertest.NewInMemory)
+	closertest.RunCloserSuite(
+		t,
+		closertest.NewInMemory,
+		conform.Isolate[closer.Closer](),
+	)
 }
 
 // BenchmarkInMemoryConformsToCloser measures each callable of the suite of
@@ -40,4 +46,4 @@ func FuzzInMemoryConformsToCloserClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0b0639a75acfc524e54f75e734269a16fcdba5ef00750cd14cbe9a7e4c92486e
+// dokimi:provenance sha256:045d3f7c4087eb6d730ac8708003f59ed534333a5d0f5eaa6beedfb2b1fe427e

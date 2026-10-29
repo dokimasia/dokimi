@@ -334,6 +334,51 @@ func TestRender(t *testing.T) {
 			}, "names.gen.go declares the entries in the order of the files")
 		})
 
+		t.Run("writes the spelling of each identifier in each language by its section", func(t *testing.T) {
+			t.Parallel()
+			tree := minimal()
+			tree["stances.yaml"] = files.Text(`stances:
+  ttl-gap:
+    meaning: The classification has a law and no claim.
+    closes: A claim.
+    since: 1.0.0
+unclaimed: {}
+`)
+			dir := files.Workspace(t, tree)
+
+			assert.NoError(t, render.Render(dir), "the spec renders")
+
+			var got struct {
+				Names     map[string]map[string]map[string]string `json:"names"`
+				Languages []string                                `json:"languages"`
+			}
+			assert.NoError(
+				t,
+				json.Unmarshal([]byte(files.Read(t, filepath.Join(dir, "naming.json"))), &got),
+				"naming.json decodes",
+			)
+			assert.Equal(t, got.Languages, []string{"go", "typescript"}, "the table names Go and TypeScript")
+			assert.Equal(t, got.Names["claims"]["zero-on-error"], map[string]string{
+				"go": "ZeroOnError", "typescript": "zeroOnError",
+			}, "the claim has its spelling in each language")
+			assert.Equal(t, got.Names["stances"]["ttl-gap"], map[string]string{
+				"go": "TTLGap", "typescript": "ttlGap",
+			}, "Go spells the initialism in capitals and TypeScript does not")
+			assert.Length(t, got.Names, 8, "each section with constants has its names")
+		})
+
+		t.Run("returns an error for naming.json that it cannot write", func(t *testing.T) {
+			t.Parallel()
+			tree := minimal()
+			tree["naming.json/keep"] = files.Text("a directory in place of the file\n")
+			dir := files.Workspace(t, tree)
+
+			err := render.Render(dir)
+
+			assert.HasError(t, err, "the directory in place of naming.json fails the render")
+			assert.Contains(t, err.Error(), "naming.json", "the error names the file")
+		})
+
 		t.Run("returns an error for a field that the entry does not have", func(t *testing.T) {
 			t.Parallel()
 			tree := minimal()

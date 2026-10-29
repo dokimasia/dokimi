@@ -101,6 +101,19 @@ var kinds = map[string]kind{
 	"stances":     {"StanceID", "stance"},
 }
 
+// namingDoc is the document of naming.json: the languages of the runtimes,
+// and the spelling of each identifier in each language by the section of
+// its entry. A runtime declares its constants with these spellings, so the
+// renderer alone decides how a language spells an identifier.
+type namingDoc struct {
+	Names     map[string]map[string]map[string]string `json:"names"`
+	Languages []string                                `json:"languages"`
+}
+
+// typescript spells the identifiers of TypeScript in camel case without the
+// initialisms of Go, as xssSafe.
+var typescript = naming.New()
+
 // identifier is the pattern of the identifier of an entry: lower-case ASCII
 // words joined by hyphens.
 const identifier = `^[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*$`
@@ -128,7 +141,8 @@ func schemaOptions() *jsonschema.ForOptions {
 }
 
 // Render renders the YAML file of each name of Files in dir into its JSON
-// file and its schema under dir/schemas, and writes dir/names.gen.go.
+// file and its schema under dir/schemas, and writes dir/names.gen.go and
+// dir/naming.json.
 //
 // # Errors
 //
@@ -151,6 +165,7 @@ func render(root *os.Root) error {
 	opts := schemaOptions()
 	names := map[string]string{}
 	var consts []constant
+	table := namingDoc{Names: map[string]map[string]map[string]string{}, Languages: []string{"go", "typescript"}}
 	if err := root.MkdirAll("schemas", 0o750); err != nil {
 		return fmt.Errorf("the directory of the schemas: %w", err)
 	}
@@ -169,14 +184,20 @@ func render(root *os.Root) error {
 		}
 		for _, s := range ids {
 			k := kinds[s.section]
+			spelled := map[string]map[string]string{}
+			table.Names[s.section] = spelled
 			for _, id := range s.ids {
 				if other, ok := names[id]; ok {
 					return fmt.Errorf("the identifier %s names a %s and a %s", id, other, k.word)
 				}
 				names[id] = k.word
 				consts = append(consts, constant{name: naming.Pascal(id), goType: k.goType, id: id})
+				spelled[id] = map[string]string{"go": naming.Pascal(id), "typescript": typescript.Camel(id)}
 			}
 		}
+	}
+	if err := writeJSON(root, "naming.json", table); err != nil {
+		return err
 	}
 	return writeNames(root, consts)
 }

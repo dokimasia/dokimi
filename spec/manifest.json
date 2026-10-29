@@ -1,5 +1,5 @@
 {
-    "digest": "sha256:0ae75cb5b18cd6aba173b6ec8434b50801f8b10a110e8660b43aaa5511242183",
+    "digest": "sha256:fd0ab657f21a8098cdccf5fc8684833da4c2640f7e464048569b370a5f9487d5",
     "files": {
         "VERSION": "sha256:59854984853104df5c353e2f681a15fc7924742f9a2e468c29af248dce45ce03",
         "claims.json": "sha256:4e90f2b25b7d0f43f4bb921ec8b6d2939bbb5c571a702b42f592c082d491aa1e",
@@ -7,6 +7,7 @@
         "gates.json": "sha256:6200ec8e4c38490002f6c2f65f8bcef5969e2d2b4a7d9cfd4345ed28c0b28649",
         "laws.json": "sha256:7ba62eb52ac2cd4f2ec457f4786020989262b90f03ddfd717b5b3acdda24584f",
         "machineries.json": "sha256:bbd760a3d22998580fd73241c31ff39b681df9b735aca4a93299e2ca76e53828",
+        "naming.json": "sha256:199afe9a05febe173ef2b321534a51c3f5fc86b117ef15c6c07a8e406aba8f05",
         "probes.json": "sha256:259d435494dece585694d4aed89e62e18a815da2746b27d0f414008df46cd29a",
         "reasons.json": "sha256:7d70ed24c1d1da2ec400b3f774061b1f1fbfae1fe704042c07d0bb243fcc3616",
         "schemas/claims.schema.json": "sha256:5a0c2bfaa69ee9efbf483f4ed511d2d49ecf0b45ba7f8db04dae25b5a58ae375",

@@ -20,6 +20,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
+	"go.dokimi.dev/dokimi/internal/derive"
 	"go.dokimi.dev/dokimi/internal/lang"
 )
 
@@ -240,7 +241,10 @@ const (
 // Errors reports that the calls take an error outside the results of a
 // generated function, which they draw from nil and conform.ErrGenerated.
 // Inputs are the implementations of the interfaces that the callables and the
-// generators take.
+// generators take. Facts are the facts of the callables in their order, and
+// Derivation contains the checks that the claims of the conformance spec
+// derive from them, with the refusals, the unclaimed classifications and the
+// edges.
 type Suite struct {
 	Subject     *emit.TypeRef
 	Methods     *emit.Interface
@@ -259,6 +263,8 @@ type Suite struct {
 	Constants   []Constant
 	Sinks       []*emit.TypeRef
 	Inputs      []Input
+	Facts       []derive.Facts
+	Derivation  derive.Suite
 	Dynamic     bool
 	Errors      bool
 }
@@ -1300,11 +1306,14 @@ func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 // take. k writes the calls. A suite with callables names the type of its
 // planted defects and the function that returns one.
 func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) {
+	syms := make([]symbol.Symbol, 0, len(methods))
 	for _, method := range methods {
 		c := callableOf(k.e, s.Declaration, method.Name)
 		s.Callables = append(s.Callables, c)
 		s.Calls = append(s.Calls, k.call(&c, method, &method.ID))
+		syms = append(syms, method)
 	}
+	k.derivation(s, syms)
 	k.overrides(s)
 	s.Checks = g.checksOf(k.m, &k.origin, s.Callables)
 	if len(methods) > 0 {
@@ -1338,6 +1347,7 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 		Calls: []Call{k.call(&callables[0], f, &f.ID)},
 	}
 	k.overrides(&s)
+	k.derivation(&s, []symbol.Symbol{f})
 	write(e, &f.ID, &s)
 	return nil
 }

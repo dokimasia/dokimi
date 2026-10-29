@@ -57,6 +57,7 @@ const (
 	locksPackage       = "example.com/shop/locks"
 	toolPackage        = "example.com/shop/lib/tool"
 	deepPackage        = "example.com/shop/lib/internal/deep"
+	derivedPackage     = "example.com/shop/derived"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )

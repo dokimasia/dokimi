@@ -194,12 +194,16 @@ The Go runtime gains the module `go.dokimi.dev/spec` and the package `probe` of 
 - `spec` embeds the vendored copy of the conformance spec, declares a constant for each entry with its spelling in the naming table, and returns the reasons of each probe.
 - `probe` implements every probe of the spec. A probe asserts through assert-go, passes the statement of the check as the contract of each assertion, and calls `Expect` before each assertion.
 
-`conform.Check[S]` gains five fields:
+`conform.Check[S]` gains seven fields:
 
 ```go
 // Claim is the claim of the conformance spec that the check binds, and
 // empty for a check of the consumer.
 Claim spec.ClaimID
+
+// Probe is the probe of the claim, whose reasons Handle.Expect accepts,
+// and empty for a check of the consumer.
+Probe spec.ProbeID
 
 // Reason is the reason code of the planted defect of the check, and empty
 // for a check of the consumer.
@@ -216,9 +220,13 @@ Machineries []spec.MachineryID
 // Shallow reports that the machineries of the claim do not include the
 // depth of its law.
 Shallow bool
+
+// Entails are the identities of the shallower checks of the suite whose
+// laws the law of the check implies, one for each edge of the derivation.
+Entails []ID[S]
 ```
 
-The runtime writes these fields into the suite record, because it does not read a claim at run time.
+The runtime writes these fields into the suite record, because it does not read a claim at run time. The isolation and the edges of `Isolate` read `Entails`, and `Expect` reads the reasons of `Probe` from the copy of the spec.
 
 ### Migration of the corpus
 

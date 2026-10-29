@@ -499,6 +499,7 @@ probes:
     summary: The list of the variants contains each variant once, in the order of the declaration.
     inputs:
       - {name: members, kind: values}
+      - {name: list, kind: call}
     reasons: [misordered-members]
     vacuous: Never, because the probe compares the whole list.
     since: 1.0.0
@@ -507,6 +508,7 @@ probes:
     inputs:
       - {name: members, kind: values}
       - {name: name, kind: call}
+      - {name: outside, kind: value}
     reasons: [shared-text]
     vacuous: Never, because the probe renders every variant.
     since: 1.0.0
@@ -514,6 +516,8 @@ probes:
     summary: Each variant is valid, and a value outside the variants is not.
     inputs:
       - {name: members, kind: values}
+      - {name: valid, kind: call}
+      - {name: outside, kind: value}
     reasons: [misjudged-validity]
     vacuous: Never, because the probe judges every variant.
     since: 1.0.0
@@ -522,6 +526,7 @@ probes:
     inputs:
       - {name: members, kind: values}
       - {name: parse, kind: call}
+      - {name: name, kind: call}
     reasons: [unparsed-text]
     vacuous: Never, because the probe parses the text of every variant.
     since: 1.0.0
@@ -529,6 +534,7 @@ probes:
     summary: Each variant encodes its own text.
     inputs:
       - {name: members, kind: values}
+      - {name: name, kind: call}
     reasons: [mismarshalled-text]
     vacuous: Never, because the probe encodes every variant.
     since: 1.0.0
@@ -536,6 +542,7 @@ probes:
     summary: The text of each variant decodes to the variant, and the text of no variant fails to decode.
     inputs:
       - {name: members, kind: values}
+      - {name: name, kind: call}
     reasons: [unmarshalled-wrong]
     vacuous: Never, because the probe decodes the text of every variant.
     since: 1.0.0

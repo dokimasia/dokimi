@@ -209,6 +209,17 @@ const (
 	// FromParse is the function that parses a name into a member.
 	FromParse SourceKind = "parse"
 
+	// FromList is the function that lists the members of an enumeration.
+	FromList SourceKind = "list"
+
+	// FromValid is the function that reports whether a value is a member of
+	// an enumeration.
+	FromValid SourceKind = "valid"
+
+	// FromOutside is a value of the type of an enumeration that no member
+	// has.
+	FromOutside SourceKind = "outside"
+
 	// FromErrorValues are the error values of a package with their names.
 	FromErrorValues SourceKind = "error-values"
 

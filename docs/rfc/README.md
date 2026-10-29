@@ -35,3 +35,4 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0024](0024-dead-and-subsumed-checks.md) | Dead and subsumed checks from mutation records | Draft |
 | [0025](0025-a-simulation-of-sans-io-machines.md) | A deterministic simulation of sans-IO machines | Draft |
 | [0026](0026-workloads-on-a-real-cluster.md) | The workloads and checkers of a simulation on a real cluster | Draft |
+| [0027](0027-the-go-probes.md) | The Go probes | Accepted |

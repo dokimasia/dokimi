@@ -45,7 +45,8 @@ var conditions = map[spec.GateID]func(f *Facts) bool{
 // facts.
 var OtherGates = []spec.GateID{
 	spec.PartnerFound, spec.OnePartner, spec.PartnerArguments, spec.Rewritable,
-	spec.Members, spec.TwoMembers, spec.ParseFunction, spec.TextEncoding,
+	spec.Members, spec.TwoMembers, spec.ListFunction, spec.ValidFunction, spec.OutsideValue, spec.ParseFunction,
+	spec.TextEncoding,
 	spec.ErrorValues, spec.TwoErrorValues, spec.ErrorTypes, spec.TwoErrorTypes,
 	spec.SelfComparingType, spec.ErrorCause,
 }

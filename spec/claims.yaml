@@ -935,7 +935,7 @@ claims:
       - mixin: partition
     gates: [cancellation, failure]
     partners:
-      read: {mode: named, param: read}
+      read: {mode: reader, param: read}
     law: one-partition-does-not-serve-another
     machineries: [nothing-beyond-a-caller]
     statement: "{read} does not return in one partition what {callable} wrote in another"
@@ -1398,13 +1398,14 @@ claims:
     since: 1.0.0
   values-in-order:
     generator: enum
-    gates: [members]
+    gates: [members, list-function]
     law: variants-are-listed-in-order
     machineries: [nothing-beyond-a-caller]
     statement: "the list of the variants of {declaration} contains each variant once, in the order of the declaration"
     probe: lists-the-members
     inputs:
       members: {from: members}
+      list: {from: list}
     defect:
       form: drops-a-variant
       clause: "a {declaration} whose list lacks its last variant"
@@ -1412,7 +1413,7 @@ claims:
     since: 1.0.0
   distinct-names:
     generator: enum
-    gates: [two-members]
+    gates: [two-members, outside-value]
     law: each-variant-has-its-own-text
     machineries: [nothing-beyond-a-caller]
     statement: "each variant of {declaration} renders its own text"
@@ -1420,6 +1421,7 @@ claims:
     inputs:
       members: {from: members}
       name: {from: name}
+      outside: {from: outside}
     defect:
       form: shares-a-text
       clause: "a {declaration} whose second variant renders the text of the first"
@@ -1427,13 +1429,15 @@ claims:
     since: 1.0.0
   valid-members:
     generator: enum
-    gates: [members]
+    gates: [members, valid-function, outside-value]
     law: only-the-variants-are-valid
     machineries: [nothing-beyond-a-caller]
     statement: "each variant of {declaration} is valid, and a value outside the variants is not"
     probe: judges-validity
     inputs:
       members: {from: members}
+      valid: {from: valid}
+      outside: {from: outside}
     defect:
       form: rejects-a-variant
       clause: "a {declaration} whose last variant is not valid"
@@ -1449,6 +1453,7 @@ claims:
     inputs:
       members: {from: members}
       parse: {from: parse}
+      name: {from: name}
     defect:
       form: parses-to-the-first
       clause: "a {declaration} whose parse function returns the first variant for every text"
@@ -1463,6 +1468,7 @@ claims:
     probe: encodes-each-variant
     inputs:
       members: {from: members}
+      name: {from: name}
     defect:
       form: encodes-the-first-text
       clause: "a {declaration} whose every variant encodes the text of the first"
@@ -1477,6 +1483,7 @@ claims:
     probe: decodes-each-text
     inputs:
       members: {from: members}
+      name: {from: name}
     defect:
       form: decodes-to-the-first
       clause: "a {declaration} whose every text decodes to the first variant"

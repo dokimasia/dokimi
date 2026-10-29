@@ -75,7 +75,15 @@ var directiveParams = map[string][]string{
 // sources are the kinds of source that a claim of each generator binds.
 var sources = map[string][]spec.SourceKind{
 	"suite": {spec.FromCallable, spec.FromPartner, spec.FromSample, spec.FromZero, spec.FromParam, spec.FromClock},
-	"enum":  {spec.FromMembers, spec.FromName, spec.FromParse, spec.FromParam},
+	"enum": {
+		spec.FromMembers,
+		spec.FromName,
+		spec.FromParse,
+		spec.FromList,
+		spec.FromValid,
+		spec.FromOutside,
+		spec.FromParam,
+	},
 	"sentinel": {
 		spec.FromErrorValues, spec.FromErrorTypes, spec.FromCauses, spec.FromParam,
 	},

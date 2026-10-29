@@ -94,6 +94,21 @@ gates:
     why: "{declaration} has fewer than two variants"
     remedy: "declare a second variant of {declaration}"
     since: 1.0.0
+  list-function:
+    passes: The enumeration has a function that lists its variants, in its surface or in its package.
+    why: "{declaration} has no function that lists its variants"
+    remedy: "generate the surface of {declaration}, or declare the function that lists its variants"
+    since: 1.0.0
+  valid-function:
+    passes: The enumeration has a function that judges whether a value is a variant, in its surface or in its package.
+    why: "{declaration} has no function that judges whether a value is a variant"
+    remedy: "generate the surface of {declaration}, or declare the function that judges a value"
+    since: 1.0.0
+  outside-value:
+    passes: The type of the enumeration has a value that no variant has.
+    why: "every value of the type of {declaration} is a variant"
+    remedy: "none, because the type has no value outside its variants"
+    since: 1.0.0
   parse-function:
     passes: The enumeration has a parse function, in its surface or in its package.
     why: "{declaration} has no parse function"

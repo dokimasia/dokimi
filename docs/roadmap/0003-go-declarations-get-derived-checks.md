@@ -7,7 +7,7 @@ released-in: unscheduled
 deadline: none
 deadline-source: none
 prd: none
-rfc: RFC-0014
+rfc: RFC-0014, RFC-0027
 ---
 
 <!--
@@ -64,3 +64,4 @@ The claims, probes and reason codes of milestone 0002 have to exist first. Vacui
 | 2026-10-28 | The corpus isolates the derived defects over the subjects of its fixtures | The controls of the corpus belong to milestone 0004, and the subject of each fixture is a correct implementation |
 | 2026-10-28 | The scope gains the generators `enum` and `sentinel` on the claims of the spec | Their checks are claims of the spec, and no milestone contained the change of the generators |
 | 2026-10-29 | The copy of the spec is in the module `go.dokimi.dev/spec` at the root of dokimi-go | Every module of the Go runtime reads one copy, and `go:embed` reads the files of its own module alone |
+| 2026-10-29 | The Go probes follow RFC-0027, and the probes of enumerations gain the inputs `list`, `valid`, `outside` and `name` | The generated checks call each probe with a fixed Go signature, and every runtime passes the functions that a probe of an enumeration calls |

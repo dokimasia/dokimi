@@ -104,6 +104,8 @@ func (c storePut) Cancel() conform.ID[Store] {
 func StoreSuite() conform.Suite[Store] {
 	return conform.Suite[Store]{
 		Declaration: "Store",
+		Package:     "example.com/shop/store",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Store]{
 			{
 				ID:          StoreChecks.Get.Smoke(),
@@ -189,6 +191,14 @@ func StoreSuite() conform.Suite[Store] {
 				Statement: "Put reports a cancelled context",
 				Apply:     RefusesACancelledPut,
 				Defect:    careless,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Store.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Store]{

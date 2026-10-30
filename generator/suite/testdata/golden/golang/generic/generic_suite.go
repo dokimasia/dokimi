@@ -78,6 +78,8 @@ func (c cacheSet) Smoke() conform.ID[Cache[int, int]] {
 func CacheSuite() conform.Suite[Cache[int, int]] {
 	return conform.Suite[Cache[int, int]]{
 		Declaration: "Cache",
+		Package:     "example.com/shop/generic",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Cache[int, int]]{
 			{
 				ID:          CacheChecks.Get.Smoke(),

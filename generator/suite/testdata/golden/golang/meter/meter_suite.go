@@ -191,6 +191,8 @@ func (c meterTotal) Deterministic() conform.ID[Meter] {
 func MeterSuite() conform.Suite[Meter] {
 	return conform.Suite[Meter]{
 		Declaration: "Meter",
+		Package:     "example.com/shop/meter",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Meter]{
 			{
 				ID:          MeterChecks.Count.Smoke(),
@@ -338,6 +340,26 @@ func MeterSuite() conform.Suite[Meter] {
 					})
 				},
 				Defect: meterTotalDrifts,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "mixin:concurrent",
+				Callable:       "Meter.Count",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Meter.Record",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Meter.Merge",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Meter]{
@@ -750,6 +772,8 @@ func (c weighCallable) LatencyBudget() conform.ID[WeighFunc] {
 func WeighSuite() conform.Suite[WeighFunc] {
 	return conform.Suite[WeighFunc]{
 		Declaration: "Weigh",
+		Package:     "example.com/shop/meter",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[WeighFunc]{
 			{
 				ID:          WeighChecks.Smoke(),
@@ -785,6 +809,14 @@ func WeighSuite() conform.Suite[WeighFunc] {
 					})
 				},
 				Defect: weighDrifts,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "mixin:concurrent",
+				Callable:       "Weigh",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[WeighFunc]{

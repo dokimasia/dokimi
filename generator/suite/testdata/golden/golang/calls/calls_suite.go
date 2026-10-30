@@ -382,6 +382,8 @@ func (c boardGather) Smoke() conform.ID[Board] {
 func BoardSuite() conform.Suite[Board] {
 	return conform.Suite[Board]{
 		Declaration: "Board",
+		Package:     "example.com/shop/calls",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Board]{
 			{
 				ID:          BoardChecks.Place.Smoke(),
@@ -704,6 +706,50 @@ func BoardSuite() conform.Suite[Board] {
 					})
 				},
 				Defect: boardGatherPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Board.Place",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "Board.Clash",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Board.Label",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Board.Mark",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Board.Paint",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Board.Repeat",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Board.Discard",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Board]{

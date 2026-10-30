@@ -83,6 +83,8 @@ func (c ledgerBalance) Deterministic() conform.ID[Ledger] {
 func LedgerSuite() conform.Suite[Ledger] {
 	return conform.Suite[Ledger]{
 		Declaration: "Ledger",
+		Package:     "example.com/shop/ledger",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Ledger]{
 			{
 				ID:          LedgerChecks.Credit.Smoke(),

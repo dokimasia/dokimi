@@ -101,6 +101,8 @@ func (c sessionsGet) ZeroOnError() conform.ID[Sessions] {
 func SessionsSuite() conform.Suite[Sessions] {
 	return conform.Suite[Sessions]{
 		Declaration: "Sessions",
+		Package:     "example.com/shop/session",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Sessions]{
 			{
 				ID:          SessionsChecks.Put.Smoke(),
@@ -180,6 +182,14 @@ func SessionsSuite() conform.Suite[Sessions] {
 					}, Session{})
 				},
 				Defect: sessionsGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Sessions.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Sessions]{

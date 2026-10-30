@@ -245,12 +245,17 @@ const (
 // Derivation contains the checks that the claims of the conformance spec
 // derive from them, with the refusals, the unclaimed classifications and the
 // edges. Derived are the derived checks in the order of the derivation, and
-// Defects their planted defects, one for each break of a callable.
+// Defects their planted defects, one for each break of a callable. Package is
+// the import path of the package of the declaration, and Version the version
+// of the plugin, which the suite record names as the version of its
+// generator.
 type Suite struct {
 	Subject     *emit.TypeRef
 	Methods     *emit.Interface
 	Func        *emit.Method
 	Declaration string
+	Package     string
+	Version     string
 	Names       Names
 	Callables   []Callable
 	Checks      []Check
@@ -1411,6 +1416,7 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	alias := func(name string) symbol.Symbol {
 		return &emit.Alias{Origin: *origin, Name: name, Visibility: symbol.VisibilityPublic}
 	}
+	s.Package, s.Version = origin.Package, Version
 	n := &s.Names
 	if !slices.ContainsFunc(s.Calls, func(c Call) bool { return c.Concurrent }) {
 		n.BenchParallel = ""

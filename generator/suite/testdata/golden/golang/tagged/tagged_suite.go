@@ -186,6 +186,8 @@ func (c hasherSeal) Cancel() conform.ID[Hasher] {
 func HasherSuite() conform.Suite[Hasher] {
 	return conform.Suite[Hasher]{
 		Declaration: "Hasher",
+		Package:     "example.com/shop/tagged",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Hasher]{
 			{
 				ID:          HasherChecks.HashTagged.Smoke(),
@@ -357,6 +359,14 @@ func HasherSuite() conform.Suite[Hasher] {
 					})
 				},
 				Defect: hasherSealIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Hasher.Seal",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Hasher]{
@@ -811,6 +821,8 @@ func (c digestCallable) Deterministic() conform.ID[DigestFunc] {
 func DigestSuite() conform.Suite[DigestFunc] {
 	return conform.Suite[DigestFunc]{
 		Declaration: "Digest",
+		Package:     "example.com/shop/tagged",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[DigestFunc]{
 			{
 				ID:          DigestChecks.Smoke(),

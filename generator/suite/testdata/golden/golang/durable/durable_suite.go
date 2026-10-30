@@ -116,6 +116,8 @@ func (c keeperGet) ZeroOnError() conform.ID[Keeper] {
 func KeeperSuite() conform.Suite[Keeper] {
 	return conform.Suite[Keeper]{
 		Declaration: "Keeper",
+		Package:     "example.com/shop/durable",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Keeper]{
 			{
 				ID:          KeeperChecks.Put.Smoke(),
@@ -216,6 +218,14 @@ func KeeperSuite() conform.Suite[Keeper] {
 				Property:  KeepsTheLastPut,
 				Defect:    keepsTheFirstPut,
 				Options:   putShares,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Keeper.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Keeper]{

@@ -100,6 +100,8 @@ func (c catalogAdd) Smoke() conform.ID[CatalogMethods] {
 func CatalogSuite() conform.Suite[CatalogMethods] {
 	return conform.Suite[CatalogMethods]{
 		Declaration: "Catalog",
+		Package:     "example.com/shop/catalog",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[CatalogMethods]{
 			{
 				ID:          CatalogChecks.Find.Smoke(),

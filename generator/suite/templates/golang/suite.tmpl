@@ -109,6 +109,8 @@ var _ = conform.CompatV1
 {{- ""}}func {{$suite}}() conform.Suite[{{$s}}] {
 	return conform.Suite[{{$s}}]{
 		Declaration: {{printf "%q" $c.Declaration}},
+		Package:     {{printf "%q" $c.Package}},
+		Generator:   conform.Generator{Name: "dokimi", Version: {{printf "%q" $c.Version}}},
 {{- if or $c.Checks $c.Derived}}
 		Checks: []conform.Check[{{$s}}]{
 {{- range $c.Derived}}{{use "go.dokimi.dev/spec"}}{{use "go.dokimi.dev/conform/probe"}}
@@ -157,6 +159,30 @@ var _ = conform.CompatV1
 {{- if .Counted}}
 				Counted:   true,
 {{- end}}
+			},
+{{- end}}
+		},
+{{- end}}
+{{- with $c.Derivation.Refusals}}{{use "go.dokimi.dev/spec"}}
+		Refusals: []conform.Refusal{
+{{- range .}}
+			{
+				Claim:    spec.{{suitePascal (print .Claim)}},
+				Callable: {{printf "%q" (suiteIdentity $c.Declaration (not $c.Func) .Callable "")}},
+				Why:      {{printf "%q" .Why}},
+				Remedy:   {{printf "%q" .Remedy}},
+			},
+{{- end}}
+		},
+{{- end}}
+{{- with $c.Derivation.Unclaimed}}{{use "go.dokimi.dev/spec"}}
+		Unclaimed: []conform.Unclaimed{
+{{- range .}}
+			{
+				Classification: {{printf "%q" .Classification}},
+				Callable:       {{printf "%q" (suiteIdentity $c.Declaration (not $c.Func) .Callable "")}},
+				Stance:         spec.{{suitePascal (print .Stance)}},
+				Note:           {{printf "%q" .Note}},
 			},
 {{- end}}
 		},

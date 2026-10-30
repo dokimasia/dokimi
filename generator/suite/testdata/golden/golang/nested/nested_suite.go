@@ -90,6 +90,8 @@ func (c courierSend) Smoke() conform.ID[Courier] {
 func CourierSuite() conform.Suite[Courier] {
 	return conform.Suite[Courier]{
 		Declaration: "Courier",
+		Package:     "example.com/shop/nested",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Courier]{
 			{
 				ID:          CourierChecks.Ship.Smoke(),
@@ -137,6 +139,20 @@ func CourierSuite() conform.Suite[Courier] {
 					})
 				},
 				Defect: courierSendPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Courier.Ship",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Courier.Send",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Courier]{
@@ -544,6 +560,58 @@ type trackerLink struct {
 func TrackerSuite() conform.Suite[Tracker] {
 	return conform.Suite[Tracker]{
 		Declaration: "Tracker",
+		Package:     "example.com/shop/nested",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Tracker.Route",
+				Why:      "eidos derives no sample of the parameter root of Route",
+				Remedy:   "author a sample of the parameter root with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Tracker.Follow",
+				Why:      "eidos derives no sample of the parameter b of Follow",
+				Remedy:   "author a sample of the parameter b with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Tracker.Walk",
+				Why:      "eidos derives no sample of the parameter s of Walk",
+				Remedy:   "author a sample of the parameter s with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Tracker.Volley",
+				Why:      "eidos derives no sample of the parameter p of Volley",
+				Remedy:   "author a sample of the parameter p with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Tracker.Track",
+				Why:      "eidos derives no sample of the parameter l of Track",
+				Remedy:   "author a sample of the parameter l with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Tracker.Pick",
+				Why:      "eidos derives no sample of the parameter c of Pick",
+				Remedy:   "author a sample of the parameter c with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Tracker.Play",
+				Why:      "eidos derives no sample of the parameter m of Play",
+				Remedy:   "author a sample of the parameter m with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Tracker.Link",
+				Why:      "eidos derives no sample of the parameter l of Link",
+				Remedy:   "author a sample of the parameter l with the directive sample",
+			},
+		},
 		Calls: []conform.Call[Tracker]{
 			{
 				Calls:    trackerRouteCalls,
@@ -1253,6 +1321,8 @@ func (c hireCallable) Deterministic() conform.ID[HireFunc] {
 func HireSuite() conform.Suite[HireFunc] {
 	return conform.Suite[HireFunc]{
 		Declaration: "Hire",
+		Package:     "example.com/shop/nested",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[HireFunc]{
 			{
 				ID:          HireChecks.Smoke(),

@@ -56,6 +56,8 @@ func (c printerPrint) Smoke() conform.ID[Printer] {
 func PrinterSuite() conform.Suite[Printer] {
 	return conform.Suite[Printer]{
 		Declaration: "Printer",
+		Package:     "example.com/shop/loose",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Printer]{
 			{
 				ID:          PrinterChecks.Print.Smoke(),
@@ -254,6 +256,8 @@ func (c recorderField) Smoke() conform.ID[Recorder] {
 func RecorderSuite() conform.Suite[Recorder] {
 	return conform.Suite[Recorder]{
 		Declaration: "Recorder",
+		Package:     "example.com/shop/loose",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Recorder]{
 			{
 				ID:          RecorderChecks.Field.Smoke(),
@@ -457,6 +461,8 @@ func (c journalPut) Smoke() conform.ID[Journal] {
 func JournalSuite() conform.Suite[Journal] {
 	return conform.Suite[Journal]{
 		Declaration: "Journal",
+		Package:     "example.com/shop/loose",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Journal]{
 			{
 				ID:          JournalChecks.Put.Smoke(),
@@ -474,6 +480,14 @@ func JournalSuite() conform.Suite[Journal] {
 					})
 				},
 				Defect: journalPutPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Journal.Put",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Journal]{
@@ -658,6 +672,8 @@ func (c plainPrint) Smoke() conform.ID[Plain] {
 func PlainSuite() conform.Suite[Plain] {
 	return conform.Suite[Plain]{
 		Declaration: "Plain",
+		Package:     "example.com/shop/loose",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Plain]{
 			{
 				ID:          PlainChecks.Print.Smoke(),
@@ -675,6 +691,14 @@ func PlainSuite() conform.Suite[Plain] {
 					})
 				},
 				Defect: plainPrintPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Plain.Print",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Plain]{
@@ -853,6 +877,28 @@ type zonedRatio struct {
 func ZonedSuite() conform.Suite[Zoned] {
 	return conform.Suite[Zoned]{
 		Declaration: "Zoned",
+		Package:     "example.com/shop/loose",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Zoned.In",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Zoned.Scale",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Zoned.Ratio",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+		},
 		Calls: []conform.Call[Zoned]{
 			{
 				Calls:    zonedInCalls,

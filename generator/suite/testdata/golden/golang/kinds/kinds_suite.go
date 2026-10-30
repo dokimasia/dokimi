@@ -546,6 +546,8 @@ type paramsUnsafePointer struct {
 func ParamsSuite() conform.Suite[Params] {
 	return conform.Suite[Params]{
 		Declaration: "Params",
+		Package:     "example.com/shop/kinds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Params]{
 			{
 				ID:          ParamsChecks.Bool.Smoke(),
@@ -903,6 +905,164 @@ func ParamsSuite() conform.Suite[Params] {
 					})
 				},
 				Defect: paramsStringPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Bool",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Int",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Int8",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Int16",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Int32",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Int64",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Uint",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Uint8",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Uint16",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Uint32",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Uint64",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Uintptr",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Float32",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Float64",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Complex64",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Complex128",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Array",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Chan",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Func",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Interface",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Map",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Ptr",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Slice",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.String",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.Struct",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Params.UnsafePointer",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Params]{
@@ -1995,6 +2155,8 @@ type everyResults struct {
 func EverySuite() conform.Suite[Every] {
 	return conform.Suite[Every]{
 		Declaration: "Every",
+		Package:     "example.com/shop/kinds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Every]{
 			{
 				ID:          EveryChecks.Fields.Smoke(),
@@ -2029,6 +2191,26 @@ func EverySuite() conform.Suite[Every] {
 					})
 				},
 				Defect: everyElementsPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Every.Fields",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Every.Elements",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Every.Results",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Every]{
@@ -2693,6 +2875,8 @@ type placerPlace struct {
 func PlacerSuite() conform.Suite[Placer] {
 	return conform.Suite[Placer]{
 		Declaration: "Placer",
+		Package:     "example.com/shop/kinds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Calls: []conform.Call[Placer]{
 			{
 				Calls:    placerPlaceCalls,
@@ -2974,6 +3158,48 @@ type routerWatch struct {
 func RouterSuite() conform.Suite[Router] {
 	return conform.Suite[Router]{
 		Declaration: "Router",
+		Package:     "example.com/shop/kinds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Router.Route",
+				Why:      "eidos derives no sample of the parameter f of Route",
+				Remedy:   "author a sample of the parameter f with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Router.Read",
+				Why:      "eidos derives no sample of the parameter in of Read",
+				Remedy:   "author a sample of the parameter in with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Router.Route",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Router.Write",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Router.Pass",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Router.Watch",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+		},
 		Calls: []conform.Call[Router]{
 			{
 				Calls:    routerRouteCalls,
@@ -3331,6 +3557,48 @@ type drawerTest struct {
 func DrawerSuite() conform.Suite[Drawer] {
 	return conform.Suite[Drawer]{
 		Declaration: "Drawer",
+		Package:     "example.com/shop/kinds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Drawer.Draw",
+				Why:      "eidos derives no sample of the parameter s of Draw",
+				Remedy:   "author a sample of the parameter s with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Drawer.Count",
+				Why:      "eidos derives no sample of the parameter shapes of Count",
+				Remedy:   "author a sample of the parameter shapes with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Drawer.Name",
+				Why:      "eidos derives no sample of the parameter names of Name",
+				Remedy:   "author a sample of the parameter names with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Drawer.Pick",
+				Why:      "eidos derives no sample of the parameter p of Pick",
+				Remedy:   "author a sample of the parameter p with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Drawer.Seal",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Drawer.Test",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+		},
 		Calls: []conform.Call[Drawer]{
 			{
 				Calls:    drawerDrawCalls,
@@ -3690,6 +3958,8 @@ type oddLoop struct {
 func OddSuite() conform.Suite[Odd] {
 	return conform.Suite[Odd]{
 		Declaration: "Odd",
+		Package:     "example.com/shop/kinds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Odd]{
 			{
 				ID:          OddChecks.Keep.Smoke(),
@@ -3707,6 +3977,34 @@ func OddSuite() conform.Suite[Odd] {
 					})
 				},
 				Defect: oddKeepPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Odd.Embed",
+				Why:      "eidos derives no sample of the parameter v of Embed",
+				Remedy:   "author a sample of the parameter v with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Odd.Tag",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Odd.Keep",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Odd.Loop",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Odd]{
@@ -4161,6 +4459,8 @@ func (c stdMeet) Smoke() conform.ID[Std] {
 func StdSuite() conform.Suite[Std] {
 	return conform.Suite[Std]{
 		Declaration: "Std",
+		Package:     "example.com/shop/kinds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Std]{
 			{
 				ID:          StdChecks.Within.Smoke(),
@@ -4226,6 +4526,74 @@ func StdSuite() conform.Suite[Std] {
 					})
 				},
 				Defect: stdMeetPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Std.Copy",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Std.Close",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Std.From",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Std.At",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Std.Buffer",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Lock",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Std.Fail",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Std.Within",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Hold",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Pair",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Meet",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Std]{

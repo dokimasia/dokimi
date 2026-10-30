@@ -126,6 +126,8 @@ func (c lockHeld) Predicate() conform.ID[Lock] {
 func LockSuite() conform.Suite[Lock] {
 	return conform.Suite[Lock]{
 		Declaration: "Lock",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Lock]{
 			{
 				ID:          LockChecks.Acquire.Cancel(),
@@ -215,6 +217,32 @@ func LockSuite() conform.Suite[Lock] {
 				Apply:     ReleaseEndsTheWait,
 				Defect:    neverReleases,
 				Around:    bubble,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Lock.Acquire",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "mixin:concurrent",
+				Callable:       "Lock.Acquire",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
+			},
+			{
+				Classification: "mixin:waits",
+				Callable:       "Lock.Acquire",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable can wait for another call.",
+			},
+			{
+				Classification: "mixin:concurrent",
+				Callable:       "Lock.Release",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[Lock]{
@@ -513,6 +541,8 @@ func (c gatePass) Cancel() conform.ID[Gate] {
 func GateSuite() conform.Suite[Gate] {
 	return conform.Suite[Gate]{
 		Declaration: "Gate",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Gate]{
 			{
 				ID:          GateChecks.Pass.Cancel(),
@@ -528,6 +558,20 @@ func GateSuite() conform.Suite[Gate] {
 					})
 				},
 				Defect: gatePassIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Gate.Pass",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "mixin:waits",
+				Callable:       "Gate.Pass",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable can wait for another call.",
 			},
 		},
 		Calls: []conform.Call[Gate]{
@@ -696,6 +740,8 @@ func (c awaitCallable) Cancel() conform.ID[AwaitFunc] {
 func AwaitSuite() conform.Suite[AwaitFunc] {
 	return conform.Suite[AwaitFunc]{
 		Declaration: "Await",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[AwaitFunc]{
 			{
 				ID:          AwaitChecks.Cancel(),
@@ -711,6 +757,20 @@ func AwaitSuite() conform.Suite[AwaitFunc] {
 					})
 				},
 				Defect: awaitIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Await",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "mixin:waits",
+				Callable:       "Await",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable can wait for another call.",
 			},
 		},
 		Calls: []conform.Call[AwaitFunc]{

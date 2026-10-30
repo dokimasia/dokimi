@@ -273,6 +273,8 @@ func (c pipelineLabel) Smoke() conform.ID[Pipeline] {
 func PipelineSuite() conform.Suite[Pipeline] {
 	return conform.Suite[Pipeline]{
 		Declaration: "Pipeline",
+		Package:     "example.com/shop/inputs",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Pipeline]{
 			{
 				ID:          PipelineChecks.Each.Smoke(),
@@ -375,6 +377,100 @@ func PipelineSuite() conform.Suite[Pipeline] {
 					})
 				},
 				Defect: pipelineLabelPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Pipeline.Pump",
+				Why:      "eidos derives no sample of the parameter from of Pump",
+				Remedy:   "author a sample of the parameter from with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Pipeline.Pump",
+				Why:      "eidos derives no sample of the parameter from of Pump",
+				Remedy:   "author a sample of the parameter from with the directive sample",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Pipeline.Fold",
+				Why:      "eidos derives no sample of the parameter items of Fold",
+				Remedy:   "author a sample of the parameter items with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Pipeline.Count",
+				Why:      "eidos derives no sample of the parameter ints of Count",
+				Remedy:   "author a sample of the parameter ints with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Pipeline.Merge",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Pipeline.Each",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Pipeline.Handle",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Pipeline.Do",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Pipeline.Notify",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Pipeline.Apply",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Pipeline.Fold",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "Pipeline.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Pipeline.Spin",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Pipeline.Copy",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Pipeline.Subscribe",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Pipeline]{

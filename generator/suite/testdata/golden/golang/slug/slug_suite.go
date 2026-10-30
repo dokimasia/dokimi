@@ -74,6 +74,8 @@ func (c slugCallable) Deterministic() conform.ID[SlugFunc] {
 func SlugSuite() conform.Suite[SlugFunc] {
 	return conform.Suite[SlugFunc]{
 		Declaration: "Slug",
+		Package:     "example.com/shop/slug",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[SlugFunc]{
 			{
 				ID:          SlugChecks.Smoke(),

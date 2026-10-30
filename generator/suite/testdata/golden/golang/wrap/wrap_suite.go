@@ -118,6 +118,8 @@ type reachGear struct {
 func ReachSuite() conform.Suite[Reach] {
 	return conform.Suite[Reach]{
 		Declaration: "Reach",
+		Package:     "example.com/shop/wrap",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Reach]{
 			{
 				ID:          ReachChecks.Current.Smoke(),
@@ -166,6 +168,52 @@ func ReachSuite() conform.Suite[Reach] {
 					}, tool.Pitch(0))
 				},
 				Defect: reachCurrentValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Smoke,
+				Callable: "Reach.Store",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Store with the directive sample",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Reach.Store",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Store with the directive sample",
+			},
+			{
+				Claim:    spec.ReadAfterWrite,
+				Callable: "Reach.Current",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Current with the directive sample",
+			},
+			{
+				Claim:    spec.Smoke,
+				Callable: "Reach.Gear",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Gear with the directive sample",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Reach.Gear",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Gear with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Reach.Gear",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Gear with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Reach.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Reach]{
@@ -430,6 +478,36 @@ type tunedTurn struct {
 func TunedSuite() conform.Suite[Tuned] {
 	return conform.Suite[Tuned]{
 		Declaration: "Tuned",
+		Package:     "example.com/shop/wrap",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Smoke,
+				Callable: "Tuned.Tune",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Tune with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Tuned.Tune",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Tuned.Watch",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Tuned.Turn",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+		},
 		Calls: []conform.Call[Tuned]{
 			{
 				Calls:    tunedTuneCalls,
@@ -805,6 +883,8 @@ type limitedSense struct {
 func LimitedSuite() conform.Suite[Limited] {
 	return conform.Suite[Limited]{
 		Declaration: "Limited",
+		Package:     "example.com/shop/wrap",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Limited]{
 			{
 				ID:          LimitedChecks.Limit.Smoke(),
@@ -856,6 +936,88 @@ func LimitedSuite() conform.Suite[Limited] {
 					})
 				},
 				Defect: limitedPhasePanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Smoke,
+				Callable: "Limited.Grip",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Grip with the directive sample",
+			},
+			{
+				Claim:    spec.Smoke,
+				Callable: "Limited.Span",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Span with the directive sample",
+			},
+			{
+				Claim:    spec.Smoke,
+				Callable: "Limited.Pitch",
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Pitch with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Limit",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Grip",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Clamp",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Frame",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Mount",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Span",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Pitch",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Measure",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Limited.Phase",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Limited.Sense",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Limited]{
@@ -1381,6 +1543,8 @@ func (c plainName) Deterministic() conform.ID[PlainMethods] {
 func PlainSuite() conform.Suite[PlainMethods] {
 	return conform.Suite[PlainMethods]{
 		Declaration: "Plain",
+		Package:     "example.com/shop/wrap",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[PlainMethods]{
 			{
 				ID:          PlainChecks.Name.Smoke(),

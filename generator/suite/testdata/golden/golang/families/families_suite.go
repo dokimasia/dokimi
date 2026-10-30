@@ -336,6 +336,8 @@ func (c storeGetWithMeta) ZeroesOnError() conform.ID[Store] {
 func StoreSuite() conform.Suite[Store] {
 	return conform.Suite[Store]{
 		Declaration: "Store",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Store]{
 			{
 				ID:          StoreChecks.Put.Smoke(),
@@ -701,6 +703,46 @@ func StoreSuite() conform.Suite[Store] {
 					)
 				},
 				Defect: storeGetWithMetaValuesBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Store.Load",
+				Why:      "Load cannot fail",
+				Remedy:   "give Load an error result",
+			},
+			{
+				Claim:    spec.Pure,
+				Callable: "Store.Split",
+				Why:      "Split does not return exactly one value",
+				Remedy:   "return one value from Split",
+			},
+			{
+				Claim:    spec.ZeroesOnMiss,
+				Callable: "Store.Inspect",
+				Why:      "Inspect returns no presence flag",
+				Remedy:   "return a presence flag beside the value of Inspect",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Store.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:batch-reader",
+				Callable:       "Store.Find",
+				Stance:         spec.Gap,
+				Note:           "No claim states what a batch read returns for a key that it does not find.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Store.Raise",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Store]{
@@ -1568,6 +1610,8 @@ func (c keyedDelete) Cancel() conform.ID[Keyed] {
 func KeyedSuite() conform.Suite[Keyed] {
 	return conform.Suite[Keyed]{
 		Declaration: "Keyed",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Keyed]{
 			{
 				ID:          KeyedChecks.Put.Smoke(),
@@ -1698,6 +1742,28 @@ func KeyedSuite() conform.Suite[Keyed] {
 					})
 				},
 				Defect: keyedDeleteIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.DeleteRemoves,
+				Callable: "Keyed.Delete",
+				Why:      "no callable of the declaration is the partner put of Delete",
+				Remedy:   "name the partner of Delete with the param of the classification",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Keyed.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:deleter",
+				Callable:       "Keyed.Delete",
+				Stance:         spec.Silent,
+				Note:           "A delete is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Keyed]{
@@ -2117,6 +2183,8 @@ func (c stampedGet) WritesFollowReads() conform.ID[Stamped] {
 func StampedSuite() conform.Suite[Stamped] {
 	return conform.Suite[Stamped]{
 		Declaration: "Stamped",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Stamped]{
 			{
 				ID:          StampedChecks.Store.Smoke(),
@@ -2640,6 +2708,8 @@ func (c decodedGet) ReadAfterWrite() conform.ID[Decoded] {
 func DecodedSuite() conform.Suite[Decoded] {
 	return conform.Suite[Decoded]{
 		Declaration: "Decoded",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Decoded]{
 			{
 				ID:          DecodedChecks.Put.Smoke(),
@@ -2727,6 +2797,14 @@ func DecodedSuite() conform.Suite[Decoded] {
 					})
 				},
 				Defect: decodedGetReadsAnotherValue,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Decoded.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Decoded]{
@@ -3078,6 +3156,8 @@ func (c expiringRead) Expires() conform.ID[Expiring] {
 func ExpiringSuite() conform.Suite[Expiring] {
 	return conform.Suite[Expiring]{
 		Declaration: "Expiring",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Expiring]{
 			{
 				ID:          ExpiringChecks.Put.Smoke(),
@@ -3175,6 +3255,14 @@ func ExpiringSuite() conform.Suite[Expiring] {
 				},
 				Defect: expiringReadAnswersASample,
 				Around: synctest.Test,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Expiring.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Expiring]{
@@ -3555,6 +3643,8 @@ func (c cachedStore) Cancel() conform.ID[Cached] {
 func CachedSuite() conform.Suite[Cached] {
 	return conform.Suite[Cached]{
 		Declaration: "Cached",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Cached]{
 			{
 				ID:          CachedChecks.Get.Smoke(),
@@ -3702,6 +3792,14 @@ func CachedSuite() conform.Suite[Cached] {
 					})
 				},
 				Defect: cachedStoreIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Cached.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Cached]{
@@ -4123,6 +4221,8 @@ func (c taggedGet) ReadAfterWrite() conform.ID[Tagged] {
 func TaggedSuite() conform.Suite[Tagged] {
 	return conform.Suite[Tagged]{
 		Declaration: "Tagged",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Tagged]{
 			{
 				ID:          TaggedChecks.Put.Smoke(),
@@ -4222,6 +4322,14 @@ func TaggedSuite() conform.Suite[Tagged] {
 					})
 				},
 				Defect: taggedGetReadsAnotherValue,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Tagged.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Tagged]{
@@ -4572,6 +4680,8 @@ func (c snapshotsGet) PointInTime() conform.ID[Snapshots] {
 func SnapshotsSuite() conform.Suite[Snapshots] {
 	return conform.Suite[Snapshots]{
 		Declaration: "Snapshots",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Snapshots]{
 			{
 				ID:          SnapshotsChecks.Store.Smoke(),
@@ -4671,6 +4781,14 @@ func SnapshotsSuite() conform.Suite[Snapshots] {
 					})
 				},
 				Defect: snapshotsGetDrifts,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Snapshots.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Snapshots]{
@@ -5030,6 +5148,8 @@ func (c bagItems) StableOrder() conform.ID[Bag] {
 func BagSuite() conform.Suite[Bag] {
 	return conform.Suite[Bag]{
 		Declaration: "Bag",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Bag]{
 			{
 				ID:          BagChecks.Add.Smoke(),
@@ -5161,6 +5281,14 @@ func BagSuite() conform.Suite[Bag] {
 					}())
 				},
 				Defect: bagItemsReordersDrain,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Bag.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Bag]{
@@ -5526,6 +5654,8 @@ func (c updaterGet) ZeroOnError() conform.ID[Updater] {
 func UpdaterSuite() conform.Suite[Updater] {
 	return conform.Suite[Updater]{
 		Declaration: "Updater",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Updater]{
 			{
 				ID:          UpdaterChecks.Put.Smoke(),
@@ -5632,6 +5762,14 @@ func UpdaterSuite() conform.Suite[Updater] {
 					}, Value{})
 				},
 				Defect: updaterGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Updater.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Updater]{
@@ -5977,6 +6115,8 @@ func (c keyedUpdaterGet) ZeroOnError() conform.ID[KeyedUpdater] {
 func KeyedUpdaterSuite() conform.Suite[KeyedUpdater] {
 	return conform.Suite[KeyedUpdater]{
 		Declaration: "KeyedUpdater",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[KeyedUpdater]{
 			{
 				ID:          KeyedUpdaterChecks.Put.Smoke(),
@@ -6083,6 +6223,14 @@ func KeyedUpdaterSuite() conform.Suite[KeyedUpdater] {
 					}, Value{})
 				},
 				Defect: keyedUpdaterGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "KeyedUpdater.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[KeyedUpdater]{
@@ -6449,6 +6597,8 @@ func (c codecDecode) ZeroOnError() conform.ID[Codec] {
 func CodecSuite() conform.Suite[Codec] {
 	return conform.Suite[Codec]{
 		Declaration: "Codec",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Codec]{
 			{
 				ID:          CodecChecks.Encode.Smoke(),
@@ -6912,6 +7062,8 @@ func (c pagerFetch) Pagination() conform.ID[Pager] {
 func PagerSuite() conform.Suite[Pager] {
 	return conform.Suite[Pager]{
 		Declaration: "Pager",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Pager]{
 			{
 				ID:          PagerChecks.Fetch.Smoke(),
@@ -7278,6 +7430,8 @@ func (c logReplay) ZeroOnError() conform.ID[Log] {
 func LogSuite() conform.Suite[Log] {
 	return conform.Suite[Log]{
 		Declaration: "Log",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Log]{
 			{
 				ID:          LogChecks.Append.Smoke(),
@@ -7405,6 +7559,22 @@ func LogSuite() conform.Suite[Log] {
 					}, []Entry(nil))
 				},
 				Defect: logReplayValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Causal,
+				Callable: "Log.Append",
+				Why:      "Append does not return exactly one value",
+				Remedy:   "return one value from Append",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Log.Append",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Log]{
@@ -7731,6 +7901,8 @@ func (c openerOpen) CursorOpen() conform.ID[Opener] {
 func OpenerSuite() conform.Suite[Opener] {
 	return conform.Suite[Opener]{
 		Declaration: "Opener",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Opener]{
 			{
 				ID:          OpenerChecks.Open.Smoke(),
@@ -7784,6 +7956,14 @@ func OpenerSuite() conform.Suite[Opener] {
 					}, ErrClosed)
 				},
 				Defect: openerOpenOpensALiveHandle,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Opener.Open",
+				Why:      "eidos derives no sample of a result of Open",
+				Remedy:   "author a sample of the result type with the directive sample",
 			},
 		},
 		Calls: []conform.Call[Opener]{
@@ -8092,6 +8272,8 @@ func (c ledgerRollback) Cancel() conform.ID[Ledger] {
 func LedgerSuite() conform.Suite[Ledger] {
 	return conform.Suite[Ledger]{
 		Declaration: "Ledger",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Ledger]{
 			{
 				ID:          LedgerChecks.Begin.Smoke(),
@@ -8221,6 +8403,20 @@ func LedgerSuite() conform.Suite[Ledger] {
 					})
 				},
 				Defect: ledgerRollbackIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Ledger.Commit",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Ledger.Rollback",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Ledger]{
@@ -8611,6 +8807,8 @@ func (c guardedMatch) Cancel() conform.ID[Guarded] {
 func GuardedSuite() conform.Suite[Guarded] {
 	return conform.Suite[Guarded]{
 		Declaration: "Guarded",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Guarded]{
 			{
 				ID:          GuardedChecks.Put.Smoke(),
@@ -8703,6 +8901,14 @@ func GuardedSuite() conform.Suite[Guarded] {
 					})
 				},
 				Defect: guardedMatchIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Guarded.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Guarded]{
@@ -9067,6 +9273,8 @@ func (c scopeGet) ZeroOnError() conform.ID[Scope] {
 func ScopeSuite() conform.Suite[Scope] {
 	return conform.Suite[Scope]{
 		Declaration: "Scope",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Scope]{
 			{
 				ID:          ScopeChecks.Run.Smoke(),
@@ -9197,6 +9405,20 @@ func ScopeSuite() conform.Suite[Scope] {
 					}, Value{})
 				},
 				Defect: scopeGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Scope.Run",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Scope.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Scope]{
@@ -9596,6 +9818,8 @@ func (c eventsOnEvent) Smoke() conform.ID[Events] {
 func EventsSuite() conform.Suite[Events] {
 	return conform.Suite[Events]{
 		Declaration: "Events",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Events]{
 			{
 				ID:          EventsChecks.Fire.Smoke(),
@@ -9662,6 +9886,20 @@ func EventsSuite() conform.Suite[Events] {
 					})
 				},
 				Defect: eventsOnEventPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Events.Fire",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Events.OnEvent",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Events]{
@@ -9995,6 +10233,8 @@ func (c timersSlow) Within() conform.ID[Timers] {
 func TimersSuite() conform.Suite[Timers] {
 	return conform.Suite[Timers]{
 		Declaration: "Timers",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Timers]{
 			{
 				ID:          TimersChecks.At.Smoke(),
@@ -10141,6 +10381,20 @@ func TimersSuite() conform.Suite[Timers] {
 				},
 				Defect: timersSlowSlow,
 				Around: synctest.Test,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Timers.At",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Timers.Slow",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Timers]{
@@ -10602,6 +10856,8 @@ func (c electionIsLeader) Smoke() conform.ID[Election] {
 func ElectionSuite() conform.Suite[Election] {
 	return conform.Suite[Election]{
 		Declaration: "Election",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Election]{
 			{
 				ID:          ElectionChecks.Campaign.Smoke(),
@@ -10701,6 +10957,34 @@ func ElectionSuite() conform.Suite[Election] {
 					})
 				},
 				Defect: electionIsLeaderPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Election.IsLeader",
+				Why:      "IsLeader cannot fail",
+				Remedy:   "give IsLeader an error result",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Election.IsLeader",
+				Why:      "IsLeader cannot fail",
+				Remedy:   "give IsLeader an error result",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Election.Campaign",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Election.Resign",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[Election]{
@@ -11052,6 +11336,8 @@ func (c poolPut) Cancel() conform.ID[Pool] {
 func PoolSuite() conform.Suite[Pool] {
 	return conform.Suite[Pool]{
 		Declaration: "Pool",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Pool]{
 			{
 				ID:          PoolChecks.Get.Smoke(),
@@ -11148,6 +11434,14 @@ func PoolSuite() conform.Suite[Pool] {
 					})
 				},
 				Defect: poolPutIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Pool.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Pool]{
@@ -11483,6 +11777,8 @@ func (c batchRead) ZeroOnError() conform.ID[Batch] {
 func BatchSuite() conform.Suite[Batch] {
 	return conform.Suite[Batch]{
 		Declaration: "Batch",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Batch]{
 			{
 				ID:          BatchChecks.Write.Smoke(),
@@ -11579,6 +11875,14 @@ func BatchSuite() conform.Suite[Batch] {
 					}, Value{})
 				},
 				Defect: batchReadValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Batch.Write",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Batch]{
@@ -11912,6 +12216,8 @@ func (c screenedValidate) Smoke() conform.ID[Screened] {
 func ScreenedSuite() conform.Suite[Screened] {
 	return conform.Suite[Screened]{
 		Declaration: "Screened",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Screened]{
 			{
 				ID:          ScreenedChecks.Store.Smoke(),
@@ -11977,6 +12283,20 @@ func ScreenedSuite() conform.Suite[Screened] {
 					})
 				},
 				Defect: screenedValidatePanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Screened.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Screened.Validate",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Screened]{
@@ -12248,6 +12568,8 @@ func (c limiterRun) RateLimit() conform.ID[Limiter] {
 func LimiterSuite() conform.Suite[Limiter] {
 	return conform.Suite[Limiter]{
 		Declaration: "Limiter",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Limiter]{
 			{
 				ID:          LimiterChecks.Run.Smoke(),
@@ -12294,6 +12616,14 @@ func LimiterSuite() conform.Suite[Limiter] {
 					}, 10, ErrLimited)
 				},
 				Defect: limiterRunSucceedsAlways,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Limiter.Run",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Limiter]{
@@ -12581,6 +12911,8 @@ func (c rendererClassify) Total() conform.ID[Renderer] {
 func RendererSuite() conform.Suite[Renderer] {
 	return conform.Suite[Renderer]{
 		Declaration: "Renderer",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Renderer]{
 			{
 				ID:          RendererChecks.Render.Smoke(),
@@ -13154,6 +13486,8 @@ func (c lifecycleSync) RetrySucceeds() conform.ID[Lifecycle] {
 func LifecycleSuite() conform.Suite[Lifecycle] {
 	return conform.Suite[Lifecycle]{
 		Declaration: "Lifecycle",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Lifecycle]{
 			{
 				ID:          LifecycleChecks.Stop.Smoke(),
@@ -13280,6 +13614,20 @@ func LifecycleSuite() conform.Suite[Lifecycle] {
 					}, 3)
 				},
 				Defect: lifecycleSyncFailsAlways,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Lifecycle.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Lifecycle.Sync",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[Lifecycle]{
@@ -13689,6 +14037,8 @@ func (c shardsGet) ZeroOnError() conform.ID[Shards] {
 func ShardsSuite() conform.Suite[Shards] {
 	return conform.Suite[Shards]{
 		Declaration: "Shards",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Shards]{
 			{
 				ID:          ShardsChecks.Put.Smoke(),
@@ -13794,6 +14144,14 @@ func ShardsSuite() conform.Suite[Shards] {
 					}, Value{})
 				},
 				Defect: shardsGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Shards.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Shards]{
@@ -14126,6 +14484,8 @@ func (c scopedGet) Cancel() conform.ID[Scoped] {
 func ScopedSuite() conform.Suite[Scoped] {
 	return conform.Suite[Scoped]{
 		Declaration: "Scoped",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Scoped]{
 			{
 				ID:          ScopedChecks.Set.Smoke(),
@@ -14222,6 +14582,14 @@ func ScopedSuite() conform.Suite[Scoped] {
 					})
 				},
 				Defect: scopedGetIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "Scoped.Set",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[Scoped]{
@@ -14592,6 +14960,8 @@ func (c plainAll) Smoke() conform.ID[Plain] {
 func PlainSuite() conform.Suite[Plain] {
 	return conform.Suite[Plain]{
 		Declaration: "Plain",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Plain]{
 			{
 				ID:          PlainChecks.Set.Smoke(),
@@ -14727,6 +15097,28 @@ func PlainSuite() conform.Suite[Plain] {
 					})
 				},
 				Defect: plainAllPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Plain.Watch",
+				Why:      "eidos derives no sample of a result of Watch",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Plain.Set",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:stream-reader",
+				Callable:       "Plain.All",
+				Stance:         spec.Gap,
+				Note:           "No claim states what a stream returns after its end.",
 			},
 		},
 		Calls: []conform.Call[Plain]{
@@ -15112,6 +15504,8 @@ func (c sessionsOpen) ZeroOnError() conform.ID[Sessions] {
 func SessionsSuite() conform.Suite[Sessions] {
 	return conform.Suite[Sessions]{
 		Declaration: "Sessions",
+		Package:     "example.com/shop/families",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Sessions]{
 			{
 				ID:          SessionsChecks.Open.Smoke(),
@@ -15160,6 +15554,14 @@ func SessionsSuite() conform.Suite[Sessions] {
 					}, (*Session)(nil))
 				},
 				Defect: sessionsOpenValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.CursorOpen,
+				Callable: "Sessions.Open",
+				Why:      "the handle that Open returns is not an interface, so no planted handle can replace it",
+				Remedy:   "return the handle of Open as an interface",
 			},
 		},
 		Calls: []conform.Call[Sessions]{

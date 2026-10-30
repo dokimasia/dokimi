@@ -48,8 +48,8 @@ flowchart LR
 | 1 | [0001](0001-a-lost-check-fails-the-gate.md) A lost check fails the generation gate | Planned | none | unscheduled |
 | 2 | [0002](0002-every-classification-has-a-law.md) Every classification has a law or a stance | In progress | none | unscheduled |
 | 3 | [0003](0003-go-declarations-get-derived-checks.md) A Go declaration gets derived checks | Done | 0002 | unscheduled |
-| 4 | [0004](0004-vacuous-and-over-strong-checks-fail.md) Vacuous and over-strong checks fail | Planned | 0003 | unscheduled |
-| 5 | [0005](0005-a-run-writes-its-suite-record.md) A run writes its suite record | Planned | 0003, 0004 | unscheduled |
+| 4 | [0004](0004-vacuous-and-over-strong-checks-fail.md) Vacuous and over-strong checks fail | Done | 0003 | unscheduled |
+| 5 | [0005](0005-a-run-writes-its-suite-record.md) A run writes its suite record | Done | 0003, 0004 | unscheduled |
 | 6 | [0006](0006-a-misspelled-brand-fails-the-run.md) A misspelled brand fails the run | Planned | none | unscheduled |
 | 7 | [0007](0007-the-corpus-judges-each-language.md) The corpus judges each language by its records | Planned | 0001, 0004, 0005 | unscheduled |
 | 8 | [0008](0008-typescript-declarations-get-proven-suites.md) A TypeScript declaration gets a proven suite | Planned | 0007 | unscheduled |

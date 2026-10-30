@@ -1,7 +1,7 @@
 ---
 milestone: 0004
 title: Vacuous and over-strong checks fail
-status: Planned
+status: Done
 depends-on: 0003
 released-in: unscheduled
 deadline: none
@@ -23,14 +23,14 @@ A team learns, from a failing test, that a check never exercised its claim on an
 
 ## Done when
 
-- [ ] RFC-0015 is accepted.
-- [ ] An application whose subject never fails a call fails `Store.Read/zero-on-error` with a message that names the vacuous condition and both remedies.
-- [ ] An excusal of the same check makes the application pass, and the excusal is counted apart from the passes.
-- [ ] A check that skips because the environment lacks direct I/O has the result `skipped`, and the application passes.
-- [ ] The application of a suite to a control of the corpus fails a check that the control fails, with the identity of the check.
-- [ ] Each shape family of the Go corpus has a control that is not its subject, and a test of the corpus fails for a family without one.
+- [x] RFC-0015 is accepted.
+- [x] An application whose subject never fails a call fails `Store.Read/zero-on-error` with a message that names the vacuous condition and both remedies.
+- [x] An excusal of the same check makes the application pass, and the excusal is counted apart from the passes.
+- [x] A check that skips because the environment lacks direct I/O has the result `skipped`, and the application passes.
+- [x] The application of a suite to a control of the corpus fails a check that the control fails, with the identity of the check.
+- [x] Each shape family of the Go corpus has a control that is not its subject, and a test of the corpus fails for a family without one.
 - [x] assert-go has released the `Observer` hook, in v0.11.0.
-- [ ] An authored check that never calls its decisive assertion is vacuous.
+- [x] An authored check that never calls its decisive assertion is vacuous.
 
 ## Why now
 
@@ -56,3 +56,4 @@ Engagement is called by the probes of milestone 0003, so the probes have to exis
 | Date | What changed | Why |
 |---|---|---|
 | 2026-10-28 | Created at position 4 | The first roadmap of dokimi |
+| 2026-10-29 | Done | The Go runtime fails vacuous checks, and the Go corpus has a control for each of its 11 shape families |

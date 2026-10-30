@@ -2,9 +2,9 @@
 rfc: 0015
 title: Vacuous checks and controls
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 discussion: none
 supersedes: none
 superseded-by: none
@@ -74,12 +74,13 @@ A property check engages when at least one of its cases engages. A case of a pro
 
 `conform.Run` counts, for each check, whether it engaged on the subject of the application. When the application ends, it fails the test of each check that passed without engaging and that no excusal covers. An application to a control is an application to a subject, so a check that a control never engages fails it the same way, and the corpus excuses such a check for that control with a reason.
 
-Each application keeps its own census, because `go test` runs the applications of a package as separate tests and does not call a hook of conform after the last of them. `dokimi report` reads the records of every application of a run and lists each check that was vacuous in every one. The message of `Run` names the check, the vacuous condition of its probe and both remedies:
+Each application keeps its own census, because `go test` runs the applications of a package as separate tests and does not call a hook of conform after the last of them. `dokimi report` reads the records of every application of a run and lists each check that was vacuous in every one. The runtime spec contains the vacuous condition of each probe. The message of `Run` names the check, the vacuous condition of its probe as the spec states it, and both remedies. The second remedy contains both forms of an excusal:
 
 ```text
-Store.Read/zero-on-error never engaged: no call of Read failed, with the
-sample inputs or with a cancelled context. Pass a subject whose Read can
-fail, or excuse the check with conform.Excuse and a reason.
+Store.Read/zero-on-error never engaged: no call fails, with the sample
+inputs or with a cancelled context. Pass a subject that engages the check,
+or excuse the check with the directive excuse or conform.Excuse and a
+reason.
 ```
 
 ### Controls
@@ -88,16 +89,16 @@ A control is a correct implementation of the declaration that differs from the s
 
 ### The corpus
 
-Each shape family of the corpus has at least one control that is not the subject:
+A shape family is a group of the shapes of the catalog whose subjects in the corpus share one representation. A control of a family tests the probes and the templates that every fixture of the family shares. A family per shape of the catalog would need about 100 controls, and most of those shapes share a map. Each shape family of the corpus has at least one control that is not the subject:
 
 | Family | Subject | Control |
 |---|---|---|
 | Stores and readers | A map | A sorted slice with binary search |
 | Appenders and logs | A slice | A chunked list that grows by blocks |
 | Caches | A map in front of a backing | A cache of one entry that evicts on each put |
-| Queues | A slice with a head index | A ring buffer |
+| Queues | A buffered channel | A ring buffer |
 
-A test of the corpus walks the families and fails for a family without a control. The ledger of the corpus lists the control of each fixture.
+A test of the corpus declares the family of each fixture in a table. It fails for a fixture outside every family and for a family without a control. The ledger of the corpus lists the control of each fixture. The verdict reverses when a check is over-strong on one shape of a family alone.
 
 ## Alternatives considered
 
@@ -141,13 +142,9 @@ The generator writes a second implementation of each declaration to serve as the
 
 - **A newer assert library.** The vacuous outcome of an authored check needs assert-go v0.11.0, and the release of assert-typescript with `observeCall`.
 - **Every probe must call Engage correctly.** A probe that never calls it makes every check of its claim vacuous. A probe that calls it too early hides vacuity. The corpus tests each probe against a subject that does not engage it.
-- **A control per shape family in the corpus.** About 20 families need a second correct implementation each, written by hand.
+- **A control per shape family in the corpus.** Each family needs a second correct implementation, written by hand. A fixture whose subject has a representation outside the table adds a family and its control.
 - **More failures for consumers.** A suite that passes today can fail with a vacuous check after the upgrade, and the consumer adds a subject that engages it or an excusal.
 - **A census per application.** A check that is vacuous on the subject of one application fails that application, also when another application of the same package engages it. The consumer excuses it in the application that cannot engage it.
-
-## Open questions
-
-- Is a family of the corpus a shape of the catalog, or a group of shapes with one representation?
 
 ## References
 

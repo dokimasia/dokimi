@@ -4,7 +4,7 @@ title: Generated inputs, fuzz targets, benchmarks and budgets
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Accepted
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-29
 discussion: none
 supersedes: none
 superseded-by: ADR-0002, ADR-0006, ADR-0009, ADR-0010, ADR-0011, ADR-0012, RFC-0007, RFC-0009, RFC-0010, RFC-0011 and RFC-0012 in part
@@ -248,11 +248,11 @@ func keepsTheFirstPut(h *StoreHandle) session.Store {
 
 A property check runs under the settings of the property engine. The runtime adds three settings:
 
-- The seed comes from `DOKIMI_SEED` when the variable is set. Otherwise the seed depends on the profile of the engine. The profile `default` takes a random seed, and the profile `ci` and a test binary of a mutation run take a seed from the contract. The suite record contains the seed of each run.
+- The seed comes from `DOKIMI_SEED` when the variable is set. Otherwise the seed depends on the profile of the engine. The profile `default` takes a random seed, and the profile `ci` and a test binary of a mutation run take a seed from the contract. An application takes one seed and passes it to each of its property runs. The suite record contains the seed.
 - A run tries 100 valid cases. The option `conform.Cases(n)` and the param `cases` of the directive `subject` set another number for one application.
 - The engine stores the smallest case of each failure under `testdata/prop/<test name>`, and the next run tries it first. A team commits the case of a real defect as a regression case.
 
-An application with an invalid setting reports it as a problem of its options and does not run a check. The invalid settings are a `DOKIMI_SEED` that is not a decimal number below 2^64, and the option `Cases` with fewer than one case. `Check.Run` ends with a fault that wraps `conform.ErrConfig` for such a setting.
+An application with an invalid setting reports it as a problem of its options and does not run a check. The invalid settings are a `DOKIMI_SEED` that is neither a decimal nor a `0x` hexadecimal number below 2^64, and the option `Cases` with fewer than one case. `Check.Run` ends with a fault that wraps `conform.ErrConfig` for such a setting.
 
 The profile `campaign` turns each run into a search for the seconds of `DOKIMI_ASSERT_PROP_BUDGET`. The labels, the fingerprints and the scores of its cases guide the search:
 
@@ -447,8 +447,8 @@ The suite record gains three fields of a check and one result:
 | Field | Values |
 |---|---|
 | `checks[].cases` | The number of valid cases of a property check |
-| `checks[].seed` | The seed of the run of a property check, as a decimal string |
-| `checks[].counterexample` | The values of the smallest failing case by label, as the typed literals of assert-spec |
+| `checks[].seed` | The seed of the run of a property check, as `0x` and 16 hexadecimal digits |
+| `checks[].counterexample` | The entries of the smallest failing case in request order, as assert-spec states the counterexample of a run: each draw with its label and the typed literal of its value, and each step of a machine |
 | `checks[].result` | Also `unchecked` for an allocation ceiling that the build or the run does not check, with the reason in `checks[].why` |
 
 The version of the spec changes at its minor number, because every change adds a field, a result or an entry.

@@ -2,9 +2,9 @@
 rfc: 0016
 title: The suite record in the artifact of a run
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-29
 discussion: none
 supersedes: none
 superseded-by: none
@@ -56,11 +56,19 @@ type Unclaimed struct {
 	Note           string
 }
 
+// Generator is the generator that wrote a suite, with its version.
+type Generator struct {
+	Name    string
+	Version string
+}
+
 type Suite[S any] struct {
 	// ... existing fields
 
 	// Package is the import path of the package of the declaration.
 	Package string
+	// Generator is the generator that wrote the suite.
+	Generator Generator
 	// Refusals are the licensed claims that the generator refused.
 	Refusals []Refusal
 	// Unclaimed are the classifications without a check.
@@ -68,9 +76,13 @@ type Suite[S any] struct {
 }
 ```
 
+The callable of a refusal and of an unclaimed classification is the name of the declaration and the name of the callable, such as `Store.Scan`. conform writes the language `go` itself. The subject of a record is the name of the factory that the consumer passed to the application, such as `storetest.NewInMemory`.
+
 ### Writing the record in Go
 
-`conform.Falsify` writes one record when its application ends. `conform.Run` writes two: the falsification of the derived checks and the application to the subject.
+`conform.Falsify` and `conform.FalsifyAllocs` each write one falsification record when their application ends. `conform.Run` writes two: the falsification of the derived checks and the application to the subject. `conform.RunBudgets` writes the subject record of the allocation ceilings and of the checks that count allocations. `conform.Fuzz` and the benchmarks do not write a record. Each record contains the result of each check of its application: the result of falsification for a falsification record, and the result on the subject for a subject record.
+
+conform writes the record through the exported writer of a record of assert-go, which splits a record by the rule of the overlay of Go for every kind of record.
 
 ```go
 // record writes the suite record of an application through t.Attr under the
@@ -81,7 +93,7 @@ type Suite[S any] struct {
 func record[S any](t T, seq int, r suiteRecord)
 ```
 
-A record is written on the test of the application, not on the subtest of a check, so one test of the artifact contains the record of the whole suite. The seed is the seed of the run, from `DOKIMI_SEED` or from the clock. conform writes the record whatever the outcome, and also after a fault that ends the application, with the field `ended` set to the fault.
+A record is written on the test of the application, not on the subtest of a check, so one test of the artifact contains the record of the whole suite. The seed is the one seed of the application. It comes from `DOKIMI_SEED`, which takes a decimal or a `0x` hexadecimal number, and otherwise from the seed that the property engine chooses under its profile. The application passes it to each of its property runs, so a rerun with `DOKIMI_SEED` set to the seed of the record repeats the application. The record writes each seed as `0x` and 16 hexadecimal digits. conform writes the record whatever the outcome, and also after the faults that end the application, with the field `ended` set to the faults, one on each line.
 
 ### Writing the record in TypeScript
 
@@ -107,7 +119,9 @@ example.com/shop/catalog  Store
 seed 0x5f3a1c9e27d4b860   spec 1.0.0   conform v0.9.0
 ```
 
-`dokimi report --json` writes one aggregated JSON document for the repository. `dokimi report` exits with a status other than 0 when a record has a falsification result other than `proven`, so CI can run it as a gate after the tests.
+`dokimi report --json` writes one aggregated JSON document for the repository. `dokimi report` exits with a status other than 0 when a record has a falsification result other than `proven`, so CI can run it as a gate after the tests. An excused or skipped check has no result to judge, and neither has an allocation ceiling that the run does not check. The command also exits with a status other than 0 for a record that does not validate against `schemas/suite.schema.json`, and for a record whose field `ended` lists the problems that stopped its application before its checks. The report writes each of those problems on a line `ended` of the suite.
+
+The package `internal/report` reads the events of `go test -json`, joins the attribute events of each key, and prints the records. `cmd/dokimi` adds the command `report` to the app of the eidos cli. `report` joins the records of a run by the identity of each check. It lists a check as vacuous when the check is vacuous in each application that judged it. An application that excused or skipped the check does not count. `report` does not read the call records of assert-spec, because the field `checks[].failure` of a suite record contains the failure record of the assertion that failed.
 
 ## Alternatives considered
 
@@ -134,10 +148,6 @@ Each check writes its own part of the record on its subtest.
 - **Go 1.25 or later.** `T.Attr` exists from Go 1.25. conform already requires a later Go.
 - **A larger artifact.** A suite of 200 checks writes a record of about 40 KB in about 11 attribute events.
 - **The split of long records.** Each reader joins the consecutive events of one key into one record, as it joins a call record of assert-spec.
-
-## Open questions
-
-- Does `dokimi report` also read the call records of assert-spec, to show the failing assertion of each failed check?
 
 ## References
 

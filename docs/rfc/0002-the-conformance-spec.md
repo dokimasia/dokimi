@@ -4,7 +4,7 @@ title: The conformance spec
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Accepted
 created: 2026-10-19
-updated: 2026-10-28
+updated: 2026-10-29
 discussion: none
 supersedes: none
 superseded-by: none
@@ -288,7 +288,7 @@ probes:
     since: 1.0.0
 ```
 
-`reasons` lists the reason codes that the probe reports. Before each assertion the probe sets the reason code of a failure of that assertion on its handle, so one assertion can report two reasons at two places of a probe. The handle fails a check whose probe sets a reason that the entry of the probe does not list. `vacuous` is the condition under which the probe reports that it did not exercise its claim.
+`reasons` lists the reason codes that the probe reports. Before each assertion the probe sets the reason code of a failure of that assertion on its handle, so one assertion can report two reasons at two places of a probe. The handle fails a check whose probe sets a reason that the entry of the probe does not list. `vacuous` is the condition under which the probe does not exercise its claim. The probe engages its handle where that condition stops being true, so a check whose probe never engages the handle is vacuous.
 
 Each input has a kind from a closed list. The template tree of each language passes each kind in one form:
 
@@ -401,7 +401,7 @@ A runtime writes the suite record into the artifact of the test runner beside th
 ```json
 {
   "spec": "1.0.0",
-  "suite": {"language": "go", "package": "example.com/store/storetest", "declaration": "Store"},
+  "suite": {"language": "go", "package": "example.com/store", "declaration": "Store"},
   "generator": {"name": "dokimi", "version": "v0.1.0"},
   "runtime": {"name": "go.dokimi.dev/conform", "version": "v0.1.0"},
   "seed": "0x5f3a1c9e27d4b860",
@@ -449,14 +449,14 @@ A runtime writes the suite record into the artifact of the test runner beside th
 | `application` | `falsification` or `subject` |
 | `subject` | The name of the subject that the consumer passed to the application, for the application `subject` |
 | `seed` | The seed of the run, as `0x` and 16 hexadecimal digits |
-| `ended` | The fault that ended the application before its last check, absent when every check ran |
+| `ended` | The faults that ended the application before its last check, one on each line, absent when every check ran |
 | `checks[].authored` | True for a check of the directive `check`. Such a check has no `claim`, `law`, `machineries` or `reason` |
 | `checks[].result` | `pass`, `fail`, `vacuous`, `excused`, `skipped` or `unchecked` for a subject. `proven`, `passed`, `wrong-reason`, `vacuous`, `unchecked`, `not-isolated`, `not-deeper` or `equivalent` for falsification |
 | `checks[].other` | The identity of the other check of a result `not-isolated`, `not-deeper` or `equivalent` |
 | `checks[].why` | The reason of `unchecked`, `skipped` or `excused` |
 | `checks[].cases` | The number of valid cases of a property check |
 | `checks[].seed` | The seed of the run of a property check, as `0x` and 16 hexadecimal digits |
-| `checks[].counterexample` | The values of the smallest failing case by label, as the typed literals of assert-spec |
+| `checks[].counterexample` | The entries of the smallest failing case in request order, as assert-spec states the counterexample of a run: each draw with its label and the typed literal of its value, and each step of a machine |
 | `checks[].reason` | The reason code that the probe reported |
 | `checks[].failure` | The failure record of assert-spec for the assertion that failed, on `fail` and on `wrong-reason` |
 | `checks[].shallow` | True when the machineries of the claim do not include the depth of its law |
@@ -496,7 +496,7 @@ A reader skips each field that its version of the schema lacks, and it shows an 
 
 The bundle of a run is the set of artifacts of its test runner, with their call records and suite records, and the trace files of the simulations. CI uploads the bundle to the service beside the outputs of the other tools of the run, such as coverage and mutation records.
 
-The seed of a run comes from the environment variable `DOKIMI_SEED`, as a decimal or a `0x` hexadecimal 64-bit number. When the variable is unset, the runtime takes a seed from the clock and prints it with the first failure. A probe that runs the property engine passes the seed of the run to the option `seed` of the engine. Every suite record contains the seed, so a run repeats with `DOKIMI_SEED` set to it.
+The seed of a run comes from the environment variable `DOKIMI_SEED`, as a decimal or a `0x` hexadecimal 64-bit number. When the variable is unset, the runtime takes the seed that the property engine chooses under its profile, and prints it with the first failure. An application takes one seed and passes it to the option `seed` of the engine in each of its property runs. Every suite record contains the seed, so a run repeats with `DOKIMI_SEED` set to it.
 
 Falsification does not take the seed of the run for a property check. It runs the property hermetically with a seed from the key of the check, as RFC-0006 states, over sequences of at least the `min-steps` of its defect form. It turns the store and the shrinking of the engine off. A proof therefore gives the same result on every run, and the corpus pins that the proof of each defect form fails at its seed.
 
@@ -532,7 +532,7 @@ The module `go.dokimi.dev/conform` contains the packages `conform` and `probe` o
 
 ### The package spec
 
-The package `spec` of the module `go.dokimi.dev/dokimi` decodes every file of the spec for the derivation. The package `spec` of each runtime, such as `go.dokimi.dev/spec`, declares the identifier types, the constants and the probes with their reasons alone, from its vendored copy. The handle reads the reasons of each probe to check the reason that the probe sets.
+The package `spec` of the module `go.dokimi.dev/dokimi` decodes every file of the spec for the derivation. The package `spec` of each runtime, such as `go.dokimi.dev/spec`, declares the identifier types, the constants and the probes with their reasons and their vacuous conditions, from its vendored copy. The handle reads the reasons of each probe to check the reason that the probe sets. A run that fails a vacuous check states the vacuous condition of its probe.
 
 ```go
 // Package spec contains the conformance spec of dokimi: the laws, claims,

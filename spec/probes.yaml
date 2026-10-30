@@ -116,7 +116,7 @@ probes:
       - {name: drain, kind: call}
       - {name: write, kind: call}
     reasons: [repeated-element]
-    vacuous: The drain returns fewer than two elements.
+    vacuous: A write fails, or the drain returns fewer than two elements.
     since: 1.0.0
   drains-in-one-order:
     summary: Two drains after two writes return the elements in the same order.
@@ -124,7 +124,7 @@ probes:
       - {name: drain, kind: call}
       - {name: write, kind: call}
     reasons: [reordered-drain]
-    vacuous: The first drain returns fewer than two elements.
+    vacuous: A write fails, or the first drain returns fewer than two elements.
     since: 1.0.0
   gains-what-went-in:
     summary: A drain gains exactly the elements that two writes wrote since the drain before it.
@@ -404,7 +404,7 @@ probes:
       - {name: call, kind: call}
       - {name: match, kind: call}
     reasons: [unmatched-write]
-    vacuous: The predicate accepts both values.
+    vacuous: The first write fails, or the predicate accepts the second value or fails.
     since: 1.0.0
   seals-after-close:
     summary: A second settlement or a call after the close of a handle fails with the declared sentinel.
@@ -459,7 +459,7 @@ probes:
       - {name: call, kind: call}
       - {name: put, kind: call}
     reasons: [unreturned-loan]
-    vacuous: The get lends nothing.
+    vacuous: The get fails.
     since: 1.0.0
   continues-from-the-cursor:
     summary: A read with the cursor of the first page returns another page.
@@ -467,7 +467,7 @@ probes:
       - {name: call, kind: call}
       - {name: cursor, kind: projection}
     reasons: [repeated-page]
-    vacuous: The first page returns no cursor.
+    vacuous: The first page fails or returns no cursor.
     since: 1.0.0
   compensates-the-step:
     summary: The compensation accepts the step that the call applied.

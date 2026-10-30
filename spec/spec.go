@@ -10,12 +10,13 @@ import (
 	"sync"
 )
 
-// files contains the version and the rendered JSON files of the spec. The
-// test of the package compares the entries that each function returns with
-// the entries that encoding/json reads from the same file, so a file that
-// does not decode fails the test, and no function reports a decoding error.
+// files contains the version, the rendered JSON files of the spec and the
+// schema of the suite record. The test of the package compares the entries
+// that each function returns with the entries that encoding/json reads from
+// the same file, so a file that does not decode fails the test, and no
+// function reports a decoding error.
 //
-//go:embed VERSION *.json
+//go:embed VERSION *.json schemas/suite.schema.json
 var files embed.FS
 
 // Version returns the version of the spec from the file VERSION, such as

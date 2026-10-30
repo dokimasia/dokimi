@@ -314,6 +314,48 @@ func TestRender(t *testing.T) {
 			}
 		})
 
+		t.Run("writes the schema of the suite record", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, minimal())
+
+			assert.NoError(t, render.Render(dir), "the spec renders")
+
+			var schema jsonschema.Schema
+			assert.NoError(t, json.Unmarshal([]byte(files.Read(t, filepath.Join(dir, "schemas", "suite.schema.json"))),
+				&schema), "the schema decodes")
+			assert.Equal(t, schema.Schema, "https://json-schema.org/draft/2020-12/schema",
+				"the schema has the draft of the other schemas")
+			resolved, err := schema.Resolve(nil)
+			assert.NoError(t, err, "the schema resolves")
+			record := func(seed, result string) map[string]any {
+				return map[string]any{
+					"spec": "1.0.0",
+					"suite": map[string]any{
+						"language":    "go",
+						"package":     "example.com/store",
+						"declaration": "Store",
+					},
+					"generator":   map[string]any{"name": "dokimi", "version": "v0.1.0"},
+					"runtime":     map[string]any{"name": "go.dokimi.dev/conform", "version": "v0.1.0"},
+					"seed":        seed,
+					"application": "subject",
+					"checks": []any{map[string]any{
+						"identity": "Store.Read/zero-on-error", "key": "store.read/zero-on-error", "result": result,
+					}},
+					"refusals":  []any{},
+					"unclaimed": []any{},
+				}
+			}
+			assert.NoError(t, resolved.Validate(record("0x5f3a1c9e27d4b860", "pass")), "the schema accepts a record")
+			later := record("0x5f3a1c9e27d4b860", "pass")
+			later["trace"] = "a field of a later minor version"
+			later["checks"].([]any)[0].(map[string]any)["steps"] = 3
+			assert.NoError(t, resolved.Validate(later), "the schema accepts the fields of a later minor version")
+			assert.HasError(t, resolved.Validate(record("0x5f3a", "pass")), "the schema refuses a short seed")
+			assert.HasError(t, resolved.Validate(record("0x5f3a1c9e27d4b860", "green")),
+				"the schema refuses a result outside the spec")
+		})
+
 		t.Run("writes a constant for each entry in the order of the files", func(t *testing.T) {
 			t.Parallel()
 			dir := files.Workspace(t, minimal())
@@ -504,6 +546,18 @@ unclaimed: {}
 
 			assert.HasError(t, err, "the directory in place of the schema fails the render")
 			assert.Contains(t, err.Error(), "the schema of laws:", "the error names the schema")
+		})
+
+		t.Run("returns an error for the schema of a record that it cannot write", func(t *testing.T) {
+			t.Parallel()
+			tree := minimal()
+			tree["schemas/suite.schema.json/keep"] = files.Text("a directory in place of the schema\n")
+			dir := files.Workspace(t, tree)
+
+			err := render.Render(dir)
+
+			assert.HasError(t, err, "the directory in place of the schema fails the render")
+			assert.Contains(t, err.Error(), "the schema of the suite record:", "the error names the record")
 		})
 
 		t.Run("returns an error for a directory that it cannot write", func(t *testing.T) {

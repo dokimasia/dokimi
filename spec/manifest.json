@@ -1,14 +1,14 @@
 {
-    "digest": "sha256:a2f1dbe540c3d2fe5da5df80f6a3104157b753e84a06b1dffe2426fbb0edf980",
+    "digest": "sha256:3a59462c6709d0cf219ad7583e01493fc8bcb0ca84d27420ce948aa7c4a99aa5",
     "files": {
         "VERSION": "sha256:59854984853104df5c353e2f681a15fc7924742f9a2e468c29af248dce45ce03",
-        "claims.json": "sha256:fae4a3cab1f74f2e3e8eea5a060ef769bfaa81733890585940069545da9be2e0",
-        "defects.json": "sha256:18a1c5c646dfd7e15c5eb4a623154b7dba2e8a09ed625c24dfb66fdd88634faa",
-        "gates.json": "sha256:3cb229784666bb1e27aee9d5ba05ea8170224ee61c02d130ce350a5b4e46e4c6",
+        "claims.json": "sha256:3842824e1829710dd9cd1bea615cc5dbdb192f9ad045f577af82a26c561a951c",
+        "defects.json": "sha256:c77d8729d30d5cf12685f8214f486b23a53d37b6b95378183200b37fdf67732e",
+        "gates.json": "sha256:170f8686d6159aef26cc118cd5210655d247a5a19a09dfeaa2ea72a74d2e0927",
         "laws.json": "sha256:7ba62eb52ac2cd4f2ec457f4786020989262b90f03ddfd717b5b3acdda24584f",
         "machineries.json": "sha256:bbd760a3d22998580fd73241c31ff39b681df9b735aca4a93299e2ca76e53828",
-        "naming.json": "sha256:4d9b71b4a084cf88d44acf575eec9b5128c44ee5e52cb573886c2f64c674f69a",
-        "probes.json": "sha256:2bd12b1a8298e4ed5b86a49a79a442d8cec8b27dbc10515822c11232ac1e1ebe",
+        "naming.json": "sha256:60ae7a2f384f4050e05886eb770ff3d3961a2d2a5e66faf4f2f80946ac03f3aa",
+        "probes.json": "sha256:700fe7e9610c4af978d350a04c2222e339d6c79ef7339c4465307f329bced4f3",
         "reasons.json": "sha256:7d70ed24c1d1da2ec400b3f774061b1f1fbfae1fe704042c07d0bb243fcc3616",
         "schemas/claims.schema.json": "sha256:5a0c2bfaa69ee9efbf483f4ed511d2d49ecf0b45ba7f8db04dae25b5a58ae375",
         "schemas/defects.schema.json": "sha256:bf74ca4141dac35d01cb69eee5600f9f1953335b9478579bbd49635fbf14e404",
@@ -18,6 +18,7 @@
         "schemas/probes.schema.json": "sha256:4efc335797ab6b45b4258bf85c44b5c65687a07221022b854412796b04a3d2a6",
         "schemas/reasons.schema.json": "sha256:d3716a6260eb1b815876240a89121ac2177fbd05e1347dc17ebfdd7995f31f9c",
         "schemas/stances.schema.json": "sha256:c6b386abdd6c4d1b0c44e4b83ee2c0edcbff0b64b55efe7341d65a21a45f1f62",
+        "schemas/suite.schema.json": "sha256:1beb6c71bb84e92ab7f4c37c9bea9771821e54cd3c63db7511e4c1bf89903c45",
         "stances.json": "sha256:728951faf11d9ed3c7cc46c3fabe82255e9b50076c2ecf022b1ac5af33baf453"
     },
     "languages": {

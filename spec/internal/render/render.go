@@ -71,6 +71,12 @@ var documents = []document{
 	{name: "stances", typ: reflect.TypeFor[stancesDoc]()},
 }
 
+// records are the records that a runtime writes, whose schemas Render writes
+// without a rendered file.
+var records = []document{
+	{name: "suite", typ: reflect.TypeFor[spec.SuiteRecord]()},
+}
+
 // Files returns the names of the files of the spec, without their
 // extensions, in the order in which Render writes them.
 func Files() []string {
@@ -125,11 +131,28 @@ var articles = []string{"a", "an", "the"}
 // draft is the JSON Schema draft of each schema.
 const draft = "https://json-schema.org/draft/2020-12/schema"
 
+// seed is the pattern of a seed: 0x and 16 hexadecimal digits.
+const seed = `^0x[0-9a-f]{16}$`
+
+// text is the JSON type of a string.
+const text = "string"
+
 // schemaOptions are the options of the inference of each schema. Each
-// identifier type has the pattern of an identifier.
+// identifier type has the pattern of an identifier, a seed has the pattern
+// of a seed, and an application and a result have the values of the spec.
 func schemaOptions() *jsonschema.ForOptions {
-	id := &jsonschema.Schema{Type: "string", Pattern: identifier}
-	types := map[reflect.Type]*jsonschema.Schema{}
+	id := &jsonschema.Schema{Type: text, Pattern: identifier}
+	results := make([]any, len(spec.Results))
+	for i, r := range spec.Results {
+		results[i] = string(r)
+	}
+	types := map[reflect.Type]*jsonschema.Schema{
+		reflect.TypeFor[spec.Seed](): {Type: text, Pattern: seed},
+		reflect.TypeFor[spec.Application](): {
+			Type: text, Enum: []any{string(spec.Falsification), string(spec.OnSubject)},
+		},
+		reflect.TypeFor[spec.Result](): {Type: text, Enum: results},
+	}
 	for _, t := range []reflect.Type{
 		reflect.TypeFor[spec.LawID](), reflect.TypeFor[spec.ClaimID](), reflect.TypeFor[spec.GateID](),
 		reflect.TypeFor[spec.ProbeID](), reflect.TypeFor[spec.ReasonID](), reflect.TypeFor[spec.DefectFormID](),
@@ -142,7 +165,8 @@ func schemaOptions() *jsonschema.ForOptions {
 
 // Render renders the YAML file of each name of Files in dir into its JSON
 // file and its schema under dir/schemas, and writes dir/names.gen.go and
-// dir/naming.json.
+// dir/naming.json. It also writes dir/schemas/suite.schema.json, the schema
+// of the suite record that a runtime writes.
 //
 // # Errors
 //
@@ -196,10 +220,35 @@ func render(root *os.Root) error {
 			}
 		}
 	}
+	for _, r := range records {
+		schema, err := jsonschema.ForType(r.typ, opts)
+		//dokimi:mutate-skip ror-true: ForType returns an error only for a type without a JSON Schema, and each record has one
+		if err == nil {
+			open(schema)
+			schema.Schema = draft
+			err = writeJSON(root, "schemas/"+r.name+".schema.json", schema)
+		}
+		if err != nil {
+			return fmt.Errorf("the schema of the %s record: %w", r.name, err)
+		}
+	}
 	if err := writeJSON(root, "naming.json", table); err != nil {
 		return err
 	}
 	return writeNames(root, consts)
+}
+
+// open lets each object of the schema s and of its properties and items have
+// properties that it does not declare, because a reader of a record skips
+// the fields of a later minor version of the spec.
+func open(s *jsonschema.Schema) {
+	s.AdditionalProperties = nil
+	for _, p := range s.Properties {
+		open(p)
+	}
+	if s.Items != nil {
+		open(s.Items)
+	}
 }
 
 // sectionIDs are the identifiers of the entries of one section of a file,

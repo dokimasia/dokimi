@@ -103,6 +103,8 @@ func (c storeGet) ZeroOnError() conform.ID[restrictedpool.Store] {
 func StoreSuite() conform.Suite[restrictedpool.Store] {
 	return conform.Suite[restrictedpool.Store]{
 		Declaration: "Store",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/restrictedpool",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[restrictedpool.Store]{
 			{
 				ID:          StoreChecks.Put.Smoke(),
@@ -182,6 +184,14 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 					}, restrictedpool.Body(""))
 				},
 				Defect: storeGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Store.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[restrictedpool.Store]{
@@ -432,4 +442,4 @@ func storeGetValueBeside(h *StoreHandle) restrictedpool.Store {
 	return &storeGetValueBesideDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8efd514ac4d80419716b527c4d212b0f29e9bf56a09f05242aa9131d19ba3603
+// dokimi:provenance sha256:544da08c136220e34b3b848b7b5fb5039e3d07dbd56fa7c4b363b6a00b93330b

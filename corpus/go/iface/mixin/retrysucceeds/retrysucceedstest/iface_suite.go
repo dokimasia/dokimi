@@ -117,6 +117,8 @@ func (c mixedAttempts) ZeroOnError() conform.ID[retrysucceeds.Mixed] {
 func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 	return conform.Suite[retrysucceeds.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/retrysucceeds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[retrysucceeds.Mixed]{
 			{
 				ID:          MixedChecks.Call.Smoke(),
@@ -212,6 +214,14 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedAttemptsValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Call",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[retrysucceeds.Mixed]{
@@ -454,4 +464,4 @@ func mixedAttemptsValueBeside(h *MixedHandle) retrysucceeds.Mixed {
 	return &mixedAttemptsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:56927dfa3ab5c375bb75c11592bffd6c7701b860ed4f50ceb9be910e683c26c2
+// dokimi:provenance sha256:74d0d4009a4d8dfb9abcbfdcba98a543fb749106a454367cdbdb0ec61e701f8f

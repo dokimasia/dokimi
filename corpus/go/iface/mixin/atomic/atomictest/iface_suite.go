@@ -107,6 +107,8 @@ func (c mixedRead) ZeroOnError() conform.ID[atomic.Mixed] {
 func MixedSuite() conform.Suite[atomic.Mixed] {
 	return conform.Suite[atomic.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/atomic",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[atomic.Mixed]{
 			{
 				ID:          MixedChecks.Write.Smoke(),
@@ -186,6 +188,20 @@ func MixedSuite() conform.Suite[atomic.Mixed] {
 					}, atomic.Entry{})
 				},
 				Defect: mixedReadValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Write",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:atomic",
+				Callable:       "Mixed.Write",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[atomic.Mixed]{
@@ -400,4 +416,4 @@ func mixedReadValueBeside(h *MixedHandle) atomic.Mixed {
 	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:545fe497daf1716d89f7af2bc1a3e19677bf28f097335a227d3760e8b613aebc
+// dokimi:provenance sha256:34bcf29e1894c54331d91ee50c7a7c928de54be639612cdd21c628480663ab2b

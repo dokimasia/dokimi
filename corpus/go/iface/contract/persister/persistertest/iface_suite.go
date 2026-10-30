@@ -119,6 +119,8 @@ func (c contractGet) ZeroOnError() conform.ID[persister.Contract] {
 func ContractSuite() conform.Suite[persister.Contract] {
 	return conform.Suite[persister.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/persister",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[persister.Contract]{
 			{
 				ID:          ContractChecks.Put.Smoke(),
@@ -518,4 +520,4 @@ func contractGetValueBeside(h *ContractHandle) persister.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:da677466d3ad3976d47f74b997ca0a93ad72a4cb1702964eaf056be65c750310
+// dokimi:provenance sha256:b5c8b54ffc23828d756a949a04310fc18ba13f589da6b88112eed5927b408311

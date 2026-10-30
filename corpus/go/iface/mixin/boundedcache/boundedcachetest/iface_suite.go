@@ -147,6 +147,8 @@ func (c mixedLen) ZeroOnError() conform.ID[boundedcache.Mixed] {
 func MixedSuite() conform.Suite[boundedcache.Mixed] {
 	return conform.Suite[boundedcache.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/boundedcache",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[boundedcache.Mixed]{
 			{
 				ID:          MixedChecks.Put.Smoke(),
@@ -277,6 +279,28 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedLenValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Mixed.Get",
+				Why:      "Get cannot fail",
+				Remedy:   "give Get an error result",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:bounded",
+				Callable:       "Mixed.Len",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[boundedcache.Mixed]{
@@ -602,4 +626,4 @@ func mixedLenValueBeside(h *MixedHandle) boundedcache.Mixed {
 	return &mixedLenValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b88accf8116f96fa0ed4b611d6e0531ff0278c93076d4e7321460aa6beff2f28
+// dokimi:provenance sha256:66a393916f783abf3da8e783043de1bcbcd5dc8ec26411509e78f82de4f3602e

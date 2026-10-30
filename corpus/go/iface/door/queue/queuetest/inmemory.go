@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package queuetest contains the suite of Queue, the check that a consumer
-// adds to the suite inside a testing/synctest bubble, and the control of the
+// adds to the suite inside a testing/synctest bubble, and the subject of the
 // suite.
 package queuetest
 
@@ -17,7 +17,7 @@ import (
 const room = 2
 
 // InMemory implements [queue.Queue] in memory. The corpus applies the suite of
-// Queue to it as a control.
+// Queue to it as a subject.
 //
 //dokimi:subject queue.Queue new=NewInMemory
 type InMemory struct {

@@ -81,6 +81,8 @@ func (c lifecycleClose) Idempotent() conform.ID[lifecycle.Lifecycle] {
 func LifecycleSuite() conform.Suite[lifecycle.Lifecycle] {
 	return conform.Suite[lifecycle.Lifecycle]{
 		Declaration: "Lifecycle",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/lifecycle",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[lifecycle.Lifecycle]{
 			{
 				ID:          LifecycleChecks.Close.Smoke(),
@@ -127,6 +129,14 @@ func LifecycleSuite() conform.Suite[lifecycle.Lifecycle] {
 					})
 				},
 				Defect: lifecycleCloseRefusesRepeat,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Lifecycle.Close",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[lifecycle.Lifecycle]{
@@ -298,4 +308,4 @@ func lifecycleCloseRefusesRepeat(h *LifecycleHandle) lifecycle.Lifecycle {
 	return &lifecycleCloseRefusesRepeatDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a420a65b12e65fbe5dfa681ae5044874e23363f15c84540b65d13124d88e0791
+// dokimi:provenance sha256:6b636ecb21ff99118972f662a65d6c8cb11e385171cf8a050984d19d8131a762

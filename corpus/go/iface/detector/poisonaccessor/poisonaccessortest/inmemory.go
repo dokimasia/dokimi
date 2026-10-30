@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package poisonaccessortest contains the double and the suite of
-// PoisonAccessor. InMemory is the control of the suite.
+// PoisonAccessor. InMemory is the subject of the suite.
 package poisonaccessortest
 
 import (
@@ -12,7 +12,7 @@ import (
 )
 
 // InMemory implements [poisonaccessor.PoisonAccessor] in memory. The corpus
-// applies the suite of PoisonAccessor to it as a control.
+// applies the suite of PoisonAccessor to it as a subject.
 //
 //dokimi:subject poisonaccessor.PoisonAccessor new=NewInMemory
 type InMemory struct {

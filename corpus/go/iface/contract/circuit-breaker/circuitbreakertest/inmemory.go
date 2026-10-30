@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package circuitbreakertest contains the double and the suite of Contract.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package circuitbreakertest
 
 import (
@@ -27,7 +27,7 @@ const UnwellKey = "unwell"
 const threshold = 3
 
 // InMemory implements [circuitbreaker.Contract] in memory. The corpus applies
-// the suite of Contract to it as a control. It counts the consecutive failures
+// the suite of Contract to it as a subject. It counts the consecutive failures
 // of each key on its own.
 //
 //dokimi:subject circuitbreaker.Contract new=NewInMemory

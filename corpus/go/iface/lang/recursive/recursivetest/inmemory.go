@@ -7,7 +7,7 @@ import "go.dokimi.dev/dokimi/corpus/go/iface/lang/recursive"
 
 // InMemory implements [recursive.Counter]. It walks each value to its end, so
 // each value of a recursive type that the suite draws has to end. The corpus
-// applies the suite of Counter to it as a control.
+// applies the suite of Counter to it as a subject.
 //
 //dokimi:subject recursive.Counter new=NewInMemory
 type InMemory struct{}

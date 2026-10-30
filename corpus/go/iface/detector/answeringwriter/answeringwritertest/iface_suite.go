@@ -78,6 +78,8 @@ func (c answeringWriterPut) ZeroOnError() conform.ID[answeringwriter.AnsweringWr
 func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 	return conform.Suite[answeringwriter.AnsweringWriter]{
 		Declaration: "AnsweringWriter",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/answeringwriter",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[answeringwriter.AnsweringWriter]{
 			{
 				ID:          AnsweringWriterChecks.Put.Smoke(),
@@ -310,4 +312,4 @@ func answeringWriterPutValueBeside(h *AnsweringWriterHandle) answeringwriter.Ans
 	return &answeringWriterPutValueBesideDefect{answeringWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:319eae0a6c751b33c9406283a847eb60023aa99827994e8868c95d77d0a14dbb
+// dokimi:provenance sha256:2af1638ee3bf57cb0e414c246f424b3d0267e8f9711664f92c2e626fa65051c6

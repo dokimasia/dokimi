@@ -110,6 +110,8 @@ func (c contractFlights) ZeroOnError() conform.ID[singleflight.Contract] {
 func ContractSuite() conform.Suite[singleflight.Contract] {
 	return conform.Suite[singleflight.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/singleflight",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[singleflight.Contract]{
 			{
 				ID:          ContractChecks.Run.Smoke(),
@@ -191,6 +193,14 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 					}, int(0))
 				},
 				Defect: contractFlightsValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "contract:single-flight/fn",
+				Callable:       "Contract.Run",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[singleflight.Contract]{
@@ -424,4 +434,4 @@ func contractFlightsValueBeside(h *ContractHandle) singleflight.Contract {
 	return &contractFlightsValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:870869a7a36ef9e143612cb78dc296e76fefdcde756b4288c5658776ee4a899b
+// dokimi:provenance sha256:9b43d088cf48348bf6458724423263f77dbe8fe2fa7b7d0754faaea0dbe599fa

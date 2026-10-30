@@ -108,6 +108,8 @@ func (c mixedRead) ZeroOnError() conform.ID[ttlperwrite.Mixed] {
 func MixedSuite() conform.Suite[ttlperwrite.Mixed] {
 	return conform.Suite[ttlperwrite.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttlperwrite",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[ttlperwrite.Mixed]{
 			{
 				ID:          MixedChecks.Put.Smoke(),
@@ -187,6 +189,22 @@ func MixedSuite() conform.Suite[ttlperwrite.Mixed] {
 					}, ttlperwrite.Entry{})
 				},
 				Defect: mixedReadValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Expires,
+				Callable: "Mixed.Read",
+				Why:      "the classification of Read sets no param duration",
+				Remedy:   "set the param duration in the directive of Read",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[ttlperwrite.Mixed]{
@@ -404,4 +422,4 @@ func mixedReadValueBeside(h *MixedHandle) ttlperwrite.Mixed {
 	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:51e5dc20f8aee165346235f43b11951001dbf7947651ce5e2a0defc42c563694
+// dokimi:provenance sha256:11e40e08067bf4903b3b450c3731fd80abdf418994a03d324d576de218db8441

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package embeddedtest contains the double and the suite of Composed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package embeddedtest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("embeddedtest: not found")
 
 // InMemory implements [embedded.Composed] in memory. The corpus applies the
-// suite of Composed to it as a control.
+// suite of Composed to it as a subject.
 //
 //dokimi:subject embedded.Composed new=NewInMemory
 type InMemory struct {

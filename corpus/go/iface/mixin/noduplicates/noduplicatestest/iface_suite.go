@@ -114,6 +114,8 @@ func (c mixedItems) NoDuplicates() conform.ID[noduplicates.Mixed] {
 func MixedSuite() conform.Suite[noduplicates.Mixed] {
 	return conform.Suite[noduplicates.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/noduplicates",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[noduplicates.Mixed]{
 			{
 				ID:          MixedChecks.Add.Smoke(),
@@ -219,6 +221,14 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 					}())
 				},
 				Defect: mixedItemsDrainsTwice,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[noduplicates.Mixed]{
@@ -460,4 +470,4 @@ func mixedItemsDrainsTwice(h *MixedHandle) noduplicates.Mixed {
 	return &mixedItemsDrainsTwiceDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:08174a69d3afe6d03fc7be2ba0a599f402b841f6a07afb6f31ed466967c6bb49
+// dokimi:provenance sha256:3088d40bcee7d85476c38e9ebd6a2977583c4ce51d7a78f1504f4c3ba242b0de

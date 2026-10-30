@@ -117,6 +117,8 @@ func (c mixedNewInput) ZeroOnError() conform.ID[sample.Mixed] {
 func MixedSuite() conform.Suite[sample.Mixed] {
 	return conform.Suite[sample.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[sample.Mixed]{
 			{
 				ID:          MixedChecks.Process.Smoke(),
@@ -213,6 +215,14 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 					}, string(""))
 				},
 				Defect: mixedNewInputValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "mixin:sample",
+				Callable:       "Mixed.Process",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents the sample of a value.",
 			},
 		},
 		Calls: []conform.Call[sample.Mixed]{
@@ -448,4 +458,4 @@ func mixedNewInputValueBeside(h *MixedHandle) sample.Mixed {
 	return &mixedNewInputValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:cf9234de46900f7e337d38c6b4aee0c0e1806502afe590aad7a0bc876ca6a139
+// dokimi:provenance sha256:53b1e227f7c099e296ac9c7fceca2ca94974505e952ed5e486f24dd2a732e4ed

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package txwithretrytest contains the double and the suite of TxWithRetry.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package txwithretrytest
 
 import (
@@ -23,7 +23,7 @@ const (
 )
 
 // InMemory implements [txwithretry.TxWithRetry] in memory. The corpus applies
-// the suite of TxWithRetry to it as a control.
+// the suite of TxWithRetry to it as a subject.
 //
 //dokimi:subject txwithretry.TxWithRetry new=NewInMemory
 type InMemory struct {

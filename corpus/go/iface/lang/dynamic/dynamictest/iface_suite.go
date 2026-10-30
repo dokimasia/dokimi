@@ -130,6 +130,8 @@ func (c diaryCount) Deterministic() conform.ID[dynamic.Diary] {
 func DiarySuite() conform.Suite[dynamic.Diary] {
 	return conform.Suite[dynamic.Diary]{
 		Declaration: "Diary",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/dynamic",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[dynamic.Diary]{
 			{
 				ID:          DiaryChecks.Print.Smoke(),
@@ -199,6 +201,20 @@ func DiarySuite() conform.Suite[dynamic.Diary] {
 					})
 				},
 				Defect: diaryCountDrifts,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Diary.In",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Diary.Scale",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[dynamic.Diary]{
@@ -463,4 +479,4 @@ func diaryCountDrifts(h *DiaryHandle) dynamic.Diary {
 	return &diaryCountDriftsDefect{diaryOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3833bfb3ea51efbb0d7c1079da348e8b0af977e5aa67bf7c4f4c91b97111cee9
+// dokimi:provenance sha256:2079800076c027ab3a2c362bae2a983fcd6aa67f22d82c5dfcf4d261b38ec3e2

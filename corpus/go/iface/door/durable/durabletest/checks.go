@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package durabletest contains the suite of Store, the checks that a consumer
-// adds to the suite with the doors of their planted defects, and the control
+// adds to the suite with the doors of their planted defects, and the subject
 // of the suite.
 package durabletest
 

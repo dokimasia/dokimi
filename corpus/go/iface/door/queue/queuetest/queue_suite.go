@@ -115,6 +115,8 @@ func (c queueClose) Smoke() conform.ID[queue.Queue] {
 func QueueSuite() conform.Suite[queue.Queue] {
 	return conform.Suite[queue.Queue]{
 		Declaration: "Queue",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/door/queue",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[queue.Queue]{
 			{
 				ID:          QueueChecks.Write.Cancel(),
@@ -169,6 +171,40 @@ func QueueSuite() conform.Suite[queue.Queue] {
 				Apply:     CloseEndsAWaitingWrite,
 				Defect:    keepsWritesWaiting,
 				Around:    bubble,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Queue.Read",
+				Why:      "Read waits for the call of another callable on a fresh subject",
+				Remedy:   "remove the mixin waits where Read returns on a fresh subject",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Queue.Write",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:waits",
+				Callable:       "Queue.Write",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable can wait for another call.",
+			},
+			{
+				Classification: "mixin:waits",
+				Callable:       "Queue.Read",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable can wait for another call.",
+			},
+			{
+				Classification: "shape:closer",
+				Callable:       "Queue.Close",
+				Stance:         spec.Silent,
+				Note:           "A close returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[queue.Queue]{
@@ -365,4 +401,4 @@ func queueClosePanics(h *QueueHandle) queue.Queue {
 	return &queueClosePanicsDefect{queueOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e47e5e58f0774dbd1ac98dde52b25f7c66406f6e75268c49ede13ee885798d2d
+// dokimi:provenance sha256:58f98ff5cb9dbbc15e3723f3a5ac0ce5d45fc3220325b4aa3ba7b9b17c246c9c

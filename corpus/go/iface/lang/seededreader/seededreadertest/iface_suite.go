@@ -110,6 +110,8 @@ func (c catalogLen) ZeroOnError() conform.ID[seededreader.Catalog] {
 func CatalogSuite() conform.Suite[seededreader.Catalog] {
 	return conform.Suite[seededreader.Catalog]{
 		Declaration: "Catalog",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/seededreader",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[seededreader.Catalog]{
 			{
 				ID:          CatalogChecks.Lookup.Smoke(),
@@ -470,4 +472,4 @@ func catalogLenValueBeside(h *CatalogHandle) seededreader.Catalog {
 	return &catalogLenValueBesideDefect{catalogOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6b9105b28c7d2e40e96b27a2785559518d40b7731492beb38d9755b121238c52
+// dokimi:provenance sha256:f7d31d6a2488e1d765d983921dc460558577b76132c0d538f741fa39a190856c

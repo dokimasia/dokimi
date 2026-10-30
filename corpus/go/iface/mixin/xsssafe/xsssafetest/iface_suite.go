@@ -86,6 +86,8 @@ func (c mixedRender) XSSSafe() conform.ID[xsssafe.Mixed] {
 func MixedSuite() conform.Suite[xsssafe.Mixed] {
 	return conform.Suite[xsssafe.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/xsssafe",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[xsssafe.Mixed]{
 			{
 				ID:          MixedChecks.Render.Smoke(),
@@ -329,4 +331,4 @@ func mixedRenderEchoes(h *MixedHandle) xsssafe.Mixed {
 	return &mixedRenderEchoesDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:49deeea44b5562a262d0c1b633df1bdbf8f63ca88f68707e3fde11dc2cbe02fc
+// dokimi:provenance sha256:d59e7d076280da50989a25fe166a0157564e0f754fdefe7847ec43efc85ae1d8

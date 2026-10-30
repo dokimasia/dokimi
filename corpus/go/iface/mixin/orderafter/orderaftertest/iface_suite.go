@@ -117,6 +117,8 @@ func (c mixedPrepare) Cancel() conform.ID[orderafter.Mixed] {
 func MixedSuite() conform.Suite[orderafter.Mixed] {
 	return conform.Suite[orderafter.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/orderafter",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[orderafter.Mixed]{
 			{
 				ID:          MixedChecks.Commit.Smoke(),
@@ -211,6 +213,20 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 					})
 				},
 				Defect: mixedPrepareIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Commit",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Prepare",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[orderafter.Mixed]{
@@ -447,4 +463,4 @@ func mixedPrepareIgnoresCancel(h *MixedHandle) orderafter.Mixed {
 	return &mixedPrepareIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:53e82d3d386f45471ca960c524fea7d23bfcb4500fac01d8a93811c1121fdb82
+// dokimi:provenance sha256:11f05c3a316269c7b2cbeefb3c457cd63b26cd62da1b10fc3e913b557d1ac62b

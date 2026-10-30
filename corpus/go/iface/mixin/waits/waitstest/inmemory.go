@@ -1,7 +1,7 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
-// Package waitstest contains the suite of Lock. InMemory is the control of
+// Package waitstest contains the suite of Lock. InMemory is the subject of
 // the suite.
 package waitstest
 
@@ -19,7 +19,7 @@ const lease = time.Minute
 
 // InMemory implements [waits.Lock] in memory. A holder holds the lock until
 // Release, or until its lease ends. The corpus applies the suite of Lock to it
-// as a control.
+// as a subject.
 //
 //dokimi:subject waits.Lock new=NewInMemory
 type InMemory struct {

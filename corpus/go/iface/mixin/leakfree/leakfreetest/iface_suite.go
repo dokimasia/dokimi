@@ -140,6 +140,8 @@ func (c mixedOutstanding) ZeroOnError() conform.ID[leakfree.Mixed] {
 func MixedSuite() conform.Suite[leakfree.Mixed] {
 	return conform.Suite[leakfree.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/leakfree",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[leakfree.Mixed]{
 			{
 				ID:          MixedChecks.Acquire.Smoke(),
@@ -250,6 +252,26 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedOutstandingValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Acquire",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "mixin:leak-free",
+				Callable:       "Mixed.Acquire",
+				Stance:         spec.Gap,
+				Note:           "No claim states that the callable leaves no goroutine or task behind.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Release",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[leakfree.Mixed]{
@@ -518,4 +540,4 @@ func mixedOutstandingValueBeside(h *MixedHandle) leakfree.Mixed {
 	return &mixedOutstandingValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5671dc2cdfae31b180a1fd8d1ba8155bb4ae3d4ca06bd26748d167b547873da3
+// dokimi:provenance sha256:63b1bd28d4ebe6e62e59755dcddb172c1067b91dd246079f261c37a94894d575

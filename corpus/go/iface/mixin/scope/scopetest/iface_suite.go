@@ -107,6 +107,8 @@ func (c mixedGet) Cancel() conform.ID[scope.Mixed] {
 func MixedSuite() conform.Suite[scope.Mixed] {
 	return conform.Suite[scope.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/scope",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[scope.Mixed]{
 			{
 				ID:          MixedChecks.Set.Smoke(),
@@ -201,6 +203,20 @@ func MixedSuite() conform.Suite[scope.Mixed] {
 					})
 				},
 				Defect: mixedGetIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "Mixed.Set",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:scope",
+				Callable:       "Mixed.Set",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents the scope of the callable.",
 			},
 		},
 		Calls: []conform.Call[scope.Mixed]{
@@ -416,4 +432,4 @@ func mixedGetIgnoresCancel(h *MixedHandle) scope.Mixed {
 	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:202e12aab5feaee2f5c3874c60b6a81aa610eba6fd72fb4e021321cfc2b8226b
+// dokimi:provenance sha256:a8c9193f7618e662f965db8104685f0e8ab15744b8a3c72a0d09f24f956fb028

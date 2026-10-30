@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package voidlifecycletest contains the double and the suite of VoidLifecycle.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package voidlifecycletest
 
 import (
@@ -12,7 +12,7 @@ import (
 )
 
 // InMemory implements [voidlifecycle.VoidLifecycle] in memory. The corpus
-// applies the suite of VoidLifecycle to it as a control.
+// applies the suite of VoidLifecycle to it as a subject.
 //
 //dokimi:subject voidlifecycle.VoidLifecycle new=NewInMemory
 type InMemory struct {

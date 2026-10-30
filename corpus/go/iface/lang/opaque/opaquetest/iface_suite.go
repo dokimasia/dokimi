@@ -76,6 +76,8 @@ func (c storePut) AllocationBudget() conform.ID[opaque.Store] {
 func StoreSuite() conform.Suite[opaque.Store] {
 	return conform.Suite[opaque.Store]{
 		Declaration: "Store",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/opaque",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[opaque.Store]{
 			{
 				ID:          StoreChecks.Put.Smoke(),
@@ -107,6 +109,14 @@ func StoreSuite() conform.Suite[opaque.Store] {
 					})
 				},
 				Defect: storePutIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Store.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[opaque.Store]{
@@ -253,4 +263,4 @@ func storePutIgnoresCancel(h *StoreHandle) opaque.Store {
 	return &storePutIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6bc436cea9b429b866f7341751ce425c9461806d33b3a7793bde337faeaef69a
+// dokimi:provenance sha256:6c1072149b217c39a9e97426aec2cbf298522865d0f5ffc3dd04d6f4dd593287

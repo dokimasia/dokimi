@@ -115,6 +115,8 @@ func (c wideNoError) Smoke() conform.ID[multireturn.Wide] {
 func WideSuite() conform.Suite[multireturn.Wide] {
 	return conform.Suite[multireturn.Wide]{
 		Declaration: "Wide",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[multireturn.Wide]{
 			{
 				ID:          WideChecks.Quad.Smoke(),
@@ -182,6 +184,32 @@ func WideSuite() conform.Suite[multireturn.Wide] {
 					})
 				},
 				Defect: wideNoErrorPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroesOnError,
+				Callable: "Wide.Quad",
+				Why:      "Quad does not return exactly two values",
+				Remedy:   "return two values from Quad",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Wide.Triple",
+				Why:      "Triple cannot fail",
+				Remedy:   "give Triple an error result",
+			},
+			{
+				Claim:    spec.ZeroesOnMiss,
+				Callable: "Wide.Triple",
+				Why:      "Triple returns no presence flag",
+				Remedy:   "return a presence flag beside the value of Triple",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Wide.NoError",
+				Why:      "NoError cannot fail",
+				Remedy:   "give NoError an error result",
 			},
 		},
 		Calls: []conform.Call[multireturn.Wide]{
@@ -393,4 +421,4 @@ func wideNoErrorPanics(h *WideHandle) multireturn.Wide {
 	return &wideNoErrorPanicsDefect{wideOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:cd569ea8553917d322b872695be2dbcdf2aa81e1540bc427ee16c6aefa528fa0
+// dokimi:provenance sha256:d56f04a2c541c6ede5ba18592ae47527d4f3d8b5890c87b0b741d32b5d2bb329

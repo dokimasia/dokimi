@@ -110,6 +110,8 @@ func (c multiArgWriterGet) ZeroOnError() conform.ID[multiargwriter.MultiArgWrite
 func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 	return conform.Suite[multiargwriter.MultiArgWriter]{
 		Declaration: "MultiArgWriter",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/multiargwriter",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[multiargwriter.MultiArgWriter]{
 			{
 				ID:          MultiArgWriterChecks.Set.Smoke(),
@@ -189,6 +191,14 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 					}, string(""))
 				},
 				Defect: multiArgWriterGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "MultiArgWriter.Set",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[multiargwriter.MultiArgWriter]{
@@ -425,4 +435,4 @@ func multiArgWriterGetValueBeside(h *MultiArgWriterHandle) multiargwriter.MultiA
 	return &multiArgWriterGetValueBesideDefect{multiArgWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8062f06edaf2dd913bece28e32d7bd71b7bb06924d5155b9e4718b9001a4be52
+// dokimi:provenance sha256:b71c9b282be0a320d66540aefeb86c4bf8099e6e01dde561a6820ef879e61a0e

@@ -150,6 +150,8 @@ func (c txWithRetryRollback) Cancel() conform.ID[txwithretry.TxWithRetry] {
 func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 	return conform.Suite[txwithretry.TxWithRetry]{
 		Declaration: "TxWithRetry",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/composite/tx-with-retry",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[txwithretry.TxWithRetry]{
 			{
 				ID:          TxWithRetryChecks.Begin.Smoke(),
@@ -260,6 +262,34 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 					})
 				},
 				Defect: txWithRetryRollbackIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Tx,
+				Callable: "TxWithRetry.Begin",
+				Why:      "Begin does not return exactly one value",
+				Remedy:   "return one value from Begin",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "TxWithRetry.Begin",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "TxWithRetry.Commit",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "TxWithRetry.Rollback",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[txwithretry.TxWithRetry]{
@@ -541,4 +571,4 @@ func txWithRetryRollbackIgnoresCancel(h *TxWithRetryHandle) txwithretry.TxWithRe
 	return &txWithRetryRollbackIgnoresCancelDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e2890eda767c55c16f158dcb3e824b8488326835eddcef20885010af0ad1b1e4
+// dokimi:provenance sha256:2365768b04276c207e6d3bce1ec49b1ef8486c4ecc56c453ff27e6f9da8ebe2c

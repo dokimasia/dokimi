@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package overmatchtest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package overmatchtest
 
 import (
@@ -16,7 +16,7 @@ import (
 )
 
 // InMemory implements [overmatch.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject overmatch.Mixed new=NewInMemory
 type InMemory struct {

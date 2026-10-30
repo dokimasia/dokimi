@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package idempotenttest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package idempotenttest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("idempotenttest: not found")
 
 // InMemory implements [idempotent.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject idempotent.Mixed new=NewInMemory
 type InMemory struct {

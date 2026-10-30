@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package workflowtest contains the double and the suite of Contract. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package workflowtest
 
 import (
@@ -18,7 +18,7 @@ import (
 var ErrTerminal = errors.New("workflowtest: no transition out of the last state")
 
 // InMemory implements [workflow.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject workflow.Contract new=NewInMemory
 type InMemory struct {

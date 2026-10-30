@@ -111,6 +111,8 @@ func (c mixedRead) ZeroOnError() conform.ID[idempotent.Mixed] {
 func MixedSuite() conform.Suite[idempotent.Mixed] {
 	return conform.Suite[idempotent.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotent",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[idempotent.Mixed]{
 			{
 				ID:          MixedChecks.Put.Smoke(),
@@ -205,6 +207,14 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 					}, string(""))
 				},
 				Defect: mixedReadValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[idempotent.Mixed]{
@@ -446,4 +456,4 @@ func mixedReadValueBeside(h *MixedHandle) idempotent.Mixed {
 	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:bb1e25e4d962a05af094675d1b5c1e1e479b3f41b927632f164c766df87b9679
+// dokimi:provenance sha256:89ff090f4c57d3aa1deaa5fa038ae6d66c9dc143b9537f704ff4309c878d1fb5

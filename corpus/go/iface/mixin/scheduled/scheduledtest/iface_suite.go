@@ -115,6 +115,8 @@ func (c mixedFired) ZeroOnError() conform.ID[scheduled.Mixed] {
 func MixedSuite() conform.Suite[scheduled.Mixed] {
 	return conform.Suite[scheduled.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/scheduled",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[scheduled.Mixed]{
 			{
 				ID:          MixedChecks.At.Smoke(),
@@ -214,6 +216,14 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedFiredValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.At",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[scheduled.Mixed]{
@@ -452,4 +462,4 @@ func mixedFiredValueBeside(h *MixedHandle) scheduled.Mixed {
 	return &mixedFiredValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7aac8ebc550fb2d15524987abf5935b1280cc342dbbafb1976052ac369aea2f5
+// dokimi:provenance sha256:51614bee73d5df32667b7a2d985f4f3633a4845c115754efd90cc19af0952937

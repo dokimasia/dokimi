@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package ttltest contains the suite and the double of Mixed. InMemory is the
-// control of the suite.
+// subject of the suite.
 package ttltest
 
 import (
@@ -24,9 +24,9 @@ const lifetime = time.Minute
 const StaleKey = "ttltest-stale"
 
 // InMemory implements [ttl.Mixed] in memory. The corpus applies the suite of
-// Mixed to it as a control, on the clock of each check. A write of the
-// control allocates nothing after a warm-up of 1000 writes, which a budget of
-// the control alone states.
+// Mixed to it as a subject, on the clock of each check. A write of the
+// subject allocates nothing after a warm-up of 1000 writes, which a budget of
+// the subject alone states.
 //
 //dokimi:subject ttl.Mixed new=NewInMemoryFromHandle
 //dokimi:budget Mixed.Put allocs=0 p99=1ms warmup=1000

@@ -115,6 +115,8 @@ func (c contractMatch) ZeroOnError() conform.ID[ifmatch.Contract] {
 func ContractSuite() conform.Suite[ifmatch.Contract] {
 	return conform.Suite[ifmatch.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-match",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[ifmatch.Contract]{
 			{
 				ID:          ContractChecks.Put.Smoke(),
@@ -222,6 +224,14 @@ func ContractSuite() conform.Suite[ifmatch.Contract] {
 					}, bool(false))
 				},
 				Defect: contractMatchValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[ifmatch.Contract]{
@@ -472,4 +482,4 @@ func contractMatchValueBeside(h *ContractHandle) ifmatch.Contract {
 	return &contractMatchValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c1917524512e4d0b4e85ba460e50641533daab51d95847490b9333fde7c0d630
+// dokimi:provenance sha256:00cd522b6ee1c9764e57f4244c6af861f0c3edd37d7167d73d420319c52c3abd

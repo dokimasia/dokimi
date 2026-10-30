@@ -116,6 +116,8 @@ func (c mixedObserved) ZeroOnError() conform.ID[sideeffect.Mixed] {
 func MixedSuite() conform.Suite[sideeffect.Mixed] {
 	return conform.Suite[sideeffect.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/sideeffect",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[sideeffect.Mixed]{
 			{
 				ID:          MixedChecks.Touch.Smoke(),
@@ -212,6 +214,14 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedObservedValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Touch",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[sideeffect.Mixed]{
@@ -447,4 +457,4 @@ func mixedObservedValueBeside(h *MixedHandle) sideeffect.Mixed {
 	return &mixedObservedValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:614f67865d5f4dcc45a5fbb9358faefa735d0ef65b01a8369932e07ed4f5e790
+// dokimi:provenance sha256:6dc5594b2eba62dc7de4842be6eb0799471f57288ac794ef023b8886ebae35dd

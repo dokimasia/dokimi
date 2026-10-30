@@ -107,6 +107,8 @@ func (c mixedCount) ZeroOnError() conform.ID[concurrent.Mixed] {
 func MixedSuite() conform.Suite[concurrent.Mixed] {
 	return conform.Suite[concurrent.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrent",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[concurrent.Mixed]{
 			{
 				ID:          MixedChecks.Bump.Smoke(),
@@ -186,6 +188,20 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedCountValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Bump",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:concurrent",
+				Callable:       "Mixed.Bump",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[concurrent.Mixed]{
@@ -412,4 +428,4 @@ func mixedCountValueBeside(h *MixedHandle) concurrent.Mixed {
 	return &mixedCountValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5d8c9e2d4581daf1956acbbf06cca1f6696926b3e2d06399418af53b48ed4fd1
+// dokimi:provenance sha256:2c9b136d7835df22aa78882b4a8bbfb2fe3b6a18a36ee0146ba11998a6ecab91

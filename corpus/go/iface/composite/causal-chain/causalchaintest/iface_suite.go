@@ -140,6 +140,8 @@ func (c logReplay) ZeroOnError() conform.ID[causalchain.Log] {
 func LogSuite() conform.Suite[causalchain.Log] {
 	return conform.Suite[causalchain.Log]{
 		Declaration: "Log",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[causalchain.Log]{
 			{
 				ID:          LogChecks.Append.Smoke(),
@@ -279,6 +281,22 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				Statement: "Replay returns the body that Append admitted",
 				Apply:     KeepsTheBody,
 				Defect:    losesBodies,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Causal,
+				Callable: "Log.Append",
+				Why:      "Append does not return exactly one value",
+				Remedy:   "return one value from Append",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Log.Append",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[causalchain.Log]{
@@ -559,4 +577,4 @@ func logReplayValueBeside(h *LogHandle) causalchain.Log {
 	return &logReplayValueBesideDefect{logOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5cbaa2c04a50e4ca605f385c22756d26204f233bc561fb842445854508a83649
+// dokimi:provenance sha256:99f5c681613967ade3b9f03cfd19b305c43069493ef64769ffffb23f636f736d

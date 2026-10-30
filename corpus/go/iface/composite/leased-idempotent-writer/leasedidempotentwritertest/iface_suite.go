@@ -117,6 +117,8 @@ func (c leasedWriterRelease) Cancel() conform.ID[leasedidempotentwriter.LeasedWr
 func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 	return conform.Suite[leasedidempotentwriter.LeasedWriter]{
 		Declaration: "LeasedWriter",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/composite/leased-idempotent-writer",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[leasedidempotentwriter.LeasedWriter]{
 			{
 				ID:          LeasedWriterChecks.Acquire.Smoke(),
@@ -194,6 +196,26 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 					})
 				},
 				Defect: leasedWriterReleaseIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "LeasedWriter.Acquire",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "LeasedWriter.Release",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:lease/release",
+				Callable:       "LeasedWriter.Release",
+				Stance:         spec.Gap,
+				Note:           "No claim states that a released lease is granted again.",
 			},
 		},
 		Calls: []conform.Call[leasedidempotentwriter.LeasedWriter]{
@@ -432,4 +454,4 @@ func leasedWriterReleaseIgnoresCancel(h *LeasedWriterHandle) leasedidempotentwri
 	return &leasedWriterReleaseIgnoresCancelDefect{leasedWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6733f798b295e1d0fff59ca475f06c3615a0a492d1fa47ecb2c71c9cd17fd4b8
+// dokimi:provenance sha256:1373d4f769fab4192cd04b443a4f1e5dfe3b43585148f90e2c0b55fe4705b4b7

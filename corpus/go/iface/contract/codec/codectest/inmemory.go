@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package codectest contains the double and the suite of Contract. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package codectest
 
 import (
@@ -15,7 +15,7 @@ import (
 )
 
 // InMemory implements [codec.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject codec.Contract new=NewInMemory
 type InMemory struct{}

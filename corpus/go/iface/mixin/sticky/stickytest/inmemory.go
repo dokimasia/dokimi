@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package stickytest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package stickytest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("stickytest: not found")
 
 // InMemory implements [sticky.Mixed] in memory. The corpus applies the suite
-// of Mixed to it as a control.
+// of Mixed to it as a subject.
 //
 //dokimi:subject sticky.Mixed new=NewInMemory
 type InMemory struct {

@@ -84,6 +84,8 @@ type filterDrain struct {
 func FilterSuite() conform.Suite[selfnamed.Filter] {
 	return conform.Suite[selfnamed.Filter]{
 		Declaration: "Filter",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/selfnamed",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[selfnamed.Filter]{
 			{
 				ID:          FilterChecks.Filter.Smoke(),
@@ -119,6 +121,14 @@ func FilterSuite() conform.Suite[selfnamed.Filter] {
 					})
 				},
 				Defect: filterFilterDrifts,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Filter.Drain",
+				Why:      "eidos derives no sample of the parameter src of Drain",
+				Remedy:   "author a sample of the parameter src with the directive sample",
 			},
 		},
 		Calls: []conform.Call[selfnamed.Filter]{
@@ -313,4 +323,4 @@ func filterFilterDrifts(h *FilterHandle) selfnamed.Filter {
 	return &filterFilterDriftsDefect{filterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fba08f48bff22358b764679f2d52d2823712de22d38b0e3921f4533e73025c67
+// dokimi:provenance sha256:c2051dc87ca0889f954a87d2ac91ab4cbb880a3d4902567d2bdc6e79686d6adb

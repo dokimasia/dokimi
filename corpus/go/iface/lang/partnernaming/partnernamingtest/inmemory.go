@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package partnernamingtest contains the double and the suite of Store.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package partnernamingtest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [partnernaming.Store] in memory. The corpus applies
-// the suite of Store to it as a control.
+// the suite of Store to it as a subject.
 //
 //dokimi:subject partnernaming.Store new=NewInMemory
 type InMemory struct {

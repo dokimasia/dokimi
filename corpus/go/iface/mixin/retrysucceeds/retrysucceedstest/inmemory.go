@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package retrysucceedstest contains the double and the suite of Mixed.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package retrysucceedstest
 
 import (
@@ -22,7 +22,7 @@ var ErrTransient = errors.New("retrysucceedstest: transient failure")
 const failuresBeforeSuccess = 2
 
 // InMemory implements [retrysucceeds.Mixed] in memory. The corpus applies
-// the suite of Mixed to it as a control.
+// the suite of Mixed to it as a subject.
 //
 //dokimi:subject retrysucceeds.Mixed new=NewInMemory
 type InMemory struct {

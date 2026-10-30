@@ -81,6 +81,8 @@ func (c contractRun) RateLimit() conform.ID[ratelimit.Contract] {
 func ContractSuite() conform.Suite[ratelimit.Contract] {
 	return conform.Suite[ratelimit.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/rate-limit",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[ratelimit.Contract]{
 			{
 				ID:          ContractChecks.Run.Smoke(),
@@ -127,6 +129,14 @@ func ContractSuite() conform.Suite[ratelimit.Contract] {
 					}, 10, ratelimit.ErrLimited)
 				},
 				Defect: contractRunSucceedsAlways,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Run",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[ratelimit.Contract]{
@@ -293,4 +303,4 @@ func contractRunSucceedsAlways(h *ContractHandle) ratelimit.Contract {
 	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5f333e33540466eca60198d5fc42074fdfb933b9e2dd8da95a25ce2a5337b956
+// dokimi:provenance sha256:2a0b6c2f80db8bef88b1670154539e94d6e2c9e23b6b6e1670185229d052f0c5

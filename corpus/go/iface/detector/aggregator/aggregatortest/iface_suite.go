@@ -77,6 +77,8 @@ func (c aggregatorCount) ZeroOnError() conform.ID[aggregator.Aggregator] {
 func AggregatorSuite() conform.Suite[aggregator.Aggregator] {
 	return conform.Suite[aggregator.Aggregator]{
 		Declaration: "Aggregator",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/aggregator",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[aggregator.Aggregator]{
 			{
 				ID:          AggregatorChecks.Count.Smoke(),
@@ -291,4 +293,4 @@ func aggregatorCountValueBeside(h *AggregatorHandle) aggregator.Aggregator {
 	return &aggregatorCountValueBesideDefect{aggregatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7c42ddc2203f34b8dc812d5fe03f3b8856123baf2c9e03d6c0f7aab64d4f45ac
+// dokimi:provenance sha256:8e93a169c876c36955713430dacf1699c91e2802d33580c6ce4cb74f6671f589

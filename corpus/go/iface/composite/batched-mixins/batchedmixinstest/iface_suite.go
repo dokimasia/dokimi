@@ -198,6 +198,8 @@ func (c batchedList) Pure() conform.ID[batchedmixins.Batched] {
 func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 	return conform.Suite[batchedmixins.Batched]{
 		Declaration: "Batched",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[batchedmixins.Batched]{
 			{
 				ID:          BatchedChecks.Put.Smoke(),
@@ -415,6 +417,26 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Statement: "List returns at most 50 keys after 51 writes",
 				Apply:     ListsAtMostTheLimit,
 				Defect:    unbounded,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Batched.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:concurrent",
+				Callable:       "Batched.Put",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
+			},
+			{
+				Classification: "mixin:bounded",
+				Callable:       "Batched.List",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[batchedmixins.Batched]{
@@ -830,4 +852,4 @@ func batchedListDrifts(h *BatchedHandle) batchedmixins.Batched {
 	return &batchedListDriftsDefect{batchedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:788bfe116ac28d9392e51c4f6864dfdb7559c38194d1defa1bf84ee90f5ca3f7
+// dokimi:provenance sha256:838831898558549dbea44b322652605d65b38f0e489082248355db5e16ab4172

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package leakfreetest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package leakfreetest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotAcquired = errors.New("leakfreetest: nothing to release")
 
 // InMemory implements [leakfree.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject leakfree.Mixed new=NewInMemory
 type InMemory struct {

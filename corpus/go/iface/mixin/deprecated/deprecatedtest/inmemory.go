@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package deprecatedtest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package deprecatedtest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("deprecatedtest: not found")
 
 // InMemory implements [deprecated.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject deprecated.Mixed new=NewInMemory
 type InMemory struct {

@@ -123,6 +123,8 @@ func (c mixedNormalize) Deterministic() conform.ID[total.Mixed] {
 func MixedSuite() conform.Suite[total.Mixed] {
 	return conform.Suite[total.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/total",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[total.Mixed]{
 			{
 				ID:          MixedChecks.Classify.Smoke(),
@@ -223,6 +225,14 @@ func MixedSuite() conform.Suite[total.Mixed] {
 					})
 				},
 				Defect: mixedNormalizeDrifts,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Total,
+				Callable: "Mixed.Normalize",
+				Why:      "Normalize cannot fail",
+				Remedy:   "give Normalize an error result",
 			},
 		},
 		Calls: []conform.Call[total.Mixed]{
@@ -466,4 +476,4 @@ func mixedNormalizeDrifts(h *MixedHandle) total.Mixed {
 	return &mixedNormalizeDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b48ae37f859a83cbc8be61c5c9558a45652bf8b4d31c76c3c378e43d1e528cf8
+// dokimi:provenance sha256:351022cdf0e8f04849a37222de19a9b5e95d6ec71b468478006dcd187d665779

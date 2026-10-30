@@ -22,6 +22,10 @@ func TestLogConformsToLog(t *testing.T) {
 		replica.New,
 		conform.Isolate[causalchain.Log](),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.Chain(),
+			"a replica refuses each append, so its replay never grows",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.ChainCausal(),
 			"a replica refuses each append, so its replay has no stamps to order",
 		),
@@ -40,6 +44,10 @@ func TestLogConformsToLog(t *testing.T) {
 // Log.
 func BenchmarkLogConformsToLog(b *testing.B) {
 	opts := []causalchaintest.LogOption{
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.Chain(),
+			"a replica refuses each append, so its replay never grows",
+		),
 		conform.Excuse(
 			causalchaintest.LogChecks.Append.ChainCausal(),
 			"a replica refuses each append, so its replay has no stamps to order",
@@ -77,6 +85,10 @@ func FuzzLogConformsToLogAppend(f *testing.F) {
 		causalchaintest.LogChecks.Append.Callable,
 		func(*causalchaintest.LogHandle) *replica.Log { return replica.New() },
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.Chain(),
+			"a replica refuses each append, so its replay never grows",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.ChainCausal(),
 			"a replica refuses each append, so its replay has no stamps to order",
 		),
@@ -99,6 +111,10 @@ func FuzzLogConformsToLogReplay(f *testing.F) {
 		causalchaintest.LogChecks.Replay.Callable,
 		func(*causalchaintest.LogHandle) *replica.Log { return replica.New() },
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.Chain(),
+			"a replica refuses each append, so its replay never grows",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.ChainCausal(),
 			"a replica refuses each append, so its replay has no stamps to order",
 		),
@@ -113,4 +129,4 @@ func FuzzLogConformsToLogReplay(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:714a4e94f1e337f131560145589fff9377ce148c501f7a63f41aaa5f89ef5b0a
+// dokimi:provenance sha256:9169ffb32ccf57a7d1d1325790bd61369e5e328853edd1845491f0046b3f1983

@@ -150,6 +150,8 @@ func (c servicePartiallyNamed) ZeroOnError() conform.ID[namedreturns.Service] {
 func ServiceSuite() conform.Suite[namedreturns.Service] {
 	return conform.Suite[namedreturns.Service]{
 		Declaration: "Service",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/namedreturns",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[namedreturns.Service]{
 			{
 				ID:          ServiceChecks.Named.Smoke(),
@@ -620,4 +622,4 @@ func servicePartiallyNamedValueBeside(h *ServiceHandle) namedreturns.Service {
 	return &servicePartiallyNamedValueBesideDefect{serviceOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:968b867f33694798440552c00ab000852a3d77d8d022408c5f09d647026b5071
+// dokimi:provenance sha256:49e642b385a52cb138eaf304a3faaed5d1eb9449e857c789c65b4caa07b57be0

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package puretest contains the double and the suite of Pure. InMemory is the
-// control of the suite.
+// subject of the suite.
 package puretest
 
 import (
@@ -10,7 +10,7 @@ import (
 )
 
 // InMemory implements [pure.Pure] in memory. The corpus applies the suite of
-// Pure to it as a control.
+// Pure to it as a subject.
 //
 //dokimi:subject pure.Pure new=NewInMemory
 type InMemory struct{ label string }
@@ -18,7 +18,7 @@ type InMemory struct{ label string }
 // The compiler checks that InMemory implements [pure.Pure].
 var _ pure.Pure = (*InMemory)(nil)
 
-// NewInMemory returns an InMemory with the label control.
+// NewInMemory returns an InMemory with the label subject.
 func NewInMemory() *InMemory { return NewInMemoryLabelled("control") }
 
 // NewInMemoryLabelled returns an InMemory whose description names label.

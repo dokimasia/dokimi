@@ -75,6 +75,8 @@ func (c contractRun) Cancel() conform.ID[circuitbreaker.Contract] {
 func ContractSuite() conform.Suite[circuitbreaker.Contract] {
 	return conform.Suite[circuitbreaker.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/circuit-breaker",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[circuitbreaker.Contract]{
 			{
 				ID:          ContractChecks.Run.Smoke(),
@@ -106,6 +108,20 @@ func ContractSuite() conform.Suite[circuitbreaker.Contract] {
 					})
 				},
 				Defect: contractRunIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Run",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:circuit-breaker/fn",
+				Callable:       "Contract.Run",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need a call that fails on demand.",
 			},
 		},
 		Calls: []conform.Call[circuitbreaker.Contract]{
@@ -251,4 +267,4 @@ func contractRunIgnoresCancel(h *ContractHandle) circuitbreaker.Contract {
 	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9bff414fe27dcb0ba4cb924ac35ebf498067d542281dfea75d58b83e50388b4b
+// dokimi:provenance sha256:6f28ce52a9ed7372408321c888a242552c6a1a335c9a33bb0844c010ea5b271c

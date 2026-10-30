@@ -106,6 +106,8 @@ func (c mixedList) ZeroOnError() conform.ID[bounded.Mixed] {
 func MixedSuite() conform.Suite[bounded.Mixed] {
 	return conform.Suite[bounded.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/bounded",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[bounded.Mixed]{
 			{
 				ID:          MixedChecks.Add.Smoke(),
@@ -185,6 +187,20 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 					}, []string(nil))
 				},
 				Defect: mixedListValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:bounded",
+				Callable:       "Mixed.List",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[bounded.Mixed]{
@@ -397,4 +413,4 @@ func mixedListValueBeside(h *MixedHandle) bounded.Mixed {
 	return &mixedListValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:dc92e59c3e02e226767d78fbb47324fec752572668f2d691b592b2f512161a5c
+// dokimi:provenance sha256:50de88f4f5bb14aad93a453f2d5c315cfbf022d191897ec72ec1b21b25db06a0

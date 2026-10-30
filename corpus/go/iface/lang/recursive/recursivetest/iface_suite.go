@@ -12,6 +12,7 @@ import (
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/recursive"
+	"go.dokimi.dev/spec"
 )
 
 // The refused claims of Counter:
@@ -73,6 +74,8 @@ func (c counterSteps) TakesTheFirstStep() conform.ID[recursive.Counter] {
 func CounterSuite() conform.Suite[recursive.Counter] {
 	return conform.Suite[recursive.Counter]{
 		Declaration: "Counter",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/recursive",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[recursive.Counter]{
 			{
 				ID:        CounterChecks.Nodes.CountsTheRoot(),
@@ -85,6 +88,20 @@ func CounterSuite() conform.Suite[recursive.Counter] {
 				Statement: "Steps counts the first step of a machine that the case draws",
 				Property:  TakesTheFirstStep,
 				Defect:    countsNothing,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Counter.Nodes",
+				Why:      "eidos derives no sample of the parameter root of Nodes",
+				Remedy:   "author a sample of the parameter root with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Counter.Steps",
+				Why:      "eidos derives no sample of the parameter start of Steps",
+				Remedy:   "author a sample of the parameter start with the directive sample",
 			},
 		},
 		Calls: []conform.Call[recursive.Counter]{
@@ -310,4 +327,4 @@ func newCounterOver(_ *CounterHandle, spend func()) recursive.Counter {
 	return counterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f838f9664d2d14797391dacaa9cba7a8a5bab09f0360fe80cdb10c5350a7a45f
+// dokimi:provenance sha256:c0f12a82c49f80523a44080bd00d184fb721f49dca0bab400362fe1bf82f2282

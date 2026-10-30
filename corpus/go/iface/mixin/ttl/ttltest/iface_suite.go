@@ -132,6 +132,8 @@ func (c mixedRead) MeanLatencyBudget() conform.ID[ttl.Mixed] {
 func MixedSuite() conform.Suite[ttl.Mixed] {
 	return conform.Suite[ttl.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[ttl.Mixed]{
 			{
 				ID:          MixedChecks.Put.Smoke(),
@@ -229,6 +231,14 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				},
 				Defect: mixedReadAnswersASample,
 				Around: synctest.Test,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[ttl.Mixed]{
@@ -469,4 +479,4 @@ func mixedReadAnswersASample(h *MixedHandle) ttl.Mixed {
 	return &mixedReadAnswersASampleDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b394d6aeb5c451bf960dd50a847b3d473f541164234040ef7a4d10cc3f82c1c2
+// dokimi:provenance sha256:963db6358da95fb36b1b339e963b52b64c23a017685137f8d92ed06a0380bcc1

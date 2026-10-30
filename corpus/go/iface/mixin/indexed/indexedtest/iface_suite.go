@@ -139,6 +139,8 @@ func (c rankedAt) ZeroOnError() conform.ID[indexed.Ranked] {
 func RankedSuite() conform.Suite[indexed.Ranked] {
 	return conform.Suite[indexed.Ranked]{
 		Declaration: "Ranked",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[indexed.Ranked]{
 			{
 				ID:          RankedChecks.Add.Smoke(),
@@ -266,6 +268,20 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 					}, indexed.Value{})
 				},
 				Defect: rankedAtValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Ranked.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:indexed",
+				Callable:       "Ranked.At",
+				Stance:         spec.Gap,
+				Note:           "No claim states that a read by index returns the element at that index.",
 			},
 		},
 		Calls: []conform.Call[indexed.Ranked]{
@@ -561,4 +577,4 @@ func rankedAtValueBeside(h *RankedHandle) indexed.Ranked {
 	return &rankedAtValueBesideDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5146a50795f8d42812be08718a74acffae473f809e13ec83911f56e57083a8d1
+// dokimi:provenance sha256:d79898f3b9062ba800f0c5ea5eda2d6ef7dd7d02d7f0dbd9c10f4626f93f9840

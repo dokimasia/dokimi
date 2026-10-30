@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package readertest contains the double and the suite of Reader. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package readertest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [reader.Reader] in memory. The corpus applies the
-// suite of Reader to it as a control.
+// suite of Reader to it as a subject.
 //
 //dokimi:subject reader.Reader new=NewInMemory
 type InMemory struct {

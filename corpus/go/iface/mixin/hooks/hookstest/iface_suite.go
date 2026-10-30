@@ -98,6 +98,8 @@ func (c mixedOnEvent) Smoke() conform.ID[hooks.Mixed] {
 func MixedSuite() conform.Suite[hooks.Mixed] {
 	return conform.Suite[hooks.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/hooks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[hooks.Mixed]{
 			{
 				ID:          MixedChecks.Fire.Smoke(),
@@ -146,6 +148,28 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 					})
 				},
 				Defect: mixedOnEventPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Hooks,
+				Callable: "Mixed.Fire",
+				Why:      "a parameter of the read of Fire selects neither a value that register takes nor a field of the written value",
+				Remedy:   "align the name of the parameter of the read with a parameter or a field of the write",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Fire",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Mixed.OnEvent",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[hooks.Mixed]{
@@ -318,4 +342,4 @@ func mixedOnEventPanics(h *MixedHandle) hooks.Mixed {
 	return &mixedOnEventPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:09935a26f2f33c489025137f1b8af24d49b824887013eb3efa57c773b88ebe1a
+// dokimi:provenance sha256:fdea03271ce7278628ca0e71860948327ebfda26458e27c10fec7a93e2f5294d

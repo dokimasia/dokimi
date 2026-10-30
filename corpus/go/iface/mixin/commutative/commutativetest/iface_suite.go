@@ -108,6 +108,8 @@ func (c mixedTotal) ZeroOnError() conform.ID[commutative.Mixed] {
 func MixedSuite() conform.Suite[commutative.Mixed] {
 	return conform.Suite[commutative.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/commutative",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[commutative.Mixed]{
 			{
 				ID:          MixedChecks.Apply.Smoke(),
@@ -187,6 +189,20 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedTotalValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Apply",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:commutative",
+				Callable:       "Mixed.Apply",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[commutative.Mixed]{
@@ -404,4 +420,4 @@ func mixedTotalValueBeside(h *MixedHandle) commutative.Mixed {
 	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:30d518e5a1c4d786d68302cbdea3aa7d64f7782c889e8a88066ec1adf88999fd
+// dokimi:provenance sha256:8a8c9db6ac4676996ed1fcb896a3b1617c3e73aa9a0dfb70a48aa23ec79fb81d

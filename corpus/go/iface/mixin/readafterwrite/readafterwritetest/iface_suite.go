@@ -114,6 +114,8 @@ func (c mixedWrite) Cancel() conform.ID[readafterwrite.Mixed] {
 func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 	return conform.Suite[readafterwrite.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/readafterwrite",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[readafterwrite.Mixed]{
 			{
 				ID:          MixedChecks.Read.Smoke(),
@@ -213,6 +215,14 @@ func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 					})
 				},
 				Defect: mixedWriteIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Write",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[readafterwrite.Mixed]{
@@ -459,4 +469,4 @@ func mixedWriteIgnoresCancel(h *MixedHandle) readafterwrite.Mixed {
 	return &mixedWriteIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4eefaf35beebdd861aa03fdcd57fbaecedd298e83df23229a3d9f53fe00cc6b1
+// dokimi:provenance sha256:80b0af7b985a0f6f5eeef4584677817d0b144486aba64e08bdd39b56a0cc540a

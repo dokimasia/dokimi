@@ -74,6 +74,8 @@ func (c pointerReaderFind) NilOnMiss() conform.ID[pointerreader.PointerReader] {
 func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
 	return conform.Suite[pointerreader.PointerReader]{
 		Declaration: "PointerReader",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[pointerreader.PointerReader]{
 			{
 				ID:          PointerReaderChecks.Find.Smoke(),
@@ -107,6 +109,14 @@ func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
 					})
 				},
 				Defect: pointerReaderFindInventsAPointer,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "PointerReader.Find",
+				Why:      "Find cannot fail",
+				Remedy:   "give Find an error result",
 			},
 		},
 		Calls: []conform.Call[pointerreader.PointerReader]{
@@ -259,4 +269,4 @@ func pointerReaderFindInventsAPointer(h *PointerReaderHandle) pointerreader.Poin
 	return &pointerReaderFindInventsAPointerDefect{pointerReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:df3e00a532f00c861fa92274d50bc99bd6714b5758b742317188f86696eb3357
+// dokimi:provenance sha256:a3a3834864fe6132217a6cb566c1fba1a2ab5aeb4c661becd5699c5ca1ea1103

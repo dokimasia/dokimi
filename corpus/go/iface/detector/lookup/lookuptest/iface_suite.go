@@ -64,6 +64,8 @@ func (c lookupInspect) Smoke() conform.ID[lookup.Lookup] {
 func LookupSuite() conform.Suite[lookup.Lookup] {
 	return conform.Suite[lookup.Lookup]{
 		Declaration: "Lookup",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[lookup.Lookup]{
 			{
 				ID:          LookupChecks.Inspect.Smoke(),
@@ -81,6 +83,14 @@ func LookupSuite() conform.Suite[lookup.Lookup] {
 					})
 				},
 				Defect: lookupInspectPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroesOnMiss,
+				Callable: "Lookup.Inspect",
+				Why:      "Inspect returns no presence flag",
+				Remedy:   "return a presence flag beside the value of Inspect",
 			},
 		},
 		Calls: []conform.Call[lookup.Lookup]{
@@ -197,4 +207,4 @@ func lookupInspectPanics(h *LookupHandle) lookup.Lookup {
 	return &lookupInspectPanicsDefect{lookupOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0dff2f8a0e52f36582e5a7e3654e62f0d05c760f50ad0dfd47997cbb0a385bff
+// dokimi:provenance sha256:7e58e29baf2d278d489c85ce206cb111d0fb6c641ac1038a7a672a699f8c85fc

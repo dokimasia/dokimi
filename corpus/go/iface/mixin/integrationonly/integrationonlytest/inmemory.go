@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package integrationonlytest contains the double and the suite of Mixed.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package integrationonlytest
 
 import (
@@ -18,7 +18,7 @@ import (
 var ErrBadDSN = errors.New("integrationonlytest: malformed dsn")
 
 // InMemory implements [integrationonly.Mixed] in memory. The corpus applies
-// the suite of Mixed to it as a control.
+// the suite of Mixed to it as a subject.
 //
 //dokimi:subject integrationonly.Mixed new=NewInMemory
 type InMemory struct {

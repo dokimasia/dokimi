@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package errorstest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package errorstest
 
 import (
@@ -17,7 +17,7 @@ import (
 const gone = "gone"
 
 // InMemory implements [errors.Mixed] in memory. The corpus applies the suite
-// of Mixed to it as a control.
+// of Mixed to it as a subject.
 //
 //dokimi:subject errors.Mixed new=NewInMemory
 type InMemory struct {

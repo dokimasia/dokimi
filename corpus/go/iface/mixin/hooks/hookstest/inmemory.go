@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package hookstest contains the double and the suite of Mixed. InMemory is the
-// control of the suite.
+// subject of the suite.
 package hookstest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [hooks.Mixed] in memory. The corpus applies the suite
-// of Mixed to it as a control.
+// of Mixed to it as a subject.
 //
 //dokimi:subject hooks.Mixed new=NewInMemory
 type InMemory struct {

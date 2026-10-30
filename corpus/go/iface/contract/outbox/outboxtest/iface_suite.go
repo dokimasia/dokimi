@@ -113,6 +113,8 @@ func (c contractSubscribe) Cancel() conform.ID[outbox.Contract] {
 func ContractSuite() conform.Suite[outbox.Contract] {
 	return conform.Suite[outbox.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/outbox",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[outbox.Contract]{
 			{
 				ID:          ContractChecks.Append.Smoke(),
@@ -177,6 +179,34 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 					})
 				},
 				Defect: contractSubscribeIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Contract.Subscribe",
+				Why:      "eidos derives no sample of a result of Subscribe",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Append",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:outbox/append",
+				Callable:       "Contract.Append",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
+			},
+			{
+				Classification: "contract:outbox/subscribe",
+				Callable:       "Contract.Subscribe",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[outbox.Contract]{
@@ -373,4 +403,4 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) outbox.Contract {
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6612e84d7b7d864f6ab196fd81c6234a73dc081c29dd9047a3f520a99e643d56
+// dokimi:provenance sha256:0b92757fbd24f16d74e4cf4d57129d42c8abb91ade12d387183eb6625b6c58ce

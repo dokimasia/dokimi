@@ -120,6 +120,8 @@ func (c paginatedReaderAdd) Cancel() conform.ID[paginatedreader.PaginatedReader]
 func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 	return conform.Suite[paginatedreader.PaginatedReader]{
 		Declaration: "PaginatedReader",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/composite/paginated-reader",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[paginatedreader.PaginatedReader]{
 			{
 				ID:          PaginatedReaderChecks.Fetch.Smoke(),
@@ -214,6 +216,14 @@ func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 					})
 				},
 				Defect: paginatedReaderAddIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "PaginatedReader.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[paginatedreader.PaginatedReader]{
@@ -477,4 +487,4 @@ func paginatedReaderAddIgnoresCancel(h *PaginatedReaderHandle) paginatedreader.P
 	return &paginatedReaderAddIgnoresCancelDefect{paginatedReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d2beaaca49674ac140af5e74aae88650501cdaa875f527802970e365a1016f26
+// dokimi:provenance sha256:a600a05eaed98374c3ca371c0996addabc672c226e73d8b92879123f098418c6

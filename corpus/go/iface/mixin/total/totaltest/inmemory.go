@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package totaltest contains the double and the suite of Mixed. InMemory is the
-// control of the suite.
+// subject of the suite.
 package totaltest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [total.Mixed] in memory. The corpus applies the suite
-// of Mixed to it as a control.
+// of Mixed to it as a subject.
 //
 //dokimi:subject total.Mixed new=NewInMemory
 type InMemory struct{}

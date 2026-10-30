@@ -68,7 +68,7 @@ func (m *Medium) read(key string) (string, bool) {
 
 // Journal is the Store over a medium. Its Put writes each value in one write
 // of the medium, so a cut of the medium leaves the value before the Put or the
-// whole new value. The corpus applies the suite of Store to it as a control,
+// whole new value. The corpus applies the suite of Store to it as a subject,
 // with its doors.
 //
 //dokimi:subject durable.Store new=NewJournal options=JournalOptions

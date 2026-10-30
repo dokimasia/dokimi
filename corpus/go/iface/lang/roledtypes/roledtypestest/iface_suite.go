@@ -103,6 +103,8 @@ func (c storeGet) ZeroOnError() conform.ID[roledtypes.Store] {
 func StoreSuite() conform.Suite[roledtypes.Store] {
 	return conform.Suite[roledtypes.Store]{
 		Declaration: "Store",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/roledtypes",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[roledtypes.Store]{
 			{
 				ID:          StoreChecks.Put.Smoke(),
@@ -182,6 +184,14 @@ func StoreSuite() conform.Suite[roledtypes.Store] {
 					}, roledtypes.Payload{})
 				},
 				Defect: storeGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Store.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[roledtypes.Store]{
@@ -420,4 +430,4 @@ func storeGetValueBeside(h *StoreHandle) roledtypes.Store {
 	return &storeGetValueBesideDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a5100076dff19fe14890f92624fd960a1f89f2f2f7b75b3d59b32aa367875a24
+// dokimi:provenance sha256:ead4ec8d7106bd4ef6115ccb9c20263a7ba5e9d49f76ceb8836e87586b66b7f6

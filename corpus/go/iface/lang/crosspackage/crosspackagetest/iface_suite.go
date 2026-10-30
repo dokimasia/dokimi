@@ -118,6 +118,8 @@ type fitterSense struct {
 func FitterSuite() conform.Suite[crosspackage.Fitter] {
 	return conform.Suite[crosspackage.Fitter]{
 		Declaration: "Fitter",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/crosspackage",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[crosspackage.Fitter]{
 			{
 				ID:          FitterChecks.Fit.Smoke(),
@@ -180,6 +182,34 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 					})
 				},
 				Defect: fitterLimitIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Fitter.Sense",
+				Why:      "eidos derives no sample of the parameter s of Sense",
+				Remedy:   "author a sample of the parameter s with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Fitter.Fit",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Fitter.Limit",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Fitter.Sense",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[crosspackage.Fitter]{
@@ -442,4 +472,4 @@ func fitterLimitIgnoresCancel(h *FitterHandle) crosspackage.Fitter {
 	return &fitterLimitIgnoresCancelDefect{fitterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d0c94a3723f1cfbcc882ae35e14cf9fabb761017bb9780dd72d04f91f9ee9de2
+// dokimi:provenance sha256:c89afad2a74bb83bdbb4148ef9c201b4f732144dda2f20db419f3d4f3fb5dc88

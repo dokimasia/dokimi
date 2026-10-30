@@ -116,6 +116,8 @@ func (c contractPut) Cancel() conform.ID[pagination.Contract] {
 func ContractSuite() conform.Suite[pagination.Contract] {
 	return conform.Suite[pagination.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/pagination",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[pagination.Contract]{
 			{
 				ID:          ContractChecks.Fetch.Smoke(),
@@ -214,6 +216,14 @@ func ContractSuite() conform.Suite[pagination.Contract] {
 					})
 				},
 				Defect: contractPutIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[pagination.Contract]{
@@ -469,4 +479,4 @@ func contractPutIgnoresCancel(h *ContractHandle) pagination.Contract {
 	return &contractPutIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:eae6278147f1803a36d10a67d3cc9e789ac6ac6dbc80c43a7beb5e71ebbe87fd
+// dokimi:provenance sha256:1fdc3fe208071fe151ed4609b583961ec1fd399bb1ef8d2c7607a04fd61e07d1

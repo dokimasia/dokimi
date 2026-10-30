@@ -142,6 +142,8 @@ func (c mixedGet) ZeroOnError() conform.ID[snapshotisolation.Mixed] {
 func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 	return conform.Suite[snapshotisolation.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[snapshotisolation.Mixed]{
 			{
 				ID:          MixedChecks.Record.Smoke(),
@@ -269,6 +271,20 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 					}, snapshotisolation.Entry{})
 				},
 				Defect: mixedGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Record",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:snapshot-isolation",
+				Callable:       "Mixed.History",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[snapshotisolation.Mixed]{
@@ -566,4 +582,4 @@ func mixedGetValueBeside(h *MixedHandle) snapshotisolation.Mixed {
 	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:23aca443b55f2e484be35acb64af102ec60cf41db2f45024c2047c177257e977
+// dokimi:provenance sha256:c6ac2a24e1470db48d8f611b64bf9b970d4e5f2c53389d9ae0cbf859c429ce80

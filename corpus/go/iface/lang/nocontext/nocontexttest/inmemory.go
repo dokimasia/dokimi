@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package nocontexttest contains the double and the suite of Calculator.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package nocontexttest
 
 import (
@@ -16,7 +16,7 @@ import (
 var ErrDivideByZero = errors.New("nocontexttest: divide by zero")
 
 // InMemory implements [nocontext.Calculator] in memory. The corpus applies
-// the suite of Calculator to it as a control.
+// the suite of Calculator to it as a subject.
 //
 //dokimi:subject nocontext.Calculator new=NewInMemory
 type InMemory struct {

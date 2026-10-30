@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package leaderelectiontest contains the double and the suite of Contract.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package leaderelectiontest
 
 import (
@@ -30,7 +30,7 @@ func NewRegistry() *Registry { return &Registry{} }
 func (r *Registry) Candidate() *InMemory { return &InMemory{registry: r} }
 
 // InMemory implements [leaderelection.Contract] in memory. The corpus
-// applies the suite of Contract to it as a control.
+// applies the suite of Contract to it as a subject.
 //
 //dokimi:subject leaderelection.Contract new=NewInMemory
 type InMemory struct{ registry *Registry }

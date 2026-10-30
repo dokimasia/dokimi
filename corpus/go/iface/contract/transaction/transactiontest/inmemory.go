@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package transactiontest contains the double and the suite of Contract.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package transactiontest
 
 import (
@@ -20,7 +20,7 @@ import (
 const RunKey = "run"
 
 // InMemory implements [transaction.Contract] in memory. The corpus applies
-// the suite of Contract to it as a control.
+// the suite of Contract to it as a subject.
 //
 //dokimi:subject transaction.Contract new=NewInMemory
 type InMemory struct {

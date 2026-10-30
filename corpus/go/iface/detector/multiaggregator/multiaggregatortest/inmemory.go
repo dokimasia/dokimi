@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package multiaggregatortest contains the double and the suite of
-// MultiAggregator. InMemory is the control of the suite.
+// MultiAggregator. InMemory is the subject of the suite.
 package multiaggregatortest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [multiaggregator.MultiAggregator] in memory. The
-// corpus applies the suite of MultiAggregator to it as a control.
+// corpus applies the suite of MultiAggregator to it as a subject.
 //
 //dokimi:subject multiaggregator.MultiAggregator new=NewInMemory
 type InMemory struct {

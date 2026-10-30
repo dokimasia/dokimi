@@ -79,6 +79,8 @@ func (c mixedDerive) Pure() conform.ID[pure.Mixed] {
 func MixedSuite() conform.Suite[pure.Mixed] {
 	return conform.Suite[pure.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/pure",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[pure.Mixed]{
 			{
 				ID:          MixedChecks.Derive.Smoke(),
@@ -269,4 +271,4 @@ func mixedDeriveDrifts(h *MixedHandle) pure.Mixed {
 	return &mixedDeriveDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:13e95ad67dc618d47f3c2e64e466071d96e73d0817a3e653cd1052d2d2acc663
+// dokimi:provenance sha256:e499ec9c84451d604dea400caaaed46a83a69c1773e38da11ab545a0281ab36b

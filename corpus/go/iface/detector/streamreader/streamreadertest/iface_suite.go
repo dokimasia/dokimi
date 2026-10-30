@@ -100,6 +100,8 @@ func (c streamReaderList) Smoke() conform.ID[streamreader.StreamReader] {
 func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 	return conform.Suite[streamreader.StreamReader]{
 		Declaration: "StreamReader",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[streamreader.StreamReader]{
 			{
 				ID:          StreamReaderChecks.Add.Smoke(),
@@ -148,6 +150,28 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 					})
 				},
 				Defect: streamReaderListPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "StreamReader.List",
+				Why:      "List cannot fail",
+				Remedy:   "give List an error result",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "StreamReader.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:stream-reader",
+				Callable:       "StreamReader.List",
+				Stance:         spec.Gap,
+				Note:           "No claim states what a stream returns after its end.",
 			},
 		},
 		Calls: []conform.Call[streamreader.StreamReader]{
@@ -330,4 +354,4 @@ func streamReaderListPanics(h *StreamReaderHandle) streamreader.StreamReader {
 	return &streamReaderListPanicsDefect{streamReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3a00952eefa40a1aab7e0a34a97bdb52d96de513cb0dd36f5726863bebf34857
+// dokimi:provenance sha256:cdb5c96a115844b58e65215226447e950d65146ab4222bf38ef25a385089b273

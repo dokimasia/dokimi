@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package namedreturnstest contains the double and the suite of Service.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package namedreturnstest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("namedreturnstest: not found")
 
 // InMemory implements [namedreturns.Service] in memory. The corpus applies
-// the suite of Service to it as a control.
+// the suite of Service to it as a subject.
 //
 //dokimi:subject namedreturns.Service new=NewInMemory
 type InMemory struct {

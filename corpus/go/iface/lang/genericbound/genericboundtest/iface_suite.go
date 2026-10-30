@@ -105,6 +105,8 @@ func (c rankedReset) Cancel() conform.ID[genericbound.Ranked[int, genericbound.S
 func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
 	return conform.Suite[genericbound.Ranked[int, genericbound.Score]]{
 		Declaration: "Ranked",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[genericbound.Ranked[int, genericbound.Score]]{
 			{
 				ID:          RankedChecks.Rank.Smoke(),
@@ -184,6 +186,14 @@ func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
 					})
 				},
 				Defect: rankedResetIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Ranked.Reset",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[genericbound.Ranked[int, genericbound.Score]]{
@@ -415,4 +425,4 @@ func rankedResetIgnoresCancel(h *RankedHandle) genericbound.Ranked[int, genericb
 	return &rankedResetIgnoresCancelDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a5323bbb10603df98a4f494acf687c56900329bca460c92dc5d443ac784cc4ea
+// dokimi:provenance sha256:ef9bf32279ed624b647eeda9cf4553a363929e3cb81a6cf2154003f13f36de26

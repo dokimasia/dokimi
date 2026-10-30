@@ -86,6 +86,8 @@ func (c contractRun) Appender() conform.ID[appender.Contract] {
 func ContractSuite() conform.Suite[appender.Contract] {
 	return conform.Suite[appender.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/appender",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[appender.Contract]{
 			{
 				ID:          ContractChecks.Run.Smoke(),
@@ -343,4 +345,4 @@ func contractRunDescends(h *ContractHandle) appender.Contract {
 	return &contractRunDescendsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:44dd4a888a3dc771c80550dc80a1724544639fc4a335e5f4029b869f801d2e79
+// dokimi:provenance sha256:ef009e71a4eb6879029c520f3cb82d36d09bf81ca84db87fb92658d3a0a3e830

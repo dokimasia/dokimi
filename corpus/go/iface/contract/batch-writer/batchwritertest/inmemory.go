@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package batchwritertest contains the double and the suite of Contract.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package batchwritertest
 
 import (
@@ -20,7 +20,7 @@ var ErrUnkeyed = errors.New("batchwritertest: a value needs a key")
 var ErrNotFound = errors.New("batchwritertest: no value under that key")
 
 // InMemory implements [batchwriter.Contract] in memory. The corpus applies
-// the suite of Contract to it as a control.
+// the suite of Contract to it as a subject.
 //
 //dokimi:subject batchwriter.Contract new=NewInMemory
 type InMemory struct {

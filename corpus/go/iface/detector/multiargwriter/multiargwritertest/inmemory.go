@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package multiargwritertest contains the double and the suite of
-// MultiArgWriter. InMemory is the control of the suite.
+// MultiArgWriter. InMemory is the subject of the suite.
 package multiargwritertest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [multiargwriter.MultiArgWriter] in memory. The corpus
-// applies the suite of MultiArgWriter to it as a control.
+// applies the suite of MultiArgWriter to it as a subject.
 //
 //dokimi:subject multiargwriter.MultiArgWriter new=NewInMemory
 type InMemory struct {

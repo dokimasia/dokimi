@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package tamperevidenttest contains the double and the suite of Mixed.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package tamperevidenttest
 
 import (
@@ -18,7 +18,7 @@ import (
 var ErrTampered = errors.New("tamperevidenttest: stored value does not match its digest")
 
 // InMemory implements [tamperevident.Mixed] in memory. The corpus applies
-// the suite of Mixed to it as a control.
+// the suite of Mixed to it as a subject.
 //
 //dokimi:subject tamperevident.Mixed new=NewInMemory
 type InMemory struct {

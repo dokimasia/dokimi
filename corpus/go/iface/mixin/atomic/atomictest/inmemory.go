@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package atomictest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package atomictest
 
 import (
@@ -21,7 +21,7 @@ var ErrNotFound = errors.New("atomictest: not found")
 var ErrHalfEntry = errors.New("atomictest: refuses an entry missing one half")
 
 // InMemory implements [atomic.Mixed] in memory. The corpus applies the suite
-// of Mixed to it as a control.
+// of Mixed to it as a subject.
 //
 //dokimi:subject atomic.Mixed new=NewInMemory
 type InMemory struct {

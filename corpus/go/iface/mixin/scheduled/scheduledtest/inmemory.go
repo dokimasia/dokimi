@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package scheduledtest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package scheduledtest
 
 import (
@@ -17,7 +17,7 @@ import (
 )
 
 // InMemory implements [scheduled.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject scheduled.Mixed new=NewInMemoryFromHandle
 type InMemory struct {

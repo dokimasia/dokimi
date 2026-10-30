@@ -140,6 +140,8 @@ func (c contractIsLeader) Smoke() conform.ID[leaderelection.Contract] {
 func ContractSuite() conform.Suite[leaderelection.Contract] {
 	return conform.Suite[leaderelection.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/leader-election",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[leaderelection.Contract]{
 			{
 				ID:          ContractChecks.Campaign.Smoke(),
@@ -239,6 +241,34 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 					})
 				},
 				Defect: contractIsLeaderPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Contract.IsLeader",
+				Why:      "IsLeader cannot fail",
+				Remedy:   "give IsLeader an error result",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Contract.IsLeader",
+				Why:      "IsLeader cannot fail",
+				Remedy:   "give IsLeader an error result",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Contract.Campaign",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Contract.Resign",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[leaderelection.Contract]{
@@ -494,4 +524,4 @@ func contractIsLeaderPanics(h *ContractHandle) leaderelection.Contract {
 	return &contractIsLeaderPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:915f0e421b12e76c7af90be83ad07b549fa7c25d3cd4a2265c9310c45b2de6dc
+// dokimi:provenance sha256:71f92e2377a609030f09c810f750902acad19178306142d60a3b522df8908d6c

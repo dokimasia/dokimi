@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package injectionsafetest contains the double and the suite of Mixed.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package injectionsafetest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrMissing = errors.New("injectionsafetest: nothing stored under the key")
 
 // InMemory implements [injectionsafe.Mixed] in memory. The corpus applies
-// the suite of Mixed to it as a control.
+// the suite of Mixed to it as a subject.
 //
 //dokimi:subject injectionsafe.Mixed new=NewInMemory
 type InMemory struct {

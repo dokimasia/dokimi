@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package pointintimetest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package pointintimetest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("pointintimetest: not found")
 
 // InMemory implements [pointintime.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject pointintime.Mixed new=NewInMemory
 type InMemory struct {
@@ -29,10 +29,14 @@ type InMemory struct {
 // The compiler checks that InMemory implements [pointintime.Mixed].
 var _ pointintime.Mixed = (*InMemory)(nil)
 
-// NewInMemory returns a new InMemory.
+// seededKey is the key of the value that NewInMemory stores.
+const seededKey = "Key-a"
+
+// NewInMemory returns an InMemory with a value under seededKey, so the first
+// read of a check of that key finds a value to pin.
 func NewInMemory() *InMemory {
 	return &InMemory{
-		source: map[string]pointintime.Value{},
+		source: map[string]pointintime.Value{seededKey: {Key: seededKey, Body: "Body-a"}},
 		view:   map[string]pointintime.Value{},
 	}
 }

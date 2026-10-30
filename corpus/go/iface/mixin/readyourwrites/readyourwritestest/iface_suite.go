@@ -118,6 +118,8 @@ func (c mixedGet) ReadYourWrites() conform.ID[readyourwrites.Mixed] {
 func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 	return conform.Suite[readyourwrites.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/readyourwrites",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[readyourwrites.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -505,4 +507,4 @@ func mixedGetReadsAnotherValue(h *MixedHandle) readyourwrites.Mixed {
 	return &mixedGetReadsAnotherValueDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e794768b90005888c255037a3832ece3d8cf8631cdf3d3a6b1ad8c4024d12c81
+// dokimi:provenance sha256:22288cd81ba0275e4ee7000a614705ead9b9170a5c85429a4cdc05bd960bd8b5

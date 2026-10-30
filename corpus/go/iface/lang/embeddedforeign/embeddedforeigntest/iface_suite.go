@@ -97,6 +97,8 @@ func (c streamClose) Smoke() conform.ID[embeddedforeign.Stream] {
 func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 	return conform.Suite[embeddedforeign.Stream]{
 		Declaration: "Stream",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[embeddedforeign.Stream]{
 			{
 				ID:          StreamChecks.Read.Smoke(),
@@ -161,6 +163,14 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 					})
 				},
 				Defect: streamClosePanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:closer",
+				Callable:       "Stream.Close",
+				Stance:         spec.Silent,
+				Note:           "A close returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[embeddedforeign.Stream]{
@@ -364,4 +374,4 @@ func streamClosePanics(h *StreamHandle) embeddedforeign.Stream {
 	return &streamClosePanicsDefect{streamOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:49e64aadf0a702d287ef09f0f77c492bb58f8db01e002a002bc451aa85dc1161
+// dokimi:provenance sha256:cc9454b75b8202b13ee5dd9a7521f3e4d760ed25baadb6763414b8b86ea8a6f0

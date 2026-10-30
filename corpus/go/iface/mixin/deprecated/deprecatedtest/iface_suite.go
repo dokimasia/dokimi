@@ -111,6 +111,8 @@ func (c mixedNew) ZeroOnError() conform.ID[deprecated.Mixed] {
 func MixedSuite() conform.Suite[deprecated.Mixed] {
 	return conform.Suite[deprecated.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/deprecated",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[deprecated.Mixed]{
 			{
 				ID:          MixedChecks.Old.Smoke(),
@@ -207,6 +209,14 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 					}, string(""))
 				},
 				Defect: mixedNewValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "mixin:deprecated",
+				Callable:       "Mixed.Old",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents the callable.",
 			},
 		},
 		Calls: []conform.Call[deprecated.Mixed]{
@@ -441,4 +451,4 @@ func mixedNewValueBeside(h *MixedHandle) deprecated.Mixed {
 	return &mixedNewValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5fae956a9f89dbc662fb9e7a6918aef5b5ffb8626bc49d18eb8950cb918029ef
+// dokimi:provenance sha256:2afa97bd320027a8da4cc8d0a35942fb57ecc08e8322f628f2a31dc75500fbcf

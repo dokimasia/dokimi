@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package lifecycletest contains the double and the suite of Lifecycle.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package lifecycletest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [lifecycle.Lifecycle] in memory. The corpus applies
-// the suite of Lifecycle to it as a control.
+// the suite of Lifecycle to it as a subject.
 //
 //dokimi:subject lifecycle.Lifecycle new=NewInMemory
 type InMemory struct {

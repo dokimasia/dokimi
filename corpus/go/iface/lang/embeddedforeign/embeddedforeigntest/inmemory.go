@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package embeddedforeigntest contains the double and the suite of Stream.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package embeddedforeigntest
 
 import (
@@ -18,7 +18,7 @@ import (
 var ErrNotFound = errors.New("embeddedforeigntest: not found")
 
 // InMemory implements [embeddedforeign.Stream] in memory. The corpus applies
-// the suite of Stream to it as a control.
+// the suite of Stream to it as a subject.
 //
 //dokimi:subject embeddedforeign.Stream new=NewInMemory
 type InMemory struct {

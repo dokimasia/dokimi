@@ -82,6 +82,8 @@ func (c mixedSlow) Within() conform.ID[timeout.Mixed] {
 func MixedSuite() conform.Suite[timeout.Mixed] {
 	return conform.Suite[timeout.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeout",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[timeout.Mixed]{
 			{
 				ID:          MixedChecks.Slow.Smoke(),
@@ -129,6 +131,14 @@ func MixedSuite() conform.Suite[timeout.Mixed] {
 				},
 				Defect: mixedSlowSlow,
 				Around: synctest.Test,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Slow",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[timeout.Mixed]{
@@ -287,4 +297,4 @@ func mixedSlowSlow(h *MixedHandle) timeout.Mixed {
 	return &mixedSlowSlowDefect{mixedOverEmbedded: h.Fresh(), clock: h.Clock()}
 }
 
-// dokimi:provenance sha256:a90633129e3c9d8761a1e4e84da40872a6446db87ab1f74efbba4545a3ab8f3d
+// dokimi:provenance sha256:be94d8302a609b3b6e7fbaec9bb4c42aca2e5a7c45af738eeb5ea2908c2a63d6

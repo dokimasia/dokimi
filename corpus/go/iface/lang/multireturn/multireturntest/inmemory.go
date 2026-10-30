@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package multireturntest contains the double and the suite of Wide. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package multireturntest
 
 import (
@@ -16,7 +16,7 @@ import (
 var ErrNotFound = errors.New("multireturntest: not found")
 
 // InMemory implements [multireturn.Wide] in memory. The corpus applies the
-// suite of Wide to it as a control.
+// suite of Wide to it as a subject.
 //
 //dokimi:subject multireturn.Wide new=NewInMemory
 type InMemory struct{ items map[string]string }

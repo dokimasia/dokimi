@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package ifabsenttest contains the double and the suite of Contract. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package ifabsenttest
 
 import (
@@ -19,7 +19,7 @@ import (
 var ErrPresent = fmt.Errorf("ifabsenttest: key already present: %w", ifabsent.ErrExists)
 
 // InMemory implements [ifabsent.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject ifabsent.Contract new=NewInMemory
 type InMemory struct {

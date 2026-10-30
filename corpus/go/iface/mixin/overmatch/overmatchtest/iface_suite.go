@@ -115,6 +115,8 @@ func (c mixedItems) OverMatch() conform.ID[overmatch.Mixed] {
 func MixedSuite() conform.Suite[overmatch.Mixed] {
 	return conform.Suite[overmatch.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/overmatch",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[overmatch.Mixed]{
 			{
 				ID:          MixedChecks.Add.Smoke(),
@@ -220,6 +222,14 @@ func MixedSuite() conform.Suite[overmatch.Mixed] {
 					}())
 				},
 				Defect: mixedItemsDrainsNothing,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[overmatch.Mixed]{
@@ -453,4 +463,4 @@ func mixedItemsDrainsNothing(h *MixedHandle) overmatch.Mixed {
 	return &mixedItemsDrainsNothingDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a0e8e6b4e61d7f2848198465683ad89969f75b09c1a9c582422d85e21abfb47a
+// dokimi:provenance sha256:29939f3422f44d38ae2253a49d45b7acd9b6170cabb76f7965d9e270353bd6e8

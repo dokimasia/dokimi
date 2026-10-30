@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package compositewritertest contains the double and the suite of
-// CompositeWriter. InMemory is the control of the suite.
+// CompositeWriter. InMemory is the subject of the suite.
 package compositewritertest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [compositewriter.CompositeWriter] in memory. The
-// corpus applies the suite of CompositeWriter to it as a control.
+// corpus applies the suite of CompositeWriter to it as a subject.
 //
 //dokimi:subject compositewriter.CompositeWriter new=NewInMemory
 type InMemory struct {

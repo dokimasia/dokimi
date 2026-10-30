@@ -108,6 +108,8 @@ func (c mixedWork) LifecycleAfterClose() conform.ID[lifecycleafterclose.Mixed] {
 func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 	return conform.Suite[lifecycleafterclose.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/lifecycleafterclose",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[lifecycleafterclose.Mixed]{
 			{
 				ID:          MixedChecks.Close.Smoke(),
@@ -187,6 +189,20 @@ func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 					}, lifecycleafterclose.ErrClosed)
 				},
 				Defect: mixedWorkSucceedsAlways,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Close",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Work",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[lifecycleafterclose.Mixed]{
@@ -408,4 +424,4 @@ func mixedWorkSucceedsAlways(h *MixedHandle) lifecycleafterclose.Mixed {
 	return &mixedWorkSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3f8327da3cb7be98f5931890c56edf8cfde6c9f16662149ebc1ca31600df652a
+// dokimi:provenance sha256:237026456368d3b530171eda7847cc828f01acce201920f36897ca8c6be1835c

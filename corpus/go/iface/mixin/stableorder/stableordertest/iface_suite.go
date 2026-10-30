@@ -116,6 +116,8 @@ func (c mixedItems) StableOrder() conform.ID[stableorder.Mixed] {
 func MixedSuite() conform.Suite[stableorder.Mixed] {
 	return conform.Suite[stableorder.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/stableorder",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[stableorder.Mixed]{
 			{
 				ID:          MixedChecks.Add.Smoke(),
@@ -221,6 +223,14 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 					}())
 				},
 				Defect: mixedItemsReordersDrain,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[stableorder.Mixed]{
@@ -464,4 +474,4 @@ func mixedItemsReordersDrain(h *MixedHandle) stableorder.Mixed {
 	return &mixedItemsReordersDrainDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c758632caabcac1e8809e1f8b65da71d9d766777d760e902ee745eae6b1c0edd
+// dokimi:provenance sha256:645e5386653e6b0ff34852b2e10a3b995152575aa29e44bc10b7bf9312977c34

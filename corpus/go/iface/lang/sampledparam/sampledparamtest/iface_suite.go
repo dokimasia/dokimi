@@ -112,6 +112,8 @@ func (c hasherCombineTagged) AllocationBudget() conform.ID[sampledparam.Hasher] 
 func HasherSuite() conform.Suite[sampledparam.Hasher] {
 	return conform.Suite[sampledparam.Hasher]{
 		Declaration: "Hasher",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/sampledparam",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[sampledparam.Hasher]{
 			{
 				ID:          HasherChecks.HashTagged.Smoke(),
@@ -395,4 +397,4 @@ func hasherCombineTaggedDrifts(h *HasherHandle) sampledparam.Hasher {
 	return &hasherCombineTaggedDriftsDefect{hasherOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4fff17e33143f5125651655b96778ea00b01e933e334d8695f7d290737474252
+// dokimi:provenance sha256:c437f8c63dd1fec982d0249cfcfde1128dcae59908367d5eec7899d59c0d6463

@@ -112,6 +112,8 @@ func (c contractTrigger) Cancel() conform.ID[watcher.Contract] {
 func ContractSuite() conform.Suite[watcher.Contract] {
 	return conform.Suite[watcher.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[watcher.Contract]{
 			{
 				ID:          ContractChecks.Watch.Smoke(),
@@ -176,6 +178,34 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 					})
 				},
 				Defect: contractTriggerIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Contract.Watch",
+				Why:      "eidos derives no sample of a result of Watch",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "contract:watcher/watch",
+				Callable:       "Contract.Watch",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Contract.Trigger",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:watcher/trigger",
+				Callable:       "Contract.Trigger",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[watcher.Contract]{
@@ -380,4 +410,4 @@ func contractTriggerIgnoresCancel(h *ContractHandle) watcher.Contract {
 	return &contractTriggerIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:918f3ba2dea3f3040890c397879c6e1923537fcf818c83285c89562c71cbf371
+// dokimi:provenance sha256:0a616fc376687381d07ae4e47532e267eb5690b7fd2d5a410a960bcbb9432b85

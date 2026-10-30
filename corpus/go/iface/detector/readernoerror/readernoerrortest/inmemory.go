@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package readernoerrortest contains the double and the suite of ReaderNoError.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package readernoerrortest
 
 import (
@@ -13,7 +13,7 @@ import (
 )
 
 // InMemory implements [readernoerror.ReaderNoError] in memory. The corpus
-// applies the suite of ReaderNoError to it as a control.
+// applies the suite of ReaderNoError to it as a subject.
 //
 //dokimi:subject readernoerror.ReaderNoError new=NewInMemory
 type InMemory struct {

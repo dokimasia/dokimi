@@ -135,6 +135,8 @@ func (c composedClose) Cancel() conform.ID[embedded.Composed] {
 func ComposedSuite() conform.Suite[embedded.Composed] {
 	return conform.Suite[embedded.Composed]{
 		Declaration: "Composed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/embedded",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[embedded.Composed]{
 			{
 				ID:          ComposedChecks.Get.Smoke(),
@@ -245,6 +247,20 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 					})
 				},
 				Defect: composedCloseIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Composed.Ping",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Composed.Close",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[embedded.Composed]{
@@ -524,4 +540,4 @@ func composedCloseIgnoresCancel(h *ComposedHandle) embedded.Composed {
 	return &composedCloseIgnoresCancelDefect{composedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:757ebe5063f18f56e0952d2fe54e4cd830fe6bb412fc8bc6005c0abd0bc23df2
+// dokimi:provenance sha256:73b92f781ff594ee80a88fbae130f6c2e5677acb95bc67b773bd55bc7cbcbe2d

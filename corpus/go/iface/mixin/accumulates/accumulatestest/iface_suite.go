@@ -111,6 +111,8 @@ func (c mixedTotal) ZeroOnError() conform.ID[accumulates.Mixed] {
 func MixedSuite() conform.Suite[accumulates.Mixed] {
 	return conform.Suite[accumulates.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/accumulates",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[accumulates.Mixed]{
 			{
 				ID:          MixedChecks.Add.Smoke(),
@@ -190,6 +192,22 @@ func MixedSuite() conform.Suite[accumulates.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedTotalValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Accumulates,
+				Callable: "Mixed.Add",
+				Why:      "a parameter of the read of Add selects neither a value that observe takes nor a field of the written value",
+				Remedy:   "align the name of the parameter of the read with a parameter or a field of the write",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[accumulates.Mixed]{
@@ -408,4 +426,4 @@ func mixedTotalValueBeside(h *MixedHandle) accumulates.Mixed {
 	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b7fb7a37eba138119b24b309053d76708c65d3d4995d2abda317ce66559f5d08
+// dokimi:provenance sha256:42bf73af3bf1b9e2f70f9f30147ed7acc2fb442e3a3d41de9006ece9c318b2f4

@@ -78,6 +78,8 @@ func (c multiAggregatorStats) ZeroesOnError() conform.ID[multiaggregator.MultiAg
 func MultiAggregatorSuite() conform.Suite[multiaggregator.MultiAggregator] {
 	return conform.Suite[multiaggregator.MultiAggregator]{
 		Declaration: "MultiAggregator",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[multiaggregator.MultiAggregator]{
 			{
 				ID:          MultiAggregatorChecks.Stats.Smoke(),
@@ -302,4 +304,4 @@ func multiAggregatorStatsValuesBeside(h *MultiAggregatorHandle) multiaggregator.
 	return &multiAggregatorStatsValuesBesideDefect{multiAggregatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ab7c1d7bceafd0315c478d157242343f5af4d1c34a2f8f2b75bd96ffafdb2ee0
+// dokimi:provenance sha256:0e154aae6933b6efb0895f8b8d1e316f11de40d9a9d860f19e5ec80fd3f31193

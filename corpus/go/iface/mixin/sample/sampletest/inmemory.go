@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package sampletest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package sampletest
 
 import (
@@ -22,7 +22,7 @@ var ErrUnprocessable = errors.New("sampletest: input is not sampled")
 const inputPrefix = "sample:"
 
 // InMemory implements [sample.Mixed] in memory. The corpus applies the suite
-// of Mixed to it as a control.
+// of Mixed to it as a subject.
 //
 //dokimi:subject sample.Mixed new=NewInMemory
 type InMemory struct {

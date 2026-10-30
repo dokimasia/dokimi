@@ -340,6 +340,8 @@ func (c storeReplace) Cancel() conform.ID[partnernaming.Store] {
 func StoreSuite() conform.Suite[partnernaming.Store] {
 	return conform.Suite[partnernaming.Store]{
 		Declaration: "Store",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[partnernaming.Store]{
 			{
 				ID:          StoreChecks.Touch.Smoke(),
@@ -687,6 +689,64 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 					})
 				},
 				Defect: storeReplaceIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.SideEffect,
+				Callable: "Store.Touch",
+				Why:      "a parameter of the read of Touch selects neither a value that observe takes nor a field of the written value",
+				Remedy:   "align the name of the parameter of the read with a parameter or a field of the write",
+			},
+			{
+				Claim:    spec.SideEffect,
+				Callable: "Store.Move",
+				Why:      "a parameter of the read of Move selects neither a value that observe takes nor a field of the written value",
+				Remedy:   "align the name of the parameter of the read with a parameter or a field of the write",
+			},
+			{
+				Claim:    spec.SideEffect,
+				Callable: "Store.Emit",
+				Why:      "a parameter of the read of Emit selects neither a value that observe takes nor a field of the written value",
+				Remedy:   "align the name of the parameter of the read with a parameter or a field of the write",
+			},
+			{
+				Claim:    spec.MonotonicReads,
+				Callable: "Store.Version",
+				Why:      "two callables of the declaration can be the partner write of Version",
+				Remedy:   "name the partner of Version with the param of the classification",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Store.Touch",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Store.Move",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Store.Emit",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Store.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Store.Replace",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[partnernaming.Store]{
@@ -1370,4 +1430,4 @@ func storeReplaceIgnoresCancel(h *StoreHandle) partnernaming.Store {
 	return &storeReplaceIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:980d7ce4fef5903cc9c8eb3b990178b501a91ae114b0bcb31f5decaf23e40893
+// dokimi:provenance sha256:b7c03383509ea454c4a6ed37929c4178b040cda21b76fc6d32118b922a11bf85

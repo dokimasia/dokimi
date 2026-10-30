@@ -160,6 +160,8 @@ func (c mixedItems) ZeroOnError() conform.ID[eventually.Mixed] {
 func MixedSuite() conform.Suite[eventually.Mixed] {
 	return conform.Suite[eventually.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[eventually.Mixed]{
 			{
 				ID:          MixedChecks.Publish.Smoke(),
@@ -289,6 +291,34 @@ func MixedSuite() conform.Suite[eventually.Mixed] {
 					}, []string(nil))
 				},
 				Defect: mixedItemsValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Mixed.Sync",
+				Why:      "eidos derives no sample of the parameter peer of Sync",
+				Remedy:   "author a sample of the parameter peer with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Publish",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Settle",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Sync",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[eventually.Mixed]{
@@ -683,4 +713,4 @@ func mixedItemsValueBeside(h *MixedHandle) eventually.Mixed {
 	return &mixedItemsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:84a5ea696bd43702d3288bd2122759153d4d2b0c856341a0dc9ebc6b0b7855b3
+// dokimi:provenance sha256:1f201651bf93be0d74f8a037b6ed82cbf5ff615d9aabe960e05d45e5d603a513

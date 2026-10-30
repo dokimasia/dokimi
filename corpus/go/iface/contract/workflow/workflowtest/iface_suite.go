@@ -110,6 +110,8 @@ func (c contractState) ZeroOnError() conform.ID[workflow.Contract] {
 func ContractSuite() conform.Suite[workflow.Contract] {
 	return conform.Suite[workflow.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/workflow",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[workflow.Contract]{
 			{
 				ID:          ContractChecks.Run.Smoke(),
@@ -189,6 +191,20 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 					}, string(""))
 				},
 				Defect: contractStateValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Run",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:workflow/fn",
+				Callable:       "Contract.Run",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[workflow.Contract]{
@@ -413,4 +429,4 @@ func contractStateValueBeside(h *ContractHandle) workflow.Contract {
 	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7f1fd75066625b372af8d9839920fad51a680213c8956e65b3ecf66a7618907c
+// dokimi:provenance sha256:837a457d94de6a1570af40160cc62d26b84fd4609a9d19c3f973c769181e4c04

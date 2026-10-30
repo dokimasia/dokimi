@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package serializabletest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package serializabletest
 
 import (
@@ -23,7 +23,7 @@ var ErrNotFound = errors.New("serializabletest: not found")
 var ErrNotAdmissible = errors.New("serializabletest: the isolation level refuses the entry")
 
 // InMemory implements [serializable.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject serializable.Mixed new=NewInMemory
 type InMemory struct {

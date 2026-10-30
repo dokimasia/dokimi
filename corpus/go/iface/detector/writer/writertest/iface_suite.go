@@ -70,6 +70,8 @@ func (c writerPut) Cancel() conform.ID[writer.Writer] {
 func WriterSuite() conform.Suite[writer.Writer] {
 	return conform.Suite[writer.Writer]{
 		Declaration: "Writer",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/writer",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[writer.Writer]{
 			{
 				ID:          WriterChecks.Put.Smoke(),
@@ -101,6 +103,14 @@ func WriterSuite() conform.Suite[writer.Writer] {
 					})
 				},
 				Defect: writerPutIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Writer.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[writer.Writer]{
@@ -236,4 +246,4 @@ func writerPutIgnoresCancel(h *WriterHandle) writer.Writer {
 	return &writerPutIgnoresCancelDefect{writerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d1c8edc1a182e8fb3a95b799c3916ac2461c56d4e24f6a48e5ff703ceb062997
+// dokimi:provenance sha256:c4af5b394f1aa72ee0f29cd9813454d4f847163e8cb20e760a023283e1d94554

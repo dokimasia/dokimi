@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package leasedidempotentwritertest contains the double and the suite of
-// LeasedWriter. InMemory is the control of the suite.
+// LeasedWriter. InMemory is the subject of the suite.
 package leasedidempotentwritertest
 
 import (
@@ -28,7 +28,7 @@ func NewRegistry() *Registry { return &Registry{leases: map[string]*InMemory{}} 
 func (r *Registry) Holder() *InMemory { return &InMemory{registry: r} }
 
 // InMemory implements [leasedidempotentwriter.LeasedWriter] in memory. The
-// corpus applies the suite of LeasedWriter to it as a control.
+// corpus applies the suite of LeasedWriter to it as a subject.
 //
 //dokimi:subject leasedidempotentwriter.LeasedWriter new=NewInMemory
 type InMemory struct{ registry *Registry }

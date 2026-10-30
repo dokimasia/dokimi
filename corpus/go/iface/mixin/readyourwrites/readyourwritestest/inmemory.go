@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package readyourwritestest contains the double and the suite of Mixed.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package readyourwritestest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("readyourwritestest: not found")
 
 // InMemory implements [readyourwrites.Mixed] in memory. The corpus applies
-// the suite of Mixed to it as a control.
+// the suite of Mixed to it as a subject.
 //
 //dokimi:subject readyourwrites.Mixed new=NewInMemory
 type InMemory struct {

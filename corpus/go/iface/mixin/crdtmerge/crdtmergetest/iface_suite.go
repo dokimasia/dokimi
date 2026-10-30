@@ -125,6 +125,8 @@ func (c mixedItems) ZeroOnError() conform.ID[crdtmerge.Mixed] {
 func MixedSuite() conform.Suite[crdtmerge.Mixed] {
 	return conform.Suite[crdtmerge.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[crdtmerge.Mixed]{
 			{
 				ID:          MixedChecks.Add.Smoke(),
@@ -204,6 +206,34 @@ func MixedSuite() conform.Suite[crdtmerge.Mixed] {
 					}, []string(nil))
 				},
 				Defect: mixedItemsValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Mixed.Merge",
+				Why:      "eidos derives no sample of the parameter peer of Merge",
+				Remedy:   "author a sample of the parameter peer with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Merge",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:crdt-merge",
+				Callable:       "Mixed.Merge",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need generated sequences.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[crdtmerge.Mixed]{
@@ -472,4 +502,4 @@ func mixedItemsValueBeside(h *MixedHandle) crdtmerge.Mixed {
 	return &mixedItemsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fb327a010484cb66cd46a69f685bcb115925ff4670a1e6998baf95b142523cec
+// dokimi:provenance sha256:20710dc365e8d4ded01480f3ceab37693d6462025c0a8c59191499d9fbcb09ea

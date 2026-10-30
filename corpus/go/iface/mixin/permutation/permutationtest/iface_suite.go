@@ -115,6 +115,8 @@ func (c mixedItems) Permutation() conform.ID[permutation.Mixed] {
 func MixedSuite() conform.Suite[permutation.Mixed] {
 	return conform.Suite[permutation.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[permutation.Mixed]{
 			{
 				ID:          MixedChecks.Add.Smoke(),
@@ -220,6 +222,14 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 					}())
 				},
 				Defect: mixedItemsDrainsNothing,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[permutation.Mixed]{
@@ -457,4 +467,4 @@ func mixedItemsDrainsNothing(h *MixedHandle) permutation.Mixed {
 	return &mixedItemsDrainsNothingDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:690a476a63e9d3b73786a741096a0379a87f3b283c26dae06c8c6f587afb0f7c
+// dokimi:provenance sha256:2028652a6d676ad11558be0d6d345d70ddd799614ae7ed8e5cf04f89e65799f0

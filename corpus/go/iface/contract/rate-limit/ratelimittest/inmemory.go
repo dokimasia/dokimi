@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package ratelimittest contains the double and the suite of Contract. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package ratelimittest
 
 import (
@@ -26,7 +26,7 @@ const (
 )
 
 // InMemory implements [ratelimit.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control. It is a token bucket that gains one
+// suite of Contract to it as a subject. It is a token bucket that gains one
 // call per period up to the burst.
 //
 //dokimi:subject ratelimit.Contract new=NewInMemory

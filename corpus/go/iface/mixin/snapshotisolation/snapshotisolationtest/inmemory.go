@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package snapshotisolationtest contains the double and the suite of Mixed.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package snapshotisolationtest
 
 import (
@@ -23,7 +23,7 @@ var ErrNotFound = errors.New("snapshotisolationtest: not found")
 var ErrNotAdmissible = errors.New("snapshotisolationtest: the isolation level refuses the entry")
 
 // InMemory implements [snapshotisolation.Mixed] in memory. The corpus
-// applies the suite of Mixed to it as a control.
+// applies the suite of Mixed to it as a subject.
 //
 //dokimi:subject snapshotisolation.Mixed new=NewInMemory
 type InMemory struct {

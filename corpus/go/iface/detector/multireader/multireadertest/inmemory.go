@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package multireadertest contains the double and the suite of MultiReader.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package multireadertest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [multireader.MultiReader] in memory. The corpus
-// applies the suite of MultiReader to it as a control.
+// applies the suite of MultiReader to it as a subject.
 //
 //dokimi:subject multireader.MultiReader new=NewInMemory
 type InMemory struct {

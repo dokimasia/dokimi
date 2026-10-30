@@ -117,6 +117,8 @@ func (c mixedAdvance) Cancel() conform.ID[monotonic.Mixed] {
 func MixedSuite() conform.Suite[monotonic.Mixed] {
 	return conform.Suite[monotonic.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonic",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[monotonic.Mixed]{
 			{
 				ID:          MixedChecks.Version.Smoke(),
@@ -212,6 +214,14 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 					})
 				},
 				Defect: mixedAdvanceIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Advance",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[monotonic.Mixed]{
@@ -450,4 +460,4 @@ func mixedAdvanceIgnoresCancel(h *MixedHandle) monotonic.Mixed {
 	return &mixedAdvanceIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8881807a4e86ca360045f5572246f2f67cf7bf114f25bb49409a560846f4081c
+// dokimi:provenance sha256:34cf931b2edf5a6c231afa447e4fe2f5c9d072cd6680dbe9f1b3fb6e5e1c4e07

@@ -7,7 +7,7 @@
 // channel, channels of each direction, an interface with an unexported
 // method, an interface as the key of a map, and values of the standard
 // library that the property engine does not read. The suite gives each type a
-// generator, and the control in memory drains each channel and calls each
+// generator, and the subject in memory drains each channel and calls each
 // function and method that it takes.
 package kinds
 

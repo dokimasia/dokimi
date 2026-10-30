@@ -10,7 +10,7 @@ import (
 )
 
 // InMemoryFile implements [suitedhandle.File] in memory. The corpus applies
-// the suite of File to it as a control.
+// the suite of File to it as a subject.
 //
 //dokimi:subject suitedhandle.File new=NewInMemoryFile
 type InMemoryFile struct {
@@ -27,7 +27,7 @@ func (f *InMemoryFile) Name() string { return f.name }
 func (*InMemoryFile) Close() error { return nil }
 
 // InMemoryFS implements [suitedhandle.FS] in memory. The corpus applies the
-// suite of FS to it as a control.
+// suite of FS to it as a subject.
 //
 //dokimi:subject suitedhandle.FS new=NewInMemoryFS
 type InMemoryFS struct {

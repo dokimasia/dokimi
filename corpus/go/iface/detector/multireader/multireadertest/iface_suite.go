@@ -78,6 +78,8 @@ func (c multiReaderGetWithMeta) ZeroesOnError() conform.ID[multireader.MultiRead
 func MultiReaderSuite() conform.Suite[multireader.MultiReader] {
 	return conform.Suite[multireader.MultiReader]{
 		Declaration: "MultiReader",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/multireader",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[multireader.MultiReader]{
 			{
 				ID:          MultiReaderChecks.GetWithMeta.Smoke(),
@@ -314,4 +316,4 @@ func multiReaderGetWithMetaValuesBeside(h *MultiReaderHandle) multireader.MultiR
 	return &multiReaderGetWithMetaValuesBesideDefect{multiReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2d0edec2e6bc14aadc60e876f9735f4d58bfb3b55f83ed1c72f966372bd4c68c
+// dokimi:provenance sha256:9822fec83ebded5b7f1bd844de785779fc1b441bf523b4f9213a585fd44d4d67

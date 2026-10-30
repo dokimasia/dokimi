@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package mutatortest contains the double and the suite of Mutator. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package mutatortest
 
 import (
@@ -13,7 +13,7 @@ import (
 )
 
 // InMemory implements [mutator.Mutator] in memory. The corpus applies the
-// suite of Mutator to it as a control.
+// suite of Mutator to it as a subject.
 //
 //dokimi:subject mutator.Mutator new=NewInMemory
 type InMemory struct {

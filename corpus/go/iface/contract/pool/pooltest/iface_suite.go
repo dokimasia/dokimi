@@ -152,6 +152,8 @@ func (c contractStats) ZeroOnError() conform.ID[pool.Contract] {
 func ContractSuite() conform.Suite[pool.Contract] {
 	return conform.Suite[pool.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/pool",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[pool.Contract]{
 			{
 				ID:          ContractChecks.Get.Smoke(),
@@ -296,6 +298,20 @@ func ContractSuite() conform.Suite[pool.Contract] {
 					}, pool.Stats{})
 				},
 				Defect: contractStatsValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:pool/stats",
+				Callable:       "Contract.Stats",
+				Stance:         spec.Gap,
+				Note:           "No claim states that the stats of a pool count each loan and each return.",
 			},
 		},
 		Calls: []conform.Call[pool.Contract]{
@@ -613,4 +629,4 @@ func contractStatsValueBeside(h *ContractHandle) pool.Contract {
 	return &contractStatsValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:373298f5f6950059677149720044534db97ea60fd6050dcdb503602d89892ebe
+// dokimi:provenance sha256:974117a2c266ae1492f9fbf25cb1f0562c4df26edef74177b2703f95569929b9

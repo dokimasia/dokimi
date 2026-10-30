@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package deletertest contains the double and the suite of Deleter. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package deletertest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [deleter.Deleter] in memory. The corpus applies the
-// suite of Deleter to it as a control.
+// suite of Deleter to it as a subject.
 //
 //dokimi:subject deleter.Deleter new=NewInMemory
 type InMemory struct {

@@ -214,6 +214,8 @@ func (c contractState) ZeroOnError() conform.ID[saga.Contract] {
 func ContractSuite() conform.Suite[saga.Contract] {
 	return conform.Suite[saga.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/saga",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[saga.Contract]{
 			{
 				ID:          ContractChecks.Step.Smoke(),
@@ -420,6 +422,32 @@ func ContractSuite() conform.Suite[saga.Contract] {
 					}, string(""))
 				},
 				Defect: contractStateValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Step",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Compensate",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Ship",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.UndoShip",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[saga.Contract]{
@@ -852,4 +880,4 @@ func contractStateValueBeside(h *ContractHandle) saga.Contract {
 	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8e26badf640173a37053a47a6400f815574b9d41adf4e2e08dd3cdb8780f8262
+// dokimi:provenance sha256:4a70d0af183d812176c280464d620a40bfff2702cc54773fe6dd6b87d2f44ce6

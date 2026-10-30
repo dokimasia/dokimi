@@ -22,6 +22,7 @@ var ErrReadOnly = errors.New("replica: a replica admits no entry")
 // entries of Append in the order of their stamps.
 //
 //dokimi:subject causalchain.Log new=New
+//dokimi:excuse Log.Append/chain reason="a replica refuses each append, so its replay never grows"
 //dokimi:excuse Log.Append/chain-causal reason="a replica refuses each append, so its replay has no stamps to order"
 //dokimi:excuse Log.Replay/keeps-the-body reason="a replica refuses each append, so no body reaches its replay"
 //dokimi:excuse Log.Replay/keeps-every-body reason="a replica refuses each append, so no body reaches its replay"

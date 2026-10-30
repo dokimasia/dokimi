@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package pointerreadertest contains the double and the suite of PointerReader.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package pointerreadertest
 
 import (
@@ -13,7 +13,7 @@ import (
 )
 
 // InMemory implements [pointerreader.PointerReader] in memory. The corpus
-// applies the suite of PointerReader to it as a control.
+// applies the suite of PointerReader to it as a subject.
 //
 //dokimi:subject pointerreader.PointerReader new=NewInMemory
 type InMemory struct {

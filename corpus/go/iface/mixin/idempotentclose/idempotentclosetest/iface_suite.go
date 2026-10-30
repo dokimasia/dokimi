@@ -115,6 +115,8 @@ func (c closerStats) ZeroOnError() conform.ID[idempotentclose.Closer] {
 func CloserSuite() conform.Suite[idempotentclose.Closer] {
 	return conform.Suite[idempotentclose.Closer]{
 		Declaration: "Closer",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[idempotentclose.Closer]{
 			{
 				ID:          CloserChecks.Close.Smoke(),
@@ -209,6 +211,14 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 					}, int(0))
 				},
 				Defect: closerStatsValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Closer.Close",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[idempotentclose.Closer]{
@@ -458,4 +468,4 @@ func closerStatsValueBeside(h *CloserHandle) idempotentclose.Closer {
 	return &closerStatsValueBesideDefect{closerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:73df7d901d1222b93735f07b3a2429cf21f15c210f7b64526f700fd86209ef7a
+// dokimi:provenance sha256:7be39f28577fccfb2d0c14f2542bb108eefd66d5eeb4a3bb85da91ac430f1091

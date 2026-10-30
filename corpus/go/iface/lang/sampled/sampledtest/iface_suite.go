@@ -81,6 +81,8 @@ func (c labellerApply) Idempotent() conform.ID[sampled.Labeller] {
 func LabellerSuite() conform.Suite[sampled.Labeller] {
 	return conform.Suite[sampled.Labeller]{
 		Declaration: "Labeller",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[sampled.Labeller]{
 			{
 				ID:          LabellerChecks.Apply.Smoke(),
@@ -127,6 +129,14 @@ func LabellerSuite() conform.Suite[sampled.Labeller] {
 					})
 				},
 				Defect: labellerApplyRefusesRepeat,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Labeller.Apply",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[sampled.Labeller]{
@@ -324,4 +334,4 @@ func labellerApplyRefusesRepeat(h *LabellerHandle) sampled.Labeller {
 	return &labellerApplyRefusesRepeatDefect{labellerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:261b4a09a2b7e3469119ecbd15a0b6154d9acd37eecf2f4c5324966693b592a8
+// dokimi:provenance sha256:7dfec6c089623437ae0432de7b676e34a1d0f6e09f56754b8d58fa1903282c76

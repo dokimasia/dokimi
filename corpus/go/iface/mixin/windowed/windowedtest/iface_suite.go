@@ -117,6 +117,8 @@ func (c mixedCountIn) ZeroOnError() conform.ID[windowed.Mixed] {
 func MixedSuite() conform.Suite[windowed.Mixed] {
 	return conform.Suite[windowed.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/windowed",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[windowed.Mixed]{
 			{
 				ID:          MixedChecks.Record.Smoke(),
@@ -214,6 +216,14 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedCountInValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Record",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[windowed.Mixed]{
@@ -455,4 +465,4 @@ func mixedCountInValueBeside(h *MixedHandle) windowed.Mixed {
 	return &mixedCountInValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:75ca02d21276bcf135ef725000e4ce289221bc63fdb84b487a5b3401d8cafe44
+// dokimi:provenance sha256:7223fc0efa653d91d12c18323eb396c42a15d600460f283073da517b7d71663b

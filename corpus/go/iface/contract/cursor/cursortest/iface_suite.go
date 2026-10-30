@@ -115,6 +115,8 @@ func (c contractClose) Cancel() conform.ID[cursor.Contract] {
 func ContractSuite() conform.Suite[cursor.Contract] {
 	return conform.Suite[cursor.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/cursor",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[cursor.Contract]{
 			{
 				ID:          ContractChecks.Next.Smoke(),
@@ -213,6 +215,14 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 					})
 				},
 				Defect: contractCloseIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Contract.Close",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[cursor.Contract]{
@@ -451,4 +461,4 @@ func contractCloseIgnoresCancel(h *ContractHandle) cursor.Contract {
 	return &contractCloseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c940ecf4fb02493331392b3739c43e2bfb73fc0d11b0b8f04c24895e1ac67c35
+// dokimi:provenance sha256:2b37fb8b370300a5c92ba1d9358c480923fce3b483221f4012105aa41db6e2ef

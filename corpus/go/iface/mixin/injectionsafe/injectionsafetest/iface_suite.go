@@ -115,6 +115,8 @@ func (c mixedLoad) ZeroOnError() conform.ID[injectionsafe.Mixed] {
 func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 	return conform.Suite[injectionsafe.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/injectionsafe",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[injectionsafe.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -214,6 +216,14 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 					}, string(""))
 				},
 				Defect: mixedLoadValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[injectionsafe.Mixed]{
@@ -454,4 +464,4 @@ func mixedLoadValueBeside(h *MixedHandle) injectionsafe.Mixed {
 	return &mixedLoadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:24ba0b9d3ac14c94cbd2da7acaf83fae3e0a024726c39f92b1e5cb09cce7ee9d
+// dokimi:provenance sha256:b2d5c46b8167dd4c3f5a6713aeb8503f7fbc39b33af2d14b029c7efd0103aa85

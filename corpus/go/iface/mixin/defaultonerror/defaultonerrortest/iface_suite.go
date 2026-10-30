@@ -99,6 +99,8 @@ func (c mixedGet) Cancel() conform.ID[defaultonerror.Mixed] {
 func MixedSuite() conform.Suite[defaultonerror.Mixed] {
 	return conform.Suite[defaultonerror.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/defaultonerror",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[defaultonerror.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -163,6 +165,20 @@ func MixedSuite() conform.Suite[defaultonerror.Mixed] {
 					})
 				},
 				Defect: mixedGetIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:default-on-error",
+				Callable:       "Mixed.Get",
+				Stance:         spec.Blocked,
+				Note:           "The mixin declares no default value for a check to compare.",
 			},
 		},
 		Calls: []conform.Call[defaultonerror.Mixed]{
@@ -375,4 +391,4 @@ func mixedGetIgnoresCancel(h *MixedHandle) defaultonerror.Mixed {
 	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0bb9e9bc0311d0f423e66473013e58ae55d4209180052e19d65da71add2d4602
+// dokimi:provenance sha256:080b04cfacac97c853debf922e5306567c6e88e57a96a07c531f12f82d36a287

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package indexedtest contains the double and the suite of Ranked. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package indexedtest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrOutOfRange = errors.New("indexedtest: index out of range")
 
 // InMemory implements [indexed.Ranked] in memory. The corpus applies the
-// suite of Ranked to it as a control.
+// suite of Ranked to it as a subject.
 //
 //dokimi:subject indexed.Ranked new=NewInMemory
 type InMemory struct {

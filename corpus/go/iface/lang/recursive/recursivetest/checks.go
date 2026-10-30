@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package recursivetest contains the suite of Counter, the checks that a
-// consumer adds to the suite, and the control of the suite.
+// consumer adds to the suite, and the subject of the suite.
 package recursivetest
 
 import (

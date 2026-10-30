@@ -74,6 +74,8 @@ func (c batchReaderGetAll) Cancel() conform.ID[batchreader.BatchReader] {
 func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 	return conform.Suite[batchreader.BatchReader]{
 		Declaration: "BatchReader",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[batchreader.BatchReader]{
 			{
 				ID:          BatchReaderChecks.GetAll.Smoke(),
@@ -107,6 +109,14 @@ func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 					})
 				},
 				Defect: batchReaderGetAllIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:batch-reader",
+				Callable:       "BatchReader.GetAll",
+				Stance:         spec.Gap,
+				Note:           "No claim states what a batch read returns for a key that it does not find.",
 			},
 		},
 		Calls: []conform.Call[batchreader.BatchReader]{
@@ -256,4 +266,4 @@ func batchReaderGetAllIgnoresCancel(h *BatchReaderHandle) batchreader.BatchReade
 	return &batchReaderGetAllIgnoresCancelDefect{batchReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:17e2b7fd569487d8212c786f2ba208c9c5e0fe7d3796af6bd2650b05918aa392
+// dokimi:provenance sha256:3c83e1994ed942e43835dc690340fe4655c40263e26f05d0c2895027f6f25b7a

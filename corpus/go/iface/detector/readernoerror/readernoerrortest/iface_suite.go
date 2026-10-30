@@ -74,6 +74,8 @@ func (c readerNoErrorLookup) MissIsZero() conform.ID[readernoerror.ReaderNoError
 func ReaderNoErrorSuite() conform.Suite[readernoerror.ReaderNoError] {
 	return conform.Suite[readernoerror.ReaderNoError]{
 		Declaration: "ReaderNoError",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[readernoerror.ReaderNoError]{
 			{
 				ID:          ReaderNoErrorChecks.Lookup.Smoke(),
@@ -107,6 +109,14 @@ func ReaderNoErrorSuite() conform.Suite[readernoerror.ReaderNoError] {
 					}, readernoerror.Value{})
 				},
 				Defect: readerNoErrorLookupInventsAValue,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "ReaderNoError.Lookup",
+				Why:      "Lookup cannot fail",
+				Remedy:   "give Lookup an error result",
 			},
 		},
 		Calls: []conform.Call[readernoerror.ReaderNoError]{
@@ -259,4 +269,4 @@ func readerNoErrorLookupInventsAValue(h *ReaderNoErrorHandle) readernoerror.Read
 	return &readerNoErrorLookupInventsAValueDefect{readerNoErrorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:421ca4f3634d39dbf2cc84739b77a53aefd73d05959a182f05404a5b15dfcda6
+// dokimi:provenance sha256:ee067bdbcbf1ab5db6cbe25f2d107b92585ff7c64f5141487721358aeb4c3a18

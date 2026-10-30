@@ -103,6 +103,8 @@ func (c storePut) Cancel() conform.ID[generic.Store[int, int]] {
 func StoreSuite() conform.Suite[generic.Store[int, int]] {
 	return conform.Suite[generic.Store[int, int]]{
 		Declaration: "Store",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/generic",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[generic.Store[int, int]]{
 			{
 				ID:          StoreChecks.Get.Smoke(),
@@ -182,6 +184,14 @@ func StoreSuite() conform.Suite[generic.Store[int, int]] {
 					})
 				},
 				Defect: storePutIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Store.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[generic.Store[int, int]]{
@@ -401,4 +411,4 @@ func storePutIgnoresCancel(h *StoreHandle) generic.Store[int, int] {
 	return &storePutIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ce24036aa411ca0ea9471aa7576e7bacdea46ed4b97b5f0379c3653b7b3adfe5
+// dokimi:provenance sha256:372eb746fb50d7703f64ff5a63a053e28b96d7bb1128dc2daa978f00b83b6586

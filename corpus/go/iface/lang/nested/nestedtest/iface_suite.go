@@ -148,6 +148,8 @@ func (c dispatcherWeight) Deterministic() conform.ID[nested.Dispatcher] {
 func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 	return conform.Suite[nested.Dispatcher]{
 		Declaration: "Dispatcher",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/nested",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[nested.Dispatcher]{
 			{
 				ID:          DispatcherChecks.Dispatch.Smoke(),
@@ -247,6 +249,20 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 					})
 				},
 				Defect: dispatcherWeightDrifts,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Dispatcher.Dispatch",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Dispatcher.DispatchAll",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[nested.Dispatcher]{
@@ -569,4 +585,4 @@ func dispatcherWeightDrifts(h *DispatcherHandle) nested.Dispatcher {
 	return &dispatcherWeightDriftsDefect{dispatcherOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8c60c96b9e2ed6927dcb3fc39b9545fe55b3153e08067f852bfe295360695102
+// dokimi:provenance sha256:39f27f9bc34544c25f85e832df4758f3e9842ceebaa1ed07d06188cdeb5087a2

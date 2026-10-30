@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package seededreadertest contains the double and the suite of Catalog.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package seededreadertest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [seededreader.Catalog] in memory. The corpus applies the
-// suite of Catalog to it as a control.
+// suite of Catalog to it as a subject.
 //
 //dokimi:subject seededreader.Catalog new=NewInMemory
 type InMemory struct {

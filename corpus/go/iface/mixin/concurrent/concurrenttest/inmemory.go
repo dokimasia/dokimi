@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package concurrenttest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package concurrenttest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [concurrent.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject concurrent.Mixed new=NewInMemory
 type InMemory struct {

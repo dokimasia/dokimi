@@ -74,6 +74,8 @@ func (c mixedConnect) Cancel() conform.ID[integrationonly.Mixed] {
 func MixedSuite() conform.Suite[integrationonly.Mixed] {
 	return conform.Suite[integrationonly.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/integrationonly",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[integrationonly.Mixed]{
 			{
 				ID:          MixedChecks.Connect.Smoke(),
@@ -105,6 +107,20 @@ func MixedSuite() conform.Suite[integrationonly.Mixed] {
 					})
 				},
 				Defect: mixedConnectIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Connect",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:integration-only",
+				Callable:       "Mixed.Connect",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable needs a real dependency.",
 			},
 		},
 		Calls: []conform.Call[integrationonly.Mixed]{
@@ -246,4 +262,4 @@ func mixedConnectIgnoresCancel(h *MixedHandle) integrationonly.Mixed {
 	return &mixedConnectIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a9acb0347930c913ee373d26ef2d73b57971b7153cdccdd405af25606d690985
+// dokimi:provenance sha256:791fb0ad260f2ee3c116e01251251416a376b0a6815a1214014a9820a617c656

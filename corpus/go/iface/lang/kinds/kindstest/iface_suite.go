@@ -248,6 +248,8 @@ type everyUse struct {
 func EverySuite() conform.Suite[kinds.Every] {
 	return conform.Suite[kinds.Every]{
 		Declaration: "Every",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/kinds",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[kinds.Every]{
 			{
 				ID:          EveryChecks.Fields.Smoke(),
@@ -336,6 +338,68 @@ func EverySuite() conform.Suite[kinds.Every] {
 				Statement: "Index returns the number of the keys of a map of names that the case draws",
 				Property:  CountsTheNames,
 				Defect:    measuresNothing,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Params",
+				Why:      "eidos derives no sample of the parameter ch of Params",
+				Remedy:   "author a sample of the parameter ch with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Results",
+				Why:      "eidos derives no sample of the parameter r of Results",
+				Remedy:   "author a sample of the parameter r with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Place",
+				Why:      "eidos derives no sample of the parameter clock of Place",
+				Remedy:   "author a sample of the parameter clock with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Route",
+				Why:      "eidos derives no sample of the parameter in of Route",
+				Remedy:   "author a sample of the parameter in with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Drain",
+				Why:      "eidos derives no sample of the parameter f of Drain",
+				Remedy:   "author a sample of the parameter f with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Watch",
+				Why:      "eidos derives no sample of the parameter s of Watch",
+				Remedy:   "author a sample of the parameter s with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Measure",
+				Why:      "eidos derives no sample of the parameter s of Measure",
+				Remedy:   "author a sample of the parameter s with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Index",
+				Why:      "eidos derives no sample of the parameter names of Index",
+				Remedy:   "author a sample of the parameter names with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Count",
+				Why:      "eidos derives no sample of the parameter shapes of Count",
+				Remedy:   "author a sample of the parameter shapes with the directive sample",
+			},
+			{
+				Claim:    spec.Deterministic,
+				Callable: "Every.Use",
+				Why:      "eidos derives no sample of the parameter r of Use",
+				Remedy:   "author a sample of the parameter r with the directive sample",
 			},
 		},
 		Calls: []conform.Call[kinds.Every]{
@@ -1532,4 +1596,4 @@ func everyElementsDrifts(h *EveryHandle) kinds.Every {
 	return &everyElementsDriftsDefect{everyOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b3971ccc592fbd6c13ee1cd3c7808cd9a4d987e6b03c586fd34b31571c13f672
+// dokimi:provenance sha256:278d111e511b66fd04779895ed16311cb67172249d44814096b688839a0fd209

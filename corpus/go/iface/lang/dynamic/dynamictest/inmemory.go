@@ -1,7 +1,7 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
-// Package dynamictest contains the suite of Diary. InMemory is the control of
+// Package dynamictest contains the suite of Diary. InMemory is the subject of
 // the suite.
 package dynamictest
 
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [dynamic.Diary] in memory. The corpus applies the suite
-// of Diary to it as a control.
+// of Diary to it as a subject.
 //
 //dokimi:subject dynamic.Diary new=NewInMemory
 type InMemory struct {

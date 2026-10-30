@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package orderaftertest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package orderaftertest
 
 import (
@@ -19,7 +19,7 @@ import (
 var ErrNotPrepared = fmt.Errorf("orderaftertest: commit before prepare: %w", orderafter.ErrNotReady)
 
 // InMemory implements [orderafter.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject orderafter.Mixed new=NewInMemory
 type InMemory struct {

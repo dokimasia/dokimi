@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package boundedcachetest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package boundedcachetest
 
 import (
@@ -17,7 +17,7 @@ import (
 const capacity = 2
 
 // InMemory implements [boundedcache.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control. At its capacity, Put evicts the oldest
+// suite of Mixed to it as a subject. At its capacity, Put evicts the oldest
 // key.
 //
 //dokimi:subject boundedcache.Mixed new=NewInMemory

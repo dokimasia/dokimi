@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package cursortest contains the double and the suite of Contract. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package cursortest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [cursor.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject cursor.Contract new=NewInMemory
 type InMemory struct {

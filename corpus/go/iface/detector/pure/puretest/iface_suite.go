@@ -70,6 +70,8 @@ func (c pureDescribe) Deterministic() conform.ID[pure.Pure] {
 func PureSuite() conform.Suite[pure.Pure] {
 	return conform.Suite[pure.Pure]{
 		Declaration: "Pure",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/pure",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[pure.Pure]{
 			{
 				ID:          PureChecks.Describe.Smoke(),
@@ -242,4 +244,4 @@ func pureDescribeDrifts(h *PureHandle) pure.Pure {
 	return &pureDescribeDriftsDefect{pureOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:baf8383ea80fed9299f870d8e6dd1d8e9cd61b7ebf666f18004a540cf4d61a79
+// dokimi:provenance sha256:27137d4c10e086514838d2f8843fa16aeb3d92c45f760c4d84a36b42303bf8d1

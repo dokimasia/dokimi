@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package publisheratleastoncetest contains the double and the suite of
-// Contract. InMemory is the control of the suite.
+// Contract. InMemory is the subject of the suite.
 package publisheratleastoncetest
 
 import (
@@ -21,7 +21,7 @@ const subscriberBuffer = 8
 var ErrFull = errors.New("publisheratleastoncetest: a subscriber is too far behind to take the message")
 
 // InMemory implements [publisheratleastonce.Contract] in memory. The corpus
-// applies the suite of Contract to it as a control.
+// applies the suite of Contract to it as a subject.
 //
 //dokimi:subject publisheratleastonce.Contract new=NewInMemory
 type InMemory struct {

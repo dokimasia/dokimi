@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package outboxtest contains the double and the suite of Contract. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package outboxtest
 
 import (
@@ -22,7 +22,7 @@ const subscriberBuffer = 8
 var ErrFull = errors.New("outboxtest: a subscriber is too far behind to take the record")
 
 // InMemory implements [outbox.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject outbox.Contract new=NewInMemory
 type InMemory struct {

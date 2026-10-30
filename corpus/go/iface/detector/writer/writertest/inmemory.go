@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package writertest contains the double and the suite of Writer. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package writertest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [writer.Writer] in memory. The corpus applies the
-// suite of Writer to it as a control.
+// suite of Writer to it as a subject.
 //
 //dokimi:subject writer.Writer new=NewInMemory
 type InMemory struct {

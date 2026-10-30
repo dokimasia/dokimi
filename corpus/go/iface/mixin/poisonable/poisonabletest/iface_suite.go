@@ -99,6 +99,8 @@ func (c mixedProbe) Poisonable() conform.ID[poisonable.Mixed] {
 func MixedSuite() conform.Suite[poisonable.Mixed] {
 	return conform.Suite[poisonable.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/poisonable",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[poisonable.Mixed]{
 			{
 				ID:          MixedChecks.Fail.Smoke(),
@@ -163,6 +165,20 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 					})
 				},
 				Defect: mixedProbeSucceedsAlways,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Fail",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:poison-accessor",
+				Callable:       "Mixed.Probe",
+				Stance:         spec.Gap,
+				Note:           "No claim states what the accessor of a poisoned subject returns.",
 			},
 		},
 		Calls: []conform.Call[poisonable.Mixed]{
@@ -350,4 +366,4 @@ func mixedProbeSucceedsAlways(h *MixedHandle) poisonable.Mixed {
 	return &mixedProbeSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a18f80d16d6515cd6dccfee60f2e22382494e72827af788df882d5113b52648c
+// dokimi:provenance sha256:7bfeeaa8e17ed4e10e7a61e8e9bbd189e6226efa28f543cf04d495ed11ee30cb

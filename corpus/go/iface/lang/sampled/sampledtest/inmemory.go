@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package sampledtest contains the double and the suite of Labeller. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package sampledtest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [sampled.Labeller] in memory. The corpus applies the
-// suite of Labeller to it as a control.
+// suite of Labeller to it as a subject.
 //
 //dokimi:subject sampled.Labeller new=NewInMemory
 type InMemory struct {

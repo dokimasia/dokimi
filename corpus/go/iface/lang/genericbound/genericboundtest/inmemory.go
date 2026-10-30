@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package genericboundtest contains the double and the suite of Ranked.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package genericboundtest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("genericboundtest: not found")
 
 // InMemory implements [genericbound.Ranked] in memory. The corpus applies the
-// suite of Ranked to it as a control.
+// suite of Ranked to it as a subject.
 //
 //dokimi:subject genericbound.Ranked new=NewInMemory
 type InMemory[K genericbound.Ordered, V any] struct {

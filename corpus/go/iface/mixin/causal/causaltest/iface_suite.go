@@ -118,6 +118,8 @@ func (c mixedGet) Causal() conform.ID[causal.Mixed] {
 func MixedSuite() conform.Suite[causal.Mixed] {
 	return conform.Suite[causal.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[causal.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -493,4 +495,4 @@ func mixedGetReadsAnotherValue(h *MixedHandle) causal.Mixed {
 	return &mixedGetReadsAnotherValueDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4bda1e0128cceb6931da8dfd36069ec656aea317c5fb1bd1c6225db5a5bbb44c
+// dokimi:provenance sha256:a79d0de0c4ff818e7f6cacb7d47dc2829ed0f4d2c4f868dbc9a1ab80219a1db6

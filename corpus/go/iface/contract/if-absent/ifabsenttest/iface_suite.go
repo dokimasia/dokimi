@@ -81,6 +81,8 @@ func (c contractPut) IfAbsent() conform.ID[ifabsent.Contract] {
 func ContractSuite() conform.Suite[ifabsent.Contract] {
 	return conform.Suite[ifabsent.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-absent",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[ifabsent.Contract]{
 			{
 				ID:          ContractChecks.Put.Smoke(),
@@ -127,6 +129,14 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 					}, ifabsent.ErrExists)
 				},
 				Defect: contractPutSucceedsAlways,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[ifabsent.Contract]{
@@ -293,4 +303,4 @@ func contractPutSucceedsAlways(h *ContractHandle) ifabsent.Contract {
 	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:13e5c55b4d26ea60955f446bbfb96c1cfcb61d574467bf0f6927b725514ac82d
+// dokimi:provenance sha256:eeaaa9c819fe688fcdc67bd00800ad64c2978fb66b0492ed784e96d8f6f8da83

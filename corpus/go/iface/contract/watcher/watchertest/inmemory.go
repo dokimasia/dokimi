@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package watchertest contains the double and the suite of Contract. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package watchertest
 
 import (
@@ -44,7 +44,7 @@ func (s *subscription) Next(timeout time.Duration) (watcher.Value, bool) {
 func (s *subscription) Stop() { s.once.Do(s.stop) }
 
 // InMemory implements [watcher.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject watcher.Contract new=NewInMemory
 type InMemory struct {

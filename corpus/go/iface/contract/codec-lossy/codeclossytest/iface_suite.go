@@ -123,6 +123,8 @@ func (c contractDecode) ZeroOnError() conform.ID[codeclossy.Contract] {
 func ContractSuite() conform.Suite[codeclossy.Contract] {
 	return conform.Suite[codeclossy.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/codec-lossy",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[codeclossy.Contract]{
 			{
 				ID:          ContractChecks.Encode.Smoke(),
@@ -511,4 +513,4 @@ func contractDecodeValueBeside(h *ContractHandle) codeclossy.Contract {
 	return &contractDecodeValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8dbb24e98cfce2338f91a90b3be412d767ce987b53d3f89d04cd69cbacea0dd2
+// dokimi:provenance sha256:3590e5e75421e3e844e72a4c98669244d3464a4b054933f5d40f36a1fa781284

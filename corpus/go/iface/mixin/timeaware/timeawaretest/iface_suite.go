@@ -124,6 +124,8 @@ func (c mixedAgeOf) Steady() conform.ID[timeaware.Mixed] {
 func MixedSuite() conform.Suite[timeaware.Mixed] {
 	return conform.Suite[timeaware.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeaware",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[timeaware.Mixed]{
 			{
 				ID:          MixedChecks.Touch.Smoke(),
@@ -239,6 +241,14 @@ func MixedSuite() conform.Suite[timeaware.Mixed] {
 				},
 				Defect: mixedAgeOfDrifts,
 				Around: synctest.Test,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Touch",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[timeaware.Mixed]{
@@ -502,4 +512,4 @@ func mixedAgeOfDrifts(h *MixedHandle) timeaware.Mixed {
 	return &mixedAgeOfDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3fd842aa13ef03f2fa1df80544498addb15332beb90678913cd2b6a563925926
+// dokimi:provenance sha256:f0ba7548c042c13c4bceec6c907a3b0814517aefadd9f0a7ff94e707a4ce0e04

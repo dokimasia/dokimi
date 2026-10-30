@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package idempotentclosetest contains the double and the suite of Closer.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package idempotentclosetest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [idempotentclose.Closer] in memory. The corpus applies
-// the suite of Closer to it as a control.
+// the suite of Closer to it as a subject.
 //
 //dokimi:subject idempotentclose.Closer new=NewInMemory
 type InMemory struct {

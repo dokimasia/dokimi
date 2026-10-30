@@ -69,6 +69,8 @@ func (c mutatorTouch) Smoke() conform.ID[mutator.Mutator] {
 func MutatorSuite() conform.Suite[mutator.Mutator] {
 	return conform.Suite[mutator.Mutator]{
 		Declaration: "Mutator",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[mutator.Mutator]{
 			{
 				ID:          MutatorChecks.Touch.Smoke(),
@@ -86,6 +88,22 @@ func MutatorSuite() conform.Suite[mutator.Mutator] {
 					})
 				},
 				Defect: mutatorTouchPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Mutator.Touch",
+				Why:      "Touch cannot fail",
+				Remedy:   "give Touch an error result",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Mutator.Touch",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[mutator.Mutator]{
@@ -205,4 +223,4 @@ func mutatorTouchPanics(h *MutatorHandle) mutator.Mutator {
 	return &mutatorTouchPanicsDefect{mutatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:936bb995d1a2b0484fcf646e563017fba42c586028a4ae2025bb863a3c53dc87
+// dokimi:provenance sha256:dd2e861072ca4ebc28ab26703b51ecbd4d7c7b5d9b7d4c7113283f1ccbd8eb44

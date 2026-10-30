@@ -119,6 +119,8 @@ func (c contractRelease) Cancel() conform.ID[lease.Contract] {
 func ContractSuite() conform.Suite[lease.Contract] {
 	return conform.Suite[lease.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/lease",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[lease.Contract]{
 			{
 				ID:          ContractChecks.Acquire.Smoke(),
@@ -197,6 +199,26 @@ func ContractSuite() conform.Suite[lease.Contract] {
 					})
 				},
 				Defect: contractReleaseIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Acquire",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Release",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:lease/release",
+				Callable:       "Contract.Release",
+				Stance:         spec.Gap,
+				Note:           "No claim states that a released lease is granted again.",
 			},
 		},
 		Calls: []conform.Call[lease.Contract]{
@@ -414,4 +436,4 @@ func contractReleaseIgnoresCancel(h *ContractHandle) lease.Contract {
 	return &contractReleaseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ea4bbc550c0651ed44bbd66b20e7a2af7b50e06605f153b33dfb6af4a645e098
+// dokimi:provenance sha256:056548c47e4d82c37130ea3991e57c653ceadee132e5ea790dc820bad14cc6bc

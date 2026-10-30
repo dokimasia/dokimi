@@ -1,7 +1,7 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
-// Package sampledparamtest contains the suite of Hasher. SHA256 is the control
+// Package sampledparamtest contains the suite of Hasher. SHA256 is the subject
 // of the suite.
 package sampledparamtest
 
@@ -15,7 +15,7 @@ import (
 const interior sampledparam.Role = 0x80
 
 // SHA256 implements [sampledparam.Hasher] with SHA-256. The corpus applies the
-// suite of Hasher to it as a control.
+// suite of Hasher to it as a subject.
 //
 //dokimi:subject sampledparam.Hasher new=NewSHA256
 type SHA256 struct{}

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package eventuallytest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package eventuallytest
 
 import (
@@ -17,7 +17,7 @@ import (
 )
 
 // InMemory implements [eventually.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject eventually.Mixed new=NewInMemory
 type InMemory struct {

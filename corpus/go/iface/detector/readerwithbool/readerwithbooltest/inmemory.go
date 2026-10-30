@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package readerwithbooltest contains the double and the suite of
-// ReaderWithBool. InMemory is the control of the suite.
+// ReaderWithBool. InMemory is the subject of the suite.
 package readerwithbooltest
 
 import (
@@ -13,7 +13,7 @@ import (
 )
 
 // InMemory implements [readerwithbool.ReaderWithBool] in memory. The corpus
-// applies the suite of ReaderWithBool to it as a control.
+// applies the suite of ReaderWithBool to it as a subject.
 //
 //dokimi:subject readerwithbool.ReaderWithBool new=NewInMemory
 type InMemory struct {

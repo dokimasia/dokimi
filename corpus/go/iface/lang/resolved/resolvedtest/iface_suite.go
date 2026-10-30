@@ -107,6 +107,8 @@ func (c applierLimit) ZeroOnError() conform.ID[resolved.Applier] {
 func ApplierSuite() conform.Suite[resolved.Applier] {
 	return conform.Suite[resolved.Applier]{
 		Declaration: "Applier",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/resolved",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[resolved.Applier]{
 			{
 				ID:          ApplierChecks.Apply.Smoke(),
@@ -186,6 +188,14 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 					}, int(0))
 				},
 				Defect: applierLimitValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Applier.Apply",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[resolved.Applier]{
@@ -413,4 +423,4 @@ func applierLimitValueBeside(h *ApplierHandle) resolved.Applier {
 	return &applierLimitValueBesideDefect{applierOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3f37f10339125771de0cd0a962b997a1d013ff11ba0ccc90afa273e0cf07b4a0
+// dokimi:provenance sha256:9cb2b9685cedb16f26077013b2ff6de4562c2710fbcba545d8871898b322f976

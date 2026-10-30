@@ -118,6 +118,8 @@ func (c mixedGet) MonotonicWrites() conform.ID[monotonicwrites.Mixed] {
 func MixedSuite() conform.Suite[monotonicwrites.Mixed] {
 	return conform.Suite[monotonicwrites.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonicwrites",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[monotonicwrites.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -508,4 +510,4 @@ func mixedGetReadsAnotherValue(h *MixedHandle) monotonicwrites.Mixed {
 	return &mixedGetReadsAnotherValueDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0667954b42606929234857c4a9c7336b5e132b7c8e21c48dddf6bf251fe97926
+// dokimi:provenance sha256:1851b43b19a3de050785769edd2d2fa84e05368d72f29ebebf78409c56b9fc47

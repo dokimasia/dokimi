@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package lookuptest contains the double and the suite of Lookup. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package lookuptest
 
 import (
@@ -12,7 +12,7 @@ import (
 )
 
 // InMemory implements [lookup.Lookup] in memory. The corpus applies the
-// suite of Lookup to it as a control.
+// suite of Lookup to it as a subject.
 //
 //dokimi:subject lookup.Lookup new=NewInMemory
 type InMemory struct {

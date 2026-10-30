@@ -138,6 +138,8 @@ func (c mixedRead) ZeroOnError() conform.ID[deleteremoves.Mixed] {
 func MixedSuite() conform.Suite[deleteremoves.Mixed] {
 	return conform.Suite[deleteremoves.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/deleteremoves",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[deleteremoves.Mixed]{
 			{
 				ID:          MixedChecks.Delete.Smoke(),
@@ -248,6 +250,28 @@ func MixedSuite() conform.Suite[deleteremoves.Mixed] {
 					}, string(""))
 				},
 				Defect: mixedReadValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.DeleteRemoves,
+				Callable: "Mixed.Delete",
+				Why:      "no callable of the declaration is the partner put of Delete",
+				Remedy:   "name the partner of Delete with the param of the classification",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:deleter",
+				Callable:       "Mixed.Delete",
+				Stance:         spec.Silent,
+				Note:           "A delete is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[deleteremoves.Mixed]{
@@ -523,4 +547,4 @@ func mixedReadValueBeside(h *MixedHandle) deleteremoves.Mixed {
 	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5c35ed2b498898de93860497e42590909a0363c11d87fc1fa6287f0b97a3923a
+// dokimi:provenance sha256:9cb240f0329ed2dff0ec47c4cd749f5ffa5018051c1668be5ec1bcc28a41ccd0

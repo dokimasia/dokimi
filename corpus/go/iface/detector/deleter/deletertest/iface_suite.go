@@ -72,6 +72,8 @@ func (c deleterDelete) Cancel() conform.ID[deleter.Deleter] {
 func DeleterSuite() conform.Suite[deleter.Deleter] {
 	return conform.Suite[deleter.Deleter]{
 		Declaration: "Deleter",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/deleter",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[deleter.Deleter]{
 			{
 				ID:          DeleterChecks.Delete.Smoke(),
@@ -103,6 +105,14 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 					})
 				},
 				Defect: deleterDeleteIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:deleter",
+				Callable:       "Deleter.Delete",
+				Stance:         spec.Silent,
+				Note:           "A delete is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[deleter.Deleter]{
@@ -242,4 +252,4 @@ func deleterDeleteIgnoresCancel(h *DeleterHandle) deleter.Deleter {
 	return &deleterDeleteIgnoresCancelDefect{deleterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9940376d6e56b3143c0f37282064a3c02ef67beea7ac3e2de65a2bf10e172d0a
+// dokimi:provenance sha256:6cfe0446a63400c6a07a5255fcd7b739530e0c9553c6674287469b902065e266

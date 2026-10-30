@@ -115,6 +115,8 @@ func (c contractGet) ZeroOnError() conform.ID[cas.Contract] {
 func ContractSuite() conform.Suite[cas.Contract] {
 	return conform.Suite[cas.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/cas",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[cas.Contract]{
 			{
 				ID:          ContractChecks.Put.Smoke(),
@@ -209,6 +211,14 @@ func ContractSuite() conform.Suite[cas.Contract] {
 					}, cas.Value{})
 				},
 				Defect: contractGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[cas.Contract]{
@@ -448,4 +458,4 @@ func contractGetValueBeside(h *ContractHandle) cas.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f1e80f01cd52aec194ba75bfe687f7e98fcab45d7fc60bdcbe588ff402328b51
+// dokimi:provenance sha256:07205bd006900df496cade66b774f443695311a9c4d479b5f5f3920b586bf290

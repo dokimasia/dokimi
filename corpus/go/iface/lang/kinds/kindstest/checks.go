@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package kindstest contains the suite of Every, the checks that a consumer
-// adds to the suite, and the control of the suite.
+// adds to the suite, and the subject of the suite.
 package kindstest
 
 import (

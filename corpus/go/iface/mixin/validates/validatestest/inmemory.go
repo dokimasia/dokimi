@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package validatestest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package validatestest
 
 import (
@@ -20,7 +20,7 @@ var ErrNotFound = errors.New("validatestest: not found")
 var ErrInvalid = errors.New("validatestest: invalid payload")
 
 // InMemory implements [validates.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject validates.Mixed new=NewInMemory
 type InMemory struct {

@@ -65,6 +65,8 @@ func (c poisonAccessorErr) Smoke() conform.ID[poisonaccessor.PoisonAccessor] {
 func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
 	return conform.Suite[poisonaccessor.PoisonAccessor]{
 		Declaration: "PoisonAccessor",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/poisonaccessor",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[poisonaccessor.PoisonAccessor]{
 			{
 				ID:          PoisonAccessorChecks.Err.Smoke(),
@@ -81,6 +83,14 @@ func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
 					})
 				},
 				Defect: poisonAccessorErrPanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:poison-accessor",
+				Callable:       "PoisonAccessor.Err",
+				Stance:         spec.Gap,
+				Note:           "No claim states what the accessor of a poisoned subject returns.",
 			},
 		},
 		Calls: []conform.Call[poisonaccessor.PoisonAccessor]{
@@ -212,4 +222,4 @@ func poisonAccessorErrPanics(h *PoisonAccessorHandle) poisonaccessor.PoisonAcces
 	return &poisonAccessorErrPanicsDefect{poisonAccessorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:cb882d0ca200d26e39e4a6ccdcf33694d405e96fd3c89f9557332d2e161f0396
+// dokimi:provenance sha256:ce121dd5071d5b12cc23b45fae6ba03ff7847b4a241232bca9d108a3a45ed194

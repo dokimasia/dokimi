@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package variadictest contains the double and the suite of Finder. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package variadictest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNoKeys = errors.New("variadictest: no keys requested")
 
 // InMemory implements [variadic.Finder] in memory. The corpus applies the
-// suite of Finder to it as a control.
+// suite of Finder to it as a subject.
 //
 //dokimi:subject variadic.Finder new=NewInMemory
 type InMemory struct {

@@ -116,6 +116,8 @@ func (c storeGet) ZeroOnError() conform.ID[durable.Store] {
 func StoreSuite() conform.Suite[durable.Store] {
 	return conform.Suite[durable.Store]{
 		Declaration: "Store",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/door/durable",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[durable.Store]{
 			{
 				ID:          StoreChecks.Put.Smoke(),
@@ -210,6 +212,14 @@ func StoreSuite() conform.Suite[durable.Store] {
 				Apply:     KeepsEachPutAcrossARestart,
 				Defect:    forgetsOnRestart,
 				Doors:     conform.Doors[durable.Store]{Restart: forget, Crash: crash},
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Store.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[durable.Store]{
@@ -423,4 +433,4 @@ func storeGetValueBeside(h *StoreHandle) durable.Store {
 	return &storeGetValueBesideDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1d0f0a452d57d589bf198ebca1dde84c7678035cc95a9998e674809314b54221
+// dokimi:provenance sha256:fce05072e658c8d23ba7ff0a433a692d0c4e9b96b6f2e68f77c5e8e691d91548

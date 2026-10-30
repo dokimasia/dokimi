@@ -115,6 +115,8 @@ func (c mixedGet) MonotonicReads() conform.ID[monotonicreads.Mixed] {
 func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 	return conform.Suite[monotonicreads.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonicreads",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[monotonicreads.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -212,6 +214,14 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 					}, func(v monotonicreads.Value) int64 { return v.Rev })
 				},
 				Defect: mixedGetVersionDescends,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[monotonicreads.Mixed]{
@@ -460,4 +470,4 @@ func mixedGetVersionDescends(h *MixedHandle) monotonicreads.Mixed {
 	return &mixedGetVersionDescendsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1ab1989b63db6dbbb6c86bb294d63bb475194ce28c96bb91eb59833ce9a9c22f
+// dokimi:provenance sha256:87583f3dbac7e69097a8a92c7ba8f30806666db58d9ebf12319714181deec0f9

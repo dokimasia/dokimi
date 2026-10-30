@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package crosspackagetest contains the suite of Fitter. InMemory is the
-// control of the suite.
+// subject of the suite.
 package crosspackagetest
 
 import (
@@ -17,7 +17,7 @@ import (
 // InMemory implements [crosspackage.Fitter] in memory. It counts the parts
 // that it fits within their limits and the senses of each sensor, and returns
 // the error of each sense. The corpus applies the suite of Fitter to it as a
-// control.
+// subject.
 //
 //dokimi:subject crosspackage.Fitter new=NewInMemory
 type InMemory struct {

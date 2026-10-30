@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package singleflighttest contains the double and the suite of Contract.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package singleflighttest
 
 import (
@@ -21,7 +21,7 @@ type call struct {
 }
 
 // InMemory implements [singleflight.Contract] in memory. The corpus applies
-// the suite of Contract to it as a control.
+// the suite of Contract to it as a subject.
 //
 //dokimi:subject singleflight.Contract new=NewInMemory
 type InMemory struct {

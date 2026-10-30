@@ -211,6 +211,8 @@ func (c contractGet) ZeroOnError() conform.ID[tx.Contract] {
 func ContractSuite() conform.Suite[tx.Contract] {
 	return conform.Suite[tx.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/tx",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[tx.Contract]{
 			{
 				ID:          ContractChecks.Begin.Smoke(),
@@ -419,6 +421,26 @@ func ContractSuite() conform.Suite[tx.Contract] {
 					}, tx.Value{})
 				},
 				Defect: contractGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Commit",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Rollback",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "Contract.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[tx.Contract]{
@@ -853,4 +875,4 @@ func contractGetValueBeside(h *ContractHandle) tx.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:eb52835684fa3f9b529fa0ea36fc4505b5b99c50703a46ad9d06540ddf142122
+// dokimi:provenance sha256:14372ee6b46f1feac80964dbfc85348f4f2ec560669629a4953bb5b0674c5a23

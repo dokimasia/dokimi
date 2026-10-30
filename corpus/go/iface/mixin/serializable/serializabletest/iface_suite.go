@@ -142,6 +142,8 @@ func (c mixedGet) ZeroOnError() conform.ID[serializable.Mixed] {
 func MixedSuite() conform.Suite[serializable.Mixed] {
 	return conform.Suite[serializable.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[serializable.Mixed]{
 			{
 				ID:          MixedChecks.Record.Smoke(),
@@ -269,6 +271,20 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 					}, serializable.Entry{})
 				},
 				Defect: mixedGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Record",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:serializable",
+				Callable:       "Mixed.History",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[serializable.Mixed]{
@@ -564,4 +580,4 @@ func mixedGetValueBeside(h *MixedHandle) serializable.Mixed {
 	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a5ff9fa098439e474decb0880db7691a8adc0c9404ae51502b87461359265f62
+// dokimi:provenance sha256:737e2fc95e182014b09594dcf600d7ec471a312ce1c4d118733df028dd3e846e

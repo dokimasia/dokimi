@@ -151,6 +151,8 @@ func (c contractVerify) Cancel() conform.ID[chain.Contract] {
 func ContractSuite() conform.Suite[chain.Contract] {
 	return conform.Suite[chain.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/chain",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[chain.Contract]{
 			{
 				ID:          ContractChecks.Append.Smoke(),
@@ -278,6 +280,26 @@ func ContractSuite() conform.Suite[chain.Contract] {
 					})
 				},
 				Defect: contractVerifyIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Append",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Contract.Verify",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "contract:chain/verify",
+				Callable:       "Contract.Verify",
+				Stance:         spec.Gap,
+				Note:           "No claim states that the verify of a chain refuses a chain that an append did not produce.",
 			},
 		},
 		Calls: []conform.Call[chain.Contract]{
@@ -572,4 +594,4 @@ func contractVerifyIgnoresCancel(h *ContractHandle) chain.Contract {
 	return &contractVerifyIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:98e5355902cdd1f271b91392dda279c62c6804a34ffe8865370b86e5fffa544e
+// dokimi:provenance sha256:e4700994f92647c6f1bd82ca72b486735eaeef2dde4be61aab1e288846a5a322

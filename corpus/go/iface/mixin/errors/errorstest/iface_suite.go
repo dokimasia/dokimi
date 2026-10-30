@@ -87,6 +87,8 @@ func (c mixedGet) Miss() conform.ID[errors.Mixed] {
 func MixedSuite() conform.Suite[errors.Mixed] {
 	return conform.Suite[errors.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/errors",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[errors.Mixed]{
 			{
 				ID:          MixedChecks.Get.Smoke(),
@@ -150,6 +152,14 @@ func MixedSuite() conform.Suite[errors.Mixed] {
 					}, errors.ErrNotFound)
 				},
 				Defect: mixedGetReportsAnotherError,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "mixin:errors",
+				Callable:       "Mixed.Get",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents the errors of the callable.",
 			},
 		},
 		Calls: []conform.Call[errors.Mixed]{
@@ -328,4 +338,4 @@ func mixedGetReportsAnotherError(h *MixedHandle) errors.Mixed {
 	return &mixedGetReportsAnotherErrorDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:76abacdecbe81e833deb882d26540486e26138c74bbabf0c1657cd9abf62d9d0
+// dokimi:provenance sha256:c07e430b5bc94009b30d89b31f755759757814400a2d4ead80c2e06747d9314f

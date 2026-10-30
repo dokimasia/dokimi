@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package partitiontest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package partitiontest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("partitiontest: not found")
 
 // InMemory implements [partition.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject partition.Mixed new=NewInMemory
 type InMemory struct {

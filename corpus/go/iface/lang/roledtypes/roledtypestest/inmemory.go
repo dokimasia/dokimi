@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package roledtypestest contains the double and the suite of Store. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package roledtypestest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("roledtypestest: not found")
 
 // InMemory implements [roledtypes.Store] in memory. The corpus applies the
-// suite of Store to it as a control.
+// suite of Store to it as a subject.
 //
 //dokimi:subject roledtypes.Store new=NewInMemory
 type InMemory struct {

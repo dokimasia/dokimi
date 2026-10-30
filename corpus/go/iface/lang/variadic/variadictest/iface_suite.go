@@ -99,6 +99,8 @@ func (c finderFindWithLimit) Cancel() conform.ID[variadic.Finder] {
 func FinderSuite() conform.Suite[variadic.Finder] {
 	return conform.Suite[variadic.Finder]{
 		Declaration: "Finder",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/variadic",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[variadic.Finder]{
 			{
 				ID:          FinderChecks.Find.Smoke(),
@@ -165,6 +167,14 @@ func FinderSuite() conform.Suite[variadic.Finder] {
 					})
 				},
 				Defect: finderFindWithLimitIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:batch-reader",
+				Callable:       "Finder.Find",
+				Stance:         spec.Gap,
+				Note:           "No claim states what a batch read returns for a key that it does not find.",
 			},
 		},
 		Calls: []conform.Call[variadic.Finder]{
@@ -372,4 +382,4 @@ func finderFindWithLimitIgnoresCancel(h *FinderHandle) variadic.Finder {
 	return &finderFindWithLimitIgnoresCancelDefect{finderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5c644770f0bec507628ddd4433d8b36acfc743866884cc4b2bee102b185b0853
+// dokimi:provenance sha256:b8a0d5591fe1ad11f0d54b53c0034e6df96dc608efbe66d63504313d8a244305

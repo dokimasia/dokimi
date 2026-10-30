@@ -107,6 +107,8 @@ func (c mixedGet) ZeroOnError() conform.ID[sticky.Mixed] {
 func MixedSuite() conform.Suite[sticky.Mixed] {
 	return conform.Suite[sticky.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/sticky",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[sticky.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -186,6 +188,20 @@ func MixedSuite() conform.Suite[sticky.Mixed] {
 					}, sticky.Value{})
 				},
 				Defect: mixedGetValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:sticky",
+				Callable:       "Mixed.Get",
+				Stance:         spec.Gap,
+				Note:           "No claim states that a value stays once the callable set it.",
 			},
 		},
 		Calls: []conform.Call[sticky.Mixed]{
@@ -399,4 +415,4 @@ func mixedGetValueBeside(h *MixedHandle) sticky.Mixed {
 	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:10c27a16ae42e6794c27c50fc2374489c584f8fa01efb41ff9e60c3792382c6c
+// dokimi:provenance sha256:355de2fb401ae38d0cee17ce4d8254c65fab20c4c6a7712d66317fa78206a8f4

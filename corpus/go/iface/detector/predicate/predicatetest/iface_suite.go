@@ -71,6 +71,8 @@ func (c predicateIsEmpty) Predicate() conform.ID[predicate.Predicate] {
 func PredicateSuite() conform.Suite[predicate.Predicate] {
 	return conform.Suite[predicate.Predicate]{
 		Declaration: "Predicate",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/predicate",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[predicate.Predicate]{
 			{
 				ID:          PredicateChecks.IsEmpty.Smoke(),
@@ -252,4 +254,4 @@ func predicateIsEmptyDrifts(h *PredicateHandle) predicate.Predicate {
 	return &predicateIsEmptyDriftsDefect{predicateOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:87a9f6bad2a0c76bfee75a52bf8d3e54e00c7e11fc206f5af3b2fd1372846c9c
+// dokimi:provenance sha256:935036f5733d3632786a046eeec1ab16e8a2c4bb9c0b27addfd0251a404cc9a6

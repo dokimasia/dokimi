@@ -149,6 +149,8 @@ func (c contractFetch) ZeroOnError() conform.ID[cache.Contract] {
 func ContractSuite() conform.Suite[cache.Contract] {
 	return conform.Suite[cache.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/cache",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[cache.Contract]{
 			{
 				ID:          ContractChecks.Store.Smoke(),
@@ -276,6 +278,22 @@ func ContractSuite() conform.Suite[cache.Contract] {
 					}, cache.Value{})
 				},
 				Defect: contractFetchValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cache,
+				Callable: "Contract.Lookup",
+				Why:      "no callable of the declaration is the partner put of Lookup",
+				Remedy:   "name the partner of Lookup with the param of the classification",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Contract.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[cache.Contract]{
@@ -574,4 +592,4 @@ func contractFetchValueBeside(h *ContractHandle) cache.Contract {
 	return &contractFetchValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:eb7177ebdc82244db1400e795f9462b9545c4fc63f10ff6d90ee102714951ac0
+// dokimi:provenance sha256:d007e7b2af8b91d343547181a6258304bf96e57a3464b0e671e2f65f3acca107

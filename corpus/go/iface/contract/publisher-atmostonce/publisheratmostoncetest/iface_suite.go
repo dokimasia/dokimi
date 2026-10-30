@@ -114,6 +114,8 @@ func (c contractSubscribe) Cancel() conform.ID[publisheratmostonce.Contract] {
 func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 	return conform.Suite[publisheratmostonce.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atmostonce",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[publisheratmostonce.Contract]{
 			{
 				ID:          ContractChecks.Publish.Smoke(),
@@ -178,6 +180,34 @@ func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 					})
 				},
 				Defect: contractSubscribeIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Contract.Subscribe",
+				Why:      "eidos derives no sample of a result of Subscribe",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Publish",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:publisher/publish",
+				Callable:       "Contract.Publish",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
+			},
+			{
+				Classification: "contract:publisher/subscribe",
+				Callable:       "Contract.Subscribe",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[publisheratmostonce.Contract]{
@@ -382,4 +412,4 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) publisheratmostonce.Contr
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7399ab7408b7f5dfa5b7937d6fefa3d6af77de843b544519cd1ac91f3d4608db
+// dokimi:provenance sha256:6cf867b5a06abdfab05cf3b061b5f74302f287181d6af45aa9489d76ff9142ce

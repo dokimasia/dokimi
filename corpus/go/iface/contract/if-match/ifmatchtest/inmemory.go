@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package ifmatchtest contains the double and the suite of Contract. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package ifmatchtest
 
 import (
@@ -21,7 +21,7 @@ var ErrAbsent = errors.New("ifmatchtest: no value under that key")
 var ErrMismatch = errors.New("ifmatchtest: stored value does not match")
 
 // InMemory implements [ifmatch.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject ifmatch.Contract new=NewInMemory
 type InMemory struct {

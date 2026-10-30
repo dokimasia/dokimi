@@ -75,6 +75,8 @@ func (c compositeWriterSet) Cancel() conform.ID[compositewriter.CompositeWriter]
 func CompositeWriterSuite() conform.Suite[compositewriter.CompositeWriter] {
 	return conform.Suite[compositewriter.CompositeWriter]{
 		Declaration: "CompositeWriter",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[compositewriter.CompositeWriter]{
 			{
 				ID:          CompositeWriterChecks.Set.Smoke(),
@@ -106,6 +108,14 @@ func CompositeWriterSuite() conform.Suite[compositewriter.CompositeWriter] {
 					})
 				},
 				Defect: compositeWriterSetIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "CompositeWriter.Set",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[compositewriter.CompositeWriter]{
@@ -263,4 +273,4 @@ func compositeWriterSetIgnoresCancel(h *CompositeWriterHandle) compositewriter.C
 	return &compositeWriterSetIgnoresCancelDefect{compositeWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:eed06ab5ddf8d066c5b902c2339acc56ae3997dcc60737218780031238119d2a
+// dokimi:provenance sha256:6b9d30e237ba1755a7192664b8529fa5579c0f25302169d2234dbb158e195a63

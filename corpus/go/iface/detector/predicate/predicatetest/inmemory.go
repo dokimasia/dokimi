@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package predicatetest contains the double and the suite of Predicate.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package predicatetest
 
 import (
@@ -12,7 +12,7 @@ import (
 )
 
 // InMemory implements [predicate.Predicate] in memory. The corpus applies
-// the suite of Predicate to it as a control.
+// the suite of Predicate to it as a subject.
 //
 //dokimi:subject predicate.Predicate new=NewInMemory
 type InMemory struct {

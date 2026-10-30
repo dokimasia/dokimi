@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package codeclossytest contains the double and the suite of Contract.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package codeclossytest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [codeclossy.Contract] in memory. The corpus applies
-// the suite of Contract to it as a control.
+// the suite of Contract to it as a subject.
 //
 //dokimi:subject codeclossy.Contract new=NewInMemory
 type InMemory struct{}

@@ -115,6 +115,8 @@ func (c mixedGet) PointInTime() conform.ID[pointintime.Mixed] {
 func MixedSuite() conform.Suite[pointintime.Mixed] {
 	return conform.Suite[pointintime.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[pointintime.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -214,6 +216,14 @@ func MixedSuite() conform.Suite[pointintime.Mixed] {
 					})
 				},
 				Defect: mixedGetDrifts,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[pointintime.Mixed]{
@@ -457,4 +467,4 @@ func mixedGetDrifts(h *MixedHandle) pointintime.Mixed {
 	return &mixedGetDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d893a3d4756855581915d5e812b213ded2be7926a94bc2876425cc66ebe4ddd7
+// dokimi:provenance sha256:88e18c735d52619d6525dea8c22de533ea9d69c919e3e229554771842c630563

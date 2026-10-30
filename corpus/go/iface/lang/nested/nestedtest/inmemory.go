@@ -1,7 +1,7 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
-// Package nestedtest contains the suite of Dispatcher. InMemory is the control
+// Package nestedtest contains the suite of Dispatcher. InMemory is the subject
 // of the suite.
 package nestedtest
 
@@ -15,7 +15,7 @@ import (
 // InMemory implements [nested.Dispatcher] in memory. Each dispatch weighs the
 // parcel of its request and calls Done and Notify of the request, so it reads
 // each field of a function type and of an interface type. The corpus applies
-// the suite of Dispatcher to it as a control.
+// the suite of Dispatcher to it as a subject.
 //
 //dokimi:subject nested.Dispatcher new=NewInMemory
 type InMemory struct {

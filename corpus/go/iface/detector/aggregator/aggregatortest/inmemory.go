@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package aggregatortest contains the double and the suite of Aggregator.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package aggregatortest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [aggregator.Aggregator] in memory. The corpus applies
-// the suite of Aggregator to it as a control.
+// the suite of Aggregator to it as a subject.
 //
 //dokimi:subject aggregator.Aggregator new=NewInMemory
 type InMemory struct {

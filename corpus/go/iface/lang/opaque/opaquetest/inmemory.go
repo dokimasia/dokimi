@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package opaquetest contains the suite and the double of Store. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package opaquetest
 
 import (
@@ -14,7 +14,7 @@ import (
 
 // InMemory implements [opaque.Store] in memory. Each put adds the length of
 // the set of its request to a total, so it reads the field of the type without
-// an exported field. The corpus applies the suite of Store to it as a control.
+// an exported field. The corpus applies the suite of Store to it as a subject.
 //
 //dokimi:subject opaque.Store new=NewInMemory
 type InMemory struct {

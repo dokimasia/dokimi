@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package answeringwritertest contains the double and the suite of
-// AnsweringWriter. InMemory is the control of the suite.
+// AnsweringWriter. InMemory is the subject of the suite.
 package answeringwritertest
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // InMemory implements [answeringwriter.AnsweringWriter] in memory. The
-// corpus applies the suite of AnsweringWriter to it as a control.
+// corpus applies the suite of AnsweringWriter to it as a subject.
 //
 //dokimi:subject answeringwriter.AnsweringWriter new=NewInMemory
 type InMemory struct {

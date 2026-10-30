@@ -74,6 +74,8 @@ func (c readerWithBoolLoad) ZeroOnMiss() conform.ID[readerwithbool.ReaderWithBoo
 func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 	return conform.Suite[readerwithbool.ReaderWithBool]{
 		Declaration: "ReaderWithBool",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/readerwithbool",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[readerwithbool.ReaderWithBool]{
 			{
 				ID:          ReaderWithBoolChecks.Load.Smoke(),
@@ -106,6 +108,14 @@ func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 					}, readerwithbool.Value{})
 				},
 				Defect: readerWithBoolLoadValueBesideAFalseFlag,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "ReaderWithBool.Load",
+				Why:      "Load cannot fail",
+				Remedy:   "give Load an error result",
 			},
 		},
 		Calls: []conform.Call[readerwithbool.ReaderWithBool]{
@@ -264,4 +274,4 @@ func readerWithBoolLoadValueBesideAFalseFlag(h *ReaderWithBoolHandle) readerwith
 	return &readerWithBoolLoadValueBesideAFalseFlagDefect{readerWithBoolOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:baae424879d3eff63f64b149e97bbd77df3b80306b184f19155ebccf3b5a7e6c
+// dokimi:provenance sha256:e26145f963cf4743377a7f33f2d34f46751912a492e46599209d242600566f48

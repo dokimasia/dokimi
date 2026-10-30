@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package batchreadertest contains the double and the suite of BatchReader.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package batchreadertest
 
 import (
@@ -19,7 +19,7 @@ import (
 var ErrNotFound = errors.New("batchreadertest: not found")
 
 // InMemory implements [batchreader.BatchReader] in memory. The corpus
-// applies the suite of BatchReader to it as a control.
+// applies the suite of BatchReader to it as a subject.
 //
 //dokimi:subject batchreader.BatchReader new=NewInMemory
 type InMemory struct {

@@ -147,6 +147,8 @@ func (c contractSubscribe) Cancel() conform.ID[publisherexactlyonce.Contract] {
 func ContractSuite() conform.Suite[publisherexactlyonce.Contract] {
 	return conform.Suite[publisherexactlyonce.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-exactlyonce",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[publisherexactlyonce.Contract]{
 			{
 				ID:          ContractChecks.Publish.Smoke(),
@@ -242,6 +244,46 @@ func ContractSuite() conform.Suite[publisherexactlyonce.Contract] {
 					})
 				},
 				Defect: contractSubscribeIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Contract.Subscribe",
+				Why:      "eidos derives no sample of a result of Subscribe",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Publish",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:publisher/publish",
+				Callable:       "Contract.Publish",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Replay",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:publisher/redeliver",
+				Callable:       "Contract.Replay",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
+			},
+			{
+				Classification: "contract:publisher/subscribe",
+				Callable:       "Contract.Subscribe",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[publisherexactlyonce.Contract]{
@@ -507,4 +549,4 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) publisherexactlyonce.Cont
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0c3bcf6861046c09d0e46a061783691f7fd4528de42504364f87532e42842a08
+// dokimi:provenance sha256:a0889f4550363b5fff7c91c5be633189f091f5c645a21d38e45e50a169ef29c4

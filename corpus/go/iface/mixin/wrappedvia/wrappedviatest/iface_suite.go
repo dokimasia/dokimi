@@ -102,6 +102,8 @@ func (c mixedCause) Cancel() conform.ID[wrappedvia.Mixed] {
 func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 	return conform.Suite[wrappedvia.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[wrappedvia.Mixed]{
 			{
 				ID:          MixedChecks.Open.Smoke(),
@@ -164,6 +166,26 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 					})
 				},
 				Defect: mixedCauseIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Open",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "mixin:wrapped-via",
+				Callable:       "Mixed.Open",
+				Stance:         spec.Gap,
+				Note:           "No claim states that the error of the callable wraps the declared error.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Cause",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[wrappedvia.Mixed]{
@@ -355,4 +377,4 @@ func mixedCauseIgnoresCancel(h *MixedHandle) wrappedvia.Mixed {
 	return &mixedCauseIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d035eec27a4d7bdd5bff21c2fa291631f553ef28ec903a8378a84bb97d2625c9
+// dokimi:provenance sha256:08a5ce8eee0f4278b79aae2084b57dfe830da09c0170ee1d1d9ae0ef5c489577

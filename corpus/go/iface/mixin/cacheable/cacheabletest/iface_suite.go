@@ -83,6 +83,8 @@ func (c mixedGet) Cacheable() conform.ID[cacheable.Mixed] {
 func MixedSuite() conform.Suite[cacheable.Mixed] {
 	return conform.Suite[cacheable.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/cacheable",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[cacheable.Mixed]{
 			{
 				ID:          MixedChecks.Get.Smoke(),
@@ -329,4 +331,4 @@ func mixedGetDrifts(h *MixedHandle) cacheable.Mixed {
 	return &mixedGetDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6638e5413e607e71872d8a42ed41beb8106cba03be3845cb14676d189addf0f0
+// dokimi:provenance sha256:aa4409c448acaee25dbea554f73f61b1ddb0c823cb9d61bd5b18f7956ddbb12d

@@ -90,6 +90,8 @@ func (c fileClose) Smoke() conform.ID[suitedhandle.File] {
 func FileSuite() conform.Suite[suitedhandle.File] {
 	return conform.Suite[suitedhandle.File]{
 		Declaration: "File",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/suitedhandle",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[suitedhandle.File]{
 			{
 				ID:          FileChecks.Name.Smoke(),
@@ -141,6 +143,14 @@ func FileSuite() conform.Suite[suitedhandle.File] {
 					})
 				},
 				Defect: fileClosePanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:closer",
+				Callable:       "File.Close",
+				Stance:         spec.Silent,
+				Note:           "A close returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[suitedhandle.File]{
@@ -361,6 +371,8 @@ func (c fsOpen) Smoke() conform.ID[suitedhandle.FS] {
 func FSSuite() conform.Suite[suitedhandle.FS] {
 	return conform.Suite[suitedhandle.FS]{
 		Declaration: "FS",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/suitedhandle",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[suitedhandle.FS]{
 			{
 				ID:          FSChecks.Open.Smoke(),
@@ -378,6 +390,14 @@ func FSSuite() conform.Suite[suitedhandle.FS] {
 					})
 				},
 				Defect: fsOpenPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "FS.Open",
+				Why:      "eidos derives no sample of a result of Open",
+				Remedy:   "author a sample of the result type with the directive sample",
 			},
 		},
 		Calls: []conform.Call[suitedhandle.FS]{
@@ -493,4 +513,4 @@ func fsOpenPanics(h *FSHandle) suitedhandle.FS {
 	return &fsOpenPanicsDefect{fsOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fa3bd6197ba67315b4a1e34ed31c0c63991d214820702f488117c748de2de420
+// dokimi:provenance sha256:126f65aa132097fbe794f8bb5e1d014b2e8c236829804a57bc40e5ce7c821310

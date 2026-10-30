@@ -12,6 +12,7 @@ import (
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamconsumer"
+	"go.dokimi.dev/spec"
 )
 
 // The refused claims of StreamConsumer:
@@ -53,6 +54,22 @@ type streamConsumerIngest struct {
 func StreamConsumerSuite() conform.Suite[streamconsumer.StreamConsumer] {
 	return conform.Suite[streamconsumer.StreamConsumer]{
 		Declaration: "StreamConsumer",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/streamconsumer",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "StreamConsumer.Ingest",
+				Why:      "eidos derives no sample of the parameter src of Ingest",
+				Remedy:   "author a sample of the parameter src with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "StreamConsumer.Ingest",
+				Why:      "eidos derives no sample of the parameter src of Ingest",
+				Remedy:   "author a sample of the parameter src with the directive sample",
+			},
+		},
 		Calls: []conform.Call[streamconsumer.StreamConsumer]{
 			{
 				Calls:    streamConsumerIngestCalls,
@@ -209,4 +226,4 @@ func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer
 	return streamConsumerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:bee044574476b9c18cb0c7ac9c8b0c5020d60d3456bcbc1ba4d70acfeeee283b
+// dokimi:provenance sha256:68851b009786d22440913d91a76ff74ab8c1c8440499a4b19c2de2303f45467a

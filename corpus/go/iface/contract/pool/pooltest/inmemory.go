@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package pooltest contains the double and the suite of Contract. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package pooltest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrExhausted = errors.New("pooltest: the pool has no free value")
 
 // InMemory implements [pool.Contract] in memory. The corpus applies the suite
-// of Contract to it as a control.
+// of Contract to it as a subject.
 //
 //dokimi:subject pool.Contract new=NewInMemory
 type InMemory struct {

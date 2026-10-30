@@ -129,6 +129,8 @@ func (c mixedRemove) Cancel() conform.ID[streamreflectsmutations.Mixed] {
 func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 	return conform.Suite[streamreflectsmutations.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/streamreflectsmutations",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[streamreflectsmutations.Mixed]{
 			{
 				ID:          MixedChecks.Stream.Smoke(),
@@ -208,6 +210,40 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 					})
 				},
 				Defect: mixedRemoveIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Mixed.Stream",
+				Why:      "Stream cannot fail",
+				Remedy:   "give Stream an error result",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:stream-reader",
+				Callable:       "Mixed.Stream",
+				Stance:         spec.Gap,
+				Note:           "No claim states what a stream returns after its end.",
+			},
+			{
+				Classification: "mixin:stream-reflects-mutations",
+				Callable:       "Mixed.Stream",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need generated sequences.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:deleter",
+				Callable:       "Mixed.Remove",
+				Stance:         spec.Silent,
+				Note:           "A delete is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[streamreflectsmutations.Mixed]{
@@ -446,4 +482,4 @@ func mixedRemoveIgnoresCancel(h *MixedHandle) streamreflectsmutations.Mixed {
 	return &mixedRemoveIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5748d4703eb5f31d50d5177085cd7f5552c431d935ba76f851461059b4ee13dd
+// dokimi:provenance sha256:fb65bc3a9ea408ab15e0865b2e1dae7e1baeaec8bdb2072f53ff564cb884e3f5

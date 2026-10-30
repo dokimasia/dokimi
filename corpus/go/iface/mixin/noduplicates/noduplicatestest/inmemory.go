@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package noduplicatestest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package noduplicatestest
 
 import (
@@ -16,7 +16,7 @@ import (
 )
 
 // InMemory implements [noduplicates.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject noduplicates.Mixed new=NewInMemory
 type InMemory struct {

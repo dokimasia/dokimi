@@ -16,7 +16,7 @@ import (
 // channel closes, sends to each send channel, and calls each function and
 // method that it takes, so each value that the suite draws has to end and has
 // to take each send. The corpus applies the suite of Every to it as a
-// control.
+// subject.
 //
 //dokimi:subject kinds.Every new=NewInMemory
 type InMemory struct{}

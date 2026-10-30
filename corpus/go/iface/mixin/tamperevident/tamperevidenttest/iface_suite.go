@@ -138,6 +138,8 @@ func (c mixedVerify) Cancel() conform.ID[tamperevident.Mixed] {
 func MixedSuite() conform.Suite[tamperevident.Mixed] {
 	return conform.Suite[tamperevident.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/tamperevident",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[tamperevident.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -250,6 +252,26 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 					})
 				},
 				Defect: mixedVerifyIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Corrupt",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Mixed.Verify",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[tamperevident.Mixed]{
@@ -522,4 +544,4 @@ func mixedVerifyIgnoresCancel(h *MixedHandle) tamperevident.Mixed {
 	return &mixedVerifyIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f7cc1e3062015966edc6bd80382a0fcdd96b5b5ee3d813b41e082c4ca537d35c
+// dokimi:provenance sha256:3135268694c69ff0283df3cbe4120b3e09ee38390d505094275e917d62fb1cdf

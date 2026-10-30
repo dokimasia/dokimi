@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package streamconsumertest contains the double and the suite of
-// StreamConsumer. InMemory is the control of the suite.
+// StreamConsumer. InMemory is the subject of the suite.
 package streamconsumertest
 
 import (
@@ -22,7 +22,7 @@ var ErrNoSource = errors.New("streamconsumertest: nil source")
 var ErrSourceFailed = errors.New("streamconsumertest: source failed")
 
 // InMemory implements [streamconsumer.StreamConsumer] in memory. The corpus
-// applies the suite of StreamConsumer to it as a control.
+// applies the suite of StreamConsumer to it as a subject.
 //
 //dokimi:subject streamconsumer.StreamConsumer new=NewInMemory
 type InMemory struct {

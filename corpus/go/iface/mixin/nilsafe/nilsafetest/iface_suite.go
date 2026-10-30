@@ -79,6 +79,8 @@ func (c mixedStore) NilSafe() conform.ID[nilsafe.Mixed] {
 func MixedSuite() conform.Suite[nilsafe.Mixed] {
 	return conform.Suite[nilsafe.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/nilsafe",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[nilsafe.Mixed]{
 			{
 				ID:          MixedChecks.Store.Smoke(),
@@ -125,6 +127,14 @@ func MixedSuite() conform.Suite[nilsafe.Mixed] {
 					})
 				},
 				Defect: mixedStorePanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Store",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[nilsafe.Mixed]{
@@ -260,4 +270,4 @@ func mixedStoreIgnoresCancel(h *MixedHandle) nilsafe.Mixed {
 	return &mixedStoreIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:91d666bc5176f5a68ccea2a4f966fd37095672b716c8b54cb660eee868145c56
+// dokimi:provenance sha256:aa72759d358e507795ac15d7775e8f48ccc2062b23ea92c26144fd15d928d76c

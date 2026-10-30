@@ -117,6 +117,8 @@ func (c calculatorReset) RepeatSurvives() conform.ID[nocontext.Calculator] {
 func CalculatorSuite() conform.Suite[nocontext.Calculator] {
 	return conform.Suite[nocontext.Calculator]{
 		Declaration: "Calculator",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/nocontext",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[nocontext.Calculator]{
 			{
 				ID:          CalculatorChecks.Add.Smoke(),
@@ -448,4 +450,4 @@ func calculatorResetPanicsOnRepeat(h *CalculatorHandle) nocontext.Calculator {
 	return &calculatorResetPanicsOnRepeatDefect{calculatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e961eeac12159f2597d7600893b8677e868ed9c6c84c439917da0534cc315d30
+// dokimi:provenance sha256:116c0ece543c6fb6399fcc8404d9f1328f78343e9c97a1bea129dee6dd92a77b

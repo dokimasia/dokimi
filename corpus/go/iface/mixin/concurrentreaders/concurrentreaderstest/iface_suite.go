@@ -106,6 +106,8 @@ func (c mixedPut) Cancel() conform.ID[concurrentreaders.Mixed] {
 func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 	return conform.Suite[concurrentreaders.Mixed]{
 		Declaration: "Mixed",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrentreaders",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[concurrentreaders.Mixed]{
 			{
 				ID:          MixedChecks.Get.Smoke(),
@@ -185,6 +187,20 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 					})
 				},
 				Defect: mixedPutIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "mixin:concurrent-readers",
+				Callable:       "Mixed.Get",
+				Stance:         spec.Needs,
+				Note:           "The claims of the mixin need concurrent callers.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[concurrentreaders.Mixed]{
@@ -417,4 +433,4 @@ func mixedPutIgnoresCancel(h *MixedHandle) concurrentreaders.Mixed {
 	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:10c3fcfd26fb10a9a957a60734204dad8832ed066dd15464df84f596b599fd38
+// dokimi:provenance sha256:7b36cf7a6b01cce37ef7ff9a0d3f4b54ea62c1417e474a373a5f0c23711cbb0b

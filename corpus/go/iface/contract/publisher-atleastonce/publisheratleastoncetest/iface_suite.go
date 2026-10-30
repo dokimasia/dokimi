@@ -114,6 +114,8 @@ func (c contractSubscribe) Cancel() conform.ID[publisheratleastonce.Contract] {
 func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 	return conform.Suite[publisheratleastonce.Contract]{
 		Declaration: "Contract",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atleastonce",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[publisheratleastonce.Contract]{
 			{
 				ID:          ContractChecks.Publish.Smoke(),
@@ -178,6 +180,34 @@ func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 					})
 				},
 				Defect: contractSubscribeIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Contract.Subscribe",
+				Why:      "eidos derives no sample of a result of Subscribe",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Contract.Publish",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "contract:publisher/publish",
+				Callable:       "Contract.Publish",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
+			},
+			{
+				Classification: "contract:publisher/subscribe",
+				Callable:       "Contract.Subscribe",
+				Stance:         spec.Needs,
+				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[publisheratleastonce.Contract]{
@@ -386,4 +416,4 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) publisheratleastonce.Cont
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:46e8d44fd2d21f1de28b11a6f258458ffdcec887ea997822727497ed2b3dee44
+// dokimi:provenance sha256:b65773cd599600f930f190d84a82efc185ccdabf63f13007f3a0302558a76f91

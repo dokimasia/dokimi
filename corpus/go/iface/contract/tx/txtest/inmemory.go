@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package txtest contains the double and the suite of Contract. InMemory is the
-// control of the suite.
+// subject of the suite.
 package txtest
 
 import (
@@ -16,7 +16,7 @@ import (
 )
 
 // InMemory implements [tx.Contract] in memory. The corpus applies the suite
-// of Contract to it as a control.
+// of Contract to it as a subject.
 //
 //dokimi:subject tx.Contract new=NewInMemory
 type InMemory struct {

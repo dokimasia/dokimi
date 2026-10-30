@@ -82,6 +82,8 @@ func (c readerGet) Miss() conform.ID[reader.Reader] {
 func ReaderSuite() conform.Suite[reader.Reader] {
 	return conform.Suite[reader.Reader]{
 		Declaration: "Reader",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/reader",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[reader.Reader]{
 			{
 				ID:          ReaderChecks.Get.Smoke(),
@@ -324,4 +326,4 @@ func readerGetReportsAnotherError(h *ReaderHandle) reader.Reader {
 	return &readerGetReportsAnotherErrorDefect{readerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1dd31a558d98fd6003b8244b9cdd85ddebb6fc5fe07f9295ab972057c8969bf1
+// dokimi:provenance sha256:27651f11665d6f117423dd29faf2ebab1b67db65123de911c8a9357fd2972012

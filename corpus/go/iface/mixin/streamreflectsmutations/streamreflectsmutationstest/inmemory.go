@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package streamreflectsmutationstest contains the double and the suite of
-// Mixed. InMemory is the control of the suite.
+// Mixed. InMemory is the subject of the suite.
 package streamreflectsmutationstest
 
 import (
@@ -16,7 +16,7 @@ import (
 )
 
 // InMemory implements [streamreflectsmutations.Mixed] in memory. The corpus
-// applies the suite of Mixed to it as a control.
+// applies the suite of Mixed to it as a subject.
 //
 //dokimi:subject streamreflectsmutations.Mixed new=NewInMemory
 type InMemory struct {

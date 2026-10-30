@@ -69,6 +69,8 @@ func (c voidLifecycleStop) RepeatSurvives() conform.ID[voidlifecycle.VoidLifecyc
 func VoidLifecycleSuite() conform.Suite[voidlifecycle.VoidLifecycle] {
 	return conform.Suite[voidlifecycle.VoidLifecycle]{
 		Declaration: "VoidLifecycle",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[voidlifecycle.VoidLifecycle]{
 			{
 				ID:          VoidLifecycleChecks.Stop.Smoke(),
@@ -252,4 +254,4 @@ func voidLifecycleStopPanicsOnRepeat(h *VoidLifecycleHandle) voidlifecycle.VoidL
 	return &voidLifecycleStopPanicsOnRepeatDefect{voidLifecycleOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9b9b7f8ab5a15ce70365fe34d33569e28c066adcf72b31ef83c224fe3ef81925
+// dokimi:provenance sha256:5e458635462c6d30f3e069b72aa54b7af9b62d748ad1a4dd765d58bed2ce6c39

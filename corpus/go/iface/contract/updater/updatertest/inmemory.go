@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package updatertest contains the double and the suite of Contract. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package updatertest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("updatertest: no value under that key")
 
 // InMemory implements [updater.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject updater.Contract new=NewInMemory
 type InMemory struct {

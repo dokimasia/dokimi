@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package castest contains the double and the suite of Contract. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package castest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrEmpty = errors.New("castest: no write set the cell yet")
 
 // InMemory implements [cas.Contract] in memory. The corpus applies the suite
-// of Contract to it as a control.
+// of Contract to it as a subject.
 //
 //dokimi:subject cas.Contract new=NewInMemory
 type InMemory struct {

@@ -63,6 +63,8 @@ func (c closerClose) Smoke() conform.ID[closer.Closer] {
 func CloserSuite() conform.Suite[closer.Closer] {
 	return conform.Suite[closer.Closer]{
 		Declaration: "Closer",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/detector/closer",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[closer.Closer]{
 			{
 				ID:          CloserChecks.Close.Smoke(),
@@ -79,6 +81,14 @@ func CloserSuite() conform.Suite[closer.Closer] {
 					})
 				},
 				Defect: closerClosePanics,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:closer",
+				Callable:       "Closer.Close",
+				Stance:         spec.Silent,
+				Note:           "A close returns nothing that a check could compare.",
 			},
 		},
 		Calls: []conform.Call[closer.Closer]{
@@ -193,4 +203,4 @@ func closerClosePanics(h *CloserHandle) closer.Closer {
 	return &closerClosePanicsDefect{closerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:268dc9ffa50184955302f7db2f82c9fed41c8527498f09348df73f398b23f25d
+// dokimi:provenance sha256:bb3dd6241d252b323a98ae56e9aef75999702289631540d1b9c6981adfde6d7a

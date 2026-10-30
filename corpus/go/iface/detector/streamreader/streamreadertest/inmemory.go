@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package streamreadertest contains the double and the suite of StreamReader.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package streamreadertest
 
 import (
@@ -15,7 +15,7 @@ import (
 )
 
 // InMemory implements [streamreader.StreamReader] in memory. The corpus
-// applies the suite of StreamReader to it as a control.
+// applies the suite of StreamReader to it as a subject.
 //
 //dokimi:subject streamreader.StreamReader new=NewInMemory
 type InMemory struct {

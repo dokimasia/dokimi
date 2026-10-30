@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package persistertest contains the double and the suite of Contract, and the
-// builder of Value. InMemory is the control of the suite.
+// builder of Value. InMemory is the subject of the suite.
 package persistertest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("persistertest: no value under that key")
 
 // InMemory implements [persister.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject persister.Contract new=NewInMemory
 type InMemory struct {

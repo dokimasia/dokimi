@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package selfnamedtest contains the double and the suite of Filter.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package selfnamedtest
 
 import (
@@ -10,7 +10,7 @@ import (
 )
 
 // InMemory implements [selfnamed.Filter] in memory. An item passes when it is
-// not empty. The corpus applies the suite of Filter to it as a control.
+// not empty. The corpus applies the suite of Filter to it as a subject.
 //
 //dokimi:subject selfnamed.Filter new=NewInMemory
 type InMemory struct{}

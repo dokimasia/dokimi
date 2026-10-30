@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package monotonicreadstest contains the double and the suite of Mixed.
-// InMemory is the control of the suite.
+// InMemory is the subject of the suite.
 package monotonicreadstest
 
 import (
@@ -17,7 +17,7 @@ import (
 var ErrNotFound = errors.New("monotonicreadstest: not found")
 
 // InMemory implements [monotonicreads.Mixed] in memory. The corpus applies
-// the suite of Mixed to it as a control.
+// the suite of Mixed to it as a subject.
 //
 //dokimi:subject monotonicreads.Mixed new=NewInMemory
 type InMemory struct {
@@ -29,9 +29,13 @@ type InMemory struct {
 // The compiler checks that InMemory implements [monotonicreads.Mixed].
 var _ monotonicreads.Mixed = (*InMemory)(nil)
 
-// NewInMemory returns a new InMemory.
+// seededKey is the key of the value that NewInMemory stores.
+const seededKey = "Key-a"
+
+// NewInMemory returns an InMemory with a value of the revision 0 under
+// seededKey, so the first read of a check of that key finds a version.
 func NewInMemory() *InMemory {
-	return &InMemory{values: map[string]monotonicreads.Value{}}
+	return &InMemory{values: map[string]monotonicreads.Value{seededKey: {Key: seededKey}}}
 }
 
 // Store implements [monotonicreads.Mixed].

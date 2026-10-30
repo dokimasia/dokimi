@@ -5,7 +5,7 @@
 // values on a medium apart from the store, so a new store over the medium
 // reads the values of an earlier one. The suite restarts a store and crashes
 // the medium of a store during a Put. The journal of durabletest is the
-// control of both doors.
+// subject of both doors.
 package durable
 
 import (

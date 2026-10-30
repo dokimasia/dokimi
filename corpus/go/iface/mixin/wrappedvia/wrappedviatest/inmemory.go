@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package wrappedviatest contains the double and the suite of Mixed. InMemory
-// is the control of the suite.
+// is the subject of the suite.
 package wrappedviatest
 
 import (
@@ -22,7 +22,7 @@ var ErrUnderlying = errors.New("wrappedviatest: underlying failure")
 const failing = "closed"
 
 // InMemory implements [wrappedvia.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject wrappedvia.Mixed new=NewInMemory
 type InMemory struct {

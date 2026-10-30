@@ -119,6 +119,8 @@ func (c lockHeld) Predicate() conform.ID[waits.Lock] {
 func LockSuite() conform.Suite[waits.Lock] {
 	return conform.Suite[waits.Lock]{
 		Declaration: "Lock",
+		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/waits",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[waits.Lock]{
 			{
 				ID:          LockChecks.Acquire.Cancel(),
@@ -201,6 +203,20 @@ func LockSuite() conform.Suite[waits.Lock] {
 					})
 				},
 				Defect: lockHeldDrifts,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Lock.Acquire",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "mixin:waits",
+				Callable:       "Lock.Acquire",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable can wait for another call.",
 			},
 		},
 		Calls: []conform.Call[waits.Lock]{
@@ -435,4 +451,4 @@ func lockHeldDrifts(h *LockHandle) waits.Lock {
 	return &lockHeldDriftsDefect{lockOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:758ce3de02e765c0e2520d0fc6bf7da2f733b078f7a3731b6f6b73f90fd88b6b
+// dokimi:provenance sha256:f9d0f417622390a0c56f85ae0d5a21c271fb0c311517865898d15ba1e2818c93

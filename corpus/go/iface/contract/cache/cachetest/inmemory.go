@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package cachetest contains the double and the suite of Contract. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package cachetest
 
 import (
@@ -18,7 +18,7 @@ import (
 var ErrNotFound = errors.New("cachetest: no value under that key")
 
 // InMemory implements [cache.Contract] in memory. The corpus applies the
-// suite of Contract to it as a control.
+// suite of Contract to it as a subject.
 //
 //dokimi:subject cache.Contract new=NewInMemory
 type InMemory struct {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package crdtmergetest contains the double and the suite of Mixed. InMemory is
-// the control of the suite.
+// the subject of the suite.
 package crdtmergetest
 
 import (
@@ -15,7 +15,7 @@ import (
 )
 
 // InMemory implements [crdtmerge.Mixed] in memory. The corpus applies the
-// suite of Mixed to it as a control.
+// suite of Mixed to it as a subject.
 //
 //dokimi:subject crdtmerge.Mixed new=NewInMemory
 type InMemory struct {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package paginatedreadertest contains the double and the suite of
-// PaginatedReader. InMemory is the control of the suite.
+// PaginatedReader. InMemory is the subject of the suite.
 package paginatedreadertest
 
 import (
@@ -29,7 +29,7 @@ const pageSize = 2
 var ErrUnknownCursor = errors.New("paginatedreadertest: cursor was not issued by this reader")
 
 // InMemory implements [paginatedreader.PaginatedReader] in memory. The corpus
-// applies the suite of PaginatedReader to it as a control. A cursor is a token
+// applies the suite of PaginatedReader to it as a subject. A cursor is a token
 // that the reader issued, so Fetch refuses an integer that no page returned.
 //
 //dokimi:subject paginatedreader.PaginatedReader new=NewInMemory

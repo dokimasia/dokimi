@@ -12,8 +12,11 @@ import (
 // help is the help text of the app.
 const help = "Generates the tests and the test helpers of the declarations of a workspace."
 
-// main runs the app of the binary over the composition of dokimi, and exits
-// with the status of the run.
+// main runs the app of the binary over the composition of dokimi, with the
+// command report beside the kernel commands, and exits with the status of the
+// run.
 func main() {
-	cli.Main(cli.New(help, dokimi.Compose), dokimi.Compose)
+	app := cli.New(help, dokimi.Compose)
+	app.Command(reportName, reportHelp, reportRun)
+	cli.Main(app, dokimi.Compose)
 }

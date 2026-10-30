@@ -180,9 +180,9 @@ homebrew_casks:
       fish: completions/dokimi.fish
     hooks:
       post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/dokimi"]
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/dokimi"], must_succeed: false
           end
     repository:
       owner: dokimasia

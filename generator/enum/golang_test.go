@@ -443,9 +443,10 @@ func rendered(t *testing.T) fstest.MapFS {
 	t.Helper()
 
 	p := enum.New()
-	res := fixture(t, golang.Target, goTree, p, statusPackage, "example.com/shop/priority", regionPackage,
+	f := fixture(t, golang.Target, goTree, p, statusPackage, "example.com/shop/priority", regionPackage,
 		"example.com/shop/split", handwrittenPackage, declaredPackage, quietPackage, commentedPackage, gapPackage,
-		remotePackage, shapedPackage, machinePackage).Generate(t, p)
+		remotePackage, shapedPackage, machinePackage)
+	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
-	return gentest.Rendered(t, res, p, gobackend.New())
+	return gentest.Rendered(t, f, res, p, gobackend.New())
 }

@@ -1,9 +1,10 @@
-package neighbour
+package neighbour_test
 
 import (
 	"strings"
 	"testing"
 
+	"example.com/shop/neighbour"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 )
@@ -18,7 +19,7 @@ func TestErrNotFound(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrConflict", ErrConflict},
+		{"ErrConflict", neighbour.ErrConflict},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -26,15 +27,15 @@ func TestErrNotFound(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrNotFound, "ErrNotFound is assigned")
-			assert.NotEqual(t, ErrNotFound.Error(), "", "ErrNotFound has a message")
+			assert.NotNil(t, neighbour.ErrNotFound, "ErrNotFound is assigned")
+			assert.NotEqual(t, neighbour.ErrNotFound.Error(), "", "ErrNotFound has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrNotFound.Error(),
+				neighbour.ErrNotFound.Error(),
 				"neighbour: ",
 				"the message of ErrNotFound opens with the package prefix",
 			)
@@ -45,7 +46,7 @@ func TestErrNotFound(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrNotFound.Error(),
+					neighbour.ErrNotFound.Error(),
 					other.err.Error(),
 					"ErrNotFound has the message of "+other.name,
 				)
@@ -55,7 +56,7 @@ func TestErrNotFound(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrNotFound.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(neighbour.ErrNotFound.Error(), other.err.Error()),
 					"the message of ErrNotFound opens with the message of "+other.name)
 			}
 		})
@@ -69,7 +70,7 @@ func TestErrNotFound(t *testing.T) {
 			for _, other := range others {
 				expect.ErrorIsNot(
 					t,
-					ErrNotFound,
+					neighbour.ErrNotFound,
 					other.err,
 					"ErrNotFound does not match "+other.name,
 				)
@@ -88,7 +89,7 @@ func TestErrConflict(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrNotFound", ErrNotFound},
+		{"ErrNotFound", neighbour.ErrNotFound},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -96,15 +97,15 @@ func TestErrConflict(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrConflict, "ErrConflict is assigned")
-			assert.NotEqual(t, ErrConflict.Error(), "", "ErrConflict has a message")
+			assert.NotNil(t, neighbour.ErrConflict, "ErrConflict is assigned")
+			assert.NotEqual(t, neighbour.ErrConflict.Error(), "", "ErrConflict has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrConflict.Error(),
+				neighbour.ErrConflict.Error(),
 				"neighbour: ",
 				"the message of ErrConflict opens with the package prefix",
 			)
@@ -115,7 +116,7 @@ func TestErrConflict(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrConflict.Error(),
+					neighbour.ErrConflict.Error(),
 					other.err.Error(),
 					"ErrConflict has the message of "+other.name,
 				)
@@ -125,7 +126,7 @@ func TestErrConflict(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrConflict.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(neighbour.ErrConflict.Error(), other.err.Error()),
 					"the message of ErrConflict opens with the message of "+other.name)
 			}
 		})
@@ -139,7 +140,7 @@ func TestErrConflict(t *testing.T) {
 			for _, other := range others {
 				expect.ErrorIsNot(
 					t,
-					ErrConflict,
+					neighbour.ErrConflict,
 					other.err,
 					"ErrConflict does not match "+other.name,
 				)

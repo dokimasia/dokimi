@@ -1,9 +1,10 @@
-package embedded
+package embedded_test
 
 import (
 	"errors"
 	"testing"
 
+	"example.com/shop/embedded"
 	"go.dokimi.dev/assert"
 )
 
@@ -18,15 +19,15 @@ func TestErrNotFound(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrNotFound, "ErrNotFound is assigned")
-			assert.NotEqual(t, ErrNotFound.Error(), "", "ErrNotFound has a message")
+			assert.NotNil(t, embedded.ErrNotFound, "ErrNotFound is assigned")
+			assert.NotEqual(t, embedded.ErrNotFound.Error(), "", "ErrNotFound has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrNotFound.Error(),
+				embedded.ErrNotFound.Error(),
 				"embedded: ",
 				"the message of ErrNotFound opens with the package prefix",
 			)
@@ -43,14 +44,14 @@ func TestBaseError(t *testing.T) {
 
 		t.Run("returns a message for the zero value", func(t *testing.T) {
 			t.Parallel()
-			assert.NotEqual(t, (BaseError{}).Error(), "", "the zero value has a message")
+			assert.NotEqual(t, (embedded.BaseError{}).Error(), "", "the zero value has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				(BaseError{}).Error(),
+				(embedded.BaseError{}).Error(),
 				"embedded: ",
 				"the message opens with the package prefix",
 			)
@@ -58,7 +59,7 @@ func TestBaseError(t *testing.T) {
 
 		t.Run("contains each text member", func(t *testing.T) {
 			t.Parallel()
-			got := BaseError{Op: "Op-a"}
+			got := embedded.BaseError{Op: "Op-a"}
 			assert.Contains(t, got.Error(), got.Op, "the message contains Op")
 		})
 	})
@@ -69,7 +70,7 @@ func TestBaseError(t *testing.T) {
 		t.Run("returns the cause", func(t *testing.T) {
 			t.Parallel()
 			cause := errors.New("cause")
-			var got BaseError
+			var got embedded.BaseError
 			got.Cause = cause
 			assert.Equal(t, errors.Unwrap(got), cause, "errors.Unwrap returns the cause")
 		})
@@ -80,10 +81,10 @@ func TestBaseError(t *testing.T) {
 
 		t.Run("matches no other error type of the package", func(t *testing.T) {
 			t.Parallel()
-			subject := BaseError{}
+			subject := embedded.BaseError{}
 			for _, other := range []error{
-				&LostError{},
-				NotFoundError{},
+				&embedded.LostError{},
+				embedded.NotFoundError{},
 			} {
 				assert.ErrorIsNot(
 					t,
@@ -105,14 +106,14 @@ func TestLostError(t *testing.T) {
 
 		t.Run("returns a message for the zero value", func(t *testing.T) {
 			t.Parallel()
-			assert.NotEqual(t, (&LostError{}).Error(), "", "the zero value has a message")
+			assert.NotEqual(t, (&embedded.LostError{}).Error(), "", "the zero value has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				(&LostError{}).Error(),
+				(&embedded.LostError{}).Error(),
 				"embedded: ",
 				"the message opens with the package prefix",
 			)
@@ -124,10 +125,10 @@ func TestLostError(t *testing.T) {
 
 		t.Run("matches no other error type of the package", func(t *testing.T) {
 			t.Parallel()
-			subject := &LostError{}
+			subject := &embedded.LostError{}
 			for _, other := range []error{
-				BaseError{},
-				NotFoundError{},
+				embedded.BaseError{},
+				embedded.NotFoundError{},
 			} {
 				assert.ErrorIsNot(
 					t,
@@ -149,14 +150,19 @@ func TestNotFoundError(t *testing.T) {
 
 		t.Run("returns a message for the zero value", func(t *testing.T) {
 			t.Parallel()
-			assert.NotEqual(t, (NotFoundError{}).Error(), "", "the zero value has a message")
+			assert.NotEqual(
+				t,
+				(embedded.NotFoundError{}).Error(),
+				"",
+				"the zero value has a message",
+			)
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				(NotFoundError{}).Error(),
+				(embedded.NotFoundError{}).Error(),
 				"embedded: ",
 				"the message opens with the package prefix",
 			)
@@ -169,7 +175,7 @@ func TestNotFoundError(t *testing.T) {
 		t.Run("returns the cause", func(t *testing.T) {
 			t.Parallel()
 			cause := errors.New("cause")
-			var got NotFoundError
+			var got embedded.NotFoundError
 			got.Cause = cause
 			assert.Equal(t, errors.Unwrap(got), cause, "errors.Unwrap returns the cause")
 		})
@@ -180,10 +186,10 @@ func TestNotFoundError(t *testing.T) {
 
 		t.Run("matches no other error type of the package", func(t *testing.T) {
 			t.Parallel()
-			subject := NotFoundError{}
+			subject := embedded.NotFoundError{}
 			for _, other := range []error{
-				BaseError{},
-				&LostError{},
+				embedded.BaseError{},
+				&embedded.LostError{},
 			} {
 				assert.ErrorIsNot(
 					t,

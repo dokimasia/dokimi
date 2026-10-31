@@ -7,6 +7,7 @@ import (
 	"cmp"
 	"slices"
 	"testing/fstest"
+	"text/template"
 
 	"go.dokimi.dev/assert"
 	golang "go.dokimi.dev/eidos/lang/go"
@@ -31,13 +32,17 @@ const (
 	alikeName      = "Alike"
 )
 
-// The version of the plugins of the cases, the name of the recorder, and the
-// templates of the two families of the recorder.
+// The version of the plugins of the cases, the name of the recorder, the
+// templates of the three families of the recorder, and the tag and the file of
+// its data family of one file per plan.
 const (
 	version                = "0.1.0"
 	recorderID   plugin.ID = "recorder"
 	recordFamily           = "recorder.tmpl"
 	checkFamily            = "recorder.test.tmpl"
+	listFamily             = "recorder.list.tmpl"
+	listTag                = "list"
+	listFile               = "recorder.list"
 )
 
 // recorded is the code of the findings that the recorder reports.
@@ -63,16 +68,24 @@ type (
 // family has the data of the name Alike. body is the template of the primary
 // family, and an empty body writes nothing for a record. external puts the Go
 // files of the family of the tests into the external test package of their
-// directory.
+// directory. listed are the structs that it also records in its data family
+// of one file per plan, under a declaration without an origin. id is the name
+// of the recorder and the word of its families, and the empty id is recorder.
+// helpers are the helpers of its templates, and overrides the helpers that
+// replace helpers of the shared vocabulary of eidos.
 type recording struct {
-	records  []string
-	beside   []string
-	again    []string
-	alike    []string
-	findings map[string]int
-	fields   []string
-	body     string
-	external bool
+	id        plugin.ID
+	records   []string
+	beside    []string
+	again     []string
+	alike     []string
+	listed    []string
+	findings  map[string]int
+	fields    []string
+	helpers   template.FuncMap
+	overrides template.FuncMap
+	body      string
+	external  bool
 }
 
 // generate runs the recorder of r over the package catalog of the Go tree
@@ -93,20 +106,32 @@ func generate(tb assert.TB, r recording) (plugin.Generator, *gentest.Fixture, pl
 // recorder returns a generator of the target golang that does at each struct
 // what r states.
 func recorder(r recording) plugin.Generator {
-	return sdk.NewPlugin(recorderID).
+	id := cmp.Or(r.id, recorderID)
+	options := []sdk.TargetOption{sdk.Templates(fstest.MapFS{
+		recordFamily: {Data: []byte(cmp.Or(r.body, "{{range .Records}}{{end}}"))},
+		checkFamily:  {Data: []byte("{{range .Records}}{{end}}")},
+		listFamily:   {Data: []byte("{{range .Records}}{{.Data.Name}}\n{{end}}")},
+	})}
+	if r.helpers != nil {
+		options = append(options, sdk.Funcs(r.helpers))
+	}
+	if r.overrides != nil {
+		options = append(options, sdk.Overrides(r.overrides))
+	}
+	return sdk.NewPlugin(id).
 		Version(version).
-		Output(plugin.Output{Per: plugin.PerSource, Word: string(recorderID), Template: recordFamily}).
+		Output(plugin.Output{Per: plugin.PerSource, Word: string(id), Template: recordFamily}).
 		Output(plugin.Output{
 			Tag:      sdk.TagTest,
 			Per:      plugin.PerSource,
-			Word:     string(recorderID),
+			Word:     string(id),
 			Template: checkFamily,
 			External: r.external,
 		}).
-		For(golang.Target, sdk.Templates(fstest.MapFS{
-			recordFamily: {Data: []byte(cmp.Or(r.body, "{{range .Records}}{{end}}"))},
-			checkFamily:  {Data: []byte("{{range .Records}}{{end}}")},
-		})).
+		Output(plugin.Output{
+			Tag: listTag, Per: plugin.PerPlan, Word: string(id), Name: listFile, Template: listFamily,
+		}).
+		For(golang.Target, options...).
 		Handle(sdk.OnStruct(func(m *sdk.StructMatch, e *sdk.Emitter) error {
 			s := m.Struct
 			for range r.findings[s.Name] {
@@ -130,6 +155,9 @@ func recorder(r recording) plugin.Generator {
 					e.File().Record(subject{Name: s.Name + "Again"}, &emit.Struct{Origin: s.ID, Name: s.Name + "Again"})
 				}
 				e.File(sdk.TagTest).Record(check{Name: s.Name}, &emit.Struct{Origin: s.ID, Name: s.Name + "Check"})
+			}
+			if slices.Contains(r.listed, s.Name) {
+				e.PlanFile(listTag).Record(subject{Name: s.Name}, &emit.Struct{Name: s.Name + "Listed"})
 			}
 			return nil
 		})).

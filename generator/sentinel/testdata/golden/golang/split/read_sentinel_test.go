@@ -1,9 +1,10 @@
-package split
+package split_test
 
 import (
 	"strings"
 	"testing"
 
+	"example.com/shop/split"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 )
@@ -18,7 +19,7 @@ func TestErrRead(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrWrite", ErrWrite},
+		{"ErrWrite", split.ErrWrite},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -26,15 +27,15 @@ func TestErrRead(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrRead, "ErrRead is assigned")
-			assert.NotEqual(t, ErrRead.Error(), "", "ErrRead has a message")
+			assert.NotNil(t, split.ErrRead, "ErrRead is assigned")
+			assert.NotEqual(t, split.ErrRead.Error(), "", "ErrRead has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrRead.Error(),
+				split.ErrRead.Error(),
 				"split: ",
 				"the message of ErrRead opens with the package prefix",
 			)
@@ -45,7 +46,7 @@ func TestErrRead(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrRead.Error(),
+					split.ErrRead.Error(),
 					other.err.Error(),
 					"ErrRead has the message of "+other.name,
 				)
@@ -55,7 +56,7 @@ func TestErrRead(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrRead.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(split.ErrRead.Error(), other.err.Error()),
 					"the message of ErrRead opens with the message of "+other.name)
 			}
 		})
@@ -67,7 +68,7 @@ func TestErrRead(t *testing.T) {
 		t.Run("matches no other sentinel of the package", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.ErrorIsNot(t, ErrRead, other.err, "ErrRead does not match "+other.name)
+				expect.ErrorIsNot(t, split.ErrRead, other.err, "ErrRead does not match "+other.name)
 			}
 		})
 	})
@@ -83,7 +84,7 @@ func TestErrWrite(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrRead", ErrRead},
+		{"ErrRead", split.ErrRead},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -91,15 +92,15 @@ func TestErrWrite(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrWrite, "ErrWrite is assigned")
-			assert.NotEqual(t, ErrWrite.Error(), "", "ErrWrite has a message")
+			assert.NotNil(t, split.ErrWrite, "ErrWrite is assigned")
+			assert.NotEqual(t, split.ErrWrite.Error(), "", "ErrWrite has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrWrite.Error(),
+				split.ErrWrite.Error(),
 				"split: ",
 				"the message of ErrWrite opens with the package prefix",
 			)
@@ -110,7 +111,7 @@ func TestErrWrite(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrWrite.Error(),
+					split.ErrWrite.Error(),
 					other.err.Error(),
 					"ErrWrite has the message of "+other.name,
 				)
@@ -120,7 +121,7 @@ func TestErrWrite(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrWrite.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(split.ErrWrite.Error(), other.err.Error()),
 					"the message of ErrWrite opens with the message of "+other.name)
 			}
 		})
@@ -132,7 +133,12 @@ func TestErrWrite(t *testing.T) {
 		t.Run("matches no other sentinel of the package", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.ErrorIsNot(t, ErrWrite, other.err, "ErrWrite does not match "+other.name)
+				expect.ErrorIsNot(
+					t,
+					split.ErrWrite,
+					other.err,
+					"ErrWrite does not match "+other.name,
+				)
 			}
 		})
 	})

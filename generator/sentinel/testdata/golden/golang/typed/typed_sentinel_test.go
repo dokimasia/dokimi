@@ -1,8 +1,9 @@
-package typed
+package typed_test
 
 import (
 	"testing"
 
+	"example.com/shop/typed"
 	"go.dokimi.dev/assert"
 )
 
@@ -15,14 +16,14 @@ func TestLimitError(t *testing.T) {
 
 		t.Run("returns a message for the zero value", func(t *testing.T) {
 			t.Parallel()
-			assert.NotEqual(t, (LimitError{}).Error(), "", "the zero value has a message")
+			assert.NotEqual(t, (typed.LimitError{}).Error(), "", "the zero value has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				(LimitError{}).Error(),
+				(typed.LimitError{}).Error(),
 				"typed: ",
 				"the message opens with the package prefix",
 			)
@@ -30,7 +31,7 @@ func TestLimitError(t *testing.T) {
 
 		t.Run("contains each text member", func(t *testing.T) {
 			t.Parallel()
-			got := LimitError{Name: "Name-a"}
+			got := typed.LimitError{Name: "Name-a"}
 			assert.Contains(t, got.Error(), got.Name, "the message contains Name")
 		})
 	})

@@ -1,8 +1,9 @@
-package declared
+package declared_test
 
 import (
 	"testing"
 
+	"example.com/shop/declared"
 	"go.dokimi.dev/assert"
 )
 
@@ -12,11 +13,11 @@ func TestLevel(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Level]bool{}
-		for _, v := range []Level{
-			Debug,
-			Info,
-			Warn,
+		seen := map[declared.Level]bool{}
+		for _, v := range []declared.Level{
+			declared.Debug,
+			declared.Info,
+			declared.Warn,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -30,18 +31,23 @@ func TestLevel(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Level{
-					Debug,
-					Info,
-					Warn,
+				want := []declared.Level{
+					declared.Debug,
+					declared.Info,
+					declared.Warn,
 				}
-				assert.Equal(t, LevelValues(), want, "LevelValues returns the declared variants")
+				assert.Equal(
+					t,
+					declared.LevelValues(),
+					want,
+					"LevelValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := LevelValues(), LevelValues()
+			first, second := declared.LevelValues(), declared.LevelValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -58,10 +64,10 @@ func TestLevel(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Level{
-				Debug,
-				Info,
-				Warn,
+			for _, v := range []declared.Level{
+				declared.Debug,
+				declared.Info,
+				declared.Warn,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -72,11 +78,11 @@ func TestLevel(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Level(4)
-				for _, v := range []Level{
-					Debug,
-					Info,
-					Warn,
+				out := declared.Level(4)
+				for _, v := range []declared.Level{
+					declared.Debug,
+					declared.Info,
+					declared.Warn,
 				} {
 					assert.NotEqual(
 						t,
@@ -94,11 +100,11 @@ func TestLevel(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Level
+			give declared.Level
 		}{
-			{name: "accepts Debug", give: Debug},
-			{name: "accepts Info", give: Info},
-			{name: "accepts Warn", give: Warn},
+			{name: "accepts Debug", give: declared.Debug},
+			{name: "accepts Info", give: declared.Info},
+			{name: "accepts Warn", give: declared.Warn},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -109,12 +115,12 @@ func TestLevel(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Level(4).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, declared.Level(4).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Level
+			var zero declared.Level
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -124,16 +130,16 @@ func TestLevel(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Level
+			give declared.Level
 		}{
-			{name: "returns Debug for its text", give: Debug},
-			{name: "returns Info for its text", give: Info},
-			{name: "returns Warn for its text", give: Warn},
+			{name: "returns Debug for its text", give: declared.Debug},
+			{name: "returns Info for its text", give: declared.Info},
+			{name: "returns Warn for its text", give: declared.Warn},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseLevel(tt.give.String())
+				got, err := declared.ParseLevel(tt.give.String())
 				assert.NoError(t, err, "ParseLevel accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseLevel returns the variant of the text")
 			})
@@ -141,11 +147,11 @@ func TestLevel(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseLevel("??????")
+			_, err := declared.ParseLevel("??????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownLevel,
+				declared.ErrUnknownLevel,
 				"ParseLevel refuses the text with ErrUnknownLevel",
 			)
 			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
@@ -157,11 +163,11 @@ func TestLevel(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Level
+			give declared.Level
 		}{
-			{name: "encodes Debug as its text", give: Debug},
-			{name: "encodes Info as its text", give: Info},
-			{name: "encodes Warn as its text", give: Warn},
+			{name: "encodes Debug as its text", give: declared.Debug},
+			{name: "encodes Info as its text", give: declared.Info},
+			{name: "encodes Warn as its text", give: declared.Warn},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -179,12 +185,12 @@ func TestLevel(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Level(4)
+			out := declared.Level(4)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownLevel,
+				declared.ErrUnknownLevel,
 				"MarshalText refuses the value with ErrUnknownLevel",
 			)
 			assert.Contains(
@@ -201,18 +207,18 @@ func TestLevel(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Level
+			give declared.Level
 		}{
-			{name: "decodes Debug from its encoding", give: Debug},
-			{name: "decodes Info from its encoding", give: Info},
-			{name: "decodes Warn from its encoding", give: Warn},
+			{name: "decodes Debug from its encoding", give: declared.Debug},
+			{name: "decodes Info from its encoding", give: declared.Info},
+			{name: "decodes Warn from its encoding", give: declared.Warn},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Level
+				var got declared.Level
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -220,7 +226,7 @@ func TestLevel(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Level
+			var got declared.Level
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),
@@ -236,10 +242,10 @@ func TestColor(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Color]bool{}
-		for _, v := range []Color{
-			Red,
-			Green,
+		seen := map[declared.Color]bool{}
+		for _, v := range []declared.Color{
+			declared.Red,
+			declared.Green,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -253,17 +259,22 @@ func TestColor(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Color{
-					Red,
-					Green,
+				want := []declared.Color{
+					declared.Red,
+					declared.Green,
 				}
-				assert.Equal(t, ColorValues(), want, "ColorValues returns the declared variants")
+				assert.Equal(
+					t,
+					declared.ColorValues(),
+					want,
+					"ColorValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := ColorValues(), ColorValues()
+			first, second := declared.ColorValues(), declared.ColorValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -280,9 +291,9 @@ func TestColor(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Color{
-				Red,
-				Green,
+			for _, v := range []declared.Color{
+				declared.Red,
+				declared.Green,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -293,10 +304,10 @@ func TestColor(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Color(3)
-				for _, v := range []Color{
-					Red,
-					Green,
+				out := declared.Color(3)
+				for _, v := range []declared.Color{
+					declared.Red,
+					declared.Green,
 				} {
 					assert.NotEqual(
 						t,
@@ -314,10 +325,10 @@ func TestColor(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Color
+			give declared.Color
 		}{
-			{name: "accepts Red", give: Red},
-			{name: "accepts Green", give: Green},
+			{name: "accepts Red", give: declared.Red},
+			{name: "accepts Green", give: declared.Green},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -328,12 +339,12 @@ func TestColor(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Color(3).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, declared.Color(3).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Color
+			var zero declared.Color
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -343,15 +354,15 @@ func TestColor(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Color
+			give declared.Color
 		}{
-			{name: "returns Red for its text", give: Red},
-			{name: "returns Green for its text", give: Green},
+			{name: "returns Red for its text", give: declared.Red},
+			{name: "returns Green for its text", give: declared.Green},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseColor(tt.give.String())
+				got, err := declared.ParseColor(tt.give.String())
 				assert.NoError(t, err, "ParseColor accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseColor returns the variant of the text")
 			})
@@ -359,11 +370,11 @@ func TestColor(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseColor("??????")
+			_, err := declared.ParseColor("??????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownColor,
+				declared.ErrUnknownColor,
 				"ParseColor refuses the text with ErrUnknownColor",
 			)
 			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
@@ -375,10 +386,10 @@ func TestColor(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Color
+			give declared.Color
 		}{
-			{name: "encodes Red as its text", give: Red},
-			{name: "encodes Green as its text", give: Green},
+			{name: "encodes Red as its text", give: declared.Red},
+			{name: "encodes Green as its text", give: declared.Green},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -396,12 +407,12 @@ func TestColor(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Color(3)
+			out := declared.Color(3)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownColor,
+				declared.ErrUnknownColor,
 				"MarshalText refuses the value with ErrUnknownColor",
 			)
 			assert.Contains(
@@ -418,17 +429,17 @@ func TestColor(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Color
+			give declared.Color
 		}{
-			{name: "decodes Red from its encoding", give: Red},
-			{name: "decodes Green from its encoding", give: Green},
+			{name: "decodes Red from its encoding", give: declared.Red},
+			{name: "decodes Green from its encoding", give: declared.Green},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Color
+				var got declared.Color
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -436,7 +447,7 @@ func TestColor(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Color
+			var got declared.Color
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),
@@ -452,10 +463,10 @@ func TestLane(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Lane]bool{}
-		for _, v := range []Lane{
-			Left,
-			Right,
+		seen := map[declared.Lane]bool{}
+		for _, v := range []declared.Lane{
+			declared.Left,
+			declared.Right,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -469,17 +480,22 @@ func TestLane(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Lane{
-					Left,
-					Right,
+				want := []declared.Lane{
+					declared.Left,
+					declared.Right,
 				}
-				assert.Equal(t, LaneValues(), want, "LaneValues returns the declared variants")
+				assert.Equal(
+					t,
+					declared.LaneValues(),
+					want,
+					"LaneValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := LaneValues(), LaneValues()
+			first, second := declared.LaneValues(), declared.LaneValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -496,9 +512,9 @@ func TestLane(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Lane{
-				Left,
-				Right,
+			for _, v := range []declared.Lane{
+				declared.Left,
+				declared.Right,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -509,10 +525,10 @@ func TestLane(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Lane(3)
-				for _, v := range []Lane{
-					Left,
-					Right,
+				out := declared.Lane(3)
+				for _, v := range []declared.Lane{
+					declared.Left,
+					declared.Right,
 				} {
 					assert.NotEqual(
 						t,
@@ -530,10 +546,10 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give declared.Lane
 		}{
-			{name: "accepts Left", give: Left},
-			{name: "accepts Right", give: Right},
+			{name: "accepts Left", give: declared.Left},
+			{name: "accepts Right", give: declared.Right},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -544,12 +560,12 @@ func TestLane(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Lane(3).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, declared.Lane(3).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Lane
+			var zero declared.Lane
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -559,15 +575,15 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give declared.Lane
 		}{
-			{name: "returns Left for its text", give: Left},
-			{name: "returns Right for its text", give: Right},
+			{name: "returns Left for its text", give: declared.Left},
+			{name: "returns Right for its text", give: declared.Right},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseLane(tt.give.String())
+				got, err := declared.ParseLane(tt.give.String())
 				assert.NoError(t, err, "ParseLane accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseLane returns the variant of the text")
 			})
@@ -575,7 +591,7 @@ func TestLane(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseLane("??????")
+			_, err := declared.ParseLane("??????")
 			assert.HasError(t, err, "ParseLane refuses the text")
 		})
 	})
@@ -585,10 +601,10 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give declared.Lane
 		}{
-			{name: "encodes Left as its text", give: Left},
-			{name: "encodes Right as its text", give: Right},
+			{name: "encodes Left as its text", give: declared.Left},
+			{name: "encodes Right as its text", give: declared.Right},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -606,7 +622,7 @@ func TestLane(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Lane(3)
+			out := declared.Lane(3)
 			_, err := out.MarshalText()
 			assert.HasError(t, err, "MarshalText refuses the value")
 			assert.Contains(
@@ -623,17 +639,17 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give declared.Lane
 		}{
-			{name: "decodes Left from its encoding", give: Left},
-			{name: "decodes Right from its encoding", give: Right},
+			{name: "decodes Left from its encoding", give: declared.Left},
+			{name: "decodes Right from its encoding", give: declared.Right},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Lane
+				var got declared.Lane
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -641,7 +657,7 @@ func TestLane(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Lane
+			var got declared.Lane
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),
@@ -657,10 +673,10 @@ func TestCoil(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Coil]bool{}
-		for _, v := range []Coil{
-			Snug,
-			Slack,
+		seen := map[declared.Coil]bool{}
+		for _, v := range []declared.Coil{
+			declared.Snug,
+			declared.Slack,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -674,17 +690,22 @@ func TestCoil(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Coil{
-					Snug,
-					Slack,
+				want := []declared.Coil{
+					declared.Snug,
+					declared.Slack,
 				}
-				assert.Equal(t, CoilValues(), want, "CoilValues returns the declared variants")
+				assert.Equal(
+					t,
+					declared.CoilValues(),
+					want,
+					"CoilValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := CoilValues(), CoilValues()
+			first, second := declared.CoilValues(), declared.CoilValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -701,9 +722,9 @@ func TestCoil(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Coil{
-				Snug,
-				Slack,
+			for _, v := range []declared.Coil{
+				declared.Snug,
+				declared.Slack,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -714,10 +735,10 @@ func TestCoil(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Coil(3)
-				for _, v := range []Coil{
-					Snug,
-					Slack,
+				out := declared.Coil(3)
+				for _, v := range []declared.Coil{
+					declared.Snug,
+					declared.Slack,
 				} {
 					assert.NotEqual(
 						t,
@@ -735,10 +756,10 @@ func TestCoil(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Coil
+			give declared.Coil
 		}{
-			{name: "accepts Snug", give: Snug},
-			{name: "accepts Slack", give: Slack},
+			{name: "accepts Snug", give: declared.Snug},
+			{name: "accepts Slack", give: declared.Slack},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -749,12 +770,12 @@ func TestCoil(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Coil(3).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, declared.Coil(3).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Coil
+			var zero declared.Coil
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -764,15 +785,15 @@ func TestCoil(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Coil
+			give declared.Coil
 		}{
-			{name: "returns Snug for its text", give: Snug},
-			{name: "returns Slack for its text", give: Slack},
+			{name: "returns Snug for its text", give: declared.Snug},
+			{name: "returns Slack for its text", give: declared.Slack},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseCoil(tt.give.String())
+				got, err := declared.ParseCoil(tt.give.String())
 				assert.NoError(t, err, "ParseCoil accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseCoil returns the variant of the text")
 			})
@@ -780,8 +801,13 @@ func TestCoil(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseCoil("??????")
-			assert.ErrorIs(t, err, ErrUnknownCoil, "ParseCoil refuses the text with ErrUnknownCoil")
+			_, err := declared.ParseCoil("??????")
+			assert.ErrorIs(
+				t,
+				err,
+				declared.ErrUnknownCoil,
+				"ParseCoil refuses the text with ErrUnknownCoil",
+			)
 			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
 		})
 	})
@@ -791,10 +817,10 @@ func TestCoil(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Coil
+			give declared.Coil
 		}{
-			{name: "encodes Snug as its text", give: Snug},
-			{name: "encodes Slack as its text", give: Slack},
+			{name: "encodes Snug as its text", give: declared.Snug},
+			{name: "encodes Slack as its text", give: declared.Slack},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -812,12 +838,12 @@ func TestCoil(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Coil(3)
+			out := declared.Coil(3)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownCoil,
+				declared.ErrUnknownCoil,
 				"MarshalText refuses the value with ErrUnknownCoil",
 			)
 			assert.Contains(
@@ -834,17 +860,17 @@ func TestCoil(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Coil
+			give declared.Coil
 		}{
-			{name: "decodes Snug from its encoding", give: Snug},
-			{name: "decodes Slack from its encoding", give: Slack},
+			{name: "decodes Snug from its encoding", give: declared.Snug},
+			{name: "decodes Slack from its encoding", give: declared.Slack},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Coil
+				var got declared.Coil
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -852,7 +878,7 @@ func TestCoil(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Coil
+			var got declared.Coil
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),

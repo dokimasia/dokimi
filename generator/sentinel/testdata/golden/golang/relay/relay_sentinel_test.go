@@ -1,9 +1,10 @@
-package relay
+package relay_test
 
 import (
 	"strings"
 	"testing"
 
+	"example.com/shop/relay"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 )
@@ -18,7 +19,7 @@ func TestErrNotFound(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrDropped", ErrDropped},
+		{"ErrDropped", relay.ErrDropped},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -26,8 +27,8 @@ func TestErrNotFound(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrNotFound, "ErrNotFound is assigned")
-			assert.NotEqual(t, ErrNotFound.Error(), "", "ErrNotFound has a message")
+			assert.NotNil(t, relay.ErrNotFound, "ErrNotFound is assigned")
+			assert.NotEqual(t, relay.ErrNotFound.Error(), "", "ErrNotFound has a message")
 		})
 
 		t.Run("returns a message of its own", func(t *testing.T) {
@@ -35,7 +36,7 @@ func TestErrNotFound(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrNotFound.Error(),
+					relay.ErrNotFound.Error(),
 					other.err.Error(),
 					"ErrNotFound has the message of "+other.name,
 				)
@@ -45,7 +46,7 @@ func TestErrNotFound(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrNotFound.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(relay.ErrNotFound.Error(), other.err.Error()),
 					"the message of ErrNotFound opens with the message of "+other.name)
 			}
 		})
@@ -59,7 +60,7 @@ func TestErrNotFound(t *testing.T) {
 			for _, other := range others {
 				expect.ErrorIsNot(
 					t,
-					ErrNotFound,
+					relay.ErrNotFound,
 					other.err,
 					"ErrNotFound does not match "+other.name,
 				)
@@ -78,7 +79,7 @@ func TestErrDropped(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrNotFound", ErrNotFound},
+		{"ErrNotFound", relay.ErrNotFound},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -86,15 +87,15 @@ func TestErrDropped(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrDropped, "ErrDropped is assigned")
-			assert.NotEqual(t, ErrDropped.Error(), "", "ErrDropped has a message")
+			assert.NotNil(t, relay.ErrDropped, "ErrDropped is assigned")
+			assert.NotEqual(t, relay.ErrDropped.Error(), "", "ErrDropped has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrDropped.Error(),
+				relay.ErrDropped.Error(),
 				"relay: ",
 				"the message of ErrDropped opens with the package prefix",
 			)
@@ -105,7 +106,7 @@ func TestErrDropped(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrDropped.Error(),
+					relay.ErrDropped.Error(),
 					other.err.Error(),
 					"ErrDropped has the message of "+other.name,
 				)
@@ -115,7 +116,7 @@ func TestErrDropped(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrDropped.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(relay.ErrDropped.Error(), other.err.Error()),
 					"the message of ErrDropped opens with the message of "+other.name)
 			}
 		})
@@ -127,7 +128,12 @@ func TestErrDropped(t *testing.T) {
 		t.Run("matches no other sentinel of the package", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.ErrorIsNot(t, ErrDropped, other.err, "ErrDropped does not match "+other.name)
+				expect.ErrorIsNot(
+					t,
+					relay.ErrDropped,
+					other.err,
+					"ErrDropped does not match "+other.name,
+				)
 			}
 		})
 	})
@@ -142,7 +148,7 @@ func TestCallError(t *testing.T) {
 
 		t.Run("contains each text member", func(t *testing.T) {
 			t.Parallel()
-			got := &CallError{Message: "Message-a", Code: 42}
+			got := &relay.CallError{Message: "Message-a", Code: 42}
 			assert.Contains(t, got.Error(), got.Message, "the message contains Message")
 		})
 	})
@@ -152,9 +158,9 @@ func TestCallError(t *testing.T) {
 
 		t.Run("matches no other error type of the package", func(t *testing.T) {
 			t.Parallel()
-			subject := &CallError{}
+			subject := &relay.CallError{}
 			for _, other := range []error{
-				&TimeoutError{},
+				&relay.TimeoutError{},
 			} {
 				assert.ErrorIsNot(
 					t,
@@ -176,14 +182,14 @@ func TestTimeoutError(t *testing.T) {
 
 		t.Run("returns a message for the zero value", func(t *testing.T) {
 			t.Parallel()
-			assert.NotEqual(t, (&TimeoutError{}).Error(), "", "the zero value has a message")
+			assert.NotEqual(t, (&relay.TimeoutError{}).Error(), "", "the zero value has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				(&TimeoutError{}).Error(),
+				(&relay.TimeoutError{}).Error(),
 				"relay: ",
 				"the message opens with the package prefix",
 			)
@@ -191,7 +197,7 @@ func TestTimeoutError(t *testing.T) {
 
 		t.Run("contains each text member", func(t *testing.T) {
 			t.Parallel()
-			got := &TimeoutError{Op: "Op-a"}
+			got := &relay.TimeoutError{Op: "Op-a"}
 			assert.Contains(t, got.Error(), got.Op, "the message contains Op")
 		})
 	})
@@ -201,9 +207,9 @@ func TestTimeoutError(t *testing.T) {
 
 		t.Run("matches no other error type of the package", func(t *testing.T) {
 			t.Parallel()
-			subject := &TimeoutError{}
+			subject := &relay.TimeoutError{}
 			for _, other := range []error{
-				&CallError{},
+				&relay.CallError{},
 			} {
 				assert.ErrorIsNot(
 					t,

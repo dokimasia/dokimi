@@ -66,8 +66,9 @@ func rendered(t *testing.T) fstest.MapFS {
 	t.Helper()
 
 	p := sentinel.New()
-	res := fixture(t, golang.Target, goTree, p, storePackage, neighbourPackage, embeddedPackage, noprefixPackage,
-		splitPackage, typedPackage, relayPackage).Generate(t, p)
+	f := fixture(t, golang.Target, goTree, p, storePackage, neighbourPackage, embeddedPackage, noprefixPackage,
+		splitPackage, typedPackage, relayPackage)
+	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
-	return gentest.Rendered(t, res, p, gobackend.New())
+	return gentest.Rendered(t, f, res, p, gobackend.New())
 }

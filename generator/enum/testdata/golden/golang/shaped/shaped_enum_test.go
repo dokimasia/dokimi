@@ -1,8 +1,9 @@
-package shaped
+package shaped_test
 
 import (
 	"testing"
 
+	"example.com/shop/shaped"
 	"go.dokimi.dev/assert"
 )
 
@@ -12,10 +13,10 @@ func TestRatio(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Ratio]bool{}
-		for _, v := range []Ratio{
-			Single,
-			Double,
+		seen := map[shaped.Ratio]bool{}
+		for _, v := range []shaped.Ratio{
+			shaped.Single,
+			shaped.Double,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -29,17 +30,22 @@ func TestRatio(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Ratio{
-					Single,
-					Double,
+				want := []shaped.Ratio{
+					shaped.Single,
+					shaped.Double,
 				}
-				assert.Equal(t, RatioValues(), want, "RatioValues returns the declared variants")
+				assert.Equal(
+					t,
+					shaped.RatioValues(),
+					want,
+					"RatioValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := RatioValues(), RatioValues()
+			first, second := shaped.RatioValues(), shaped.RatioValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -56,9 +62,9 @@ func TestRatio(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Ratio{
-				Single,
-				Double,
+			for _, v := range []shaped.Ratio{
+				shaped.Single,
+				shaped.Double,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -69,10 +75,10 @@ func TestRatio(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Ratio(3)
-				for _, v := range []Ratio{
-					Single,
-					Double,
+				out := shaped.Ratio(3)
+				for _, v := range []shaped.Ratio{
+					shaped.Single,
+					shaped.Double,
 				} {
 					assert.NotEqual(
 						t,
@@ -90,10 +96,10 @@ func TestRatio(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Ratio
+			give shaped.Ratio
 		}{
-			{name: "accepts Single", give: Single},
-			{name: "accepts Double", give: Double},
+			{name: "accepts Single", give: shaped.Single},
+			{name: "accepts Double", give: shaped.Double},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -104,12 +110,12 @@ func TestRatio(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Ratio(3).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, shaped.Ratio(3).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Ratio
+			var zero shaped.Ratio
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -119,15 +125,15 @@ func TestRatio(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Ratio
+			give shaped.Ratio
 		}{
-			{name: "returns Single for its text", give: Single},
-			{name: "returns Double for its text", give: Double},
+			{name: "returns Single for its text", give: shaped.Single},
+			{name: "returns Double for its text", give: shaped.Double},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseRatio(tt.give.String())
+				got, err := shaped.ParseRatio(tt.give.String())
 				assert.NoError(t, err, "ParseRatio accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseRatio returns the variant of the text")
 			})
@@ -135,11 +141,11 @@ func TestRatio(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseRatio("???????")
+			_, err := shaped.ParseRatio("???????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownRatio,
+				shaped.ErrUnknownRatio,
 				"ParseRatio refuses the text with ErrUnknownRatio",
 			)
 			assert.Contains(t, err.Error(), "???????", "the error contains the refused text")
@@ -151,10 +157,10 @@ func TestRatio(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Ratio
+			give shaped.Ratio
 		}{
-			{name: "encodes Single as its text", give: Single},
-			{name: "encodes Double as its text", give: Double},
+			{name: "encodes Single as its text", give: shaped.Single},
+			{name: "encodes Double as its text", give: shaped.Double},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -172,12 +178,12 @@ func TestRatio(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Ratio(3)
+			out := shaped.Ratio(3)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownRatio,
+				shaped.ErrUnknownRatio,
 				"MarshalText refuses the value with ErrUnknownRatio",
 			)
 			assert.Contains(
@@ -194,17 +200,17 @@ func TestRatio(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Ratio
+			give shaped.Ratio
 		}{
-			{name: "decodes Single from its encoding", give: Single},
-			{name: "decodes Double from its encoding", give: Double},
+			{name: "decodes Single from its encoding", give: shaped.Single},
+			{name: "decodes Double from its encoding", give: shaped.Double},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Ratio
+				var got shaped.Ratio
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -212,7 +218,7 @@ func TestRatio(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Ratio
+			var got shaped.Ratio
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("???????")),
@@ -228,10 +234,10 @@ func TestTier(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Tier]bool{}
-		for _, v := range []Tier{
-			Bronze,
-			Silver,
+		seen := map[shaped.Tier]bool{}
+		for _, v := range []shaped.Tier{
+			shaped.Bronze,
+			shaped.Silver,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -245,17 +251,22 @@ func TestTier(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Tier{
-					Bronze,
-					Silver,
+				want := []shaped.Tier{
+					shaped.Bronze,
+					shaped.Silver,
 				}
-				assert.Equal(t, TierValues(), want, "TierValues returns the declared variants")
+				assert.Equal(
+					t,
+					shaped.TierValues(),
+					want,
+					"TierValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := TierValues(), TierValues()
+			first, second := shaped.TierValues(), shaped.TierValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -272,9 +283,9 @@ func TestTier(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Tier{
-				Bronze,
-				Silver,
+			for _, v := range []shaped.Tier{
+				shaped.Bronze,
+				shaped.Silver,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -285,10 +296,10 @@ func TestTier(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Tier(3)
-				for _, v := range []Tier{
-					Bronze,
-					Silver,
+				out := shaped.Tier(3)
+				for _, v := range []shaped.Tier{
+					shaped.Bronze,
+					shaped.Silver,
 				} {
 					assert.NotEqual(
 						t,
@@ -306,10 +317,10 @@ func TestTier(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Tier
+			give shaped.Tier
 		}{
-			{name: "accepts Bronze", give: Bronze},
-			{name: "accepts Silver", give: Silver},
+			{name: "accepts Bronze", give: shaped.Bronze},
+			{name: "accepts Silver", give: shaped.Silver},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -320,12 +331,12 @@ func TestTier(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Tier(3).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, shaped.Tier(3).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Tier
+			var zero shaped.Tier
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -335,15 +346,15 @@ func TestTier(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Tier
+			give shaped.Tier
 		}{
-			{name: "returns Bronze for its text", give: Bronze},
-			{name: "returns Silver for its text", give: Silver},
+			{name: "returns Bronze for its text", give: shaped.Bronze},
+			{name: "returns Silver for its text", give: shaped.Silver},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseTier(tt.give.String())
+				got, err := shaped.ParseTier(tt.give.String())
 				assert.NoError(t, err, "ParseTier accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseTier returns the variant of the text")
 			})
@@ -351,8 +362,13 @@ func TestTier(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseTier("???????")
-			assert.ErrorIs(t, err, ErrUnknownTier, "ParseTier refuses the text with ErrUnknownTier")
+			_, err := shaped.ParseTier("???????")
+			assert.ErrorIs(
+				t,
+				err,
+				shaped.ErrUnknownTier,
+				"ParseTier refuses the text with ErrUnknownTier",
+			)
 			assert.Contains(t, err.Error(), "???????", "the error contains the refused text")
 		})
 	})
@@ -362,10 +378,10 @@ func TestTier(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Tier
+			give shaped.Tier
 		}{
-			{name: "encodes Bronze as its text", give: Bronze},
-			{name: "encodes Silver as its text", give: Silver},
+			{name: "encodes Bronze as its text", give: shaped.Bronze},
+			{name: "encodes Silver as its text", give: shaped.Silver},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -383,12 +399,12 @@ func TestTier(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Tier(3)
+			out := shaped.Tier(3)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownTier,
+				shaped.ErrUnknownTier,
 				"MarshalText refuses the value with ErrUnknownTier",
 			)
 			assert.Contains(
@@ -405,17 +421,17 @@ func TestTier(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Tier
+			give shaped.Tier
 		}{
-			{name: "decodes Bronze from its encoding", give: Bronze},
-			{name: "decodes Silver from its encoding", give: Silver},
+			{name: "decodes Bronze from its encoding", give: shaped.Bronze},
+			{name: "decodes Silver from its encoding", give: shaped.Silver},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Tier
+				var got shaped.Tier
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -423,7 +439,7 @@ func TestTier(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Tier
+			var got shaped.Tier
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("???????")),

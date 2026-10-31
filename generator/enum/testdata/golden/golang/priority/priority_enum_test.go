@@ -1,8 +1,9 @@
-package priority
+package priority_test
 
 import (
 	"testing"
 
+	"example.com/shop/priority"
 	"go.dokimi.dev/assert"
 )
 
@@ -13,12 +14,12 @@ func TestPriority(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Priority]bool{}
-		for _, v := range []Priority{
-			Low,
-			Medium,
-			High,
-			Critical,
+		seen := map[priority.Priority]bool{}
+		for _, v := range []priority.Priority{
+			priority.Low,
+			priority.Medium,
+			priority.High,
+			priority.Critical,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -32,15 +33,15 @@ func TestPriority(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Priority{
-					Low,
-					Medium,
-					High,
-					Critical,
+				want := []priority.Priority{
+					priority.Low,
+					priority.Medium,
+					priority.High,
+					priority.Critical,
 				}
 				assert.Equal(
 					t,
-					PriorityValues(),
+					priority.PriorityValues(),
 					want,
 					"PriorityValues returns the declared variants",
 				)
@@ -49,7 +50,7 @@ func TestPriority(t *testing.T) {
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := PriorityValues(), PriorityValues()
+			first, second := priority.PriorityValues(), priority.PriorityValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -66,11 +67,11 @@ func TestPriority(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Priority{
-				Low,
-				Medium,
-				High,
-				Critical,
+			for _, v := range []priority.Priority{
+				priority.Low,
+				priority.Medium,
+				priority.High,
+				priority.Critical,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -81,12 +82,12 @@ func TestPriority(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Priority(4)
-				for _, v := range []Priority{
-					Low,
-					Medium,
-					High,
-					Critical,
+				out := priority.Priority(4)
+				for _, v := range []priority.Priority{
+					priority.Low,
+					priority.Medium,
+					priority.High,
+					priority.Critical,
 				} {
 					assert.NotEqual(
 						t,
@@ -104,12 +105,12 @@ func TestPriority(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Priority
+			give priority.Priority
 		}{
-			{name: "accepts Low", give: Low},
-			{name: "accepts Medium", give: Medium},
-			{name: "accepts High", give: High},
-			{name: "accepts Critical", give: Critical},
+			{name: "accepts Low", give: priority.Low},
+			{name: "accepts Medium", give: priority.Medium},
+			{name: "accepts High", give: priority.High},
+			{name: "accepts Critical", give: priority.Critical},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -120,13 +121,13 @@ func TestPriority(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Priority(4).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, priority.Priority(4).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("accepts the zero value Low", func(t *testing.T) {
 			t.Parallel()
-			var zero Priority
-			assert.Equal(t, zero, Low, "the zero value is Low")
+			var zero priority.Priority
+			assert.Equal(t, zero, priority.Low, "the zero value is Low")
 			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
 		})
 	})
@@ -136,17 +137,17 @@ func TestPriority(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Priority
+			give priority.Priority
 		}{
-			{name: "returns Low for its text", give: Low},
-			{name: "returns Medium for its text", give: Medium},
-			{name: "returns High for its text", give: High},
-			{name: "returns Critical for its text", give: Critical},
+			{name: "returns Low for its text", give: priority.Low},
+			{name: "returns Medium for its text", give: priority.Medium},
+			{name: "returns High for its text", give: priority.High},
+			{name: "returns Critical for its text", give: priority.Critical},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParsePriority(tt.give.String())
+				got, err := priority.ParsePriority(tt.give.String())
 				assert.NoError(t, err, "ParsePriority accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParsePriority returns the variant of the text")
 			})
@@ -154,11 +155,11 @@ func TestPriority(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParsePriority("?????????")
+			_, err := priority.ParsePriority("?????????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownPriority,
+				priority.ErrUnknownPriority,
 				"ParsePriority refuses the text with ErrUnknownPriority",
 			)
 			assert.Contains(t, err.Error(), "?????????", "the error contains the refused text")
@@ -170,12 +171,12 @@ func TestPriority(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Priority
+			give priority.Priority
 		}{
-			{name: "encodes Low as its text", give: Low},
-			{name: "encodes Medium as its text", give: Medium},
-			{name: "encodes High as its text", give: High},
-			{name: "encodes Critical as its text", give: Critical},
+			{name: "encodes Low as its text", give: priority.Low},
+			{name: "encodes Medium as its text", give: priority.Medium},
+			{name: "encodes High as its text", give: priority.High},
+			{name: "encodes Critical as its text", give: priority.Critical},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -193,12 +194,12 @@ func TestPriority(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Priority(4)
+			out := priority.Priority(4)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownPriority,
+				priority.ErrUnknownPriority,
 				"MarshalText refuses the value with ErrUnknownPriority",
 			)
 			assert.Contains(
@@ -215,19 +216,19 @@ func TestPriority(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Priority
+			give priority.Priority
 		}{
-			{name: "decodes Low from its encoding", give: Low},
-			{name: "decodes Medium from its encoding", give: Medium},
-			{name: "decodes High from its encoding", give: High},
-			{name: "decodes Critical from its encoding", give: Critical},
+			{name: "decodes Low from its encoding", give: priority.Low},
+			{name: "decodes Medium from its encoding", give: priority.Medium},
+			{name: "decodes High from its encoding", give: priority.High},
+			{name: "decodes Critical from its encoding", give: priority.Critical},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Priority
+				var got priority.Priority
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -235,7 +236,7 @@ func TestPriority(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Priority
+			var got priority.Priority
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("?????????")),

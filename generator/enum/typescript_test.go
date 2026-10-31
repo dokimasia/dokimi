@@ -152,7 +152,8 @@ func renderedTypeScript(t *testing.T) fstest.MapFS {
 	t.Helper()
 
 	p := enum.New()
-	res := fixture(t, typescript.Target, tsTree, p, statusModule).Generate(t, p)
+	f := fixture(t, typescript.Target, tsTree, p, statusModule)
+	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
-	return gentest.Rendered(t, res, p, tsbackend.New())
+	return gentest.Rendered(t, f, res, p, tsbackend.New())
 }

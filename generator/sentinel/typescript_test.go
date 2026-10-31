@@ -45,10 +45,11 @@ func TestTypeScript(t *testing.T) {
 		t.Parallel()
 
 		p := sentinel.New()
-		res := fixture(t, typescript.Target, tsTree, p, storeModule, parseModule, labelModule,
-			unconstructedModule, relayModule).Generate(t, p)
+		f := fixture(t, typescript.Target, tsTree, p, storeModule, parseModule, labelModule, unconstructedModule,
+			relayModule)
+		res := f.Generate(t, p)
 		assert.NoError(t, res.Err, "the generator runs whole")
-		golden.MatchTree(t, "typescript", gentest.Rendered(t, res, p, tsbackend.New()), golden.ShouldUpdate())
+		golden.MatchTree(t, "typescript", gentest.Rendered(t, f, res, p, tsbackend.New()), golden.ShouldUpdate())
 	})
 
 	t.Run("records each error class under the param remote as remote", func(t *testing.T) {

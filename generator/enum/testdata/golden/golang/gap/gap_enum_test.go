@@ -1,8 +1,9 @@
-package gap
+package gap_test
 
 import (
 	"testing"
 
+	"example.com/shop/gap"
 	"go.dokimi.dev/assert"
 )
 
@@ -12,13 +13,13 @@ func TestGap(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Gap]bool{}
-		for _, v := range []Gap{
-			Two,
-			Three,
-			Five,
-			Six,
-			Eleven,
+		seen := map[gap.Gap]bool{}
+		for _, v := range []gap.Gap{
+			gap.Two,
+			gap.Three,
+			gap.Five,
+			gap.Six,
+			gap.Eleven,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -32,20 +33,20 @@ func TestGap(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Gap{
-					Two,
-					Three,
-					Five,
-					Six,
-					Eleven,
+				want := []gap.Gap{
+					gap.Two,
+					gap.Three,
+					gap.Five,
+					gap.Six,
+					gap.Eleven,
 				}
-				assert.Equal(t, GapValues(), want, "GapValues returns the declared variants")
+				assert.Equal(t, gap.GapValues(), want, "GapValues returns the declared variants")
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := GapValues(), GapValues()
+			first, second := gap.GapValues(), gap.GapValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -62,12 +63,12 @@ func TestGap(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Gap{
-				Two,
-				Three,
-				Five,
-				Six,
-				Eleven,
+			for _, v := range []gap.Gap{
+				gap.Two,
+				gap.Three,
+				gap.Five,
+				gap.Six,
+				gap.Eleven,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -78,13 +79,13 @@ func TestGap(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Gap(12)
-				for _, v := range []Gap{
-					Two,
-					Three,
-					Five,
-					Six,
-					Eleven,
+				out := gap.Gap(12)
+				for _, v := range []gap.Gap{
+					gap.Two,
+					gap.Three,
+					gap.Five,
+					gap.Six,
+					gap.Eleven,
 				} {
 					assert.NotEqual(
 						t,
@@ -102,13 +103,13 @@ func TestGap(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Gap
+			give gap.Gap
 		}{
-			{name: "accepts Two", give: Two},
-			{name: "accepts Three", give: Three},
-			{name: "accepts Five", give: Five},
-			{name: "accepts Six", give: Six},
-			{name: "accepts Eleven", give: Eleven},
+			{name: "accepts Two", give: gap.Two},
+			{name: "accepts Three", give: gap.Three},
+			{name: "accepts Five", give: gap.Five},
+			{name: "accepts Six", give: gap.Six},
+			{name: "accepts Eleven", give: gap.Eleven},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -119,12 +120,12 @@ func TestGap(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Gap(12).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, gap.Gap(12).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Gap
+			var zero gap.Gap
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -134,18 +135,18 @@ func TestGap(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Gap
+			give gap.Gap
 		}{
-			{name: "returns Two for its text", give: Two},
-			{name: "returns Three for its text", give: Three},
-			{name: "returns Five for its text", give: Five},
-			{name: "returns Six for its text", give: Six},
-			{name: "returns Eleven for its text", give: Eleven},
+			{name: "returns Two for its text", give: gap.Two},
+			{name: "returns Three for its text", give: gap.Three},
+			{name: "returns Five for its text", give: gap.Five},
+			{name: "returns Six for its text", give: gap.Six},
+			{name: "returns Eleven for its text", give: gap.Eleven},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseGap(tt.give.String())
+				got, err := gap.ParseGap(tt.give.String())
 				assert.NoError(t, err, "ParseGap accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseGap returns the variant of the text")
 			})
@@ -153,8 +154,13 @@ func TestGap(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseGap("???????")
-			assert.ErrorIs(t, err, ErrUnknownGap, "ParseGap refuses the text with ErrUnknownGap")
+			_, err := gap.ParseGap("???????")
+			assert.ErrorIs(
+				t,
+				err,
+				gap.ErrUnknownGap,
+				"ParseGap refuses the text with ErrUnknownGap",
+			)
 			assert.Contains(t, err.Error(), "???????", "the error contains the refused text")
 		})
 	})
@@ -164,13 +170,13 @@ func TestGap(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Gap
+			give gap.Gap
 		}{
-			{name: "encodes Two as its text", give: Two},
-			{name: "encodes Three as its text", give: Three},
-			{name: "encodes Five as its text", give: Five},
-			{name: "encodes Six as its text", give: Six},
-			{name: "encodes Eleven as its text", give: Eleven},
+			{name: "encodes Two as its text", give: gap.Two},
+			{name: "encodes Three as its text", give: gap.Three},
+			{name: "encodes Five as its text", give: gap.Five},
+			{name: "encodes Six as its text", give: gap.Six},
+			{name: "encodes Eleven as its text", give: gap.Eleven},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -188,12 +194,12 @@ func TestGap(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Gap(12)
+			out := gap.Gap(12)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownGap,
+				gap.ErrUnknownGap,
 				"MarshalText refuses the value with ErrUnknownGap",
 			)
 			assert.Contains(
@@ -210,20 +216,20 @@ func TestGap(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Gap
+			give gap.Gap
 		}{
-			{name: "decodes Two from its encoding", give: Two},
-			{name: "decodes Three from its encoding", give: Three},
-			{name: "decodes Five from its encoding", give: Five},
-			{name: "decodes Six from its encoding", give: Six},
-			{name: "decodes Eleven from its encoding", give: Eleven},
+			{name: "decodes Two from its encoding", give: gap.Two},
+			{name: "decodes Three from its encoding", give: gap.Three},
+			{name: "decodes Five from its encoding", give: gap.Five},
+			{name: "decodes Six from its encoding", give: gap.Six},
+			{name: "decodes Eleven from its encoding", give: gap.Eleven},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Gap
+				var got gap.Gap
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -231,7 +237,7 @@ func TestGap(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Gap
+			var got gap.Gap
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("???????")),
@@ -247,11 +253,11 @@ func TestUnum(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Unum]bool{}
-		for _, v := range []Unum{
-			Naught,
-			One,
-			Far,
+		seen := map[gap.Unum]bool{}
+		for _, v := range []gap.Unum{
+			gap.Naught,
+			gap.One,
+			gap.Far,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -265,18 +271,18 @@ func TestUnum(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Unum{
-					Naught,
-					One,
-					Far,
+				want := []gap.Unum{
+					gap.Naught,
+					gap.One,
+					gap.Far,
 				}
-				assert.Equal(t, UnumValues(), want, "UnumValues returns the declared variants")
+				assert.Equal(t, gap.UnumValues(), want, "UnumValues returns the declared variants")
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := UnumValues(), UnumValues()
+			first, second := gap.UnumValues(), gap.UnumValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -293,10 +299,10 @@ func TestUnum(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Unum{
-				Naught,
-				One,
-				Far,
+			for _, v := range []gap.Unum{
+				gap.Naught,
+				gap.One,
+				gap.Far,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -307,11 +313,11 @@ func TestUnum(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Unum(254)
-				for _, v := range []Unum{
-					Naught,
-					One,
-					Far,
+				out := gap.Unum(254)
+				for _, v := range []gap.Unum{
+					gap.Naught,
+					gap.One,
+					gap.Far,
 				} {
 					assert.NotEqual(
 						t,
@@ -329,11 +335,11 @@ func TestUnum(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Unum
+			give gap.Unum
 		}{
-			{name: "accepts Naught", give: Naught},
-			{name: "accepts One", give: One},
-			{name: "accepts Far", give: Far},
+			{name: "accepts Naught", give: gap.Naught},
+			{name: "accepts One", give: gap.One},
+			{name: "accepts Far", give: gap.Far},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -344,13 +350,13 @@ func TestUnum(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Unum(254).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, gap.Unum(254).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("accepts the zero value Naught", func(t *testing.T) {
 			t.Parallel()
-			var zero Unum
-			assert.Equal(t, zero, Naught, "the zero value is Naught")
+			var zero gap.Unum
+			assert.Equal(t, zero, gap.Naught, "the zero value is Naught")
 			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
 		})
 	})
@@ -360,16 +366,16 @@ func TestUnum(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Unum
+			give gap.Unum
 		}{
-			{name: "returns Naught for its text", give: Naught},
-			{name: "returns One for its text", give: One},
-			{name: "returns Far for its text", give: Far},
+			{name: "returns Naught for its text", give: gap.Naught},
+			{name: "returns One for its text", give: gap.One},
+			{name: "returns Far for its text", give: gap.Far},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseUnum(tt.give.String())
+				got, err := gap.ParseUnum(tt.give.String())
 				assert.NoError(t, err, "ParseUnum accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseUnum returns the variant of the text")
 			})
@@ -377,8 +383,13 @@ func TestUnum(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseUnum("???????")
-			assert.ErrorIs(t, err, ErrUnknownUnum, "ParseUnum refuses the text with ErrUnknownUnum")
+			_, err := gap.ParseUnum("???????")
+			assert.ErrorIs(
+				t,
+				err,
+				gap.ErrUnknownUnum,
+				"ParseUnum refuses the text with ErrUnknownUnum",
+			)
 			assert.Contains(t, err.Error(), "???????", "the error contains the refused text")
 		})
 	})
@@ -388,11 +399,11 @@ func TestUnum(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Unum
+			give gap.Unum
 		}{
-			{name: "encodes Naught as its text", give: Naught},
-			{name: "encodes One as its text", give: One},
-			{name: "encodes Far as its text", give: Far},
+			{name: "encodes Naught as its text", give: gap.Naught},
+			{name: "encodes One as its text", give: gap.One},
+			{name: "encodes Far as its text", give: gap.Far},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -410,12 +421,12 @@ func TestUnum(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Unum(254)
+			out := gap.Unum(254)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownUnum,
+				gap.ErrUnknownUnum,
 				"MarshalText refuses the value with ErrUnknownUnum",
 			)
 			assert.Contains(
@@ -432,18 +443,18 @@ func TestUnum(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Unum
+			give gap.Unum
 		}{
-			{name: "decodes Naught from its encoding", give: Naught},
-			{name: "decodes One from its encoding", give: One},
-			{name: "decodes Far from its encoding", give: Far},
+			{name: "decodes Naught from its encoding", give: gap.Naught},
+			{name: "decodes One from its encoding", give: gap.One},
+			{name: "decodes Far from its encoding", give: gap.Far},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Unum
+				var got gap.Unum
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -451,7 +462,7 @@ func TestUnum(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Unum
+			var got gap.Unum
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("???????")),
@@ -467,20 +478,20 @@ func TestPrime(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Prime]bool{}
-		for _, v := range []Prime{
-			P2,
-			P3,
-			P5,
-			P7,
-			P11,
-			P13,
-			P17,
-			P19,
-			P23,
-			P29,
-			P31,
-			P37,
+		seen := map[gap.Prime]bool{}
+		for _, v := range []gap.Prime{
+			gap.P2,
+			gap.P3,
+			gap.P5,
+			gap.P7,
+			gap.P11,
+			gap.P13,
+			gap.P17,
+			gap.P19,
+			gap.P23,
+			gap.P29,
+			gap.P31,
+			gap.P37,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -494,27 +505,32 @@ func TestPrime(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Prime{
-					P2,
-					P3,
-					P5,
-					P7,
-					P11,
-					P13,
-					P17,
-					P19,
-					P23,
-					P29,
-					P31,
-					P37,
+				want := []gap.Prime{
+					gap.P2,
+					gap.P3,
+					gap.P5,
+					gap.P7,
+					gap.P11,
+					gap.P13,
+					gap.P17,
+					gap.P19,
+					gap.P23,
+					gap.P29,
+					gap.P31,
+					gap.P37,
 				}
-				assert.Equal(t, PrimeValues(), want, "PrimeValues returns the declared variants")
+				assert.Equal(
+					t,
+					gap.PrimeValues(),
+					want,
+					"PrimeValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := PrimeValues(), PrimeValues()
+			first, second := gap.PrimeValues(), gap.PrimeValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -531,19 +547,19 @@ func TestPrime(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Prime{
-				P2,
-				P3,
-				P5,
-				P7,
-				P11,
-				P13,
-				P17,
-				P19,
-				P23,
-				P29,
-				P31,
-				P37,
+			for _, v := range []gap.Prime{
+				gap.P2,
+				gap.P3,
+				gap.P5,
+				gap.P7,
+				gap.P11,
+				gap.P13,
+				gap.P17,
+				gap.P19,
+				gap.P23,
+				gap.P29,
+				gap.P31,
+				gap.P37,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -554,20 +570,20 @@ func TestPrime(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Prime(38)
-				for _, v := range []Prime{
-					P2,
-					P3,
-					P5,
-					P7,
-					P11,
-					P13,
-					P17,
-					P19,
-					P23,
-					P29,
-					P31,
-					P37,
+				out := gap.Prime(38)
+				for _, v := range []gap.Prime{
+					gap.P2,
+					gap.P3,
+					gap.P5,
+					gap.P7,
+					gap.P11,
+					gap.P13,
+					gap.P17,
+					gap.P19,
+					gap.P23,
+					gap.P29,
+					gap.P31,
+					gap.P37,
 				} {
 					assert.NotEqual(
 						t,
@@ -585,20 +601,20 @@ func TestPrime(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Prime
+			give gap.Prime
 		}{
-			{name: "accepts P2", give: P2},
-			{name: "accepts P3", give: P3},
-			{name: "accepts P5", give: P5},
-			{name: "accepts P7", give: P7},
-			{name: "accepts P11", give: P11},
-			{name: "accepts P13", give: P13},
-			{name: "accepts P17", give: P17},
-			{name: "accepts P19", give: P19},
-			{name: "accepts P23", give: P23},
-			{name: "accepts P29", give: P29},
-			{name: "accepts P31", give: P31},
-			{name: "accepts P37", give: P37},
+			{name: "accepts P2", give: gap.P2},
+			{name: "accepts P3", give: gap.P3},
+			{name: "accepts P5", give: gap.P5},
+			{name: "accepts P7", give: gap.P7},
+			{name: "accepts P11", give: gap.P11},
+			{name: "accepts P13", give: gap.P13},
+			{name: "accepts P17", give: gap.P17},
+			{name: "accepts P19", give: gap.P19},
+			{name: "accepts P23", give: gap.P23},
+			{name: "accepts P29", give: gap.P29},
+			{name: "accepts P31", give: gap.P31},
+			{name: "accepts P37", give: gap.P37},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -609,12 +625,12 @@ func TestPrime(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Prime(38).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, gap.Prime(38).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Prime
+			var zero gap.Prime
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -624,25 +640,25 @@ func TestPrime(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Prime
+			give gap.Prime
 		}{
-			{name: "returns P2 for its text", give: P2},
-			{name: "returns P3 for its text", give: P3},
-			{name: "returns P5 for its text", give: P5},
-			{name: "returns P7 for its text", give: P7},
-			{name: "returns P11 for its text", give: P11},
-			{name: "returns P13 for its text", give: P13},
-			{name: "returns P17 for its text", give: P17},
-			{name: "returns P19 for its text", give: P19},
-			{name: "returns P23 for its text", give: P23},
-			{name: "returns P29 for its text", give: P29},
-			{name: "returns P31 for its text", give: P31},
-			{name: "returns P37 for its text", give: P37},
+			{name: "returns P2 for its text", give: gap.P2},
+			{name: "returns P3 for its text", give: gap.P3},
+			{name: "returns P5 for its text", give: gap.P5},
+			{name: "returns P7 for its text", give: gap.P7},
+			{name: "returns P11 for its text", give: gap.P11},
+			{name: "returns P13 for its text", give: gap.P13},
+			{name: "returns P17 for its text", give: gap.P17},
+			{name: "returns P19 for its text", give: gap.P19},
+			{name: "returns P23 for its text", give: gap.P23},
+			{name: "returns P29 for its text", give: gap.P29},
+			{name: "returns P31 for its text", give: gap.P31},
+			{name: "returns P37 for its text", give: gap.P37},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParsePrime(tt.give.String())
+				got, err := gap.ParsePrime(tt.give.String())
 				assert.NoError(t, err, "ParsePrime accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParsePrime returns the variant of the text")
 			})
@@ -650,11 +666,11 @@ func TestPrime(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParsePrime("????")
+			_, err := gap.ParsePrime("????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownPrime,
+				gap.ErrUnknownPrime,
 				"ParsePrime refuses the text with ErrUnknownPrime",
 			)
 			assert.Contains(t, err.Error(), "????", "the error contains the refused text")
@@ -666,20 +682,20 @@ func TestPrime(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Prime
+			give gap.Prime
 		}{
-			{name: "encodes P2 as its text", give: P2},
-			{name: "encodes P3 as its text", give: P3},
-			{name: "encodes P5 as its text", give: P5},
-			{name: "encodes P7 as its text", give: P7},
-			{name: "encodes P11 as its text", give: P11},
-			{name: "encodes P13 as its text", give: P13},
-			{name: "encodes P17 as its text", give: P17},
-			{name: "encodes P19 as its text", give: P19},
-			{name: "encodes P23 as its text", give: P23},
-			{name: "encodes P29 as its text", give: P29},
-			{name: "encodes P31 as its text", give: P31},
-			{name: "encodes P37 as its text", give: P37},
+			{name: "encodes P2 as its text", give: gap.P2},
+			{name: "encodes P3 as its text", give: gap.P3},
+			{name: "encodes P5 as its text", give: gap.P5},
+			{name: "encodes P7 as its text", give: gap.P7},
+			{name: "encodes P11 as its text", give: gap.P11},
+			{name: "encodes P13 as its text", give: gap.P13},
+			{name: "encodes P17 as its text", give: gap.P17},
+			{name: "encodes P19 as its text", give: gap.P19},
+			{name: "encodes P23 as its text", give: gap.P23},
+			{name: "encodes P29 as its text", give: gap.P29},
+			{name: "encodes P31 as its text", give: gap.P31},
+			{name: "encodes P37 as its text", give: gap.P37},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -697,12 +713,12 @@ func TestPrime(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Prime(38)
+			out := gap.Prime(38)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownPrime,
+				gap.ErrUnknownPrime,
 				"MarshalText refuses the value with ErrUnknownPrime",
 			)
 			assert.Contains(
@@ -719,27 +735,27 @@ func TestPrime(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Prime
+			give gap.Prime
 		}{
-			{name: "decodes P2 from its encoding", give: P2},
-			{name: "decodes P3 from its encoding", give: P3},
-			{name: "decodes P5 from its encoding", give: P5},
-			{name: "decodes P7 from its encoding", give: P7},
-			{name: "decodes P11 from its encoding", give: P11},
-			{name: "decodes P13 from its encoding", give: P13},
-			{name: "decodes P17 from its encoding", give: P17},
-			{name: "decodes P19 from its encoding", give: P19},
-			{name: "decodes P23 from its encoding", give: P23},
-			{name: "decodes P29 from its encoding", give: P29},
-			{name: "decodes P31 from its encoding", give: P31},
-			{name: "decodes P37 from its encoding", give: P37},
+			{name: "decodes P2 from its encoding", give: gap.P2},
+			{name: "decodes P3 from its encoding", give: gap.P3},
+			{name: "decodes P5 from its encoding", give: gap.P5},
+			{name: "decodes P7 from its encoding", give: gap.P7},
+			{name: "decodes P11 from its encoding", give: gap.P11},
+			{name: "decodes P13 from its encoding", give: gap.P13},
+			{name: "decodes P17 from its encoding", give: gap.P17},
+			{name: "decodes P19 from its encoding", give: gap.P19},
+			{name: "decodes P23 from its encoding", give: gap.P23},
+			{name: "decodes P29 from its encoding", give: gap.P29},
+			{name: "decodes P31 from its encoding", give: gap.P31},
+			{name: "decodes P37 from its encoding", give: gap.P37},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Prime
+				var got gap.Prime
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -747,7 +763,7 @@ func TestPrime(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Prime
+			var got gap.Prime
 			assert.HasError(t, got.UnmarshalText([]byte("????")), "UnmarshalText refuses the text")
 		})
 	})
@@ -759,11 +775,11 @@ func TestRank(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Rank]bool{}
-		for _, v := range []Rank{
-			Gold,
-			Silver,
-			Bronze,
+		seen := map[gap.Rank]bool{}
+		for _, v := range []gap.Rank{
+			gap.Gold,
+			gap.Silver,
+			gap.Bronze,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -777,18 +793,18 @@ func TestRank(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Rank{
-					Gold,
-					Silver,
-					Bronze,
+				want := []gap.Rank{
+					gap.Gold,
+					gap.Silver,
+					gap.Bronze,
 				}
-				assert.Equal(t, RankValues(), want, "RankValues returns the declared variants")
+				assert.Equal(t, gap.RankValues(), want, "RankValues returns the declared variants")
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := RankValues(), RankValues()
+			first, second := gap.RankValues(), gap.RankValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -805,10 +821,10 @@ func TestRank(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Rank{
-				Gold,
-				Silver,
-				Bronze,
+			for _, v := range []gap.Rank{
+				gap.Gold,
+				gap.Silver,
+				gap.Bronze,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -819,11 +835,11 @@ func TestRank(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Rank(4)
-				for _, v := range []Rank{
-					Gold,
-					Silver,
-					Bronze,
+				out := gap.Rank(4)
+				for _, v := range []gap.Rank{
+					gap.Gold,
+					gap.Silver,
+					gap.Bronze,
 				} {
 					assert.NotEqual(
 						t,
@@ -841,11 +857,11 @@ func TestRank(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Rank
+			give gap.Rank
 		}{
-			{name: "accepts Gold", give: Gold},
-			{name: "accepts Silver", give: Silver},
-			{name: "accepts Bronze", give: Bronze},
+			{name: "accepts Gold", give: gap.Gold},
+			{name: "accepts Silver", give: gap.Silver},
+			{name: "accepts Bronze", give: gap.Bronze},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -856,12 +872,12 @@ func TestRank(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Rank(4).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, gap.Rank(4).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Rank
+			var zero gap.Rank
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -871,16 +887,16 @@ func TestRank(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Rank
+			give gap.Rank
 		}{
-			{name: "returns Gold for its text", give: Gold},
-			{name: "returns Silver for its text", give: Silver},
-			{name: "returns Bronze for its text", give: Bronze},
+			{name: "returns Gold for its text", give: gap.Gold},
+			{name: "returns Silver for its text", give: gap.Silver},
+			{name: "returns Bronze for its text", give: gap.Bronze},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseRank(tt.give.String())
+				got, err := gap.ParseRank(tt.give.String())
 				assert.NoError(t, err, "ParseRank accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseRank returns the variant of the text")
 			})
@@ -888,8 +904,13 @@ func TestRank(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseRank("???????")
-			assert.ErrorIs(t, err, ErrUnknownRank, "ParseRank refuses the text with ErrUnknownRank")
+			_, err := gap.ParseRank("???????")
+			assert.ErrorIs(
+				t,
+				err,
+				gap.ErrUnknownRank,
+				"ParseRank refuses the text with ErrUnknownRank",
+			)
 			assert.Contains(t, err.Error(), "???????", "the error contains the refused text")
 		})
 	})
@@ -899,11 +920,11 @@ func TestRank(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Rank
+			give gap.Rank
 		}{
-			{name: "encodes Gold as its text", give: Gold},
-			{name: "encodes Silver as its text", give: Silver},
-			{name: "encodes Bronze as its text", give: Bronze},
+			{name: "encodes Gold as its text", give: gap.Gold},
+			{name: "encodes Silver as its text", give: gap.Silver},
+			{name: "encodes Bronze as its text", give: gap.Bronze},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -921,12 +942,12 @@ func TestRank(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Rank(4)
+			out := gap.Rank(4)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownRank,
+				gap.ErrUnknownRank,
 				"MarshalText refuses the value with ErrUnknownRank",
 			)
 			assert.Contains(
@@ -943,18 +964,18 @@ func TestRank(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Rank
+			give gap.Rank
 		}{
-			{name: "decodes Gold from its encoding", give: Gold},
-			{name: "decodes Silver from its encoding", give: Silver},
-			{name: "decodes Bronze from its encoding", give: Bronze},
+			{name: "decodes Gold from its encoding", give: gap.Gold},
+			{name: "decodes Silver from its encoding", give: gap.Silver},
+			{name: "decodes Bronze from its encoding", give: gap.Bronze},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Rank
+				var got gap.Rank
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -962,7 +983,7 @@ func TestRank(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Rank
+			var got gap.Rank
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("???????")),
@@ -978,18 +999,18 @@ func TestOdd(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Odd]bool{}
-		for _, v := range []Odd{
-			O1,
-			O3,
-			O5,
-			O7,
-			O9,
-			O11,
-			O13,
-			O15,
-			O17,
-			O19,
+		seen := map[gap.Odd]bool{}
+		for _, v := range []gap.Odd{
+			gap.O1,
+			gap.O3,
+			gap.O5,
+			gap.O7,
+			gap.O9,
+			gap.O11,
+			gap.O13,
+			gap.O15,
+			gap.O17,
+			gap.O19,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -1003,25 +1024,25 @@ func TestOdd(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Odd{
-					O1,
-					O3,
-					O5,
-					O7,
-					O9,
-					O11,
-					O13,
-					O15,
-					O17,
-					O19,
+				want := []gap.Odd{
+					gap.O1,
+					gap.O3,
+					gap.O5,
+					gap.O7,
+					gap.O9,
+					gap.O11,
+					gap.O13,
+					gap.O15,
+					gap.O17,
+					gap.O19,
 				}
-				assert.Equal(t, OddValues(), want, "OddValues returns the declared variants")
+				assert.Equal(t, gap.OddValues(), want, "OddValues returns the declared variants")
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := OddValues(), OddValues()
+			first, second := gap.OddValues(), gap.OddValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -1038,17 +1059,17 @@ func TestOdd(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Odd{
-				O1,
-				O3,
-				O5,
-				O7,
-				O9,
-				O11,
-				O13,
-				O15,
-				O17,
-				O19,
+			for _, v := range []gap.Odd{
+				gap.O1,
+				gap.O3,
+				gap.O5,
+				gap.O7,
+				gap.O9,
+				gap.O11,
+				gap.O13,
+				gap.O15,
+				gap.O17,
+				gap.O19,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -1059,18 +1080,18 @@ func TestOdd(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Odd(20)
-				for _, v := range []Odd{
-					O1,
-					O3,
-					O5,
-					O7,
-					O9,
-					O11,
-					O13,
-					O15,
-					O17,
-					O19,
+				out := gap.Odd(20)
+				for _, v := range []gap.Odd{
+					gap.O1,
+					gap.O3,
+					gap.O5,
+					gap.O7,
+					gap.O9,
+					gap.O11,
+					gap.O13,
+					gap.O15,
+					gap.O17,
+					gap.O19,
 				} {
 					assert.NotEqual(
 						t,
@@ -1088,18 +1109,18 @@ func TestOdd(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Odd
+			give gap.Odd
 		}{
-			{name: "accepts O1", give: O1},
-			{name: "accepts O3", give: O3},
-			{name: "accepts O5", give: O5},
-			{name: "accepts O7", give: O7},
-			{name: "accepts O9", give: O9},
-			{name: "accepts O11", give: O11},
-			{name: "accepts O13", give: O13},
-			{name: "accepts O15", give: O15},
-			{name: "accepts O17", give: O17},
-			{name: "accepts O19", give: O19},
+			{name: "accepts O1", give: gap.O1},
+			{name: "accepts O3", give: gap.O3},
+			{name: "accepts O5", give: gap.O5},
+			{name: "accepts O7", give: gap.O7},
+			{name: "accepts O9", give: gap.O9},
+			{name: "accepts O11", give: gap.O11},
+			{name: "accepts O13", give: gap.O13},
+			{name: "accepts O15", give: gap.O15},
+			{name: "accepts O17", give: gap.O17},
+			{name: "accepts O19", give: gap.O19},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -1110,12 +1131,12 @@ func TestOdd(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Odd(20).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, gap.Odd(20).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Odd
+			var zero gap.Odd
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -1125,23 +1146,23 @@ func TestOdd(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Odd
+			give gap.Odd
 		}{
-			{name: "returns O1 for its text", give: O1},
-			{name: "returns O3 for its text", give: O3},
-			{name: "returns O5 for its text", give: O5},
-			{name: "returns O7 for its text", give: O7},
-			{name: "returns O9 for its text", give: O9},
-			{name: "returns O11 for its text", give: O11},
-			{name: "returns O13 for its text", give: O13},
-			{name: "returns O15 for its text", give: O15},
-			{name: "returns O17 for its text", give: O17},
-			{name: "returns O19 for its text", give: O19},
+			{name: "returns O1 for its text", give: gap.O1},
+			{name: "returns O3 for its text", give: gap.O3},
+			{name: "returns O5 for its text", give: gap.O5},
+			{name: "returns O7 for its text", give: gap.O7},
+			{name: "returns O9 for its text", give: gap.O9},
+			{name: "returns O11 for its text", give: gap.O11},
+			{name: "returns O13 for its text", give: gap.O13},
+			{name: "returns O15 for its text", give: gap.O15},
+			{name: "returns O17 for its text", give: gap.O17},
+			{name: "returns O19 for its text", give: gap.O19},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseOdd(tt.give.String())
+				got, err := gap.ParseOdd(tt.give.String())
 				assert.NoError(t, err, "ParseOdd accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseOdd returns the variant of the text")
 			})
@@ -1149,8 +1170,13 @@ func TestOdd(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseOdd("????")
-			assert.ErrorIs(t, err, ErrUnknownOdd, "ParseOdd refuses the text with ErrUnknownOdd")
+			_, err := gap.ParseOdd("????")
+			assert.ErrorIs(
+				t,
+				err,
+				gap.ErrUnknownOdd,
+				"ParseOdd refuses the text with ErrUnknownOdd",
+			)
 			assert.Contains(t, err.Error(), "????", "the error contains the refused text")
 		})
 	})
@@ -1160,18 +1186,18 @@ func TestOdd(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Odd
+			give gap.Odd
 		}{
-			{name: "encodes O1 as its text", give: O1},
-			{name: "encodes O3 as its text", give: O3},
-			{name: "encodes O5 as its text", give: O5},
-			{name: "encodes O7 as its text", give: O7},
-			{name: "encodes O9 as its text", give: O9},
-			{name: "encodes O11 as its text", give: O11},
-			{name: "encodes O13 as its text", give: O13},
-			{name: "encodes O15 as its text", give: O15},
-			{name: "encodes O17 as its text", give: O17},
-			{name: "encodes O19 as its text", give: O19},
+			{name: "encodes O1 as its text", give: gap.O1},
+			{name: "encodes O3 as its text", give: gap.O3},
+			{name: "encodes O5 as its text", give: gap.O5},
+			{name: "encodes O7 as its text", give: gap.O7},
+			{name: "encodes O9 as its text", give: gap.O9},
+			{name: "encodes O11 as its text", give: gap.O11},
+			{name: "encodes O13 as its text", give: gap.O13},
+			{name: "encodes O15 as its text", give: gap.O15},
+			{name: "encodes O17 as its text", give: gap.O17},
+			{name: "encodes O19 as its text", give: gap.O19},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -1189,12 +1215,12 @@ func TestOdd(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Odd(20)
+			out := gap.Odd(20)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownOdd,
+				gap.ErrUnknownOdd,
 				"MarshalText refuses the value with ErrUnknownOdd",
 			)
 			assert.Contains(
@@ -1211,25 +1237,25 @@ func TestOdd(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Odd
+			give gap.Odd
 		}{
-			{name: "decodes O1 from its encoding", give: O1},
-			{name: "decodes O3 from its encoding", give: O3},
-			{name: "decodes O5 from its encoding", give: O5},
-			{name: "decodes O7 from its encoding", give: O7},
-			{name: "decodes O9 from its encoding", give: O9},
-			{name: "decodes O11 from its encoding", give: O11},
-			{name: "decodes O13 from its encoding", give: O13},
-			{name: "decodes O15 from its encoding", give: O15},
-			{name: "decodes O17 from its encoding", give: O17},
-			{name: "decodes O19 from its encoding", give: O19},
+			{name: "decodes O1 from its encoding", give: gap.O1},
+			{name: "decodes O3 from its encoding", give: gap.O3},
+			{name: "decodes O5 from its encoding", give: gap.O5},
+			{name: "decodes O7 from its encoding", give: gap.O7},
+			{name: "decodes O9 from its encoding", give: gap.O9},
+			{name: "decodes O11 from its encoding", give: gap.O11},
+			{name: "decodes O13 from its encoding", give: gap.O13},
+			{name: "decodes O15 from its encoding", give: gap.O15},
+			{name: "decodes O17 from its encoding", give: gap.O17},
+			{name: "decodes O19 from its encoding", give: gap.O19},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Odd
+				var got gap.Odd
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -1237,7 +1263,7 @@ func TestOdd(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Odd
+			var got gap.Odd
 			assert.HasError(t, got.UnmarshalText([]byte("????")), "UnmarshalText refuses the text")
 		})
 	})
@@ -1249,11 +1275,11 @@ func TestNum(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Num]bool{}
-		for _, v := range []Num{
-			Minus,
-			Zero,
-			Plus,
+		seen := map[gap.Num]bool{}
+		for _, v := range []gap.Num{
+			gap.Minus,
+			gap.Zero,
+			gap.Plus,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -1267,18 +1293,18 @@ func TestNum(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Num{
-					Minus,
-					Zero,
-					Plus,
+				want := []gap.Num{
+					gap.Minus,
+					gap.Zero,
+					gap.Plus,
 				}
-				assert.Equal(t, NumValues(), want, "NumValues returns the declared variants")
+				assert.Equal(t, gap.NumValues(), want, "NumValues returns the declared variants")
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := NumValues(), NumValues()
+			first, second := gap.NumValues(), gap.NumValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -1295,10 +1321,10 @@ func TestNum(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Num{
-				Minus,
-				Zero,
-				Plus,
+			for _, v := range []gap.Num{
+				gap.Minus,
+				gap.Zero,
+				gap.Plus,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -1309,11 +1335,11 @@ func TestNum(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Num(2)
-				for _, v := range []Num{
-					Minus,
-					Zero,
-					Plus,
+				out := gap.Num(2)
+				for _, v := range []gap.Num{
+					gap.Minus,
+					gap.Zero,
+					gap.Plus,
 				} {
 					assert.NotEqual(
 						t,
@@ -1331,11 +1357,11 @@ func TestNum(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Num
+			give gap.Num
 		}{
-			{name: "accepts Minus", give: Minus},
-			{name: "accepts Zero", give: Zero},
-			{name: "accepts Plus", give: Plus},
+			{name: "accepts Minus", give: gap.Minus},
+			{name: "accepts Zero", give: gap.Zero},
+			{name: "accepts Plus", give: gap.Plus},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -1346,13 +1372,13 @@ func TestNum(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Num(2).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, gap.Num(2).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("accepts the zero value Zero", func(t *testing.T) {
 			t.Parallel()
-			var zero Num
-			assert.Equal(t, zero, Zero, "the zero value is Zero")
+			var zero gap.Num
+			assert.Equal(t, zero, gap.Zero, "the zero value is Zero")
 			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
 		})
 	})
@@ -1362,16 +1388,16 @@ func TestNum(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Num
+			give gap.Num
 		}{
-			{name: "returns Minus for its text", give: Minus},
-			{name: "returns Zero for its text", give: Zero},
-			{name: "returns Plus for its text", give: Plus},
+			{name: "returns Minus for its text", give: gap.Minus},
+			{name: "returns Zero for its text", give: gap.Zero},
+			{name: "returns Plus for its text", give: gap.Plus},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseNum(tt.give.String())
+				got, err := gap.ParseNum(tt.give.String())
 				assert.NoError(t, err, "ParseNum accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseNum returns the variant of the text")
 			})
@@ -1379,8 +1405,13 @@ func TestNum(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseNum("??????")
-			assert.ErrorIs(t, err, ErrUnknownNum, "ParseNum refuses the text with ErrUnknownNum")
+			_, err := gap.ParseNum("??????")
+			assert.ErrorIs(
+				t,
+				err,
+				gap.ErrUnknownNum,
+				"ParseNum refuses the text with ErrUnknownNum",
+			)
 			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
 		})
 	})
@@ -1390,11 +1421,11 @@ func TestNum(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Num
+			give gap.Num
 		}{
-			{name: "encodes Minus as its text", give: Minus},
-			{name: "encodes Zero as its text", give: Zero},
-			{name: "encodes Plus as its text", give: Plus},
+			{name: "encodes Minus as its text", give: gap.Minus},
+			{name: "encodes Zero as its text", give: gap.Zero},
+			{name: "encodes Plus as its text", give: gap.Plus},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -1412,12 +1443,12 @@ func TestNum(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Num(2)
+			out := gap.Num(2)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownNum,
+				gap.ErrUnknownNum,
 				"MarshalText refuses the value with ErrUnknownNum",
 			)
 			assert.Contains(
@@ -1434,18 +1465,18 @@ func TestNum(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Num
+			give gap.Num
 		}{
-			{name: "decodes Minus from its encoding", give: Minus},
-			{name: "decodes Zero from its encoding", give: Zero},
-			{name: "decodes Plus from its encoding", give: Plus},
+			{name: "decodes Minus from its encoding", give: gap.Minus},
+			{name: "decodes Zero from its encoding", give: gap.Zero},
+			{name: "decodes Plus from its encoding", give: gap.Plus},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Num
+				var got gap.Num
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -1453,7 +1484,7 @@ func TestNum(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Num
+			var got gap.Num
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),

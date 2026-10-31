@@ -1,8 +1,9 @@
-package split
+package split_test
 
 import (
 	"testing"
 
+	"example.com/shop/split"
 	"go.dokimi.dev/assert"
 )
 
@@ -13,11 +14,11 @@ func TestSignal(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Signal]bool{}
-		for _, v := range []Signal{
-			Green,
-			Amber,
-			Red,
+		seen := map[split.Signal]bool{}
+		for _, v := range []split.Signal{
+			split.Green,
+			split.Amber,
+			split.Red,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -31,18 +32,23 @@ func TestSignal(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Signal{
-					Green,
-					Amber,
-					Red,
+				want := []split.Signal{
+					split.Green,
+					split.Amber,
+					split.Red,
 				}
-				assert.Equal(t, SignalValues(), want, "SignalValues returns the declared variants")
+				assert.Equal(
+					t,
+					split.SignalValues(),
+					want,
+					"SignalValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := SignalValues(), SignalValues()
+			first, second := split.SignalValues(), split.SignalValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -59,10 +65,10 @@ func TestSignal(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Signal{
-				Green,
-				Amber,
-				Red,
+			for _, v := range []split.Signal{
+				split.Green,
+				split.Amber,
+				split.Red,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -73,11 +79,11 @@ func TestSignal(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Signal(4)
-				for _, v := range []Signal{
-					Green,
-					Amber,
-					Red,
+				out := split.Signal(4)
+				for _, v := range []split.Signal{
+					split.Green,
+					split.Amber,
+					split.Red,
 				} {
 					assert.NotEqual(
 						t,
@@ -95,11 +101,11 @@ func TestSignal(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Signal
+			give split.Signal
 		}{
-			{name: "accepts Green", give: Green},
-			{name: "accepts Amber", give: Amber},
-			{name: "accepts Red", give: Red},
+			{name: "accepts Green", give: split.Green},
+			{name: "accepts Amber", give: split.Amber},
+			{name: "accepts Red", give: split.Red},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -110,12 +116,12 @@ func TestSignal(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Signal(4).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, split.Signal(4).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Signal
+			var zero split.Signal
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -125,16 +131,16 @@ func TestSignal(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Signal
+			give split.Signal
 		}{
-			{name: "returns Green for its text", give: Green},
-			{name: "returns Amber for its text", give: Amber},
-			{name: "returns Red for its text", give: Red},
+			{name: "returns Green for its text", give: split.Green},
+			{name: "returns Amber for its text", give: split.Amber},
+			{name: "returns Red for its text", give: split.Red},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseSignal(tt.give.String())
+				got, err := split.ParseSignal(tt.give.String())
 				assert.NoError(t, err, "ParseSignal accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseSignal returns the variant of the text")
 			})
@@ -142,11 +148,11 @@ func TestSignal(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseSignal("??????")
+			_, err := split.ParseSignal("??????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownSignal,
+				split.ErrUnknownSignal,
 				"ParseSignal refuses the text with ErrUnknownSignal",
 			)
 			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
@@ -158,11 +164,11 @@ func TestSignal(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Signal
+			give split.Signal
 		}{
-			{name: "encodes Green as its text", give: Green},
-			{name: "encodes Amber as its text", give: Amber},
-			{name: "encodes Red as its text", give: Red},
+			{name: "encodes Green as its text", give: split.Green},
+			{name: "encodes Amber as its text", give: split.Amber},
+			{name: "encodes Red as its text", give: split.Red},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -180,12 +186,12 @@ func TestSignal(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Signal(4)
+			out := split.Signal(4)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownSignal,
+				split.ErrUnknownSignal,
 				"MarshalText refuses the value with ErrUnknownSignal",
 			)
 			assert.Contains(
@@ -202,18 +208,18 @@ func TestSignal(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Signal
+			give split.Signal
 		}{
-			{name: "decodes Green from its encoding", give: Green},
-			{name: "decodes Amber from its encoding", give: Amber},
-			{name: "decodes Red from its encoding", give: Red},
+			{name: "decodes Green from its encoding", give: split.Green},
+			{name: "decodes Amber from its encoding", give: split.Amber},
+			{name: "decodes Red from its encoding", give: split.Red},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Signal
+				var got split.Signal
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -221,7 +227,7 @@ func TestSignal(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Signal
+			var got split.Signal
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),

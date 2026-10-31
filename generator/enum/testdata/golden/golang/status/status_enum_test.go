@@ -1,8 +1,9 @@
-package status
+package status_test
 
 import (
 	"testing"
 
+	"example.com/shop/status"
 	"go.dokimi.dev/assert"
 )
 
@@ -13,11 +14,11 @@ func TestStatus(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Status]bool{}
-		for _, v := range []Status{
-			Draft,
-			Published,
-			Archived,
+		seen := map[status.Status]bool{}
+		for _, v := range []status.Status{
+			status.Draft,
+			status.Published,
+			status.Archived,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -31,18 +32,23 @@ func TestStatus(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Status{
-					Draft,
-					Published,
-					Archived,
+				want := []status.Status{
+					status.Draft,
+					status.Published,
+					status.Archived,
 				}
-				assert.Equal(t, StatusValues(), want, "StatusValues returns the declared variants")
+				assert.Equal(
+					t,
+					status.StatusValues(),
+					want,
+					"StatusValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := StatusValues(), StatusValues()
+			first, second := status.StatusValues(), status.StatusValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -59,10 +65,10 @@ func TestStatus(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Status{
-				Draft,
-				Published,
-				Archived,
+			for _, v := range []status.Status{
+				status.Draft,
+				status.Published,
+				status.Archived,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -73,11 +79,11 @@ func TestStatus(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Status(4)
-				for _, v := range []Status{
-					Draft,
-					Published,
-					Archived,
+				out := status.Status(4)
+				for _, v := range []status.Status{
+					status.Draft,
+					status.Published,
+					status.Archived,
 				} {
 					assert.NotEqual(
 						t,
@@ -95,11 +101,11 @@ func TestStatus(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Status
+			give status.Status
 		}{
-			{name: "accepts Draft", give: Draft},
-			{name: "accepts Published", give: Published},
-			{name: "accepts Archived", give: Archived},
+			{name: "accepts Draft", give: status.Draft},
+			{name: "accepts Published", give: status.Published},
+			{name: "accepts Archived", give: status.Archived},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -110,12 +116,12 @@ func TestStatus(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Status(4).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, status.Status(4).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Status
+			var zero status.Status
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -125,16 +131,16 @@ func TestStatus(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Status
+			give status.Status
 		}{
-			{name: "returns Draft for its text", give: Draft},
-			{name: "returns Published for its text", give: Published},
-			{name: "returns Archived for its text", give: Archived},
+			{name: "returns Draft for its text", give: status.Draft},
+			{name: "returns Published for its text", give: status.Published},
+			{name: "returns Archived for its text", give: status.Archived},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseStatus(tt.give.String())
+				got, err := status.ParseStatus(tt.give.String())
 				assert.NoError(t, err, "ParseStatus accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseStatus returns the variant of the text")
 			})
@@ -142,11 +148,11 @@ func TestStatus(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseStatus("??????????")
+			_, err := status.ParseStatus("??????????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownStatus,
+				status.ErrUnknownStatus,
 				"ParseStatus refuses the text with ErrUnknownStatus",
 			)
 			assert.Contains(t, err.Error(), "??????????", "the error contains the refused text")
@@ -158,11 +164,11 @@ func TestStatus(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Status
+			give status.Status
 		}{
-			{name: "encodes Draft as its text", give: Draft},
-			{name: "encodes Published as its text", give: Published},
-			{name: "encodes Archived as its text", give: Archived},
+			{name: "encodes Draft as its text", give: status.Draft},
+			{name: "encodes Published as its text", give: status.Published},
+			{name: "encodes Archived as its text", give: status.Archived},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -180,12 +186,12 @@ func TestStatus(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Status(4)
+			out := status.Status(4)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownStatus,
+				status.ErrUnknownStatus,
 				"MarshalText refuses the value with ErrUnknownStatus",
 			)
 			assert.Contains(
@@ -202,18 +208,18 @@ func TestStatus(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Status
+			give status.Status
 		}{
-			{name: "decodes Draft from its encoding", give: Draft},
-			{name: "decodes Published from its encoding", give: Published},
-			{name: "decodes Archived from its encoding", give: Archived},
+			{name: "decodes Draft from its encoding", give: status.Draft},
+			{name: "decodes Published from its encoding", give: status.Published},
+			{name: "decodes Archived from its encoding", give: status.Archived},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Status
+				var got status.Status
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -221,7 +227,7 @@ func TestStatus(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Status
+			var got status.Status
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????????")),

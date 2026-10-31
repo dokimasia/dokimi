@@ -1,8 +1,9 @@
-package commented
+package commented_test
 
 import (
 	"testing"
 
+	"example.com/shop/commented"
 	"go.dokimi.dev/assert"
 )
 
@@ -12,11 +13,11 @@ func TestGrade(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Grade]bool{}
-		for _, v := range []Grade{
-			Poor,
-			Fair,
-			Good,
+		seen := map[commented.Grade]bool{}
+		for _, v := range []commented.Grade{
+			commented.Poor,
+			commented.Fair,
+			commented.Good,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -30,18 +31,23 @@ func TestGrade(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Grade{
-					Poor,
-					Fair,
-					Good,
+				want := []commented.Grade{
+					commented.Poor,
+					commented.Fair,
+					commented.Good,
 				}
-				assert.Equal(t, GradeValues(), want, "GradeValues returns the declared variants")
+				assert.Equal(
+					t,
+					commented.GradeValues(),
+					want,
+					"GradeValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := GradeValues(), GradeValues()
+			first, second := commented.GradeValues(), commented.GradeValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -57,11 +63,11 @@ func TestGrade(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Grade
+			give commented.Grade
 			want string
 		}{
-			{name: "returns the declared text of Poor", give: Poor, want: "poor"},
-			{name: "returns the declared text of Fair", give: Fair, want: "fair enough"},
+			{name: "returns the declared text of Poor", give: commented.Poor, want: "poor"},
+			{name: "returns the declared text of Fair", give: commented.Fair, want: "fair enough"},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -78,10 +84,10 @@ func TestGrade(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Grade{
-				Poor,
-				Fair,
-				Good,
+			for _, v := range []commented.Grade{
+				commented.Poor,
+				commented.Fair,
+				commented.Good,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -92,11 +98,11 @@ func TestGrade(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Grade(3)
-				for _, v := range []Grade{
-					Poor,
-					Fair,
-					Good,
+				out := commented.Grade(3)
+				for _, v := range []commented.Grade{
+					commented.Poor,
+					commented.Fair,
+					commented.Good,
 				} {
 					assert.NotEqual(
 						t,
@@ -114,11 +120,11 @@ func TestGrade(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Grade
+			give commented.Grade
 		}{
-			{name: "accepts Poor", give: Poor},
-			{name: "accepts Fair", give: Fair},
-			{name: "accepts Good", give: Good},
+			{name: "accepts Poor", give: commented.Poor},
+			{name: "accepts Fair", give: commented.Fair},
+			{name: "accepts Good", give: commented.Good},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -129,13 +135,13 @@ func TestGrade(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Grade(3).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, commented.Grade(3).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("accepts the zero value Poor", func(t *testing.T) {
 			t.Parallel()
-			var zero Grade
-			assert.Equal(t, zero, Poor, "the zero value is Poor")
+			var zero commented.Grade
+			assert.Equal(t, zero, commented.Poor, "the zero value is Poor")
 			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
 		})
 	})
@@ -145,16 +151,16 @@ func TestGrade(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Grade
+			give commented.Grade
 		}{
-			{name: "returns Poor for its text", give: Poor},
-			{name: "returns Fair for its text", give: Fair},
-			{name: "returns Good for its text", give: Good},
+			{name: "returns Poor for its text", give: commented.Poor},
+			{name: "returns Fair for its text", give: commented.Fair},
+			{name: "returns Good for its text", give: commented.Good},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseGrade(tt.give.String())
+				got, err := commented.ParseGrade(tt.give.String())
 				assert.NoError(t, err, "ParseGrade accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseGrade returns the variant of the text")
 			})
@@ -162,11 +168,11 @@ func TestGrade(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseGrade("????????????")
+			_, err := commented.ParseGrade("????????????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownGrade,
+				commented.ErrUnknownGrade,
 				"ParseGrade refuses the text with ErrUnknownGrade",
 			)
 			assert.Contains(t, err.Error(), "????????????", "the error contains the refused text")
@@ -178,11 +184,11 @@ func TestGrade(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Grade
+			give commented.Grade
 		}{
-			{name: "encodes Poor as its text", give: Poor},
-			{name: "encodes Fair as its text", give: Fair},
-			{name: "encodes Good as its text", give: Good},
+			{name: "encodes Poor as its text", give: commented.Poor},
+			{name: "encodes Fair as its text", give: commented.Fair},
+			{name: "encodes Good as its text", give: commented.Good},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -200,12 +206,12 @@ func TestGrade(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Grade(3)
+			out := commented.Grade(3)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownGrade,
+				commented.ErrUnknownGrade,
 				"MarshalText refuses the value with ErrUnknownGrade",
 			)
 			assert.Contains(
@@ -222,18 +228,18 @@ func TestGrade(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Grade
+			give commented.Grade
 		}{
-			{name: "decodes Poor from its encoding", give: Poor},
-			{name: "decodes Fair from its encoding", give: Fair},
-			{name: "decodes Good from its encoding", give: Good},
+			{name: "decodes Poor from its encoding", give: commented.Poor},
+			{name: "decodes Fair from its encoding", give: commented.Fair},
+			{name: "decodes Good from its encoding", give: commented.Good},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Grade
+				var got commented.Grade
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -241,7 +247,7 @@ func TestGrade(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Grade
+			var got commented.Grade
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("????????????")),
@@ -257,10 +263,10 @@ func TestMood(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Mood]bool{}
-		for _, v := range []Mood{
-			Calm,
-			Angry,
+		seen := map[commented.Mood]bool{}
+		for _, v := range []commented.Mood{
+			commented.Calm,
+			commented.Angry,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -274,17 +280,22 @@ func TestMood(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Mood{
-					Calm,
-					Angry,
+				want := []commented.Mood{
+					commented.Calm,
+					commented.Angry,
 				}
-				assert.Equal(t, MoodValues(), want, "MoodValues returns the declared variants")
+				assert.Equal(
+					t,
+					commented.MoodValues(),
+					want,
+					"MoodValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := MoodValues(), MoodValues()
+			first, second := commented.MoodValues(), commented.MoodValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -301,9 +312,9 @@ func TestMood(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Mood{
-				Calm,
-				Angry,
+			for _, v := range []commented.Mood{
+				commented.Calm,
+				commented.Angry,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -314,10 +325,10 @@ func TestMood(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Mood(2)
-				for _, v := range []Mood{
-					Calm,
-					Angry,
+				out := commented.Mood(2)
+				for _, v := range []commented.Mood{
+					commented.Calm,
+					commented.Angry,
 				} {
 					assert.NotEqual(
 						t,
@@ -335,10 +346,10 @@ func TestMood(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Mood
+			give commented.Mood
 		}{
-			{name: "accepts Calm", give: Calm},
-			{name: "accepts Angry", give: Angry},
+			{name: "accepts Calm", give: commented.Calm},
+			{name: "accepts Angry", give: commented.Angry},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -349,13 +360,13 @@ func TestMood(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Mood(2).IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, commented.Mood(2).IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("accepts the zero value Calm", func(t *testing.T) {
 			t.Parallel()
-			var zero Mood
-			assert.Equal(t, zero, Calm, "the zero value is Calm")
+			var zero commented.Mood
+			assert.Equal(t, zero, commented.Calm, "the zero value is Calm")
 			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
 		})
 	})
@@ -365,15 +376,15 @@ func TestMood(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Mood
+			give commented.Mood
 		}{
-			{name: "returns Calm for its text", give: Calm},
-			{name: "returns Angry for its text", give: Angry},
+			{name: "returns Calm for its text", give: commented.Calm},
+			{name: "returns Angry for its text", give: commented.Angry},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseMood(tt.give.String())
+				got, err := commented.ParseMood(tt.give.String())
 				assert.NoError(t, err, "ParseMood accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseMood returns the variant of the text")
 			})
@@ -381,8 +392,13 @@ func TestMood(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseMood("??????")
-			assert.ErrorIs(t, err, ErrUnknownMood, "ParseMood refuses the text with ErrUnknownMood")
+			_, err := commented.ParseMood("??????")
+			assert.ErrorIs(
+				t,
+				err,
+				commented.ErrUnknownMood,
+				"ParseMood refuses the text with ErrUnknownMood",
+			)
 			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
 		})
 	})
@@ -392,10 +408,10 @@ func TestMood(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Mood
+			give commented.Mood
 		}{
-			{name: "encodes Calm as its text", give: Calm},
-			{name: "encodes Angry as its text", give: Angry},
+			{name: "encodes Calm as its text", give: commented.Calm},
+			{name: "encodes Angry as its text", give: commented.Angry},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -413,12 +429,12 @@ func TestMood(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Mood(2)
+			out := commented.Mood(2)
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownMood,
+				commented.ErrUnknownMood,
 				"MarshalText refuses the value with ErrUnknownMood",
 			)
 			assert.Contains(
@@ -435,17 +451,17 @@ func TestMood(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Mood
+			give commented.Mood
 		}{
-			{name: "decodes Calm from its encoding", give: Calm},
-			{name: "decodes Angry from its encoding", give: Angry},
+			{name: "decodes Calm from its encoding", give: commented.Calm},
+			{name: "decodes Angry from its encoding", give: commented.Angry},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Mood
+				var got commented.Mood
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -453,7 +469,7 @@ func TestMood(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Mood
+			var got commented.Mood
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),

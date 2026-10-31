@@ -1,8 +1,9 @@
-package region
+package region_test
 
 import (
 	"testing"
 
+	"example.com/shop/region"
 	"go.dokimi.dev/assert"
 )
 
@@ -13,11 +14,11 @@ func TestRegion(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Region]bool{}
-		for _, v := range []Region{
-			US,
-			EU,
-			AP,
+		seen := map[region.Region]bool{}
+		for _, v := range []region.Region{
+			region.US,
+			region.EU,
+			region.AP,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -31,18 +32,23 @@ func TestRegion(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Region{
-					US,
-					EU,
-					AP,
+				want := []region.Region{
+					region.US,
+					region.EU,
+					region.AP,
 				}
-				assert.Equal(t, RegionValues(), want, "RegionValues returns the declared variants")
+				assert.Equal(
+					t,
+					region.RegionValues(),
+					want,
+					"RegionValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := RegionValues(), RegionValues()
+			first, second := region.RegionValues(), region.RegionValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -58,12 +64,12 @@ func TestRegion(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Region
+			give region.Region
 			want string
 		}{
-			{name: "returns the declared text of US", give: US, want: "us-east"},
-			{name: "returns the declared text of EU", give: EU, want: "eu-west"},
-			{name: "returns the declared text of AP", give: AP, want: "ap-south"},
+			{name: "returns the declared text of US", give: region.US, want: "us-east"},
+			{name: "returns the declared text of EU", give: region.EU, want: "eu-west"},
+			{name: "returns the declared text of AP", give: region.AP, want: "ap-south"},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -80,10 +86,10 @@ func TestRegion(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Region{
-				US,
-				EU,
-				AP,
+			for _, v := range []region.Region{
+				region.US,
+				region.EU,
+				region.AP,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -94,11 +100,11 @@ func TestRegion(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Region("")
-				for _, v := range []Region{
-					US,
-					EU,
-					AP,
+				out := region.Region("")
+				for _, v := range []region.Region{
+					region.US,
+					region.EU,
+					region.AP,
 				} {
 					assert.NotEqual(
 						t,
@@ -116,11 +122,11 @@ func TestRegion(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Region
+			give region.Region
 		}{
-			{name: "accepts US", give: US},
-			{name: "accepts EU", give: EU},
-			{name: "accepts AP", give: AP},
+			{name: "accepts US", give: region.US},
+			{name: "accepts EU", give: region.EU},
+			{name: "accepts AP", give: region.AP},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -131,12 +137,12 @@ func TestRegion(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Region("").IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, region.Region("").IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Region
+			var zero region.Region
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -146,16 +152,16 @@ func TestRegion(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Region
+			give region.Region
 		}{
-			{name: "returns US for its text", give: US},
-			{name: "returns EU for its text", give: EU},
-			{name: "returns AP for its text", give: AP},
+			{name: "returns US for its text", give: region.US},
+			{name: "returns EU for its text", give: region.EU},
+			{name: "returns AP for its text", give: region.AP},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseRegion(tt.give.String())
+				got, err := region.ParseRegion(tt.give.String())
 				assert.NoError(t, err, "ParseRegion accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseRegion returns the variant of the text")
 			})
@@ -163,11 +169,11 @@ func TestRegion(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseRegion("?????????")
+			_, err := region.ParseRegion("?????????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownRegion,
+				region.ErrUnknownRegion,
 				"ParseRegion refuses the text with ErrUnknownRegion",
 			)
 			assert.Contains(t, err.Error(), "?????????", "the error contains the refused text")
@@ -179,11 +185,11 @@ func TestRegion(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Region
+			give region.Region
 		}{
-			{name: "encodes US as its text", give: US},
-			{name: "encodes EU as its text", give: EU},
-			{name: "encodes AP as its text", give: AP},
+			{name: "encodes US as its text", give: region.US},
+			{name: "encodes EU as its text", give: region.EU},
+			{name: "encodes AP as its text", give: region.AP},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -201,12 +207,12 @@ func TestRegion(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Region("")
+			out := region.Region("")
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownRegion,
+				region.ErrUnknownRegion,
 				"MarshalText refuses the value with ErrUnknownRegion",
 			)
 			assert.Contains(
@@ -223,18 +229,18 @@ func TestRegion(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Region
+			give region.Region
 		}{
-			{name: "decodes US from its encoding", give: US},
-			{name: "decodes EU from its encoding", give: EU},
-			{name: "decodes AP from its encoding", give: AP},
+			{name: "decodes US from its encoding", give: region.US},
+			{name: "decodes EU from its encoding", give: region.EU},
+			{name: "decodes AP from its encoding", give: region.AP},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Region
+				var got region.Region
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -242,7 +248,7 @@ func TestRegion(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Region
+			var got region.Region
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("?????????")),
@@ -258,11 +264,11 @@ func TestZone(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Zone]bool{}
-		for _, v := range []Zone{
-			North,
-			South,
-			Unset,
+		seen := map[region.Zone]bool{}
+		for _, v := range []region.Zone{
+			region.North,
+			region.South,
+			region.Unset,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -276,18 +282,23 @@ func TestZone(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Zone{
-					North,
-					South,
-					Unset,
+				want := []region.Zone{
+					region.North,
+					region.South,
+					region.Unset,
 				}
-				assert.Equal(t, ZoneValues(), want, "ZoneValues returns the declared variants")
+				assert.Equal(
+					t,
+					region.ZoneValues(),
+					want,
+					"ZoneValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := ZoneValues(), ZoneValues()
+			first, second := region.ZoneValues(), region.ZoneValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -303,12 +314,12 @@ func TestZone(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Zone
+			give region.Zone
 			want string
 		}{
-			{name: "returns the declared text of North", give: North, want: "north"},
-			{name: "returns the declared text of South", give: South, want: "south"},
-			{name: "returns the declared text of Unset", give: Unset, want: ""},
+			{name: "returns the declared text of North", give: region.North, want: "north"},
+			{name: "returns the declared text of South", give: region.South, want: "south"},
+			{name: "returns the declared text of Unset", give: region.Unset, want: ""},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -325,10 +336,10 @@ func TestZone(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Zone{
-				North,
-				South,
-				Unset,
+			for _, v := range []region.Zone{
+				region.North,
+				region.South,
+				region.Unset,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -339,11 +350,11 @@ func TestZone(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Zone("??????")
-				for _, v := range []Zone{
-					North,
-					South,
-					Unset,
+				out := region.Zone("??????")
+				for _, v := range []region.Zone{
+					region.North,
+					region.South,
+					region.Unset,
 				} {
 					assert.NotEqual(
 						t,
@@ -361,11 +372,11 @@ func TestZone(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Zone
+			give region.Zone
 		}{
-			{name: "accepts North", give: North},
-			{name: "accepts South", give: South},
-			{name: "accepts Unset", give: Unset},
+			{name: "accepts North", give: region.North},
+			{name: "accepts South", give: region.South},
+			{name: "accepts Unset", give: region.Unset},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -376,13 +387,13 @@ func TestZone(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Zone("??????").IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, region.Zone("??????").IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("accepts the zero value Unset", func(t *testing.T) {
 			t.Parallel()
-			var zero Zone
-			assert.Equal(t, zero, Unset, "the zero value is Unset")
+			var zero region.Zone
+			assert.Equal(t, zero, region.Unset, "the zero value is Unset")
 			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
 		})
 	})
@@ -392,16 +403,16 @@ func TestZone(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Zone
+			give region.Zone
 		}{
-			{name: "returns North for its text", give: North},
-			{name: "returns South for its text", give: South},
-			{name: "returns Unset for its text", give: Unset},
+			{name: "returns North for its text", give: region.North},
+			{name: "returns South for its text", give: region.South},
+			{name: "returns Unset for its text", give: region.Unset},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseZone(tt.give.String())
+				got, err := region.ParseZone(tt.give.String())
 				assert.NoError(t, err, "ParseZone accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseZone returns the variant of the text")
 			})
@@ -409,8 +420,13 @@ func TestZone(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseZone("??????")
-			assert.ErrorIs(t, err, ErrUnknownZone, "ParseZone refuses the text with ErrUnknownZone")
+			_, err := region.ParseZone("??????")
+			assert.ErrorIs(
+				t,
+				err,
+				region.ErrUnknownZone,
+				"ParseZone refuses the text with ErrUnknownZone",
+			)
 			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
 		})
 	})
@@ -420,11 +436,11 @@ func TestZone(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Zone
+			give region.Zone
 		}{
-			{name: "encodes North as its text", give: North},
-			{name: "encodes South as its text", give: South},
-			{name: "encodes Unset as its text", give: Unset},
+			{name: "encodes North as its text", give: region.North},
+			{name: "encodes South as its text", give: region.South},
+			{name: "encodes Unset as its text", give: region.Unset},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -442,12 +458,12 @@ func TestZone(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Zone("??????")
+			out := region.Zone("??????")
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownZone,
+				region.ErrUnknownZone,
 				"MarshalText refuses the value with ErrUnknownZone",
 			)
 			assert.Contains(
@@ -464,18 +480,18 @@ func TestZone(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Zone
+			give region.Zone
 		}{
-			{name: "decodes North from its encoding", give: North},
-			{name: "decodes South from its encoding", give: South},
-			{name: "decodes Unset from its encoding", give: Unset},
+			{name: "decodes North from its encoding", give: region.North},
+			{name: "decodes South from its encoding", give: region.South},
+			{name: "decodes Unset from its encoding", give: region.Unset},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Zone
+				var got region.Zone
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -483,7 +499,7 @@ func TestZone(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Zone
+			var got region.Zone
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),
@@ -499,10 +515,10 @@ func TestLane(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Lane]bool{}
-		for _, v := range []Lane{
-			Left,
-			Right,
+		seen := map[region.Lane]bool{}
+		for _, v := range []region.Lane{
+			region.Left,
+			region.Right,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -516,17 +532,22 @@ func TestLane(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Lane{
-					Left,
-					Right,
+				want := []region.Lane{
+					region.Left,
+					region.Right,
 				}
-				assert.Equal(t, LaneValues(), want, "LaneValues returns the declared variants")
+				assert.Equal(
+					t,
+					region.LaneValues(),
+					want,
+					"LaneValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := LaneValues(), LaneValues()
+			first, second := region.LaneValues(), region.LaneValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -542,11 +563,11 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give region.Lane
 			want string
 		}{
-			{name: "returns the declared text of Left", give: Left, want: "left"},
-			{name: "returns the declared text of Right", give: Right, want: "right"},
+			{name: "returns the declared text of Left", give: region.Left, want: "left"},
+			{name: "returns the declared text of Right", give: region.Right, want: "right"},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -563,9 +584,9 @@ func TestLane(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Lane{
-				Left,
-				Right,
+			for _, v := range []region.Lane{
+				region.Left,
+				region.Right,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -576,10 +597,10 @@ func TestLane(t *testing.T) {
 			"renders a value outside the declared set with a text of its own",
 			func(t *testing.T) {
 				t.Parallel()
-				out := Lane("")
-				for _, v := range []Lane{
-					Left,
-					Right,
+				out := region.Lane("")
+				for _, v := range []region.Lane{
+					region.Left,
+					region.Right,
 				} {
 					assert.NotEqual(
 						t,
@@ -597,10 +618,10 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give region.Lane
 		}{
-			{name: "accepts Left", give: Left},
-			{name: "accepts Right", give: Right},
+			{name: "accepts Left", give: region.Left},
+			{name: "accepts Right", give: region.Right},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -611,12 +632,12 @@ func TestLane(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			assert.False(t, Lane("").IsValid(), "IsValid refuses an undeclared value")
+			assert.False(t, region.Lane("").IsValid(), "IsValid refuses an undeclared value")
 		})
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Lane
+			var zero region.Lane
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -626,15 +647,15 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give region.Lane
 		}{
-			{name: "returns Left for its text", give: Left},
-			{name: "returns Right for its text", give: Right},
+			{name: "returns Left for its text", give: region.Left},
+			{name: "returns Right for its text", give: region.Right},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseLane(tt.give.String())
+				got, err := region.ParseLane(tt.give.String())
 				assert.NoError(t, err, "ParseLane accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseLane returns the variant of the text")
 			})
@@ -642,8 +663,13 @@ func TestLane(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseLane("??????")
-			assert.ErrorIs(t, err, ErrUnknownLane, "ParseLane refuses the text with ErrUnknownLane")
+			_, err := region.ParseLane("??????")
+			assert.ErrorIs(
+				t,
+				err,
+				region.ErrUnknownLane,
+				"ParseLane refuses the text with ErrUnknownLane",
+			)
 			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
 		})
 	})
@@ -653,10 +679,10 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give region.Lane
 		}{
-			{name: "encodes Left as its text", give: Left},
-			{name: "encodes Right as its text", give: Right},
+			{name: "encodes Left as its text", give: region.Left},
+			{name: "encodes Right as its text", give: region.Right},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -674,12 +700,12 @@ func TestLane(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			out := Lane("")
+			out := region.Lane("")
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownLane,
+				region.ErrUnknownLane,
 				"MarshalText refuses the value with ErrUnknownLane",
 			)
 			assert.Contains(
@@ -696,17 +722,17 @@ func TestLane(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Lane
+			give region.Lane
 		}{
-			{name: "decodes Left from its encoding", give: Left},
-			{name: "decodes Right from its encoding", give: Right},
+			{name: "decodes Left from its encoding", give: region.Left},
+			{name: "decodes Right from its encoding", give: region.Right},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Lane
+				var got region.Lane
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -714,7 +740,7 @@ func TestLane(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Lane
+			var got region.Lane
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("??????")),

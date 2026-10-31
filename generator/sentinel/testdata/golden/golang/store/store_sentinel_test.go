@@ -1,4 +1,4 @@
-package store
+package store_test
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"example.com/shop/neighbour"
+	"example.com/shop/store"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 )
@@ -20,8 +21,8 @@ func TestErrNotFound(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrConflict", ErrConflict},
-		{"ErrClosed", ErrClosed},
+		{"ErrConflict", store.ErrConflict},
+		{"ErrClosed", store.ErrClosed},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -29,15 +30,15 @@ func TestErrNotFound(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrNotFound, "ErrNotFound is assigned")
-			assert.NotEqual(t, ErrNotFound.Error(), "", "ErrNotFound has a message")
+			assert.NotNil(t, store.ErrNotFound, "ErrNotFound is assigned")
+			assert.NotEqual(t, store.ErrNotFound.Error(), "", "ErrNotFound has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrNotFound.Error(),
+				store.ErrNotFound.Error(),
 				"kv: ",
 				"the message of ErrNotFound opens with the package prefix",
 			)
@@ -48,7 +49,7 @@ func TestErrNotFound(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrNotFound.Error(),
+					store.ErrNotFound.Error(),
 					other.err.Error(),
 					"ErrNotFound has the message of "+other.name,
 				)
@@ -58,7 +59,7 @@ func TestErrNotFound(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrNotFound.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(store.ErrNotFound.Error(), other.err.Error()),
 					"the message of ErrNotFound opens with the message of "+other.name)
 			}
 		})
@@ -72,7 +73,7 @@ func TestErrNotFound(t *testing.T) {
 			for _, other := range others {
 				expect.ErrorIsNot(
 					t,
-					ErrNotFound,
+					store.ErrNotFound,
 					other.err,
 					"ErrNotFound does not match "+other.name,
 				)
@@ -90,7 +91,7 @@ func TestErrNotFound(t *testing.T) {
 			} {
 				expect.ErrorIsNot(
 					t,
-					ErrNotFound,
+					store.ErrNotFound,
 					other.err,
 					"ErrNotFound does not match "+other.name+" of neighbour",
 				)
@@ -109,8 +110,8 @@ func TestErrConflict(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrNotFound", ErrNotFound},
-		{"ErrClosed", ErrClosed},
+		{"ErrNotFound", store.ErrNotFound},
+		{"ErrClosed", store.ErrClosed},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -118,15 +119,15 @@ func TestErrConflict(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrConflict, "ErrConflict is assigned")
-			assert.NotEqual(t, ErrConflict.Error(), "", "ErrConflict has a message")
+			assert.NotNil(t, store.ErrConflict, "ErrConflict is assigned")
+			assert.NotEqual(t, store.ErrConflict.Error(), "", "ErrConflict has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrConflict.Error(),
+				store.ErrConflict.Error(),
 				"kv: ",
 				"the message of ErrConflict opens with the package prefix",
 			)
@@ -137,7 +138,7 @@ func TestErrConflict(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrConflict.Error(),
+					store.ErrConflict.Error(),
 					other.err.Error(),
 					"ErrConflict has the message of "+other.name,
 				)
@@ -147,7 +148,7 @@ func TestErrConflict(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrConflict.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(store.ErrConflict.Error(), other.err.Error()),
 					"the message of ErrConflict opens with the message of "+other.name)
 			}
 		})
@@ -161,7 +162,7 @@ func TestErrConflict(t *testing.T) {
 			for _, other := range others {
 				expect.ErrorIsNot(
 					t,
-					ErrConflict,
+					store.ErrConflict,
 					other.err,
 					"ErrConflict does not match "+other.name,
 				)
@@ -179,7 +180,7 @@ func TestErrConflict(t *testing.T) {
 			} {
 				expect.ErrorIsNot(
 					t,
-					ErrConflict,
+					store.ErrConflict,
 					other.err,
 					"ErrConflict does not match "+other.name+" of neighbour",
 				)
@@ -198,8 +199,8 @@ func TestErrClosed(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrNotFound", ErrNotFound},
-		{"ErrConflict", ErrConflict},
+		{"ErrNotFound", store.ErrNotFound},
+		{"ErrConflict", store.ErrConflict},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -207,15 +208,15 @@ func TestErrClosed(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrClosed, "ErrClosed is assigned")
-			assert.NotEqual(t, ErrClosed.Error(), "", "ErrClosed has a message")
+			assert.NotNil(t, store.ErrClosed, "ErrClosed is assigned")
+			assert.NotEqual(t, store.ErrClosed.Error(), "", "ErrClosed has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				ErrClosed.Error(),
+				store.ErrClosed.Error(),
 				"kv: ",
 				"the message of ErrClosed opens with the package prefix",
 			)
@@ -226,7 +227,7 @@ func TestErrClosed(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrClosed.Error(),
+					store.ErrClosed.Error(),
 					other.err.Error(),
 					"ErrClosed has the message of "+other.name,
 				)
@@ -236,7 +237,7 @@ func TestErrClosed(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrClosed.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(store.ErrClosed.Error(), other.err.Error()),
 					"the message of ErrClosed opens with the message of "+other.name)
 			}
 		})
@@ -248,7 +249,12 @@ func TestErrClosed(t *testing.T) {
 		t.Run("matches no other sentinel of the package", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.ErrorIsNot(t, ErrClosed, other.err, "ErrClosed does not match "+other.name)
+				expect.ErrorIsNot(
+					t,
+					store.ErrClosed,
+					other.err,
+					"ErrClosed does not match "+other.name,
+				)
 			}
 		})
 
@@ -263,7 +269,7 @@ func TestErrClosed(t *testing.T) {
 			} {
 				expect.ErrorIsNot(
 					t,
-					ErrClosed,
+					store.ErrClosed,
 					other.err,
 					"ErrClosed does not match "+other.name+" of neighbour",
 				)
@@ -281,14 +287,14 @@ func TestNotFoundError(t *testing.T) {
 
 		t.Run("returns a message for the zero value", func(t *testing.T) {
 			t.Parallel()
-			assert.NotEqual(t, (&NotFoundError{}).Error(), "", "the zero value has a message")
+			assert.NotEqual(t, (&store.NotFoundError{}).Error(), "", "the zero value has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				(&NotFoundError{}).Error(),
+				(&store.NotFoundError{}).Error(),
 				"kv: ",
 				"the message opens with the package prefix",
 			)
@@ -296,7 +302,7 @@ func TestNotFoundError(t *testing.T) {
 
 		t.Run("contains each text member", func(t *testing.T) {
 			t.Parallel()
-			got := &NotFoundError{Key: "Key-a", Attempt: 42}
+			got := &store.NotFoundError{Key: "Key-a", Attempt: 42}
 			assert.Contains(t, got.Error(), got.Key, "the message contains Key")
 		})
 	})
@@ -306,11 +312,11 @@ func TestNotFoundError(t *testing.T) {
 
 		t.Run("agrees with errors.Is on each sentinel", func(t *testing.T) {
 			t.Parallel()
-			subject := &NotFoundError{}
+			subject := &store.NotFoundError{}
 			for _, e := range []error{
-				ErrNotFound,
-				ErrConflict,
-				ErrClosed,
+				store.ErrNotFound,
+				store.ErrConflict,
+				store.ErrClosed,
 			} {
 				assert.Equal(t, subject.Is(e), errors.Is(subject, e), "Is agrees with errors.Is")
 			}
@@ -322,9 +328,9 @@ func TestNotFoundError(t *testing.T) {
 
 		t.Run("matches no other error type of the package", func(t *testing.T) {
 			t.Parallel()
-			subject := &NotFoundError{}
+			subject := &store.NotFoundError{}
 			for _, other := range []error{
-				&WrappedError{},
+				&store.WrappedError{},
 			} {
 				assert.ErrorIsNot(
 					t,
@@ -346,14 +352,14 @@ func TestWrappedError(t *testing.T) {
 
 		t.Run("returns a message for the zero value", func(t *testing.T) {
 			t.Parallel()
-			assert.NotEqual(t, (&WrappedError{}).Error(), "", "the zero value has a message")
+			assert.NotEqual(t, (&store.WrappedError{}).Error(), "", "the zero value has a message")
 		})
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
 			assert.HasPrefix(
 				t,
-				(&WrappedError{}).Error(),
+				(&store.WrappedError{}).Error(),
 				"kv: ",
 				"the message opens with the package prefix",
 			)
@@ -361,7 +367,7 @@ func TestWrappedError(t *testing.T) {
 
 		t.Run("contains each text member", func(t *testing.T) {
 			t.Parallel()
-			got := &WrappedError{Op: "Op-a"}
+			got := &store.WrappedError{Op: "Op-a"}
 			assert.Contains(t, got.Error(), got.Op, "the message contains Op")
 		})
 	})
@@ -372,7 +378,7 @@ func TestWrappedError(t *testing.T) {
 		t.Run("returns the cause", func(t *testing.T) {
 			t.Parallel()
 			cause := errors.New("cause")
-			got := &WrappedError{}
+			got := &store.WrappedError{}
 			got.Cause = cause
 			assert.Equal(t, errors.Unwrap(got), cause, "errors.Unwrap returns the cause")
 		})
@@ -383,9 +389,9 @@ func TestWrappedError(t *testing.T) {
 
 		t.Run("matches no other error type of the package", func(t *testing.T) {
 			t.Parallel()
-			subject := &WrappedError{}
+			subject := &store.WrappedError{}
 			for _, other := range []error{
-				&NotFoundError{},
+				&store.NotFoundError{},
 			} {
 				assert.ErrorIsNot(
 					t,

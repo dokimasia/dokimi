@@ -1,8 +1,9 @@
-package remote
+package remote_test
 
 import (
 	"testing"
 
+	"example.com/shop/remote"
 	"go.dokimi.dev/assert"
 )
 
@@ -13,10 +14,10 @@ func TestSeason(t *testing.T) {
 
 	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
-		seen := map[Season]bool{}
-		for _, v := range []Season{
-			Spring,
-			Autumn,
+		seen := map[remote.Season]bool{}
+		for _, v := range []remote.Season{
+			remote.Spring,
+			remote.Autumn,
 		} {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
@@ -30,17 +31,22 @@ func TestSeason(t *testing.T) {
 			"returns the declared variants in the order of their declaration",
 			func(t *testing.T) {
 				t.Parallel()
-				want := []Season{
-					Spring,
-					Autumn,
+				want := []remote.Season{
+					remote.Spring,
+					remote.Autumn,
 				}
-				assert.Equal(t, SeasonValues(), want, "SeasonValues returns the declared variants")
+				assert.Equal(
+					t,
+					remote.SeasonValues(),
+					want,
+					"SeasonValues returns the declared variants",
+				)
 			},
 		)
 
 		t.Run("returns a new slice for each call", func(t *testing.T) {
 			t.Parallel()
-			first, second := SeasonValues(), SeasonValues()
+			first, second := remote.SeasonValues(), remote.SeasonValues()
 			assert.NotEqual(
 				t,
 				&first[0],
@@ -57,9 +63,9 @@ func TestSeason(t *testing.T) {
 		t.Run("returns a text of its own for each variant", func(t *testing.T) {
 			t.Parallel()
 			seen := map[string]bool{}
-			for _, v := range []Season{
-				Spring,
-				Autumn,
+			for _, v := range []remote.Season{
+				remote.Spring,
+				remote.Autumn,
 			} {
 				assert.False(t, seen[v.String()], "each variant has a text of its own")
 				seen[v.String()] = true
@@ -72,10 +78,10 @@ func TestSeason(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Season
+			give remote.Season
 		}{
-			{name: "accepts Spring", give: Spring},
-			{name: "accepts Autumn", give: Autumn},
+			{name: "accepts Spring", give: remote.Spring},
+			{name: "accepts Autumn", give: remote.Autumn},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -86,7 +92,7 @@ func TestSeason(t *testing.T) {
 
 		t.Run("refuses the zero value", func(t *testing.T) {
 			t.Parallel()
-			var zero Season
+			var zero remote.Season
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
 		})
 	})
@@ -96,15 +102,15 @@ func TestSeason(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Season
+			give remote.Season
 		}{
-			{name: "returns Spring for its text", give: Spring},
-			{name: "returns Autumn for its text", give: Autumn},
+			{name: "returns Spring for its text", give: remote.Spring},
+			{name: "returns Autumn for its text", give: remote.Autumn},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				got, err := ParseSeason(tt.give.String())
+				got, err := remote.ParseSeason(tt.give.String())
 				assert.NoError(t, err, "ParseSeason accepts the text of the variant")
 				assert.Equal(t, got, tt.give, "ParseSeason returns the variant of the text")
 			})
@@ -112,11 +118,11 @@ func TestSeason(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseSeason("???????")
+			_, err := remote.ParseSeason("???????")
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownSeason,
+				remote.ErrUnknownSeason,
 				"ParseSeason refuses the text with ErrUnknownSeason",
 			)
 			assert.Contains(t, err.Error(), "???????", "the error contains the refused text")
@@ -128,10 +134,10 @@ func TestSeason(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Season
+			give remote.Season
 		}{
-			{name: "encodes Spring as its text", give: Spring},
-			{name: "encodes Autumn as its text", give: Autumn},
+			{name: "encodes Spring as its text", give: remote.Spring},
+			{name: "encodes Autumn as its text", give: remote.Autumn},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -149,12 +155,12 @@ func TestSeason(t *testing.T) {
 
 		t.Run("refuses a value outside the declared set", func(t *testing.T) {
 			t.Parallel()
-			var out Season
+			var out remote.Season
 			_, err := out.MarshalText()
 			assert.ErrorIs(
 				t,
 				err,
-				ErrUnknownSeason,
+				remote.ErrUnknownSeason,
 				"MarshalText refuses the value with ErrUnknownSeason",
 			)
 			assert.Contains(
@@ -171,17 +177,17 @@ func TestSeason(t *testing.T) {
 
 		tests := []struct {
 			name string
-			give Season
+			give remote.Season
 		}{
-			{name: "decodes Spring from its encoding", give: Spring},
-			{name: "decodes Autumn from its encoding", give: Autumn},
+			{name: "decodes Spring from its encoding", give: remote.Spring},
+			{name: "decodes Autumn from its encoding", give: remote.Autumn},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				text, err := tt.give.MarshalText()
 				assert.NoError(t, err, "MarshalText encodes the variant")
-				var got Season
+				var got remote.Season
 				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
 				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
 			})
@@ -189,7 +195,7 @@ func TestSeason(t *testing.T) {
 
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
-			var got Season
+			var got remote.Season
 			assert.HasError(
 				t,
 				got.UnmarshalText([]byte("???????")),

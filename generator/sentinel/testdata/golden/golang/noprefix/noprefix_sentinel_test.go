@@ -1,9 +1,10 @@
-package noprefix
+package noprefix_test
 
 import (
 	"strings"
 	"testing"
 
+	"example.com/shop/noprefix"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 )
@@ -18,7 +19,7 @@ func TestErrRetry(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrGiveUp", ErrGiveUp},
+		{"ErrGiveUp", noprefix.ErrGiveUp},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -26,8 +27,8 @@ func TestErrRetry(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrRetry, "ErrRetry is assigned")
-			assert.NotEqual(t, ErrRetry.Error(), "", "ErrRetry has a message")
+			assert.NotNil(t, noprefix.ErrRetry, "ErrRetry is assigned")
+			assert.NotEqual(t, noprefix.ErrRetry.Error(), "", "ErrRetry has a message")
 		})
 
 		t.Run("returns a message of its own", func(t *testing.T) {
@@ -35,7 +36,7 @@ func TestErrRetry(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrRetry.Error(),
+					noprefix.ErrRetry.Error(),
 					other.err.Error(),
 					"ErrRetry has the message of "+other.name,
 				)
@@ -45,7 +46,7 @@ func TestErrRetry(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrRetry.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(noprefix.ErrRetry.Error(), other.err.Error()),
 					"the message of ErrRetry opens with the message of "+other.name)
 			}
 		})
@@ -57,7 +58,12 @@ func TestErrRetry(t *testing.T) {
 		t.Run("matches no other sentinel of the package", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.ErrorIsNot(t, ErrRetry, other.err, "ErrRetry does not match "+other.name)
+				expect.ErrorIsNot(
+					t,
+					noprefix.ErrRetry,
+					other.err,
+					"ErrRetry does not match "+other.name,
+				)
 			}
 		})
 	})
@@ -73,7 +79,7 @@ func TestErrGiveUp(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"ErrRetry", ErrRetry},
+		{"ErrRetry", noprefix.ErrRetry},
 	}
 
 	t.Run("Error", func(t *testing.T) {
@@ -81,8 +87,8 @@ func TestErrGiveUp(t *testing.T) {
 
 		t.Run("returns a message", func(t *testing.T) {
 			t.Parallel()
-			assert.NotNil(t, ErrGiveUp, "ErrGiveUp is assigned")
-			assert.NotEqual(t, ErrGiveUp.Error(), "", "ErrGiveUp has a message")
+			assert.NotNil(t, noprefix.ErrGiveUp, "ErrGiveUp is assigned")
+			assert.NotEqual(t, noprefix.ErrGiveUp.Error(), "", "ErrGiveUp has a message")
 		})
 
 		t.Run("returns a message of its own", func(t *testing.T) {
@@ -90,7 +96,7 @@ func TestErrGiveUp(t *testing.T) {
 			for _, other := range others {
 				expect.NotEqual(
 					t,
-					ErrGiveUp.Error(),
+					noprefix.ErrGiveUp.Error(),
 					other.err.Error(),
 					"ErrGiveUp has the message of "+other.name,
 				)
@@ -100,7 +106,7 @@ func TestErrGiveUp(t *testing.T) {
 		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.False(t, strings.HasPrefix(ErrGiveUp.Error(), other.err.Error()),
+				expect.False(t, strings.HasPrefix(noprefix.ErrGiveUp.Error(), other.err.Error()),
 					"the message of ErrGiveUp opens with the message of "+other.name)
 			}
 		})
@@ -112,7 +118,12 @@ func TestErrGiveUp(t *testing.T) {
 		t.Run("matches no other sentinel of the package", func(t *testing.T) {
 			t.Parallel()
 			for _, other := range others {
-				expect.ErrorIsNot(t, ErrGiveUp, other.err, "ErrGiveUp does not match "+other.name)
+				expect.ErrorIsNot(
+					t,
+					noprefix.ErrGiveUp,
+					other.err,
+					"ErrGiveUp does not match "+other.name,
+				)
 			}
 		})
 	})

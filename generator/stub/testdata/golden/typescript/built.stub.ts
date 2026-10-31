@@ -6,6 +6,7 @@ import { Group } from "@dokimi/runtime/stub/group";
 import { MethodStub } from "@dokimi/runtime/stub/method-stub";
 import type { Invoice } from "./billing";
 import type { Account, Note, Store } from "./built";
+import { AccountBuilder } from "./built.builder";
 
 /** StoreGetCall records one call of Store.get. */
 export interface StoreGetCall {

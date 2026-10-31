@@ -2,16 +2,17 @@
 {{- $t := .Decl}}
 {{- $c := .Data}}
 {{- $stub := $c.Double}}
-{{- $iface := $c.Subject}}
 {{- $tp := typeparams $t.TypeParams}}
 {{- $ta := typeargs $t.TypeParams}}
 {{- if and $c.Generic (not $c.Witnesses)}}
 
-{{docs (wrapdocs (printf `%s is generic, and its type parameters have no witnesses, so the file has no
-checks of it. A test in the package of a consumer instantiates it.` $stub))}}
+{{docs (wrapdocs (printf `%s is generic, and its type parameters have no witnesses that a test outside
+its package can refer to, so the file has no checks of it. A test in the package of a consumer
+instantiates it.` $stub))}}
 {{- else if $c.Methods}}
 {{- use "testing"}}{{use "time"}}{{use "math/rand/v2"}}{{use "go.dokimi.dev/assert"}}{{use "go.dokimi.dev/stub"}}
-{{- $new := spell (stubRef $t (printf "New%s" $stub))}}
+{{- $constructor := stubNew $stub}}
+{{- $new := spell (stubRef $t $constructor)}}
 {{- $double := spell (stubRef $t $stub)}}
 {{- $strict := spell (stubRef $t (printf "%sStrict" $stub))}}
 {{- $clock := spell (stubRef $t (printf "%sWithClock" $stub))}}
@@ -214,15 +215,15 @@ checks call %s alone.` $instance $first.Name))}}
 {{- end}}
 	})
 
-	t.Run("New{{$stub}}Delayed", func(t *testing.T) {
+	t.Run("{{$constructor}}Delayed", func(t *testing.T) {
 		t.Parallel()
 		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) {{$alias}}{{$ta}} {
-			return {{$instance}}{{$ta}}(tb, {{spell (stubRef $t (printf "New%sDelayed" $stub))}}{{$ta}}(tb, d, clk))
+			return {{$instance}}{{$ta}}(tb, {{spell (stubRef $t (printf "%sDelayed" $constructor))}}{{$ta}}(tb, d, clk))
 		})
 	})
 {{- if $c.Fallible}}{{use "errors"}}
 
-	t.Run("New{{$stub}}Failing", func(t *testing.T) {
+	t.Run("{{$constructor}}Failing", func(t *testing.T) {
 		t.Parallel()
 {{- range $i, $m := $c.Methods}}
 {{- if ge $m.Err 0}}
@@ -231,9 +232,9 @@ checks call %s alone.` $instance $first.Name))}}
 		t.Run("fails {{$m.Name}} with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("{{$m.Name}}-failing")
-			s := {{spell (stubRef $t (printf "New%sFailing" $stub))}}{{$ta}}(t, want)
+			s := {{spell (stubRef $t (printf "%sFailing" $constructor))}}{{$ta}}(t, want)
 			{{template "stub.fails" $m}} := {{$helper}}{{$ta}}(t, s)
-			assert.ErrorIs(t, {{(index $m.Returns $m.Err).Local}}, want, "{{$m.Name}} fails with the error of New{{$stub}}Failing")
+			assert.ErrorIs(t, {{(index $m.Returns $m.Err).Local}}, want, "{{$m.Name}} fails with the error of {{$constructor}}Failing")
 		})
 {{- end}}
 {{- end}}
@@ -255,7 +256,7 @@ checks call %s alone.` $instance $first.Name))}}
 			fn := func({{template "stub.testfuncparams" $m}}){{template "stub.testresults" $m}} {
 {{- template "stub.zeros" $m}}
 			}
-			s := {{$new}}{{$ta}}(r, {{$strict}}{{$ta}}(), {{spell (stubRef $t (printf "With%s%s" $iface $m.Name))}}{{$ta}}(fn))
+			s := {{$new}}{{$ta}}(r, {{$strict}}{{$ta}}(), {{spell (stubRef $t (stubWith $c.Subject $m.Name))}}{{$ta}}(fn))
 			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(t, s)
 			assert.True(t, r.Failed(), "a strict double refuses {{$m.Name}} before {{.}}")
 		})
@@ -340,18 +341,18 @@ checks call %s alone.` $instance $first.Name))}}
 {{- range $i, $m := $c.Methods}}
 {{- $helper := printf "%s%s" (stubCamel $stub) $m.Name}}
 
-	t.Run("With{{$iface}}{{$m.Name}}", func(t *testing.T) {
+	t.Run("{{stubWith $c.Subject $m.Name}}", func(t *testing.T) {
 		t.Parallel()
 
 		t.Run("sets the function of {{$m.Name}}", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := {{$new}}(t, {{spell (stubRef $t (printf "With%s%s" $iface $m.Name))}}{{$ta}}(func({{template "stub.testfuncparams" $m}}){{template "stub.testresults" $m}} {
+			s := {{$new}}(t, {{spell (stubRef $t (stubWith $c.Subject $m.Name))}}{{$ta}}(func({{template "stub.testfuncparams" $m}}){{template "stub.testresults" $m}} {
 				called = true
 {{- template "stub.zeros" $m}}
 			}))
 			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(t, s)
-			assert.True(t, called, "With{{$iface}}{{$m.Name}} sets the function of {{$m.Name}}")
+			assert.True(t, called, "{{stubWith $c.Subject $m.Name}} sets the function of {{$m.Name}}")
 		})
 	})
 {{- end}}

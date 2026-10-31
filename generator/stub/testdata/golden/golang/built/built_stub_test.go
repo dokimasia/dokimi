@@ -1,4 +1,4 @@
-package built
+package built_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"example.com/shop/billing"
+	"example.com/shop/built"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/stub"
@@ -23,7 +24,7 @@ func storeStubGetArgs(tb assert.TB) (context.Context, string) {
 }
 
 // storeStubGet calls Get of s with the samples of its arguments.
-func storeStubGet(tb assert.TB, s *StoreStub) (Account, error) {
+func storeStubGet(tb assert.TB, s *built.StoreStub) (built.Account, error) {
 	tb.Helper()
 	a0, a1 := storeStubGetArgs(tb)
 	return s.Get(a0, a1)
@@ -31,10 +32,10 @@ func storeStubGet(tb assert.TB, s *StoreStub) (Account, error) {
 
 // storeStubGetPins returns the samples of the results of Get, with a new
 // error as its error result.
-func storeStubGetPins() (Account, error) {
-	var want0 Account
+func storeStubGetPins() (built.Account, error) {
+	var want0 built.Account
 	want1 := errors.New("Get-returns")
-	want0 = Account{ID: "ID-a"}
+	want0 = built.Account{ID: "ID-a"}
 	return want0, want1
 }
 
@@ -48,7 +49,7 @@ func storeStubFindArgs(tb assert.TB) (context.Context, string) {
 }
 
 // storeStubFind calls Find of s with the samples of its arguments.
-func storeStubFind(tb assert.TB, s *StoreStub) (*Account, error) {
+func storeStubFind(tb assert.TB, s *built.StoreStub) (*built.Account, error) {
 	tb.Helper()
 	a0, a1 := storeStubFindArgs(tb)
 	return s.Find(a0, a1)
@@ -56,10 +57,10 @@ func storeStubFind(tb assert.TB, s *StoreStub) (*Account, error) {
 
 // storeStubFindPins returns the samples of the results of Find, with a new
 // error as its error result.
-func storeStubFindPins() (*Account, error) {
-	var want0 *Account
+func storeStubFindPins() (*built.Account, error) {
+	var want0 *built.Account
 	want1 := errors.New("Find-returns")
-	want0 = &Account{ID: "ID-a"}
+	want0 = &built.Account{ID: "ID-a"}
 	return want0, want1
 }
 
@@ -72,17 +73,17 @@ func storeStubLookupArgs(tb assert.TB) string {
 }
 
 // storeStubLookup calls Lookup of s with the samples of its arguments.
-func storeStubLookup(tb assert.TB, s *StoreStub) (Account, bool) {
+func storeStubLookup(tb assert.TB, s *built.StoreStub) (built.Account, bool) {
 	tb.Helper()
 	a0 := storeStubLookupArgs(tb)
 	return s.Lookup(a0)
 }
 
 // storeStubLookupPins returns the samples of the results of Lookup.
-func storeStubLookupPins() (Account, bool) {
-	var want0 Account
+func storeStubLookupPins() (built.Account, bool) {
+	var want0 built.Account
 	var want1 bool
-	want0 = Account{ID: "ID-a"}
+	want0 = built.Account{ID: "ID-a"}
 	want1 = true
 	return want0, want1
 }
@@ -95,7 +96,7 @@ func storeStubListArgs(tb assert.TB) context.Context {
 }
 
 // storeStubList calls List of s with the samples of its arguments.
-func storeStubList(tb assert.TB, s *StoreStub) (Page[Account], error) {
+func storeStubList(tb assert.TB, s *built.StoreStub) (built.Page[built.Account], error) {
 	tb.Helper()
 	a0 := storeStubListArgs(tb)
 	return s.List(a0)
@@ -103,10 +104,10 @@ func storeStubList(tb assert.TB, s *StoreStub) (Page[Account], error) {
 
 // storeStubListPins returns the samples of the results of List, with a new
 // error as its error result.
-func storeStubListPins() (Page[Account], error) {
-	var want0 Page[Account]
+func storeStubListPins() (built.Page[built.Account], error) {
+	var want0 built.Page[built.Account]
 	want1 := errors.New("List-returns")
-	want0 = Page[Account]{Items: []Account{{ID: "ID-a"}}}
+	want0 = built.Page[built.Account]{Items: []built.Account{{ID: "ID-a"}}}
 	return want0, want1
 }
 
@@ -119,16 +120,16 @@ func storeStubNoteArgs(tb assert.TB) string {
 }
 
 // storeStubNote calls Note of s with the samples of its arguments.
-func storeStubNote(tb assert.TB, s *StoreStub) Note {
+func storeStubNote(tb assert.TB, s *built.StoreStub) built.Note {
 	tb.Helper()
 	a0 := storeStubNoteArgs(tb)
 	return s.Note(a0)
 }
 
 // storeStubNotePins returns the samples of the results of Note.
-func storeStubNotePins() Note {
-	var want0 Note
-	want0 = Note{Text: "Text-a"}
+func storeStubNotePins() built.Note {
+	var want0 built.Note
+	want0 = built.Note{Text: "Text-a"}
 	return want0
 }
 
@@ -141,7 +142,7 @@ func storeStubBillArgs(tb assert.TB) string {
 }
 
 // storeStubBill calls Bill of s with the samples of its arguments.
-func storeStubBill(tb assert.TB, s *StoreStub) billing.Invoice {
+func storeStubBill(tb assert.TB, s *built.StoreStub) billing.Invoice {
 	tb.Helper()
 	a0 := storeStubBillArgs(tb)
 	return s.Bill(a0)
@@ -156,26 +157,26 @@ func storeStubBillPins() billing.Invoice {
 
 // storeStubGetSubject returns the subject of [stub.Behaviour] for Get. The
 // subject calls a new double that reports to tb.
-func storeStubGetSubject(tb assert.TB) stub.Subject[StoreGetCall, StoreGetReturn] {
+func storeStubGetSubject(tb assert.TB) stub.Subject[built.StoreGetCall, built.StoreGetReturn] {
 	tb.Helper()
-	s := NewStoreStub(tb)
-	return stub.Subject[StoreGetCall, StoreGetReturn]{
+	s := built.NewStoreStub(tb)
+	return stub.Subject[built.StoreGetCall, built.StoreGetReturn]{
 		Stub: s.OnGet.MethodStub,
 		Call: func() {
 			_, _ = storeStubGet(tb, s)
 		},
-		Result: func() StoreGetReturn {
+		Result: func() built.StoreGetReturn {
 			got0, got1 := storeStubGet(tb, s)
-			return StoreGetReturn{Result: got0, Err: got1}
+			return built.StoreGetReturn{Result: got0, Err: got1}
 		},
-		Default: func() StoreGetReturn {
-			r0 := NewAccountBuilder().Build()
-			return StoreGetReturn{Result: r0}
+		Default: func() built.StoreGetReturn {
+			r0 := built.NewAccountBuilder().Build()
+			return built.StoreGetReturn{Result: r0}
 		},
 		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (Account, error) {
+			s.OnGet.Func(func(_ context.Context, _ string) (built.Account, error) {
 				mark()
-				var z0 Account
+				var z0 built.Account
 				var z1 error
 				return z0, z1
 			})
@@ -189,26 +190,26 @@ func storeStubGetSubject(tb assert.TB) stub.Subject[StoreGetCall, StoreGetReturn
 
 // storeStubFindSubject returns the subject of [stub.Behaviour] for Find.
 // The subject calls a new double that reports to tb.
-func storeStubFindSubject(tb assert.TB) stub.Subject[StoreFindCall, StoreFindReturn] {
+func storeStubFindSubject(tb assert.TB) stub.Subject[built.StoreFindCall, built.StoreFindReturn] {
 	tb.Helper()
-	s := NewStoreStub(tb)
-	return stub.Subject[StoreFindCall, StoreFindReturn]{
+	s := built.NewStoreStub(tb)
+	return stub.Subject[built.StoreFindCall, built.StoreFindReturn]{
 		Stub: s.OnFind.MethodStub,
 		Call: func() {
 			_, _ = storeStubFind(tb, s)
 		},
-		Result: func() StoreFindReturn {
+		Result: func() built.StoreFindReturn {
 			got0, got1 := storeStubFind(tb, s)
-			return StoreFindReturn{Result: got0, Err: got1}
+			return built.StoreFindReturn{Result: got0, Err: got1}
 		},
-		Default: func() StoreFindReturn {
-			r0 := NewAccountBuilder().Build()
-			return StoreFindReturn{Result: &r0}
+		Default: func() built.StoreFindReturn {
+			r0 := built.NewAccountBuilder().Build()
+			return built.StoreFindReturn{Result: &r0}
 		},
 		Override: func(mark func()) {
-			s.OnFind.Func(func(_ context.Context, _ string) (*Account, error) {
+			s.OnFind.Func(func(_ context.Context, _ string) (*built.Account, error) {
 				mark()
-				var z0 *Account
+				var z0 *built.Account
 				var z1 error
 				return z0, z1
 			})
@@ -222,26 +223,28 @@ func storeStubFindSubject(tb assert.TB) stub.Subject[StoreFindCall, StoreFindRet
 
 // storeStubLookupSubject returns the subject of [stub.Behaviour] for
 // Lookup. The subject calls a new double that reports to tb.
-func storeStubLookupSubject(tb assert.TB) stub.Subject[StoreLookupCall, StoreLookupReturn] {
+func storeStubLookupSubject(
+	tb assert.TB,
+) stub.Subject[built.StoreLookupCall, built.StoreLookupReturn] {
 	tb.Helper()
-	s := NewStoreStub(tb)
-	return stub.Subject[StoreLookupCall, StoreLookupReturn]{
+	s := built.NewStoreStub(tb)
+	return stub.Subject[built.StoreLookupCall, built.StoreLookupReturn]{
 		Stub: s.OnLookup.MethodStub,
 		Call: func() {
 			_, _ = storeStubLookup(tb, s)
 		},
-		Result: func() StoreLookupReturn {
+		Result: func() built.StoreLookupReturn {
 			got0, got1 := storeStubLookup(tb, s)
-			return StoreLookupReturn{Result0: got0, Result1: got1}
+			return built.StoreLookupReturn{Result0: got0, Result1: got1}
 		},
-		Default: func() StoreLookupReturn {
-			r0 := NewAccountBuilder().Build()
-			return StoreLookupReturn{Result0: r0}
+		Default: func() built.StoreLookupReturn {
+			r0 := built.NewAccountBuilder().Build()
+			return built.StoreLookupReturn{Result0: r0}
 		},
 		Override: func(mark func()) {
-			s.OnLookup.Func(func(_ string) (Account, bool) {
+			s.OnLookup.Func(func(_ string) (built.Account, bool) {
 				mark()
-				var z0 Account
+				var z0 built.Account
 				var z1 bool
 				return z0, z1
 			})
@@ -251,26 +254,26 @@ func storeStubLookupSubject(tb assert.TB) stub.Subject[StoreLookupCall, StoreLoo
 
 // storeStubListSubject returns the subject of [stub.Behaviour] for List.
 // The subject calls a new double that reports to tb.
-func storeStubListSubject(tb assert.TB) stub.Subject[StoreListCall, StoreListReturn] {
+func storeStubListSubject(tb assert.TB) stub.Subject[built.StoreListCall, built.StoreListReturn] {
 	tb.Helper()
-	s := NewStoreStub(tb)
-	return stub.Subject[StoreListCall, StoreListReturn]{
+	s := built.NewStoreStub(tb)
+	return stub.Subject[built.StoreListCall, built.StoreListReturn]{
 		Stub: s.OnList.MethodStub,
 		Call: func() {
 			_, _ = storeStubList(tb, s)
 		},
-		Result: func() StoreListReturn {
+		Result: func() built.StoreListReturn {
 			got0, got1 := storeStubList(tb, s)
-			return StoreListReturn{Result: got0, Err: got1}
+			return built.StoreListReturn{Result: got0, Err: got1}
 		},
-		Default: func() StoreListReturn {
-			r0 := NewPageBuilder[Account]().Build()
-			return StoreListReturn{Result: r0}
+		Default: func() built.StoreListReturn {
+			r0 := built.NewPageBuilder[built.Account]().Build()
+			return built.StoreListReturn{Result: r0}
 		},
 		Override: func(mark func()) {
-			s.OnList.Func(func(_ context.Context) (Page[Account], error) {
+			s.OnList.Func(func(_ context.Context) (built.Page[built.Account], error) {
 				mark()
-				var z0 Page[Account]
+				var z0 built.Page[built.Account]
 				var z1 error
 				return z0, z1
 			})
@@ -284,22 +287,22 @@ func storeStubListSubject(tb assert.TB) stub.Subject[StoreListCall, StoreListRet
 
 // storeStubNoteSubject returns the subject of [stub.Behaviour] for Note.
 // The subject calls a new double that reports to tb.
-func storeStubNoteSubject(tb assert.TB) stub.Subject[StoreNoteCall, StoreNoteReturn] {
+func storeStubNoteSubject(tb assert.TB) stub.Subject[built.StoreNoteCall, built.StoreNoteReturn] {
 	tb.Helper()
-	s := NewStoreStub(tb)
-	return stub.Subject[StoreNoteCall, StoreNoteReturn]{
+	s := built.NewStoreStub(tb)
+	return stub.Subject[built.StoreNoteCall, built.StoreNoteReturn]{
 		Stub: s.OnNote.MethodStub,
 		Call: func() {
 			_ = storeStubNote(tb, s)
 		},
-		Result: func() StoreNoteReturn {
+		Result: func() built.StoreNoteReturn {
 			got0 := storeStubNote(tb, s)
-			return StoreNoteReturn{Result: got0}
+			return built.StoreNoteReturn{Result: got0}
 		},
 		Override: func(mark func()) {
-			s.OnNote.Func(func(_ string) Note {
+			s.OnNote.Func(func(_ string) built.Note {
 				mark()
-				var z0 Note
+				var z0 built.Note
 				return z0
 			})
 		},
@@ -308,17 +311,17 @@ func storeStubNoteSubject(tb assert.TB) stub.Subject[StoreNoteCall, StoreNoteRet
 
 // storeStubBillSubject returns the subject of [stub.Behaviour] for Bill.
 // The subject calls a new double that reports to tb.
-func storeStubBillSubject(tb assert.TB) stub.Subject[StoreBillCall, StoreBillReturn] {
+func storeStubBillSubject(tb assert.TB) stub.Subject[built.StoreBillCall, built.StoreBillReturn] {
 	tb.Helper()
-	s := NewStoreStub(tb)
-	return stub.Subject[StoreBillCall, StoreBillReturn]{
+	s := built.NewStoreStub(tb)
+	return stub.Subject[built.StoreBillCall, built.StoreBillReturn]{
 		Stub: s.OnBill.MethodStub,
 		Call: func() {
 			_ = storeStubBill(tb, s)
 		},
-		Result: func() StoreBillReturn {
+		Result: func() built.StoreBillReturn {
 			got0 := storeStubBill(tb, s)
-			return StoreBillReturn{Result: got0}
+			return built.StoreBillReturn{Result: got0}
 		},
 		Override: func(mark func()) {
 			s.OnBill.Func(func(_ string) billing.Invoice {
@@ -330,13 +333,13 @@ func storeStubBillSubject(tb assert.TB) stub.Subject[StoreBillCall, StoreBillRet
 	}
 }
 
-// storeStubInstance is the instance of a StoreStub that the checks of the
-// constructors and the options drive.
-type storeStubInstance = stub.Instance[StoreGetCall]
+// storeStubInstance is the instance of a built.StoreStub that the checks
+// of the constructors and the options drive.
+type storeStubInstance = stub.Instance[built.StoreGetCall]
 
 // storeStubInstanceOf returns the instance of s. The options apply to the
 // whole double, so the checks call Get alone.
-func storeStubInstanceOf(tb assert.TB, s *StoreStub) storeStubInstance {
+func storeStubInstanceOf(tb assert.TB, s *built.StoreStub) storeStubInstance {
 	tb.Helper()
 	return storeStubInstance{
 		Stub: s.OnGet.MethodStub,
@@ -358,7 +361,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_, _ = storeStubGet(t, s)
 			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
 			a0, a1 := storeStubGetArgs(t)
@@ -368,9 +371,9 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
-			var seen []StoreGetCall
-			s.OnGet.OnRecord(func(c StoreGetCall) { seen = append(seen, c) })
+			s := built.NewStoreStub(t)
+			var seen []built.StoreGetCall
+			s.OnGet.OnRecord(func(c built.StoreGetCall) { seen = append(seen, c) })
 			_, _ = storeStubGet(t, s)
 			_, _ = storeStubGet(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
@@ -383,7 +386,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_, _ = storeStubFind(t, s)
 			got := s.OnFind.AssertCalledOnce(t, "Find records the call")
 			a0, a1 := storeStubFindArgs(t)
@@ -393,9 +396,9 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
-			var seen []StoreFindCall
-			s.OnFind.OnRecord(func(c StoreFindCall) { seen = append(seen, c) })
+			s := built.NewStoreStub(t)
+			var seen []built.StoreFindCall
+			s.OnFind.OnRecord(func(c built.StoreFindCall) { seen = append(seen, c) })
 			_, _ = storeStubFind(t, s)
 			_, _ = storeStubFind(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Find")
@@ -408,7 +411,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_, _ = storeStubLookup(t, s)
 			got := s.OnLookup.AssertCalledOnce(t, "Lookup records the call")
 			a0 := storeStubLookupArgs(t)
@@ -417,9 +420,9 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
-			var seen []StoreLookupCall
-			s.OnLookup.OnRecord(func(c StoreLookupCall) { seen = append(seen, c) })
+			s := built.NewStoreStub(t)
+			var seen []built.StoreLookupCall
+			s.OnLookup.OnRecord(func(c built.StoreLookupCall) { seen = append(seen, c) })
 			_, _ = storeStubLookup(t, s)
 			_, _ = storeStubLookup(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Lookup")
@@ -432,7 +435,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_, _ = storeStubList(t, s)
 			got := s.OnList.AssertCalledOnce(t, "List records the call")
 			a0 := storeStubListArgs(t)
@@ -441,9 +444,9 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
-			var seen []StoreListCall
-			s.OnList.OnRecord(func(c StoreListCall) { seen = append(seen, c) })
+			s := built.NewStoreStub(t)
+			var seen []built.StoreListCall
+			s.OnList.OnRecord(func(c built.StoreListCall) { seen = append(seen, c) })
 			_, _ = storeStubList(t, s)
 			_, _ = storeStubList(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of List")
@@ -456,7 +459,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_ = storeStubNote(t, s)
 			got := s.OnNote.AssertCalledOnce(t, "Note records the call")
 			a0 := storeStubNoteArgs(t)
@@ -465,9 +468,9 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
-			var seen []StoreNoteCall
-			s.OnNote.OnRecord(func(c StoreNoteCall) { seen = append(seen, c) })
+			s := built.NewStoreStub(t)
+			var seen []built.StoreNoteCall
+			s.OnNote.OnRecord(func(c built.StoreNoteCall) { seen = append(seen, c) })
 			_ = storeStubNote(t, s)
 			_ = storeStubNote(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Note")
@@ -480,7 +483,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_ = storeStubBill(t, s)
 			got := s.OnBill.AssertCalledOnce(t, "Bill records the call")
 			a0 := storeStubBillArgs(t)
@@ -489,9 +492,9 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
-			var seen []StoreBillCall
-			s.OnBill.OnRecord(func(c StoreBillCall) { seen = append(seen, c) })
+			s := built.NewStoreStub(t)
+			var seen []built.StoreBillCall
+			s.OnBill.OnRecord(func(c built.StoreBillCall) { seen = append(seen, c) })
 			_ = storeStubBill(t, s)
 			_ = storeStubBill(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Bill")
@@ -501,12 +504,12 @@ func TestStoreStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) storeStubInstance {
-			return storeStubInstanceOf(tb, NewStoreStub(tb))
+			return storeStubInstanceOf(tb, built.NewStoreStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Get", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_, _ = storeStubGet(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
@@ -514,7 +517,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0, want1 := storeStubGetPins()
 			s.OnGet.Returns(want0, want1)
 			s.ResetCalls()
@@ -525,7 +528,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Find", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_, _ = storeStubFind(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnFind.CallCount(), 0, "ResetCalls clears the calls of Find")
@@ -533,7 +536,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Find", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0, want1 := storeStubFindPins()
 			s.OnFind.Returns(want0, want1)
 			s.ResetCalls()
@@ -544,7 +547,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Lookup", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_, _ = storeStubLookup(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnLookup.CallCount(), 0, "ResetCalls clears the calls of Lookup")
@@ -552,7 +555,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Lookup", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0, want1 := storeStubLookupPins()
 			s.OnLookup.Returns(want0, want1)
 			s.ResetCalls()
@@ -563,7 +566,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of List", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_, _ = storeStubList(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnList.CallCount(), 0, "ResetCalls clears the calls of List")
@@ -571,7 +574,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of List", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0, want1 := storeStubListPins()
 			s.OnList.Returns(want0, want1)
 			s.ResetCalls()
@@ -582,7 +585,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Note", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_ = storeStubNote(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnNote.CallCount(), 0, "ResetCalls clears the calls of Note")
@@ -590,7 +593,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Note", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0 := storeStubNotePins()
 			s.OnNote.Returns(want0)
 			s.ResetCalls()
@@ -600,7 +603,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Bill", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			_ = storeStubBill(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnBill.CallCount(), 0, "ResetCalls clears the calls of Bill")
@@ -608,7 +611,7 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Bill", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0 := storeStubBillPins()
 			s.OnBill.Returns(want0)
 			s.ResetCalls()
@@ -622,7 +625,7 @@ func TestStoreStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
-				return storeStubInstanceOf(tb, NewStoreStubDelayed(tb, d, clk))
+				return storeStubInstanceOf(tb, built.NewStoreStubDelayed(tb, d, clk))
 			},
 		)
 	})
@@ -633,7 +636,7 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails Get with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Get-failing")
-			s := NewStoreStubFailing(t, want)
+			s := built.NewStoreStubFailing(t, want)
 			_, r1 := storeStubGet(t, s)
 			assert.ErrorIs(t, r1, want, "Get fails with the error of NewStoreStubFailing")
 		})
@@ -641,7 +644,7 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails Find with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Find-failing")
-			s := NewStoreStubFailing(t, want)
+			s := built.NewStoreStubFailing(t, want)
 			_, r1 := storeStubFind(t, s)
 			assert.ErrorIs(t, r1, want, "Find fails with the error of NewStoreStubFailing")
 		})
@@ -649,7 +652,7 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails List with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("List-failing")
-			s := NewStoreStubFailing(t, want)
+			s := built.NewStoreStubFailing(t, want)
 			_, r1 := storeStubList(t, s)
 			assert.ErrorIs(t, r1, want, "List fails with the error of NewStoreStubFailing")
 		})
@@ -658,7 +661,7 @@ func TestStoreStub(t *testing.T) {
 	t.Run("StoreStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) storeStubInstance {
-			return storeStubInstanceOf(tb, NewStoreStub(tb, StoreStubStrict()))
+			return storeStubInstanceOf(tb, built.NewStoreStub(tb, built.StoreStubStrict()))
 		})
 	})
 
@@ -667,8 +670,8 @@ func TestStoreStub(t *testing.T) {
 
 		t.Run("passes Get to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewStoreStub(t)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			inner := built.NewStoreStub(t)
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_, _ = storeStubGet(t, s)
 			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
 		})
@@ -676,17 +679,17 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails Get with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Get-delegate")
-			inner := NewStoreStub(t)
+			inner := built.NewStoreStub(t)
 			inner.OnGet.Faults(want, 1)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_, r1 := storeStubGet(t, s)
 			assert.ErrorIs(t, r1, want, "Get fails with the error of the implementation")
 		})
 
 		t.Run("passes Find to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewStoreStub(t)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			inner := built.NewStoreStub(t)
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_, _ = storeStubFind(t, s)
 			inner.OnFind.AssertCalledOnce(t, "Find calls the implementation")
 		})
@@ -694,25 +697,25 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails Find with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Find-delegate")
-			inner := NewStoreStub(t)
+			inner := built.NewStoreStub(t)
 			inner.OnFind.Faults(want, 1)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_, r1 := storeStubFind(t, s)
 			assert.ErrorIs(t, r1, want, "Find fails with the error of the implementation")
 		})
 
 		t.Run("passes Lookup to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewStoreStub(t)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			inner := built.NewStoreStub(t)
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_, _ = storeStubLookup(t, s)
 			inner.OnLookup.AssertCalledOnce(t, "Lookup calls the implementation")
 		})
 
 		t.Run("passes List to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewStoreStub(t)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			inner := built.NewStoreStub(t)
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_, _ = storeStubList(t, s)
 			inner.OnList.AssertCalledOnce(t, "List calls the implementation")
 		})
@@ -720,25 +723,25 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails List with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("List-delegate")
-			inner := NewStoreStub(t)
+			inner := built.NewStoreStub(t)
 			inner.OnList.Faults(want, 1)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_, r1 := storeStubList(t, s)
 			assert.ErrorIs(t, r1, want, "List fails with the error of the implementation")
 		})
 
 		t.Run("passes Note to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewStoreStub(t)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			inner := built.NewStoreStub(t)
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_ = storeStubNote(t, s)
 			inner.OnNote.AssertCalledOnce(t, "Note calls the implementation")
 		})
 
 		t.Run("passes Bill to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewStoreStub(t)
-			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			inner := built.NewStoreStub(t)
+			s := built.NewStoreStub(t, built.StoreStubDelegateTo(inner))
 			_ = storeStubBill(t, s)
 			inner.OnBill.AssertCalledOnce(t, "Bill calls the implementation")
 		})
@@ -747,21 +750,24 @@ func TestStoreStub(t *testing.T) {
 	t.Run("StoreStubWithClock", func(t *testing.T) {
 		t.Parallel()
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) storeStubInstance {
-			return storeStubInstanceOf(tb, NewStoreStub(tb, StoreStubWithClock(clk)))
+			return storeStubInstanceOf(tb, built.NewStoreStub(tb, built.StoreStubWithClock(clk)))
 		})
 	})
 
 	t.Run("StoreStubWithRandSource", func(t *testing.T) {
 		t.Parallel()
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) storeStubInstance {
-			return storeStubInstanceOf(tb, NewStoreStub(tb, StoreStubWithRandSource(src)))
+			return storeStubInstanceOf(
+				tb,
+				built.NewStoreStub(tb, built.StoreStubWithRandSource(src)),
+			)
 		})
 	})
 
 	t.Run("StoreStubBenchMode", func(t *testing.T) {
 		t.Parallel()
 		stub.BenchModeBehaviour(t, func(tb assert.TB) storeStubInstance {
-			return storeStubInstanceOf(tb, NewStoreStub(tb, StoreStubBenchMode()))
+			return storeStubInstanceOf(tb, built.NewStoreStub(tb, built.StoreStubBenchMode()))
 		})
 	})
 
@@ -772,7 +778,11 @@ func TestStoreStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
 				return storeStubInstanceOf(
 					tb,
-					NewStoreStub(tb, StoreStubWithClock(clk), StoreStubWithLatency(d)),
+					built.NewStoreStub(
+						tb,
+						built.StoreStubWithClock(clk),
+						built.StoreStubWithLatency(d),
+					),
 				)
 			},
 		)
@@ -784,7 +794,7 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails Get with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Get-failing")
-			s := NewStoreStub(t, StoreStubFailing(want))
+			s := built.NewStoreStub(t, built.StoreStubFailing(want))
 			_, r1 := storeStubGet(t, s)
 			assert.ErrorIs(t, r1, want, "Get fails with the error of StoreStubFailing")
 		})
@@ -792,7 +802,7 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails Find with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Find-failing")
-			s := NewStoreStub(t, StoreStubFailing(want))
+			s := built.NewStoreStub(t, built.StoreStubFailing(want))
 			_, r1 := storeStubFind(t, s)
 			assert.ErrorIs(t, r1, want, "Find fails with the error of StoreStubFailing")
 		})
@@ -800,7 +810,7 @@ func TestStoreStub(t *testing.T) {
 		t.Run("fails List with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("List-failing")
-			s := NewStoreStub(t, StoreStubFailing(want))
+			s := built.NewStoreStub(t, built.StoreStubFailing(want))
 			_, r1 := storeStubList(t, s)
 			assert.ErrorIs(t, r1, want, "List fails with the error of StoreStubFailing")
 		})
@@ -812,12 +822,15 @@ func TestStoreStub(t *testing.T) {
 		t.Run("sets the function of Get", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewStoreStub(t, WithStoreGet(func(_ context.Context, _ string) (Account, error) {
-				called = true
-				var z0 Account
-				var z1 error
-				return z0, z1
-			}))
+			s := built.NewStoreStub(
+				t,
+				built.WithStoreGet(func(_ context.Context, _ string) (built.Account, error) {
+					called = true
+					var z0 built.Account
+					var z1 error
+					return z0, z1
+				}),
+			)
 			_, _ = storeStubGet(t, s)
 			assert.True(t, called, "WithStoreGet sets the function of Get")
 		})
@@ -829,12 +842,15 @@ func TestStoreStub(t *testing.T) {
 		t.Run("sets the function of Find", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewStoreStub(t, WithStoreFind(func(_ context.Context, _ string) (*Account, error) {
-				called = true
-				var z0 *Account
-				var z1 error
-				return z0, z1
-			}))
+			s := built.NewStoreStub(
+				t,
+				built.WithStoreFind(func(_ context.Context, _ string) (*built.Account, error) {
+					called = true
+					var z0 *built.Account
+					var z1 error
+					return z0, z1
+				}),
+			)
 			_, _ = storeStubFind(t, s)
 			assert.True(t, called, "WithStoreFind sets the function of Find")
 		})
@@ -846,9 +862,9 @@ func TestStoreStub(t *testing.T) {
 		t.Run("sets the function of Lookup", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewStoreStub(t, WithStoreLookup(func(_ string) (Account, bool) {
+			s := built.NewStoreStub(t, built.WithStoreLookup(func(_ string) (built.Account, bool) {
 				called = true
-				var z0 Account
+				var z0 built.Account
 				var z1 bool
 				return z0, z1
 			}))
@@ -863,12 +879,15 @@ func TestStoreStub(t *testing.T) {
 		t.Run("sets the function of List", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewStoreStub(t, WithStoreList(func(_ context.Context) (Page[Account], error) {
-				called = true
-				var z0 Page[Account]
-				var z1 error
-				return z0, z1
-			}))
+			s := built.NewStoreStub(
+				t,
+				built.WithStoreList(func(_ context.Context) (built.Page[built.Account], error) {
+					called = true
+					var z0 built.Page[built.Account]
+					var z1 error
+					return z0, z1
+				}),
+			)
 			_, _ = storeStubList(t, s)
 			assert.True(t, called, "WithStoreList sets the function of List")
 		})
@@ -880,9 +899,9 @@ func TestStoreStub(t *testing.T) {
 		t.Run("sets the function of Note", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewStoreStub(t, WithStoreNote(func(_ string) Note {
+			s := built.NewStoreStub(t, built.WithStoreNote(func(_ string) built.Note {
 				called = true
-				var z0 Note
+				var z0 built.Note
 				return z0
 			}))
 			_ = storeStubNote(t, s)
@@ -896,7 +915,7 @@ func TestStoreStub(t *testing.T) {
 		t.Run("sets the function of Bill", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewStoreStub(t, WithStoreBill(func(_ string) billing.Invoice {
+			s := built.NewStoreStub(t, built.WithStoreBill(func(_ string) billing.Invoice {
 				called = true
 				var z0 billing.Invoice
 				return z0
@@ -917,7 +936,7 @@ func TestStoreGetStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Get", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0, want1 := storeStubGetPins()
 			assert.NotEqual(t, want0, storeStubGetSubject(t).Default().Result,
 				"the sample of Result differs from its default result")
@@ -930,9 +949,9 @@ func TestStoreGetStub(t *testing.T) {
 		t.Run("configures Get for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewStoreStub(r)
+			s := built.NewStoreStub(r)
 			s.OnGet.Strict()
-			var want0 Account
+			var want0 built.Account
 			var want1 error
 			s.OnGet.Returns(want0, want1)
 			_, _ = storeStubGet(t, s)
@@ -945,12 +964,12 @@ func TestStoreGetStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			var got0 context.Context
 			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (Account, error) {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (built.Account, error) {
 				got0, got1 = p0, p1
-				var z0 Account
+				var z0 built.Account
 				var z1 error
 				return z0, z1
 			})
@@ -972,7 +991,7 @@ func TestStoreFindStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Find", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0, want1 := storeStubFindPins()
 			assert.NotEqual(t, want0, storeStubFindSubject(t).Default().Result,
 				"the sample of Result differs from its default result")
@@ -985,9 +1004,9 @@ func TestStoreFindStub(t *testing.T) {
 		t.Run("configures Find for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewStoreStub(r)
+			s := built.NewStoreStub(r)
 			s.OnFind.Strict()
-			var want0 *Account
+			var want0 *built.Account
 			var want1 error
 			s.OnFind.Returns(want0, want1)
 			_, _ = storeStubFind(t, s)
@@ -1000,12 +1019,12 @@ func TestStoreFindStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Find to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			var got0 context.Context
 			var got1 string
-			s.OnFind.Func(func(p0 context.Context, p1 string) (*Account, error) {
+			s.OnFind.Func(func(p0 context.Context, p1 string) (*built.Account, error) {
 				got0, got1 = p0, p1
-				var z0 *Account
+				var z0 *built.Account
 				var z1 error
 				return z0, z1
 			})
@@ -1027,7 +1046,7 @@ func TestStoreLookupStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Lookup", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0, want1 := storeStubLookupPins()
 			assert.NotEqual(t, want0, storeStubLookupSubject(t).Default().Result0,
 				"the sample of Result0 differs from its default result")
@@ -1040,9 +1059,9 @@ func TestStoreLookupStub(t *testing.T) {
 		t.Run("configures Lookup for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewStoreStub(r)
+			s := built.NewStoreStub(r)
 			s.OnLookup.Strict()
-			var want0 Account
+			var want0 built.Account
 			var want1 bool
 			s.OnLookup.Returns(want0, want1)
 			_, _ = storeStubLookup(t, s)
@@ -1055,11 +1074,11 @@ func TestStoreLookupStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Lookup to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			var got0 string
-			s.OnLookup.Func(func(p0 string) (Account, bool) {
+			s.OnLookup.Func(func(p0 string) (built.Account, bool) {
 				got0 = p0
-				var z0 Account
+				var z0 built.Account
 				var z1 bool
 				return z0, z1
 			})
@@ -1080,7 +1099,7 @@ func TestStoreListStub(t *testing.T) {
 
 		t.Run("sets the results of each call of List", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0, want1 := storeStubListPins()
 			assert.NotEqual(t, want0, storeStubListSubject(t).Default().Result,
 				"the sample of Result differs from its default result")
@@ -1093,9 +1112,9 @@ func TestStoreListStub(t *testing.T) {
 		t.Run("configures List for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewStoreStub(r)
+			s := built.NewStoreStub(r)
 			s.OnList.Strict()
-			var want0 Page[Account]
+			var want0 built.Page[built.Account]
 			var want1 error
 			s.OnList.Returns(want0, want1)
 			_, _ = storeStubList(t, s)
@@ -1108,11 +1127,11 @@ func TestStoreListStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of List to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			var got0 context.Context
-			s.OnList.Func(func(p0 context.Context) (Page[Account], error) {
+			s.OnList.Func(func(p0 context.Context) (built.Page[built.Account], error) {
 				got0 = p0
-				var z0 Page[Account]
+				var z0 built.Page[built.Account]
 				var z1 error
 				return z0, z1
 			})
@@ -1133,7 +1152,7 @@ func TestStoreNoteStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Note", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0 := storeStubNotePins()
 			s.OnNote.Returns(want0)
 			got0 := storeStubNote(t, s)
@@ -1143,9 +1162,9 @@ func TestStoreNoteStub(t *testing.T) {
 		t.Run("configures Note for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewStoreStub(r)
+			s := built.NewStoreStub(r)
 			s.OnNote.Strict()
-			var want0 Note
+			var want0 built.Note
 			s.OnNote.Returns(want0)
 			_ = storeStubNote(t, s)
 			assert.False(t, r.Failed(), "strict mode accepts the call of Note")
@@ -1157,11 +1176,11 @@ func TestStoreNoteStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Note to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			var got0 string
-			s.OnNote.Func(func(p0 string) Note {
+			s.OnNote.Func(func(p0 string) built.Note {
 				got0 = p0
-				var z0 Note
+				var z0 built.Note
 				return z0
 			})
 			_ = storeStubNote(t, s)
@@ -1181,7 +1200,7 @@ func TestStoreBillStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Bill", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			want0 := storeStubBillPins()
 			s.OnBill.Returns(want0)
 			got0 := storeStubBill(t, s)
@@ -1191,7 +1210,7 @@ func TestStoreBillStub(t *testing.T) {
 		t.Run("configures Bill for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewStoreStub(r)
+			s := built.NewStoreStub(r)
 			s.OnBill.Strict()
 			var want0 billing.Invoice
 			s.OnBill.Returns(want0)
@@ -1205,7 +1224,7 @@ func TestStoreBillStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Bill to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewStoreStub(t)
+			s := built.NewStoreStub(t)
 			var got0 string
 			s.OnBill.Func(func(p0 string) billing.Invoice {
 				got0 = p0

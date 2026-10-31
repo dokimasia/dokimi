@@ -252,8 +252,10 @@ func rendered(t *testing.T) fstest.MapFS {
 	t.Helper()
 
 	p := stub.New()
-	res := fixture(t, golang.Target, goTree, p, catalogPackage, parityPackage, genericPackage, edgePackage,
-		handlesPackage, mixedPackage, sequencePackage, builtPackage, billingPackage).Generate(t, p)
+	f, b := planned(t, golang.Target, goTree, p, catalogPackage, parityPackage, genericPackage, edgePackage,
+		handlesPackage, mixedPackage, sequencePackage, builtPackage, billingPackage, hiddenPackage)
+	assert.NoError(t, f.Generate(t, b).Err, "builder runs whole")
+	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
-	return gentest.Rendered(t, res, p, gobackend.New())
+	return gentest.Rendered(t, f, res, p, gobackend.New(), b)
 }

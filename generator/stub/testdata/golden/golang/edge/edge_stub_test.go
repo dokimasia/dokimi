@@ -1,4 +1,4 @@
-package edge
+package edge_test
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"example.com/shop/edge"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/stub"
@@ -22,14 +23,14 @@ func edgeStubSkipArgs(tb assert.TB) (string, int) {
 }
 
 // edgeStubSkip calls Skip of s with the samples of its arguments.
-func edgeStubSkip(tb assert.TB, s *EdgeStub) {
+func edgeStubSkip(tb assert.TB, s *edge.EdgeStub) {
 	tb.Helper()
 	a0, a1 := edgeStubSkipArgs(tb)
 	s.Skip(a0, a1)
 }
 
 // edgeStubRead calls Read of s with the samples of its arguments.
-func edgeStubRead(tb assert.TB, s *EdgeStub) (int, error) {
+func edgeStubRead(tb assert.TB, s *edge.EdgeStub) (int, error) {
 	tb.Helper()
 	return s.Read()
 }
@@ -52,7 +53,7 @@ func edgeStubKeepArgs(tb assert.TB) int {
 }
 
 // edgeStubKeep calls Keep of s with the samples of its arguments.
-func edgeStubKeep(tb assert.TB, s *EdgeStub) int {
+func edgeStubKeep(tb assert.TB, s *edge.EdgeStub) int {
 	tb.Helper()
 	a0 := edgeStubKeepArgs(tb)
 	return s.Keep(a0)
@@ -74,7 +75,7 @@ func edgeStubUseArgs(tb assert.TB) string {
 }
 
 // edgeStubUse calls Use of s with the samples of its arguments.
-func edgeStubUse(tb assert.TB, s *EdgeStub) error {
+func edgeStubUse(tb assert.TB, s *edge.EdgeStub) error {
 	tb.Helper()
 	a0 := edgeStubUseArgs(tb)
 	return s.Use(a0)
@@ -96,7 +97,7 @@ func edgeStubRecordArgs(tb assert.TB) string {
 }
 
 // edgeStubRecord calls Record of s with the samples of its arguments.
-func edgeStubRecord(tb assert.TB, s *EdgeStub) (int, error) {
+func edgeStubRecord(tb assert.TB, s *edge.EdgeStub) (int, error) {
 	tb.Helper()
 	a0 := edgeStubRecordArgs(tb)
 	return s.Record(a0)
@@ -112,7 +113,7 @@ func edgeStubRecordPins() (int, error) {
 }
 
 // edgeStubClash calls Clash of s with the samples of its arguments.
-func edgeStubClash(tb assert.TB, s *EdgeStub) (string, error) {
+func edgeStubClash(tb assert.TB, s *edge.EdgeStub) (string, error) {
 	tb.Helper()
 	return s.Clash()
 }
@@ -137,7 +138,7 @@ func edgeStubShiftArgs(tb assert.TB) (string, int) {
 }
 
 // edgeStubShift calls Shift of s with the samples of its arguments.
-func edgeStubShift(tb assert.TB, s *EdgeStub) {
+func edgeStubShift(tb assert.TB, s *edge.EdgeStub) {
 	tb.Helper()
 	a0, a1 := edgeStubShiftArgs(tb)
 	s.Shift(a0, a1)
@@ -152,7 +153,7 @@ func edgeStubFetchArgs(tb assert.TB) string {
 }
 
 // edgeStubFetch calls Fetch of s with the samples of its arguments.
-func edgeStubFetch(tb assert.TB, s *EdgeStub) (int, error) {
+func edgeStubFetch(tb assert.TB, s *edge.EdgeStub) (int, error) {
 	tb.Helper()
 	a0 := edgeStubFetchArgs(tb)
 	return s.Fetch(a0)
@@ -196,14 +197,14 @@ func edgeStubWideArgs(tb assert.TB) (int, int, int, int, int, int, int, int, int
 }
 
 // edgeStubWide calls Wide of s with the samples of its arguments.
-func edgeStubWide(tb assert.TB, s *EdgeStub) {
+func edgeStubWide(tb assert.TB, s *edge.EdgeStub) {
 	tb.Helper()
 	a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 := edgeStubWideArgs(tb)
 	s.Wide(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
 }
 
 // edgeStubPair calls Pair of s with the samples of its arguments.
-func edgeStubPair(tb assert.TB, s *EdgeStub) (int, int) {
+func edgeStubPair(tb assert.TB, s *edge.EdgeStub) (int, int) {
 	tb.Helper()
 	return s.Pair()
 }
@@ -219,10 +220,10 @@ func edgeStubPairPins() (int, int) {
 
 // edgeStubSkipSubject returns the subject of [stub.Behaviour] for Skip.
 // The subject calls a new double that reports to tb.
-func edgeStubSkipSubject(tb assert.TB) stub.Subject[EdgeSkipCall, struct{}] {
+func edgeStubSkipSubject(tb assert.TB) stub.Subject[edge.EdgeSkipCall, struct{}] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeSkipCall, struct{}]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeSkipCall, struct{}]{
 		Stub: s.OnSkip.MethodStub,
 		Call: func() {
 			edgeStubSkip(tb, s)
@@ -237,17 +238,17 @@ func edgeStubSkipSubject(tb assert.TB) stub.Subject[EdgeSkipCall, struct{}] {
 
 // edgeStubReadSubject returns the subject of [stub.Behaviour] for Read.
 // The subject calls a new double that reports to tb.
-func edgeStubReadSubject(tb assert.TB) stub.Subject[EdgeReadCall, EdgeReadReturn] {
+func edgeStubReadSubject(tb assert.TB) stub.Subject[edge.EdgeReadCall, edge.EdgeReadReturn] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeReadCall, EdgeReadReturn]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeReadCall, edge.EdgeReadReturn]{
 		Stub: s.OnRead.MethodStub,
 		Call: func() {
 			_, _ = edgeStubRead(tb, s)
 		},
-		Result: func() EdgeReadReturn {
+		Result: func() edge.EdgeReadReturn {
 			got0, got1 := edgeStubRead(tb, s)
-			return EdgeReadReturn{R: got0, Err: got1}
+			return edge.EdgeReadReturn{R: got0, Err: got1}
 		},
 		Override: func(mark func()) {
 			s.OnRead.Func(func() (int, error) {
@@ -266,17 +267,17 @@ func edgeStubReadSubject(tb assert.TB) stub.Subject[EdgeReadCall, EdgeReadReturn
 
 // edgeStubKeepSubject returns the subject of [stub.Behaviour] for Keep.
 // The subject calls a new double that reports to tb.
-func edgeStubKeepSubject(tb assert.TB) stub.Subject[EdgeKeepCall, EdgeKeepReturn] {
+func edgeStubKeepSubject(tb assert.TB) stub.Subject[edge.EdgeKeepCall, edge.EdgeKeepReturn] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeKeepCall, EdgeKeepReturn]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeKeepCall, edge.EdgeKeepReturn]{
 		Stub: s.OnKeep.MethodStub,
 		Call: func() {
 			_ = edgeStubKeep(tb, s)
 		},
-		Result: func() EdgeKeepReturn {
+		Result: func() edge.EdgeKeepReturn {
 			got0 := edgeStubKeep(tb, s)
-			return EdgeKeepReturn{Result: got0}
+			return edge.EdgeKeepReturn{Result: got0}
 		},
 		Override: func(mark func()) {
 			s.OnKeep.Func(func(_ int) int {
@@ -290,17 +291,17 @@ func edgeStubKeepSubject(tb assert.TB) stub.Subject[EdgeKeepCall, EdgeKeepReturn
 
 // edgeStubUseSubject returns the subject of [stub.Behaviour] for Use. The
 // subject calls a new double that reports to tb.
-func edgeStubUseSubject(tb assert.TB) stub.Subject[EdgeUseCall, EdgeUseReturn] {
+func edgeStubUseSubject(tb assert.TB) stub.Subject[edge.EdgeUseCall, edge.EdgeUseReturn] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeUseCall, EdgeUseReturn]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeUseCall, edge.EdgeUseReturn]{
 		Stub: s.OnUse.MethodStub,
 		Call: func() {
 			_ = edgeStubUse(tb, s)
 		},
-		Result: func() EdgeUseReturn {
+		Result: func() edge.EdgeUseReturn {
 			got0 := edgeStubUse(tb, s)
-			return EdgeUseReturn{Err: got0}
+			return edge.EdgeUseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
 			s.OnUse.Func(func(_ string) error {
@@ -318,17 +319,17 @@ func edgeStubUseSubject(tb assert.TB) stub.Subject[EdgeUseCall, EdgeUseReturn] {
 
 // edgeStubRecordSubject returns the subject of [stub.Behaviour] for
 // Record. The subject calls a new double that reports to tb.
-func edgeStubRecordSubject(tb assert.TB) stub.Subject[EdgeRecordCall, EdgeRecordReturn] {
+func edgeStubRecordSubject(tb assert.TB) stub.Subject[edge.EdgeRecordCall, edge.EdgeRecordReturn] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeRecordCall, EdgeRecordReturn]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeRecordCall, edge.EdgeRecordReturn]{
 		Stub: s.OnRecord.MethodStub,
 		Call: func() {
 			_, _ = edgeStubRecord(tb, s)
 		},
-		Result: func() EdgeRecordReturn {
+		Result: func() edge.EdgeRecordReturn {
 			got0, got1 := edgeStubRecord(tb, s)
-			return EdgeRecordReturn{N: got0, Err: got1}
+			return edge.EdgeRecordReturn{N: got0, Err: got1}
 		},
 		Override: func(mark func()) {
 			s.OnRecord.Func(func(_ string) (int, error) {
@@ -347,17 +348,17 @@ func edgeStubRecordSubject(tb assert.TB) stub.Subject[EdgeRecordCall, EdgeRecord
 
 // edgeStubClashSubject returns the subject of [stub.Behaviour] for Clash.
 // The subject calls a new double that reports to tb.
-func edgeStubClashSubject(tb assert.TB) stub.Subject[EdgeClashCall, EdgeClashReturn] {
+func edgeStubClashSubject(tb assert.TB) stub.Subject[edge.EdgeClashCall, edge.EdgeClashReturn] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeClashCall, EdgeClashReturn]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeClashCall, edge.EdgeClashReturn]{
 		Stub: s.OnClash.MethodStub,
 		Call: func() {
 			_, _ = edgeStubClash(tb, s)
 		},
-		Result: func() EdgeClashReturn {
+		Result: func() edge.EdgeClashReturn {
 			got0, got1 := edgeStubClash(tb, s)
-			return EdgeClashReturn{S: got0, Err: got1}
+			return edge.EdgeClashReturn{S: got0, Err: got1}
 		},
 		Override: func(mark func()) {
 			s.OnClash.Func(func() (string, error) {
@@ -376,10 +377,10 @@ func edgeStubClashSubject(tb assert.TB) stub.Subject[EdgeClashCall, EdgeClashRet
 
 // edgeStubShiftSubject returns the subject of [stub.Behaviour] for Shift.
 // The subject calls a new double that reports to tb.
-func edgeStubShiftSubject(tb assert.TB) stub.Subject[EdgeShiftCall, struct{}] {
+func edgeStubShiftSubject(tb assert.TB) stub.Subject[edge.EdgeShiftCall, struct{}] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeShiftCall, struct{}]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeShiftCall, struct{}]{
 		Stub: s.OnShift.MethodStub,
 		Call: func() {
 			edgeStubShift(tb, s)
@@ -394,17 +395,17 @@ func edgeStubShiftSubject(tb assert.TB) stub.Subject[EdgeShiftCall, struct{}] {
 
 // edgeStubFetchSubject returns the subject of [stub.Behaviour] for Fetch.
 // The subject calls a new double that reports to tb.
-func edgeStubFetchSubject(tb assert.TB) stub.Subject[EdgeFetchCall, EdgeFetchReturn] {
+func edgeStubFetchSubject(tb assert.TB) stub.Subject[edge.EdgeFetchCall, edge.EdgeFetchReturn] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeFetchCall, EdgeFetchReturn]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeFetchCall, edge.EdgeFetchReturn]{
 		Stub: s.OnFetch.MethodStub,
 		Call: func() {
 			_, _ = edgeStubFetch(tb, s)
 		},
-		Result: func() EdgeFetchReturn {
+		Result: func() edge.EdgeFetchReturn {
 			got0, got1 := edgeStubFetch(tb, s)
-			return EdgeFetchReturn{A0: got0, Err: got1}
+			return edge.EdgeFetchReturn{A0: got0, Err: got1}
 		},
 		Override: func(mark func()) {
 			s.OnFetch.Func(func(_ string) (int, error) {
@@ -423,10 +424,10 @@ func edgeStubFetchSubject(tb assert.TB) stub.Subject[EdgeFetchCall, EdgeFetchRet
 
 // edgeStubWideSubject returns the subject of [stub.Behaviour] for Wide.
 // The subject calls a new double that reports to tb.
-func edgeStubWideSubject(tb assert.TB) stub.Subject[EdgeWideCall, struct{}] {
+func edgeStubWideSubject(tb assert.TB) stub.Subject[edge.EdgeWideCall, struct{}] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgeWideCall, struct{}]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgeWideCall, struct{}]{
 		Stub: s.OnWide.MethodStub,
 		Call: func() {
 			edgeStubWide(tb, s)
@@ -441,17 +442,17 @@ func edgeStubWideSubject(tb assert.TB) stub.Subject[EdgeWideCall, struct{}] {
 
 // edgeStubPairSubject returns the subject of [stub.Behaviour] for Pair.
 // The subject calls a new double that reports to tb.
-func edgeStubPairSubject(tb assert.TB) stub.Subject[EdgePairCall, EdgePairReturn] {
+func edgeStubPairSubject(tb assert.TB) stub.Subject[edge.EdgePairCall, edge.EdgePairReturn] {
 	tb.Helper()
-	s := NewEdgeStub(tb)
-	return stub.Subject[EdgePairCall, EdgePairReturn]{
+	s := edge.NewEdgeStub(tb)
+	return stub.Subject[edge.EdgePairCall, edge.EdgePairReturn]{
 		Stub: s.OnPair.MethodStub,
 		Call: func() {
 			_, _ = edgeStubPair(tb, s)
 		},
-		Result: func() EdgePairReturn {
+		Result: func() edge.EdgePairReturn {
 			got0, got1 := edgeStubPair(tb, s)
-			return EdgePairReturn{AB: got0, Ab: got1}
+			return edge.EdgePairReturn{AB: got0, Ab: got1}
 		},
 		Override: func(mark func()) {
 			s.OnPair.Func(func() (int, int) {
@@ -464,13 +465,13 @@ func edgeStubPairSubject(tb assert.TB) stub.Subject[EdgePairCall, EdgePairReturn
 	}
 }
 
-// edgeStubInstance is the instance of a EdgeStub that the checks of the
-// constructors and the options drive.
-type edgeStubInstance = stub.Instance[EdgeSkipCall]
+// edgeStubInstance is the instance of a edge.EdgeStub that the checks of
+// the constructors and the options drive.
+type edgeStubInstance = stub.Instance[edge.EdgeSkipCall]
 
 // edgeStubInstanceOf returns the instance of s. The options apply to the
 // whole double, so the checks call Skip alone.
-func edgeStubInstanceOf(tb assert.TB, s *EdgeStub) edgeStubInstance {
+func edgeStubInstanceOf(tb assert.TB, s *edge.EdgeStub) edgeStubInstance {
 	tb.Helper()
 	return edgeStubInstance{
 		Stub: s.OnSkip.MethodStub,
@@ -492,7 +493,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			edgeStubSkip(t, s)
 			got := s.OnSkip.AssertCalledOnce(t, "Skip records the call")
 			a0, a1 := edgeStubSkipArgs(t)
@@ -502,9 +503,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeSkipCall
-			s.OnSkip.OnRecord(func(c EdgeSkipCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeSkipCall
+			s.OnSkip.OnRecord(func(c edge.EdgeSkipCall) { seen = append(seen, c) })
 			edgeStubSkip(t, s)
 			edgeStubSkip(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Skip")
@@ -517,9 +518,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeReadCall
-			s.OnRead.OnRecord(func(c EdgeReadCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeReadCall
+			s.OnRead.OnRecord(func(c edge.EdgeReadCall) { seen = append(seen, c) })
 			_, _ = edgeStubRead(t, s)
 			_, _ = edgeStubRead(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Read")
@@ -532,7 +533,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_ = edgeStubKeep(t, s)
 			got := s.OnKeep.AssertCalledOnce(t, "Keep records the call")
 			a0 := edgeStubKeepArgs(t)
@@ -541,9 +542,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeKeepCall
-			s.OnKeep.OnRecord(func(c EdgeKeepCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeKeepCall
+			s.OnKeep.OnRecord(func(c edge.EdgeKeepCall) { seen = append(seen, c) })
 			_ = edgeStubKeep(t, s)
 			_ = edgeStubKeep(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Keep")
@@ -556,7 +557,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_ = edgeStubUse(t, s)
 			got := s.OnUse.AssertCalledOnce(t, "Use records the call")
 			a0 := edgeStubUseArgs(t)
@@ -565,9 +566,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeUseCall
-			s.OnUse.OnRecord(func(c EdgeUseCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeUseCall
+			s.OnUse.OnRecord(func(c edge.EdgeUseCall) { seen = append(seen, c) })
 			_ = edgeStubUse(t, s)
 			_ = edgeStubUse(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Use")
@@ -580,7 +581,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_, _ = edgeStubRecord(t, s)
 			got := s.OnRecord.AssertCalledOnce(t, "Record records the call")
 			a0 := edgeStubRecordArgs(t)
@@ -589,9 +590,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeRecordCall
-			s.OnRecord.OnRecord(func(c EdgeRecordCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeRecordCall
+			s.OnRecord.OnRecord(func(c edge.EdgeRecordCall) { seen = append(seen, c) })
 			_, _ = edgeStubRecord(t, s)
 			_, _ = edgeStubRecord(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Record")
@@ -604,9 +605,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeClashCall
-			s.OnClash.OnRecord(func(c EdgeClashCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeClashCall
+			s.OnClash.OnRecord(func(c edge.EdgeClashCall) { seen = append(seen, c) })
 			_, _ = edgeStubClash(t, s)
 			_, _ = edgeStubClash(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Clash")
@@ -619,7 +620,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			edgeStubShift(t, s)
 			got := s.OnShift.AssertCalledOnce(t, "Shift records the call")
 			a0, a1 := edgeStubShiftArgs(t)
@@ -629,9 +630,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeShiftCall
-			s.OnShift.OnRecord(func(c EdgeShiftCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeShiftCall
+			s.OnShift.OnRecord(func(c edge.EdgeShiftCall) { seen = append(seen, c) })
 			edgeStubShift(t, s)
 			edgeStubShift(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Shift")
@@ -644,7 +645,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_, _ = edgeStubFetch(t, s)
 			got := s.OnFetch.AssertCalledOnce(t, "Fetch records the call")
 			a0 := edgeStubFetchArgs(t)
@@ -653,9 +654,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeFetchCall
-			s.OnFetch.OnRecord(func(c EdgeFetchCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeFetchCall
+			s.OnFetch.OnRecord(func(c edge.EdgeFetchCall) { seen = append(seen, c) })
 			_, _ = edgeStubFetch(t, s)
 			_, _ = edgeStubFetch(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fetch")
@@ -668,7 +669,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			edgeStubWide(t, s)
 			got := s.OnWide.AssertCalledOnce(t, "Wide records the call")
 			a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 := edgeStubWideArgs(t)
@@ -687,9 +688,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgeWideCall
-			s.OnWide.OnRecord(func(c EdgeWideCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgeWideCall
+			s.OnWide.OnRecord(func(c edge.EdgeWideCall) { seen = append(seen, c) })
 			edgeStubWide(t, s)
 			edgeStubWide(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Wide")
@@ -702,9 +703,9 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
-			var seen []EdgePairCall
-			s.OnPair.OnRecord(func(c EdgePairCall) { seen = append(seen, c) })
+			s := edge.NewEdgeStub(t)
+			var seen []edge.EdgePairCall
+			s.OnPair.OnRecord(func(c edge.EdgePairCall) { seen = append(seen, c) })
 			_, _ = edgeStubPair(t, s)
 			_, _ = edgeStubPair(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Pair")
@@ -714,12 +715,12 @@ func TestEdgeStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) edgeStubInstance {
-			return edgeStubInstanceOf(tb, NewEdgeStub(tb))
+			return edgeStubInstanceOf(tb, edge.NewEdgeStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Skip", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			edgeStubSkip(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnSkip.CallCount(), 0, "ResetCalls clears the calls of Skip")
@@ -727,7 +728,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Read", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_, _ = edgeStubRead(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnRead.CallCount(), 0, "ResetCalls clears the calls of Read")
@@ -735,7 +736,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Read", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubReadPins()
 			s.OnRead.Returns(want0, want1)
 			s.ResetCalls()
@@ -746,7 +747,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Keep", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_ = edgeStubKeep(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnKeep.CallCount(), 0, "ResetCalls clears the calls of Keep")
@@ -754,7 +755,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Keep", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0 := edgeStubKeepPins()
 			s.OnKeep.Returns(want0)
 			s.ResetCalls()
@@ -764,7 +765,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Use", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_ = edgeStubUse(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnUse.CallCount(), 0, "ResetCalls clears the calls of Use")
@@ -772,7 +773,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Use", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0 := edgeStubUsePins()
 			s.OnUse.Returns(want0)
 			s.ResetCalls()
@@ -782,7 +783,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Record", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_, _ = edgeStubRecord(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnRecord.CallCount(), 0, "ResetCalls clears the calls of Record")
@@ -790,7 +791,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Record", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubRecordPins()
 			s.OnRecord.Returns(want0, want1)
 			s.ResetCalls()
@@ -801,7 +802,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Clash", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_, _ = edgeStubClash(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnClash.CallCount(), 0, "ResetCalls clears the calls of Clash")
@@ -809,7 +810,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Clash", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubClashPins()
 			s.OnClash.Returns(want0, want1)
 			s.ResetCalls()
@@ -820,7 +821,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Shift", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			edgeStubShift(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnShift.CallCount(), 0, "ResetCalls clears the calls of Shift")
@@ -828,7 +829,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Fetch", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_, _ = edgeStubFetch(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnFetch.CallCount(), 0, "ResetCalls clears the calls of Fetch")
@@ -836,7 +837,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Fetch", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubFetchPins()
 			s.OnFetch.Returns(want0, want1)
 			s.ResetCalls()
@@ -847,7 +848,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Wide", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			edgeStubWide(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnWide.CallCount(), 0, "ResetCalls clears the calls of Wide")
@@ -855,7 +856,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Pair", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			_, _ = edgeStubPair(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnPair.CallCount(), 0, "ResetCalls clears the calls of Pair")
@@ -863,7 +864,7 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Pair", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubPairPins()
 			s.OnPair.Returns(want0, want1)
 			s.ResetCalls()
@@ -878,7 +879,7 @@ func TestEdgeStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) edgeStubInstance {
-				return edgeStubInstanceOf(tb, NewEdgeStubDelayed(tb, d, clk))
+				return edgeStubInstanceOf(tb, edge.NewEdgeStubDelayed(tb, d, clk))
 			},
 		)
 	})
@@ -889,7 +890,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Read with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Read-failing")
-			s := NewEdgeStubFailing(t, want)
+			s := edge.NewEdgeStubFailing(t, want)
 			_, r1 := edgeStubRead(t, s)
 			assert.ErrorIs(t, r1, want, "Read fails with the error of NewEdgeStubFailing")
 		})
@@ -897,7 +898,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Use with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Use-failing")
-			s := NewEdgeStubFailing(t, want)
+			s := edge.NewEdgeStubFailing(t, want)
 			r0 := edgeStubUse(t, s)
 			assert.ErrorIs(t, r0, want, "Use fails with the error of NewEdgeStubFailing")
 		})
@@ -905,7 +906,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Record with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Record-failing")
-			s := NewEdgeStubFailing(t, want)
+			s := edge.NewEdgeStubFailing(t, want)
 			_, err := edgeStubRecord(t, s)
 			assert.ErrorIs(t, err, want, "Record fails with the error of NewEdgeStubFailing")
 		})
@@ -913,7 +914,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Clash with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Clash-failing")
-			s := NewEdgeStubFailing(t, want)
+			s := edge.NewEdgeStubFailing(t, want)
 			_, r1 := edgeStubClash(t, s)
 			assert.ErrorIs(t, r1, want, "Clash fails with the error of NewEdgeStubFailing")
 		})
@@ -921,7 +922,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Fetch with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Fetch-failing")
-			s := NewEdgeStubFailing(t, want)
+			s := edge.NewEdgeStubFailing(t, want)
 			_, err := edgeStubFetch(t, s)
 			assert.ErrorIs(t, err, want, "Fetch fails with the error of NewEdgeStubFailing")
 		})
@@ -930,7 +931,7 @@ func TestEdgeStub(t *testing.T) {
 	t.Run("EdgeStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) edgeStubInstance {
-			return edgeStubInstanceOf(tb, NewEdgeStub(tb, EdgeStubStrict()))
+			return edgeStubInstanceOf(tb, edge.NewEdgeStub(tb, edge.EdgeStubStrict()))
 		})
 	})
 
@@ -939,16 +940,16 @@ func TestEdgeStub(t *testing.T) {
 
 		t.Run("passes Skip to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			edgeStubSkip(t, s)
 			inner.OnSkip.AssertCalledOnce(t, "Skip calls the implementation")
 		})
 
 		t.Run("passes Read to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, _ = edgeStubRead(t, s)
 			inner.OnRead.AssertCalledOnce(t, "Read calls the implementation")
 		})
@@ -956,25 +957,25 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Read with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Read-delegate")
-			inner := NewEdgeStub(t)
+			inner := edge.NewEdgeStub(t)
 			inner.OnRead.Faults(want, 1)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, r1 := edgeStubRead(t, s)
 			assert.ErrorIs(t, r1, want, "Read fails with the error of the implementation")
 		})
 
 		t.Run("passes Keep to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_ = edgeStubKeep(t, s)
 			inner.OnKeep.AssertCalledOnce(t, "Keep calls the implementation")
 		})
 
 		t.Run("passes Use to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_ = edgeStubUse(t, s)
 			inner.OnUse.AssertCalledOnce(t, "Use calls the implementation")
 		})
@@ -982,17 +983,17 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Use with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Use-delegate")
-			inner := NewEdgeStub(t)
+			inner := edge.NewEdgeStub(t)
 			inner.OnUse.Faults(want, 1)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			r0 := edgeStubUse(t, s)
 			assert.ErrorIs(t, r0, want, "Use fails with the error of the implementation")
 		})
 
 		t.Run("passes Record to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, _ = edgeStubRecord(t, s)
 			inner.OnRecord.AssertCalledOnce(t, "Record calls the implementation")
 		})
@@ -1000,17 +1001,17 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Record with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Record-delegate")
-			inner := NewEdgeStub(t)
+			inner := edge.NewEdgeStub(t)
 			inner.OnRecord.Faults(want, 1)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, err := edgeStubRecord(t, s)
 			assert.ErrorIs(t, err, want, "Record fails with the error of the implementation")
 		})
 
 		t.Run("passes Clash to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, _ = edgeStubClash(t, s)
 			inner.OnClash.AssertCalledOnce(t, "Clash calls the implementation")
 		})
@@ -1018,25 +1019,25 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Clash with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Clash-delegate")
-			inner := NewEdgeStub(t)
+			inner := edge.NewEdgeStub(t)
 			inner.OnClash.Faults(want, 1)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, r1 := edgeStubClash(t, s)
 			assert.ErrorIs(t, r1, want, "Clash fails with the error of the implementation")
 		})
 
 		t.Run("passes Shift to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			edgeStubShift(t, s)
 			inner.OnShift.AssertCalledOnce(t, "Shift calls the implementation")
 		})
 
 		t.Run("passes Fetch to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, _ = edgeStubFetch(t, s)
 			inner.OnFetch.AssertCalledOnce(t, "Fetch calls the implementation")
 		})
@@ -1044,25 +1045,25 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Fetch with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Fetch-delegate")
-			inner := NewEdgeStub(t)
+			inner := edge.NewEdgeStub(t)
 			inner.OnFetch.Faults(want, 1)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, err := edgeStubFetch(t, s)
 			assert.ErrorIs(t, err, want, "Fetch fails with the error of the implementation")
 		})
 
 		t.Run("passes Wide to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			edgeStubWide(t, s)
 			inner.OnWide.AssertCalledOnce(t, "Wide calls the implementation")
 		})
 
 		t.Run("passes Pair to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewEdgeStub(t)
-			s := NewEdgeStub(t, EdgeStubDelegateTo(inner))
+			inner := edge.NewEdgeStub(t)
+			s := edge.NewEdgeStub(t, edge.EdgeStubDelegateTo(inner))
 			_, _ = edgeStubPair(t, s)
 			inner.OnPair.AssertCalledOnce(t, "Pair calls the implementation")
 		})
@@ -1071,21 +1072,21 @@ func TestEdgeStub(t *testing.T) {
 	t.Run("EdgeStubWithClock", func(t *testing.T) {
 		t.Parallel()
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) edgeStubInstance {
-			return edgeStubInstanceOf(tb, NewEdgeStub(tb, EdgeStubWithClock(clk)))
+			return edgeStubInstanceOf(tb, edge.NewEdgeStub(tb, edge.EdgeStubWithClock(clk)))
 		})
 	})
 
 	t.Run("EdgeStubWithRandSource", func(t *testing.T) {
 		t.Parallel()
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) edgeStubInstance {
-			return edgeStubInstanceOf(tb, NewEdgeStub(tb, EdgeStubWithRandSource(src)))
+			return edgeStubInstanceOf(tb, edge.NewEdgeStub(tb, edge.EdgeStubWithRandSource(src)))
 		})
 	})
 
 	t.Run("EdgeStubBenchMode", func(t *testing.T) {
 		t.Parallel()
 		stub.BenchModeBehaviour(t, func(tb assert.TB) edgeStubInstance {
-			return edgeStubInstanceOf(tb, NewEdgeStub(tb, EdgeStubBenchMode()))
+			return edgeStubInstanceOf(tb, edge.NewEdgeStub(tb, edge.EdgeStubBenchMode()))
 		})
 	})
 
@@ -1096,7 +1097,7 @@ func TestEdgeStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) edgeStubInstance {
 				return edgeStubInstanceOf(
 					tb,
-					NewEdgeStub(tb, EdgeStubWithClock(clk), EdgeStubWithLatency(d)),
+					edge.NewEdgeStub(tb, edge.EdgeStubWithClock(clk), edge.EdgeStubWithLatency(d)),
 				)
 			},
 		)
@@ -1108,7 +1109,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Read with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Read-failing")
-			s := NewEdgeStub(t, EdgeStubFailing(want))
+			s := edge.NewEdgeStub(t, edge.EdgeStubFailing(want))
 			_, r1 := edgeStubRead(t, s)
 			assert.ErrorIs(t, r1, want, "Read fails with the error of EdgeStubFailing")
 		})
@@ -1116,7 +1117,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Use with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Use-failing")
-			s := NewEdgeStub(t, EdgeStubFailing(want))
+			s := edge.NewEdgeStub(t, edge.EdgeStubFailing(want))
 			r0 := edgeStubUse(t, s)
 			assert.ErrorIs(t, r0, want, "Use fails with the error of EdgeStubFailing")
 		})
@@ -1124,7 +1125,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Record with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Record-failing")
-			s := NewEdgeStub(t, EdgeStubFailing(want))
+			s := edge.NewEdgeStub(t, edge.EdgeStubFailing(want))
 			_, err := edgeStubRecord(t, s)
 			assert.ErrorIs(t, err, want, "Record fails with the error of EdgeStubFailing")
 		})
@@ -1132,7 +1133,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Clash with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Clash-failing")
-			s := NewEdgeStub(t, EdgeStubFailing(want))
+			s := edge.NewEdgeStub(t, edge.EdgeStubFailing(want))
 			_, r1 := edgeStubClash(t, s)
 			assert.ErrorIs(t, r1, want, "Clash fails with the error of EdgeStubFailing")
 		})
@@ -1140,7 +1141,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("fails Fetch with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Fetch-failing")
-			s := NewEdgeStub(t, EdgeStubFailing(want))
+			s := edge.NewEdgeStub(t, edge.EdgeStubFailing(want))
 			_, err := edgeStubFetch(t, s)
 			assert.ErrorIs(t, err, want, "Fetch fails with the error of EdgeStubFailing")
 		})
@@ -1152,7 +1153,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Skip", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeSkip(func(_ string, _ int) {
+			s := edge.NewEdgeStub(t, edge.WithEdgeSkip(func(_ string, _ int) {
 				called = true
 			}))
 			edgeStubSkip(t, s)
@@ -1166,7 +1167,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Read", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeRead(func() (int, error) {
+			s := edge.NewEdgeStub(t, edge.WithEdgeRead(func() (int, error) {
 				called = true
 				var z0 int
 				var z1 error
@@ -1183,7 +1184,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Keep", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeKeep(func(_ int) int {
+			s := edge.NewEdgeStub(t, edge.WithEdgeKeep(func(_ int) int {
 				called = true
 				var z0 int
 				return z0
@@ -1199,7 +1200,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Use", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeUse(func(_ string) error {
+			s := edge.NewEdgeStub(t, edge.WithEdgeUse(func(_ string) error {
 				called = true
 				var z0 error
 				return z0
@@ -1215,7 +1216,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Record", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeRecord(func(_ string) (int, error) {
+			s := edge.NewEdgeStub(t, edge.WithEdgeRecord(func(_ string) (int, error) {
 				called = true
 				var z0 int
 				var z1 error
@@ -1232,7 +1233,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Clash", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeClash(func() (string, error) {
+			s := edge.NewEdgeStub(t, edge.WithEdgeClash(func() (string, error) {
 				called = true
 				var z0 string
 				var z1 error
@@ -1249,7 +1250,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Shift", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeShift(func(_ string, _ int) {
+			s := edge.NewEdgeStub(t, edge.WithEdgeShift(func(_ string, _ int) {
 				called = true
 			}))
 			edgeStubShift(t, s)
@@ -1263,7 +1264,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Fetch", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeFetch(func(_ string) (int, error) {
+			s := edge.NewEdgeStub(t, edge.WithEdgeFetch(func(_ string) (int, error) {
 				called = true
 				var z0 int
 				var z1 error
@@ -1280,7 +1281,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Wide", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgeWide(func(_, _, _, _, _, _, _, _, _, _, _ int) {
+			s := edge.NewEdgeStub(t, edge.WithEdgeWide(func(_, _, _, _, _, _, _, _, _, _, _ int) {
 				called = true
 			}))
 			edgeStubWide(t, s)
@@ -1294,7 +1295,7 @@ func TestEdgeStub(t *testing.T) {
 		t.Run("sets the function of Pair", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewEdgeStub(t, WithEdgePair(func() (int, int) {
+			s := edge.NewEdgeStub(t, edge.WithEdgePair(func() (int, int) {
 				called = true
 				var z0 int
 				var z1 int
@@ -1316,7 +1317,7 @@ func TestEdgeSkipStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Skip to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			var got0 string
 			var got1 int
 			s.OnSkip.Func(func(p0 string, p1 int) {
@@ -1340,7 +1341,7 @@ func TestEdgeReadStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Read", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubReadPins()
 			s.OnRead.Returns(want0, want1)
 			got0, got1 := edgeStubRead(t, s)
@@ -1351,7 +1352,7 @@ func TestEdgeReadStub(t *testing.T) {
 		t.Run("configures Read for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewEdgeStub(r)
+			s := edge.NewEdgeStub(r)
 			s.OnRead.Strict()
 			var want0 int
 			var want1 error
@@ -1372,7 +1373,7 @@ func TestEdgeKeepStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Keep", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0 := edgeStubKeepPins()
 			s.OnKeep.Returns(want0)
 			got0 := edgeStubKeep(t, s)
@@ -1382,7 +1383,7 @@ func TestEdgeKeepStub(t *testing.T) {
 		t.Run("configures Keep for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewEdgeStub(r)
+			s := edge.NewEdgeStub(r)
 			s.OnKeep.Strict()
 			var want0 int
 			s.OnKeep.Returns(want0)
@@ -1396,7 +1397,7 @@ func TestEdgeKeepStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Keep to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			var got0 int
 			s.OnKeep.Func(func(p0 int) int {
 				got0 = p0
@@ -1419,7 +1420,7 @@ func TestEdgeUseStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Use", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0 := edgeStubUsePins()
 			s.OnUse.Returns(want0)
 			got0 := edgeStubUse(t, s)
@@ -1429,7 +1430,7 @@ func TestEdgeUseStub(t *testing.T) {
 		t.Run("configures Use for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewEdgeStub(r)
+			s := edge.NewEdgeStub(r)
 			s.OnUse.Strict()
 			var want0 error
 			s.OnUse.Returns(want0)
@@ -1443,7 +1444,7 @@ func TestEdgeUseStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Use to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			var got0 string
 			s.OnUse.Func(func(p0 string) error {
 				got0 = p0
@@ -1467,7 +1468,7 @@ func TestEdgeRecordStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Record", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubRecordPins()
 			s.OnRecord.Returns(want0, want1)
 			got0, got1 := edgeStubRecord(t, s)
@@ -1478,7 +1479,7 @@ func TestEdgeRecordStub(t *testing.T) {
 		t.Run("configures Record for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewEdgeStub(r)
+			s := edge.NewEdgeStub(r)
 			s.OnRecord.Strict()
 			var want0 int
 			var want1 error
@@ -1493,7 +1494,7 @@ func TestEdgeRecordStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Record to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			var got0 string
 			s.OnRecord.Func(func(p0 string) (int, error) {
 				got0 = p0
@@ -1518,7 +1519,7 @@ func TestEdgeClashStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Clash", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubClashPins()
 			s.OnClash.Returns(want0, want1)
 			got0, got1 := edgeStubClash(t, s)
@@ -1529,7 +1530,7 @@ func TestEdgeClashStub(t *testing.T) {
 		t.Run("configures Clash for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewEdgeStub(r)
+			s := edge.NewEdgeStub(r)
 			s.OnClash.Strict()
 			var want0 string
 			var want1 error
@@ -1550,7 +1551,7 @@ func TestEdgeShiftStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Shift to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			var got0 string
 			var got1 int
 			s.OnShift.Func(func(p0 string, p1 int) {
@@ -1574,7 +1575,7 @@ func TestEdgeFetchStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Fetch", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubFetchPins()
 			s.OnFetch.Returns(want0, want1)
 			got0, got1 := edgeStubFetch(t, s)
@@ -1585,7 +1586,7 @@ func TestEdgeFetchStub(t *testing.T) {
 		t.Run("configures Fetch for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewEdgeStub(r)
+			s := edge.NewEdgeStub(r)
 			s.OnFetch.Strict()
 			var want0 int
 			var want1 error
@@ -1600,7 +1601,7 @@ func TestEdgeFetchStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Fetch to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			var got0 string
 			s.OnFetch.Func(func(p0 string) (int, error) {
 				got0 = p0
@@ -1625,7 +1626,7 @@ func TestEdgeWideStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Wide to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			var got0 int
 			var got1 int
 			var got2 int
@@ -1667,7 +1668,7 @@ func TestEdgePairStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Pair", func(t *testing.T) {
 			t.Parallel()
-			s := NewEdgeStub(t)
+			s := edge.NewEdgeStub(t)
 			want0, want1 := edgeStubPairPins()
 			s.OnPair.Returns(want0, want1)
 			got0, got1 := edgeStubPair(t, s)
@@ -1678,7 +1679,7 @@ func TestEdgePairStub(t *testing.T) {
 		t.Run("configures Pair for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewEdgeStub(r)
+			s := edge.NewEdgeStub(r)
 			s.OnPair.Strict()
 			var want0 int
 			var want1 int

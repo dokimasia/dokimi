@@ -5,6 +5,7 @@
 {{- if eq $d.Name $c.Double}}
 {{- $stub := $d.Name}}
 {{- $iface := $c.Subject}}
+{{- $new := stubNew $stub}}
 {{- $tp := typeparams $d.TypeParams}}
 {{- $ta := typeargs $d.TypeParams}}
 {{- $unset := "its zero value"}}{{range $c.Methods}}{{if .Defaulted}}{{$unset = "its default results"}}{{end}}{{end}}
@@ -230,9 +231,10 @@ Each call of such a method then fails with err.` $stub))}}
 }
 {{- end}}
 {{- range $m := $c.Methods}}
+{{- $with := stubWith $iface $m.Name}}
 
-{{docs (wrapdocs (printf `With%s%s returns the option that sets the function of %s.` $iface $m.Name $m.Name))}}
-{{- ""}}func With{{$iface}}{{$m.Name}}{{$tp}}(fn func({{template "stub.paramtypes" $m}}){{template "stub.results" $m}}) {{$stub}}Option{{$ta}} {
+{{docs (wrapdocs (printf `%s returns the option that sets the function of %s.` $with $m.Name))}}
+{{- ""}}func {{$with}}{{$tp}}(fn func({{template "stub.paramtypes" $m}}){{template "stub.results" $m}}) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.{{$m.Field}}.Func(fn) }
 }
 {{- end}}
@@ -273,10 +275,10 @@ parameters. The double does not branch on its type parameters, so it implements
 {{- ""}}var _ {{spell .}} = (*{{$stub}}{{typeargs $c.Witnesses}})(nil)
 {{- end}}
 
-{{docs (wrapdocs (printf `New%s returns a double of %s that reports its failures to tb and applies
+{{docs (wrapdocs (printf `%s returns a double of %s that reports its failures to tb and applies
 opts. The double checks the expected counts of calls at the end of the test.
-With a nil tb, the double reports nothing.` $stub $iface))}}
-{{- ""}}func New{{$stub}}{{$tp}}(tb assert.TB, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
+With a nil tb, the double reports nothing.` $new $iface))}}
+{{- ""}}func {{$new}}{{$tp}}(tb assert.TB, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
 	s := &{{$stub}}{{$ta}}{
 {{- range $c.Methods}}
 		{{.Field}}: &{{.Stub}}{{$ta}}{MethodStub: stub.NewMethodStub[{{.Call}}{{$ta}}](tb, "{{.Qualified}}")},
@@ -302,20 +304,20 @@ With a nil tb, the double reports nothing.` $stub $iface))}}
 	return s
 }
 
-{{docs (wrapdocs (printf `New%sDelayed returns a double whose methods sleep d on clk before they
-return. It applies opts after the clock and the latency.` $stub))}}
-{{- ""}}func New{{$stub}}Delayed{{$tp}}(tb assert.TB, d time.Duration, clk assert.Clock, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
-	return New{{$stub}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{
+{{docs (wrapdocs (printf `%sDelayed returns a double whose methods sleep d on clk before they
+return. It applies opts after the clock and the latency.` $new))}}
+{{- ""}}func {{$new}}Delayed{{$tp}}(tb assert.TB, d time.Duration, clk assert.Clock, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
+	return {{$new}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{
 		{{$stub}}WithClock{{$ta}}(clk),
 		{{$stub}}WithLatency{{$ta}}(d),
 	}, opts...)...)
 }
 {{- if $c.Fallible}}
 
-{{docs (wrapdocs (printf `New%sFailing returns a double on which each call of a method that can
-fail fails with err. It applies opts after the failure.` $stub))}}
-{{- ""}}func New{{$stub}}Failing{{$tp}}(tb assert.TB, err error, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
-	return New{{$stub}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{ {{- $stub}}Failing{{$ta}}(err)}, opts...)...)
+{{docs (wrapdocs (printf `%sFailing returns a double on which each call of a method that can
+fail fails with err. It applies opts after the failure.` $new))}}
+{{- ""}}func {{$new}}Failing{{$tp}}(tb assert.TB, err error, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
+	return {{$new}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{ {{- $stub}}Failing{{$ta}}(err)}, opts...)...)
 }
 {{- end}}
 

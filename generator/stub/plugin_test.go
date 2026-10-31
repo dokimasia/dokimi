@@ -4,6 +4,7 @@
 package stub_test
 
 import (
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -18,6 +19,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/plugintest"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
+	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/gentest"
@@ -43,9 +45,14 @@ const (
 	counterPackage    = "example.com/shop/counter"
 	sealedPackage     = "example.com/shop/sealed"
 	fieldedPackage    = "example.com/shop/fielded"
+	movedPackage      = "example.com/shop/moved"
 	fieldedModule     = "fielded"
 	shopPackage       = "shop"
 	bagName           = "Bag"
+	hostsName         = "Hosts"
+	lowerStoreName    = "store"
+	handleName        = "session"
+	cacheName         = "cache"
 	pairsName         = "Pairs"
 	sessionName       = "Session"
 	cursorName        = "Cursor"
@@ -95,7 +102,7 @@ func TestStub(t *testing.T) {
 			p := stub.New()
 			f := gentest.New(t, &gentest.Spec{
 				Dir: goTree, Packages: []string{suitedPackage}, Target: golang.Target, Plugins: []plugin.Plugin{p},
-				Annotators: append(annotators(), suite.New()),
+				Annotators: append(annotators(builder.New()), suite.New()),
 			})
 			res := f.Generate(t, p)
 			assert.NoError(t, res.Err, "the generator runs whole")
@@ -116,7 +123,7 @@ func TestStub(t *testing.T) {
 			p := stub.New()
 			f := gentest.New(t, &gentest.Spec{
 				Dir: goTree, Packages: []string{wrapPackage, toolPackage, deepPackage}, Target: golang.Target,
-				Plugins: []plugin.Plugin{p}, Annotators: annotators(),
+				Plugins: []plugin.Plugin{p}, Annotators: annotators(builder.New()),
 			})
 			res := f.Generate(t, p)
 			assert.NoError(t, res.Err, "the generator runs whole")
@@ -941,6 +948,15 @@ func TestStub(t *testing.T) {
 			expect.True(t, got.Pinnable, "a result of Get has a sample")
 		})
 
+		t.Run("marks no result whose sample the external test package cannot refer to as pinned", func(t *testing.T) {
+			t.Parallel()
+
+			got := method(t, generate(t, golang.Target, goTree, hiddenPackage).models[hostsName], "Find")
+			expect.Equal(t, []bool{got.Returns[0].Pinned, got.Returns[1].Pinned}, []bool{false, false},
+				"the samples of Host are results of unexported functions")
+			expect.False(t, got.Pinnable, "no result of Find has a sample that its test can refer to")
+		})
+
 		{
 			tests := []struct {
 				name        string
@@ -966,6 +982,87 @@ func TestStub(t *testing.T) {
 				})
 			}
 		}
+
+		{
+			tests := []struct {
+				name        string
+				givePkg     string
+				giveSubject string
+				wantNames   []string
+			}{
+				{
+					name:        "names the constructor and the options of a double after its exported subject",
+					givePkg:     catalogPackage,
+					giveSubject: storeName,
+					wantNames:   []string{"WithStoreGet", "NewStoreStub", "NewStoreStubDelayed", "NewStoreStubFailing"},
+				},
+				{
+					name:        "names the constructor and the options of a double of an unexported subject in camel case",
+					givePkg:     hiddenPackage,
+					giveSubject: lowerStoreName,
+					wantNames:   []string{"withStoreGet", "newStoreStub", "newStoreStubDelayed", "newStoreStubFailing"},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got := generate(t, golang.Target, goTree, tt.givePkg).beside[tt.giveSubject]
+					for _, name := range tt.wantNames {
+						expect.Contains(t, got, name, "the record of the double declares "+name)
+					}
+				})
+			}
+		}
+
+		t.Run("records no checks of the double of an unexported subject", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, hiddenPackage)
+			assert.Contains(t, got.models, lowerStoreName, "stub records the double of store")
+			expect.NotContains(t, got.checks, lowerStoreName, "a test outside the package cannot refer to store")
+		})
+
+		t.Run("records the double of a handle that a method of an unexported subject returns", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, hiddenPackage)
+			assert.Contains(t, got.models, handleName, "the method Open of store returns the handle session")
+			expect.Equal(t, got.models[handleName].Producer, lowerStoreName, "store produces session")
+		})
+
+		t.Run("records the double of an exported subject that the directive out moves", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, movedPackage)
+			expect.Equal(t, slices.Sorted(maps.Keys(got.models)), []string{storeName},
+				"the file of the double of Store in the package movedtest imports Store")
+		})
+
+		t.Run("leaves each sample and witness to the layout where the plan previews no package", func(t *testing.T) {
+			t.Parallel()
+
+			p := stub.New()
+			f := gentest.New(t, &gentest.Spec{
+				Dir: goTree, Packages: []string{hiddenPackage}, Target: golang.Target, Plugins: []plugin.Plugin{p},
+				Annotators: annotators(builder.New()),
+			})
+			res := f.Generate(t, p)
+			assert.NoError(t, res.Err, "the generator runs whole")
+			models := gentest.Records(t, res, stubTemplate, "", func(m stub.Model) string { return m.Subject })
+			expect.True(t, method(t, models[hostsName].Data, "Find").Returns[0].Pinned,
+				"the sample of Host pins the result of Find, because the layout checks each reference")
+			expect.Equal(t, spellings(models[finderName].Data.Witnesses), "node", "the witness of T is node")
+			expect.Contains(t, models, lowerStoreName, "the layout checks the reference of the double of store")
+		})
+
+		t.Run("records no witnesses that the external test package cannot refer to", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, hiddenPackage)
+			expect.Empty(t, got.models[finderName].Witnesses, "the witness of T is the unexported type node")
+			expect.Empty(t, got.checks[finderName].Witnesses, "the tests of Finder state that the double has no checks")
+		})
 
 		t.Run("records the compile-time check of a generic double at its witnesses", func(t *testing.T) {
 			t.Parallel()
@@ -1588,6 +1685,18 @@ func TestStub(t *testing.T) {
 						"its double in the package example.com/shop/wrap cannot import, so it has no double: golang: " +
 						"example.com/shop/lib/internal/deep is internal to example.com/shop/lib, and the package " +
 						"example.com/shop/wrap is outside it",
+				},
+				{
+					name:       "reports Unimplementable at an unexported interface whose double moves to another package",
+					giveTarget: golang.Target,
+					giveTree:   goTree,
+					givePkgs:   []string{movedPackage},
+					wantCode:   stub.Unimplementable,
+					wantAt:     symbol.KindInterface,
+					wantName:   cacheName,
+					wantMsg: "the file of the double of cache in the package example.com/shop/moved/movedtest cannot " +
+						"import cache, so it has no double: golang: cache is not exported from example.com/shop/moved, " +
+						"and the code is in example.com/shop/moved/movedtest",
 				},
 				{
 					name:       "reports Unimplementable at an interface with an unexported method under an out",

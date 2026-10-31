@@ -13,6 +13,7 @@ import (
 	goannotate "go.dokimi.dev/eidos/lang/go/annotate"
 	gobackend "go.dokimi.dev/eidos/lang/go/backend"
 	"go.dokimi.dev/eidos/plugin/shape/catalog"
+	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/authored"
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/emit"
@@ -40,6 +41,7 @@ const (
 	sequencePackage = "example.com/shop/sequence"
 	builtPackage    = "example.com/shop/built"
 	billingPackage  = "example.com/shop/billing"
+	hiddenPackage   = "example.com/shop/hidden"
 	storeModule     = "store"
 	clockModule     = "clock"
 	handlesModule   = "handles"
@@ -54,6 +56,7 @@ const (
 	clockName       = "Clock"
 	repoName        = "Repo"
 	edgeName        = "Edge"
+	finderName      = "Finder"
 )
 
 // generated is what stub records over one fixture: the model, the record of
@@ -77,14 +80,27 @@ type generated struct {
 func fixture(tb assert.TB, target plugin.Target, dir string, p plugin.Plugin, pkgs ...string) *gentest.Fixture {
 	tb.Helper()
 
+	f, _ := planned(tb, target, dir, p, pkgs...)
+	return f
+}
+
+// planned returns the fixture that fixture returns, and the builder whose
+// annotate half stamps the fixture. The plan of the composition runs the
+// generate half of that builder before stub.
+func planned(
+	tb assert.TB, target plugin.Target, dir string, p plugin.Plugin, pkgs ...string,
+) (*gentest.Fixture, sdk.Dual) {
+	tb.Helper()
+
+	b := builder.New()
 	return gentest.New(tb, &gentest.Spec{
 		Dir:        dir,
 		Packages:   pkgs,
 		Target:     target,
 		Types:      spokes[target],
 		Plugins:    []plugin.Plugin{p},
-		Annotators: annotators(),
-	})
+		Annotators: annotators(b),
+	}), b
 }
 
 // spokes are the spokes of the fixtures by their target.
@@ -92,11 +108,11 @@ var spokes = map[plugin.Target]plugin.TypeSpeller{golang.Target: gobackend.New()
 
 // annotators returns the annotators of the composition: the authored samples
 // and witnesses, the facts of Go, the declared defaults, the names of the
-// builders, the faults of the methods and the classifications of the shape
-// catalog.
-func annotators() []plugin.Annotator {
+// builders of b, the faults of the methods and the classifications of the
+// shape catalog.
+func annotators(b plugin.Annotator) []plugin.Annotator {
 	return append([]plugin.Annotator{
-		authored.Sample(), authored.Witness(), goannotate.New(), defaults.New(), builder.New(), fault.New(),
+		authored.Sample(), authored.Witness(), goannotate.New(), defaults.New(), b, fault.New(),
 	}, catalog.Annotators()...)
 }
 

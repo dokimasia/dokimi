@@ -1,4 +1,4 @@
-package handles
+package handles_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"example.com/shop/handles"
 	"example.com/shop/other"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
@@ -14,7 +15,7 @@ import (
 )
 
 // archiveStubSize calls Size of s with the samples of its arguments.
-func archiveStubSize(tb assert.TB, s *ArchiveStub) int {
+func archiveStubSize(tb assert.TB, s *handles.ArchiveStub) int {
 	tb.Helper()
 	return s.Size()
 }
@@ -35,7 +36,7 @@ func archiveStubOpenLogArgs(tb assert.TB) string {
 }
 
 // archiveStubOpenLog calls OpenLog of s with the samples of its arguments.
-func archiveStubOpenLog(tb assert.TB, s *ArchiveStub) (Log, error) {
+func archiveStubOpenLog(tb assert.TB, s *handles.ArchiveStub) (handles.Log, error) {
 	tb.Helper()
 	a0 := archiveStubOpenLogArgs(tb)
 	return s.OpenLog(a0)
@@ -43,25 +44,27 @@ func archiveStubOpenLog(tb assert.TB, s *ArchiveStub) (Log, error) {
 
 // archiveStubOpenLogPins returns the samples of the results of OpenLog,
 // with a new error as its error result.
-func archiveStubOpenLogPins() (Log, error) {
-	var want0 Log
+func archiveStubOpenLogPins() (handles.Log, error) {
+	var want0 handles.Log
 	want1 := errors.New("OpenLog-returns")
 	return want0, want1
 }
 
 // archiveStubSizeSubject returns the subject of [stub.Behaviour] for Size.
 // The subject calls a new double that reports to tb.
-func archiveStubSizeSubject(tb assert.TB) stub.Subject[ArchiveSizeCall, ArchiveSizeReturn] {
+func archiveStubSizeSubject(
+	tb assert.TB,
+) stub.Subject[handles.ArchiveSizeCall, handles.ArchiveSizeReturn] {
 	tb.Helper()
-	s := NewArchiveStub(tb)
-	return stub.Subject[ArchiveSizeCall, ArchiveSizeReturn]{
+	s := handles.NewArchiveStub(tb)
+	return stub.Subject[handles.ArchiveSizeCall, handles.ArchiveSizeReturn]{
 		Stub: s.OnSize.MethodStub,
 		Call: func() {
 			_ = archiveStubSize(tb, s)
 		},
-		Result: func() ArchiveSizeReturn {
+		Result: func() handles.ArchiveSizeReturn {
 			got0 := archiveStubSize(tb, s)
-			return ArchiveSizeReturn{Result: got0}
+			return handles.ArchiveSizeReturn{Result: got0}
 		},
 		Override: func(mark func()) {
 			s.OnSize.Func(func() int {
@@ -77,22 +80,22 @@ func archiveStubSizeSubject(tb assert.TB) stub.Subject[ArchiveSizeCall, ArchiveS
 // OpenLog. The subject calls a new double that reports to tb.
 func archiveStubOpenLogSubject(
 	tb assert.TB,
-) stub.Subject[ArchiveOpenLogCall, ArchiveOpenLogReturn] {
+) stub.Subject[handles.ArchiveOpenLogCall, handles.ArchiveOpenLogReturn] {
 	tb.Helper()
-	s := NewArchiveStub(tb)
-	return stub.Subject[ArchiveOpenLogCall, ArchiveOpenLogReturn]{
+	s := handles.NewArchiveStub(tb)
+	return stub.Subject[handles.ArchiveOpenLogCall, handles.ArchiveOpenLogReturn]{
 		Stub: s.OnOpenLog.MethodStub,
 		Call: func() {
 			_, _ = archiveStubOpenLog(tb, s)
 		},
-		Result: func() ArchiveOpenLogReturn {
+		Result: func() handles.ArchiveOpenLogReturn {
 			got0, got1 := archiveStubOpenLog(tb, s)
-			return ArchiveOpenLogReturn{Result: got0, Err: got1}
+			return handles.ArchiveOpenLogReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
-			s.OnOpenLog.Func(func(_ string) (Log, error) {
+			s.OnOpenLog.Func(func(_ string) (handles.Log, error) {
 				mark()
-				var z0 Log
+				var z0 handles.Log
 				var z1 error
 				return z0, z1
 			})
@@ -104,13 +107,13 @@ func archiveStubOpenLogSubject(
 	}
 }
 
-// archiveStubInstance is the instance of a ArchiveStub that the checks of
-// the constructors and the options drive.
-type archiveStubInstance = stub.Instance[ArchiveSizeCall]
+// archiveStubInstance is the instance of a handles.ArchiveStub that the
+// checks of the constructors and the options drive.
+type archiveStubInstance = stub.Instance[handles.ArchiveSizeCall]
 
 // archiveStubInstanceOf returns the instance of s. The options apply to
 // the whole double, so the checks call Size alone.
-func archiveStubInstanceOf(tb assert.TB, s *ArchiveStub) archiveStubInstance {
+func archiveStubInstanceOf(tb assert.TB, s *handles.ArchiveStub) archiveStubInstance {
 	tb.Helper()
 	return archiveStubInstance{
 		Stub: s.OnSize.MethodStub,
@@ -132,9 +135,9 @@ func TestArchiveStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
-			var seen []ArchiveSizeCall
-			s.OnSize.OnRecord(func(c ArchiveSizeCall) { seen = append(seen, c) })
+			s := handles.NewArchiveStub(t)
+			var seen []handles.ArchiveSizeCall
+			s.OnSize.OnRecord(func(c handles.ArchiveSizeCall) { seen = append(seen, c) })
 			_ = archiveStubSize(t, s)
 			_ = archiveStubSize(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Size")
@@ -147,7 +150,7 @@ func TestArchiveStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
+			s := handles.NewArchiveStub(t)
 			_, _ = archiveStubOpenLog(t, s)
 			got := s.OnOpenLog.AssertCalledOnce(t, "OpenLog records the call")
 			a0 := archiveStubOpenLogArgs(t)
@@ -156,9 +159,9 @@ func TestArchiveStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
-			var seen []ArchiveOpenLogCall
-			s.OnOpenLog.OnRecord(func(c ArchiveOpenLogCall) { seen = append(seen, c) })
+			s := handles.NewArchiveStub(t)
+			var seen []handles.ArchiveOpenLogCall
+			s.OnOpenLog.OnRecord(func(c handles.ArchiveOpenLogCall) { seen = append(seen, c) })
 			_, _ = archiveStubOpenLog(t, s)
 			_, _ = archiveStubOpenLog(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of OpenLog")
@@ -168,12 +171,12 @@ func TestArchiveStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) archiveStubInstance {
-			return archiveStubInstanceOf(tb, NewArchiveStub(tb))
+			return archiveStubInstanceOf(tb, handles.NewArchiveStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Size", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
+			s := handles.NewArchiveStub(t)
 			_ = archiveStubSize(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnSize.CallCount(), 0, "ResetCalls clears the calls of Size")
@@ -181,7 +184,7 @@ func TestArchiveStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Size", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
+			s := handles.NewArchiveStub(t)
 			want0 := archiveStubSizePins()
 			s.OnSize.Returns(want0)
 			s.ResetCalls()
@@ -191,7 +194,7 @@ func TestArchiveStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of OpenLog", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
+			s := handles.NewArchiveStub(t)
 			_, _ = archiveStubOpenLog(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnOpenLog.CallCount(), 0, "ResetCalls clears the calls of OpenLog")
@@ -199,7 +202,7 @@ func TestArchiveStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of OpenLog", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
+			s := handles.NewArchiveStub(t)
 			want0, want1 := archiveStubOpenLogPins()
 			s.OnOpenLog.Returns(want0, want1)
 			s.ResetCalls()
@@ -213,7 +216,7 @@ func TestArchiveStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) archiveStubInstance {
-				return archiveStubInstanceOf(tb, NewArchiveStubDelayed(tb, d, clk))
+				return archiveStubInstanceOf(tb, handles.NewArchiveStubDelayed(tb, d, clk))
 			},
 		)
 	})
@@ -224,7 +227,7 @@ func TestArchiveStub(t *testing.T) {
 		t.Run("fails OpenLog with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("OpenLog-failing")
-			s := NewArchiveStubFailing(t, want)
+			s := handles.NewArchiveStubFailing(t, want)
 			_, r1 := archiveStubOpenLog(t, s)
 			assert.ErrorIs(t, r1, want, "OpenLog fails with the error of NewArchiveStubFailing")
 		})
@@ -233,7 +236,10 @@ func TestArchiveStub(t *testing.T) {
 	t.Run("ArchiveStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) archiveStubInstance {
-			return archiveStubInstanceOf(tb, NewArchiveStub(tb, ArchiveStubStrict()))
+			return archiveStubInstanceOf(
+				tb,
+				handles.NewArchiveStub(tb, handles.ArchiveStubStrict()),
+			)
 		})
 	})
 
@@ -242,16 +248,16 @@ func TestArchiveStub(t *testing.T) {
 
 		t.Run("passes Size to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewArchiveStub(t)
-			s := NewArchiveStub(t, ArchiveStubDelegateTo(inner))
+			inner := handles.NewArchiveStub(t)
+			s := handles.NewArchiveStub(t, handles.ArchiveStubDelegateTo(inner))
 			_ = archiveStubSize(t, s)
 			inner.OnSize.AssertCalledOnce(t, "Size calls the implementation")
 		})
 
 		t.Run("passes OpenLog to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewArchiveStub(t)
-			s := NewArchiveStub(t, ArchiveStubDelegateTo(inner))
+			inner := handles.NewArchiveStub(t)
+			s := handles.NewArchiveStub(t, handles.ArchiveStubDelegateTo(inner))
 			_, _ = archiveStubOpenLog(t, s)
 			inner.OnOpenLog.AssertCalledOnce(t, "OpenLog calls the implementation")
 		})
@@ -259,9 +265,9 @@ func TestArchiveStub(t *testing.T) {
 		t.Run("fails OpenLog with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("OpenLog-delegate")
-			inner := NewArchiveStub(t)
+			inner := handles.NewArchiveStub(t)
 			inner.OnOpenLog.Faults(want, 1)
-			s := NewArchiveStub(t, ArchiveStubDelegateTo(inner))
+			s := handles.NewArchiveStub(t, handles.ArchiveStubDelegateTo(inner))
 			_, r1 := archiveStubOpenLog(t, s)
 			assert.ErrorIs(t, r1, want, "OpenLog fails with the error of the implementation")
 		})
@@ -270,21 +276,30 @@ func TestArchiveStub(t *testing.T) {
 	t.Run("ArchiveStubWithClock", func(t *testing.T) {
 		t.Parallel()
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) archiveStubInstance {
-			return archiveStubInstanceOf(tb, NewArchiveStub(tb, ArchiveStubWithClock(clk)))
+			return archiveStubInstanceOf(
+				tb,
+				handles.NewArchiveStub(tb, handles.ArchiveStubWithClock(clk)),
+			)
 		})
 	})
 
 	t.Run("ArchiveStubWithRandSource", func(t *testing.T) {
 		t.Parallel()
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) archiveStubInstance {
-			return archiveStubInstanceOf(tb, NewArchiveStub(tb, ArchiveStubWithRandSource(src)))
+			return archiveStubInstanceOf(
+				tb,
+				handles.NewArchiveStub(tb, handles.ArchiveStubWithRandSource(src)),
+			)
 		})
 	})
 
 	t.Run("ArchiveStubBenchMode", func(t *testing.T) {
 		t.Parallel()
 		stub.BenchModeBehaviour(t, func(tb assert.TB) archiveStubInstance {
-			return archiveStubInstanceOf(tb, NewArchiveStub(tb, ArchiveStubBenchMode()))
+			return archiveStubInstanceOf(
+				tb,
+				handles.NewArchiveStub(tb, handles.ArchiveStubBenchMode()),
+			)
 		})
 	})
 
@@ -295,7 +310,11 @@ func TestArchiveStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) archiveStubInstance {
 				return archiveStubInstanceOf(
 					tb,
-					NewArchiveStub(tb, ArchiveStubWithClock(clk), ArchiveStubWithLatency(d)),
+					handles.NewArchiveStub(
+						tb,
+						handles.ArchiveStubWithClock(clk),
+						handles.ArchiveStubWithLatency(d),
+					),
 				)
 			},
 		)
@@ -307,7 +326,7 @@ func TestArchiveStub(t *testing.T) {
 		t.Run("fails OpenLog with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("OpenLog-failing")
-			s := NewArchiveStub(t, ArchiveStubFailing(want))
+			s := handles.NewArchiveStub(t, handles.ArchiveStubFailing(want))
 			_, r1 := archiveStubOpenLog(t, s)
 			assert.ErrorIs(t, r1, want, "OpenLog fails with the error of ArchiveStubFailing")
 		})
@@ -319,7 +338,7 @@ func TestArchiveStub(t *testing.T) {
 		t.Run("sets the function of Size", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewArchiveStub(t, WithArchiveSize(func() int {
+			s := handles.NewArchiveStub(t, handles.WithArchiveSize(func() int {
 				called = true
 				var z0 int
 				return z0
@@ -335,12 +354,15 @@ func TestArchiveStub(t *testing.T) {
 		t.Run("sets the function of OpenLog", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewArchiveStub(t, WithArchiveOpenLog(func(_ string) (Log, error) {
-				called = true
-				var z0 Log
-				var z1 error
-				return z0, z1
-			}))
+			s := handles.NewArchiveStub(
+				t,
+				handles.WithArchiveOpenLog(func(_ string) (handles.Log, error) {
+					called = true
+					var z0 handles.Log
+					var z1 error
+					return z0, z1
+				}),
+			)
 			_, _ = archiveStubOpenLog(t, s)
 			assert.True(t, called, "WithArchiveOpenLog sets the function of OpenLog")
 		})
@@ -357,7 +379,7 @@ func TestArchiveSizeStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Size", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
+			s := handles.NewArchiveStub(t)
 			want0 := archiveStubSizePins()
 			s.OnSize.Returns(want0)
 			got0 := archiveStubSize(t, s)
@@ -367,7 +389,7 @@ func TestArchiveSizeStub(t *testing.T) {
 		t.Run("configures Size for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewArchiveStub(r)
+			s := handles.NewArchiveStub(r)
 			s.OnSize.Strict()
 			var want0 int
 			s.OnSize.Returns(want0)
@@ -387,7 +409,7 @@ func TestArchiveOpenLogStub(t *testing.T) {
 
 		t.Run("sets the results of each call of OpenLog", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
+			s := handles.NewArchiveStub(t)
 			want0, want1 := archiveStubOpenLogPins()
 			s.OnOpenLog.Returns(want0, want1)
 			_, got1 := archiveStubOpenLog(t, s)
@@ -397,9 +419,9 @@ func TestArchiveOpenLogStub(t *testing.T) {
 		t.Run("configures OpenLog for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewArchiveStub(r)
+			s := handles.NewArchiveStub(r)
 			s.OnOpenLog.Strict()
-			var want0 Log
+			var want0 handles.Log
 			var want1 error
 			s.OnOpenLog.Returns(want0, want1)
 			_, _ = archiveStubOpenLog(t, s)
@@ -412,11 +434,11 @@ func TestArchiveOpenLogStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of OpenLog to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewArchiveStub(t)
+			s := handles.NewArchiveStub(t)
 			var got0 string
-			s.OnOpenLog.Func(func(p0 string) (Log, error) {
+			s.OnOpenLog.Func(func(p0 string) (handles.Log, error) {
 				got0 = p0
-				var z0 Log
+				var z0 handles.Log
 				var z1 error
 				return z0, z1
 			})
@@ -436,7 +458,7 @@ func logStubAppendArgs(tb assert.TB) string {
 }
 
 // logStubAppend calls Append of s with the samples of its arguments.
-func logStubAppend(tb assert.TB, s *LogStub) error {
+func logStubAppend(tb assert.TB, s *handles.LogStub) error {
 	tb.Helper()
 	a0 := logStubAppendArgs(tb)
 	return s.Append(a0)
@@ -451,17 +473,19 @@ func logStubAppendPins() error {
 
 // logStubAppendSubject returns the subject of [stub.Behaviour] for Append.
 // The subject calls a new double that reports to tb.
-func logStubAppendSubject(tb assert.TB) stub.Subject[LogAppendCall, LogAppendReturn] {
+func logStubAppendSubject(
+	tb assert.TB,
+) stub.Subject[handles.LogAppendCall, handles.LogAppendReturn] {
 	tb.Helper()
-	s := NewLogStub(tb)
-	return stub.Subject[LogAppendCall, LogAppendReturn]{
+	s := handles.NewLogStub(tb)
+	return stub.Subject[handles.LogAppendCall, handles.LogAppendReturn]{
 		Stub: s.OnAppend.MethodStub,
 		Call: func() {
 			_ = logStubAppend(tb, s)
 		},
-		Result: func() LogAppendReturn {
+		Result: func() handles.LogAppendReturn {
 			got0 := logStubAppend(tb, s)
-			return LogAppendReturn{Err: got0}
+			return handles.LogAppendReturn{Err: got0}
 		},
 		Override: func(mark func()) {
 			s.OnAppend.Func(func(_ string) error {
@@ -477,13 +501,13 @@ func logStubAppendSubject(tb assert.TB) stub.Subject[LogAppendCall, LogAppendRet
 	}
 }
 
-// logStubInstance is the instance of a LogStub that the checks of the
-// constructors and the options drive.
-type logStubInstance = stub.Instance[LogAppendCall]
+// logStubInstance is the instance of a handles.LogStub that the checks of
+// the constructors and the options drive.
+type logStubInstance = stub.Instance[handles.LogAppendCall]
 
 // logStubInstanceOf returns the instance of s. The options apply to the
 // whole double, so the checks call Append alone.
-func logStubInstanceOf(tb assert.TB, s *LogStub) logStubInstance {
+func logStubInstanceOf(tb assert.TB, s *handles.LogStub) logStubInstance {
 	tb.Helper()
 	return logStubInstance{
 		Stub: s.OnAppend.MethodStub,
@@ -505,7 +529,7 @@ func TestLogStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewLogStub(t)
+			s := handles.NewLogStub(t)
 			_ = logStubAppend(t, s)
 			got := s.OnAppend.AssertCalledOnce(t, "Append records the call")
 			a0 := logStubAppendArgs(t)
@@ -514,9 +538,9 @@ func TestLogStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewLogStub(t)
-			var seen []LogAppendCall
-			s.OnAppend.OnRecord(func(c LogAppendCall) { seen = append(seen, c) })
+			s := handles.NewLogStub(t)
+			var seen []handles.LogAppendCall
+			s.OnAppend.OnRecord(func(c handles.LogAppendCall) { seen = append(seen, c) })
 			_ = logStubAppend(t, s)
 			_ = logStubAppend(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Append")
@@ -526,12 +550,12 @@ func TestLogStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) logStubInstance {
-			return logStubInstanceOf(tb, NewLogStub(tb))
+			return logStubInstanceOf(tb, handles.NewLogStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Append", func(t *testing.T) {
 			t.Parallel()
-			s := NewLogStub(t)
+			s := handles.NewLogStub(t)
 			_ = logStubAppend(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnAppend.CallCount(), 0, "ResetCalls clears the calls of Append")
@@ -539,7 +563,7 @@ func TestLogStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Append", func(t *testing.T) {
 			t.Parallel()
-			s := NewLogStub(t)
+			s := handles.NewLogStub(t)
 			want0 := logStubAppendPins()
 			s.OnAppend.Returns(want0)
 			s.ResetCalls()
@@ -553,7 +577,7 @@ func TestLogStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) logStubInstance {
-				return logStubInstanceOf(tb, NewLogStubDelayed(tb, d, clk))
+				return logStubInstanceOf(tb, handles.NewLogStubDelayed(tb, d, clk))
 			},
 		)
 	})
@@ -564,7 +588,7 @@ func TestLogStub(t *testing.T) {
 		t.Run("fails Append with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Append-failing")
-			s := NewLogStubFailing(t, want)
+			s := handles.NewLogStubFailing(t, want)
 			r0 := logStubAppend(t, s)
 			assert.ErrorIs(t, r0, want, "Append fails with the error of NewLogStubFailing")
 		})
@@ -573,7 +597,7 @@ func TestLogStub(t *testing.T) {
 	t.Run("LogStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) logStubInstance {
-			return logStubInstanceOf(tb, NewLogStub(tb, LogStubStrict()))
+			return logStubInstanceOf(tb, handles.NewLogStub(tb, handles.LogStubStrict()))
 		})
 	})
 
@@ -582,8 +606,8 @@ func TestLogStub(t *testing.T) {
 
 		t.Run("passes Append to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewLogStub(t)
-			s := NewLogStub(t, LogStubDelegateTo(inner))
+			inner := handles.NewLogStub(t)
+			s := handles.NewLogStub(t, handles.LogStubDelegateTo(inner))
 			_ = logStubAppend(t, s)
 			inner.OnAppend.AssertCalledOnce(t, "Append calls the implementation")
 		})
@@ -591,9 +615,9 @@ func TestLogStub(t *testing.T) {
 		t.Run("fails Append with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Append-delegate")
-			inner := NewLogStub(t)
+			inner := handles.NewLogStub(t)
 			inner.OnAppend.Faults(want, 1)
-			s := NewLogStub(t, LogStubDelegateTo(inner))
+			s := handles.NewLogStub(t, handles.LogStubDelegateTo(inner))
 			r0 := logStubAppend(t, s)
 			assert.ErrorIs(t, r0, want, "Append fails with the error of the implementation")
 		})
@@ -602,21 +626,21 @@ func TestLogStub(t *testing.T) {
 	t.Run("LogStubWithClock", func(t *testing.T) {
 		t.Parallel()
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) logStubInstance {
-			return logStubInstanceOf(tb, NewLogStub(tb, LogStubWithClock(clk)))
+			return logStubInstanceOf(tb, handles.NewLogStub(tb, handles.LogStubWithClock(clk)))
 		})
 	})
 
 	t.Run("LogStubWithRandSource", func(t *testing.T) {
 		t.Parallel()
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) logStubInstance {
-			return logStubInstanceOf(tb, NewLogStub(tb, LogStubWithRandSource(src)))
+			return logStubInstanceOf(tb, handles.NewLogStub(tb, handles.LogStubWithRandSource(src)))
 		})
 	})
 
 	t.Run("LogStubBenchMode", func(t *testing.T) {
 		t.Parallel()
 		stub.BenchModeBehaviour(t, func(tb assert.TB) logStubInstance {
-			return logStubInstanceOf(tb, NewLogStub(tb, LogStubBenchMode()))
+			return logStubInstanceOf(tb, handles.NewLogStub(tb, handles.LogStubBenchMode()))
 		})
 	})
 
@@ -627,7 +651,11 @@ func TestLogStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) logStubInstance {
 				return logStubInstanceOf(
 					tb,
-					NewLogStub(tb, LogStubWithClock(clk), LogStubWithLatency(d)),
+					handles.NewLogStub(
+						tb,
+						handles.LogStubWithClock(clk),
+						handles.LogStubWithLatency(d),
+					),
 				)
 			},
 		)
@@ -639,7 +667,7 @@ func TestLogStub(t *testing.T) {
 		t.Run("fails Append with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Append-failing")
-			s := NewLogStub(t, LogStubFailing(want))
+			s := handles.NewLogStub(t, handles.LogStubFailing(want))
 			r0 := logStubAppend(t, s)
 			assert.ErrorIs(t, r0, want, "Append fails with the error of LogStubFailing")
 		})
@@ -651,7 +679,7 @@ func TestLogStub(t *testing.T) {
 		t.Run("sets the function of Append", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewLogStub(t, WithLogAppend(func(_ string) error {
+			s := handles.NewLogStub(t, handles.WithLogAppend(func(_ string) error {
 				called = true
 				var z0 error
 				return z0
@@ -672,7 +700,7 @@ func TestLogAppendStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Append", func(t *testing.T) {
 			t.Parallel()
-			s := NewLogStub(t)
+			s := handles.NewLogStub(t)
 			want0 := logStubAppendPins()
 			s.OnAppend.Returns(want0)
 			got0 := logStubAppend(t, s)
@@ -682,7 +710,7 @@ func TestLogAppendStub(t *testing.T) {
 		t.Run("configures Append for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewLogStub(r)
+			s := handles.NewLogStub(r)
 			s.OnAppend.Strict()
 			var want0 error
 			s.OnAppend.Returns(want0)
@@ -696,7 +724,7 @@ func TestLogAppendStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Append to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewLogStub(t)
+			s := handles.NewLogStub(t)
 			var got0 string
 			s.OnAppend.Func(func(p0 string) error {
 				got0 = p0
@@ -718,7 +746,7 @@ func producerStubOpenArgs(tb assert.TB) context.Context {
 }
 
 // producerStubOpen calls Open of s with the samples of its arguments.
-func producerStubOpen(tb assert.TB, s *ProducerStub) (Cursor, error) {
+func producerStubOpen(tb assert.TB, s *handles.ProducerStub) (handles.Cursor, error) {
 	tb.Helper()
 	a0 := producerStubOpenArgs(tb)
 	return s.Open(a0)
@@ -726,8 +754,8 @@ func producerStubOpen(tb assert.TB, s *ProducerStub) (Cursor, error) {
 
 // producerStubOpenPins returns the samples of the results of Open, with a
 // new error as its error result.
-func producerStubOpenPins() (Cursor, error) {
-	var want0 Cursor
+func producerStubOpenPins() (handles.Cursor, error) {
+	var want0 handles.Cursor
 	want1 := errors.New("Open-returns")
 	return want0, want1
 }
@@ -741,50 +769,52 @@ func producerStubResumeArgs(tb assert.TB) string {
 }
 
 // producerStubResume calls Resume of s with the samples of its arguments.
-func producerStubResume(tb assert.TB, s *ProducerStub) Cursor {
+func producerStubResume(tb assert.TB, s *handles.ProducerStub) handles.Cursor {
 	tb.Helper()
 	a0 := producerStubResumeArgs(tb)
 	return s.Resume(a0)
 }
 
 // producerStubWatch calls Watch of s with the samples of its arguments.
-func producerStubWatch(tb assert.TB, s *ProducerStub) Subscription {
+func producerStubWatch(tb assert.TB, s *handles.ProducerStub) handles.Subscription {
 	tb.Helper()
 	return s.Watch()
 }
 
 // producerStubNothing calls Nothing of s with the samples of its
 // arguments.
-func producerStubNothing(tb assert.TB, s *ProducerStub) Empty {
+func producerStubNothing(tb assert.TB, s *handles.ProducerStub) handles.Empty {
 	tb.Helper()
 	return s.Nothing()
 }
 
 // producerStubElsewhere calls Elsewhere of s with the samples of its
 // arguments.
-func producerStubElsewhere(tb assert.TB, s *ProducerStub) other.Thing {
+func producerStubElsewhere(tb assert.TB, s *handles.ProducerStub) other.Thing {
 	tb.Helper()
 	return s.Elsewhere()
 }
 
 // producerStubOpenSubject returns the subject of [stub.Behaviour] for
 // Open. The subject calls a new double that reports to tb.
-func producerStubOpenSubject(tb assert.TB) stub.Subject[ProducerOpenCall, ProducerOpenReturn] {
+func producerStubOpenSubject(
+	tb assert.TB,
+) stub.Subject[handles.ProducerOpenCall, handles.ProducerOpenReturn] {
 	tb.Helper()
-	s := NewProducerStub(tb)
-	return stub.Subject[ProducerOpenCall, ProducerOpenReturn]{
+	s := handles.NewProducerStub(tb)
+	return stub.Subject[handles.ProducerOpenCall, handles.ProducerOpenReturn]{
 		Stub: s.OnOpen.MethodStub,
 		Call: func() {
 			_, _ = producerStubOpen(tb, s)
 		},
-		Result: func() ProducerOpenReturn {
+		Result: func() handles.ProducerOpenReturn {
 			got0, got1 := producerStubOpen(tb, s)
-			return ProducerOpenReturn{Result: got0, Err: got1}
+			return handles.ProducerOpenReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
-			s.OnOpen.Func(func(_ context.Context) (Cursor, error) {
+			s.OnOpen.Func(func(_ context.Context) (handles.Cursor, error) {
 				mark()
-				var z0 Cursor
+				var z0 handles.Cursor
 				var z1 error
 				return z0, z1
 			})
@@ -800,22 +830,22 @@ func producerStubOpenSubject(tb assert.TB) stub.Subject[ProducerOpenCall, Produc
 // Resume. The subject calls a new double that reports to tb.
 func producerStubResumeSubject(
 	tb assert.TB,
-) stub.Subject[ProducerResumeCall, ProducerResumeReturn] {
+) stub.Subject[handles.ProducerResumeCall, handles.ProducerResumeReturn] {
 	tb.Helper()
-	s := NewProducerStub(tb)
-	return stub.Subject[ProducerResumeCall, ProducerResumeReturn]{
+	s := handles.NewProducerStub(tb)
+	return stub.Subject[handles.ProducerResumeCall, handles.ProducerResumeReturn]{
 		Stub: s.OnResume.MethodStub,
 		Call: func() {
 			_ = producerStubResume(tb, s)
 		},
-		Result: func() ProducerResumeReturn {
+		Result: func() handles.ProducerResumeReturn {
 			got0 := producerStubResume(tb, s)
-			return ProducerResumeReturn{Result: got0}
+			return handles.ProducerResumeReturn{Result: got0}
 		},
 		Override: func(mark func()) {
-			s.OnResume.Func(func(_ string) Cursor {
+			s.OnResume.Func(func(_ string) handles.Cursor {
 				mark()
-				var z0 Cursor
+				var z0 handles.Cursor
 				return z0
 			})
 		},
@@ -824,22 +854,24 @@ func producerStubResumeSubject(
 
 // producerStubWatchSubject returns the subject of [stub.Behaviour] for
 // Watch. The subject calls a new double that reports to tb.
-func producerStubWatchSubject(tb assert.TB) stub.Subject[ProducerWatchCall, ProducerWatchReturn] {
+func producerStubWatchSubject(
+	tb assert.TB,
+) stub.Subject[handles.ProducerWatchCall, handles.ProducerWatchReturn] {
 	tb.Helper()
-	s := NewProducerStub(tb)
-	return stub.Subject[ProducerWatchCall, ProducerWatchReturn]{
+	s := handles.NewProducerStub(tb)
+	return stub.Subject[handles.ProducerWatchCall, handles.ProducerWatchReturn]{
 		Stub: s.OnWatch.MethodStub,
 		Call: func() {
 			_ = producerStubWatch(tb, s)
 		},
-		Result: func() ProducerWatchReturn {
+		Result: func() handles.ProducerWatchReturn {
 			got0 := producerStubWatch(tb, s)
-			return ProducerWatchReturn{Result: got0}
+			return handles.ProducerWatchReturn{Result: got0}
 		},
 		Override: func(mark func()) {
-			s.OnWatch.Func(func() Subscription {
+			s.OnWatch.Func(func() handles.Subscription {
 				mark()
-				var z0 Subscription
+				var z0 handles.Subscription
 				return z0
 			})
 		},
@@ -850,22 +882,22 @@ func producerStubWatchSubject(tb assert.TB) stub.Subject[ProducerWatchCall, Prod
 // Nothing. The subject calls a new double that reports to tb.
 func producerStubNothingSubject(
 	tb assert.TB,
-) stub.Subject[ProducerNothingCall, ProducerNothingReturn] {
+) stub.Subject[handles.ProducerNothingCall, handles.ProducerNothingReturn] {
 	tb.Helper()
-	s := NewProducerStub(tb)
-	return stub.Subject[ProducerNothingCall, ProducerNothingReturn]{
+	s := handles.NewProducerStub(tb)
+	return stub.Subject[handles.ProducerNothingCall, handles.ProducerNothingReturn]{
 		Stub: s.OnNothing.MethodStub,
 		Call: func() {
 			_ = producerStubNothing(tb, s)
 		},
-		Result: func() ProducerNothingReturn {
+		Result: func() handles.ProducerNothingReturn {
 			got0 := producerStubNothing(tb, s)
-			return ProducerNothingReturn{Result: got0}
+			return handles.ProducerNothingReturn{Result: got0}
 		},
 		Override: func(mark func()) {
-			s.OnNothing.Func(func() Empty {
+			s.OnNothing.Func(func() handles.Empty {
 				mark()
-				var z0 Empty
+				var z0 handles.Empty
 				return z0
 			})
 		},
@@ -876,17 +908,17 @@ func producerStubNothingSubject(
 // Elsewhere. The subject calls a new double that reports to tb.
 func producerStubElsewhereSubject(
 	tb assert.TB,
-) stub.Subject[ProducerElsewhereCall, ProducerElsewhereReturn] {
+) stub.Subject[handles.ProducerElsewhereCall, handles.ProducerElsewhereReturn] {
 	tb.Helper()
-	s := NewProducerStub(tb)
-	return stub.Subject[ProducerElsewhereCall, ProducerElsewhereReturn]{
+	s := handles.NewProducerStub(tb)
+	return stub.Subject[handles.ProducerElsewhereCall, handles.ProducerElsewhereReturn]{
 		Stub: s.OnElsewhere.MethodStub,
 		Call: func() {
 			_ = producerStubElsewhere(tb, s)
 		},
-		Result: func() ProducerElsewhereReturn {
+		Result: func() handles.ProducerElsewhereReturn {
 			got0 := producerStubElsewhere(tb, s)
-			return ProducerElsewhereReturn{Result: got0}
+			return handles.ProducerElsewhereReturn{Result: got0}
 		},
 		Override: func(mark func()) {
 			s.OnElsewhere.Func(func() other.Thing {
@@ -898,13 +930,13 @@ func producerStubElsewhereSubject(
 	}
 }
 
-// producerStubInstance is the instance of a ProducerStub that the checks
-// of the constructors and the options drive.
-type producerStubInstance = stub.Instance[ProducerOpenCall]
+// producerStubInstance is the instance of a handles.ProducerStub that the
+// checks of the constructors and the options drive.
+type producerStubInstance = stub.Instance[handles.ProducerOpenCall]
 
 // producerStubInstanceOf returns the instance of s. The options apply to
 // the whole double, so the checks call Open alone.
-func producerStubInstanceOf(tb assert.TB, s *ProducerStub) producerStubInstance {
+func producerStubInstanceOf(tb assert.TB, s *handles.ProducerStub) producerStubInstance {
 	tb.Helper()
 	return producerStubInstance{
 		Stub: s.OnOpen.MethodStub,
@@ -926,7 +958,7 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			_, _ = producerStubOpen(t, s)
 			got := s.OnOpen.AssertCalledOnce(t, "Open records the call")
 			a0 := producerStubOpenArgs(t)
@@ -935,9 +967,9 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
-			var seen []ProducerOpenCall
-			s.OnOpen.OnRecord(func(c ProducerOpenCall) { seen = append(seen, c) })
+			s := handles.NewProducerStub(t)
+			var seen []handles.ProducerOpenCall
+			s.OnOpen.OnRecord(func(c handles.ProducerOpenCall) { seen = append(seen, c) })
 			_, _ = producerStubOpen(t, s)
 			_, _ = producerStubOpen(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Open")
@@ -950,7 +982,7 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			_ = producerStubResume(t, s)
 			got := s.OnResume.AssertCalledOnce(t, "Resume records the call")
 			a0 := producerStubResumeArgs(t)
@@ -959,9 +991,9 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
-			var seen []ProducerResumeCall
-			s.OnResume.OnRecord(func(c ProducerResumeCall) { seen = append(seen, c) })
+			s := handles.NewProducerStub(t)
+			var seen []handles.ProducerResumeCall
+			s.OnResume.OnRecord(func(c handles.ProducerResumeCall) { seen = append(seen, c) })
 			_ = producerStubResume(t, s)
 			_ = producerStubResume(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Resume")
@@ -974,9 +1006,9 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
-			var seen []ProducerWatchCall
-			s.OnWatch.OnRecord(func(c ProducerWatchCall) { seen = append(seen, c) })
+			s := handles.NewProducerStub(t)
+			var seen []handles.ProducerWatchCall
+			s.OnWatch.OnRecord(func(c handles.ProducerWatchCall) { seen = append(seen, c) })
 			_ = producerStubWatch(t, s)
 			_ = producerStubWatch(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Watch")
@@ -989,9 +1021,9 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
-			var seen []ProducerNothingCall
-			s.OnNothing.OnRecord(func(c ProducerNothingCall) { seen = append(seen, c) })
+			s := handles.NewProducerStub(t)
+			var seen []handles.ProducerNothingCall
+			s.OnNothing.OnRecord(func(c handles.ProducerNothingCall) { seen = append(seen, c) })
 			_ = producerStubNothing(t, s)
 			_ = producerStubNothing(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Nothing")
@@ -1004,9 +1036,9 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
-			var seen []ProducerElsewhereCall
-			s.OnElsewhere.OnRecord(func(c ProducerElsewhereCall) { seen = append(seen, c) })
+			s := handles.NewProducerStub(t)
+			var seen []handles.ProducerElsewhereCall
+			s.OnElsewhere.OnRecord(func(c handles.ProducerElsewhereCall) { seen = append(seen, c) })
 			_ = producerStubElsewhere(t, s)
 			_ = producerStubElsewhere(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Elsewhere")
@@ -1016,12 +1048,12 @@ func TestProducerStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) producerStubInstance {
-			return producerStubInstanceOf(tb, NewProducerStub(tb))
+			return producerStubInstanceOf(tb, handles.NewProducerStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Open", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			_, _ = producerStubOpen(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnOpen.CallCount(), 0, "ResetCalls clears the calls of Open")
@@ -1029,7 +1061,7 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Open", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			want0, want1 := producerStubOpenPins()
 			s.OnOpen.Returns(want0, want1)
 			s.ResetCalls()
@@ -1039,7 +1071,7 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Resume", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			_ = producerStubResume(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnResume.CallCount(), 0, "ResetCalls clears the calls of Resume")
@@ -1047,7 +1079,7 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Watch", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			_ = producerStubWatch(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnWatch.CallCount(), 0, "ResetCalls clears the calls of Watch")
@@ -1055,7 +1087,7 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Nothing", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			_ = producerStubNothing(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnNothing.CallCount(), 0, "ResetCalls clears the calls of Nothing")
@@ -1063,7 +1095,7 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Elsewhere", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			_ = producerStubElsewhere(t, s)
 			s.ResetCalls()
 			assert.Equal(
@@ -1080,7 +1112,7 @@ func TestProducerStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) producerStubInstance {
-				return producerStubInstanceOf(tb, NewProducerStubDelayed(tb, d, clk))
+				return producerStubInstanceOf(tb, handles.NewProducerStubDelayed(tb, d, clk))
 			},
 		)
 	})
@@ -1091,7 +1123,7 @@ func TestProducerStub(t *testing.T) {
 		t.Run("fails Open with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Open-failing")
-			s := NewProducerStubFailing(t, want)
+			s := handles.NewProducerStubFailing(t, want)
 			_, r1 := producerStubOpen(t, s)
 			assert.ErrorIs(t, r1, want, "Open fails with the error of NewProducerStubFailing")
 		})
@@ -1100,7 +1132,10 @@ func TestProducerStub(t *testing.T) {
 	t.Run("ProducerStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) producerStubInstance {
-			return producerStubInstanceOf(tb, NewProducerStub(tb, ProducerStubStrict()))
+			return producerStubInstanceOf(
+				tb,
+				handles.NewProducerStub(tb, handles.ProducerStubStrict()),
+			)
 		})
 	})
 
@@ -1109,8 +1144,8 @@ func TestProducerStub(t *testing.T) {
 
 		t.Run("passes Open to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewProducerStub(t)
-			s := NewProducerStub(t, ProducerStubDelegateTo(inner))
+			inner := handles.NewProducerStub(t)
+			s := handles.NewProducerStub(t, handles.ProducerStubDelegateTo(inner))
 			_, _ = producerStubOpen(t, s)
 			inner.OnOpen.AssertCalledOnce(t, "Open calls the implementation")
 		})
@@ -1118,41 +1153,41 @@ func TestProducerStub(t *testing.T) {
 		t.Run("fails Open with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Open-delegate")
-			inner := NewProducerStub(t)
+			inner := handles.NewProducerStub(t)
 			inner.OnOpen.Faults(want, 1)
-			s := NewProducerStub(t, ProducerStubDelegateTo(inner))
+			s := handles.NewProducerStub(t, handles.ProducerStubDelegateTo(inner))
 			_, r1 := producerStubOpen(t, s)
 			assert.ErrorIs(t, r1, want, "Open fails with the error of the implementation")
 		})
 
 		t.Run("passes Resume to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewProducerStub(t)
-			s := NewProducerStub(t, ProducerStubDelegateTo(inner))
+			inner := handles.NewProducerStub(t)
+			s := handles.NewProducerStub(t, handles.ProducerStubDelegateTo(inner))
 			_ = producerStubResume(t, s)
 			inner.OnResume.AssertCalledOnce(t, "Resume calls the implementation")
 		})
 
 		t.Run("passes Watch to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewProducerStub(t)
-			s := NewProducerStub(t, ProducerStubDelegateTo(inner))
+			inner := handles.NewProducerStub(t)
+			s := handles.NewProducerStub(t, handles.ProducerStubDelegateTo(inner))
 			_ = producerStubWatch(t, s)
 			inner.OnWatch.AssertCalledOnce(t, "Watch calls the implementation")
 		})
 
 		t.Run("passes Nothing to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewProducerStub(t)
-			s := NewProducerStub(t, ProducerStubDelegateTo(inner))
+			inner := handles.NewProducerStub(t)
+			s := handles.NewProducerStub(t, handles.ProducerStubDelegateTo(inner))
 			_ = producerStubNothing(t, s)
 			inner.OnNothing.AssertCalledOnce(t, "Nothing calls the implementation")
 		})
 
 		t.Run("passes Elsewhere to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewProducerStub(t)
-			s := NewProducerStub(t, ProducerStubDelegateTo(inner))
+			inner := handles.NewProducerStub(t)
+			s := handles.NewProducerStub(t, handles.ProducerStubDelegateTo(inner))
 			_ = producerStubElsewhere(t, s)
 			inner.OnElsewhere.AssertCalledOnce(t, "Elsewhere calls the implementation")
 		})
@@ -1161,21 +1196,30 @@ func TestProducerStub(t *testing.T) {
 	t.Run("ProducerStubWithClock", func(t *testing.T) {
 		t.Parallel()
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) producerStubInstance {
-			return producerStubInstanceOf(tb, NewProducerStub(tb, ProducerStubWithClock(clk)))
+			return producerStubInstanceOf(
+				tb,
+				handles.NewProducerStub(tb, handles.ProducerStubWithClock(clk)),
+			)
 		})
 	})
 
 	t.Run("ProducerStubWithRandSource", func(t *testing.T) {
 		t.Parallel()
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) producerStubInstance {
-			return producerStubInstanceOf(tb, NewProducerStub(tb, ProducerStubWithRandSource(src)))
+			return producerStubInstanceOf(
+				tb,
+				handles.NewProducerStub(tb, handles.ProducerStubWithRandSource(src)),
+			)
 		})
 	})
 
 	t.Run("ProducerStubBenchMode", func(t *testing.T) {
 		t.Parallel()
 		stub.BenchModeBehaviour(t, func(tb assert.TB) producerStubInstance {
-			return producerStubInstanceOf(tb, NewProducerStub(tb, ProducerStubBenchMode()))
+			return producerStubInstanceOf(
+				tb,
+				handles.NewProducerStub(tb, handles.ProducerStubBenchMode()),
+			)
 		})
 	})
 
@@ -1186,7 +1230,11 @@ func TestProducerStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) producerStubInstance {
 				return producerStubInstanceOf(
 					tb,
-					NewProducerStub(tb, ProducerStubWithClock(clk), ProducerStubWithLatency(d)),
+					handles.NewProducerStub(
+						tb,
+						handles.ProducerStubWithClock(clk),
+						handles.ProducerStubWithLatency(d),
+					),
 				)
 			},
 		)
@@ -1198,7 +1246,7 @@ func TestProducerStub(t *testing.T) {
 		t.Run("fails Open with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Open-failing")
-			s := NewProducerStub(t, ProducerStubFailing(want))
+			s := handles.NewProducerStub(t, handles.ProducerStubFailing(want))
 			_, r1 := producerStubOpen(t, s)
 			assert.ErrorIs(t, r1, want, "Open fails with the error of ProducerStubFailing")
 		})
@@ -1210,12 +1258,15 @@ func TestProducerStub(t *testing.T) {
 		t.Run("sets the function of Open", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewProducerStub(t, WithProducerOpen(func(_ context.Context) (Cursor, error) {
-				called = true
-				var z0 Cursor
-				var z1 error
-				return z0, z1
-			}))
+			s := handles.NewProducerStub(
+				t,
+				handles.WithProducerOpen(func(_ context.Context) (handles.Cursor, error) {
+					called = true
+					var z0 handles.Cursor
+					var z1 error
+					return z0, z1
+				}),
+			)
 			_, _ = producerStubOpen(t, s)
 			assert.True(t, called, "WithProducerOpen sets the function of Open")
 		})
@@ -1227,11 +1278,14 @@ func TestProducerStub(t *testing.T) {
 		t.Run("sets the function of Resume", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewProducerStub(t, WithProducerResume(func(_ string) Cursor {
-				called = true
-				var z0 Cursor
-				return z0
-			}))
+			s := handles.NewProducerStub(
+				t,
+				handles.WithProducerResume(func(_ string) handles.Cursor {
+					called = true
+					var z0 handles.Cursor
+					return z0
+				}),
+			)
 			_ = producerStubResume(t, s)
 			assert.True(t, called, "WithProducerResume sets the function of Resume")
 		})
@@ -1243,9 +1297,9 @@ func TestProducerStub(t *testing.T) {
 		t.Run("sets the function of Watch", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewProducerStub(t, WithProducerWatch(func() Subscription {
+			s := handles.NewProducerStub(t, handles.WithProducerWatch(func() handles.Subscription {
 				called = true
-				var z0 Subscription
+				var z0 handles.Subscription
 				return z0
 			}))
 			_ = producerStubWatch(t, s)
@@ -1259,9 +1313,9 @@ func TestProducerStub(t *testing.T) {
 		t.Run("sets the function of Nothing", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewProducerStub(t, WithProducerNothing(func() Empty {
+			s := handles.NewProducerStub(t, handles.WithProducerNothing(func() handles.Empty {
 				called = true
-				var z0 Empty
+				var z0 handles.Empty
 				return z0
 			}))
 			_ = producerStubNothing(t, s)
@@ -1275,7 +1329,7 @@ func TestProducerStub(t *testing.T) {
 		t.Run("sets the function of Elsewhere", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewProducerStub(t, WithProducerElsewhere(func() other.Thing {
+			s := handles.NewProducerStub(t, handles.WithProducerElsewhere(func() other.Thing {
 				called = true
 				var z0 other.Thing
 				return z0
@@ -1296,7 +1350,7 @@ func TestProducerOpenStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Open", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			want0, want1 := producerStubOpenPins()
 			s.OnOpen.Returns(want0, want1)
 			_, got1 := producerStubOpen(t, s)
@@ -1306,9 +1360,9 @@ func TestProducerOpenStub(t *testing.T) {
 		t.Run("configures Open for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewProducerStub(r)
+			s := handles.NewProducerStub(r)
 			s.OnOpen.Strict()
-			var want0 Cursor
+			var want0 handles.Cursor
 			var want1 error
 			s.OnOpen.Returns(want0, want1)
 			_, _ = producerStubOpen(t, s)
@@ -1321,11 +1375,11 @@ func TestProducerOpenStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Open to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			var got0 context.Context
-			s.OnOpen.Func(func(p0 context.Context) (Cursor, error) {
+			s.OnOpen.Func(func(p0 context.Context) (handles.Cursor, error) {
 				got0 = p0
-				var z0 Cursor
+				var z0 handles.Cursor
 				var z1 error
 				return z0, z1
 			})
@@ -1347,9 +1401,9 @@ func TestProducerResumeStub(t *testing.T) {
 		t.Run("configures Resume for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewProducerStub(r)
+			s := handles.NewProducerStub(r)
 			s.OnResume.Strict()
-			var want0 Cursor
+			var want0 handles.Cursor
 			s.OnResume.Returns(want0)
 			_ = producerStubResume(t, s)
 			assert.False(t, r.Failed(), "strict mode accepts the call of Resume")
@@ -1361,11 +1415,11 @@ func TestProducerResumeStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Resume to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewProducerStub(t)
+			s := handles.NewProducerStub(t)
 			var got0 string
-			s.OnResume.Func(func(p0 string) Cursor {
+			s.OnResume.Func(func(p0 string) handles.Cursor {
 				got0 = p0
-				var z0 Cursor
+				var z0 handles.Cursor
 				return z0
 			})
 			_ = producerStubResume(t, s)
@@ -1386,9 +1440,9 @@ func TestProducerWatchStub(t *testing.T) {
 		t.Run("configures Watch for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewProducerStub(r)
+			s := handles.NewProducerStub(r)
 			s.OnWatch.Strict()
-			var want0 Subscription
+			var want0 handles.Subscription
 			s.OnWatch.Returns(want0)
 			_ = producerStubWatch(t, s)
 			assert.False(t, r.Failed(), "strict mode accepts the call of Watch")
@@ -1407,9 +1461,9 @@ func TestProducerNothingStub(t *testing.T) {
 		t.Run("configures Nothing for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewProducerStub(r)
+			s := handles.NewProducerStub(r)
 			s.OnNothing.Strict()
-			var want0 Empty
+			var want0 handles.Empty
 			s.OnNothing.Returns(want0)
 			_ = producerStubNothing(t, s)
 			assert.False(t, r.Failed(), "strict mode accepts the call of Nothing")
@@ -1428,7 +1482,7 @@ func TestProducerElsewhereStub(t *testing.T) {
 		t.Run("configures Elsewhere for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewProducerStub(r)
+			s := handles.NewProducerStub(r)
 			s.OnElsewhere.Strict()
 			var want0 other.Thing
 			s.OnElsewhere.Returns(want0)
@@ -1446,7 +1500,7 @@ func cursorStubNextArgs(tb assert.TB) context.Context {
 }
 
 // cursorStubNext calls Next of s with the samples of its arguments.
-func cursorStubNext(tb assert.TB, s *CursorStub) (string, bool, error) {
+func cursorStubNext(tb assert.TB, s *handles.CursorStub) (string, bool, error) {
 	tb.Helper()
 	a0 := cursorStubNextArgs(tb)
 	return s.Next(a0)
@@ -1471,7 +1525,7 @@ func cursorStubCloseArgs(tb assert.TB) context.Context {
 }
 
 // cursorStubClose calls Close of s with the samples of its arguments.
-func cursorStubClose(tb assert.TB, s *CursorStub) error {
+func cursorStubClose(tb assert.TB, s *handles.CursorStub) error {
 	tb.Helper()
 	a0 := cursorStubCloseArgs(tb)
 	return s.Close(a0)
@@ -1486,17 +1540,19 @@ func cursorStubClosePins() error {
 
 // cursorStubNextSubject returns the subject of [stub.Behaviour] for Next.
 // The subject calls a new double that reports to tb.
-func cursorStubNextSubject(tb assert.TB) stub.Subject[CursorNextCall, CursorNextReturn] {
+func cursorStubNextSubject(
+	tb assert.TB,
+) stub.Subject[handles.CursorNextCall, handles.CursorNextReturn] {
 	tb.Helper()
-	s := NewCursorStub(tb)
-	return stub.Subject[CursorNextCall, CursorNextReturn]{
+	s := handles.NewCursorStub(tb)
+	return stub.Subject[handles.CursorNextCall, handles.CursorNextReturn]{
 		Stub: s.OnNext.MethodStub,
 		Call: func() {
 			_, _, _ = cursorStubNext(tb, s)
 		},
-		Result: func() CursorNextReturn {
+		Result: func() handles.CursorNextReturn {
 			got0, got1, got2 := cursorStubNext(tb, s)
-			return CursorNextReturn{Result0: got0, Result1: got1, Err: got2}
+			return handles.CursorNextReturn{Result0: got0, Result1: got1, Err: got2}
 		},
 		Override: func(mark func()) {
 			s.OnNext.Func(func(_ context.Context) (string, bool, error) {
@@ -1516,17 +1572,19 @@ func cursorStubNextSubject(tb assert.TB) stub.Subject[CursorNextCall, CursorNext
 
 // cursorStubCloseSubject returns the subject of [stub.Behaviour] for
 // Close. The subject calls a new double that reports to tb.
-func cursorStubCloseSubject(tb assert.TB) stub.Subject[CursorCloseCall, CursorCloseReturn] {
+func cursorStubCloseSubject(
+	tb assert.TB,
+) stub.Subject[handles.CursorCloseCall, handles.CursorCloseReturn] {
 	tb.Helper()
-	s := NewCursorStub(tb)
-	return stub.Subject[CursorCloseCall, CursorCloseReturn]{
+	s := handles.NewCursorStub(tb)
+	return stub.Subject[handles.CursorCloseCall, handles.CursorCloseReturn]{
 		Stub: s.OnClose.MethodStub,
 		Call: func() {
 			_ = cursorStubClose(tb, s)
 		},
-		Result: func() CursorCloseReturn {
+		Result: func() handles.CursorCloseReturn {
 			got0 := cursorStubClose(tb, s)
-			return CursorCloseReturn{Err: got0}
+			return handles.CursorCloseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
 			s.OnClose.Func(func(_ context.Context) error {
@@ -1542,13 +1600,13 @@ func cursorStubCloseSubject(tb assert.TB) stub.Subject[CursorCloseCall, CursorCl
 	}
 }
 
-// cursorStubInstance is the instance of a CursorStub that the checks of
-// the constructors and the options drive.
-type cursorStubInstance = stub.Instance[CursorNextCall]
+// cursorStubInstance is the instance of a handles.CursorStub that the
+// checks of the constructors and the options drive.
+type cursorStubInstance = stub.Instance[handles.CursorNextCall]
 
 // cursorStubInstanceOf returns the instance of s. The options apply to the
 // whole double, so the checks call Next alone.
-func cursorStubInstanceOf(tb assert.TB, s *CursorStub) cursorStubInstance {
+func cursorStubInstanceOf(tb assert.TB, s *handles.CursorStub) cursorStubInstance {
 	tb.Helper()
 	return cursorStubInstance{
 		Stub: s.OnNext.MethodStub,
@@ -1570,7 +1628,7 @@ func TestCursorStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			_, _, _ = cursorStubNext(t, s)
 			got := s.OnNext.AssertCalledOnce(t, "Next records the call")
 			a0 := cursorStubNextArgs(t)
@@ -1579,9 +1637,9 @@ func TestCursorStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
-			var seen []CursorNextCall
-			s.OnNext.OnRecord(func(c CursorNextCall) { seen = append(seen, c) })
+			s := handles.NewCursorStub(t)
+			var seen []handles.CursorNextCall
+			s.OnNext.OnRecord(func(c handles.CursorNextCall) { seen = append(seen, c) })
 			_, _, _ = cursorStubNext(t, s)
 			_, _, _ = cursorStubNext(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Next")
@@ -1594,7 +1652,7 @@ func TestCursorStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			_ = cursorStubClose(t, s)
 			got := s.OnClose.AssertCalledOnce(t, "Close records the call")
 			a0 := cursorStubCloseArgs(t)
@@ -1603,9 +1661,9 @@ func TestCursorStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
-			var seen []CursorCloseCall
-			s.OnClose.OnRecord(func(c CursorCloseCall) { seen = append(seen, c) })
+			s := handles.NewCursorStub(t)
+			var seen []handles.CursorCloseCall
+			s.OnClose.OnRecord(func(c handles.CursorCloseCall) { seen = append(seen, c) })
 			_ = cursorStubClose(t, s)
 			_ = cursorStubClose(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
@@ -1615,12 +1673,12 @@ func TestCursorStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) cursorStubInstance {
-			return cursorStubInstanceOf(tb, NewCursorStub(tb))
+			return cursorStubInstanceOf(tb, handles.NewCursorStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Next", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			_, _, _ = cursorStubNext(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnNext.CallCount(), 0, "ResetCalls clears the calls of Next")
@@ -1628,7 +1686,7 @@ func TestCursorStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Next", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			want0, want1, want2 := cursorStubNextPins()
 			s.OnNext.Returns(want0, want1, want2)
 			s.ResetCalls()
@@ -1640,7 +1698,7 @@ func TestCursorStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Close", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			_ = cursorStubClose(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
@@ -1648,7 +1706,7 @@ func TestCursorStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			want0 := cursorStubClosePins()
 			s.OnClose.Returns(want0)
 			s.ResetCalls()
@@ -1662,7 +1720,7 @@ func TestCursorStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) cursorStubInstance {
-				return cursorStubInstanceOf(tb, NewCursorStubDelayed(tb, d, clk))
+				return cursorStubInstanceOf(tb, handles.NewCursorStubDelayed(tb, d, clk))
 			},
 		)
 	})
@@ -1673,7 +1731,7 @@ func TestCursorStub(t *testing.T) {
 		t.Run("fails Next with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Next-failing")
-			s := NewCursorStubFailing(t, want)
+			s := handles.NewCursorStubFailing(t, want)
 			_, _, r2 := cursorStubNext(t, s)
 			assert.ErrorIs(t, r2, want, "Next fails with the error of NewCursorStubFailing")
 		})
@@ -1681,7 +1739,7 @@ func TestCursorStub(t *testing.T) {
 		t.Run("fails Close with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Close-failing")
-			s := NewCursorStubFailing(t, want)
+			s := handles.NewCursorStubFailing(t, want)
 			r0 := cursorStubClose(t, s)
 			assert.ErrorIs(t, r0, want, "Close fails with the error of NewCursorStubFailing")
 		})
@@ -1690,7 +1748,7 @@ func TestCursorStub(t *testing.T) {
 	t.Run("CursorStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) cursorStubInstance {
-			return cursorStubInstanceOf(tb, NewCursorStub(tb, CursorStubStrict()))
+			return cursorStubInstanceOf(tb, handles.NewCursorStub(tb, handles.CursorStubStrict()))
 		})
 	})
 
@@ -1699,8 +1757,8 @@ func TestCursorStub(t *testing.T) {
 
 		t.Run("passes Next to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewCursorStub(t)
-			s := NewCursorStub(t, CursorStubDelegateTo(inner))
+			inner := handles.NewCursorStub(t)
+			s := handles.NewCursorStub(t, handles.CursorStubDelegateTo(inner))
 			_, _, _ = cursorStubNext(t, s)
 			inner.OnNext.AssertCalledOnce(t, "Next calls the implementation")
 		})
@@ -1708,17 +1766,17 @@ func TestCursorStub(t *testing.T) {
 		t.Run("fails Next with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Next-delegate")
-			inner := NewCursorStub(t)
+			inner := handles.NewCursorStub(t)
 			inner.OnNext.Faults(want, 1)
-			s := NewCursorStub(t, CursorStubDelegateTo(inner))
+			s := handles.NewCursorStub(t, handles.CursorStubDelegateTo(inner))
 			_, _, r2 := cursorStubNext(t, s)
 			assert.ErrorIs(t, r2, want, "Next fails with the error of the implementation")
 		})
 
 		t.Run("passes Close to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewCursorStub(t)
-			s := NewCursorStub(t, CursorStubDelegateTo(inner))
+			inner := handles.NewCursorStub(t)
+			s := handles.NewCursorStub(t, handles.CursorStubDelegateTo(inner))
 			_ = cursorStubClose(t, s)
 			inner.OnClose.AssertCalledOnce(t, "Close calls the implementation")
 		})
@@ -1726,9 +1784,9 @@ func TestCursorStub(t *testing.T) {
 		t.Run("fails Close with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Close-delegate")
-			inner := NewCursorStub(t)
+			inner := handles.NewCursorStub(t)
 			inner.OnClose.Faults(want, 1)
-			s := NewCursorStub(t, CursorStubDelegateTo(inner))
+			s := handles.NewCursorStub(t, handles.CursorStubDelegateTo(inner))
 			r0 := cursorStubClose(t, s)
 			assert.ErrorIs(t, r0, want, "Close fails with the error of the implementation")
 		})
@@ -1737,21 +1795,30 @@ func TestCursorStub(t *testing.T) {
 	t.Run("CursorStubWithClock", func(t *testing.T) {
 		t.Parallel()
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) cursorStubInstance {
-			return cursorStubInstanceOf(tb, NewCursorStub(tb, CursorStubWithClock(clk)))
+			return cursorStubInstanceOf(
+				tb,
+				handles.NewCursorStub(tb, handles.CursorStubWithClock(clk)),
+			)
 		})
 	})
 
 	t.Run("CursorStubWithRandSource", func(t *testing.T) {
 		t.Parallel()
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) cursorStubInstance {
-			return cursorStubInstanceOf(tb, NewCursorStub(tb, CursorStubWithRandSource(src)))
+			return cursorStubInstanceOf(
+				tb,
+				handles.NewCursorStub(tb, handles.CursorStubWithRandSource(src)),
+			)
 		})
 	})
 
 	t.Run("CursorStubBenchMode", func(t *testing.T) {
 		t.Parallel()
 		stub.BenchModeBehaviour(t, func(tb assert.TB) cursorStubInstance {
-			return cursorStubInstanceOf(tb, NewCursorStub(tb, CursorStubBenchMode()))
+			return cursorStubInstanceOf(
+				tb,
+				handles.NewCursorStub(tb, handles.CursorStubBenchMode()),
+			)
 		})
 	})
 
@@ -1762,7 +1829,11 @@ func TestCursorStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) cursorStubInstance {
 				return cursorStubInstanceOf(
 					tb,
-					NewCursorStub(tb, CursorStubWithClock(clk), CursorStubWithLatency(d)),
+					handles.NewCursorStub(
+						tb,
+						handles.CursorStubWithClock(clk),
+						handles.CursorStubWithLatency(d),
+					),
 				)
 			},
 		)
@@ -1774,7 +1845,7 @@ func TestCursorStub(t *testing.T) {
 		t.Run("fails Next with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Next-failing")
-			s := NewCursorStub(t, CursorStubFailing(want))
+			s := handles.NewCursorStub(t, handles.CursorStubFailing(want))
 			_, _, r2 := cursorStubNext(t, s)
 			assert.ErrorIs(t, r2, want, "Next fails with the error of CursorStubFailing")
 		})
@@ -1782,7 +1853,7 @@ func TestCursorStub(t *testing.T) {
 		t.Run("fails Close with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Close-failing")
-			s := NewCursorStub(t, CursorStubFailing(want))
+			s := handles.NewCursorStub(t, handles.CursorStubFailing(want))
 			r0 := cursorStubClose(t, s)
 			assert.ErrorIs(t, r0, want, "Close fails with the error of CursorStubFailing")
 		})
@@ -1794,13 +1865,16 @@ func TestCursorStub(t *testing.T) {
 		t.Run("sets the function of Next", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewCursorStub(t, WithCursorNext(func(_ context.Context) (string, bool, error) {
-				called = true
-				var z0 string
-				var z1 bool
-				var z2 error
-				return z0, z1, z2
-			}))
+			s := handles.NewCursorStub(
+				t,
+				handles.WithCursorNext(func(_ context.Context) (string, bool, error) {
+					called = true
+					var z0 string
+					var z1 bool
+					var z2 error
+					return z0, z1, z2
+				}),
+			)
 			_, _, _ = cursorStubNext(t, s)
 			assert.True(t, called, "WithCursorNext sets the function of Next")
 		})
@@ -1812,7 +1886,7 @@ func TestCursorStub(t *testing.T) {
 		t.Run("sets the function of Close", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewCursorStub(t, WithCursorClose(func(_ context.Context) error {
+			s := handles.NewCursorStub(t, handles.WithCursorClose(func(_ context.Context) error {
 				called = true
 				var z0 error
 				return z0
@@ -1833,7 +1907,7 @@ func TestCursorNextStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Next", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			want0, want1, want2 := cursorStubNextPins()
 			s.OnNext.Returns(want0, want1, want2)
 			got0, got1, got2 := cursorStubNext(t, s)
@@ -1845,7 +1919,7 @@ func TestCursorNextStub(t *testing.T) {
 		t.Run("configures Next for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewCursorStub(r)
+			s := handles.NewCursorStub(r)
 			s.OnNext.Strict()
 			var want0 string
 			var want1 bool
@@ -1861,7 +1935,7 @@ func TestCursorNextStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Next to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			var got0 context.Context
 			s.OnNext.Func(func(p0 context.Context) (string, bool, error) {
 				got0 = p0
@@ -1887,7 +1961,7 @@ func TestCursorCloseStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Close", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			want0 := cursorStubClosePins()
 			s.OnClose.Returns(want0)
 			got0 := cursorStubClose(t, s)
@@ -1897,7 +1971,7 @@ func TestCursorCloseStub(t *testing.T) {
 		t.Run("configures Close for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewCursorStub(r)
+			s := handles.NewCursorStub(r)
 			s.OnClose.Strict()
 			var want0 error
 			s.OnClose.Returns(want0)
@@ -1911,7 +1985,7 @@ func TestCursorCloseStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Close to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewCursorStub(t)
+			s := handles.NewCursorStub(t)
 			var got0 context.Context
 			s.OnClose.Func(func(p0 context.Context) error {
 				got0 = p0
@@ -1926,42 +2000,44 @@ func TestCursorCloseStub(t *testing.T) {
 }
 
 // readerStubRead calls Read of s with the samples of its arguments.
-func readerStubRead(tb assert.TB, s *ReaderStub) Cursor {
+func readerStubRead(tb assert.TB, s *handles.ReaderStub) handles.Cursor {
 	tb.Helper()
 	return s.Read()
 }
 
 // readerStubReadSubject returns the subject of [stub.Behaviour] for Read.
 // The subject calls a new double that reports to tb.
-func readerStubReadSubject(tb assert.TB) stub.Subject[ReaderReadCall, ReaderReadReturn] {
+func readerStubReadSubject(
+	tb assert.TB,
+) stub.Subject[handles.ReaderReadCall, handles.ReaderReadReturn] {
 	tb.Helper()
-	s := NewReaderStub(tb)
-	return stub.Subject[ReaderReadCall, ReaderReadReturn]{
+	s := handles.NewReaderStub(tb)
+	return stub.Subject[handles.ReaderReadCall, handles.ReaderReadReturn]{
 		Stub: s.OnRead.MethodStub,
 		Call: func() {
 			_ = readerStubRead(tb, s)
 		},
-		Result: func() ReaderReadReturn {
+		Result: func() handles.ReaderReadReturn {
 			got0 := readerStubRead(tb, s)
-			return ReaderReadReturn{Result: got0}
+			return handles.ReaderReadReturn{Result: got0}
 		},
 		Override: func(mark func()) {
-			s.OnRead.Func(func() Cursor {
+			s.OnRead.Func(func() handles.Cursor {
 				mark()
-				var z0 Cursor
+				var z0 handles.Cursor
 				return z0
 			})
 		},
 	}
 }
 
-// readerStubInstance is the instance of a ReaderStub that the checks of
-// the constructors and the options drive.
-type readerStubInstance = stub.Instance[ReaderReadCall]
+// readerStubInstance is the instance of a handles.ReaderStub that the
+// checks of the constructors and the options drive.
+type readerStubInstance = stub.Instance[handles.ReaderReadCall]
 
 // readerStubInstanceOf returns the instance of s. The options apply to the
 // whole double, so the checks call Read alone.
-func readerStubInstanceOf(tb assert.TB, s *ReaderStub) readerStubInstance {
+func readerStubInstanceOf(tb assert.TB, s *handles.ReaderStub) readerStubInstance {
 	tb.Helper()
 	return readerStubInstance{
 		Stub: s.OnRead.MethodStub,
@@ -1983,9 +2059,9 @@ func TestReaderStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewReaderStub(t)
-			var seen []ReaderReadCall
-			s.OnRead.OnRecord(func(c ReaderReadCall) { seen = append(seen, c) })
+			s := handles.NewReaderStub(t)
+			var seen []handles.ReaderReadCall
+			s.OnRead.OnRecord(func(c handles.ReaderReadCall) { seen = append(seen, c) })
 			_ = readerStubRead(t, s)
 			_ = readerStubRead(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Read")
@@ -1995,12 +2071,12 @@ func TestReaderStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) readerStubInstance {
-			return readerStubInstanceOf(tb, NewReaderStub(tb))
+			return readerStubInstanceOf(tb, handles.NewReaderStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Read", func(t *testing.T) {
 			t.Parallel()
-			s := NewReaderStub(t)
+			s := handles.NewReaderStub(t)
 			_ = readerStubRead(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnRead.CallCount(), 0, "ResetCalls clears the calls of Read")
@@ -2012,7 +2088,7 @@ func TestReaderStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) readerStubInstance {
-				return readerStubInstanceOf(tb, NewReaderStubDelayed(tb, d, clk))
+				return readerStubInstanceOf(tb, handles.NewReaderStubDelayed(tb, d, clk))
 			},
 		)
 	})
@@ -2020,7 +2096,7 @@ func TestReaderStub(t *testing.T) {
 	t.Run("ReaderStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) readerStubInstance {
-			return readerStubInstanceOf(tb, NewReaderStub(tb, ReaderStubStrict()))
+			return readerStubInstanceOf(tb, handles.NewReaderStub(tb, handles.ReaderStubStrict()))
 		})
 	})
 
@@ -2029,8 +2105,8 @@ func TestReaderStub(t *testing.T) {
 
 		t.Run("passes Read to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewReaderStub(t)
-			s := NewReaderStub(t, ReaderStubDelegateTo(inner))
+			inner := handles.NewReaderStub(t)
+			s := handles.NewReaderStub(t, handles.ReaderStubDelegateTo(inner))
 			_ = readerStubRead(t, s)
 			inner.OnRead.AssertCalledOnce(t, "Read calls the implementation")
 		})
@@ -2039,21 +2115,30 @@ func TestReaderStub(t *testing.T) {
 	t.Run("ReaderStubWithClock", func(t *testing.T) {
 		t.Parallel()
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) readerStubInstance {
-			return readerStubInstanceOf(tb, NewReaderStub(tb, ReaderStubWithClock(clk)))
+			return readerStubInstanceOf(
+				tb,
+				handles.NewReaderStub(tb, handles.ReaderStubWithClock(clk)),
+			)
 		})
 	})
 
 	t.Run("ReaderStubWithRandSource", func(t *testing.T) {
 		t.Parallel()
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) readerStubInstance {
-			return readerStubInstanceOf(tb, NewReaderStub(tb, ReaderStubWithRandSource(src)))
+			return readerStubInstanceOf(
+				tb,
+				handles.NewReaderStub(tb, handles.ReaderStubWithRandSource(src)),
+			)
 		})
 	})
 
 	t.Run("ReaderStubBenchMode", func(t *testing.T) {
 		t.Parallel()
 		stub.BenchModeBehaviour(t, func(tb assert.TB) readerStubInstance {
-			return readerStubInstanceOf(tb, NewReaderStub(tb, ReaderStubBenchMode()))
+			return readerStubInstanceOf(
+				tb,
+				handles.NewReaderStub(tb, handles.ReaderStubBenchMode()),
+			)
 		})
 	})
 
@@ -2064,7 +2149,11 @@ func TestReaderStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) readerStubInstance {
 				return readerStubInstanceOf(
 					tb,
-					NewReaderStub(tb, ReaderStubWithClock(clk), ReaderStubWithLatency(d)),
+					handles.NewReaderStub(
+						tb,
+						handles.ReaderStubWithClock(clk),
+						handles.ReaderStubWithLatency(d),
+					),
 				)
 			},
 		)
@@ -2076,9 +2165,9 @@ func TestReaderStub(t *testing.T) {
 		t.Run("sets the function of Read", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewReaderStub(t, WithReaderRead(func() Cursor {
+			s := handles.NewReaderStub(t, handles.WithReaderRead(func() handles.Cursor {
 				called = true
-				var z0 Cursor
+				var z0 handles.Cursor
 				return z0
 			}))
 			_ = readerStubRead(t, s)
@@ -2098,9 +2187,9 @@ func TestReaderReadStub(t *testing.T) {
 		t.Run("configures Read for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewReaderStub(r)
+			s := handles.NewReaderStub(r)
 			s.OnRead.Strict()
-			var want0 Cursor
+			var want0 handles.Cursor
 			s.OnRead.Returns(want0)
 			_ = readerStubRead(t, s)
 			assert.False(t, r.Failed(), "strict mode accepts the call of Read")
@@ -2110,17 +2199,19 @@ func TestReaderReadStub(t *testing.T) {
 
 // subscriptionStubCancel calls Cancel of s with the samples of its
 // arguments.
-func subscriptionStubCancel(tb assert.TB, s *SubscriptionStub) {
+func subscriptionStubCancel(tb assert.TB, s *handles.SubscriptionStub) {
 	tb.Helper()
 	s.Cancel()
 }
 
 // subscriptionStubCancelSubject returns the subject of [stub.Behaviour]
 // for Cancel. The subject calls a new double that reports to tb.
-func subscriptionStubCancelSubject(tb assert.TB) stub.Subject[SubscriptionCancelCall, struct{}] {
+func subscriptionStubCancelSubject(
+	tb assert.TB,
+) stub.Subject[handles.SubscriptionCancelCall, struct{}] {
 	tb.Helper()
-	s := NewSubscriptionStub(tb)
-	return stub.Subject[SubscriptionCancelCall, struct{}]{
+	s := handles.NewSubscriptionStub(tb)
+	return stub.Subject[handles.SubscriptionCancelCall, struct{}]{
 		Stub: s.OnCancel.MethodStub,
 		Call: func() {
 			subscriptionStubCancel(tb, s)
@@ -2133,13 +2224,16 @@ func subscriptionStubCancelSubject(tb assert.TB) stub.Subject[SubscriptionCancel
 	}
 }
 
-// subscriptionStubInstance is the instance of a SubscriptionStub that the
-// checks of the constructors and the options drive.
-type subscriptionStubInstance = stub.Instance[SubscriptionCancelCall]
+// subscriptionStubInstance is the instance of a handles.SubscriptionStub
+// that the checks of the constructors and the options drive.
+type subscriptionStubInstance = stub.Instance[handles.SubscriptionCancelCall]
 
 // subscriptionStubInstanceOf returns the instance of s. The options apply
 // to the whole double, so the checks call Cancel alone.
-func subscriptionStubInstanceOf(tb assert.TB, s *SubscriptionStub) subscriptionStubInstance {
+func subscriptionStubInstanceOf(
+	tb assert.TB,
+	s *handles.SubscriptionStub,
+) subscriptionStubInstance {
 	tb.Helper()
 	return subscriptionStubInstance{
 		Stub: s.OnCancel.MethodStub,
@@ -2161,9 +2255,9 @@ func TestSubscriptionStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewSubscriptionStub(t)
-			var seen []SubscriptionCancelCall
-			s.OnCancel.OnRecord(func(c SubscriptionCancelCall) { seen = append(seen, c) })
+			s := handles.NewSubscriptionStub(t)
+			var seen []handles.SubscriptionCancelCall
+			s.OnCancel.OnRecord(func(c handles.SubscriptionCancelCall) { seen = append(seen, c) })
 			subscriptionStubCancel(t, s)
 			subscriptionStubCancel(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Cancel")
@@ -2173,12 +2267,12 @@ func TestSubscriptionStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) subscriptionStubInstance {
-			return subscriptionStubInstanceOf(tb, NewSubscriptionStub(tb))
+			return subscriptionStubInstanceOf(tb, handles.NewSubscriptionStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Cancel", func(t *testing.T) {
 			t.Parallel()
-			s := NewSubscriptionStub(t)
+			s := handles.NewSubscriptionStub(t)
 			subscriptionStubCancel(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnCancel.CallCount(), 0, "ResetCalls clears the calls of Cancel")
@@ -2190,7 +2284,10 @@ func TestSubscriptionStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) subscriptionStubInstance {
-				return subscriptionStubInstanceOf(tb, NewSubscriptionStubDelayed(tb, d, clk))
+				return subscriptionStubInstanceOf(
+					tb,
+					handles.NewSubscriptionStubDelayed(tb, d, clk),
+				)
 			},
 		)
 	})
@@ -2198,7 +2295,10 @@ func TestSubscriptionStub(t *testing.T) {
 	t.Run("SubscriptionStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) subscriptionStubInstance {
-			return subscriptionStubInstanceOf(tb, NewSubscriptionStub(tb, SubscriptionStubStrict()))
+			return subscriptionStubInstanceOf(
+				tb,
+				handles.NewSubscriptionStub(tb, handles.SubscriptionStubStrict()),
+			)
 		})
 	})
 
@@ -2207,8 +2307,8 @@ func TestSubscriptionStub(t *testing.T) {
 
 		t.Run("passes Cancel to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewSubscriptionStub(t)
-			s := NewSubscriptionStub(t, SubscriptionStubDelegateTo(inner))
+			inner := handles.NewSubscriptionStub(t)
+			s := handles.NewSubscriptionStub(t, handles.SubscriptionStubDelegateTo(inner))
 			subscriptionStubCancel(t, s)
 			inner.OnCancel.AssertCalledOnce(t, "Cancel calls the implementation")
 		})
@@ -2219,7 +2319,7 @@ func TestSubscriptionStub(t *testing.T) {
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) subscriptionStubInstance {
 			return subscriptionStubInstanceOf(
 				tb,
-				NewSubscriptionStub(tb, SubscriptionStubWithClock(clk)),
+				handles.NewSubscriptionStub(tb, handles.SubscriptionStubWithClock(clk)),
 			)
 		})
 	})
@@ -2229,7 +2329,7 @@ func TestSubscriptionStub(t *testing.T) {
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) subscriptionStubInstance {
 			return subscriptionStubInstanceOf(
 				tb,
-				NewSubscriptionStub(tb, SubscriptionStubWithRandSource(src)),
+				handles.NewSubscriptionStub(tb, handles.SubscriptionStubWithRandSource(src)),
 			)
 		})
 	})
@@ -2239,7 +2339,7 @@ func TestSubscriptionStub(t *testing.T) {
 		stub.BenchModeBehaviour(t, func(tb assert.TB) subscriptionStubInstance {
 			return subscriptionStubInstanceOf(
 				tb,
-				NewSubscriptionStub(tb, SubscriptionStubBenchMode()),
+				handles.NewSubscriptionStub(tb, handles.SubscriptionStubBenchMode()),
 			)
 		})
 	})
@@ -2251,10 +2351,10 @@ func TestSubscriptionStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) subscriptionStubInstance {
 				return subscriptionStubInstanceOf(
 					tb,
-					NewSubscriptionStub(
+					handles.NewSubscriptionStub(
 						tb,
-						SubscriptionStubWithClock(clk),
-						SubscriptionStubWithLatency(d),
+						handles.SubscriptionStubWithClock(clk),
+						handles.SubscriptionStubWithLatency(d),
 					),
 				)
 			},
@@ -2267,7 +2367,7 @@ func TestSubscriptionStub(t *testing.T) {
 		t.Run("sets the function of Cancel", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewSubscriptionStub(t, WithSubscriptionCancel(func() {
+			s := handles.NewSubscriptionStub(t, handles.WithSubscriptionCancel(func() {
 				called = true
 			}))
 			subscriptionStubCancel(t, s)

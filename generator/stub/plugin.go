@@ -619,14 +619,26 @@ func (g *generator) invocation(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *
 
 // write records the model of the double of the subject into the family of
 // the doubles and into the family of the tests, and returns the members of
-// the double. Where write reports a finding, it does not record the model
-// and returns no members. A handle without a member has no double and no
-// finding, because a method may return an interface without methods.
+// the double. It records no tests of a subject that its package does not
+// export, because a test outside the package cannot refer to the subject.
+// Where write reports a finding, it does not record the model and returns no
+// members. It reports [Unimplementable] where the file of the double cannot
+// refer to the subject, such as an unexported subject whose double the
+// directive out moves into another package. A handle without a member has no
+// double and no finding, because a method may return an interface without
+// methods.
 func (in *invocation) write() members {
 	sub := in.sub
 	if !in.p.referable(sub.visibility) {
 		in.m.Errorf(Unimplementable, "%s is not exported, so the file of its double cannot refer to it", sub.name)
 		return members{}
+	}
+	if pkg, placed := in.e.File().Package(); placed == nil {
+		if err := in.b.Importable(pkg, &node.TypeRef{Spelling: sub.name, Target: sub.origin}); err != nil {
+			in.m.Errorf(Unimplementable, "the file of the double of %s in the package %s cannot import %s, so it "+
+				"has no double: %v", sub.name, pkg.Package, sub.name, err)
+			return members{}
+		}
 	}
 	template := in.m.Directive().Params[FieldParam].Str
 	field, err := nametemplate.Segments(template, methodField)
@@ -691,6 +703,9 @@ func (in *invocation) write() members {
 		double.Fields.Append(referent(&c.Target, c.Ref))
 	}
 	in.e.File().Record(model, record...)
+	if sub.visibility != symbol.VisibilityPublic {
+		return walked
+	}
 	if declared != nil {
 		for _, d := range record {
 			test.Fields.Append(referent(&sub.origin, emit.DeclaredName(d)))
@@ -737,13 +752,26 @@ func constructions(methods []Method) []*Default {
 }
 
 // modelOf returns the model of the double of the subject without its
-// methods and properties.
+// methods and properties. The model has no witnesses where the file of the
+// double or the file of its tests cannot refer to one of them, such as to an
+// unexported type, so the tests then state that the double has no checks.
+// modelOf checks the package that the plan previews for each file, and takes
+// each witness for a file without a preview, because the layout then checks
+// each reference itself.
 func (in *invocation) modelOf(double *emit.Struct) Model {
 	sub := in.sub
 	model := Model{Double: double.Name, Subject: sub.name, Producer: sub.producer, Generic: len(sub.params) > 0}
 	value := &emit.TypeRef{Spelling: sub.name, Target: sub.origin, Args: sdk.TypeArgs(double.TypeParams)}
 	model.Delegate = in.p.delegate(value, sub.class)
-	for _, w := range in.b.Witnesses(sub.params) {
+	witnesses := in.b.Witnesses(sub.params)
+	for _, out := range []*sdk.Out{in.e.File(), in.e.File(TestTag)} {
+		pkg, placed := out.Package()
+		unimportable := func(w *node.TypeRef) bool { return in.b.Importable(pkg, w) != nil }
+		if placed == nil && slices.ContainsFunc(witnesses, unimportable) {
+			witnesses = nil
+		}
+	}
+	for _, w := range witnesses {
 		model.Witnesses = append(model.Witnesses, rules.EmitRef(w))
 	}
 	if !sub.value {
@@ -1107,12 +1135,19 @@ func (in *invocation) resultSamples(method *node.Method, c *Method) []emit.Value
 // hint is the text of a sample of text. A type that mentions a type
 // parameter of the double has no sample, because the checks of a generic
 // double run in a function that takes the type parameters. A refused sample
-// has the zero value.
+// has the zero value. So has a sample that refers to a declaration that the
+// file of the tests cannot refer to, such as an unexported function. sample
+// checks the package that the plan previews for that file, and keeps the
+// sample where the plan previews no package, because the layout then checks
+// each reference itself.
 func (in *invocation) sample(id *symbol.Identity, ref *node.TypeRef, emitted *emit.TypeRef, hint string) emit.Value {
 	if in.mentions(emitted) {
 		return emit.Value{}
 	}
 	s, _ := in.b.SamplesOf(*id, ref, hint)
+	if pkg, placed := in.e.File(TestTag).Package(); placed == nil && in.b.ImportableValue(pkg, s.Value) != nil {
+		return emit.Value{}
+	}
 	return s.Value
 }
 

@@ -1,4 +1,4 @@
-package mixed
+package mixed_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"example.com/shop/mixed"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/stub"
@@ -20,7 +21,7 @@ func sessionStubPrepareArgs(tb assert.TB) context.Context {
 }
 
 // sessionStubPrepare calls Prepare of s with the samples of its arguments.
-func sessionStubPrepare(tb assert.TB, s *SessionStub) error {
+func sessionStubPrepare(tb assert.TB, s *mixed.SessionStub) error {
 	tb.Helper()
 	a0 := sessionStubPrepareArgs(tb)
 	return s.Prepare(a0)
@@ -41,7 +42,7 @@ func sessionStubCommitArgs(tb assert.TB) context.Context {
 }
 
 // sessionStubCommit calls Commit of s with the samples of its arguments.
-func sessionStubCommit(tb assert.TB, s *SessionStub) error {
+func sessionStubCommit(tb assert.TB, s *mixed.SessionStub) error {
 	tb.Helper()
 	a0 := sessionStubCommitArgs(tb)
 	return s.Commit(a0)
@@ -63,7 +64,7 @@ func sessionStubOldArgs(tb assert.TB) string {
 }
 
 // sessionStubOld calls Old of s with the samples of its arguments.
-func sessionStubOld(tb assert.TB, s *SessionStub) (string, error) {
+func sessionStubOld(tb assert.TB, s *mixed.SessionStub) (string, error) {
 	tb.Helper()
 	a0 := sessionStubOldArgs(tb)
 	return s.Old(a0)
@@ -82,17 +83,17 @@ func sessionStubOldPins() (string, error) {
 // Prepare. The subject calls a new double that reports to tb.
 func sessionStubPrepareSubject(
 	tb assert.TB,
-) stub.Subject[SessionPrepareCall, SessionPrepareReturn] {
+) stub.Subject[mixed.SessionPrepareCall, mixed.SessionPrepareReturn] {
 	tb.Helper()
-	s := NewSessionStub(tb)
-	return stub.Subject[SessionPrepareCall, SessionPrepareReturn]{
+	s := mixed.NewSessionStub(tb)
+	return stub.Subject[mixed.SessionPrepareCall, mixed.SessionPrepareReturn]{
 		Stub: s.OnPrepare.MethodStub,
 		Call: func() {
 			_ = sessionStubPrepare(tb, s)
 		},
-		Result: func() SessionPrepareReturn {
+		Result: func() mixed.SessionPrepareReturn {
 			got0 := sessionStubPrepare(tb, s)
-			return SessionPrepareReturn{Err: got0}
+			return mixed.SessionPrepareReturn{Err: got0}
 		},
 		Override: func(mark func()) {
 			s.OnPrepare.Func(func(_ context.Context) error {
@@ -110,17 +111,19 @@ func sessionStubPrepareSubject(
 
 // sessionStubCommitSubject returns the subject of [stub.Behaviour] for
 // Commit. The subject calls a new double that reports to tb.
-func sessionStubCommitSubject(tb assert.TB) stub.Subject[SessionCommitCall, SessionCommitReturn] {
+func sessionStubCommitSubject(
+	tb assert.TB,
+) stub.Subject[mixed.SessionCommitCall, mixed.SessionCommitReturn] {
 	tb.Helper()
-	s := NewSessionStub(tb)
-	return stub.Subject[SessionCommitCall, SessionCommitReturn]{
+	s := mixed.NewSessionStub(tb)
+	return stub.Subject[mixed.SessionCommitCall, mixed.SessionCommitReturn]{
 		Stub: s.OnCommit.MethodStub,
 		Call: func() {
 			_ = sessionStubCommit(tb, s)
 		},
-		Result: func() SessionCommitReturn {
+		Result: func() mixed.SessionCommitReturn {
 			got0 := sessionStubCommit(tb, s)
-			return SessionCommitReturn{Err: got0}
+			return mixed.SessionCommitReturn{Err: got0}
 		},
 		Override: func(mark func()) {
 			s.OnCommit.Func(func(_ context.Context) error {
@@ -138,17 +141,19 @@ func sessionStubCommitSubject(tb assert.TB) stub.Subject[SessionCommitCall, Sess
 
 // sessionStubOldSubject returns the subject of [stub.Behaviour] for Old.
 // The subject calls a new double that reports to tb.
-func sessionStubOldSubject(tb assert.TB) stub.Subject[SessionOldCall, SessionOldReturn] {
+func sessionStubOldSubject(
+	tb assert.TB,
+) stub.Subject[mixed.SessionOldCall, mixed.SessionOldReturn] {
 	tb.Helper()
-	s := NewSessionStub(tb)
-	return stub.Subject[SessionOldCall, SessionOldReturn]{
+	s := mixed.NewSessionStub(tb)
+	return stub.Subject[mixed.SessionOldCall, mixed.SessionOldReturn]{
 		Stub: s.OnOld.MethodStub,
 		Call: func() {
 			_, _ = sessionStubOld(tb, s)
 		},
-		Result: func() SessionOldReturn {
+		Result: func() mixed.SessionOldReturn {
 			got0, got1 := sessionStubOld(tb, s)
-			return SessionOldReturn{Result: got0, Err: got1}
+			return mixed.SessionOldReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
 			s.OnOld.Func(func(_ string) (string, error) {
@@ -165,13 +170,13 @@ func sessionStubOldSubject(tb assert.TB) stub.Subject[SessionOldCall, SessionOld
 	}
 }
 
-// sessionStubInstance is the instance of a SessionStub that the checks of
-// the constructors and the options drive.
-type sessionStubInstance = stub.Instance[SessionPrepareCall]
+// sessionStubInstance is the instance of a mixed.SessionStub that the
+// checks of the constructors and the options drive.
+type sessionStubInstance = stub.Instance[mixed.SessionPrepareCall]
 
 // sessionStubInstanceOf returns the instance of s. The options apply to
 // the whole double, so the checks call Prepare alone.
-func sessionStubInstanceOf(tb assert.TB, s *SessionStub) sessionStubInstance {
+func sessionStubInstanceOf(tb assert.TB, s *mixed.SessionStub) sessionStubInstance {
 	tb.Helper()
 	return sessionStubInstance{
 		Stub: s.OnPrepare.MethodStub,
@@ -193,7 +198,7 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			_ = sessionStubPrepare(t, s)
 			got := s.OnPrepare.AssertCalledOnce(t, "Prepare records the call")
 			a0 := sessionStubPrepareArgs(t)
@@ -202,9 +207,9 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
-			var seen []SessionPrepareCall
-			s.OnPrepare.OnRecord(func(c SessionPrepareCall) { seen = append(seen, c) })
+			s := mixed.NewSessionStub(t)
+			var seen []mixed.SessionPrepareCall
+			s.OnPrepare.OnRecord(func(c mixed.SessionPrepareCall) { seen = append(seen, c) })
 			_ = sessionStubPrepare(t, s)
 			_ = sessionStubPrepare(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Prepare")
@@ -217,7 +222,7 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			_ = sessionStubCommit(t, s)
 			got := s.OnCommit.AssertCalledOnce(t, "Commit records the call")
 			a0 := sessionStubCommitArgs(t)
@@ -226,9 +231,9 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
-			var seen []SessionCommitCall
-			s.OnCommit.OnRecord(func(c SessionCommitCall) { seen = append(seen, c) })
+			s := mixed.NewSessionStub(t)
+			var seen []mixed.SessionCommitCall
+			s.OnCommit.OnRecord(func(c mixed.SessionCommitCall) { seen = append(seen, c) })
 			_ = sessionStubCommit(t, s)
 			_ = sessionStubCommit(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Commit")
@@ -241,7 +246,7 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			_, _ = sessionStubOld(t, s)
 			got := s.OnOld.AssertCalledOnce(t, "Old records the call")
 			a0 := sessionStubOldArgs(t)
@@ -250,9 +255,9 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
-			var seen []SessionOldCall
-			s.OnOld.OnRecord(func(c SessionOldCall) { seen = append(seen, c) })
+			s := mixed.NewSessionStub(t)
+			var seen []mixed.SessionOldCall
+			s.OnOld.OnRecord(func(c mixed.SessionOldCall) { seen = append(seen, c) })
 			_, _ = sessionStubOld(t, s)
 			_, _ = sessionStubOld(t, s)
 			assert.Length(t, seen, 2, "OnRecord runs once for each call of Old")
@@ -262,12 +267,12 @@ func TestSessionStub(t *testing.T) {
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) sessionStubInstance {
-			return sessionStubInstanceOf(tb, NewSessionStub(tb))
+			return sessionStubInstanceOf(tb, mixed.NewSessionStub(tb))
 		})
 
 		t.Run("clears the recorded calls of Prepare", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			_ = sessionStubPrepare(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnPrepare.CallCount(), 0, "ResetCalls clears the calls of Prepare")
@@ -275,7 +280,7 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Prepare", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			want0 := sessionStubPreparePins()
 			s.OnPrepare.Returns(want0)
 			s.ResetCalls()
@@ -285,7 +290,7 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Commit", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			_ = sessionStubCommit(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnCommit.CallCount(), 0, "ResetCalls clears the calls of Commit")
@@ -293,7 +298,7 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Commit", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			want0 := sessionStubCommitPins()
 			s.OnCommit.Returns(want0)
 			s.ResetCalls()
@@ -303,7 +308,7 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("clears the recorded calls of Old", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			_, _ = sessionStubOld(t, s)
 			s.ResetCalls()
 			assert.Equal(t, s.OnOld.CallCount(), 0, "ResetCalls clears the calls of Old")
@@ -311,7 +316,7 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("keeps the results of Returns of Old", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			want0, want1 := sessionStubOldPins()
 			s.OnOld.Returns(want0, want1)
 			s.ResetCalls()
@@ -326,7 +331,7 @@ func TestSessionStub(t *testing.T) {
 		stub.LatencyBehaviour(
 			t,
 			func(tb assert.TB, d time.Duration, clk assert.Clock) sessionStubInstance {
-				return sessionStubInstanceOf(tb, NewSessionStubDelayed(tb, d, clk))
+				return sessionStubInstanceOf(tb, mixed.NewSessionStubDelayed(tb, d, clk))
 			},
 		)
 	})
@@ -337,7 +342,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Prepare with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Prepare-failing")
-			s := NewSessionStubFailing(t, want)
+			s := mixed.NewSessionStubFailing(t, want)
 			r0 := sessionStubPrepare(t, s)
 			assert.ErrorIs(t, r0, want, "Prepare fails with the error of NewSessionStubFailing")
 		})
@@ -345,7 +350,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Commit with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Commit-failing")
-			s := NewSessionStubFailing(t, want)
+			s := mixed.NewSessionStubFailing(t, want)
 			r0 := sessionStubCommit(t, s)
 			assert.ErrorIs(t, r0, want, "Commit fails with the error of NewSessionStubFailing")
 		})
@@ -353,7 +358,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Old with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Old-failing")
-			s := NewSessionStubFailing(t, want)
+			s := mixed.NewSessionStubFailing(t, want)
 			_, r1 := sessionStubOld(t, s)
 			assert.ErrorIs(t, r1, want, "Old fails with the error of NewSessionStubFailing")
 		})
@@ -362,7 +367,7 @@ func TestSessionStub(t *testing.T) {
 	t.Run("SessionStubStrict", func(t *testing.T) {
 		t.Parallel()
 		stub.StrictBehaviour(t, func(tb assert.TB) sessionStubInstance {
-			return sessionStubInstanceOf(tb, NewSessionStub(tb, SessionStubStrict()))
+			return sessionStubInstanceOf(tb, mixed.NewSessionStub(tb, mixed.SessionStubStrict()))
 		})
 
 		t.Run("refuses Commit before Prepare", func(t *testing.T) {
@@ -372,7 +377,7 @@ func TestSessionStub(t *testing.T) {
 				var z0 error
 				return z0
 			}
-			s := NewSessionStub(r, SessionStubStrict(), WithSessionCommit(fn))
+			s := mixed.NewSessionStub(r, mixed.SessionStubStrict(), mixed.WithSessionCommit(fn))
 			_ = sessionStubCommit(t, s)
 			assert.True(t, r.Failed(), "a strict double refuses Commit before Prepare")
 		})
@@ -383,8 +388,8 @@ func TestSessionStub(t *testing.T) {
 
 		t.Run("passes Prepare to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewSessionStub(t)
-			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			inner := mixed.NewSessionStub(t)
+			s := mixed.NewSessionStub(t, mixed.SessionStubDelegateTo(inner))
 			_ = sessionStubPrepare(t, s)
 			inner.OnPrepare.AssertCalledOnce(t, "Prepare calls the implementation")
 		})
@@ -392,17 +397,17 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Prepare with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Prepare-delegate")
-			inner := NewSessionStub(t)
+			inner := mixed.NewSessionStub(t)
 			inner.OnPrepare.Faults(want, 1)
-			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			s := mixed.NewSessionStub(t, mixed.SessionStubDelegateTo(inner))
 			r0 := sessionStubPrepare(t, s)
 			assert.ErrorIs(t, r0, want, "Prepare fails with the error of the implementation")
 		})
 
 		t.Run("passes Commit to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewSessionStub(t)
-			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			inner := mixed.NewSessionStub(t)
+			s := mixed.NewSessionStub(t, mixed.SessionStubDelegateTo(inner))
 			_ = sessionStubCommit(t, s)
 			inner.OnCommit.AssertCalledOnce(t, "Commit calls the implementation")
 		})
@@ -410,17 +415,17 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Commit with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Commit-delegate")
-			inner := NewSessionStub(t)
+			inner := mixed.NewSessionStub(t)
 			inner.OnCommit.Faults(want, 1)
-			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			s := mixed.NewSessionStub(t, mixed.SessionStubDelegateTo(inner))
 			r0 := sessionStubCommit(t, s)
 			assert.ErrorIs(t, r0, want, "Commit fails with the error of the implementation")
 		})
 
 		t.Run("passes Old to the implementation", func(t *testing.T) {
 			t.Parallel()
-			inner := NewSessionStub(t)
-			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			inner := mixed.NewSessionStub(t)
+			s := mixed.NewSessionStub(t, mixed.SessionStubDelegateTo(inner))
 			_, _ = sessionStubOld(t, s)
 			inner.OnOld.AssertCalledOnce(t, "Old calls the implementation")
 		})
@@ -428,9 +433,9 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Old with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Old-delegate")
-			inner := NewSessionStub(t)
+			inner := mixed.NewSessionStub(t)
 			inner.OnOld.Faults(want, 1)
-			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			s := mixed.NewSessionStub(t, mixed.SessionStubDelegateTo(inner))
 			_, r1 := sessionStubOld(t, s)
 			assert.ErrorIs(t, r1, want, "Old fails with the error of the implementation")
 		})
@@ -439,21 +444,27 @@ func TestSessionStub(t *testing.T) {
 	t.Run("SessionStubWithClock", func(t *testing.T) {
 		t.Parallel()
 		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) sessionStubInstance {
-			return sessionStubInstanceOf(tb, NewSessionStub(tb, SessionStubWithClock(clk)))
+			return sessionStubInstanceOf(
+				tb,
+				mixed.NewSessionStub(tb, mixed.SessionStubWithClock(clk)),
+			)
 		})
 	})
 
 	t.Run("SessionStubWithRandSource", func(t *testing.T) {
 		t.Parallel()
 		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) sessionStubInstance {
-			return sessionStubInstanceOf(tb, NewSessionStub(tb, SessionStubWithRandSource(src)))
+			return sessionStubInstanceOf(
+				tb,
+				mixed.NewSessionStub(tb, mixed.SessionStubWithRandSource(src)),
+			)
 		})
 	})
 
 	t.Run("SessionStubBenchMode", func(t *testing.T) {
 		t.Parallel()
 		stub.BenchModeBehaviour(t, func(tb assert.TB) sessionStubInstance {
-			return sessionStubInstanceOf(tb, NewSessionStub(tb, SessionStubBenchMode()))
+			return sessionStubInstanceOf(tb, mixed.NewSessionStub(tb, mixed.SessionStubBenchMode()))
 		})
 	})
 
@@ -464,7 +475,11 @@ func TestSessionStub(t *testing.T) {
 			func(tb assert.TB, d time.Duration, clk assert.Clock) sessionStubInstance {
 				return sessionStubInstanceOf(
 					tb,
-					NewSessionStub(tb, SessionStubWithClock(clk), SessionStubWithLatency(d)),
+					mixed.NewSessionStub(
+						tb,
+						mixed.SessionStubWithClock(clk),
+						mixed.SessionStubWithLatency(d),
+					),
 				)
 			},
 		)
@@ -476,7 +491,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Prepare with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Prepare-failing")
-			s := NewSessionStub(t, SessionStubFailing(want))
+			s := mixed.NewSessionStub(t, mixed.SessionStubFailing(want))
 			r0 := sessionStubPrepare(t, s)
 			assert.ErrorIs(t, r0, want, "Prepare fails with the error of SessionStubFailing")
 		})
@@ -484,7 +499,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Commit with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Commit-failing")
-			s := NewSessionStub(t, SessionStubFailing(want))
+			s := mixed.NewSessionStub(t, mixed.SessionStubFailing(want))
 			r0 := sessionStubCommit(t, s)
 			assert.ErrorIs(t, r0, want, "Commit fails with the error of SessionStubFailing")
 		})
@@ -492,7 +507,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("fails Old with its error", func(t *testing.T) {
 			t.Parallel()
 			want := errors.New("Old-failing")
-			s := NewSessionStub(t, SessionStubFailing(want))
+			s := mixed.NewSessionStub(t, mixed.SessionStubFailing(want))
 			_, r1 := sessionStubOld(t, s)
 			assert.ErrorIs(t, r1, want, "Old fails with the error of SessionStubFailing")
 		})
@@ -504,7 +519,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("sets the function of Prepare", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewSessionStub(t, WithSessionPrepare(func(_ context.Context) error {
+			s := mixed.NewSessionStub(t, mixed.WithSessionPrepare(func(_ context.Context) error {
 				called = true
 				var z0 error
 				return z0
@@ -520,7 +535,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("sets the function of Commit", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewSessionStub(t, WithSessionCommit(func(_ context.Context) error {
+			s := mixed.NewSessionStub(t, mixed.WithSessionCommit(func(_ context.Context) error {
 				called = true
 				var z0 error
 				return z0
@@ -536,7 +551,7 @@ func TestSessionStub(t *testing.T) {
 		t.Run("sets the function of Old", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := NewSessionStub(t, WithSessionOld(func(_ string) (string, error) {
+			s := mixed.NewSessionStub(t, mixed.WithSessionOld(func(_ string) (string, error) {
 				called = true
 				var z0 string
 				var z1 error
@@ -558,7 +573,7 @@ func TestSessionPrepareStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Prepare", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			want0 := sessionStubPreparePins()
 			s.OnPrepare.Returns(want0)
 			got0 := sessionStubPrepare(t, s)
@@ -568,7 +583,7 @@ func TestSessionPrepareStub(t *testing.T) {
 		t.Run("configures Prepare for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewSessionStub(r)
+			s := mixed.NewSessionStub(r)
 			s.OnPrepare.Strict()
 			var want0 error
 			s.OnPrepare.Returns(want0)
@@ -582,7 +597,7 @@ func TestSessionPrepareStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Prepare to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			var got0 context.Context
 			s.OnPrepare.Func(func(p0 context.Context) error {
 				got0 = p0
@@ -606,7 +621,7 @@ func TestSessionCommitStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Commit", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			want0 := sessionStubCommitPins()
 			s.OnCommit.Returns(want0)
 			got0 := sessionStubCommit(t, s)
@@ -616,7 +631,7 @@ func TestSessionCommitStub(t *testing.T) {
 		t.Run("configures Commit for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewSessionStub(r)
+			s := mixed.NewSessionStub(r)
 			s.OnCommit.Strict()
 			var want0 error
 			s.OnCommit.Returns(want0)
@@ -630,7 +645,7 @@ func TestSessionCommitStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Commit to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			var got0 context.Context
 			s.OnCommit.Func(func(p0 context.Context) error {
 				got0 = p0
@@ -654,7 +669,7 @@ func TestSessionOldStub(t *testing.T) {
 
 		t.Run("sets the results of each call of Old", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			want0, want1 := sessionStubOldPins()
 			s.OnOld.Returns(want0, want1)
 			got0, got1 := sessionStubOld(t, s)
@@ -665,7 +680,7 @@ func TestSessionOldStub(t *testing.T) {
 		t.Run("configures Old for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
-			s := NewSessionStub(r)
+			s := mixed.NewSessionStub(r)
 			s.OnOld.Strict()
 			var want0 string
 			var want1 error
@@ -680,7 +695,7 @@ func TestSessionOldStub(t *testing.T) {
 
 		t.Run("passes the arguments of each call of Old to the function", func(t *testing.T) {
 			t.Parallel()
-			s := NewSessionStub(t)
+			s := mixed.NewSessionStub(t)
 			var got0 string
 			s.OnOld.Func(func(p0 string) (string, error) {
 				got0 = p0

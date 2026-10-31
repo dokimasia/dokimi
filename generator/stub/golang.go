@@ -5,6 +5,7 @@ package stub
 
 import (
 	"embed"
+	"go/token"
 	"strconv"
 	"text/template"
 
@@ -48,6 +49,19 @@ const (
 	golangWith       = "With"
 )
 
+// The constructor and the option of each method of the double of an
+// unexported subject open with golangNewUnexported and golangWithUnexported,
+// followed by the name of the double or of the subject in Pascal case, as in
+// newStoreStub and withStoreGet for the subject store. The templates of Go
+// name the constructor through golangNewHelper and each option through
+// golangWithHelper.
+const (
+	golangNewUnexported  = "new"
+	golangWithUnexported = "with"
+	golangNewHelper      = "stubNew"
+	golangWithHelper     = "stubWith"
+)
+
 // golangFault opens the name of the helper of the stub of a method that arms
 // an error value for the next call, as in FaultNotFound for ErrNotFound.
 const golangFault = "Fault"
@@ -70,7 +84,10 @@ func (golangPart) Target() plugin.Target { return golang.Target }
 func (golangPart) Options() []sdk.TargetOption {
 	return []sdk.TargetOption{
 		sdk.TemplatesOf(golangTemplates, golang.Target),
-		sdk.Funcs(template.FuncMap{camelHelper: naming.Camel, siteHelper: siteOf, refHelper: referentOf}),
+		sdk.Funcs(template.FuncMap{
+			camelHelper: naming.Camel, siteHelper: siteOf, refHelper: referentOf,
+			golangNewHelper: golangNewName, golangWithHelper: golangWithName,
+		}),
 	}
 }
 
@@ -185,6 +202,28 @@ func (golangPart) delegate(value *emit.TypeRef, class bool) *emit.TypeRef {
 // for the base NotFound of ErrNotFound.
 func (golangPart) fault(base string) string { return golangFault + naming.Pascal(base) }
 
+// golangNewName returns New followed by the name of the double, such as
+// NewStoreStub, and newStoreStub for the unexported double storeStub. The
+// declarations of a double and its templates name its constructor through
+// it, so the settle of eidos keeps the name that the templates write.
+func golangNewName(double string) string {
+	if token.IsExported(double) {
+		return golangNew + double
+	}
+	return golangNewUnexported + naming.Pascal(double)
+}
+
+// golangWithName returns With followed by the names of the subject and of the
+// method, such as WithStoreGet, and withStoreGet for the unexported subject
+// store. The declarations of a double and its templates name each option
+// through it.
+func golangWithName(subject, method string) string {
+	if token.IsExported(subject) {
+		return golangWith + subject + method
+	}
+	return golangWithUnexported + naming.Pascal(subject) + method
+}
+
 // construction returns seed, the function that constructs a builder from the
 // seed, such as NewAccountBuilder. A Go double calls the function itself.
 func (golangPart) construction(_, seed string) (ref, method string) { return seed, "" }
@@ -210,16 +249,17 @@ func (golangPart) declarations(double *emit.Struct, m *Model) []symbol.Symbol {
 		if len(c.Returns) > 0 {
 			out = append(out, typ(c.Return))
 		}
-		out = append(out, function(golangWith+m.Subject+c.Name))
+		out = append(out, function(golangWithName(m.Subject, c.Name)))
 	}
+	constructor := golangNewName(name)
 	out = append(out,
 		&emit.Alias{Origin: double.Origin, Name: name + golangOption, Visibility: double.Visibility, Defined: true},
 		function(name+golangStrict), function(name+golangDelegateTo), function(name+golangWithClock),
 		function(name+golangWithRand), function(name+golangBenchMode), function(name+golangLatency),
-		function(golangNew+name), function(golangNew+name+golangDelayed),
+		function(constructor), function(constructor+golangDelayed),
 	)
 	if m.Fallible {
-		out = append(out, function(name+golangFailing), function(golangNew+name+golangFailing))
+		out = append(out, function(name+golangFailing), function(constructor+golangFailing))
 	}
 	return out
 }

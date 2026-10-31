@@ -4,6 +4,7 @@ import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehavio
 import { describe, expect, it } from "vitest";
 import { Invoice } from "./billing";
 import { Account, Note } from "./built";
+import { AccountBuilder } from "./built.builder";
 import { StoreStub } from "./built.stub";
 
 /** Returns the samples of the arguments of get. An argument without a sample is undefined. */

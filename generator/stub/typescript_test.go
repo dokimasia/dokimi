@@ -20,12 +20,9 @@ import (
 	"go.dokimi.dev/dokimi/internal/gentest"
 )
 
-// The module of the interface Finder, whose method has a word that the
-// initialisms of Go contain.
-const (
-	finderModule = "finder"
-	finderName   = "Finder"
-)
+// finderModule is the module of the interface Finder, whose method has a word
+// that the initialisms of Go contain.
+const finderModule = "finder"
 
 // The part of TypeScript declares the target typescript with the template of
 // each family and its helpers. It returns the names of the member that
@@ -213,8 +210,10 @@ func renderedTypeScript(t *testing.T) fstest.MapFS {
 	t.Helper()
 
 	p := stub.New()
-	res := fixture(t, typescript.Target, tsTree, p, storeModule, clockModule, handlesModule, streamModule,
-		mixedModule, finderModule, pointModule, builtModule, billingModule).Generate(t, p)
+	f, b := planned(t, typescript.Target, tsTree, p, storeModule, clockModule, handlesModule, streamModule,
+		mixedModule, finderModule, pointModule, builtModule, billingModule)
+	assert.NoError(t, f.Generate(t, b).Err, "builder runs whole")
+	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
-	return gentest.Rendered(t, res, p, tsbackend.New())
+	return gentest.Rendered(t, f, res, p, tsbackend.New(), b)
 }

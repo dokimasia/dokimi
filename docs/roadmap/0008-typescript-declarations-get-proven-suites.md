@@ -27,6 +27,7 @@ A TypeScript team that writes `//dokimi:suite` on an interface gets a Vitest sui
 - [ ] `dokimi run` writes `iface.suite.ts` and `iface.suite.test.ts` for each declaration under `//dokimi:suite` in the TypeScript corpus.
 - [ ] `@dokimi/runtime` exports `conform`, `spec` and `probe`, with a probe for each claim of level 1.
 - [ ] Each application writes its suite record into the meta of its Vitest test, and `dokimi report` reads it.
+- [ ] A run of dokimi writes `dokimi.typescript.lock` for the plan typescript, and removing a directive from a fixture of the TypeScript corpus fails `dokimi run --check` with `LostCheck`.
 - [ ] `dokimi conform --lang typescript` passes at level 1, with an overlay that declares each difference from Go.
 - [ ] Removing an entry from the overlay of TypeScript fails the gate with the key of the difference.
 
@@ -36,7 +37,7 @@ The corpus gate of milestone 0007 has to exist first, so that TypeScript is judg
 
 ## Scope
 
-The template tree of the suite generator for TypeScript, the modules `conform`, `spec` and `probe` of `@dokimi/runtime`, the probes of level 1, the overlay of TypeScript and the controls of its corpus.
+The template tree of the suite generator for TypeScript with the template of its lock, the modules `conform`, `spec` and `probe` of `@dokimi/runtime`, the probes of level 1, the overlay of TypeScript and the controls of its corpus.
 
 ## Not in this milestone
 
@@ -56,3 +57,4 @@ The template tree of the suite generator for TypeScript, the modules `conform`, 
 | Date | What changed | Why |
 |---|---|---|
 | 2026-10-28 | Created at position 8 | The first roadmap of dokimi |
+| 2026-10-30 | The lock of the plan typescript moves here from milestone 0001 | A plan has a lock when it runs the suite generator, and the plan typescript runs it from this milestone on |

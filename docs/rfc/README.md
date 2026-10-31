@@ -21,7 +21,7 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0010](0010-the-benchmarks-of-a-callable-that-waits.md) | The benchmarks of a callable that waits for another call | Accepted |
 | [0011](0011-the-environment-of-a-check.md) | The environment of the runs of a check | Accepted |
 | [0012](0012-the-sample-of-a-parameter.md) | The sample of a parameter in the generated calls | Accepted |
-| [0013](0013-the-lock-of-check-identities.md) | The lock of check identities | Draft |
+| [0013](0013-the-lock-of-check-identities.md) | The lock of check identities | Accepted |
 | [0014](0014-the-derivation-of-checks.md) | The derivation of checks from the conformance spec | Accepted |
 | [0015](0015-vacuous-checks-and-controls.md) | Vacuous checks and controls | Accepted |
 | [0016](0016-the-suite-record-in-the-run-artifact.md) | The suite record in the artifact of a run | Accepted |

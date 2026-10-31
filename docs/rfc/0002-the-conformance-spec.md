@@ -82,6 +82,7 @@ spec/
 ├── references.yaml    the reference forms of the verified fakes
 ├── machineries.yaml   the machineries
 ├── stances.yaml       the stances, and the stance of each classification without a claim
+├── keys.yaml          the identities whose keys each runtime checks its key form against
 ├── laws.json          rendered from laws.yaml, as each YAML file is rendered
 ├── …
 ├── schemas/           a JSON Schema for each rendered file and for the suite record
@@ -384,6 +385,8 @@ identity := declaration ["." callable] "/" segment ["#" case]
 `declaration` and `callable` are the names of the declaration and the callable as the source declares them, such as `Store.Read` in Go and `Store.read` in TypeScript. A check of a claim with the scope `declaration`, such as `Store/agrees-with-the-reference`, has no callable. A check of an enumeration or of the errors of a package has no callable either. Its declaration is the enumeration or the name of the package. The name of a TypeScript module is the name of its file without the extensions. `segment` is the identifier of the claim, and `case` separates two bindings of one claim on one callable.
 
 To join checks across languages, the key form splits each name into words with `naming.Words` of eidos. It writes the words in lower case and joins them with hyphens. `naming.Words` splits at a separator, between a lower-case and an upper-case letter, before the last upper-case letter of a run that a lower-case letter follows, and before an upper-case letter that follows a digit. `Store.ReadAll/zero-on-error` in Go, `Store.readAll/zero-on-error` in TypeScript and `Store.read_all/zero-on-error` in Rust all have the key `store.read-all/zero-on-error`. `HTTPServer` in Go, `httpServer` in TypeScript and `http_server` in Rust all have the key `http-server`. Two callables of one declaration with the same key fail generation.
+
+A runtime cannot call `naming.Words`, so each runtime implements the key form for the suite record. The renderer writes the key of each identity of `keys.yaml` into `keys.json`, and the test of the copy of each runtime checks its key form against every entry.
 
 The test runner of each language runs each check as a test of its own, named by the identity of the check. The call records of a check belong to that test. The field `tests` of a killed mutant in the run record of mutate-spec names the tests that failed on it, so a mutant maps to the checks that detected it. A run that stops at the first failure names one of those checks.
 

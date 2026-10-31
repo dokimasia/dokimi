@@ -149,3 +149,13 @@ var BadOptions = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Meaning: "the function of the param options of the directive subject is not a function of the options of " +
 		"an application",
 })
+
+// LostCheck reports a line of the committed lock of a plan that the run no
+// longer generates: a derived check, a check of the consumer or a ceiling of a
+// budget that the change removes, refuses or binds to another partner. run
+// --check reports it as an Error at the line of the committed lock. A
+// commit of the regenerated lock approves the change.
+var LostCheck = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  12,
+	Meaning: "a check of the committed lock is no longer generated",
+})

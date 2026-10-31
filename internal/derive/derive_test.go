@@ -89,7 +89,7 @@ func TestDerive(t *testing.T) {
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Refusals, []derive.Refusal{{
-				Claim: spec.ZeroOnError, Callable: "Read",
+				Claim: spec.ZeroOnError, Callable: "Read", Key: "store.read/zero-on-error",
 				Why:    "eidos derives no sample of a result of Read",
 				Remedy: "author a sample of the result type with the directive sample",
 			}}, "the claim refuses with the reason and the remedy of the gate")
@@ -122,7 +122,7 @@ func TestDerive(t *testing.T) {
 				"the default withdraws the claim",
 			)
 			assert.Equal(t, got.Unclaimed, []derive.Unclaimed{{
-				Classification: "mixin:default-on-error", Callable: "Read", Stance: spec.Blocked,
+				Classification: "mixin:default-on-error", Callable: "Read", Key: "store.read", Stance: spec.Blocked,
 				Note: "The mixin declares no default value for a check to compare.",
 			}}, "the mixin has its stance")
 		})
@@ -139,7 +139,7 @@ func TestDerive(t *testing.T) {
 				assert.NoError(t, err, "the declaration derives")
 				assert.False(t, slices.Contains(identities(got), "Store.Get/expires"), "the claim needs a clock")
 				assert.True(t, slices.Contains(got.Unclaimed, derive.Unclaimed{
-					Classification: "mixin:ttl", Callable: "Get", Stance: spec.Needs,
+					Classification: "mixin:ttl", Callable: "Get", Key: "store.get", Stance: spec.Needs,
 					Note: "The claim expires needs clock-the-run-advances.",
 				}), "the mixin needs the machinery")
 			},
@@ -179,7 +179,7 @@ func TestDerive(t *testing.T) {
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.True(t, slices.Contains(got.Refusals, derive.Refusal{
-				Claim: spec.Miss, Callable: "Get",
+				Claim: spec.Miss, Callable: "Get", Key: "store.get/miss",
 				Why:    "the classification of Get sets no param sentinel",
 				Remedy: "set the param sentinel in the directive of Get",
 			}), "the claim refuses with the name of the param")
@@ -193,7 +193,7 @@ func TestDerive(t *testing.T) {
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Unclaimed, []derive.Unclaimed{{
-				Classification: "shape:writer", Callable: "Put", Stance: spec.Silent,
+				Classification: "shape:writer", Callable: "Put", Key: "store.put", Stance: spec.Silent,
 				Note: "A write is an input of the other checks, and its result is an error alone.",
 			}}, "the shape writer is silent")
 		})
@@ -231,7 +231,7 @@ func TestDerive(t *testing.T) {
 			assert.NoError(t, err, "the declaration derives")
 			assert.Empty(t, got.Checks, "no claim binds without samples of the input")
 			assert.Equal(t, got.Refusals, []derive.Refusal{{
-				Claim: spec.Deterministic, Callable: "Hash",
+				Claim: spec.Deterministic, Callable: "Hash", Key: "store.hash/deterministic",
 				Why:    "eidos derives no sample of the parameter key of Hash",
 				Remedy: "author a sample of the parameter key with the directive sample",
 			}}, "the claim of the shape refuses, and smoke is silent")
@@ -337,7 +337,7 @@ func TestDerive(t *testing.T) {
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Unclaimed, []derive.Unclaimed{{
-				Classification: "shape:reader", Callable: "Read", Stance: spec.Needs,
+				Classification: "shape:reader", Callable: "Read", Key: "store.read", Stance: spec.Needs,
 				Note: "The claim agrees needs the param machineries=reference of the directive suite.",
 			}}, "the note names the param that states the machinery")
 		})
@@ -379,7 +379,7 @@ func TestDerive(t *testing.T) {
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Unclaimed, []derive.Unclaimed{{
-				Classification: "contract:pool/stats", Callable: "Get", Stance: spec.Gap,
+				Classification: "contract:pool/stats", Callable: "Get", Key: "store.get", Stance: spec.Gap,
 				Note: "No claim states that the stats of a pool count each loan and each return.",
 			}}, "the role has its stance once")
 		})
@@ -416,6 +416,24 @@ func TestDerive(t *testing.T) {
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Checks[1].Key, "store.get/twice#b", "the key has the id of the instance")
+		})
+
+		t.Run("adds the id of the instance to the key of a refusal of a claim that binds twice", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("twice", spec.Licence{Contract: "cache", Role: "cache"})
+			get := getter()
+			get.Class.Contracts = []shape.Membership{
+				{Contract: "cache", Role: "cache", ID: "a"},
+				{Contract: "cache", Role: "cache", ID: "b"},
+			}
+			get.Inputs = append([]derive.Value(nil), get.Inputs...)
+			get.Inputs[0].Samples[0] = rules.Refused(rules.RefusedNoLiteral)
+
+			got, err := derive.Derive([]derive.Facts{get}, []spec.Claim{c}, nil, runtime)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, []string{got.Refusals[0].Key, got.Refusals[1].Key},
+				[]string{"store.get/twice#a", "store.get/twice#b"}, "each refusal has the key of its instance")
 		})
 
 		t.Run("binds a claim with of a callable that has both classifications alone", func(t *testing.T) {
@@ -541,5 +559,33 @@ func TestDerive(t *testing.T) {
 
 			assert.ErrorIs(t, err, derive.ErrKey, "two callables share the key store.read-all")
 		})
+	})
+
+	t.Run("Facts.Key", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name      string
+			giveFacts derive.Facts
+			want      string
+		}{
+			{
+				name:      "returns the key of a method with its declaration",
+				giveFacts: derive.Facts{Declaration: "OrderStore", Callable: "ReadAll"},
+				want:      "order-store.read-all",
+			},
+			{
+				name:      "returns the key of a function alone",
+				giveFacts: derive.Facts{Callable: "SlugOf"},
+				want:      "slug-of",
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				assert.Equal(t, tt.giveFacts.Key(), tt.want, "the key joins the callable across languages")
+			})
+		}
 	})
 }

@@ -1,15 +1,16 @@
-package loose
+package loose_test
 
 import (
 	"testing"
 
+	"example.com/shop/loose"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
 
-// printerSubjectEmbedded is Printer under the name of the field that
+// printerSubjectEmbedded is loose.Printer under the name of the field that
 // printerSubject embeds.
-type printerSubjectEmbedded = Printer
+type printerSubjectEmbedded = loose.Printer
 
 // printerSubject is a value of Printer that only TestPrinterSuite builds.
 type printerSubject struct{ printerSubjectEmbedded }
@@ -21,29 +22,29 @@ func TestPrinterSuite(t *testing.T) {
 
 	t.Run("PrinterSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, PrinterSuite())
+		conform.Falsify(t, loose.PrinterSuite())
 	})
 
 	t.Run("RunPrinterSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *printerSubject
-		RunPrinterSuite(
+		loose.RunPrinterSuite(
 			t,
 			func() *printerSubject {
 				built = &printerSubject{}
 				return built
 			},
-			conform.With(PrinterCheck{
+			conform.With(loose.PrinterCheck{
 				ID:        "Printer/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PrinterHandle) {
+				Apply: func(h *loose.PrinterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Printer(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Printer(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PrinterHandle) Printer { return &printerSubject{} },
+				Defect: func(*loose.PrinterHandle) loose.Printer { return &printerSubject{} },
 			}),
 			conform.Excuse(
-				PrinterChecks.Print.Smoke(),
+				loose.PrinterChecks.Print.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -52,23 +53,23 @@ func TestPrinterSuite(t *testing.T) {
 	t.Run("RunPrinterSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *printerSubject
-		RunPrinterSuiteFromHandle(
+		loose.RunPrinterSuiteFromHandle(
 			t,
-			func(*PrinterHandle) *printerSubject {
+			func(*loose.PrinterHandle) *printerSubject {
 				built = &printerSubject{}
 				return built
 			},
-			conform.With(PrinterCheck{
+			conform.With(loose.PrinterCheck{
 				ID:        "Printer/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PrinterHandle) {
+				Apply: func(h *loose.PrinterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Printer(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Printer(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PrinterHandle) Printer { return &printerSubject{} },
+				Defect: func(*loose.PrinterHandle) loose.Printer { return &printerSubject{} },
 			}),
 			conform.Excuse(
-				PrinterChecks.Print.Smoke(),
+				loose.PrinterChecks.Print.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -77,8 +78,8 @@ func TestPrinterSuite(t *testing.T) {
 
 // printerIdle returns the planted defect of a ceiling of Printer with a
 // spend of nothing, a subject that answers each call at once.
-func printerIdle(h *PrinterHandle) Printer {
-	return PrinterSuite().Calls[0].Over(h, func() {})
+func printerIdle(h *loose.PrinterHandle) loose.Printer {
+	return loose.PrinterSuite().Calls[0].Over(h, func() {})
 }
 
 // TestPrinterSuiteBudgets applies the allocation ceilings of the suite of
@@ -86,12 +87,15 @@ func printerIdle(h *PrinterHandle) Printer {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestPrinterSuiteBudgets(t *testing.T) {
-	RunPrinterBudgets(
+	loose.RunPrinterBudgets(
 		t,
 		printerIdle,
-		conform.Ceilings(PrinterChecks.Print.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			loose.PrinterChecks.Print.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			PrinterChecks.Print.Smoke(),
+			loose.PrinterChecks.Print.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -100,12 +104,12 @@ func TestPrinterSuiteBudgets(t *testing.T) {
 // FuzzPrinterSuitePrint registers the fuzz target of Printer.Print on
 // printerIdle, with every check of the suite excused.
 func FuzzPrinterSuitePrint(f *testing.F) {
-	FuzzPrinterSuite(
+	loose.FuzzPrinterSuite(
 		f,
-		PrinterChecks.Print.Callable,
+		loose.PrinterChecks.Print.Callable,
 		printerIdle,
 		conform.Excuse(
-			PrinterChecks.Print.Smoke(),
+			loose.PrinterChecks.Print.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -115,13 +119,13 @@ func FuzzPrinterSuitePrint(f *testing.F) {
 // printerIdle.
 func BenchmarkPrinterSuite(b *testing.B) {
 	b.Run("Print", func(b *testing.B) {
-		BenchPrinterSuite(b, PrinterChecks.Print.Callable, printerIdle)
+		loose.BenchPrinterSuite(b, loose.PrinterChecks.Print.Callable, printerIdle)
 	})
 }
 
-// recorderSubjectEmbedded is Recorder under the name of the field that
-// recorderSubject embeds.
-type recorderSubjectEmbedded = Recorder
+// recorderSubjectEmbedded is loose.Recorder under the name of the field
+// that recorderSubject embeds.
+type recorderSubjectEmbedded = loose.Recorder
 
 // recorderSubject is a value of Recorder that only TestRecorderSuite
 // builds.
@@ -134,29 +138,29 @@ func TestRecorderSuite(t *testing.T) {
 
 	t.Run("RecorderSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, RecorderSuite())
+		conform.Falsify(t, loose.RecorderSuite())
 	})
 
 	t.Run("RunRecorderSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *recorderSubject
-		RunRecorderSuite(
+		loose.RunRecorderSuite(
 			t,
 			func() *recorderSubject {
 				built = &recorderSubject{}
 				return built
 			},
-			conform.With(RecorderCheck{
+			conform.With(loose.RecorderCheck{
 				ID:        "Recorder/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *RecorderHandle) {
+				Apply: func(h *loose.RecorderHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Recorder(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Recorder(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*RecorderHandle) Recorder { return &recorderSubject{} },
+				Defect: func(*loose.RecorderHandle) loose.Recorder { return &recorderSubject{} },
 			}),
 			conform.Excuse(
-				RecorderChecks.Field.Smoke(),
+				loose.RecorderChecks.Field.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -165,23 +169,23 @@ func TestRecorderSuite(t *testing.T) {
 	t.Run("RunRecorderSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *recorderSubject
-		RunRecorderSuiteFromHandle(
+		loose.RunRecorderSuiteFromHandle(
 			t,
-			func(*RecorderHandle) *recorderSubject {
+			func(*loose.RecorderHandle) *recorderSubject {
 				built = &recorderSubject{}
 				return built
 			},
-			conform.With(RecorderCheck{
+			conform.With(loose.RecorderCheck{
 				ID:        "Recorder/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *RecorderHandle) {
+				Apply: func(h *loose.RecorderHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Recorder(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Recorder(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*RecorderHandle) Recorder { return &recorderSubject{} },
+				Defect: func(*loose.RecorderHandle) loose.Recorder { return &recorderSubject{} },
 			}),
 			conform.Excuse(
-				RecorderChecks.Field.Smoke(),
+				loose.RecorderChecks.Field.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -190,8 +194,8 @@ func TestRecorderSuite(t *testing.T) {
 
 // recorderIdle returns the planted defect of a ceiling of Recorder with a
 // spend of nothing, a subject that answers each call at once.
-func recorderIdle(h *RecorderHandle) Recorder {
-	return RecorderSuite().Calls[0].Over(h, func() {})
+func recorderIdle(h *loose.RecorderHandle) loose.Recorder {
+	return loose.RecorderSuite().Calls[0].Over(h, func() {})
 }
 
 // TestRecorderSuiteBudgets applies the allocation ceilings of the suite of
@@ -199,12 +203,15 @@ func recorderIdle(h *RecorderHandle) Recorder {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestRecorderSuiteBudgets(t *testing.T) {
-	RunRecorderBudgets(
+	loose.RunRecorderBudgets(
 		t,
 		recorderIdle,
-		conform.Ceilings(RecorderChecks.Field.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			loose.RecorderChecks.Field.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			RecorderChecks.Field.Smoke(),
+			loose.RecorderChecks.Field.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -213,12 +220,12 @@ func TestRecorderSuiteBudgets(t *testing.T) {
 // FuzzRecorderSuiteField registers the fuzz target of Recorder.Field on
 // recorderIdle, with every check of the suite excused.
 func FuzzRecorderSuiteField(f *testing.F) {
-	FuzzRecorderSuite(
+	loose.FuzzRecorderSuite(
 		f,
-		RecorderChecks.Field.Callable,
+		loose.RecorderChecks.Field.Callable,
 		recorderIdle,
 		conform.Excuse(
-			RecorderChecks.Field.Smoke(),
+			loose.RecorderChecks.Field.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -228,13 +235,13 @@ func FuzzRecorderSuiteField(f *testing.F) {
 // on recorderIdle.
 func BenchmarkRecorderSuite(b *testing.B) {
 	b.Run("Field", func(b *testing.B) {
-		BenchRecorderSuite(b, RecorderChecks.Field.Callable, recorderIdle)
+		loose.BenchRecorderSuite(b, loose.RecorderChecks.Field.Callable, recorderIdle)
 	})
 }
 
-// journalSubjectEmbedded is Journal under the name of the field that
+// journalSubjectEmbedded is loose.Journal under the name of the field that
 // journalSubject embeds.
-type journalSubjectEmbedded = Journal
+type journalSubjectEmbedded = loose.Journal
 
 // journalSubject is a value of Journal that only TestJournalSuite builds.
 type journalSubject struct{ journalSubjectEmbedded }
@@ -246,29 +253,29 @@ func TestJournalSuite(t *testing.T) {
 
 	t.Run("JournalSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, JournalSuite())
+		conform.Falsify(t, loose.JournalSuite())
 	})
 
 	t.Run("RunJournalSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *journalSubject
-		RunJournalSuite(
+		loose.RunJournalSuite(
 			t,
 			func() *journalSubject {
 				built = &journalSubject{}
 				return built
 			},
-			conform.With(JournalCheck{
+			conform.With(loose.JournalCheck{
 				ID:        "Journal/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *JournalHandle) {
+				Apply: func(h *loose.JournalHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Journal(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Journal(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*JournalHandle) Journal { return &journalSubject{} },
+				Defect: func(*loose.JournalHandle) loose.Journal { return &journalSubject{} },
 			}),
 			conform.Excuse(
-				JournalChecks.Put.Smoke(),
+				loose.JournalChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -277,23 +284,23 @@ func TestJournalSuite(t *testing.T) {
 	t.Run("RunJournalSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *journalSubject
-		RunJournalSuiteFromHandle(
+		loose.RunJournalSuiteFromHandle(
 			t,
-			func(*JournalHandle) *journalSubject {
+			func(*loose.JournalHandle) *journalSubject {
 				built = &journalSubject{}
 				return built
 			},
-			conform.With(JournalCheck{
+			conform.With(loose.JournalCheck{
 				ID:        "Journal/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *JournalHandle) {
+				Apply: func(h *loose.JournalHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Journal(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Journal(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*JournalHandle) Journal { return &journalSubject{} },
+				Defect: func(*loose.JournalHandle) loose.Journal { return &journalSubject{} },
 			}),
 			conform.Excuse(
-				JournalChecks.Put.Smoke(),
+				loose.JournalChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -302,8 +309,8 @@ func TestJournalSuite(t *testing.T) {
 
 // journalIdle returns the planted defect of a ceiling of Journal with a
 // spend of nothing, a subject that answers each call at once.
-func journalIdle(h *JournalHandle) Journal {
-	return JournalSuite().Calls[0].Over(h, func() {})
+func journalIdle(h *loose.JournalHandle) loose.Journal {
+	return loose.JournalSuite().Calls[0].Over(h, func() {})
 }
 
 // TestJournalSuiteBudgets applies the allocation ceilings of the suite of
@@ -311,12 +318,12 @@ func journalIdle(h *JournalHandle) Journal {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestJournalSuiteBudgets(t *testing.T) {
-	RunJournalBudgets(
+	loose.RunJournalBudgets(
 		t,
 		journalIdle,
-		conform.Ceilings(JournalChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(loose.JournalChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			JournalChecks.Put.Smoke(),
+			loose.JournalChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -325,12 +332,12 @@ func TestJournalSuiteBudgets(t *testing.T) {
 // FuzzJournalSuitePut registers the fuzz target of Journal.Put on
 // journalIdle, with every check of the suite excused.
 func FuzzJournalSuitePut(f *testing.F) {
-	FuzzJournalSuite(
+	loose.FuzzJournalSuite(
 		f,
-		JournalChecks.Put.Callable,
+		loose.JournalChecks.Put.Callable,
 		journalIdle,
 		conform.Excuse(
-			JournalChecks.Put.Smoke(),
+			loose.JournalChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -340,13 +347,13 @@ func FuzzJournalSuitePut(f *testing.F) {
 // journalIdle.
 func BenchmarkJournalSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchJournalSuite(b, JournalChecks.Put.Callable, journalIdle)
+		loose.BenchJournalSuite(b, loose.JournalChecks.Put.Callable, journalIdle)
 	})
 }
 
-// plainSubjectEmbedded is Plain under the name of the field that
+// plainSubjectEmbedded is loose.Plain under the name of the field that
 // plainSubject embeds.
-type plainSubjectEmbedded = Plain
+type plainSubjectEmbedded = loose.Plain
 
 // plainSubject is a value of Plain that only TestPlainSuite builds.
 type plainSubject struct{ plainSubjectEmbedded }
@@ -358,29 +365,29 @@ func TestPlainSuite(t *testing.T) {
 
 	t.Run("PlainSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, PlainSuite())
+		conform.Falsify(t, loose.PlainSuite())
 	})
 
 	t.Run("RunPlainSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *plainSubject
-		RunPlainSuite(
+		loose.RunPlainSuite(
 			t,
 			func() *plainSubject {
 				built = &plainSubject{}
 				return built
 			},
-			conform.With(PlainCheck{
+			conform.With(loose.PlainCheck{
 				ID:        "Plain/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PlainHandle) {
+				Apply: func(h *loose.PlainHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Plain(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Plain(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PlainHandle) Plain { return &plainSubject{} },
+				Defect: func(*loose.PlainHandle) loose.Plain { return &plainSubject{} },
 			}),
 			conform.Excuse(
-				PlainChecks.Print.Smoke(),
+				loose.PlainChecks.Print.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -389,23 +396,23 @@ func TestPlainSuite(t *testing.T) {
 	t.Run("RunPlainSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *plainSubject
-		RunPlainSuiteFromHandle(
+		loose.RunPlainSuiteFromHandle(
 			t,
-			func(*PlainHandle) *plainSubject {
+			func(*loose.PlainHandle) *plainSubject {
 				built = &plainSubject{}
 				return built
 			},
-			conform.With(PlainCheck{
+			conform.With(loose.PlainCheck{
 				ID:        "Plain/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PlainHandle) {
+				Apply: func(h *loose.PlainHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Plain(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Plain(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PlainHandle) Plain { return &plainSubject{} },
+				Defect: func(*loose.PlainHandle) loose.Plain { return &plainSubject{} },
 			}),
 			conform.Excuse(
-				PlainChecks.Print.Smoke(),
+				loose.PlainChecks.Print.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -414,8 +421,8 @@ func TestPlainSuite(t *testing.T) {
 
 // plainIdle returns the planted defect of a ceiling of Plain with a spend
 // of nothing, a subject that answers each call at once.
-func plainIdle(h *PlainHandle) Plain {
-	return PlainSuite().Calls[0].Over(h, func() {})
+func plainIdle(h *loose.PlainHandle) loose.Plain {
+	return loose.PlainSuite().Calls[0].Over(h, func() {})
 }
 
 // TestPlainSuiteBudgets applies the allocation ceilings of the suite of
@@ -423,12 +430,12 @@ func plainIdle(h *PlainHandle) Plain {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestPlainSuiteBudgets(t *testing.T) {
-	RunPlainBudgets(
+	loose.RunPlainBudgets(
 		t,
 		plainIdle,
-		conform.Ceilings(PlainChecks.Print.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(loose.PlainChecks.Print.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			PlainChecks.Print.Smoke(),
+			loose.PlainChecks.Print.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -437,12 +444,12 @@ func TestPlainSuiteBudgets(t *testing.T) {
 // FuzzPlainSuitePrint registers the fuzz target of Plain.Print on
 // plainIdle, with every check of the suite excused.
 func FuzzPlainSuitePrint(f *testing.F) {
-	FuzzPlainSuite(
+	loose.FuzzPlainSuite(
 		f,
-		PlainChecks.Print.Callable,
+		loose.PlainChecks.Print.Callable,
 		plainIdle,
 		conform.Excuse(
-			PlainChecks.Print.Smoke(),
+			loose.PlainChecks.Print.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -452,13 +459,13 @@ func FuzzPlainSuitePrint(f *testing.F) {
 // plainIdle.
 func BenchmarkPlainSuite(b *testing.B) {
 	b.Run("Print", func(b *testing.B) {
-		BenchPlainSuite(b, PlainChecks.Print.Callable, plainIdle)
+		loose.BenchPlainSuite(b, loose.PlainChecks.Print.Callable, plainIdle)
 	})
 }
 
-// zonedSubjectEmbedded is Zoned under the name of the field that
+// zonedSubjectEmbedded is loose.Zoned under the name of the field that
 // zonedSubject embeds.
-type zonedSubjectEmbedded = Zoned
+type zonedSubjectEmbedded = loose.Zoned
 
 // zonedSubject is a value of Zoned that only TestZonedSuite builds.
 type zonedSubject struct{ zonedSubjectEmbedded }
@@ -470,26 +477,26 @@ func TestZonedSuite(t *testing.T) {
 
 	t.Run("ZonedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, ZonedSuite())
+		conform.Falsify(t, loose.ZonedSuite())
 	})
 
 	t.Run("RunZonedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *zonedSubject
-		RunZonedSuite(
+		loose.RunZonedSuite(
 			t,
 			func() *zonedSubject {
 				built = &zonedSubject{}
 				return built
 			},
-			conform.With(ZonedCheck{
+			conform.With(loose.ZonedCheck{
 				ID:        "Zoned/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ZonedHandle) {
+				Apply: func(h *loose.ZonedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Zoned(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Zoned(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ZonedHandle) Zoned { return &zonedSubject{} },
+				Defect: func(*loose.ZonedHandle) loose.Zoned { return &zonedSubject{} },
 			}),
 		)
 	})
@@ -497,20 +504,20 @@ func TestZonedSuite(t *testing.T) {
 	t.Run("RunZonedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *zonedSubject
-		RunZonedSuiteFromHandle(
+		loose.RunZonedSuiteFromHandle(
 			t,
-			func(*ZonedHandle) *zonedSubject {
+			func(*loose.ZonedHandle) *zonedSubject {
 				built = &zonedSubject{}
 				return built
 			},
-			conform.With(ZonedCheck{
+			conform.With(loose.ZonedCheck{
 				ID:        "Zoned/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ZonedHandle) {
+				Apply: func(h *loose.ZonedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Zoned(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, loose.Zoned(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ZonedHandle) Zoned { return &zonedSubject{} },
+				Defect: func(*loose.ZonedHandle) loose.Zoned { return &zonedSubject{} },
 			}),
 		)
 	})
@@ -518,8 +525,8 @@ func TestZonedSuite(t *testing.T) {
 
 // zonedIdle returns the planted defect of a ceiling of Zoned with a spend
 // of nothing, a subject that answers each call at once.
-func zonedIdle(h *ZonedHandle) Zoned {
-	return ZonedSuite().Calls[0].Over(h, func() {})
+func zonedIdle(h *loose.ZonedHandle) loose.Zoned {
+	return loose.ZonedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestZonedSuiteBudgets applies the allocation ceilings of the suite of
@@ -527,21 +534,21 @@ func zonedIdle(h *ZonedHandle) Zoned {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestZonedSuiteBudgets(t *testing.T) {
-	RunZonedBudgets(
+	loose.RunZonedBudgets(
 		t,
 		zonedIdle,
-		conform.Ceilings(ZonedChecks.In.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ZonedChecks.Scale.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ZonedChecks.Ratio.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(loose.ZonedChecks.In.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(loose.ZonedChecks.Scale.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(loose.ZonedChecks.Ratio.Callable, conform.Budget{Allocs: new(uint64(0))}),
 	)
 }
 
 // FuzzZonedSuiteIn registers the fuzz target of Zoned.In on zonedIdle,
 // with every check of the suite excused.
 func FuzzZonedSuiteIn(f *testing.F) {
-	FuzzZonedSuite(
+	loose.FuzzZonedSuite(
 		f,
-		ZonedChecks.In.Callable,
+		loose.ZonedChecks.In.Callable,
 		zonedIdle,
 	)
 }
@@ -549,9 +556,9 @@ func FuzzZonedSuiteIn(f *testing.F) {
 // FuzzZonedSuiteScale registers the fuzz target of Zoned.Scale on
 // zonedIdle, with every check of the suite excused.
 func FuzzZonedSuiteScale(f *testing.F) {
-	FuzzZonedSuite(
+	loose.FuzzZonedSuite(
 		f,
-		ZonedChecks.Scale.Callable,
+		loose.ZonedChecks.Scale.Callable,
 		zonedIdle,
 	)
 }
@@ -559,9 +566,9 @@ func FuzzZonedSuiteScale(f *testing.F) {
 // FuzzZonedSuiteRatio registers the fuzz target of Zoned.Ratio on
 // zonedIdle, with every check of the suite excused.
 func FuzzZonedSuiteRatio(f *testing.F) {
-	FuzzZonedSuite(
+	loose.FuzzZonedSuite(
 		f,
-		ZonedChecks.Ratio.Callable,
+		loose.ZonedChecks.Ratio.Callable,
 		zonedIdle,
 	)
 }
@@ -570,12 +577,12 @@ func FuzzZonedSuiteRatio(f *testing.F) {
 // zonedIdle.
 func BenchmarkZonedSuite(b *testing.B) {
 	b.Run("In", func(b *testing.B) {
-		BenchZonedSuite(b, ZonedChecks.In.Callable, zonedIdle)
+		loose.BenchZonedSuite(b, loose.ZonedChecks.In.Callable, zonedIdle)
 	})
 	b.Run("Scale", func(b *testing.B) {
-		BenchZonedSuite(b, ZonedChecks.Scale.Callable, zonedIdle)
+		loose.BenchZonedSuite(b, loose.ZonedChecks.Scale.Callable, zonedIdle)
 	})
 	b.Run("Ratio", func(b *testing.B) {
-		BenchZonedSuite(b, ZonedChecks.Ratio.Callable, zonedIdle)
+		loose.BenchZonedSuite(b, loose.ZonedChecks.Ratio.Callable, zonedIdle)
 	})
 }

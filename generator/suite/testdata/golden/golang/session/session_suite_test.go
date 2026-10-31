@@ -1,15 +1,16 @@
-package session
+package session_test
 
 import (
 	"testing"
 
+	"example.com/shop/session"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
 
-// sessionsSubjectEmbedded is Sessions under the name of the field that
-// sessionsSubject embeds.
-type sessionsSubjectEmbedded = Sessions
+// sessionsSubjectEmbedded is session.Sessions under the name of the field
+// that sessionsSubject embeds.
+type sessionsSubjectEmbedded = session.Sessions
 
 // sessionsSubject is a value of Sessions that only TestSessionsSuite
 // builds.
@@ -22,45 +23,51 @@ func TestSessionsSuite(t *testing.T) {
 
 	t.Run("SessionsSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, SessionsSuite())
+		conform.Falsify(t, session.SessionsSuite())
 	})
 
 	t.Run("RunSessionsSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *sessionsSubject
-		RunSessionsSuite(
+		session.RunSessionsSuite(
 			t,
 			func() *sessionsSubject {
 				built = &sessionsSubject{}
 				return built
 			},
-			conform.With(SessionsCheck{
+			conform.With(session.SessionsCheck{
 				ID:        "Sessions/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *SessionsHandle) {
+				Apply: func(h *session.SessionsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Sessions(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						session.Sessions(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*SessionsHandle) Sessions { return &sessionsSubject{} },
+				Defect: func(*session.SessionsHandle) session.Sessions { return &sessionsSubject{} },
 			}),
 			conform.Excuse(
-				SessionsChecks.Put.Smoke(),
+				session.SessionsChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Put.Cancel(),
+				session.SessionsChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Get.Smoke(),
+				session.SessionsChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Get.Cancel(),
+				session.SessionsChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Get.ZeroOnError(),
+				session.SessionsChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -69,39 +76,45 @@ func TestSessionsSuite(t *testing.T) {
 	t.Run("RunSessionsSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *sessionsSubject
-		RunSessionsSuiteFromHandle(
+		session.RunSessionsSuiteFromHandle(
 			t,
-			func(*SessionsHandle) *sessionsSubject {
+			func(*session.SessionsHandle) *sessionsSubject {
 				built = &sessionsSubject{}
 				return built
 			},
-			conform.With(SessionsCheck{
+			conform.With(session.SessionsCheck{
 				ID:        "Sessions/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *SessionsHandle) {
+				Apply: func(h *session.SessionsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Sessions(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						session.Sessions(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*SessionsHandle) Sessions { return &sessionsSubject{} },
+				Defect: func(*session.SessionsHandle) session.Sessions { return &sessionsSubject{} },
 			}),
 			conform.Excuse(
-				SessionsChecks.Put.Smoke(),
+				session.SessionsChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Put.Cancel(),
+				session.SessionsChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Get.Smoke(),
+				session.SessionsChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Get.Cancel(),
+				session.SessionsChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Get.ZeroOnError(),
+				session.SessionsChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -110,8 +123,8 @@ func TestSessionsSuite(t *testing.T) {
 
 // sessionsIdle returns the planted defect of a ceiling of Sessions with a
 // spend of nothing, a subject that answers each call at once.
-func sessionsIdle(h *SessionsHandle) Sessions {
-	return SessionsSuite().Calls[0].Over(h, func() {})
+func sessionsIdle(h *session.SessionsHandle) session.Sessions {
+	return session.SessionsSuite().Calls[0].Over(h, func() {})
 }
 
 // TestSessionsSuiteBudgets applies the allocation ceilings of the suite of
@@ -119,29 +132,35 @@ func sessionsIdle(h *SessionsHandle) Sessions {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestSessionsSuiteBudgets(t *testing.T) {
-	RunSessionsBudgets(
+	session.RunSessionsBudgets(
 		t,
 		sessionsIdle,
-		conform.Ceilings(SessionsChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(SessionsChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			session.SessionsChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			session.SessionsChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			SessionsChecks.Put.Smoke(),
+			session.SessionsChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Put.Cancel(),
+			session.SessionsChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.Smoke(),
+			session.SessionsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.Cancel(),
+			session.SessionsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.ZeroOnError(),
+			session.SessionsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -150,28 +169,28 @@ func TestSessionsSuiteBudgets(t *testing.T) {
 // FuzzSessionsSuitePut registers the fuzz target of Sessions.Put on
 // sessionsIdle, with every check of the suite excused.
 func FuzzSessionsSuitePut(f *testing.F) {
-	FuzzSessionsSuite(
+	session.FuzzSessionsSuite(
 		f,
-		SessionsChecks.Put.Callable,
+		session.SessionsChecks.Put.Callable,
 		sessionsIdle,
 		conform.Excuse(
-			SessionsChecks.Put.Smoke(),
+			session.SessionsChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Put.Cancel(),
+			session.SessionsChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.Smoke(),
+			session.SessionsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.Cancel(),
+			session.SessionsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.ZeroOnError(),
+			session.SessionsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -180,28 +199,28 @@ func FuzzSessionsSuitePut(f *testing.F) {
 // FuzzSessionsSuiteGet registers the fuzz target of Sessions.Get on
 // sessionsIdle, with every check of the suite excused.
 func FuzzSessionsSuiteGet(f *testing.F) {
-	FuzzSessionsSuite(
+	session.FuzzSessionsSuite(
 		f,
-		SessionsChecks.Get.Callable,
+		session.SessionsChecks.Get.Callable,
 		sessionsIdle,
 		conform.Excuse(
-			SessionsChecks.Put.Smoke(),
+			session.SessionsChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Put.Cancel(),
+			session.SessionsChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.Smoke(),
+			session.SessionsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.Cancel(),
+			session.SessionsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Get.ZeroOnError(),
+			session.SessionsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -211,9 +230,9 @@ func FuzzSessionsSuiteGet(f *testing.F) {
 // on sessionsIdle.
 func BenchmarkSessionsSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchSessionsSuite(b, SessionsChecks.Put.Callable, sessionsIdle)
+		session.BenchSessionsSuite(b, session.SessionsChecks.Put.Callable, sessionsIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchSessionsSuite(b, SessionsChecks.Get.Callable, sessionsIdle)
+		session.BenchSessionsSuite(b, session.SessionsChecks.Get.Callable, sessionsIdle)
 	})
 }

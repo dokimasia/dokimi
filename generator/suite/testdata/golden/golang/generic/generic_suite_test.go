@@ -1,15 +1,16 @@
-package generic
+package generic_test
 
 import (
 	"testing"
 
+	"example.com/shop/generic"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
 
-// cacheSubjectEmbedded is Cache[int, int] under the name of the field that
-// cacheSubject embeds.
-type cacheSubjectEmbedded = Cache[int, int]
+// cacheSubjectEmbedded is generic.Cache[int, int] under the name of the
+// field that cacheSubject embeds.
+type cacheSubjectEmbedded = generic.Cache[int, int]
 
 // cacheSubject is a value of Cache that only TestCacheSuite builds.
 type cacheSubject struct{ cacheSubjectEmbedded }
@@ -21,37 +22,43 @@ func TestCacheSuite(t *testing.T) {
 
 	t.Run("CacheSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, CacheSuite())
+		conform.Falsify(t, generic.CacheSuite())
 	})
 
 	t.Run("RunCacheSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *cacheSubject
-		RunCacheSuite(
+		generic.RunCacheSuite(
 			t,
 			func() *cacheSubject {
 				built = &cacheSubject{}
 				return built
 			},
-			conform.With(CacheCheck{
+			conform.With(generic.CacheCheck{
 				ID:        "Cache/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *CacheHandle) {
+				Apply: func(h *generic.CacheHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Cache[int, int](built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						generic.Cache[int, int](built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*CacheHandle) Cache[int, int] { return &cacheSubject{} },
+				Defect: func(*generic.CacheHandle) generic.Cache[int, int] { return &cacheSubject{} },
 			}),
 			conform.Excuse(
-				CacheChecks.Get.Smoke(),
+				generic.CacheChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CacheChecks.Get.ZeroOnMiss(),
+				generic.CacheChecks.Get.ZeroOnMiss(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CacheChecks.Set.Smoke(),
+				generic.CacheChecks.Set.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -60,31 +67,37 @@ func TestCacheSuite(t *testing.T) {
 	t.Run("RunCacheSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *cacheSubject
-		RunCacheSuiteFromHandle(
+		generic.RunCacheSuiteFromHandle(
 			t,
-			func(*CacheHandle) *cacheSubject {
+			func(*generic.CacheHandle) *cacheSubject {
 				built = &cacheSubject{}
 				return built
 			},
-			conform.With(CacheCheck{
+			conform.With(generic.CacheCheck{
 				ID:        "Cache/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *CacheHandle) {
+				Apply: func(h *generic.CacheHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Cache[int, int](built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						generic.Cache[int, int](built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*CacheHandle) Cache[int, int] { return &cacheSubject{} },
+				Defect: func(*generic.CacheHandle) generic.Cache[int, int] { return &cacheSubject{} },
 			}),
 			conform.Excuse(
-				CacheChecks.Get.Smoke(),
+				generic.CacheChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CacheChecks.Get.ZeroOnMiss(),
+				generic.CacheChecks.Get.ZeroOnMiss(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CacheChecks.Set.Smoke(),
+				generic.CacheChecks.Set.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -93,8 +106,8 @@ func TestCacheSuite(t *testing.T) {
 
 // cacheIdle returns the planted defect of a ceiling of Cache with a spend
 // of nothing, a subject that answers each call at once.
-func cacheIdle(h *CacheHandle) Cache[int, int] {
-	return CacheSuite().Calls[0].Over(h, func() {})
+func cacheIdle(h *generic.CacheHandle) generic.Cache[int, int] {
+	return generic.CacheSuite().Calls[0].Over(h, func() {})
 }
 
 // TestCacheSuiteBudgets applies the allocation ceilings of the suite of
@@ -102,21 +115,21 @@ func cacheIdle(h *CacheHandle) Cache[int, int] {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestCacheSuiteBudgets(t *testing.T) {
-	RunCacheBudgets(
+	generic.RunCacheBudgets(
 		t,
 		cacheIdle,
-		conform.Ceilings(CacheChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(CacheChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(generic.CacheChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(generic.CacheChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			CacheChecks.Get.Smoke(),
+			generic.CacheChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CacheChecks.Get.ZeroOnMiss(),
+			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CacheChecks.Set.Smoke(),
+			generic.CacheChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -125,20 +138,20 @@ func TestCacheSuiteBudgets(t *testing.T) {
 // FuzzCacheSuiteGet registers the fuzz target of Cache.Get on cacheIdle,
 // with every check of the suite excused.
 func FuzzCacheSuiteGet(f *testing.F) {
-	FuzzCacheSuite(
+	generic.FuzzCacheSuite(
 		f,
-		CacheChecks.Get.Callable,
+		generic.CacheChecks.Get.Callable,
 		cacheIdle,
 		conform.Excuse(
-			CacheChecks.Get.Smoke(),
+			generic.CacheChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CacheChecks.Get.ZeroOnMiss(),
+			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CacheChecks.Set.Smoke(),
+			generic.CacheChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -147,20 +160,20 @@ func FuzzCacheSuiteGet(f *testing.F) {
 // FuzzCacheSuiteSet registers the fuzz target of Cache.Set on cacheIdle,
 // with every check of the suite excused.
 func FuzzCacheSuiteSet(f *testing.F) {
-	FuzzCacheSuite(
+	generic.FuzzCacheSuite(
 		f,
-		CacheChecks.Set.Callable,
+		generic.CacheChecks.Set.Callable,
 		cacheIdle,
 		conform.Excuse(
-			CacheChecks.Get.Smoke(),
+			generic.CacheChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CacheChecks.Get.ZeroOnMiss(),
+			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CacheChecks.Set.Smoke(),
+			generic.CacheChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -170,9 +183,9 @@ func FuzzCacheSuiteSet(f *testing.F) {
 // cacheIdle.
 func BenchmarkCacheSuite(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
-		BenchCacheSuite(b, CacheChecks.Get.Callable, cacheIdle)
+		generic.BenchCacheSuite(b, generic.CacheChecks.Get.Callable, cacheIdle)
 	})
 	b.Run("Set", func(b *testing.B) {
-		BenchCacheSuite(b, CacheChecks.Set.Callable, cacheIdle)
+		generic.BenchCacheSuite(b, generic.CacheChecks.Set.Callable, cacheIdle)
 	})
 }

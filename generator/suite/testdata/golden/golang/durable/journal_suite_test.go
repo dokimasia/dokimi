@@ -1,8 +1,9 @@
-package durable
+package durable_test
 
 import (
 	"testing"
 
+	"example.com/shop/durable"
 	"go.dokimi.dev/conform"
 )
 
@@ -11,25 +12,25 @@ import (
 func TestJournalConformsToKeeper(t *testing.T) {
 	t.Parallel()
 
-	RunKeeperSuite(t, NewJournal, JournalOptions()...)
+	durable.RunKeeperSuite(t, durable.NewJournal, durable.JournalOptions()...)
 }
 
 // BenchmarkJournalConformsToKeeper measures each callable of the suite of
 // Keeper on Journal.
 func BenchmarkJournalConformsToKeeper(b *testing.B) {
-	opts := JournalOptions()
+	opts := durable.JournalOptions()
 	b.Run("Put", func(b *testing.B) {
-		BenchKeeperSuite(
+		durable.BenchKeeperSuite(
 			b,
-			KeeperChecks.Put.Callable,
-			func(*KeeperHandle) *Journal { return NewJournal() },
+			durable.KeeperChecks.Put.Callable,
+			func(*durable.KeeperHandle) *durable.Journal { return durable.NewJournal() },
 			opts...)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchKeeperSuite(
+		durable.BenchKeeperSuite(
 			b,
-			KeeperChecks.Get.Callable,
-			func(*KeeperHandle) *Journal { return NewJournal() },
+			durable.KeeperChecks.Get.Callable,
+			func(*durable.KeeperHandle) *durable.Journal { return durable.NewJournal() },
 			opts...)
 	})
 }
@@ -37,21 +38,21 @@ func BenchmarkJournalConformsToKeeper(b *testing.B) {
 // FuzzJournalConformsToKeeperPut fuzzes the property checks of Keeper.Put
 // on Journal.
 func FuzzJournalConformsToKeeperPut(f *testing.F) {
-	FuzzKeeperSuite(
+	durable.FuzzKeeperSuite(
 		f,
-		KeeperChecks.Put.Callable,
-		func(*KeeperHandle) *Journal { return NewJournal() },
-		JournalOptions()...)
+		durable.KeeperChecks.Put.Callable,
+		func(*durable.KeeperHandle) *durable.Journal { return durable.NewJournal() },
+		durable.JournalOptions()...)
 }
 
 // FuzzJournalConformsToKeeperGet fuzzes the property checks of Keeper.Get
 // on Journal.
 func FuzzJournalConformsToKeeperGet(f *testing.F) {
-	FuzzKeeperSuite(
+	durable.FuzzKeeperSuite(
 		f,
-		KeeperChecks.Get.Callable,
-		func(*KeeperHandle) *Journal { return NewJournal() },
-		JournalOptions()...)
+		durable.KeeperChecks.Get.Callable,
+		func(*durable.KeeperHandle) *durable.Journal { return durable.NewJournal() },
+		durable.JournalOptions()...)
 }
 
 // TestTunedConformsToKeeper applies the checks of the suite of Keeper to
@@ -59,62 +60,65 @@ func FuzzJournalConformsToKeeperGet(f *testing.F) {
 func TestTunedConformsToKeeper(t *testing.T) {
 	t.Parallel()
 
-	opts := append([]KeeperOption{
-		conform.Cases[Keeper](20),
+	opts := append([]durable.KeeperOption{
+		conform.Cases[durable.Keeper](20),
 		conform.Excuse(
-			KeeperChecks.Get.KeepsEachPutAcrossARestart(),
+			durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
 			"the tuned journal keeps no medium",
 		),
-	}, JournalOptions()...)
-	RunKeeperSuite(t, NewTuned, opts...)
+	}, durable.JournalOptions()...)
+	durable.RunKeeperSuite(t, durable.NewTuned, opts...)
 }
 
 // TestTunedConformsToKeeperAllocs applies the allocation ceilings and the
 // checks that count allocations of the suite of Keeper to Tuned.
 func TestTunedConformsToKeeperAllocs(t *testing.T) {
-	opts := append([]KeeperOption{
-		conform.Cases[Keeper](20),
+	opts := append([]durable.KeeperOption{
+		conform.Cases[durable.Keeper](20),
 		conform.Ceilings(
-			KeeperChecks.Get.Callable,
+			durable.KeeperChecks.Get.Callable,
 			conform.Budget{
 				Allocs: new(uint64(2)),
 			},
 		),
 		conform.Excuse(
-			KeeperChecks.Get.KeepsEachPutAcrossARestart(),
+			durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
 			"the tuned journal keeps no medium",
 		),
-	}, JournalOptions()...)
-	RunKeeperBudgets(t, func(*KeeperHandle) *Tuned { return NewTuned() }, opts...)
+	}, durable.JournalOptions()...)
+	durable.RunKeeperBudgets(
+		t,
+		func(*durable.KeeperHandle) *durable.Tuned { return durable.NewTuned() },
+		opts...)
 }
 
 // BenchmarkTunedConformsToKeeper measures each callable of the suite of
 // Keeper on Tuned.
 func BenchmarkTunedConformsToKeeper(b *testing.B) {
-	opts := append([]KeeperOption{
+	opts := append([]durable.KeeperOption{
 		conform.Ceilings(
-			KeeperChecks.Get.Callable,
+			durable.KeeperChecks.Get.Callable,
 			conform.Budget{
 				Allocs: new(uint64(2)),
 			},
 		),
 		conform.Excuse(
-			KeeperChecks.Get.KeepsEachPutAcrossARestart(),
+			durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
 			"the tuned journal keeps no medium",
 		),
-	}, JournalOptions()...)
+	}, durable.JournalOptions()...)
 	b.Run("Put", func(b *testing.B) {
-		BenchKeeperSuite(
+		durable.BenchKeeperSuite(
 			b,
-			KeeperChecks.Put.Callable,
-			func(*KeeperHandle) *Tuned { return NewTuned() },
+			durable.KeeperChecks.Put.Callable,
+			func(*durable.KeeperHandle) *durable.Tuned { return durable.NewTuned() },
 			opts...)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchKeeperSuite(
+		durable.BenchKeeperSuite(
 			b,
-			KeeperChecks.Get.Callable,
-			func(*KeeperHandle) *Tuned { return NewTuned() },
+			durable.KeeperChecks.Get.Callable,
+			func(*durable.KeeperHandle) *durable.Tuned { return durable.NewTuned() },
 			opts...)
 	})
 }
@@ -122,31 +126,31 @@ func BenchmarkTunedConformsToKeeper(b *testing.B) {
 // FuzzTunedConformsToKeeperPut fuzzes the property checks of Keeper.Put on
 // Tuned.
 func FuzzTunedConformsToKeeperPut(f *testing.F) {
-	opts := append([]KeeperOption{
+	opts := append([]durable.KeeperOption{
 		conform.Excuse(
-			KeeperChecks.Get.KeepsEachPutAcrossARestart(),
+			durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
 			"the tuned journal keeps no medium",
 		),
-	}, JournalOptions()...)
-	FuzzKeeperSuite(
+	}, durable.JournalOptions()...)
+	durable.FuzzKeeperSuite(
 		f,
-		KeeperChecks.Put.Callable,
-		func(*KeeperHandle) *Tuned { return NewTuned() },
+		durable.KeeperChecks.Put.Callable,
+		func(*durable.KeeperHandle) *durable.Tuned { return durable.NewTuned() },
 		opts...)
 }
 
 // FuzzTunedConformsToKeeperGet fuzzes the property checks of Keeper.Get on
 // Tuned.
 func FuzzTunedConformsToKeeperGet(f *testing.F) {
-	opts := append([]KeeperOption{
+	opts := append([]durable.KeeperOption{
 		conform.Excuse(
-			KeeperChecks.Get.KeepsEachPutAcrossARestart(),
+			durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
 			"the tuned journal keeps no medium",
 		),
-	}, JournalOptions()...)
-	FuzzKeeperSuite(
+	}, durable.JournalOptions()...)
+	durable.FuzzKeeperSuite(
 		f,
-		KeeperChecks.Get.Callable,
-		func(*KeeperHandle) *Tuned { return NewTuned() },
+		durable.KeeperChecks.Get.Callable,
+		func(*durable.KeeperHandle) *durable.Tuned { return durable.NewTuned() },
 		opts...)
 }

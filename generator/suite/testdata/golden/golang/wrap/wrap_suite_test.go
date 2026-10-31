@@ -1,15 +1,16 @@
-package wrap
+package wrap_test
 
 import (
 	"testing"
 
+	"example.com/shop/wrap"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
 
-// reachSubjectEmbedded is Reach under the name of the field that
+// reachSubjectEmbedded is wrap.Reach under the name of the field that
 // reachSubject embeds.
-type reachSubjectEmbedded = Reach
+type reachSubjectEmbedded = wrap.Reach
 
 // reachSubject is a value of Reach that only TestReachSuite builds.
 type reachSubject struct{ reachSubjectEmbedded }
@@ -21,37 +22,37 @@ func TestReachSuite(t *testing.T) {
 
 	t.Run("ReachSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, ReachSuite())
+		conform.Falsify(t, wrap.ReachSuite())
 	})
 
 	t.Run("RunReachSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *reachSubject
-		RunReachSuite(
+		wrap.RunReachSuite(
 			t,
 			func() *reachSubject {
 				built = &reachSubject{}
 				return built
 			},
-			conform.With(ReachCheck{
+			conform.With(wrap.ReachCheck{
 				ID:        "Reach/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ReachHandle) {
+				Apply: func(h *wrap.ReachHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Reach(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, wrap.Reach(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ReachHandle) Reach { return &reachSubject{} },
+				Defect: func(*wrap.ReachHandle) wrap.Reach { return &reachSubject{} },
 			}),
 			conform.Excuse(
-				ReachChecks.Current.Smoke(),
+				wrap.ReachChecks.Current.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ReachChecks.Current.Cancel(),
+				wrap.ReachChecks.Current.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ReachChecks.Current.ZeroOnError(),
+				wrap.ReachChecks.Current.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -60,31 +61,31 @@ func TestReachSuite(t *testing.T) {
 	t.Run("RunReachSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *reachSubject
-		RunReachSuiteFromHandle(
+		wrap.RunReachSuiteFromHandle(
 			t,
-			func(*ReachHandle) *reachSubject {
+			func(*wrap.ReachHandle) *reachSubject {
 				built = &reachSubject{}
 				return built
 			},
-			conform.With(ReachCheck{
+			conform.With(wrap.ReachCheck{
 				ID:        "Reach/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ReachHandle) {
+				Apply: func(h *wrap.ReachHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Reach(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, wrap.Reach(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ReachHandle) Reach { return &reachSubject{} },
+				Defect: func(*wrap.ReachHandle) wrap.Reach { return &reachSubject{} },
 			}),
 			conform.Excuse(
-				ReachChecks.Current.Smoke(),
+				wrap.ReachChecks.Current.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ReachChecks.Current.Cancel(),
+				wrap.ReachChecks.Current.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ReachChecks.Current.ZeroOnError(),
+				wrap.ReachChecks.Current.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -93,8 +94,8 @@ func TestReachSuite(t *testing.T) {
 
 // reachIdle returns the planted defect of a ceiling of Reach with a spend
 // of nothing, a subject that answers each call at once.
-func reachIdle(h *ReachHandle) Reach {
-	return ReachSuite().Calls[0].Over(h, func() {})
+func reachIdle(h *wrap.ReachHandle) wrap.Reach {
+	return wrap.ReachSuite().Calls[0].Over(h, func() {})
 }
 
 // TestReachSuiteBudgets applies the allocation ceilings of the suite of
@@ -102,22 +103,22 @@ func reachIdle(h *ReachHandle) Reach {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestReachSuiteBudgets(t *testing.T) {
-	RunReachBudgets(
+	wrap.RunReachBudgets(
 		t,
 		reachIdle,
-		conform.Ceilings(ReachChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ReachChecks.Current.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ReachChecks.Gear.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.ReachChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.ReachChecks.Current.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.ReachChecks.Gear.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			ReachChecks.Current.Smoke(),
+			wrap.ReachChecks.Current.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ReachChecks.Current.Cancel(),
+			wrap.ReachChecks.Current.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ReachChecks.Current.ZeroOnError(),
+			wrap.ReachChecks.Current.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -126,20 +127,20 @@ func TestReachSuiteBudgets(t *testing.T) {
 // FuzzReachSuiteStore registers the fuzz target of Reach.Store on
 // reachIdle, with every check of the suite excused.
 func FuzzReachSuiteStore(f *testing.F) {
-	FuzzReachSuite(
+	wrap.FuzzReachSuite(
 		f,
-		ReachChecks.Store.Callable,
+		wrap.ReachChecks.Store.Callable,
 		reachIdle,
 		conform.Excuse(
-			ReachChecks.Current.Smoke(),
+			wrap.ReachChecks.Current.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ReachChecks.Current.Cancel(),
+			wrap.ReachChecks.Current.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ReachChecks.Current.ZeroOnError(),
+			wrap.ReachChecks.Current.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -148,20 +149,20 @@ func FuzzReachSuiteStore(f *testing.F) {
 // FuzzReachSuiteCurrent registers the fuzz target of Reach.Current on
 // reachIdle, with every check of the suite excused.
 func FuzzReachSuiteCurrent(f *testing.F) {
-	FuzzReachSuite(
+	wrap.FuzzReachSuite(
 		f,
-		ReachChecks.Current.Callable,
+		wrap.ReachChecks.Current.Callable,
 		reachIdle,
 		conform.Excuse(
-			ReachChecks.Current.Smoke(),
+			wrap.ReachChecks.Current.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ReachChecks.Current.Cancel(),
+			wrap.ReachChecks.Current.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ReachChecks.Current.ZeroOnError(),
+			wrap.ReachChecks.Current.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -170,20 +171,20 @@ func FuzzReachSuiteCurrent(f *testing.F) {
 // FuzzReachSuiteGear registers the fuzz target of Reach.Gear on reachIdle,
 // with every check of the suite excused.
 func FuzzReachSuiteGear(f *testing.F) {
-	FuzzReachSuite(
+	wrap.FuzzReachSuite(
 		f,
-		ReachChecks.Gear.Callable,
+		wrap.ReachChecks.Gear.Callable,
 		reachIdle,
 		conform.Excuse(
-			ReachChecks.Current.Smoke(),
+			wrap.ReachChecks.Current.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ReachChecks.Current.Cancel(),
+			wrap.ReachChecks.Current.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ReachChecks.Current.ZeroOnError(),
+			wrap.ReachChecks.Current.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -193,19 +194,19 @@ func FuzzReachSuiteGear(f *testing.F) {
 // reachIdle.
 func BenchmarkReachSuite(b *testing.B) {
 	b.Run("Store", func(b *testing.B) {
-		BenchReachSuite(b, ReachChecks.Store.Callable, reachIdle)
+		wrap.BenchReachSuite(b, wrap.ReachChecks.Store.Callable, reachIdle)
 	})
 	b.Run("Current", func(b *testing.B) {
-		BenchReachSuite(b, ReachChecks.Current.Callable, reachIdle)
+		wrap.BenchReachSuite(b, wrap.ReachChecks.Current.Callable, reachIdle)
 	})
 	b.Run("Gear", func(b *testing.B) {
-		BenchReachSuite(b, ReachChecks.Gear.Callable, reachIdle)
+		wrap.BenchReachSuite(b, wrap.ReachChecks.Gear.Callable, reachIdle)
 	})
 }
 
-// tunedSubjectEmbedded is Tuned under the name of the field that
+// tunedSubjectEmbedded is wrap.Tuned under the name of the field that
 // tunedSubject embeds.
-type tunedSubjectEmbedded = Tuned
+type tunedSubjectEmbedded = wrap.Tuned
 
 // tunedSubject is a value of Tuned that only TestTunedSuite builds.
 type tunedSubject struct{ tunedSubjectEmbedded }
@@ -217,26 +218,26 @@ func TestTunedSuite(t *testing.T) {
 
 	t.Run("TunedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, TunedSuite())
+		conform.Falsify(t, wrap.TunedSuite())
 	})
 
 	t.Run("RunTunedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *tunedSubject
-		RunTunedSuite(
+		wrap.RunTunedSuite(
 			t,
 			func() *tunedSubject {
 				built = &tunedSubject{}
 				return built
 			},
-			conform.With(TunedCheck{
+			conform.With(wrap.TunedCheck{
 				ID:        "Tuned/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *TunedHandle) {
+				Apply: func(h *wrap.TunedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Tuned(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, wrap.Tuned(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*TunedHandle) Tuned { return &tunedSubject{} },
+				Defect: func(*wrap.TunedHandle) wrap.Tuned { return &tunedSubject{} },
 			}),
 		)
 	})
@@ -244,20 +245,20 @@ func TestTunedSuite(t *testing.T) {
 	t.Run("RunTunedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *tunedSubject
-		RunTunedSuiteFromHandle(
+		wrap.RunTunedSuiteFromHandle(
 			t,
-			func(*TunedHandle) *tunedSubject {
+			func(*wrap.TunedHandle) *tunedSubject {
 				built = &tunedSubject{}
 				return built
 			},
-			conform.With(TunedCheck{
+			conform.With(wrap.TunedCheck{
 				ID:        "Tuned/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *TunedHandle) {
+				Apply: func(h *wrap.TunedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Tuned(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, wrap.Tuned(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*TunedHandle) Tuned { return &tunedSubject{} },
+				Defect: func(*wrap.TunedHandle) wrap.Tuned { return &tunedSubject{} },
 			}),
 		)
 	})
@@ -265,8 +266,8 @@ func TestTunedSuite(t *testing.T) {
 
 // tunedIdle returns the planted defect of a ceiling of Tuned with a spend
 // of nothing, a subject that answers each call at once.
-func tunedIdle(h *TunedHandle) Tuned {
-	return TunedSuite().Calls[0].Over(h, func() {})
+func tunedIdle(h *wrap.TunedHandle) wrap.Tuned {
+	return wrap.TunedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestTunedSuiteBudgets applies the allocation ceilings of the suite of
@@ -274,21 +275,21 @@ func tunedIdle(h *TunedHandle) Tuned {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestTunedSuiteBudgets(t *testing.T) {
-	RunTunedBudgets(
+	wrap.RunTunedBudgets(
 		t,
 		tunedIdle,
-		conform.Ceilings(TunedChecks.Tune.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(TunedChecks.Watch.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(TunedChecks.Turn.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.TunedChecks.Tune.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.TunedChecks.Watch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.TunedChecks.Turn.Callable, conform.Budget{Allocs: new(uint64(0))}),
 	)
 }
 
 // FuzzTunedSuiteTune registers the fuzz target of Tuned.Tune on tunedIdle,
 // with every check of the suite excused.
 func FuzzTunedSuiteTune(f *testing.F) {
-	FuzzTunedSuite(
+	wrap.FuzzTunedSuite(
 		f,
-		TunedChecks.Tune.Callable,
+		wrap.TunedChecks.Tune.Callable,
 		tunedIdle,
 	)
 }
@@ -296,9 +297,9 @@ func FuzzTunedSuiteTune(f *testing.F) {
 // FuzzTunedSuiteWatch registers the fuzz target of Tuned.Watch on
 // tunedIdle, with every check of the suite excused.
 func FuzzTunedSuiteWatch(f *testing.F) {
-	FuzzTunedSuite(
+	wrap.FuzzTunedSuite(
 		f,
-		TunedChecks.Watch.Callable,
+		wrap.TunedChecks.Watch.Callable,
 		tunedIdle,
 	)
 }
@@ -306,9 +307,9 @@ func FuzzTunedSuiteWatch(f *testing.F) {
 // FuzzTunedSuiteTurn registers the fuzz target of Tuned.Turn on tunedIdle,
 // with every check of the suite excused.
 func FuzzTunedSuiteTurn(f *testing.F) {
-	FuzzTunedSuite(
+	wrap.FuzzTunedSuite(
 		f,
-		TunedChecks.Turn.Callable,
+		wrap.TunedChecks.Turn.Callable,
 		tunedIdle,
 	)
 }
@@ -317,19 +318,19 @@ func FuzzTunedSuiteTurn(f *testing.F) {
 // tunedIdle.
 func BenchmarkTunedSuite(b *testing.B) {
 	b.Run("Tune", func(b *testing.B) {
-		BenchTunedSuite(b, TunedChecks.Tune.Callable, tunedIdle)
+		wrap.BenchTunedSuite(b, wrap.TunedChecks.Tune.Callable, tunedIdle)
 	})
 	b.Run("Watch", func(b *testing.B) {
-		BenchTunedSuite(b, TunedChecks.Watch.Callable, tunedIdle)
+		wrap.BenchTunedSuite(b, wrap.TunedChecks.Watch.Callable, tunedIdle)
 	})
 	b.Run("Turn", func(b *testing.B) {
-		BenchTunedSuite(b, TunedChecks.Turn.Callable, tunedIdle)
+		wrap.BenchTunedSuite(b, wrap.TunedChecks.Turn.Callable, tunedIdle)
 	})
 }
 
-// limitedSubjectEmbedded is Limited under the name of the field that
+// limitedSubjectEmbedded is wrap.Limited under the name of the field that
 // limitedSubject embeds.
-type limitedSubjectEmbedded = Limited
+type limitedSubjectEmbedded = wrap.Limited
 
 // limitedSubject is a value of Limited that only TestLimitedSuite builds.
 type limitedSubject struct{ limitedSubjectEmbedded }
@@ -341,37 +342,37 @@ func TestLimitedSuite(t *testing.T) {
 
 	t.Run("LimitedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, LimitedSuite())
+		conform.Falsify(t, wrap.LimitedSuite())
 	})
 
 	t.Run("RunLimitedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *limitedSubject
-		RunLimitedSuite(
+		wrap.RunLimitedSuite(
 			t,
 			func() *limitedSubject {
 				built = &limitedSubject{}
 				return built
 			},
-			conform.With(LimitedCheck{
+			conform.With(wrap.LimitedCheck{
 				ID:        "Limited/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LimitedHandle) {
+				Apply: func(h *wrap.LimitedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Limited(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, wrap.Limited(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*LimitedHandle) Limited { return &limitedSubject{} },
+				Defect: func(*wrap.LimitedHandle) wrap.Limited { return &limitedSubject{} },
 			}),
 			conform.Excuse(
-				LimitedChecks.Limit.Smoke(),
+				wrap.LimitedChecks.Limit.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LimitedChecks.Measure.Smoke(),
+				wrap.LimitedChecks.Measure.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LimitedChecks.Phase.Smoke(),
+				wrap.LimitedChecks.Phase.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -380,31 +381,31 @@ func TestLimitedSuite(t *testing.T) {
 	t.Run("RunLimitedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *limitedSubject
-		RunLimitedSuiteFromHandle(
+		wrap.RunLimitedSuiteFromHandle(
 			t,
-			func(*LimitedHandle) *limitedSubject {
+			func(*wrap.LimitedHandle) *limitedSubject {
 				built = &limitedSubject{}
 				return built
 			},
-			conform.With(LimitedCheck{
+			conform.With(wrap.LimitedCheck{
 				ID:        "Limited/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LimitedHandle) {
+				Apply: func(h *wrap.LimitedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Limited(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, wrap.Limited(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*LimitedHandle) Limited { return &limitedSubject{} },
+				Defect: func(*wrap.LimitedHandle) wrap.Limited { return &limitedSubject{} },
 			}),
 			conform.Excuse(
-				LimitedChecks.Limit.Smoke(),
+				wrap.LimitedChecks.Limit.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LimitedChecks.Measure.Smoke(),
+				wrap.LimitedChecks.Measure.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LimitedChecks.Phase.Smoke(),
+				wrap.LimitedChecks.Phase.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -413,8 +414,8 @@ func TestLimitedSuite(t *testing.T) {
 
 // limitedIdle returns the planted defect of a ceiling of Limited with a
 // spend of nothing, a subject that answers each call at once.
-func limitedIdle(h *LimitedHandle) Limited {
-	return LimitedSuite().Calls[0].Over(h, func() {})
+func limitedIdle(h *wrap.LimitedHandle) wrap.Limited {
+	return wrap.LimitedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestLimitedSuiteBudgets applies the allocation ceilings of the suite of
@@ -422,28 +423,31 @@ func limitedIdle(h *LimitedHandle) Limited {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestLimitedSuiteBudgets(t *testing.T) {
-	RunLimitedBudgets(
+	wrap.RunLimitedBudgets(
 		t,
 		limitedIdle,
-		conform.Ceilings(LimitedChecks.Limit.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LimitedChecks.Grip.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LimitedChecks.Clamp.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LimitedChecks.Frame.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LimitedChecks.Mount.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LimitedChecks.Span.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LimitedChecks.Pitch.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LimitedChecks.Measure.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LimitedChecks.Phase.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.LimitedChecks.Limit.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.LimitedChecks.Grip.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.LimitedChecks.Clamp.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.LimitedChecks.Frame.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.LimitedChecks.Mount.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.LimitedChecks.Span.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.LimitedChecks.Pitch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			wrap.LimitedChecks.Measure.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(wrap.LimitedChecks.Phase.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -452,20 +456,20 @@ func TestLimitedSuiteBudgets(t *testing.T) {
 // FuzzLimitedSuiteLimit registers the fuzz target of Limited.Limit on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuiteLimit(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Limit.Callable,
+		wrap.LimitedChecks.Limit.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -474,20 +478,20 @@ func FuzzLimitedSuiteLimit(f *testing.F) {
 // FuzzLimitedSuiteGrip registers the fuzz target of Limited.Grip on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuiteGrip(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Grip.Callable,
+		wrap.LimitedChecks.Grip.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -496,20 +500,20 @@ func FuzzLimitedSuiteGrip(f *testing.F) {
 // FuzzLimitedSuiteClamp registers the fuzz target of Limited.Clamp on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuiteClamp(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Clamp.Callable,
+		wrap.LimitedChecks.Clamp.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -518,20 +522,20 @@ func FuzzLimitedSuiteClamp(f *testing.F) {
 // FuzzLimitedSuiteFrame registers the fuzz target of Limited.Frame on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuiteFrame(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Frame.Callable,
+		wrap.LimitedChecks.Frame.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -540,20 +544,20 @@ func FuzzLimitedSuiteFrame(f *testing.F) {
 // FuzzLimitedSuiteMount registers the fuzz target of Limited.Mount on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuiteMount(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Mount.Callable,
+		wrap.LimitedChecks.Mount.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -562,20 +566,20 @@ func FuzzLimitedSuiteMount(f *testing.F) {
 // FuzzLimitedSuiteSpan registers the fuzz target of Limited.Span on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuiteSpan(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Span.Callable,
+		wrap.LimitedChecks.Span.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -584,20 +588,20 @@ func FuzzLimitedSuiteSpan(f *testing.F) {
 // FuzzLimitedSuitePitch registers the fuzz target of Limited.Pitch on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuitePitch(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Pitch.Callable,
+		wrap.LimitedChecks.Pitch.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -606,20 +610,20 @@ func FuzzLimitedSuitePitch(f *testing.F) {
 // FuzzLimitedSuiteMeasure registers the fuzz target of Limited.Measure on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuiteMeasure(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Measure.Callable,
+		wrap.LimitedChecks.Measure.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -628,20 +632,20 @@ func FuzzLimitedSuiteMeasure(f *testing.F) {
 // FuzzLimitedSuitePhase registers the fuzz target of Limited.Phase on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuitePhase(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Phase.Callable,
+		wrap.LimitedChecks.Phase.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -650,20 +654,20 @@ func FuzzLimitedSuitePhase(f *testing.F) {
 // FuzzLimitedSuiteSense registers the fuzz target of Limited.Sense on
 // limitedIdle, with every check of the suite excused.
 func FuzzLimitedSuiteSense(f *testing.F) {
-	FuzzLimitedSuite(
+	wrap.FuzzLimitedSuite(
 		f,
-		LimitedChecks.Sense.Callable,
+		wrap.LimitedChecks.Sense.Callable,
 		limitedIdle,
 		conform.Excuse(
-			LimitedChecks.Limit.Smoke(),
+			wrap.LimitedChecks.Limit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Measure.Smoke(),
+			wrap.LimitedChecks.Measure.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimitedChecks.Phase.Smoke(),
+			wrap.LimitedChecks.Phase.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -673,40 +677,40 @@ func FuzzLimitedSuiteSense(f *testing.F) {
 // limitedIdle.
 func BenchmarkLimitedSuite(b *testing.B) {
 	b.Run("Limit", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Limit.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Limit.Callable, limitedIdle)
 	})
 	b.Run("Grip", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Grip.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Grip.Callable, limitedIdle)
 	})
 	b.Run("Clamp", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Clamp.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Clamp.Callable, limitedIdle)
 	})
 	b.Run("Frame", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Frame.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Frame.Callable, limitedIdle)
 	})
 	b.Run("Mount", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Mount.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Mount.Callable, limitedIdle)
 	})
 	b.Run("Span", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Span.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Span.Callable, limitedIdle)
 	})
 	b.Run("Pitch", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Pitch.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Pitch.Callable, limitedIdle)
 	})
 	b.Run("Measure", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Measure.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Measure.Callable, limitedIdle)
 	})
 	b.Run("Phase", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Phase.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Phase.Callable, limitedIdle)
 	})
 	b.Run("Sense", func(b *testing.B) {
-		BenchLimitedSuite(b, LimitedChecks.Sense.Callable, limitedIdle)
+		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Sense.Callable, limitedIdle)
 	})
 }
 
-// plainSubjectEmbedded is PlainMethods under the name of the field that
-// plainSubject embeds.
-type plainSubjectEmbedded = PlainMethods
+// plainSubjectEmbedded is wrap.PlainMethods under the name of the field
+// that plainSubject embeds.
+type plainSubjectEmbedded = wrap.PlainMethods
 
 // plainSubject is a value of Plain that only TestPlainSuite builds.
 type plainSubject struct{ plainSubjectEmbedded }
@@ -718,33 +722,39 @@ func TestPlainSuite(t *testing.T) {
 
 	t.Run("PlainSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, PlainSuite())
+		conform.Falsify(t, wrap.PlainSuite())
 	})
 
 	t.Run("RunPlainSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *plainSubject
-		RunPlainSuite(
+		wrap.RunPlainSuite(
 			t,
 			func() *plainSubject {
 				built = &plainSubject{}
 				return built
 			},
-			conform.With(PlainCheck{
+			conform.With(wrap.PlainCheck{
 				ID:        "Plain/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PlainHandle) {
+				Apply: func(h *wrap.PlainHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, PlainMethods(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						wrap.PlainMethods(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*PlainHandle) PlainMethods { return &plainSubject{} },
+				Defect: func(*wrap.PlainHandle) wrap.PlainMethods { return &plainSubject{} },
 			}),
 			conform.Excuse(
-				PlainChecks.Name.Smoke(),
+				wrap.PlainChecks.Name.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Name.Deterministic(),
+				wrap.PlainChecks.Name.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -753,27 +763,33 @@ func TestPlainSuite(t *testing.T) {
 	t.Run("RunPlainSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *plainSubject
-		RunPlainSuiteFromHandle(
+		wrap.RunPlainSuiteFromHandle(
 			t,
-			func(*PlainHandle) *plainSubject {
+			func(*wrap.PlainHandle) *plainSubject {
 				built = &plainSubject{}
 				return built
 			},
-			conform.With(PlainCheck{
+			conform.With(wrap.PlainCheck{
 				ID:        "Plain/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PlainHandle) {
+				Apply: func(h *wrap.PlainHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, PlainMethods(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						wrap.PlainMethods(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*PlainHandle) PlainMethods { return &plainSubject{} },
+				Defect: func(*wrap.PlainHandle) wrap.PlainMethods { return &plainSubject{} },
 			}),
 			conform.Excuse(
-				PlainChecks.Name.Smoke(),
+				wrap.PlainChecks.Name.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Name.Deterministic(),
+				wrap.PlainChecks.Name.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -782,8 +798,8 @@ func TestPlainSuite(t *testing.T) {
 
 // plainIdle returns the planted defect of a ceiling of Plain with a spend
 // of nothing, a subject that answers each call at once.
-func plainIdle(h *PlainHandle) PlainMethods {
-	return PlainSuite().Calls[0].Over(h, func() {})
+func plainIdle(h *wrap.PlainHandle) wrap.PlainMethods {
+	return wrap.PlainSuite().Calls[0].Over(h, func() {})
 }
 
 // TestPlainSuiteBudgets applies the allocation ceilings of the suite of
@@ -791,16 +807,16 @@ func plainIdle(h *PlainHandle) PlainMethods {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestPlainSuiteBudgets(t *testing.T) {
-	RunPlainBudgets(
+	wrap.RunPlainBudgets(
 		t,
 		plainIdle,
-		conform.Ceilings(PlainChecks.Name.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrap.PlainChecks.Name.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			PlainChecks.Name.Smoke(),
+			wrap.PlainChecks.Name.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Name.Deterministic(),
+			wrap.PlainChecks.Name.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -809,16 +825,16 @@ func TestPlainSuiteBudgets(t *testing.T) {
 // FuzzPlainSuiteName registers the fuzz target of Plain.Name on plainIdle,
 // with every check of the suite excused.
 func FuzzPlainSuiteName(f *testing.F) {
-	FuzzPlainSuite(
+	wrap.FuzzPlainSuite(
 		f,
-		PlainChecks.Name.Callable,
+		wrap.PlainChecks.Name.Callable,
 		plainIdle,
 		conform.Excuse(
-			PlainChecks.Name.Smoke(),
+			wrap.PlainChecks.Name.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Name.Deterministic(),
+			wrap.PlainChecks.Name.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -828,6 +844,6 @@ func FuzzPlainSuiteName(f *testing.F) {
 // plainIdle.
 func BenchmarkPlainSuite(b *testing.B) {
 	b.Run("Name", func(b *testing.B) {
-		BenchPlainSuite(b, PlainChecks.Name.Callable, plainIdle)
+		wrap.BenchPlainSuite(b, wrap.PlainChecks.Name.Callable, plainIdle)
 	})
 }

@@ -1,8 +1,9 @@
-package slug
+package slug_test
 
 import (
 	"testing"
 
+	"example.com/shop/slug"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
@@ -14,41 +15,41 @@ func TestSlugSuite(t *testing.T) {
 
 	t.Run("SlugSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, SlugSuite())
+		conform.Falsify(t, slug.SlugSuite())
 	})
 
 	t.Run("Slug", func(t *testing.T) {
 		t.Parallel()
-		RunSlugSuite(t, Slug)
+		slug.RunSlugSuite(t, slug.Slug)
 	})
 
 	t.Run("RunSlugSuite", func(t *testing.T) {
 		t.Parallel()
-		RunSlugSuite(
+		slug.RunSlugSuite(
 			t,
-			Slug,
-			conform.With(SlugCheck{
+			slug.Slug,
+			conform.With(slug.SlugCheck{
 				ID:        "Slug/receives-the-function",
 				Statement: "the subject of a check is the function of the application",
-				Apply: func(h *SlugHandle) {
-					assert.Equal(h, h.Subject(), SlugFunc(Slug), h.Statement())
+				Apply: func(h *slug.SlugHandle) {
+					assert.Equal(h, h.Subject(), slug.SlugFunc(slug.Slug), h.Statement())
 				},
-				Defect: func(*SlugHandle) SlugFunc { return nil },
+				Defect: func(*slug.SlugHandle) slug.SlugFunc { return nil },
 			}),
 			conform.Excuse(
-				SlugChecks.Smoke(),
+				slug.SlugChecks.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SlugChecks.Deterministic(),
+				slug.SlugChecks.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SlugChecks.KeepsTheOrder(),
+				slug.SlugChecks.KeepsTheOrder(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SlugChecks.KeepsTheWords(),
+				slug.SlugChecks.KeepsTheWords(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -56,33 +57,33 @@ func TestSlugSuite(t *testing.T) {
 
 	t.Run("RunSlugSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
-		RunSlugSuiteFromHandle(
+		slug.RunSlugSuiteFromHandle(
 			t,
-			func(*SlugHandle) SlugFunc {
-				return Slug
+			func(*slug.SlugHandle) slug.SlugFunc {
+				return slug.Slug
 			},
-			conform.With(SlugCheck{
+			conform.With(slug.SlugCheck{
 				ID:        "Slug/builds-the-subject",
 				Statement: "the subject of a check is the function that the factory returns",
-				Apply: func(h *SlugHandle) {
-					assert.Equal(h, h.Subject(), SlugFunc(Slug), h.Statement())
+				Apply: func(h *slug.SlugHandle) {
+					assert.Equal(h, h.Subject(), slug.SlugFunc(slug.Slug), h.Statement())
 				},
-				Defect: func(*SlugHandle) SlugFunc { return nil },
+				Defect: func(*slug.SlugHandle) slug.SlugFunc { return nil },
 			}),
 			conform.Excuse(
-				SlugChecks.Smoke(),
+				slug.SlugChecks.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SlugChecks.Deterministic(),
+				slug.SlugChecks.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SlugChecks.KeepsTheOrder(),
+				slug.SlugChecks.KeepsTheOrder(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SlugChecks.KeepsTheWords(),
+				slug.SlugChecks.KeepsTheWords(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -92,13 +93,13 @@ func TestSlugSuite(t *testing.T) {
 		t.Parallel()
 		assert.Equal(
 			t,
-			string(SlugChecks.KeepsTheOrder()),
+			string(slug.SlugChecks.KeepsTheOrder()),
 			"Slug/keeps-the-order",
 			"the identity of the check joins the callable and the segment of the check",
 		)
 		assert.Equal(
 			t,
-			string(SlugChecks.KeepsTheWords()),
+			string(slug.SlugChecks.KeepsTheWords()),
 			"Slug/keeps-the-words",
 			"the identity of the check joins the callable and the segment of the check",
 		)
@@ -107,10 +108,10 @@ func TestSlugSuite(t *testing.T) {
 
 // BenchmarkSlug measures Slug.
 func BenchmarkSlug(b *testing.B) {
-	BenchSlugSuite(b, Slug)
+	slug.BenchSlugSuite(b, slug.Slug)
 }
 
 // FuzzSlug fuzzes the property checks of Slug.
 func FuzzSlug(f *testing.F) {
-	FuzzSlugSuite(f, Slug)
+	slug.FuzzSlugSuite(f, slug.Slug)
 }

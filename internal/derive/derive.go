@@ -11,7 +11,6 @@ import (
 	"slices"
 	"strings"
 
-	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
@@ -72,6 +71,12 @@ type Field struct {
 	Shape rules.TypeShape
 }
 
+// Key returns the key of the callable of f, which joins it across languages:
+// store.read-all for the method ReadAll of Store, and slug for a function.
+func (f *Facts) Key() string {
+	return spec.Key(f.qualified())
+}
+
 // qualified returns the name of the callable of f in an identity: Store.Read
 // for a method, and Slug for a function.
 func (f *Facts) qualified() string {
@@ -79,15 +84,6 @@ func (f *Facts) qualified() string {
 		return f.Callable
 	}
 	return f.Declaration + "." + f.Callable
-}
-
-// key returns the name of the callable of f in a key: store.read for a
-// method, and slug for a function.
-func (f *Facts) key() string {
-	if f.Declaration == "" {
-		return keyOf(f.Callable)
-	}
-	return keyOf(f.Declaration) + "." + keyOf(f.Callable)
 }
 
 // sampled reports whether eidos derives two distinct samples of v.
@@ -138,8 +134,13 @@ type Check struct {
 
 // Refusal is a licensed claim whose gate failed on a callable.
 type Refusal struct {
-	Claim       spec.ClaimID
-	Callable    string
+	Claim    spec.ClaimID
+	Callable string
+
+	// Key is the key of the check that the refusal stands for, such as
+	// store.scan/zero-on-error.
+	Key string
+
 	Why, Remedy string
 }
 
@@ -149,6 +150,9 @@ type Unclaimed struct {
 	// Classification is shape:<name>, mixin:<name> or
 	// contract:<name>/<role>.
 	Classification, Callable string
+
+	// Key is the key of the callable, such as store.put.
+	Key string
 
 	Stance spec.StanceID
 	Note   string
@@ -186,7 +190,7 @@ func Derive(decl []Facts, table []spec.Claim, suite, runtime []spec.MachineryID)
 	keys := map[string]string{}
 	for i := range decl {
 		f := &decl[i]
-		key := f.key()
+		key := f.Key()
 		if other, ok := keys[key]; ok {
 			return Suite{}, fmt.Errorf("%w: %s and %s have the key %s", ErrKey, other, f.Callable, key)
 		}
@@ -238,17 +242,18 @@ func deriveCallable(out *Suite, f *Facts, decl []Facts, table []spec.Claim, supp
 		if covered[cls] {
 			continue
 		}
+		key := f.Key()
 		if note, ok := needs[cls]; ok {
 			out.Unclaimed = append(
 				out.Unclaimed,
-				Unclaimed{Classification: cls, Callable: f.Callable, Stance: spec.Needs, Note: note},
+				Unclaimed{Classification: cls, Callable: f.Callable, Key: key, Stance: spec.Needs, Note: note},
 			)
 			continue
 		}
 		if u, ok := spec.UnclaimedOf(cls); ok {
 			out.Unclaimed = append(
 				out.Unclaimed,
-				Unclaimed{Classification: cls, Callable: f.Callable, Stance: u.Stance, Note: u.Note},
+				Unclaimed{Classification: cls, Callable: f.Callable, Key: key, Stance: u.Stance, Note: u.Note},
 			)
 		}
 	}
@@ -266,11 +271,16 @@ func cover(covered map[string]bool, licensings []licensing) {
 // every callable whose gate fails.
 func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, bool) {
 	everyCallable := l.licence.Callable
+	identity := f.qualified() + "/" + string(c.ID)
+	if l.instance != "" {
+		identity += "#" + l.instance
+	}
 	refuse := func(why, remedy string) (Check, *Refusal, bool) {
 		if everyCallable {
 			return Check{}, nil, true
 		}
-		return Check{}, &Refusal{Claim: c.ID, Callable: f.Callable, Why: why, Remedy: remedy}, false
+		return Check{}, &Refusal{Claim: c.ID, Callable: f.Callable, Key: spec.Key(identity), Why: why, Remedy: remedy},
+			false
 	}
 	declaration := f.Declaration
 	if declaration == "" {
@@ -311,15 +321,9 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		names[p.Name] = pair.Partner.Callable
 	}
 	law, _ := spec.LawOf(c.Law)
-	identity := f.qualified() + "/" + string(c.ID)
-	key := f.key() + "/" + string(c.ID)
-	if l.instance != "" {
-		identity += "#" + l.instance
-		key += "#" + l.instance
-	}
 	return Check{
 		Claim: c, Facts: f, Pairs: pairs,
-		Identity: identity, Key: key,
+		Identity: identity, Key: spec.Key(identity),
 		Statement: fill(c.Statement, names), Clause: fill(c.Defect.Clause, names),
 		Shallow: !slices.Contains(c.Machineries, law.Depth),
 	}, nil, false
@@ -465,12 +469,6 @@ func edgesOf(checks []Check) []Edge {
 		}
 	}
 	return out
-}
-
-// keyOf returns a name in the key form: its words in lower case, joined by
-// hyphens.
-func keyOf(name string) string {
-	return strings.ToLower(strings.Join(naming.Words(name), "-"))
 }
 
 // fill replaces each name in braces in text with its value in names.

@@ -1,15 +1,16 @@
-package inputs
+package inputs_test
 
 import (
 	"testing"
 
+	"example.com/shop/inputs"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
 
-// pipelineSubjectEmbedded is Pipeline under the name of the field that
-// pipelineSubject embeds.
-type pipelineSubjectEmbedded = Pipeline
+// pipelineSubjectEmbedded is inputs.Pipeline under the name of the field
+// that pipelineSubject embeds.
+type pipelineSubjectEmbedded = inputs.Pipeline
 
 // pipelineSubject is a value of Pipeline that only TestPipelineSuite
 // builds.
@@ -22,49 +23,49 @@ func TestPipelineSuite(t *testing.T) {
 
 	t.Run("PipelineSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, PipelineSuite())
+		conform.Falsify(t, inputs.PipelineSuite())
 	})
 
 	t.Run("RunPipelineSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *pipelineSubject
-		RunPipelineSuite(
+		inputs.RunPipelineSuite(
 			t,
 			func() *pipelineSubject {
 				built = &pipelineSubject{}
 				return built
 			},
-			conform.With(PipelineCheck{
+			conform.With(inputs.PipelineCheck{
 				ID:        "Pipeline/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PipelineHandle) {
+				Apply: func(h *inputs.PipelineHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Pipeline(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, inputs.Pipeline(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PipelineHandle) Pipeline { return &pipelineSubject{} },
+				Defect: func(*inputs.PipelineHandle) inputs.Pipeline { return &pipelineSubject{} },
 			}),
 			conform.Excuse(
-				PipelineChecks.Each.Smoke(),
+				inputs.PipelineChecks.Each.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Do.Smoke(),
+				inputs.PipelineChecks.Do.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Notify.Smoke(),
+				inputs.PipelineChecks.Notify.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Apply.Smoke(),
+				inputs.PipelineChecks.Apply.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Put.Smoke(),
+				inputs.PipelineChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Label.Smoke(),
+				inputs.PipelineChecks.Label.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -73,43 +74,43 @@ func TestPipelineSuite(t *testing.T) {
 	t.Run("RunPipelineSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *pipelineSubject
-		RunPipelineSuiteFromHandle(
+		inputs.RunPipelineSuiteFromHandle(
 			t,
-			func(*PipelineHandle) *pipelineSubject {
+			func(*inputs.PipelineHandle) *pipelineSubject {
 				built = &pipelineSubject{}
 				return built
 			},
-			conform.With(PipelineCheck{
+			conform.With(inputs.PipelineCheck{
 				ID:        "Pipeline/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PipelineHandle) {
+				Apply: func(h *inputs.PipelineHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Pipeline(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, inputs.Pipeline(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PipelineHandle) Pipeline { return &pipelineSubject{} },
+				Defect: func(*inputs.PipelineHandle) inputs.Pipeline { return &pipelineSubject{} },
 			}),
 			conform.Excuse(
-				PipelineChecks.Each.Smoke(),
+				inputs.PipelineChecks.Each.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Do.Smoke(),
+				inputs.PipelineChecks.Do.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Notify.Smoke(),
+				inputs.PipelineChecks.Notify.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Apply.Smoke(),
+				inputs.PipelineChecks.Apply.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Put.Smoke(),
+				inputs.PipelineChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PipelineChecks.Label.Smoke(),
+				inputs.PipelineChecks.Label.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -118,8 +119,8 @@ func TestPipelineSuite(t *testing.T) {
 
 // pipelineIdle returns the planted defect of a ceiling of Pipeline with a
 // spend of nothing, a subject that answers each call at once.
-func pipelineIdle(h *PipelineHandle) Pipeline {
-	return PipelineSuite().Calls[0].Over(h, func() {})
+func pipelineIdle(h *inputs.PipelineHandle) inputs.Pipeline {
+	return inputs.PipelineSuite().Calls[0].Over(h, func() {})
 }
 
 // TestPipelineSuiteBudgets applies the allocation ceilings of the suite of
@@ -127,42 +128,72 @@ func pipelineIdle(h *PipelineHandle) Pipeline {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestPipelineSuiteBudgets(t *testing.T) {
-	RunPipelineBudgets(
+	inputs.RunPipelineBudgets(
 		t,
 		pipelineIdle,
-		conform.Ceilings(PipelineChecks.Each.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Handle.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Do.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Notify.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Spin.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Copy.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Configure.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Subscribe.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PipelineChecks.Label.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			inputs.PipelineChecks.Each.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.PipelineChecks.Handle.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(inputs.PipelineChecks.Do.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			inputs.PipelineChecks.Notify.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.PipelineChecks.Apply.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.PipelineChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.PipelineChecks.Spin.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.PipelineChecks.Copy.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.PipelineChecks.Configure.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.PipelineChecks.Subscribe.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.PipelineChecks.Label.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -171,32 +202,32 @@ func TestPipelineSuiteBudgets(t *testing.T) {
 // FuzzPipelineSuitePump registers the fuzz target of Pipeline.Pump on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuitePump(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Pump.Callable,
+		inputs.PipelineChecks.Pump.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -205,32 +236,32 @@ func FuzzPipelineSuitePump(f *testing.F) {
 // FuzzPipelineSuiteMerge registers the fuzz target of Pipeline.Merge on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteMerge(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Merge.Callable,
+		inputs.PipelineChecks.Merge.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -239,32 +270,32 @@ func FuzzPipelineSuiteMerge(f *testing.F) {
 // FuzzPipelineSuiteEach registers the fuzz target of Pipeline.Each on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteEach(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Each.Callable,
+		inputs.PipelineChecks.Each.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -273,32 +304,32 @@ func FuzzPipelineSuiteEach(f *testing.F) {
 // FuzzPipelineSuiteHandle registers the fuzz target of Pipeline.Handle on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteHandle(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Handle.Callable,
+		inputs.PipelineChecks.Handle.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -307,32 +338,32 @@ func FuzzPipelineSuiteHandle(f *testing.F) {
 // FuzzPipelineSuiteDo registers the fuzz target of Pipeline.Do on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteDo(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Do.Callable,
+		inputs.PipelineChecks.Do.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -341,32 +372,32 @@ func FuzzPipelineSuiteDo(f *testing.F) {
 // FuzzPipelineSuiteNotify registers the fuzz target of Pipeline.Notify on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteNotify(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Notify.Callable,
+		inputs.PipelineChecks.Notify.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -375,32 +406,32 @@ func FuzzPipelineSuiteNotify(f *testing.F) {
 // FuzzPipelineSuiteApply registers the fuzz target of Pipeline.Apply on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteApply(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Apply.Callable,
+		inputs.PipelineChecks.Apply.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -409,32 +440,32 @@ func FuzzPipelineSuiteApply(f *testing.F) {
 // FuzzPipelineSuiteFold registers the fuzz target of Pipeline.Fold on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteFold(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Fold.Callable,
+		inputs.PipelineChecks.Fold.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -443,32 +474,32 @@ func FuzzPipelineSuiteFold(f *testing.F) {
 // FuzzPipelineSuitePut registers the fuzz target of Pipeline.Put on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuitePut(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Put.Callable,
+		inputs.PipelineChecks.Put.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -477,32 +508,32 @@ func FuzzPipelineSuitePut(f *testing.F) {
 // FuzzPipelineSuiteCount registers the fuzz target of Pipeline.Count on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteCount(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Count.Callable,
+		inputs.PipelineChecks.Count.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -511,32 +542,32 @@ func FuzzPipelineSuiteCount(f *testing.F) {
 // FuzzPipelineSuiteSpin registers the fuzz target of Pipeline.Spin on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteSpin(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Spin.Callable,
+		inputs.PipelineChecks.Spin.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -545,32 +576,32 @@ func FuzzPipelineSuiteSpin(f *testing.F) {
 // FuzzPipelineSuiteCopy registers the fuzz target of Pipeline.Copy on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteCopy(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Copy.Callable,
+		inputs.PipelineChecks.Copy.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -580,32 +611,32 @@ func FuzzPipelineSuiteCopy(f *testing.F) {
 // Pipeline.Configure on pipelineIdle, with every check of the suite
 // excused.
 func FuzzPipelineSuiteConfigure(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Configure.Callable,
+		inputs.PipelineChecks.Configure.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -615,32 +646,32 @@ func FuzzPipelineSuiteConfigure(f *testing.F) {
 // Pipeline.Subscribe on pipelineIdle, with every check of the suite
 // excused.
 func FuzzPipelineSuiteSubscribe(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Subscribe.Callable,
+		inputs.PipelineChecks.Subscribe.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -649,32 +680,32 @@ func FuzzPipelineSuiteSubscribe(f *testing.F) {
 // FuzzPipelineSuiteLabel registers the fuzz target of Pipeline.Label on
 // pipelineIdle, with every check of the suite excused.
 func FuzzPipelineSuiteLabel(f *testing.F) {
-	FuzzPipelineSuite(
+	inputs.FuzzPipelineSuite(
 		f,
-		PipelineChecks.Label.Callable,
+		inputs.PipelineChecks.Label.Callable,
 		pipelineIdle,
 		conform.Excuse(
-			PipelineChecks.Each.Smoke(),
+			inputs.PipelineChecks.Each.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Do.Smoke(),
+			inputs.PipelineChecks.Do.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Notify.Smoke(),
+			inputs.PipelineChecks.Notify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Apply.Smoke(),
+			inputs.PipelineChecks.Apply.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Put.Smoke(),
+			inputs.PipelineChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PipelineChecks.Label.Smoke(),
+			inputs.PipelineChecks.Label.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -684,48 +715,48 @@ func FuzzPipelineSuiteLabel(f *testing.F) {
 // on pipelineIdle.
 func BenchmarkPipelineSuite(b *testing.B) {
 	b.Run("Pump", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Pump.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Pump.Callable, pipelineIdle)
 	})
 	b.Run("Merge", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Merge.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Merge.Callable, pipelineIdle)
 	})
 	b.Run("Each", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Each.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Each.Callable, pipelineIdle)
 	})
 	b.Run("Handle", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Handle.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Handle.Callable, pipelineIdle)
 	})
 	b.Run("Do", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Do.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Do.Callable, pipelineIdle)
 	})
 	b.Run("Notify", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Notify.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Notify.Callable, pipelineIdle)
 	})
 	b.Run("Apply", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Apply.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Apply.Callable, pipelineIdle)
 	})
 	b.Run("Fold", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Fold.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Fold.Callable, pipelineIdle)
 	})
 	b.Run("Put", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Put.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Put.Callable, pipelineIdle)
 	})
 	b.Run("Count", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Count.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Count.Callable, pipelineIdle)
 	})
 	b.Run("Spin", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Spin.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Spin.Callable, pipelineIdle)
 	})
 	b.Run("Copy", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Copy.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Copy.Callable, pipelineIdle)
 	})
 	b.Run("Configure", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Configure.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Configure.Callable, pipelineIdle)
 	})
 	b.Run("Subscribe", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Subscribe.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Subscribe.Callable, pipelineIdle)
 	})
 	b.Run("Label", func(b *testing.B) {
-		BenchPipelineSuite(b, PipelineChecks.Label.Callable, pipelineIdle)
+		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Label.Callable, pipelineIdle)
 	})
 }

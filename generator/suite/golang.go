@@ -32,7 +32,8 @@ var golangTemplates embed.FS
 // defectHelper and bodyHelper return the views of a planted defect that its
 // templates read, joinHelper joins words with commas, namesHelper joins the
 // names of the results of a planted defect, and identityHelper writes the
-// identity of a check of a suite.
+// identity of a check of a suite. lockHelper returns the lines of the lock of
+// a plan.
 const (
 	pascalHelper   = "suitePascal"
 	camelHelper    = "suiteCamel"
@@ -43,6 +44,7 @@ const (
 	joinHelper     = "suiteJoin"
 	namesHelper    = "suiteNames"
 	identityHelper = "suiteIdentity"
+	lockHelper     = "suiteLock"
 )
 
 // identityIn returns the identity of the check segment of the callable of the
@@ -149,7 +151,7 @@ func (golangPart) Options() []sdk.TargetOption {
 		sdk.Funcs(template.FuncMap{
 			pascalHelper: naming.Pascal, camelHelper: naming.Camel, ceilingsHelper: Budget.segments,
 			durationHelper: golangDuration, defectHelper: viewOfDefect, bodyHelper: viewOfBody, joinHelper: joined,
-			namesHelper: namesOfOutcomes, identityHelper: identityIn,
+			namesHelper: namesOfOutcomes, identityHelper: identityIn, lockHelper: lockLines,
 		}),
 	}
 }

@@ -66,12 +66,13 @@ const (
 // generated is what suite records over one fixture: the suite of each
 // declaration by its name, the record of each test of the family of the tests
 // by the name of the test, the origins that test their package from inside,
-// and the findings of the run.
+// the record of each suite in the lock, and the findings of the run.
 type generated struct {
 	suites   map[string]suite.Suite
 	tests    map[string]gentest.Record[suite.Conformance]
 	beside   map[string][]string
 	inside   map[symbol.Identity]bool
+	locks    []suite.Lock
 	findings []diag.Diag
 }
 
@@ -259,5 +260,6 @@ func recorded(t *testing.T, f *gentest.Fixture, p plugin.Plugin) generated {
 	got.beside = gentest.Beside(res, declaration)
 	got.tests = gentest.Records(t, res, conformTemplate, suite.TestTag,
 		func(c suite.Conformance) string { return c.Test })
+	got.locks = gentest.List[suite.Lock](res)
 	return got
 }

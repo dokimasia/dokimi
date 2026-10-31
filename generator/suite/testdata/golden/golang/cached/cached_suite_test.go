@@ -1,8 +1,10 @@
-package cached
+package cached_test
 
 import (
 	"testing"
 
+	"example.com/shop/cached"
+	"example.com/shop/generic"
 	"go.dokimi.dev/conform"
 )
 
@@ -11,11 +13,11 @@ import (
 func TestCacheConformsToCache(t *testing.T) {
 	t.Parallel()
 
-	RunCacheSuite(
+	generic.RunCacheSuite(
 		t,
-		New,
+		cached.New,
 		conform.Excuse(
-			CacheChecks.Get.ZeroOnMiss(),
+			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the cache returns the zero value of int for each miss already",
 		),
 	)
@@ -24,24 +26,24 @@ func TestCacheConformsToCache(t *testing.T) {
 // BenchmarkCacheConformsToCache measures each callable of the suite of
 // Cache on Cache.
 func BenchmarkCacheConformsToCache(b *testing.B) {
-	opts := []CacheOption{
+	opts := []generic.CacheOption{
 		conform.Excuse(
-			CacheChecks.Get.ZeroOnMiss(),
+			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the cache returns the zero value of int for each miss already",
 		),
 	}
 	b.Run("Get", func(b *testing.B) {
-		BenchCacheSuite(
+		generic.BenchCacheSuite(
 			b,
-			CacheChecks.Get.Callable,
-			func(*CacheHandle) *Cache { return New() },
+			generic.CacheChecks.Get.Callable,
+			func(*generic.CacheHandle) *cached.Cache { return cached.New() },
 			opts...)
 	})
 	b.Run("Set", func(b *testing.B) {
-		BenchCacheSuite(
+		generic.BenchCacheSuite(
 			b,
-			CacheChecks.Set.Callable,
-			func(*CacheHandle) *Cache { return New() },
+			generic.CacheChecks.Set.Callable,
+			func(*generic.CacheHandle) *cached.Cache { return cached.New() },
 			opts...)
 	})
 }
@@ -49,12 +51,12 @@ func BenchmarkCacheConformsToCache(b *testing.B) {
 // FuzzCacheConformsToCacheGet fuzzes the property checks of Cache.Get on
 // Cache.
 func FuzzCacheConformsToCacheGet(f *testing.F) {
-	FuzzCacheSuite(
+	generic.FuzzCacheSuite(
 		f,
-		CacheChecks.Get.Callable,
-		func(*CacheHandle) *Cache { return New() },
+		generic.CacheChecks.Get.Callable,
+		func(*generic.CacheHandle) *cached.Cache { return cached.New() },
 		conform.Excuse(
-			CacheChecks.Get.ZeroOnMiss(),
+			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the cache returns the zero value of int for each miss already",
 		),
 	)
@@ -63,12 +65,12 @@ func FuzzCacheConformsToCacheGet(f *testing.F) {
 // FuzzCacheConformsToCacheSet fuzzes the property checks of Cache.Set on
 // Cache.
 func FuzzCacheConformsToCacheSet(f *testing.F) {
-	FuzzCacheSuite(
+	generic.FuzzCacheSuite(
 		f,
-		CacheChecks.Set.Callable,
-		func(*CacheHandle) *Cache { return New() },
+		generic.CacheChecks.Set.Callable,
+		func(*generic.CacheHandle) *cached.Cache { return cached.New() },
 		conform.Excuse(
-			CacheChecks.Get.ZeroOnMiss(),
+			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the cache returns the zero value of int for each miss already",
 		),
 	)

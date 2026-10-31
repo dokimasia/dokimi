@@ -1,15 +1,16 @@
-package meter
+package meter_test
 
 import (
 	"testing"
 
+	"example.com/shop/meter"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
 
-// meterSubjectEmbedded is Meter under the name of the field that
+// meterSubjectEmbedded is meter.Meter under the name of the field that
 // meterSubject embeds.
-type meterSubjectEmbedded = Meter
+type meterSubjectEmbedded = meter.Meter
 
 // meterSubject is a value of Meter that only TestMeterSuite builds.
 type meterSubject struct{ meterSubjectEmbedded }
@@ -21,61 +22,61 @@ func TestMeterSuite(t *testing.T) {
 
 	t.Run("MeterSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, MeterSuite())
+		conform.Falsify(t, meter.MeterSuite())
 	})
 
 	t.Run("RunMeterSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *meterSubject
-		RunMeterSuite(
+		meter.RunMeterSuite(
 			t,
 			func() *meterSubject {
 				built = &meterSubject{}
 				return built
 			},
-			conform.With(MeterCheck{
+			conform.With(meter.MeterCheck{
 				ID:        "Meter/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *MeterHandle) {
+				Apply: func(h *meter.MeterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Meter(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, meter.Meter(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*MeterHandle) Meter { return &meterSubject{} },
+				Defect: func(*meter.MeterHandle) meter.Meter { return &meterSubject{} },
 			}),
 			conform.Excuse(
-				MeterChecks.Count.Smoke(),
+				meter.MeterChecks.Count.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Count.Cancel(),
+				meter.MeterChecks.Count.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Count.ZeroOnError(),
+				meter.MeterChecks.Count.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Record.Smoke(),
+				meter.MeterChecks.Record.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Record.Cancel(),
+				meter.MeterChecks.Record.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Merge.Smoke(),
+				meter.MeterChecks.Merge.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Merge.NilSafe(),
+				meter.MeterChecks.Merge.NilSafe(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Total.Smoke(),
+				meter.MeterChecks.Total.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Total.Deterministic(),
+				meter.MeterChecks.Total.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -84,55 +85,55 @@ func TestMeterSuite(t *testing.T) {
 	t.Run("RunMeterSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *meterSubject
-		RunMeterSuiteFromHandle(
+		meter.RunMeterSuiteFromHandle(
 			t,
-			func(*MeterHandle) *meterSubject {
+			func(*meter.MeterHandle) *meterSubject {
 				built = &meterSubject{}
 				return built
 			},
-			conform.With(MeterCheck{
+			conform.With(meter.MeterCheck{
 				ID:        "Meter/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *MeterHandle) {
+				Apply: func(h *meter.MeterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Meter(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, meter.Meter(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*MeterHandle) Meter { return &meterSubject{} },
+				Defect: func(*meter.MeterHandle) meter.Meter { return &meterSubject{} },
 			}),
 			conform.Excuse(
-				MeterChecks.Count.Smoke(),
+				meter.MeterChecks.Count.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Count.Cancel(),
+				meter.MeterChecks.Count.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Count.ZeroOnError(),
+				meter.MeterChecks.Count.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Record.Smoke(),
+				meter.MeterChecks.Record.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Record.Cancel(),
+				meter.MeterChecks.Record.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Merge.Smoke(),
+				meter.MeterChecks.Merge.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Merge.NilSafe(),
+				meter.MeterChecks.Merge.NilSafe(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Total.Smoke(),
+				meter.MeterChecks.Total.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				MeterChecks.Total.Deterministic(),
+				meter.MeterChecks.Total.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -142,31 +143,31 @@ func TestMeterSuite(t *testing.T) {
 		t.Parallel()
 		assert.Equal(
 			t,
-			string(MeterChecks.Count.AllocationBudget()),
+			string(meter.MeterChecks.Count.AllocationBudget()),
 			"Meter.Count/allocation-budget",
 			"the identity of the check joins the callable and the segment of the check",
 		)
 		assert.Equal(
 			t,
-			string(MeterChecks.Count.ByteBudget()),
+			string(meter.MeterChecks.Count.ByteBudget()),
 			"Meter.Count/byte-budget",
 			"the identity of the check joins the callable and the segment of the check",
 		)
 		assert.Equal(
 			t,
-			string(MeterChecks.Count.LatencyBudget()),
+			string(meter.MeterChecks.Count.LatencyBudget()),
 			"Meter.Count/latency-budget",
 			"the identity of the check joins the callable and the segment of the check",
 		)
 		assert.Equal(
 			t,
-			string(MeterChecks.Count.MeanLatencyBudget()),
+			string(meter.MeterChecks.Count.MeanLatencyBudget()),
 			"Meter.Count/mean-latency-budget",
 			"the identity of the check joins the callable and the segment of the check",
 		)
 		assert.Equal(
 			t,
-			string(MeterChecks.Record.LatencyBudget()),
+			string(meter.MeterChecks.Record.LatencyBudget()),
 			"Meter.Record/latency-budget",
 			"the identity of the check joins the callable and the segment of the check",
 		)
@@ -177,14 +178,14 @@ func TestMeterSuite(t *testing.T) {
 // that count allocations of the suite of Meter.
 func TestMeterSuiteAllocs(t *testing.T) {
 	t.Run("MeterSuite", func(t *testing.T) {
-		conform.FalsifyAllocs(t, MeterSuite())
+		conform.FalsifyAllocs(t, meter.MeterSuite())
 	})
 }
 
 // meterIdle returns the planted defect of a ceiling of Meter with a spend
 // of nothing, a subject that answers each call at once.
-func meterIdle(h *MeterHandle) Meter {
-	return MeterSuite().Calls[0].Over(h, func() {})
+func meterIdle(h *meter.MeterHandle) meter.Meter {
+	return meter.MeterSuite().Calls[0].Over(h, func() {})
 }
 
 // TestMeterSuiteBudgets applies the allocation ceilings of the suite of
@@ -192,45 +193,45 @@ func meterIdle(h *MeterHandle) Meter {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestMeterSuiteBudgets(t *testing.T) {
-	RunMeterBudgets(
+	meter.RunMeterBudgets(
 		t,
 		meterIdle,
-		conform.Ceilings(MeterChecks.Merge.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(MeterChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(meter.MeterChecks.Merge.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(meter.MeterChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			MeterChecks.Count.Smoke(),
+			meter.MeterChecks.Count.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.Cancel(),
+			meter.MeterChecks.Count.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.ZeroOnError(),
+			meter.MeterChecks.Count.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Smoke(),
+			meter.MeterChecks.Record.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Cancel(),
+			meter.MeterChecks.Record.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.Smoke(),
+			meter.MeterChecks.Merge.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.NilSafe(),
+			meter.MeterChecks.Merge.NilSafe(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Smoke(),
+			meter.MeterChecks.Total.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Deterministic(),
+			meter.MeterChecks.Total.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -239,44 +240,44 @@ func TestMeterSuiteBudgets(t *testing.T) {
 // FuzzMeterSuiteCount registers the fuzz target of Meter.Count on
 // meterIdle, with every check of the suite excused.
 func FuzzMeterSuiteCount(f *testing.F) {
-	FuzzMeterSuite(
+	meter.FuzzMeterSuite(
 		f,
-		MeterChecks.Count.Callable,
+		meter.MeterChecks.Count.Callable,
 		meterIdle,
 		conform.Excuse(
-			MeterChecks.Count.Smoke(),
+			meter.MeterChecks.Count.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.Cancel(),
+			meter.MeterChecks.Count.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.ZeroOnError(),
+			meter.MeterChecks.Count.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Smoke(),
+			meter.MeterChecks.Record.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Cancel(),
+			meter.MeterChecks.Record.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.Smoke(),
+			meter.MeterChecks.Merge.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.NilSafe(),
+			meter.MeterChecks.Merge.NilSafe(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Smoke(),
+			meter.MeterChecks.Total.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Deterministic(),
+			meter.MeterChecks.Total.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -285,44 +286,44 @@ func FuzzMeterSuiteCount(f *testing.F) {
 // FuzzMeterSuiteRecord registers the fuzz target of Meter.Record on
 // meterIdle, with every check of the suite excused.
 func FuzzMeterSuiteRecord(f *testing.F) {
-	FuzzMeterSuite(
+	meter.FuzzMeterSuite(
 		f,
-		MeterChecks.Record.Callable,
+		meter.MeterChecks.Record.Callable,
 		meterIdle,
 		conform.Excuse(
-			MeterChecks.Count.Smoke(),
+			meter.MeterChecks.Count.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.Cancel(),
+			meter.MeterChecks.Count.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.ZeroOnError(),
+			meter.MeterChecks.Count.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Smoke(),
+			meter.MeterChecks.Record.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Cancel(),
+			meter.MeterChecks.Record.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.Smoke(),
+			meter.MeterChecks.Merge.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.NilSafe(),
+			meter.MeterChecks.Merge.NilSafe(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Smoke(),
+			meter.MeterChecks.Total.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Deterministic(),
+			meter.MeterChecks.Total.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -331,44 +332,44 @@ func FuzzMeterSuiteRecord(f *testing.F) {
 // FuzzMeterSuiteMerge registers the fuzz target of Meter.Merge on
 // meterIdle, with every check of the suite excused.
 func FuzzMeterSuiteMerge(f *testing.F) {
-	FuzzMeterSuite(
+	meter.FuzzMeterSuite(
 		f,
-		MeterChecks.Merge.Callable,
+		meter.MeterChecks.Merge.Callable,
 		meterIdle,
 		conform.Excuse(
-			MeterChecks.Count.Smoke(),
+			meter.MeterChecks.Count.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.Cancel(),
+			meter.MeterChecks.Count.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.ZeroOnError(),
+			meter.MeterChecks.Count.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Smoke(),
+			meter.MeterChecks.Record.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Cancel(),
+			meter.MeterChecks.Record.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.Smoke(),
+			meter.MeterChecks.Merge.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.NilSafe(),
+			meter.MeterChecks.Merge.NilSafe(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Smoke(),
+			meter.MeterChecks.Total.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Deterministic(),
+			meter.MeterChecks.Total.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -377,44 +378,44 @@ func FuzzMeterSuiteMerge(f *testing.F) {
 // FuzzMeterSuiteTotal registers the fuzz target of Meter.Total on
 // meterIdle, with every check of the suite excused.
 func FuzzMeterSuiteTotal(f *testing.F) {
-	FuzzMeterSuite(
+	meter.FuzzMeterSuite(
 		f,
-		MeterChecks.Total.Callable,
+		meter.MeterChecks.Total.Callable,
 		meterIdle,
 		conform.Excuse(
-			MeterChecks.Count.Smoke(),
+			meter.MeterChecks.Count.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.Cancel(),
+			meter.MeterChecks.Count.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Count.ZeroOnError(),
+			meter.MeterChecks.Count.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Smoke(),
+			meter.MeterChecks.Record.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Record.Cancel(),
+			meter.MeterChecks.Record.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.Smoke(),
+			meter.MeterChecks.Merge.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Merge.NilSafe(),
+			meter.MeterChecks.Merge.NilSafe(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Smoke(),
+			meter.MeterChecks.Total.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			MeterChecks.Total.Deterministic(),
+			meter.MeterChecks.Total.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -424,16 +425,16 @@ func FuzzMeterSuiteTotal(f *testing.F) {
 // meterIdle.
 func BenchmarkMeterSuite(b *testing.B) {
 	b.Run("Count", func(b *testing.B) {
-		BenchMeterSuite(b, MeterChecks.Count.Callable, meterIdle)
+		meter.BenchMeterSuite(b, meter.MeterChecks.Count.Callable, meterIdle)
 	})
 	b.Run("Record", func(b *testing.B) {
-		BenchMeterSuite(b, MeterChecks.Record.Callable, meterIdle)
+		meter.BenchMeterSuite(b, meter.MeterChecks.Record.Callable, meterIdle)
 	})
 	b.Run("Merge", func(b *testing.B) {
-		BenchMeterSuite(b, MeterChecks.Merge.Callable, meterIdle)
+		meter.BenchMeterSuite(b, meter.MeterChecks.Merge.Callable, meterIdle)
 	})
 	b.Run("Total", func(b *testing.B) {
-		BenchMeterSuite(b, MeterChecks.Total.Callable, meterIdle)
+		meter.BenchMeterSuite(b, meter.MeterChecks.Total.Callable, meterIdle)
 	})
 }
 
@@ -442,7 +443,7 @@ func BenchmarkMeterSuite(b *testing.B) {
 // once.
 func BenchmarkMeterSuiteParallel(b *testing.B) {
 	b.Run("Count", func(b *testing.B) {
-		BenchMeterSuiteParallel(b, MeterChecks.Count.Callable, meterIdle)
+		meter.BenchMeterSuiteParallel(b, meter.MeterChecks.Count.Callable, meterIdle)
 	})
 }
 
@@ -453,33 +454,33 @@ func TestWeighSuite(t *testing.T) {
 
 	t.Run("WeighSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, WeighSuite())
+		conform.Falsify(t, meter.WeighSuite())
 	})
 
 	t.Run("Weigh", func(t *testing.T) {
 		t.Parallel()
-		RunWeighSuite(t, Weigh)
+		meter.RunWeighSuite(t, meter.Weigh)
 	})
 
 	t.Run("RunWeighSuite", func(t *testing.T) {
 		t.Parallel()
-		RunWeighSuite(
+		meter.RunWeighSuite(
 			t,
-			Weigh,
-			conform.With(WeighCheck{
+			meter.Weigh,
+			conform.With(meter.WeighCheck{
 				ID:        "Weigh/receives-the-function",
 				Statement: "the subject of a check is the function of the application",
-				Apply: func(h *WeighHandle) {
-					assert.Equal(h, h.Subject(), WeighFunc(Weigh), h.Statement())
+				Apply: func(h *meter.WeighHandle) {
+					assert.Equal(h, h.Subject(), meter.WeighFunc(meter.Weigh), h.Statement())
 				},
-				Defect: func(*WeighHandle) WeighFunc { return nil },
+				Defect: func(*meter.WeighHandle) meter.WeighFunc { return nil },
 			}),
 			conform.Excuse(
-				WeighChecks.Smoke(),
+				meter.WeighChecks.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				WeighChecks.Deterministic(),
+				meter.WeighChecks.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -487,25 +488,25 @@ func TestWeighSuite(t *testing.T) {
 
 	t.Run("RunWeighSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
-		RunWeighSuiteFromHandle(
+		meter.RunWeighSuiteFromHandle(
 			t,
-			func(*WeighHandle) WeighFunc {
-				return Weigh
+			func(*meter.WeighHandle) meter.WeighFunc {
+				return meter.Weigh
 			},
-			conform.With(WeighCheck{
+			conform.With(meter.WeighCheck{
 				ID:        "Weigh/builds-the-subject",
 				Statement: "the subject of a check is the function that the factory returns",
-				Apply: func(h *WeighHandle) {
-					assert.Equal(h, h.Subject(), WeighFunc(Weigh), h.Statement())
+				Apply: func(h *meter.WeighHandle) {
+					assert.Equal(h, h.Subject(), meter.WeighFunc(meter.Weigh), h.Statement())
 				},
-				Defect: func(*WeighHandle) WeighFunc { return nil },
+				Defect: func(*meter.WeighHandle) meter.WeighFunc { return nil },
 			}),
 			conform.Excuse(
-				WeighChecks.Smoke(),
+				meter.WeighChecks.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				WeighChecks.Deterministic(),
+				meter.WeighChecks.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -515,13 +516,13 @@ func TestWeighSuite(t *testing.T) {
 		t.Parallel()
 		assert.Equal(
 			t,
-			string(WeighChecks.AllocationBudget()),
+			string(meter.WeighChecks.AllocationBudget()),
 			"Weigh/allocation-budget",
 			"the identity of the check joins the callable and the segment of the check",
 		)
 		assert.Equal(
 			t,
-			string(WeighChecks.LatencyBudget()),
+			string(meter.WeighChecks.LatencyBudget()),
 			"Weigh/latency-budget",
 			"the identity of the check joins the callable and the segment of the check",
 		)
@@ -532,27 +533,27 @@ func TestWeighSuite(t *testing.T) {
 // that count allocations of the suite of Weigh.
 func TestWeighSuiteAllocs(t *testing.T) {
 	t.Run("WeighSuite", func(t *testing.T) {
-		conform.FalsifyAllocs(t, WeighSuite())
+		conform.FalsifyAllocs(t, meter.WeighSuite())
 	})
 }
 
 // TestWeighAllocs applies the allocation ceiling and the checks that count
 // allocations of Weigh to Weigh.
 func TestWeighAllocs(t *testing.T) {
-	RunWeighBudgets(t, Weigh)
+	meter.RunWeighBudgets(t, meter.Weigh)
 }
 
 // BenchmarkWeigh measures Weigh.
 func BenchmarkWeigh(b *testing.B) {
-	BenchWeighSuite(b, Weigh)
+	meter.BenchWeighSuite(b, meter.Weigh)
 }
 
 // BenchmarkWeighParallel measures Weigh on GOMAXPROCS goroutines at once.
 func BenchmarkWeighParallel(b *testing.B) {
-	BenchWeighSuiteParallel(b, Weigh)
+	meter.BenchWeighSuiteParallel(b, meter.Weigh)
 }
 
 // FuzzWeigh fuzzes the property checks of Weigh.
 func FuzzWeigh(f *testing.F) {
-	FuzzWeighSuite(f, Weigh)
+	meter.FuzzWeighSuite(f, meter.Weigh)
 }

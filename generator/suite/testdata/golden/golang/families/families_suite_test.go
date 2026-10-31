@@ -1,15 +1,16 @@
-package families
+package families_test
 
 import (
 	"testing"
 
+	"example.com/shop/families"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
 
-// storeSubjectEmbedded is Store under the name of the field that
+// storeSubjectEmbedded is families.Store under the name of the field that
 // storeSubject embeds.
-type storeSubjectEmbedded = Store
+type storeSubjectEmbedded = families.Store
 
 // storeSubject is a value of Store that only TestStoreSuite builds.
 type storeSubject struct{ storeSubjectEmbedded }
@@ -21,113 +22,113 @@ func TestStoreSuite(t *testing.T) {
 
 	t.Run("StoreSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, StoreSuite())
+		conform.Falsify(t, families.StoreSuite())
 	})
 
 	t.Run("RunStoreSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *storeSubject
-		RunStoreSuite(
+		families.RunStoreSuite(
 			t,
 			func() *storeSubject {
 				built = &storeSubject{}
 				return built
 			},
-			conform.With(StoreCheck{
+			conform.With(families.StoreCheck{
 				ID:        "Store/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *StoreHandle) {
+				Apply: func(h *families.StoreHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Store(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Store(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*StoreHandle) Store { return &storeSubject{} },
+				Defect: func(*families.StoreHandle) families.Store { return &storeSubject{} },
 			}),
 			conform.Excuse(
-				StoreChecks.Put.Smoke(),
+				families.StoreChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Put.Cancel(),
+				families.StoreChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.Smoke(),
+				families.StoreChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.Cancel(),
+				families.StoreChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.ZeroOnError(),
+				families.StoreChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.ReadAfterWrite(),
+				families.StoreChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.MonotonicReads(),
+				families.StoreChecks.Get.MonotonicReads(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Load.Smoke(),
+				families.StoreChecks.Load.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Load.ZeroOnMiss(),
+				families.StoreChecks.Load.ZeroOnMiss(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Load.Cacheable(),
+				families.StoreChecks.Load.Cacheable(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Split.Smoke(),
+				families.StoreChecks.Split.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Find.Smoke(),
+				families.StoreChecks.Find.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Find.Cancel(),
+				families.StoreChecks.Find.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Level.Smoke(),
+				families.StoreChecks.Level.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Level.Cancel(),
+				families.StoreChecks.Level.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Level.ZeroOnError(),
+				families.StoreChecks.Level.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Raise.Smoke(),
+				families.StoreChecks.Raise.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Raise.Cancel(),
+				families.StoreChecks.Raise.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Inspect.Smoke(),
+				families.StoreChecks.Inspect.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.GetWithMeta.Smoke(),
+				families.StoreChecks.GetWithMeta.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.GetWithMeta.Cancel(),
+				families.StoreChecks.GetWithMeta.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.GetWithMeta.ZeroesOnError(),
+				families.StoreChecks.GetWithMeta.ZeroesOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -136,107 +137,107 @@ func TestStoreSuite(t *testing.T) {
 	t.Run("RunStoreSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *storeSubject
-		RunStoreSuiteFromHandle(
+		families.RunStoreSuiteFromHandle(
 			t,
-			func(*StoreHandle) *storeSubject {
+			func(*families.StoreHandle) *storeSubject {
 				built = &storeSubject{}
 				return built
 			},
-			conform.With(StoreCheck{
+			conform.With(families.StoreCheck{
 				ID:        "Store/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *StoreHandle) {
+				Apply: func(h *families.StoreHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Store(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Store(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*StoreHandle) Store { return &storeSubject{} },
+				Defect: func(*families.StoreHandle) families.Store { return &storeSubject{} },
 			}),
 			conform.Excuse(
-				StoreChecks.Put.Smoke(),
+				families.StoreChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Put.Cancel(),
+				families.StoreChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.Smoke(),
+				families.StoreChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.Cancel(),
+				families.StoreChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.ZeroOnError(),
+				families.StoreChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.ReadAfterWrite(),
+				families.StoreChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.MonotonicReads(),
+				families.StoreChecks.Get.MonotonicReads(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Load.Smoke(),
+				families.StoreChecks.Load.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Load.ZeroOnMiss(),
+				families.StoreChecks.Load.ZeroOnMiss(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Load.Cacheable(),
+				families.StoreChecks.Load.Cacheable(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Split.Smoke(),
+				families.StoreChecks.Split.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Find.Smoke(),
+				families.StoreChecks.Find.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Find.Cancel(),
+				families.StoreChecks.Find.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Level.Smoke(),
+				families.StoreChecks.Level.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Level.Cancel(),
+				families.StoreChecks.Level.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Level.ZeroOnError(),
+				families.StoreChecks.Level.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Raise.Smoke(),
+				families.StoreChecks.Raise.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Raise.Cancel(),
+				families.StoreChecks.Raise.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Inspect.Smoke(),
+				families.StoreChecks.Inspect.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.GetWithMeta.Smoke(),
+				families.StoreChecks.GetWithMeta.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.GetWithMeta.Cancel(),
+				families.StoreChecks.GetWithMeta.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.GetWithMeta.ZeroesOnError(),
+				families.StoreChecks.GetWithMeta.ZeroesOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -245,8 +246,8 @@ func TestStoreSuite(t *testing.T) {
 
 // storeIdle returns the planted defect of a ceiling of Store with a spend
 // of nothing, a subject that answers each call at once.
-func storeIdle(h *StoreHandle) Store {
-	return StoreSuite().Calls[0].Over(h, func() {})
+func storeIdle(h *families.StoreHandle) families.Store {
+	return families.StoreSuite().Calls[0].Over(h, func() {})
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
@@ -254,104 +255,125 @@ func storeIdle(h *StoreHandle) Store {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestStoreSuiteBudgets(t *testing.T) {
-	RunStoreBudgets(
+	families.RunStoreBudgets(
 		t,
 		storeIdle,
-		conform.Ceilings(StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.Load.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.Split.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.Find.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.Level.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.Raise.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.Inspect.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.GetWithMeta.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.StoreChecks.Load.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.StoreChecks.Split.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.StoreChecks.Find.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.StoreChecks.Level.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.StoreChecks.Raise.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.StoreChecks.Inspect.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.StoreChecks.GetWithMeta.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -360,96 +382,96 @@ func TestStoreSuiteBudgets(t *testing.T) {
 // FuzzStoreSuitePut registers the fuzz target of Store.Put on storeIdle,
 // with every check of the suite excused.
 func FuzzStoreSuitePut(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.Put.Callable,
+		families.StoreChecks.Put.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -458,96 +480,96 @@ func FuzzStoreSuitePut(f *testing.F) {
 // FuzzStoreSuiteGet registers the fuzz target of Store.Get on storeIdle,
 // with every check of the suite excused.
 func FuzzStoreSuiteGet(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.Get.Callable,
+		families.StoreChecks.Get.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -556,96 +578,96 @@ func FuzzStoreSuiteGet(f *testing.F) {
 // FuzzStoreSuiteLoad registers the fuzz target of Store.Load on storeIdle,
 // with every check of the suite excused.
 func FuzzStoreSuiteLoad(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.Load.Callable,
+		families.StoreChecks.Load.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -654,96 +676,96 @@ func FuzzStoreSuiteLoad(f *testing.F) {
 // FuzzStoreSuiteSplit registers the fuzz target of Store.Split on
 // storeIdle, with every check of the suite excused.
 func FuzzStoreSuiteSplit(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.Split.Callable,
+		families.StoreChecks.Split.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -752,96 +774,96 @@ func FuzzStoreSuiteSplit(f *testing.F) {
 // FuzzStoreSuiteFind registers the fuzz target of Store.Find on storeIdle,
 // with every check of the suite excused.
 func FuzzStoreSuiteFind(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.Find.Callable,
+		families.StoreChecks.Find.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -850,96 +872,96 @@ func FuzzStoreSuiteFind(f *testing.F) {
 // FuzzStoreSuiteLevel registers the fuzz target of Store.Level on
 // storeIdle, with every check of the suite excused.
 func FuzzStoreSuiteLevel(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.Level.Callable,
+		families.StoreChecks.Level.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -948,96 +970,96 @@ func FuzzStoreSuiteLevel(f *testing.F) {
 // FuzzStoreSuiteRaise registers the fuzz target of Store.Raise on
 // storeIdle, with every check of the suite excused.
 func FuzzStoreSuiteRaise(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.Raise.Callable,
+		families.StoreChecks.Raise.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1046,96 +1068,96 @@ func FuzzStoreSuiteRaise(f *testing.F) {
 // FuzzStoreSuiteInspect registers the fuzz target of Store.Inspect on
 // storeIdle, with every check of the suite excused.
 func FuzzStoreSuiteInspect(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.Inspect.Callable,
+		families.StoreChecks.Inspect.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1144,96 +1166,96 @@ func FuzzStoreSuiteInspect(f *testing.F) {
 // FuzzStoreSuiteGetWithMeta registers the fuzz target of Store.GetWithMeta
 // on storeIdle, with every check of the suite excused.
 func FuzzStoreSuiteGetWithMeta(f *testing.F) {
-	FuzzStoreSuite(
+	families.FuzzStoreSuite(
 		f,
-		StoreChecks.GetWithMeta.Callable,
+		families.StoreChecks.GetWithMeta.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			families.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			families.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			families.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			families.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			families.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ReadAfterWrite(),
+			families.StoreChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.MonotonicReads(),
+			families.StoreChecks.Get.MonotonicReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Smoke(),
+			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.ZeroOnMiss(),
+			families.StoreChecks.Load.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Load.Cacheable(),
+			families.StoreChecks.Load.Cacheable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Split.Smoke(),
+			families.StoreChecks.Split.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Smoke(),
+			families.StoreChecks.Find.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Find.Cancel(),
+			families.StoreChecks.Find.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Smoke(),
+			families.StoreChecks.Level.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.Cancel(),
+			families.StoreChecks.Level.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Level.ZeroOnError(),
+			families.StoreChecks.Level.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Smoke(),
+			families.StoreChecks.Raise.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Raise.Cancel(),
+			families.StoreChecks.Raise.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Inspect.Smoke(),
+			families.StoreChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Smoke(),
+			families.StoreChecks.GetWithMeta.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.Cancel(),
+			families.StoreChecks.GetWithMeta.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.GetWithMeta.ZeroesOnError(),
+			families.StoreChecks.GetWithMeta.ZeroesOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1243,37 +1265,37 @@ func FuzzStoreSuiteGetWithMeta(f *testing.F) {
 // storeIdle.
 func BenchmarkStoreSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Put.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.Put.Callable, storeIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Get.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.Get.Callable, storeIdle)
 	})
 	b.Run("Load", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Load.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.Load.Callable, storeIdle)
 	})
 	b.Run("Split", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Split.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.Split.Callable, storeIdle)
 	})
 	b.Run("Find", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Find.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.Find.Callable, storeIdle)
 	})
 	b.Run("Level", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Level.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.Level.Callable, storeIdle)
 	})
 	b.Run("Raise", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Raise.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.Raise.Callable, storeIdle)
 	})
 	b.Run("Inspect", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Inspect.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.Inspect.Callable, storeIdle)
 	})
 	b.Run("GetWithMeta", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.GetWithMeta.Callable, storeIdle)
+		families.BenchStoreSuite(b, families.StoreChecks.GetWithMeta.Callable, storeIdle)
 	})
 }
 
-// keyedSubjectEmbedded is Keyed under the name of the field that
+// keyedSubjectEmbedded is families.Keyed under the name of the field that
 // keyedSubject embeds.
-type keyedSubjectEmbedded = Keyed
+type keyedSubjectEmbedded = families.Keyed
 
 // keyedSubject is a value of Keyed that only TestKeyedSuite builds.
 type keyedSubject struct{ keyedSubjectEmbedded }
@@ -1285,57 +1307,57 @@ func TestKeyedSuite(t *testing.T) {
 
 	t.Run("KeyedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, KeyedSuite())
+		conform.Falsify(t, families.KeyedSuite())
 	})
 
 	t.Run("RunKeyedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *keyedSubject
-		RunKeyedSuite(
+		families.RunKeyedSuite(
 			t,
 			func() *keyedSubject {
 				built = &keyedSubject{}
 				return built
 			},
-			conform.With(KeyedCheck{
+			conform.With(families.KeyedCheck{
 				ID:        "Keyed/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *KeyedHandle) {
+				Apply: func(h *families.KeyedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Keyed(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Keyed(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*KeyedHandle) Keyed { return &keyedSubject{} },
+				Defect: func(*families.KeyedHandle) families.Keyed { return &keyedSubject{} },
 			}),
 			conform.Excuse(
-				KeyedChecks.Put.Smoke(),
+				families.KeyedChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Put.Cancel(),
+				families.KeyedChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Get.Smoke(),
+				families.KeyedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Get.Cancel(),
+				families.KeyedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Get.ZeroOnError(),
+				families.KeyedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Get.ReadAfterWrite(),
+				families.KeyedChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Delete.Smoke(),
+				families.KeyedChecks.Delete.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Delete.Cancel(),
+				families.KeyedChecks.Delete.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -1344,51 +1366,51 @@ func TestKeyedSuite(t *testing.T) {
 	t.Run("RunKeyedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *keyedSubject
-		RunKeyedSuiteFromHandle(
+		families.RunKeyedSuiteFromHandle(
 			t,
-			func(*KeyedHandle) *keyedSubject {
+			func(*families.KeyedHandle) *keyedSubject {
 				built = &keyedSubject{}
 				return built
 			},
-			conform.With(KeyedCheck{
+			conform.With(families.KeyedCheck{
 				ID:        "Keyed/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *KeyedHandle) {
+				Apply: func(h *families.KeyedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Keyed(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Keyed(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*KeyedHandle) Keyed { return &keyedSubject{} },
+				Defect: func(*families.KeyedHandle) families.Keyed { return &keyedSubject{} },
 			}),
 			conform.Excuse(
-				KeyedChecks.Put.Smoke(),
+				families.KeyedChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Put.Cancel(),
+				families.KeyedChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Get.Smoke(),
+				families.KeyedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Get.Cancel(),
+				families.KeyedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Get.ZeroOnError(),
+				families.KeyedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Get.ReadAfterWrite(),
+				families.KeyedChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Delete.Smoke(),
+				families.KeyedChecks.Delete.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedChecks.Delete.Cancel(),
+				families.KeyedChecks.Delete.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -1397,8 +1419,8 @@ func TestKeyedSuite(t *testing.T) {
 
 // keyedIdle returns the planted defect of a ceiling of Keyed with a spend
 // of nothing, a subject that answers each call at once.
-func keyedIdle(h *KeyedHandle) Keyed {
-	return KeyedSuite().Calls[0].Over(h, func() {})
+func keyedIdle(h *families.KeyedHandle) families.Keyed {
+	return families.KeyedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestKeyedSuiteBudgets applies the allocation ceilings of the suite of
@@ -1406,42 +1428,45 @@ func keyedIdle(h *KeyedHandle) Keyed {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestKeyedSuiteBudgets(t *testing.T) {
-	RunKeyedBudgets(
+	families.RunKeyedBudgets(
 		t,
 		keyedIdle,
-		conform.Ceilings(KeyedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(KeyedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(KeyedChecks.Delete.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.KeyedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.KeyedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.KeyedChecks.Delete.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			KeyedChecks.Put.Smoke(),
+			families.KeyedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Put.Cancel(),
+			families.KeyedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.Smoke(),
+			families.KeyedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.Cancel(),
+			families.KeyedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.ZeroOnError(),
+			families.KeyedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.ReadAfterWrite(),
+			families.KeyedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Delete.Smoke(),
+			families.KeyedChecks.Delete.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Delete.Cancel(),
+			families.KeyedChecks.Delete.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1450,40 +1475,40 @@ func TestKeyedSuiteBudgets(t *testing.T) {
 // FuzzKeyedSuitePut registers the fuzz target of Keyed.Put on keyedIdle,
 // with every check of the suite excused.
 func FuzzKeyedSuitePut(f *testing.F) {
-	FuzzKeyedSuite(
+	families.FuzzKeyedSuite(
 		f,
-		KeyedChecks.Put.Callable,
+		families.KeyedChecks.Put.Callable,
 		keyedIdle,
 		conform.Excuse(
-			KeyedChecks.Put.Smoke(),
+			families.KeyedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Put.Cancel(),
+			families.KeyedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.Smoke(),
+			families.KeyedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.Cancel(),
+			families.KeyedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.ZeroOnError(),
+			families.KeyedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.ReadAfterWrite(),
+			families.KeyedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Delete.Smoke(),
+			families.KeyedChecks.Delete.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Delete.Cancel(),
+			families.KeyedChecks.Delete.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1492,40 +1517,40 @@ func FuzzKeyedSuitePut(f *testing.F) {
 // FuzzKeyedSuiteGet registers the fuzz target of Keyed.Get on keyedIdle,
 // with every check of the suite excused.
 func FuzzKeyedSuiteGet(f *testing.F) {
-	FuzzKeyedSuite(
+	families.FuzzKeyedSuite(
 		f,
-		KeyedChecks.Get.Callable,
+		families.KeyedChecks.Get.Callable,
 		keyedIdle,
 		conform.Excuse(
-			KeyedChecks.Put.Smoke(),
+			families.KeyedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Put.Cancel(),
+			families.KeyedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.Smoke(),
+			families.KeyedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.Cancel(),
+			families.KeyedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.ZeroOnError(),
+			families.KeyedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.ReadAfterWrite(),
+			families.KeyedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Delete.Smoke(),
+			families.KeyedChecks.Delete.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Delete.Cancel(),
+			families.KeyedChecks.Delete.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1534,40 +1559,40 @@ func FuzzKeyedSuiteGet(f *testing.F) {
 // FuzzKeyedSuiteDelete registers the fuzz target of Keyed.Delete on
 // keyedIdle, with every check of the suite excused.
 func FuzzKeyedSuiteDelete(f *testing.F) {
-	FuzzKeyedSuite(
+	families.FuzzKeyedSuite(
 		f,
-		KeyedChecks.Delete.Callable,
+		families.KeyedChecks.Delete.Callable,
 		keyedIdle,
 		conform.Excuse(
-			KeyedChecks.Put.Smoke(),
+			families.KeyedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Put.Cancel(),
+			families.KeyedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.Smoke(),
+			families.KeyedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.Cancel(),
+			families.KeyedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.ZeroOnError(),
+			families.KeyedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Get.ReadAfterWrite(),
+			families.KeyedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Delete.Smoke(),
+			families.KeyedChecks.Delete.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedChecks.Delete.Cancel(),
+			families.KeyedChecks.Delete.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1577,19 +1602,19 @@ func FuzzKeyedSuiteDelete(f *testing.F) {
 // keyedIdle.
 func BenchmarkKeyedSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchKeyedSuite(b, KeyedChecks.Put.Callable, keyedIdle)
+		families.BenchKeyedSuite(b, families.KeyedChecks.Put.Callable, keyedIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchKeyedSuite(b, KeyedChecks.Get.Callable, keyedIdle)
+		families.BenchKeyedSuite(b, families.KeyedChecks.Get.Callable, keyedIdle)
 	})
 	b.Run("Delete", func(b *testing.B) {
-		BenchKeyedSuite(b, KeyedChecks.Delete.Callable, keyedIdle)
+		families.BenchKeyedSuite(b, families.KeyedChecks.Delete.Callable, keyedIdle)
 	})
 }
 
-// stampedSubjectEmbedded is Stamped under the name of the field that
-// stampedSubject embeds.
-type stampedSubjectEmbedded = Stamped
+// stampedSubjectEmbedded is families.Stamped under the name of the field
+// that stampedSubject embeds.
+type stampedSubjectEmbedded = families.Stamped
 
 // stampedSubject is a value of Stamped that only TestStampedSuite builds.
 type stampedSubject struct{ stampedSubjectEmbedded }
@@ -1601,57 +1626,63 @@ func TestStampedSuite(t *testing.T) {
 
 	t.Run("StampedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, StampedSuite())
+		conform.Falsify(t, families.StampedSuite())
 	})
 
 	t.Run("RunStampedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *stampedSubject
-		RunStampedSuite(
+		families.RunStampedSuite(
 			t,
 			func() *stampedSubject {
 				built = &stampedSubject{}
 				return built
 			},
-			conform.With(StampedCheck{
+			conform.With(families.StampedCheck{
 				ID:        "Stamped/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *StampedHandle) {
+				Apply: func(h *families.StampedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Stamped(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Stamped(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*StampedHandle) Stamped { return &stampedSubject{} },
+				Defect: func(*families.StampedHandle) families.Stamped { return &stampedSubject{} },
 			}),
 			conform.Excuse(
-				StampedChecks.Store.Smoke(),
+				families.StampedChecks.Store.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Store.Cancel(),
+				families.StampedChecks.Store.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Store.ZeroOnError(),
+				families.StampedChecks.Store.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.Smoke(),
+				families.StampedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.Cancel(),
+				families.StampedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.ZeroOnError(),
+				families.StampedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.ReadAfterWrite(),
+				families.StampedChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.WritesFollowReads(),
+				families.StampedChecks.Get.WritesFollowReads(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -1660,51 +1691,57 @@ func TestStampedSuite(t *testing.T) {
 	t.Run("RunStampedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *stampedSubject
-		RunStampedSuiteFromHandle(
+		families.RunStampedSuiteFromHandle(
 			t,
-			func(*StampedHandle) *stampedSubject {
+			func(*families.StampedHandle) *stampedSubject {
 				built = &stampedSubject{}
 				return built
 			},
-			conform.With(StampedCheck{
+			conform.With(families.StampedCheck{
 				ID:        "Stamped/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *StampedHandle) {
+				Apply: func(h *families.StampedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Stamped(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Stamped(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*StampedHandle) Stamped { return &stampedSubject{} },
+				Defect: func(*families.StampedHandle) families.Stamped { return &stampedSubject{} },
 			}),
 			conform.Excuse(
-				StampedChecks.Store.Smoke(),
+				families.StampedChecks.Store.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Store.Cancel(),
+				families.StampedChecks.Store.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Store.ZeroOnError(),
+				families.StampedChecks.Store.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.Smoke(),
+				families.StampedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.Cancel(),
+				families.StampedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.ZeroOnError(),
+				families.StampedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.ReadAfterWrite(),
+				families.StampedChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StampedChecks.Get.WritesFollowReads(),
+				families.StampedChecks.Get.WritesFollowReads(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -1713,8 +1750,8 @@ func TestStampedSuite(t *testing.T) {
 
 // stampedIdle returns the planted defect of a ceiling of Stamped with a
 // spend of nothing, a subject that answers each call at once.
-func stampedIdle(h *StampedHandle) Stamped {
-	return StampedSuite().Calls[0].Over(h, func() {})
+func stampedIdle(h *families.StampedHandle) families.Stamped {
+	return families.StampedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestStampedSuiteBudgets applies the allocation ceilings of the suite of
@@ -1722,41 +1759,47 @@ func stampedIdle(h *StampedHandle) Stamped {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestStampedSuiteBudgets(t *testing.T) {
-	RunStampedBudgets(
+	families.RunStampedBudgets(
 		t,
 		stampedIdle,
-		conform.Ceilings(StampedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StampedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.StampedChecks.Store.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.StampedChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			StampedChecks.Store.Smoke(),
+			families.StampedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Store.Cancel(),
+			families.StampedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Store.ZeroOnError(),
+			families.StampedChecks.Store.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.Smoke(),
+			families.StampedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.Cancel(),
+			families.StampedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.ZeroOnError(),
+			families.StampedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.ReadAfterWrite(),
+			families.StampedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.WritesFollowReads(),
+			families.StampedChecks.Get.WritesFollowReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1765,40 +1808,40 @@ func TestStampedSuiteBudgets(t *testing.T) {
 // FuzzStampedSuiteStore registers the fuzz target of Stamped.Store on
 // stampedIdle, with every check of the suite excused.
 func FuzzStampedSuiteStore(f *testing.F) {
-	FuzzStampedSuite(
+	families.FuzzStampedSuite(
 		f,
-		StampedChecks.Store.Callable,
+		families.StampedChecks.Store.Callable,
 		stampedIdle,
 		conform.Excuse(
-			StampedChecks.Store.Smoke(),
+			families.StampedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Store.Cancel(),
+			families.StampedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Store.ZeroOnError(),
+			families.StampedChecks.Store.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.Smoke(),
+			families.StampedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.Cancel(),
+			families.StampedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.ZeroOnError(),
+			families.StampedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.ReadAfterWrite(),
+			families.StampedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.WritesFollowReads(),
+			families.StampedChecks.Get.WritesFollowReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1807,40 +1850,40 @@ func FuzzStampedSuiteStore(f *testing.F) {
 // FuzzStampedSuiteGet registers the fuzz target of Stamped.Get on
 // stampedIdle, with every check of the suite excused.
 func FuzzStampedSuiteGet(f *testing.F) {
-	FuzzStampedSuite(
+	families.FuzzStampedSuite(
 		f,
-		StampedChecks.Get.Callable,
+		families.StampedChecks.Get.Callable,
 		stampedIdle,
 		conform.Excuse(
-			StampedChecks.Store.Smoke(),
+			families.StampedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Store.Cancel(),
+			families.StampedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Store.ZeroOnError(),
+			families.StampedChecks.Store.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.Smoke(),
+			families.StampedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.Cancel(),
+			families.StampedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.ZeroOnError(),
+			families.StampedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.ReadAfterWrite(),
+			families.StampedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StampedChecks.Get.WritesFollowReads(),
+			families.StampedChecks.Get.WritesFollowReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1850,16 +1893,16 @@ func FuzzStampedSuiteGet(f *testing.F) {
 // stampedIdle.
 func BenchmarkStampedSuite(b *testing.B) {
 	b.Run("Store", func(b *testing.B) {
-		BenchStampedSuite(b, StampedChecks.Store.Callable, stampedIdle)
+		families.BenchStampedSuite(b, families.StampedChecks.Store.Callable, stampedIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchStampedSuite(b, StampedChecks.Get.Callable, stampedIdle)
+		families.BenchStampedSuite(b, families.StampedChecks.Get.Callable, stampedIdle)
 	})
 }
 
-// decodedSubjectEmbedded is Decoded under the name of the field that
-// decodedSubject embeds.
-type decodedSubjectEmbedded = Decoded
+// decodedSubjectEmbedded is families.Decoded under the name of the field
+// that decodedSubject embeds.
+type decodedSubjectEmbedded = families.Decoded
 
 // decodedSubject is a value of Decoded that only TestDecodedSuite builds.
 type decodedSubject struct{ decodedSubjectEmbedded }
@@ -1871,45 +1914,51 @@ func TestDecodedSuite(t *testing.T) {
 
 	t.Run("DecodedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, DecodedSuite())
+		conform.Falsify(t, families.DecodedSuite())
 	})
 
 	t.Run("RunDecodedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *decodedSubject
-		RunDecodedSuite(
+		families.RunDecodedSuite(
 			t,
 			func() *decodedSubject {
 				built = &decodedSubject{}
 				return built
 			},
-			conform.With(DecodedCheck{
+			conform.With(families.DecodedCheck{
 				ID:        "Decoded/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *DecodedHandle) {
+				Apply: func(h *families.DecodedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Decoded(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Decoded(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*DecodedHandle) Decoded { return &decodedSubject{} },
+				Defect: func(*families.DecodedHandle) families.Decoded { return &decodedSubject{} },
 			}),
 			conform.Excuse(
-				DecodedChecks.Put.Smoke(),
+				families.DecodedChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				DecodedChecks.Put.Cancel(),
+				families.DecodedChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				DecodedChecks.Get.Smoke(),
+				families.DecodedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				DecodedChecks.Get.Cancel(),
+				families.DecodedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				DecodedChecks.Get.ReadAfterWrite(),
+				families.DecodedChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -1918,39 +1967,45 @@ func TestDecodedSuite(t *testing.T) {
 	t.Run("RunDecodedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *decodedSubject
-		RunDecodedSuiteFromHandle(
+		families.RunDecodedSuiteFromHandle(
 			t,
-			func(*DecodedHandle) *decodedSubject {
+			func(*families.DecodedHandle) *decodedSubject {
 				built = &decodedSubject{}
 				return built
 			},
-			conform.With(DecodedCheck{
+			conform.With(families.DecodedCheck{
 				ID:        "Decoded/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *DecodedHandle) {
+				Apply: func(h *families.DecodedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Decoded(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Decoded(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*DecodedHandle) Decoded { return &decodedSubject{} },
+				Defect: func(*families.DecodedHandle) families.Decoded { return &decodedSubject{} },
 			}),
 			conform.Excuse(
-				DecodedChecks.Put.Smoke(),
+				families.DecodedChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				DecodedChecks.Put.Cancel(),
+				families.DecodedChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				DecodedChecks.Get.Smoke(),
+				families.DecodedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				DecodedChecks.Get.Cancel(),
+				families.DecodedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				DecodedChecks.Get.ReadAfterWrite(),
+				families.DecodedChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -1959,8 +2014,8 @@ func TestDecodedSuite(t *testing.T) {
 
 // decodedIdle returns the planted defect of a ceiling of Decoded with a
 // spend of nothing, a subject that answers each call at once.
-func decodedIdle(h *DecodedHandle) Decoded {
-	return DecodedSuite().Calls[0].Over(h, func() {})
+func decodedIdle(h *families.DecodedHandle) families.Decoded {
+	return families.DecodedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestDecodedSuiteBudgets applies the allocation ceilings of the suite of
@@ -1968,29 +2023,35 @@ func decodedIdle(h *DecodedHandle) Decoded {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestDecodedSuiteBudgets(t *testing.T) {
-	RunDecodedBudgets(
+	families.RunDecodedBudgets(
 		t,
 		decodedIdle,
-		conform.Ceilings(DecodedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(DecodedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.DecodedChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.DecodedChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			DecodedChecks.Put.Smoke(),
+			families.DecodedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Put.Cancel(),
+			families.DecodedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.Smoke(),
+			families.DecodedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.Cancel(),
+			families.DecodedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.ReadAfterWrite(),
+			families.DecodedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1999,28 +2060,28 @@ func TestDecodedSuiteBudgets(t *testing.T) {
 // FuzzDecodedSuitePut registers the fuzz target of Decoded.Put on
 // decodedIdle, with every check of the suite excused.
 func FuzzDecodedSuitePut(f *testing.F) {
-	FuzzDecodedSuite(
+	families.FuzzDecodedSuite(
 		f,
-		DecodedChecks.Put.Callable,
+		families.DecodedChecks.Put.Callable,
 		decodedIdle,
 		conform.Excuse(
-			DecodedChecks.Put.Smoke(),
+			families.DecodedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Put.Cancel(),
+			families.DecodedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.Smoke(),
+			families.DecodedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.Cancel(),
+			families.DecodedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.ReadAfterWrite(),
+			families.DecodedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2029,28 +2090,28 @@ func FuzzDecodedSuitePut(f *testing.F) {
 // FuzzDecodedSuiteGet registers the fuzz target of Decoded.Get on
 // decodedIdle, with every check of the suite excused.
 func FuzzDecodedSuiteGet(f *testing.F) {
-	FuzzDecodedSuite(
+	families.FuzzDecodedSuite(
 		f,
-		DecodedChecks.Get.Callable,
+		families.DecodedChecks.Get.Callable,
 		decodedIdle,
 		conform.Excuse(
-			DecodedChecks.Put.Smoke(),
+			families.DecodedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Put.Cancel(),
+			families.DecodedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.Smoke(),
+			families.DecodedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.Cancel(),
+			families.DecodedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			DecodedChecks.Get.ReadAfterWrite(),
+			families.DecodedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2060,16 +2121,16 @@ func FuzzDecodedSuiteGet(f *testing.F) {
 // decodedIdle.
 func BenchmarkDecodedSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchDecodedSuite(b, DecodedChecks.Put.Callable, decodedIdle)
+		families.BenchDecodedSuite(b, families.DecodedChecks.Put.Callable, decodedIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchDecodedSuite(b, DecodedChecks.Get.Callable, decodedIdle)
+		families.BenchDecodedSuite(b, families.DecodedChecks.Get.Callable, decodedIdle)
 	})
 }
 
-// expiringSubjectEmbedded is Expiring under the name of the field that
-// expiringSubject embeds.
-type expiringSubjectEmbedded = Expiring
+// expiringSubjectEmbedded is families.Expiring under the name of the field
+// that expiringSubject embeds.
+type expiringSubjectEmbedded = families.Expiring
 
 // expiringSubject is a value of Expiring that only TestExpiringSuite
 // builds.
@@ -2082,49 +2143,55 @@ func TestExpiringSuite(t *testing.T) {
 
 	t.Run("ExpiringSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, ExpiringSuite())
+		conform.Falsify(t, families.ExpiringSuite())
 	})
 
 	t.Run("RunExpiringSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *expiringSubject
-		RunExpiringSuite(
+		families.RunExpiringSuite(
 			t,
 			func() *expiringSubject {
 				built = &expiringSubject{}
 				return built
 			},
-			conform.With(ExpiringCheck{
+			conform.With(families.ExpiringCheck{
 				ID:        "Expiring/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ExpiringHandle) {
+				Apply: func(h *families.ExpiringHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Expiring(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Expiring(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*ExpiringHandle) Expiring { return &expiringSubject{} },
+				Defect: func(*families.ExpiringHandle) families.Expiring { return &expiringSubject{} },
 			}),
 			conform.Excuse(
-				ExpiringChecks.Put.Smoke(),
+				families.ExpiringChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Put.Cancel(),
+				families.ExpiringChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Read.Smoke(),
+				families.ExpiringChecks.Read.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Read.Cancel(),
+				families.ExpiringChecks.Read.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Read.ZeroOnError(),
+				families.ExpiringChecks.Read.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Read.Expires(),
+				families.ExpiringChecks.Read.Expires(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2133,43 +2200,49 @@ func TestExpiringSuite(t *testing.T) {
 	t.Run("RunExpiringSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *expiringSubject
-		RunExpiringSuiteFromHandle(
+		families.RunExpiringSuiteFromHandle(
 			t,
-			func(*ExpiringHandle) *expiringSubject {
+			func(*families.ExpiringHandle) *expiringSubject {
 				built = &expiringSubject{}
 				return built
 			},
-			conform.With(ExpiringCheck{
+			conform.With(families.ExpiringCheck{
 				ID:        "Expiring/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ExpiringHandle) {
+				Apply: func(h *families.ExpiringHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Expiring(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Expiring(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*ExpiringHandle) Expiring { return &expiringSubject{} },
+				Defect: func(*families.ExpiringHandle) families.Expiring { return &expiringSubject{} },
 			}),
 			conform.Excuse(
-				ExpiringChecks.Put.Smoke(),
+				families.ExpiringChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Put.Cancel(),
+				families.ExpiringChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Read.Smoke(),
+				families.ExpiringChecks.Read.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Read.Cancel(),
+				families.ExpiringChecks.Read.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Read.ZeroOnError(),
+				families.ExpiringChecks.Read.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ExpiringChecks.Read.Expires(),
+				families.ExpiringChecks.Read.Expires(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2178,8 +2251,8 @@ func TestExpiringSuite(t *testing.T) {
 
 // expiringIdle returns the planted defect of a ceiling of Expiring with a
 // spend of nothing, a subject that answers each call at once.
-func expiringIdle(h *ExpiringHandle) Expiring {
-	return ExpiringSuite().Calls[0].Over(h, func() {})
+func expiringIdle(h *families.ExpiringHandle) families.Expiring {
+	return families.ExpiringSuite().Calls[0].Over(h, func() {})
 }
 
 // TestExpiringSuiteBudgets applies the allocation ceilings of the suite of
@@ -2187,33 +2260,39 @@ func expiringIdle(h *ExpiringHandle) Expiring {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestExpiringSuiteBudgets(t *testing.T) {
-	RunExpiringBudgets(
+	families.RunExpiringBudgets(
 		t,
 		expiringIdle,
-		conform.Ceilings(ExpiringChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ExpiringChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.ExpiringChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.ExpiringChecks.Read.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			ExpiringChecks.Put.Smoke(),
+			families.ExpiringChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Put.Cancel(),
+			families.ExpiringChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Smoke(),
+			families.ExpiringChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Cancel(),
+			families.ExpiringChecks.Read.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.ZeroOnError(),
+			families.ExpiringChecks.Read.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Expires(),
+			families.ExpiringChecks.Read.Expires(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2222,32 +2301,32 @@ func TestExpiringSuiteBudgets(t *testing.T) {
 // FuzzExpiringSuitePut registers the fuzz target of Expiring.Put on
 // expiringIdle, with every check of the suite excused.
 func FuzzExpiringSuitePut(f *testing.F) {
-	FuzzExpiringSuite(
+	families.FuzzExpiringSuite(
 		f,
-		ExpiringChecks.Put.Callable,
+		families.ExpiringChecks.Put.Callable,
 		expiringIdle,
 		conform.Excuse(
-			ExpiringChecks.Put.Smoke(),
+			families.ExpiringChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Put.Cancel(),
+			families.ExpiringChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Smoke(),
+			families.ExpiringChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Cancel(),
+			families.ExpiringChecks.Read.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.ZeroOnError(),
+			families.ExpiringChecks.Read.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Expires(),
+			families.ExpiringChecks.Read.Expires(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2256,32 +2335,32 @@ func FuzzExpiringSuitePut(f *testing.F) {
 // FuzzExpiringSuiteRead registers the fuzz target of Expiring.Read on
 // expiringIdle, with every check of the suite excused.
 func FuzzExpiringSuiteRead(f *testing.F) {
-	FuzzExpiringSuite(
+	families.FuzzExpiringSuite(
 		f,
-		ExpiringChecks.Read.Callable,
+		families.ExpiringChecks.Read.Callable,
 		expiringIdle,
 		conform.Excuse(
-			ExpiringChecks.Put.Smoke(),
+			families.ExpiringChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Put.Cancel(),
+			families.ExpiringChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Smoke(),
+			families.ExpiringChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Cancel(),
+			families.ExpiringChecks.Read.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.ZeroOnError(),
+			families.ExpiringChecks.Read.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ExpiringChecks.Read.Expires(),
+			families.ExpiringChecks.Read.Expires(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2291,16 +2370,16 @@ func FuzzExpiringSuiteRead(f *testing.F) {
 // on expiringIdle.
 func BenchmarkExpiringSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchExpiringSuite(b, ExpiringChecks.Put.Callable, expiringIdle)
+		families.BenchExpiringSuite(b, families.ExpiringChecks.Put.Callable, expiringIdle)
 	})
 	b.Run("Read", func(b *testing.B) {
-		BenchExpiringSuite(b, ExpiringChecks.Read.Callable, expiringIdle)
+		families.BenchExpiringSuite(b, families.ExpiringChecks.Read.Callable, expiringIdle)
 	})
 }
 
-// cachedSubjectEmbedded is Cached under the name of the field that
-// cachedSubject embeds.
-type cachedSubjectEmbedded = Cached
+// cachedSubjectEmbedded is families.Cached under the name of the field
+// that cachedSubject embeds.
+type cachedSubjectEmbedded = families.Cached
 
 // cachedSubject is a value of Cached that only TestCachedSuite builds.
 type cachedSubject struct{ cachedSubjectEmbedded }
@@ -2312,61 +2391,61 @@ func TestCachedSuite(t *testing.T) {
 
 	t.Run("CachedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, CachedSuite())
+		conform.Falsify(t, families.CachedSuite())
 	})
 
 	t.Run("RunCachedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *cachedSubject
-		RunCachedSuite(
+		families.RunCachedSuite(
 			t,
 			func() *cachedSubject {
 				built = &cachedSubject{}
 				return built
 			},
-			conform.With(CachedCheck{
+			conform.With(families.CachedCheck{
 				ID:        "Cached/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *CachedHandle) {
+				Apply: func(h *families.CachedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Cached(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Cached(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*CachedHandle) Cached { return &cachedSubject{} },
+				Defect: func(*families.CachedHandle) families.Cached { return &cachedSubject{} },
 			}),
 			conform.Excuse(
-				CachedChecks.Get.Smoke(),
+				families.CachedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Get.Cancel(),
+				families.CachedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Get.ZeroOnError(),
+				families.CachedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Get.Cache(),
+				families.CachedChecks.Get.Cache(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Fetch.Smoke(),
+				families.CachedChecks.Fetch.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Fetch.Cancel(),
+				families.CachedChecks.Fetch.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Fetch.ZeroOnError(),
+				families.CachedChecks.Fetch.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Store.Smoke(),
+				families.CachedChecks.Store.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Store.Cancel(),
+				families.CachedChecks.Store.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2375,55 +2454,55 @@ func TestCachedSuite(t *testing.T) {
 	t.Run("RunCachedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *cachedSubject
-		RunCachedSuiteFromHandle(
+		families.RunCachedSuiteFromHandle(
 			t,
-			func(*CachedHandle) *cachedSubject {
+			func(*families.CachedHandle) *cachedSubject {
 				built = &cachedSubject{}
 				return built
 			},
-			conform.With(CachedCheck{
+			conform.With(families.CachedCheck{
 				ID:        "Cached/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *CachedHandle) {
+				Apply: func(h *families.CachedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Cached(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Cached(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*CachedHandle) Cached { return &cachedSubject{} },
+				Defect: func(*families.CachedHandle) families.Cached { return &cachedSubject{} },
 			}),
 			conform.Excuse(
-				CachedChecks.Get.Smoke(),
+				families.CachedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Get.Cancel(),
+				families.CachedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Get.ZeroOnError(),
+				families.CachedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Get.Cache(),
+				families.CachedChecks.Get.Cache(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Fetch.Smoke(),
+				families.CachedChecks.Fetch.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Fetch.Cancel(),
+				families.CachedChecks.Fetch.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Fetch.ZeroOnError(),
+				families.CachedChecks.Fetch.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Store.Smoke(),
+				families.CachedChecks.Store.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CachedChecks.Store.Cancel(),
+				families.CachedChecks.Store.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2432,8 +2511,8 @@ func TestCachedSuite(t *testing.T) {
 
 // cachedIdle returns the planted defect of a ceiling of Cached with a
 // spend of nothing, a subject that answers each call at once.
-func cachedIdle(h *CachedHandle) Cached {
-	return CachedSuite().Calls[0].Over(h, func() {})
+func cachedIdle(h *families.CachedHandle) families.Cached {
+	return families.CachedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestCachedSuiteBudgets applies the allocation ceilings of the suite of
@@ -2441,46 +2520,55 @@ func cachedIdle(h *CachedHandle) Cached {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestCachedSuiteBudgets(t *testing.T) {
-	RunCachedBudgets(
+	families.RunCachedBudgets(
 		t,
 		cachedIdle,
-		conform.Ceilings(CachedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(CachedChecks.Fetch.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(CachedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.CachedChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.CachedChecks.Fetch.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.CachedChecks.Store.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			CachedChecks.Get.Smoke(),
+			families.CachedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.Cancel(),
+			families.CachedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.ZeroOnError(),
+			families.CachedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.Cache(),
+			families.CachedChecks.Get.Cache(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.Smoke(),
+			families.CachedChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.Cancel(),
+			families.CachedChecks.Fetch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.ZeroOnError(),
+			families.CachedChecks.Fetch.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Store.Smoke(),
+			families.CachedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Store.Cancel(),
+			families.CachedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2489,44 +2577,44 @@ func TestCachedSuiteBudgets(t *testing.T) {
 // FuzzCachedSuiteGet registers the fuzz target of Cached.Get on
 // cachedIdle, with every check of the suite excused.
 func FuzzCachedSuiteGet(f *testing.F) {
-	FuzzCachedSuite(
+	families.FuzzCachedSuite(
 		f,
-		CachedChecks.Get.Callable,
+		families.CachedChecks.Get.Callable,
 		cachedIdle,
 		conform.Excuse(
-			CachedChecks.Get.Smoke(),
+			families.CachedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.Cancel(),
+			families.CachedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.ZeroOnError(),
+			families.CachedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.Cache(),
+			families.CachedChecks.Get.Cache(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.Smoke(),
+			families.CachedChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.Cancel(),
+			families.CachedChecks.Fetch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.ZeroOnError(),
+			families.CachedChecks.Fetch.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Store.Smoke(),
+			families.CachedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Store.Cancel(),
+			families.CachedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2535,44 +2623,44 @@ func FuzzCachedSuiteGet(f *testing.F) {
 // FuzzCachedSuiteFetch registers the fuzz target of Cached.Fetch on
 // cachedIdle, with every check of the suite excused.
 func FuzzCachedSuiteFetch(f *testing.F) {
-	FuzzCachedSuite(
+	families.FuzzCachedSuite(
 		f,
-		CachedChecks.Fetch.Callable,
+		families.CachedChecks.Fetch.Callable,
 		cachedIdle,
 		conform.Excuse(
-			CachedChecks.Get.Smoke(),
+			families.CachedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.Cancel(),
+			families.CachedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.ZeroOnError(),
+			families.CachedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.Cache(),
+			families.CachedChecks.Get.Cache(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.Smoke(),
+			families.CachedChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.Cancel(),
+			families.CachedChecks.Fetch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.ZeroOnError(),
+			families.CachedChecks.Fetch.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Store.Smoke(),
+			families.CachedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Store.Cancel(),
+			families.CachedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2581,44 +2669,44 @@ func FuzzCachedSuiteFetch(f *testing.F) {
 // FuzzCachedSuiteStore registers the fuzz target of Cached.Store on
 // cachedIdle, with every check of the suite excused.
 func FuzzCachedSuiteStore(f *testing.F) {
-	FuzzCachedSuite(
+	families.FuzzCachedSuite(
 		f,
-		CachedChecks.Store.Callable,
+		families.CachedChecks.Store.Callable,
 		cachedIdle,
 		conform.Excuse(
-			CachedChecks.Get.Smoke(),
+			families.CachedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.Cancel(),
+			families.CachedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.ZeroOnError(),
+			families.CachedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Get.Cache(),
+			families.CachedChecks.Get.Cache(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.Smoke(),
+			families.CachedChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.Cancel(),
+			families.CachedChecks.Fetch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Fetch.ZeroOnError(),
+			families.CachedChecks.Fetch.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Store.Smoke(),
+			families.CachedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CachedChecks.Store.Cancel(),
+			families.CachedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2628,19 +2716,19 @@ func FuzzCachedSuiteStore(f *testing.F) {
 // cachedIdle.
 func BenchmarkCachedSuite(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
-		BenchCachedSuite(b, CachedChecks.Get.Callable, cachedIdle)
+		families.BenchCachedSuite(b, families.CachedChecks.Get.Callable, cachedIdle)
 	})
 	b.Run("Fetch", func(b *testing.B) {
-		BenchCachedSuite(b, CachedChecks.Fetch.Callable, cachedIdle)
+		families.BenchCachedSuite(b, families.CachedChecks.Fetch.Callable, cachedIdle)
 	})
 	b.Run("Store", func(b *testing.B) {
-		BenchCachedSuite(b, CachedChecks.Store.Callable, cachedIdle)
+		families.BenchCachedSuite(b, families.CachedChecks.Store.Callable, cachedIdle)
 	})
 }
 
-// taggedSubjectEmbedded is Tagged under the name of the field that
-// taggedSubject embeds.
-type taggedSubjectEmbedded = Tagged
+// taggedSubjectEmbedded is families.Tagged under the name of the field
+// that taggedSubject embeds.
+type taggedSubjectEmbedded = families.Tagged
 
 // taggedSubject is a value of Tagged that only TestTaggedSuite builds.
 type taggedSubject struct{ taggedSubjectEmbedded }
@@ -2652,49 +2740,49 @@ func TestTaggedSuite(t *testing.T) {
 
 	t.Run("TaggedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, TaggedSuite())
+		conform.Falsify(t, families.TaggedSuite())
 	})
 
 	t.Run("RunTaggedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *taggedSubject
-		RunTaggedSuite(
+		families.RunTaggedSuite(
 			t,
 			func() *taggedSubject {
 				built = &taggedSubject{}
 				return built
 			},
-			conform.With(TaggedCheck{
+			conform.With(families.TaggedCheck{
 				ID:        "Tagged/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *TaggedHandle) {
+				Apply: func(h *families.TaggedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Tagged(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Tagged(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*TaggedHandle) Tagged { return &taggedSubject{} },
+				Defect: func(*families.TaggedHandle) families.Tagged { return &taggedSubject{} },
 			}),
 			conform.Excuse(
-				TaggedChecks.Put.Smoke(),
+				families.TaggedChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Put.Cancel(),
+				families.TaggedChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Get.Smoke(),
+				families.TaggedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Get.Cancel(),
+				families.TaggedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Get.ZeroOnError(),
+				families.TaggedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Get.ReadAfterWrite(),
+				families.TaggedChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2703,43 +2791,43 @@ func TestTaggedSuite(t *testing.T) {
 	t.Run("RunTaggedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *taggedSubject
-		RunTaggedSuiteFromHandle(
+		families.RunTaggedSuiteFromHandle(
 			t,
-			func(*TaggedHandle) *taggedSubject {
+			func(*families.TaggedHandle) *taggedSubject {
 				built = &taggedSubject{}
 				return built
 			},
-			conform.With(TaggedCheck{
+			conform.With(families.TaggedCheck{
 				ID:        "Tagged/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *TaggedHandle) {
+				Apply: func(h *families.TaggedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Tagged(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Tagged(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*TaggedHandle) Tagged { return &taggedSubject{} },
+				Defect: func(*families.TaggedHandle) families.Tagged { return &taggedSubject{} },
 			}),
 			conform.Excuse(
-				TaggedChecks.Put.Smoke(),
+				families.TaggedChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Put.Cancel(),
+				families.TaggedChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Get.Smoke(),
+				families.TaggedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Get.Cancel(),
+				families.TaggedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Get.ZeroOnError(),
+				families.TaggedChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TaggedChecks.Get.ReadAfterWrite(),
+				families.TaggedChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2748,8 +2836,8 @@ func TestTaggedSuite(t *testing.T) {
 
 // taggedIdle returns the planted defect of a ceiling of Tagged with a
 // spend of nothing, a subject that answers each call at once.
-func taggedIdle(h *TaggedHandle) Tagged {
-	return TaggedSuite().Calls[0].Over(h, func() {})
+func taggedIdle(h *families.TaggedHandle) families.Tagged {
+	return families.TaggedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestTaggedSuiteBudgets applies the allocation ceilings of the suite of
@@ -2757,33 +2845,39 @@ func taggedIdle(h *TaggedHandle) Tagged {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestTaggedSuiteBudgets(t *testing.T) {
-	RunTaggedBudgets(
+	families.RunTaggedBudgets(
 		t,
 		taggedIdle,
-		conform.Ceilings(TaggedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(TaggedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.TaggedChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.TaggedChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			TaggedChecks.Put.Smoke(),
+			families.TaggedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Put.Cancel(),
+			families.TaggedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.Smoke(),
+			families.TaggedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.Cancel(),
+			families.TaggedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.ZeroOnError(),
+			families.TaggedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.ReadAfterWrite(),
+			families.TaggedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2792,32 +2886,32 @@ func TestTaggedSuiteBudgets(t *testing.T) {
 // FuzzTaggedSuitePut registers the fuzz target of Tagged.Put on
 // taggedIdle, with every check of the suite excused.
 func FuzzTaggedSuitePut(f *testing.F) {
-	FuzzTaggedSuite(
+	families.FuzzTaggedSuite(
 		f,
-		TaggedChecks.Put.Callable,
+		families.TaggedChecks.Put.Callable,
 		taggedIdle,
 		conform.Excuse(
-			TaggedChecks.Put.Smoke(),
+			families.TaggedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Put.Cancel(),
+			families.TaggedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.Smoke(),
+			families.TaggedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.Cancel(),
+			families.TaggedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.ZeroOnError(),
+			families.TaggedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.ReadAfterWrite(),
+			families.TaggedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2826,32 +2920,32 @@ func FuzzTaggedSuitePut(f *testing.F) {
 // FuzzTaggedSuiteGet registers the fuzz target of Tagged.Get on
 // taggedIdle, with every check of the suite excused.
 func FuzzTaggedSuiteGet(f *testing.F) {
-	FuzzTaggedSuite(
+	families.FuzzTaggedSuite(
 		f,
-		TaggedChecks.Get.Callable,
+		families.TaggedChecks.Get.Callable,
 		taggedIdle,
 		conform.Excuse(
-			TaggedChecks.Put.Smoke(),
+			families.TaggedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Put.Cancel(),
+			families.TaggedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.Smoke(),
+			families.TaggedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.Cancel(),
+			families.TaggedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.ZeroOnError(),
+			families.TaggedChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TaggedChecks.Get.ReadAfterWrite(),
+			families.TaggedChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -2861,16 +2955,16 @@ func FuzzTaggedSuiteGet(f *testing.F) {
 // taggedIdle.
 func BenchmarkTaggedSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchTaggedSuite(b, TaggedChecks.Put.Callable, taggedIdle)
+		families.BenchTaggedSuite(b, families.TaggedChecks.Put.Callable, taggedIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchTaggedSuite(b, TaggedChecks.Get.Callable, taggedIdle)
+		families.BenchTaggedSuite(b, families.TaggedChecks.Get.Callable, taggedIdle)
 	})
 }
 
-// snapshotsSubjectEmbedded is Snapshots under the name of the field that
-// snapshotsSubject embeds.
-type snapshotsSubjectEmbedded = Snapshots
+// snapshotsSubjectEmbedded is families.Snapshots under the name of the
+// field that snapshotsSubject embeds.
+type snapshotsSubjectEmbedded = families.Snapshots
 
 // snapshotsSubject is a value of Snapshots that only TestSnapshotsSuite
 // builds.
@@ -2883,49 +2977,55 @@ func TestSnapshotsSuite(t *testing.T) {
 
 	t.Run("SnapshotsSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, SnapshotsSuite())
+		conform.Falsify(t, families.SnapshotsSuite())
 	})
 
 	t.Run("RunSnapshotsSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *snapshotsSubject
-		RunSnapshotsSuite(
+		families.RunSnapshotsSuite(
 			t,
 			func() *snapshotsSubject {
 				built = &snapshotsSubject{}
 				return built
 			},
-			conform.With(SnapshotsCheck{
+			conform.With(families.SnapshotsCheck{
 				ID:        "Snapshots/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *SnapshotsHandle) {
+				Apply: func(h *families.SnapshotsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Snapshots(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Snapshots(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*SnapshotsHandle) Snapshots { return &snapshotsSubject{} },
+				Defect: func(*families.SnapshotsHandle) families.Snapshots { return &snapshotsSubject{} },
 			}),
 			conform.Excuse(
-				SnapshotsChecks.Store.Smoke(),
+				families.SnapshotsChecks.Store.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Store.Cancel(),
+				families.SnapshotsChecks.Store.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Get.Smoke(),
+				families.SnapshotsChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Get.Cancel(),
+				families.SnapshotsChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Get.ZeroOnError(),
+				families.SnapshotsChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Get.PointInTime(),
+				families.SnapshotsChecks.Get.PointInTime(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2934,43 +3034,49 @@ func TestSnapshotsSuite(t *testing.T) {
 	t.Run("RunSnapshotsSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *snapshotsSubject
-		RunSnapshotsSuiteFromHandle(
+		families.RunSnapshotsSuiteFromHandle(
 			t,
-			func(*SnapshotsHandle) *snapshotsSubject {
+			func(*families.SnapshotsHandle) *snapshotsSubject {
 				built = &snapshotsSubject{}
 				return built
 			},
-			conform.With(SnapshotsCheck{
+			conform.With(families.SnapshotsCheck{
 				ID:        "Snapshots/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *SnapshotsHandle) {
+				Apply: func(h *families.SnapshotsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Snapshots(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Snapshots(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*SnapshotsHandle) Snapshots { return &snapshotsSubject{} },
+				Defect: func(*families.SnapshotsHandle) families.Snapshots { return &snapshotsSubject{} },
 			}),
 			conform.Excuse(
-				SnapshotsChecks.Store.Smoke(),
+				families.SnapshotsChecks.Store.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Store.Cancel(),
+				families.SnapshotsChecks.Store.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Get.Smoke(),
+				families.SnapshotsChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Get.Cancel(),
+				families.SnapshotsChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Get.ZeroOnError(),
+				families.SnapshotsChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SnapshotsChecks.Get.PointInTime(),
+				families.SnapshotsChecks.Get.PointInTime(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2979,8 +3085,8 @@ func TestSnapshotsSuite(t *testing.T) {
 
 // snapshotsIdle returns the planted defect of a ceiling of Snapshots with
 // a spend of nothing, a subject that answers each call at once.
-func snapshotsIdle(h *SnapshotsHandle) Snapshots {
-	return SnapshotsSuite().Calls[0].Over(h, func() {})
+func snapshotsIdle(h *families.SnapshotsHandle) families.Snapshots {
+	return families.SnapshotsSuite().Calls[0].Over(h, func() {})
 }
 
 // TestSnapshotsSuiteBudgets applies the allocation ceilings of the suite
@@ -2988,33 +3094,39 @@ func snapshotsIdle(h *SnapshotsHandle) Snapshots {
 // a ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestSnapshotsSuiteBudgets(t *testing.T) {
-	RunSnapshotsBudgets(
+	families.RunSnapshotsBudgets(
 		t,
 		snapshotsIdle,
-		conform.Ceilings(SnapshotsChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(SnapshotsChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.SnapshotsChecks.Store.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.SnapshotsChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			SnapshotsChecks.Store.Smoke(),
+			families.SnapshotsChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Store.Cancel(),
+			families.SnapshotsChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.Smoke(),
+			families.SnapshotsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.Cancel(),
+			families.SnapshotsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.ZeroOnError(),
+			families.SnapshotsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.PointInTime(),
+			families.SnapshotsChecks.Get.PointInTime(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3023,32 +3135,32 @@ func TestSnapshotsSuiteBudgets(t *testing.T) {
 // FuzzSnapshotsSuiteStore registers the fuzz target of Snapshots.Store on
 // snapshotsIdle, with every check of the suite excused.
 func FuzzSnapshotsSuiteStore(f *testing.F) {
-	FuzzSnapshotsSuite(
+	families.FuzzSnapshotsSuite(
 		f,
-		SnapshotsChecks.Store.Callable,
+		families.SnapshotsChecks.Store.Callable,
 		snapshotsIdle,
 		conform.Excuse(
-			SnapshotsChecks.Store.Smoke(),
+			families.SnapshotsChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Store.Cancel(),
+			families.SnapshotsChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.Smoke(),
+			families.SnapshotsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.Cancel(),
+			families.SnapshotsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.ZeroOnError(),
+			families.SnapshotsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.PointInTime(),
+			families.SnapshotsChecks.Get.PointInTime(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3057,32 +3169,32 @@ func FuzzSnapshotsSuiteStore(f *testing.F) {
 // FuzzSnapshotsSuiteGet registers the fuzz target of Snapshots.Get on
 // snapshotsIdle, with every check of the suite excused.
 func FuzzSnapshotsSuiteGet(f *testing.F) {
-	FuzzSnapshotsSuite(
+	families.FuzzSnapshotsSuite(
 		f,
-		SnapshotsChecks.Get.Callable,
+		families.SnapshotsChecks.Get.Callable,
 		snapshotsIdle,
 		conform.Excuse(
-			SnapshotsChecks.Store.Smoke(),
+			families.SnapshotsChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Store.Cancel(),
+			families.SnapshotsChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.Smoke(),
+			families.SnapshotsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.Cancel(),
+			families.SnapshotsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.ZeroOnError(),
+			families.SnapshotsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SnapshotsChecks.Get.PointInTime(),
+			families.SnapshotsChecks.Get.PointInTime(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3092,16 +3204,16 @@ func FuzzSnapshotsSuiteGet(f *testing.F) {
 // on snapshotsIdle.
 func BenchmarkSnapshotsSuite(b *testing.B) {
 	b.Run("Store", func(b *testing.B) {
-		BenchSnapshotsSuite(b, SnapshotsChecks.Store.Callable, snapshotsIdle)
+		families.BenchSnapshotsSuite(b, families.SnapshotsChecks.Store.Callable, snapshotsIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchSnapshotsSuite(b, SnapshotsChecks.Get.Callable, snapshotsIdle)
+		families.BenchSnapshotsSuite(b, families.SnapshotsChecks.Get.Callable, snapshotsIdle)
 	})
 }
 
-// bagSubjectEmbedded is Bag under the name of the field that bagSubject
-// embeds.
-type bagSubjectEmbedded = Bag
+// bagSubjectEmbedded is families.Bag under the name of the field that
+// bagSubject embeds.
+type bagSubjectEmbedded = families.Bag
 
 // bagSubject is a value of Bag that only TestBagSuite builds.
 type bagSubject struct{ bagSubjectEmbedded }
@@ -3113,53 +3225,53 @@ func TestBagSuite(t *testing.T) {
 
 	t.Run("BagSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, BagSuite())
+		conform.Falsify(t, families.BagSuite())
 	})
 
 	t.Run("RunBagSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *bagSubject
-		RunBagSuite(
+		families.RunBagSuite(
 			t,
 			func() *bagSubject {
 				built = &bagSubject{}
 				return built
 			},
-			conform.With(BagCheck{
+			conform.With(families.BagCheck{
 				ID:        "Bag/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *BagHandle) {
+				Apply: func(h *families.BagHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Bag(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Bag(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*BagHandle) Bag { return &bagSubject{} },
+				Defect: func(*families.BagHandle) families.Bag { return &bagSubject{} },
 			}),
 			conform.Excuse(
-				BagChecks.Add.Smoke(),
+				families.BagChecks.Add.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Add.Cancel(),
+				families.BagChecks.Add.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.Smoke(),
+				families.BagChecks.Items.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.Cancel(),
+				families.BagChecks.Items.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.ZeroOnError(),
+				families.BagChecks.Items.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.NoDuplicates(),
+				families.BagChecks.Items.NoDuplicates(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.StableOrder(),
+				families.BagChecks.Items.StableOrder(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3168,47 +3280,47 @@ func TestBagSuite(t *testing.T) {
 	t.Run("RunBagSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *bagSubject
-		RunBagSuiteFromHandle(
+		families.RunBagSuiteFromHandle(
 			t,
-			func(*BagHandle) *bagSubject {
+			func(*families.BagHandle) *bagSubject {
 				built = &bagSubject{}
 				return built
 			},
-			conform.With(BagCheck{
+			conform.With(families.BagCheck{
 				ID:        "Bag/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *BagHandle) {
+				Apply: func(h *families.BagHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Bag(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Bag(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*BagHandle) Bag { return &bagSubject{} },
+				Defect: func(*families.BagHandle) families.Bag { return &bagSubject{} },
 			}),
 			conform.Excuse(
-				BagChecks.Add.Smoke(),
+				families.BagChecks.Add.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Add.Cancel(),
+				families.BagChecks.Add.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.Smoke(),
+				families.BagChecks.Items.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.Cancel(),
+				families.BagChecks.Items.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.ZeroOnError(),
+				families.BagChecks.Items.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.NoDuplicates(),
+				families.BagChecks.Items.NoDuplicates(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BagChecks.Items.StableOrder(),
+				families.BagChecks.Items.StableOrder(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3217,45 +3329,45 @@ func TestBagSuite(t *testing.T) {
 
 // bagIdle returns the planted defect of a ceiling of Bag with a spend of
 // nothing, a subject that answers each call at once.
-func bagIdle(h *BagHandle) Bag {
-	return BagSuite().Calls[0].Over(h, func() {})
+func bagIdle(h *families.BagHandle) families.Bag {
+	return families.BagSuite().Calls[0].Over(h, func() {})
 }
 
 // TestBagSuiteBudgets applies the allocation ceilings of the suite of Bag
 // to bagIdle with every check of the suite excused, and a ceiling of 0 to
 // each callable without a budget whose calls build no input of their own.
 func TestBagSuiteBudgets(t *testing.T) {
-	RunBagBudgets(
+	families.RunBagBudgets(
 		t,
 		bagIdle,
-		conform.Ceilings(BagChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(BagChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.BagChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.BagChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			BagChecks.Add.Smoke(),
+			families.BagChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Add.Cancel(),
+			families.BagChecks.Add.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.Smoke(),
+			families.BagChecks.Items.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.Cancel(),
+			families.BagChecks.Items.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.ZeroOnError(),
+			families.BagChecks.Items.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.NoDuplicates(),
+			families.BagChecks.Items.NoDuplicates(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.StableOrder(),
+			families.BagChecks.Items.StableOrder(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3264,36 +3376,36 @@ func TestBagSuiteBudgets(t *testing.T) {
 // FuzzBagSuiteAdd registers the fuzz target of Bag.Add on bagIdle, with
 // every check of the suite excused.
 func FuzzBagSuiteAdd(f *testing.F) {
-	FuzzBagSuite(
+	families.FuzzBagSuite(
 		f,
-		BagChecks.Add.Callable,
+		families.BagChecks.Add.Callable,
 		bagIdle,
 		conform.Excuse(
-			BagChecks.Add.Smoke(),
+			families.BagChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Add.Cancel(),
+			families.BagChecks.Add.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.Smoke(),
+			families.BagChecks.Items.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.Cancel(),
+			families.BagChecks.Items.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.ZeroOnError(),
+			families.BagChecks.Items.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.NoDuplicates(),
+			families.BagChecks.Items.NoDuplicates(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.StableOrder(),
+			families.BagChecks.Items.StableOrder(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3302,36 +3414,36 @@ func FuzzBagSuiteAdd(f *testing.F) {
 // FuzzBagSuiteItems registers the fuzz target of Bag.Items on bagIdle,
 // with every check of the suite excused.
 func FuzzBagSuiteItems(f *testing.F) {
-	FuzzBagSuite(
+	families.FuzzBagSuite(
 		f,
-		BagChecks.Items.Callable,
+		families.BagChecks.Items.Callable,
 		bagIdle,
 		conform.Excuse(
-			BagChecks.Add.Smoke(),
+			families.BagChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Add.Cancel(),
+			families.BagChecks.Add.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.Smoke(),
+			families.BagChecks.Items.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.Cancel(),
+			families.BagChecks.Items.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.ZeroOnError(),
+			families.BagChecks.Items.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.NoDuplicates(),
+			families.BagChecks.Items.NoDuplicates(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BagChecks.Items.StableOrder(),
+			families.BagChecks.Items.StableOrder(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3340,16 +3452,16 @@ func FuzzBagSuiteItems(f *testing.F) {
 // BenchmarkBagSuite measures each callable of the suite of Bag on bagIdle.
 func BenchmarkBagSuite(b *testing.B) {
 	b.Run("Add", func(b *testing.B) {
-		BenchBagSuite(b, BagChecks.Add.Callable, bagIdle)
+		families.BenchBagSuite(b, families.BagChecks.Add.Callable, bagIdle)
 	})
 	b.Run("Items", func(b *testing.B) {
-		BenchBagSuite(b, BagChecks.Items.Callable, bagIdle)
+		families.BenchBagSuite(b, families.BagChecks.Items.Callable, bagIdle)
 	})
 }
 
-// updaterSubjectEmbedded is Updater under the name of the field that
-// updaterSubject embeds.
-type updaterSubjectEmbedded = Updater
+// updaterSubjectEmbedded is families.Updater under the name of the field
+// that updaterSubject embeds.
+type updaterSubjectEmbedded = families.Updater
 
 // updaterSubject is a value of Updater that only TestUpdaterSuite builds.
 type updaterSubject struct{ updaterSubjectEmbedded }
@@ -3361,49 +3473,55 @@ func TestUpdaterSuite(t *testing.T) {
 
 	t.Run("UpdaterSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, UpdaterSuite())
+		conform.Falsify(t, families.UpdaterSuite())
 	})
 
 	t.Run("RunUpdaterSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *updaterSubject
-		RunUpdaterSuite(
+		families.RunUpdaterSuite(
 			t,
 			func() *updaterSubject {
 				built = &updaterSubject{}
 				return built
 			},
-			conform.With(UpdaterCheck{
+			conform.With(families.UpdaterCheck{
 				ID:        "Updater/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *UpdaterHandle) {
+				Apply: func(h *families.UpdaterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Updater(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Updater(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*UpdaterHandle) Updater { return &updaterSubject{} },
+				Defect: func(*families.UpdaterHandle) families.Updater { return &updaterSubject{} },
 			}),
 			conform.Excuse(
-				UpdaterChecks.Put.Smoke(),
+				families.UpdaterChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Put.Cancel(),
+				families.UpdaterChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Put.Updater(),
+				families.UpdaterChecks.Put.Updater(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Get.Smoke(),
+				families.UpdaterChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Get.Cancel(),
+				families.UpdaterChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Get.ZeroOnError(),
+				families.UpdaterChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3412,43 +3530,49 @@ func TestUpdaterSuite(t *testing.T) {
 	t.Run("RunUpdaterSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *updaterSubject
-		RunUpdaterSuiteFromHandle(
+		families.RunUpdaterSuiteFromHandle(
 			t,
-			func(*UpdaterHandle) *updaterSubject {
+			func(*families.UpdaterHandle) *updaterSubject {
 				built = &updaterSubject{}
 				return built
 			},
-			conform.With(UpdaterCheck{
+			conform.With(families.UpdaterCheck{
 				ID:        "Updater/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *UpdaterHandle) {
+				Apply: func(h *families.UpdaterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Updater(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Updater(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*UpdaterHandle) Updater { return &updaterSubject{} },
+				Defect: func(*families.UpdaterHandle) families.Updater { return &updaterSubject{} },
 			}),
 			conform.Excuse(
-				UpdaterChecks.Put.Smoke(),
+				families.UpdaterChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Put.Cancel(),
+				families.UpdaterChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Put.Updater(),
+				families.UpdaterChecks.Put.Updater(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Get.Smoke(),
+				families.UpdaterChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Get.Cancel(),
+				families.UpdaterChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				UpdaterChecks.Get.ZeroOnError(),
+				families.UpdaterChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3457,8 +3581,8 @@ func TestUpdaterSuite(t *testing.T) {
 
 // updaterIdle returns the planted defect of a ceiling of Updater with a
 // spend of nothing, a subject that answers each call at once.
-func updaterIdle(h *UpdaterHandle) Updater {
-	return UpdaterSuite().Calls[0].Over(h, func() {})
+func updaterIdle(h *families.UpdaterHandle) families.Updater {
+	return families.UpdaterSuite().Calls[0].Over(h, func() {})
 }
 
 // TestUpdaterSuiteBudgets applies the allocation ceilings of the suite of
@@ -3466,33 +3590,39 @@ func updaterIdle(h *UpdaterHandle) Updater {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestUpdaterSuiteBudgets(t *testing.T) {
-	RunUpdaterBudgets(
+	families.RunUpdaterBudgets(
 		t,
 		updaterIdle,
-		conform.Ceilings(UpdaterChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(UpdaterChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.UpdaterChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.UpdaterChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			UpdaterChecks.Put.Smoke(),
+			families.UpdaterChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Put.Cancel(),
+			families.UpdaterChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Put.Updater(),
+			families.UpdaterChecks.Put.Updater(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.Smoke(),
+			families.UpdaterChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.Cancel(),
+			families.UpdaterChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.ZeroOnError(),
+			families.UpdaterChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3501,32 +3631,32 @@ func TestUpdaterSuiteBudgets(t *testing.T) {
 // FuzzUpdaterSuitePut registers the fuzz target of Updater.Put on
 // updaterIdle, with every check of the suite excused.
 func FuzzUpdaterSuitePut(f *testing.F) {
-	FuzzUpdaterSuite(
+	families.FuzzUpdaterSuite(
 		f,
-		UpdaterChecks.Put.Callable,
+		families.UpdaterChecks.Put.Callable,
 		updaterIdle,
 		conform.Excuse(
-			UpdaterChecks.Put.Smoke(),
+			families.UpdaterChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Put.Cancel(),
+			families.UpdaterChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Put.Updater(),
+			families.UpdaterChecks.Put.Updater(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.Smoke(),
+			families.UpdaterChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.Cancel(),
+			families.UpdaterChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.ZeroOnError(),
+			families.UpdaterChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3535,32 +3665,32 @@ func FuzzUpdaterSuitePut(f *testing.F) {
 // FuzzUpdaterSuiteGet registers the fuzz target of Updater.Get on
 // updaterIdle, with every check of the suite excused.
 func FuzzUpdaterSuiteGet(f *testing.F) {
-	FuzzUpdaterSuite(
+	families.FuzzUpdaterSuite(
 		f,
-		UpdaterChecks.Get.Callable,
+		families.UpdaterChecks.Get.Callable,
 		updaterIdle,
 		conform.Excuse(
-			UpdaterChecks.Put.Smoke(),
+			families.UpdaterChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Put.Cancel(),
+			families.UpdaterChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Put.Updater(),
+			families.UpdaterChecks.Put.Updater(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.Smoke(),
+			families.UpdaterChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.Cancel(),
+			families.UpdaterChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			UpdaterChecks.Get.ZeroOnError(),
+			families.UpdaterChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3570,16 +3700,16 @@ func FuzzUpdaterSuiteGet(f *testing.F) {
 // updaterIdle.
 func BenchmarkUpdaterSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchUpdaterSuite(b, UpdaterChecks.Put.Callable, updaterIdle)
+		families.BenchUpdaterSuite(b, families.UpdaterChecks.Put.Callable, updaterIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchUpdaterSuite(b, UpdaterChecks.Get.Callable, updaterIdle)
+		families.BenchUpdaterSuite(b, families.UpdaterChecks.Get.Callable, updaterIdle)
 	})
 }
 
-// keyedUpdaterSubjectEmbedded is KeyedUpdater under the name of the field
-// that keyedUpdaterSubject embeds.
-type keyedUpdaterSubjectEmbedded = KeyedUpdater
+// keyedUpdaterSubjectEmbedded is families.KeyedUpdater under the name of
+// the field that keyedUpdaterSubject embeds.
+type keyedUpdaterSubjectEmbedded = families.KeyedUpdater
 
 // keyedUpdaterSubject is a value of KeyedUpdater that only
 // TestKeyedUpdaterSuite builds.
@@ -3592,49 +3722,55 @@ func TestKeyedUpdaterSuite(t *testing.T) {
 
 	t.Run("KeyedUpdaterSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, KeyedUpdaterSuite())
+		conform.Falsify(t, families.KeyedUpdaterSuite())
 	})
 
 	t.Run("RunKeyedUpdaterSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *keyedUpdaterSubject
-		RunKeyedUpdaterSuite(
+		families.RunKeyedUpdaterSuite(
 			t,
 			func() *keyedUpdaterSubject {
 				built = &keyedUpdaterSubject{}
 				return built
 			},
-			conform.With(KeyedUpdaterCheck{
+			conform.With(families.KeyedUpdaterCheck{
 				ID:        "KeyedUpdater/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *KeyedUpdaterHandle) {
+				Apply: func(h *families.KeyedUpdaterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, KeyedUpdater(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.KeyedUpdater(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*KeyedUpdaterHandle) KeyedUpdater { return &keyedUpdaterSubject{} },
+				Defect: func(*families.KeyedUpdaterHandle) families.KeyedUpdater { return &keyedUpdaterSubject{} },
 			}),
 			conform.Excuse(
-				KeyedUpdaterChecks.Put.Smoke(),
+				families.KeyedUpdaterChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Put.Cancel(),
+				families.KeyedUpdaterChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Put.Updater(),
+				families.KeyedUpdaterChecks.Put.Updater(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Get.Smoke(),
+				families.KeyedUpdaterChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Get.Cancel(),
+				families.KeyedUpdaterChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Get.ZeroOnError(),
+				families.KeyedUpdaterChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3643,43 +3779,49 @@ func TestKeyedUpdaterSuite(t *testing.T) {
 	t.Run("RunKeyedUpdaterSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *keyedUpdaterSubject
-		RunKeyedUpdaterSuiteFromHandle(
+		families.RunKeyedUpdaterSuiteFromHandle(
 			t,
-			func(*KeyedUpdaterHandle) *keyedUpdaterSubject {
+			func(*families.KeyedUpdaterHandle) *keyedUpdaterSubject {
 				built = &keyedUpdaterSubject{}
 				return built
 			},
-			conform.With(KeyedUpdaterCheck{
+			conform.With(families.KeyedUpdaterCheck{
 				ID:        "KeyedUpdater/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *KeyedUpdaterHandle) {
+				Apply: func(h *families.KeyedUpdaterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, KeyedUpdater(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.KeyedUpdater(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*KeyedUpdaterHandle) KeyedUpdater { return &keyedUpdaterSubject{} },
+				Defect: func(*families.KeyedUpdaterHandle) families.KeyedUpdater { return &keyedUpdaterSubject{} },
 			}),
 			conform.Excuse(
-				KeyedUpdaterChecks.Put.Smoke(),
+				families.KeyedUpdaterChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Put.Cancel(),
+				families.KeyedUpdaterChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Put.Updater(),
+				families.KeyedUpdaterChecks.Put.Updater(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Get.Smoke(),
+				families.KeyedUpdaterChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Get.Cancel(),
+				families.KeyedUpdaterChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				KeyedUpdaterChecks.Get.ZeroOnError(),
+				families.KeyedUpdaterChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3688,8 +3830,8 @@ func TestKeyedUpdaterSuite(t *testing.T) {
 
 // keyedUpdaterIdle returns the planted defect of a ceiling of KeyedUpdater
 // with a spend of nothing, a subject that answers each call at once.
-func keyedUpdaterIdle(h *KeyedUpdaterHandle) KeyedUpdater {
-	return KeyedUpdaterSuite().Calls[0].Over(h, func() {})
+func keyedUpdaterIdle(h *families.KeyedUpdaterHandle) families.KeyedUpdater {
+	return families.KeyedUpdaterSuite().Calls[0].Over(h, func() {})
 }
 
 // TestKeyedUpdaterSuiteBudgets applies the allocation ceilings of the
@@ -3697,33 +3839,39 @@ func keyedUpdaterIdle(h *KeyedUpdaterHandle) KeyedUpdater {
 // excused, and a ceiling of 0 to each callable without a budget whose
 // calls build no input of their own.
 func TestKeyedUpdaterSuiteBudgets(t *testing.T) {
-	RunKeyedUpdaterBudgets(
+	families.RunKeyedUpdaterBudgets(
 		t,
 		keyedUpdaterIdle,
-		conform.Ceilings(KeyedUpdaterChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(KeyedUpdaterChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.KeyedUpdaterChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.KeyedUpdaterChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Smoke(),
+			families.KeyedUpdaterChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Cancel(),
+			families.KeyedUpdaterChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Updater(),
+			families.KeyedUpdaterChecks.Put.Updater(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.Smoke(),
+			families.KeyedUpdaterChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.Cancel(),
+			families.KeyedUpdaterChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.ZeroOnError(),
+			families.KeyedUpdaterChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3732,32 +3880,32 @@ func TestKeyedUpdaterSuiteBudgets(t *testing.T) {
 // FuzzKeyedUpdaterSuitePut registers the fuzz target of KeyedUpdater.Put
 // on keyedUpdaterIdle, with every check of the suite excused.
 func FuzzKeyedUpdaterSuitePut(f *testing.F) {
-	FuzzKeyedUpdaterSuite(
+	families.FuzzKeyedUpdaterSuite(
 		f,
-		KeyedUpdaterChecks.Put.Callable,
+		families.KeyedUpdaterChecks.Put.Callable,
 		keyedUpdaterIdle,
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Smoke(),
+			families.KeyedUpdaterChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Cancel(),
+			families.KeyedUpdaterChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Updater(),
+			families.KeyedUpdaterChecks.Put.Updater(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.Smoke(),
+			families.KeyedUpdaterChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.Cancel(),
+			families.KeyedUpdaterChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.ZeroOnError(),
+			families.KeyedUpdaterChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3766,32 +3914,32 @@ func FuzzKeyedUpdaterSuitePut(f *testing.F) {
 // FuzzKeyedUpdaterSuiteGet registers the fuzz target of KeyedUpdater.Get
 // on keyedUpdaterIdle, with every check of the suite excused.
 func FuzzKeyedUpdaterSuiteGet(f *testing.F) {
-	FuzzKeyedUpdaterSuite(
+	families.FuzzKeyedUpdaterSuite(
 		f,
-		KeyedUpdaterChecks.Get.Callable,
+		families.KeyedUpdaterChecks.Get.Callable,
 		keyedUpdaterIdle,
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Smoke(),
+			families.KeyedUpdaterChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Cancel(),
+			families.KeyedUpdaterChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Put.Updater(),
+			families.KeyedUpdaterChecks.Put.Updater(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.Smoke(),
+			families.KeyedUpdaterChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.Cancel(),
+			families.KeyedUpdaterChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			KeyedUpdaterChecks.Get.ZeroOnError(),
+			families.KeyedUpdaterChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3801,16 +3949,24 @@ func FuzzKeyedUpdaterSuiteGet(f *testing.F) {
 // KeyedUpdater on keyedUpdaterIdle.
 func BenchmarkKeyedUpdaterSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchKeyedUpdaterSuite(b, KeyedUpdaterChecks.Put.Callable, keyedUpdaterIdle)
+		families.BenchKeyedUpdaterSuite(
+			b,
+			families.KeyedUpdaterChecks.Put.Callable,
+			keyedUpdaterIdle,
+		)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchKeyedUpdaterSuite(b, KeyedUpdaterChecks.Get.Callable, keyedUpdaterIdle)
+		families.BenchKeyedUpdaterSuite(
+			b,
+			families.KeyedUpdaterChecks.Get.Callable,
+			keyedUpdaterIdle,
+		)
 	})
 }
 
-// codecSubjectEmbedded is Codec under the name of the field that
+// codecSubjectEmbedded is families.Codec under the name of the field that
 // codecSubject embeds.
-type codecSubjectEmbedded = Codec
+type codecSubjectEmbedded = families.Codec
 
 // codecSubject is a value of Codec that only TestCodecSuite builds.
 type codecSubject struct{ codecSubjectEmbedded }
@@ -3822,53 +3978,53 @@ func TestCodecSuite(t *testing.T) {
 
 	t.Run("CodecSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, CodecSuite())
+		conform.Falsify(t, families.CodecSuite())
 	})
 
 	t.Run("RunCodecSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *codecSubject
-		RunCodecSuite(
+		families.RunCodecSuite(
 			t,
 			func() *codecSubject {
 				built = &codecSubject{}
 				return built
 			},
-			conform.With(CodecCheck{
+			conform.With(families.CodecCheck{
 				ID:        "Codec/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *CodecHandle) {
+				Apply: func(h *families.CodecHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Codec(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Codec(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*CodecHandle) Codec { return &codecSubject{} },
+				Defect: func(*families.CodecHandle) families.Codec { return &codecSubject{} },
 			}),
 			conform.Excuse(
-				CodecChecks.Encode.Smoke(),
+				families.CodecChecks.Encode.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Encode.Cancel(),
+				families.CodecChecks.Encode.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Encode.ZeroOnError(),
+				families.CodecChecks.Encode.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Encode.Codec(),
+				families.CodecChecks.Encode.Codec(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Decode.Smoke(),
+				families.CodecChecks.Decode.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Decode.Cancel(),
+				families.CodecChecks.Decode.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Decode.ZeroOnError(),
+				families.CodecChecks.Decode.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3877,47 +4033,47 @@ func TestCodecSuite(t *testing.T) {
 	t.Run("RunCodecSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *codecSubject
-		RunCodecSuiteFromHandle(
+		families.RunCodecSuiteFromHandle(
 			t,
-			func(*CodecHandle) *codecSubject {
+			func(*families.CodecHandle) *codecSubject {
 				built = &codecSubject{}
 				return built
 			},
-			conform.With(CodecCheck{
+			conform.With(families.CodecCheck{
 				ID:        "Codec/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *CodecHandle) {
+				Apply: func(h *families.CodecHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Codec(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Codec(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*CodecHandle) Codec { return &codecSubject{} },
+				Defect: func(*families.CodecHandle) families.Codec { return &codecSubject{} },
 			}),
 			conform.Excuse(
-				CodecChecks.Encode.Smoke(),
+				families.CodecChecks.Encode.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Encode.Cancel(),
+				families.CodecChecks.Encode.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Encode.ZeroOnError(),
+				families.CodecChecks.Encode.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Encode.Codec(),
+				families.CodecChecks.Encode.Codec(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Decode.Smoke(),
+				families.CodecChecks.Decode.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Decode.Cancel(),
+				families.CodecChecks.Decode.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				CodecChecks.Decode.ZeroOnError(),
+				families.CodecChecks.Decode.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3926,8 +4082,8 @@ func TestCodecSuite(t *testing.T) {
 
 // codecIdle returns the planted defect of a ceiling of Codec with a spend
 // of nothing, a subject that answers each call at once.
-func codecIdle(h *CodecHandle) Codec {
-	return CodecSuite().Calls[0].Over(h, func() {})
+func codecIdle(h *families.CodecHandle) families.Codec {
+	return families.CodecSuite().Calls[0].Over(h, func() {})
 }
 
 // TestCodecSuiteBudgets applies the allocation ceilings of the suite of
@@ -3935,37 +4091,43 @@ func codecIdle(h *CodecHandle) Codec {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestCodecSuiteBudgets(t *testing.T) {
-	RunCodecBudgets(
+	families.RunCodecBudgets(
 		t,
 		codecIdle,
-		conform.Ceilings(CodecChecks.Encode.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(CodecChecks.Decode.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.CodecChecks.Encode.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.CodecChecks.Decode.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			CodecChecks.Encode.Smoke(),
+			families.CodecChecks.Encode.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.Cancel(),
+			families.CodecChecks.Encode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.ZeroOnError(),
+			families.CodecChecks.Encode.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.Codec(),
+			families.CodecChecks.Encode.Codec(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.Smoke(),
+			families.CodecChecks.Decode.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.Cancel(),
+			families.CodecChecks.Decode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.ZeroOnError(),
+			families.CodecChecks.Decode.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3974,36 +4136,36 @@ func TestCodecSuiteBudgets(t *testing.T) {
 // FuzzCodecSuiteEncode registers the fuzz target of Codec.Encode on
 // codecIdle, with every check of the suite excused.
 func FuzzCodecSuiteEncode(f *testing.F) {
-	FuzzCodecSuite(
+	families.FuzzCodecSuite(
 		f,
-		CodecChecks.Encode.Callable,
+		families.CodecChecks.Encode.Callable,
 		codecIdle,
 		conform.Excuse(
-			CodecChecks.Encode.Smoke(),
+			families.CodecChecks.Encode.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.Cancel(),
+			families.CodecChecks.Encode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.ZeroOnError(),
+			families.CodecChecks.Encode.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.Codec(),
+			families.CodecChecks.Encode.Codec(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.Smoke(),
+			families.CodecChecks.Decode.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.Cancel(),
+			families.CodecChecks.Decode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.ZeroOnError(),
+			families.CodecChecks.Decode.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4012,36 +4174,36 @@ func FuzzCodecSuiteEncode(f *testing.F) {
 // FuzzCodecSuiteDecode registers the fuzz target of Codec.Decode on
 // codecIdle, with every check of the suite excused.
 func FuzzCodecSuiteDecode(f *testing.F) {
-	FuzzCodecSuite(
+	families.FuzzCodecSuite(
 		f,
-		CodecChecks.Decode.Callable,
+		families.CodecChecks.Decode.Callable,
 		codecIdle,
 		conform.Excuse(
-			CodecChecks.Encode.Smoke(),
+			families.CodecChecks.Encode.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.Cancel(),
+			families.CodecChecks.Encode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.ZeroOnError(),
+			families.CodecChecks.Encode.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Encode.Codec(),
+			families.CodecChecks.Encode.Codec(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.Smoke(),
+			families.CodecChecks.Decode.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.Cancel(),
+			families.CodecChecks.Decode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			CodecChecks.Decode.ZeroOnError(),
+			families.CodecChecks.Decode.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4051,16 +4213,16 @@ func FuzzCodecSuiteDecode(f *testing.F) {
 // codecIdle.
 func BenchmarkCodecSuite(b *testing.B) {
 	b.Run("Encode", func(b *testing.B) {
-		BenchCodecSuite(b, CodecChecks.Encode.Callable, codecIdle)
+		families.BenchCodecSuite(b, families.CodecChecks.Encode.Callable, codecIdle)
 	})
 	b.Run("Decode", func(b *testing.B) {
-		BenchCodecSuite(b, CodecChecks.Decode.Callable, codecIdle)
+		families.BenchCodecSuite(b, families.CodecChecks.Decode.Callable, codecIdle)
 	})
 }
 
-// pagerSubjectEmbedded is Pager under the name of the field that
+// pagerSubjectEmbedded is families.Pager under the name of the field that
 // pagerSubject embeds.
-type pagerSubjectEmbedded = Pager
+type pagerSubjectEmbedded = families.Pager
 
 // pagerSubject is a value of Pager that only TestPagerSuite builds.
 type pagerSubject struct{ pagerSubjectEmbedded }
@@ -4072,41 +4234,41 @@ func TestPagerSuite(t *testing.T) {
 
 	t.Run("PagerSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, PagerSuite())
+		conform.Falsify(t, families.PagerSuite())
 	})
 
 	t.Run("RunPagerSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *pagerSubject
-		RunPagerSuite(
+		families.RunPagerSuite(
 			t,
 			func() *pagerSubject {
 				built = &pagerSubject{}
 				return built
 			},
-			conform.With(PagerCheck{
+			conform.With(families.PagerCheck{
 				ID:        "Pager/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PagerHandle) {
+				Apply: func(h *families.PagerHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Pager(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Pager(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PagerHandle) Pager { return &pagerSubject{} },
+				Defect: func(*families.PagerHandle) families.Pager { return &pagerSubject{} },
 			}),
 			conform.Excuse(
-				PagerChecks.Fetch.Smoke(),
+				families.PagerChecks.Fetch.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PagerChecks.Fetch.Cancel(),
+				families.PagerChecks.Fetch.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PagerChecks.Fetch.ZeroOnError(),
+				families.PagerChecks.Fetch.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PagerChecks.Fetch.Pagination(),
+				families.PagerChecks.Fetch.Pagination(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4115,35 +4277,35 @@ func TestPagerSuite(t *testing.T) {
 	t.Run("RunPagerSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *pagerSubject
-		RunPagerSuiteFromHandle(
+		families.RunPagerSuiteFromHandle(
 			t,
-			func(*PagerHandle) *pagerSubject {
+			func(*families.PagerHandle) *pagerSubject {
 				built = &pagerSubject{}
 				return built
 			},
-			conform.With(PagerCheck{
+			conform.With(families.PagerCheck{
 				ID:        "Pager/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PagerHandle) {
+				Apply: func(h *families.PagerHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Pager(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Pager(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PagerHandle) Pager { return &pagerSubject{} },
+				Defect: func(*families.PagerHandle) families.Pager { return &pagerSubject{} },
 			}),
 			conform.Excuse(
-				PagerChecks.Fetch.Smoke(),
+				families.PagerChecks.Fetch.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PagerChecks.Fetch.Cancel(),
+				families.PagerChecks.Fetch.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PagerChecks.Fetch.ZeroOnError(),
+				families.PagerChecks.Fetch.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PagerChecks.Fetch.Pagination(),
+				families.PagerChecks.Fetch.Pagination(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4152,8 +4314,8 @@ func TestPagerSuite(t *testing.T) {
 
 // pagerIdle returns the planted defect of a ceiling of Pager with a spend
 // of nothing, a subject that answers each call at once.
-func pagerIdle(h *PagerHandle) Pager {
-	return PagerSuite().Calls[0].Over(h, func() {})
+func pagerIdle(h *families.PagerHandle) families.Pager {
+	return families.PagerSuite().Calls[0].Over(h, func() {})
 }
 
 // TestPagerSuiteBudgets applies the allocation ceilings of the suite of
@@ -4161,24 +4323,27 @@ func pagerIdle(h *PagerHandle) Pager {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestPagerSuiteBudgets(t *testing.T) {
-	RunPagerBudgets(
+	families.RunPagerBudgets(
 		t,
 		pagerIdle,
-		conform.Ceilings(PagerChecks.Fetch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.PagerChecks.Fetch.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			PagerChecks.Fetch.Smoke(),
+			families.PagerChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PagerChecks.Fetch.Cancel(),
+			families.PagerChecks.Fetch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PagerChecks.Fetch.ZeroOnError(),
+			families.PagerChecks.Fetch.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PagerChecks.Fetch.Pagination(),
+			families.PagerChecks.Fetch.Pagination(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4187,24 +4352,24 @@ func TestPagerSuiteBudgets(t *testing.T) {
 // FuzzPagerSuiteFetch registers the fuzz target of Pager.Fetch on
 // pagerIdle, with every check of the suite excused.
 func FuzzPagerSuiteFetch(f *testing.F) {
-	FuzzPagerSuite(
+	families.FuzzPagerSuite(
 		f,
-		PagerChecks.Fetch.Callable,
+		families.PagerChecks.Fetch.Callable,
 		pagerIdle,
 		conform.Excuse(
-			PagerChecks.Fetch.Smoke(),
+			families.PagerChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PagerChecks.Fetch.Cancel(),
+			families.PagerChecks.Fetch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PagerChecks.Fetch.ZeroOnError(),
+			families.PagerChecks.Fetch.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PagerChecks.Fetch.Pagination(),
+			families.PagerChecks.Fetch.Pagination(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4214,13 +4379,13 @@ func FuzzPagerSuiteFetch(f *testing.F) {
 // pagerIdle.
 func BenchmarkPagerSuite(b *testing.B) {
 	b.Run("Fetch", func(b *testing.B) {
-		BenchPagerSuite(b, PagerChecks.Fetch.Callable, pagerIdle)
+		families.BenchPagerSuite(b, families.PagerChecks.Fetch.Callable, pagerIdle)
 	})
 }
 
-// logSubjectEmbedded is Log under the name of the field that logSubject
-// embeds.
-type logSubjectEmbedded = Log
+// logSubjectEmbedded is families.Log under the name of the field that
+// logSubject embeds.
+type logSubjectEmbedded = families.Log
 
 // logSubject is a value of Log that only TestLogSuite builds.
 type logSubject struct{ logSubjectEmbedded }
@@ -4232,53 +4397,53 @@ func TestLogSuite(t *testing.T) {
 
 	t.Run("LogSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, LogSuite())
+		conform.Falsify(t, families.LogSuite())
 	})
 
 	t.Run("RunLogSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *logSubject
-		RunLogSuite(
+		families.RunLogSuite(
 			t,
 			func() *logSubject {
 				built = &logSubject{}
 				return built
 			},
-			conform.With(LogCheck{
+			conform.With(families.LogCheck{
 				ID:        "Log/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LogHandle) {
+				Apply: func(h *families.LogHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Log(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Log(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*LogHandle) Log { return &logSubject{} },
+				Defect: func(*families.LogHandle) families.Log { return &logSubject{} },
 			}),
 			conform.Excuse(
-				LogChecks.Append.Smoke(),
+				families.LogChecks.Append.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Append.Cancel(),
+				families.LogChecks.Append.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Append.ChainCausal(),
+				families.LogChecks.Append.ChainCausal(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Append.Chain(),
+				families.LogChecks.Append.Chain(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Replay.Smoke(),
+				families.LogChecks.Replay.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Replay.Cancel(),
+				families.LogChecks.Replay.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Replay.ZeroOnError(),
+				families.LogChecks.Replay.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4287,47 +4452,47 @@ func TestLogSuite(t *testing.T) {
 	t.Run("RunLogSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *logSubject
-		RunLogSuiteFromHandle(
+		families.RunLogSuiteFromHandle(
 			t,
-			func(*LogHandle) *logSubject {
+			func(*families.LogHandle) *logSubject {
 				built = &logSubject{}
 				return built
 			},
-			conform.With(LogCheck{
+			conform.With(families.LogCheck{
 				ID:        "Log/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LogHandle) {
+				Apply: func(h *families.LogHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Log(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Log(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*LogHandle) Log { return &logSubject{} },
+				Defect: func(*families.LogHandle) families.Log { return &logSubject{} },
 			}),
 			conform.Excuse(
-				LogChecks.Append.Smoke(),
+				families.LogChecks.Append.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Append.Cancel(),
+				families.LogChecks.Append.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Append.ChainCausal(),
+				families.LogChecks.Append.ChainCausal(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Append.Chain(),
+				families.LogChecks.Append.Chain(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Replay.Smoke(),
+				families.LogChecks.Replay.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Replay.Cancel(),
+				families.LogChecks.Replay.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LogChecks.Replay.ZeroOnError(),
+				families.LogChecks.Replay.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4336,45 +4501,51 @@ func TestLogSuite(t *testing.T) {
 
 // logIdle returns the planted defect of a ceiling of Log with a spend of
 // nothing, a subject that answers each call at once.
-func logIdle(h *LogHandle) Log {
-	return LogSuite().Calls[0].Over(h, func() {})
+func logIdle(h *families.LogHandle) families.Log {
+	return families.LogSuite().Calls[0].Over(h, func() {})
 }
 
 // TestLogSuiteBudgets applies the allocation ceilings of the suite of Log
 // to logIdle with every check of the suite excused, and a ceiling of 0 to
 // each callable without a budget whose calls build no input of their own.
 func TestLogSuiteBudgets(t *testing.T) {
-	RunLogBudgets(
+	families.RunLogBudgets(
 		t,
 		logIdle,
-		conform.Ceilings(LogChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LogChecks.Replay.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.LogChecks.Append.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.LogChecks.Replay.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			LogChecks.Append.Smoke(),
+			families.LogChecks.Append.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.Cancel(),
+			families.LogChecks.Append.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.ChainCausal(),
+			families.LogChecks.Append.ChainCausal(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.Chain(),
+			families.LogChecks.Append.Chain(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.Smoke(),
+			families.LogChecks.Replay.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.Cancel(),
+			families.LogChecks.Replay.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.ZeroOnError(),
+			families.LogChecks.Replay.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4383,36 +4554,36 @@ func TestLogSuiteBudgets(t *testing.T) {
 // FuzzLogSuiteAppend registers the fuzz target of Log.Append on logIdle,
 // with every check of the suite excused.
 func FuzzLogSuiteAppend(f *testing.F) {
-	FuzzLogSuite(
+	families.FuzzLogSuite(
 		f,
-		LogChecks.Append.Callable,
+		families.LogChecks.Append.Callable,
 		logIdle,
 		conform.Excuse(
-			LogChecks.Append.Smoke(),
+			families.LogChecks.Append.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.Cancel(),
+			families.LogChecks.Append.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.ChainCausal(),
+			families.LogChecks.Append.ChainCausal(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.Chain(),
+			families.LogChecks.Append.Chain(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.Smoke(),
+			families.LogChecks.Replay.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.Cancel(),
+			families.LogChecks.Replay.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.ZeroOnError(),
+			families.LogChecks.Replay.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4421,36 +4592,36 @@ func FuzzLogSuiteAppend(f *testing.F) {
 // FuzzLogSuiteReplay registers the fuzz target of Log.Replay on logIdle,
 // with every check of the suite excused.
 func FuzzLogSuiteReplay(f *testing.F) {
-	FuzzLogSuite(
+	families.FuzzLogSuite(
 		f,
-		LogChecks.Replay.Callable,
+		families.LogChecks.Replay.Callable,
 		logIdle,
 		conform.Excuse(
-			LogChecks.Append.Smoke(),
+			families.LogChecks.Append.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.Cancel(),
+			families.LogChecks.Append.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.ChainCausal(),
+			families.LogChecks.Append.ChainCausal(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Append.Chain(),
+			families.LogChecks.Append.Chain(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.Smoke(),
+			families.LogChecks.Replay.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.Cancel(),
+			families.LogChecks.Replay.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LogChecks.Replay.ZeroOnError(),
+			families.LogChecks.Replay.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4459,16 +4630,16 @@ func FuzzLogSuiteReplay(f *testing.F) {
 // BenchmarkLogSuite measures each callable of the suite of Log on logIdle.
 func BenchmarkLogSuite(b *testing.B) {
 	b.Run("Append", func(b *testing.B) {
-		BenchLogSuite(b, LogChecks.Append.Callable, logIdle)
+		families.BenchLogSuite(b, families.LogChecks.Append.Callable, logIdle)
 	})
 	b.Run("Replay", func(b *testing.B) {
-		BenchLogSuite(b, LogChecks.Replay.Callable, logIdle)
+		families.BenchLogSuite(b, families.LogChecks.Replay.Callable, logIdle)
 	})
 }
 
-// openerSubjectEmbedded is Opener under the name of the field that
-// openerSubject embeds.
-type openerSubjectEmbedded = Opener
+// openerSubjectEmbedded is families.Opener under the name of the field
+// that openerSubject embeds.
+type openerSubjectEmbedded = families.Opener
 
 // openerSubject is a value of Opener that only TestOpenerSuite builds.
 type openerSubject struct{ openerSubjectEmbedded }
@@ -4480,37 +4651,37 @@ func TestOpenerSuite(t *testing.T) {
 
 	t.Run("OpenerSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, OpenerSuite())
+		conform.Falsify(t, families.OpenerSuite())
 	})
 
 	t.Run("RunOpenerSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *openerSubject
-		RunOpenerSuite(
+		families.RunOpenerSuite(
 			t,
 			func() *openerSubject {
 				built = &openerSubject{}
 				return built
 			},
-			conform.With(OpenerCheck{
+			conform.With(families.OpenerCheck{
 				ID:        "Opener/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *OpenerHandle) {
+				Apply: func(h *families.OpenerHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Opener(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Opener(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*OpenerHandle) Opener { return &openerSubject{} },
+				Defect: func(*families.OpenerHandle) families.Opener { return &openerSubject{} },
 			}),
 			conform.Excuse(
-				OpenerChecks.Open.Smoke(),
+				families.OpenerChecks.Open.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				OpenerChecks.Open.Cancel(),
+				families.OpenerChecks.Open.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				OpenerChecks.Open.CursorOpen(),
+				families.OpenerChecks.Open.CursorOpen(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4519,31 +4690,31 @@ func TestOpenerSuite(t *testing.T) {
 	t.Run("RunOpenerSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *openerSubject
-		RunOpenerSuiteFromHandle(
+		families.RunOpenerSuiteFromHandle(
 			t,
-			func(*OpenerHandle) *openerSubject {
+			func(*families.OpenerHandle) *openerSubject {
 				built = &openerSubject{}
 				return built
 			},
-			conform.With(OpenerCheck{
+			conform.With(families.OpenerCheck{
 				ID:        "Opener/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *OpenerHandle) {
+				Apply: func(h *families.OpenerHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Opener(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Opener(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*OpenerHandle) Opener { return &openerSubject{} },
+				Defect: func(*families.OpenerHandle) families.Opener { return &openerSubject{} },
 			}),
 			conform.Excuse(
-				OpenerChecks.Open.Smoke(),
+				families.OpenerChecks.Open.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				OpenerChecks.Open.Cancel(),
+				families.OpenerChecks.Open.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				OpenerChecks.Open.CursorOpen(),
+				families.OpenerChecks.Open.CursorOpen(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4552,8 +4723,8 @@ func TestOpenerSuite(t *testing.T) {
 
 // openerIdle returns the planted defect of a ceiling of Opener with a
 // spend of nothing, a subject that answers each call at once.
-func openerIdle(h *OpenerHandle) Opener {
-	return OpenerSuite().Calls[0].Over(h, func() {})
+func openerIdle(h *families.OpenerHandle) families.Opener {
+	return families.OpenerSuite().Calls[0].Over(h, func() {})
 }
 
 // TestOpenerSuiteBudgets applies the allocation ceilings of the suite of
@@ -4561,20 +4732,23 @@ func openerIdle(h *OpenerHandle) Opener {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestOpenerSuiteBudgets(t *testing.T) {
-	RunOpenerBudgets(
+	families.RunOpenerBudgets(
 		t,
 		openerIdle,
-		conform.Ceilings(OpenerChecks.Open.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.OpenerChecks.Open.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			OpenerChecks.Open.Smoke(),
+			families.OpenerChecks.Open.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			OpenerChecks.Open.Cancel(),
+			families.OpenerChecks.Open.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			OpenerChecks.Open.CursorOpen(),
+			families.OpenerChecks.Open.CursorOpen(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4583,20 +4757,20 @@ func TestOpenerSuiteBudgets(t *testing.T) {
 // FuzzOpenerSuiteOpen registers the fuzz target of Opener.Open on
 // openerIdle, with every check of the suite excused.
 func FuzzOpenerSuiteOpen(f *testing.F) {
-	FuzzOpenerSuite(
+	families.FuzzOpenerSuite(
 		f,
-		OpenerChecks.Open.Callable,
+		families.OpenerChecks.Open.Callable,
 		openerIdle,
 		conform.Excuse(
-			OpenerChecks.Open.Smoke(),
+			families.OpenerChecks.Open.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			OpenerChecks.Open.Cancel(),
+			families.OpenerChecks.Open.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			OpenerChecks.Open.CursorOpen(),
+			families.OpenerChecks.Open.CursorOpen(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4606,13 +4780,13 @@ func FuzzOpenerSuiteOpen(f *testing.F) {
 // openerIdle.
 func BenchmarkOpenerSuite(b *testing.B) {
 	b.Run("Open", func(b *testing.B) {
-		BenchOpenerSuite(b, OpenerChecks.Open.Callable, openerIdle)
+		families.BenchOpenerSuite(b, families.OpenerChecks.Open.Callable, openerIdle)
 	})
 }
 
-// ledgerSubjectEmbedded is Ledger under the name of the field that
-// ledgerSubject embeds.
-type ledgerSubjectEmbedded = Ledger
+// ledgerSubjectEmbedded is families.Ledger under the name of the field
+// that ledgerSubject embeds.
+type ledgerSubjectEmbedded = families.Ledger
 
 // ledgerSubject is a value of Ledger that only TestLedgerSuite builds.
 type ledgerSubject struct{ ledgerSubjectEmbedded }
@@ -4624,57 +4798,57 @@ func TestLedgerSuite(t *testing.T) {
 
 	t.Run("LedgerSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, LedgerSuite())
+		conform.Falsify(t, families.LedgerSuite())
 	})
 
 	t.Run("RunLedgerSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *ledgerSubject
-		RunLedgerSuite(
+		families.RunLedgerSuite(
 			t,
 			func() *ledgerSubject {
 				built = &ledgerSubject{}
 				return built
 			},
-			conform.With(LedgerCheck{
+			conform.With(families.LedgerCheck{
 				ID:        "Ledger/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LedgerHandle) {
+				Apply: func(h *families.LedgerHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Ledger(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Ledger(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*LedgerHandle) Ledger { return &ledgerSubject{} },
+				Defect: func(*families.LedgerHandle) families.Ledger { return &ledgerSubject{} },
 			}),
 			conform.Excuse(
-				LedgerChecks.Begin.Smoke(),
+				families.LedgerChecks.Begin.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Begin.Cancel(),
+				families.LedgerChecks.Begin.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Begin.ZeroOnError(),
+				families.LedgerChecks.Begin.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Begin.Tx(),
+				families.LedgerChecks.Begin.Tx(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Commit.Smoke(),
+				families.LedgerChecks.Commit.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Commit.Cancel(),
+				families.LedgerChecks.Commit.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Rollback.Smoke(),
+				families.LedgerChecks.Rollback.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Rollback.Cancel(),
+				families.LedgerChecks.Rollback.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4683,51 +4857,51 @@ func TestLedgerSuite(t *testing.T) {
 	t.Run("RunLedgerSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *ledgerSubject
-		RunLedgerSuiteFromHandle(
+		families.RunLedgerSuiteFromHandle(
 			t,
-			func(*LedgerHandle) *ledgerSubject {
+			func(*families.LedgerHandle) *ledgerSubject {
 				built = &ledgerSubject{}
 				return built
 			},
-			conform.With(LedgerCheck{
+			conform.With(families.LedgerCheck{
 				ID:        "Ledger/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LedgerHandle) {
+				Apply: func(h *families.LedgerHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Ledger(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Ledger(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*LedgerHandle) Ledger { return &ledgerSubject{} },
+				Defect: func(*families.LedgerHandle) families.Ledger { return &ledgerSubject{} },
 			}),
 			conform.Excuse(
-				LedgerChecks.Begin.Smoke(),
+				families.LedgerChecks.Begin.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Begin.Cancel(),
+				families.LedgerChecks.Begin.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Begin.ZeroOnError(),
+				families.LedgerChecks.Begin.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Begin.Tx(),
+				families.LedgerChecks.Begin.Tx(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Commit.Smoke(),
+				families.LedgerChecks.Commit.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Commit.Cancel(),
+				families.LedgerChecks.Commit.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Rollback.Smoke(),
+				families.LedgerChecks.Rollback.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Rollback.Cancel(),
+				families.LedgerChecks.Rollback.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4736,8 +4910,8 @@ func TestLedgerSuite(t *testing.T) {
 
 // ledgerIdle returns the planted defect of a ceiling of Ledger with a
 // spend of nothing, a subject that answers each call at once.
-func ledgerIdle(h *LedgerHandle) Ledger {
-	return LedgerSuite().Calls[0].Over(h, func() {})
+func ledgerIdle(h *families.LedgerHandle) families.Ledger {
+	return families.LedgerSuite().Calls[0].Over(h, func() {})
 }
 
 // TestLedgerSuiteBudgets applies the allocation ceilings of the suite of
@@ -4745,42 +4919,51 @@ func ledgerIdle(h *LedgerHandle) Ledger {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestLedgerSuiteBudgets(t *testing.T) {
-	RunLedgerBudgets(
+	families.RunLedgerBudgets(
 		t,
 		ledgerIdle,
-		conform.Ceilings(LedgerChecks.Begin.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LedgerChecks.Commit.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LedgerChecks.Rollback.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.LedgerChecks.Begin.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.LedgerChecks.Commit.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.LedgerChecks.Rollback.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			LedgerChecks.Begin.Smoke(),
+			families.LedgerChecks.Begin.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.Cancel(),
+			families.LedgerChecks.Begin.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.ZeroOnError(),
+			families.LedgerChecks.Begin.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.Tx(),
+			families.LedgerChecks.Begin.Tx(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Commit.Smoke(),
+			families.LedgerChecks.Commit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Commit.Cancel(),
+			families.LedgerChecks.Commit.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Rollback.Smoke(),
+			families.LedgerChecks.Rollback.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Rollback.Cancel(),
+			families.LedgerChecks.Rollback.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4789,40 +4972,40 @@ func TestLedgerSuiteBudgets(t *testing.T) {
 // FuzzLedgerSuiteBegin registers the fuzz target of Ledger.Begin on
 // ledgerIdle, with every check of the suite excused.
 func FuzzLedgerSuiteBegin(f *testing.F) {
-	FuzzLedgerSuite(
+	families.FuzzLedgerSuite(
 		f,
-		LedgerChecks.Begin.Callable,
+		families.LedgerChecks.Begin.Callable,
 		ledgerIdle,
 		conform.Excuse(
-			LedgerChecks.Begin.Smoke(),
+			families.LedgerChecks.Begin.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.Cancel(),
+			families.LedgerChecks.Begin.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.ZeroOnError(),
+			families.LedgerChecks.Begin.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.Tx(),
+			families.LedgerChecks.Begin.Tx(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Commit.Smoke(),
+			families.LedgerChecks.Commit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Commit.Cancel(),
+			families.LedgerChecks.Commit.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Rollback.Smoke(),
+			families.LedgerChecks.Rollback.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Rollback.Cancel(),
+			families.LedgerChecks.Rollback.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4831,40 +5014,40 @@ func FuzzLedgerSuiteBegin(f *testing.F) {
 // FuzzLedgerSuiteCommit registers the fuzz target of Ledger.Commit on
 // ledgerIdle, with every check of the suite excused.
 func FuzzLedgerSuiteCommit(f *testing.F) {
-	FuzzLedgerSuite(
+	families.FuzzLedgerSuite(
 		f,
-		LedgerChecks.Commit.Callable,
+		families.LedgerChecks.Commit.Callable,
 		ledgerIdle,
 		conform.Excuse(
-			LedgerChecks.Begin.Smoke(),
+			families.LedgerChecks.Begin.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.Cancel(),
+			families.LedgerChecks.Begin.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.ZeroOnError(),
+			families.LedgerChecks.Begin.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.Tx(),
+			families.LedgerChecks.Begin.Tx(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Commit.Smoke(),
+			families.LedgerChecks.Commit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Commit.Cancel(),
+			families.LedgerChecks.Commit.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Rollback.Smoke(),
+			families.LedgerChecks.Rollback.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Rollback.Cancel(),
+			families.LedgerChecks.Rollback.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4873,40 +5056,40 @@ func FuzzLedgerSuiteCommit(f *testing.F) {
 // FuzzLedgerSuiteRollback registers the fuzz target of Ledger.Rollback on
 // ledgerIdle, with every check of the suite excused.
 func FuzzLedgerSuiteRollback(f *testing.F) {
-	FuzzLedgerSuite(
+	families.FuzzLedgerSuite(
 		f,
-		LedgerChecks.Rollback.Callable,
+		families.LedgerChecks.Rollback.Callable,
 		ledgerIdle,
 		conform.Excuse(
-			LedgerChecks.Begin.Smoke(),
+			families.LedgerChecks.Begin.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.Cancel(),
+			families.LedgerChecks.Begin.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.ZeroOnError(),
+			families.LedgerChecks.Begin.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Begin.Tx(),
+			families.LedgerChecks.Begin.Tx(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Commit.Smoke(),
+			families.LedgerChecks.Commit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Commit.Cancel(),
+			families.LedgerChecks.Commit.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Rollback.Smoke(),
+			families.LedgerChecks.Rollback.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Rollback.Cancel(),
+			families.LedgerChecks.Rollback.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4916,19 +5099,19 @@ func FuzzLedgerSuiteRollback(f *testing.F) {
 // ledgerIdle.
 func BenchmarkLedgerSuite(b *testing.B) {
 	b.Run("Begin", func(b *testing.B) {
-		BenchLedgerSuite(b, LedgerChecks.Begin.Callable, ledgerIdle)
+		families.BenchLedgerSuite(b, families.LedgerChecks.Begin.Callable, ledgerIdle)
 	})
 	b.Run("Commit", func(b *testing.B) {
-		BenchLedgerSuite(b, LedgerChecks.Commit.Callable, ledgerIdle)
+		families.BenchLedgerSuite(b, families.LedgerChecks.Commit.Callable, ledgerIdle)
 	})
 	b.Run("Rollback", func(b *testing.B) {
-		BenchLedgerSuite(b, LedgerChecks.Rollback.Callable, ledgerIdle)
+		families.BenchLedgerSuite(b, families.LedgerChecks.Rollback.Callable, ledgerIdle)
 	})
 }
 
-// guardedSubjectEmbedded is Guarded under the name of the field that
-// guardedSubject embeds.
-type guardedSubjectEmbedded = Guarded
+// guardedSubjectEmbedded is families.Guarded under the name of the field
+// that guardedSubject embeds.
+type guardedSubjectEmbedded = families.Guarded
 
 // guardedSubject is a value of Guarded that only TestGuardedSuite builds.
 type guardedSubject struct{ guardedSubjectEmbedded }
@@ -4940,45 +5123,51 @@ func TestGuardedSuite(t *testing.T) {
 
 	t.Run("GuardedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, GuardedSuite())
+		conform.Falsify(t, families.GuardedSuite())
 	})
 
 	t.Run("RunGuardedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *guardedSubject
-		RunGuardedSuite(
+		families.RunGuardedSuite(
 			t,
 			func() *guardedSubject {
 				built = &guardedSubject{}
 				return built
 			},
-			conform.With(GuardedCheck{
+			conform.With(families.GuardedCheck{
 				ID:        "Guarded/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *GuardedHandle) {
+				Apply: func(h *families.GuardedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Guarded(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Guarded(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*GuardedHandle) Guarded { return &guardedSubject{} },
+				Defect: func(*families.GuardedHandle) families.Guarded { return &guardedSubject{} },
 			}),
 			conform.Excuse(
-				GuardedChecks.Put.Smoke(),
+				families.GuardedChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				GuardedChecks.Put.Cancel(),
+				families.GuardedChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				GuardedChecks.Put.IfMatch(),
+				families.GuardedChecks.Put.IfMatch(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				GuardedChecks.Match.Smoke(),
+				families.GuardedChecks.Match.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				GuardedChecks.Match.Cancel(),
+				families.GuardedChecks.Match.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4987,39 +5176,45 @@ func TestGuardedSuite(t *testing.T) {
 	t.Run("RunGuardedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *guardedSubject
-		RunGuardedSuiteFromHandle(
+		families.RunGuardedSuiteFromHandle(
 			t,
-			func(*GuardedHandle) *guardedSubject {
+			func(*families.GuardedHandle) *guardedSubject {
 				built = &guardedSubject{}
 				return built
 			},
-			conform.With(GuardedCheck{
+			conform.With(families.GuardedCheck{
 				ID:        "Guarded/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *GuardedHandle) {
+				Apply: func(h *families.GuardedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Guarded(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Guarded(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*GuardedHandle) Guarded { return &guardedSubject{} },
+				Defect: func(*families.GuardedHandle) families.Guarded { return &guardedSubject{} },
 			}),
 			conform.Excuse(
-				GuardedChecks.Put.Smoke(),
+				families.GuardedChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				GuardedChecks.Put.Cancel(),
+				families.GuardedChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				GuardedChecks.Put.IfMatch(),
+				families.GuardedChecks.Put.IfMatch(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				GuardedChecks.Match.Smoke(),
+				families.GuardedChecks.Match.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				GuardedChecks.Match.Cancel(),
+				families.GuardedChecks.Match.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5028,8 +5223,8 @@ func TestGuardedSuite(t *testing.T) {
 
 // guardedIdle returns the planted defect of a ceiling of Guarded with a
 // spend of nothing, a subject that answers each call at once.
-func guardedIdle(h *GuardedHandle) Guarded {
-	return GuardedSuite().Calls[0].Over(h, func() {})
+func guardedIdle(h *families.GuardedHandle) families.Guarded {
+	return families.GuardedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestGuardedSuiteBudgets applies the allocation ceilings of the suite of
@@ -5037,29 +5232,35 @@ func guardedIdle(h *GuardedHandle) Guarded {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestGuardedSuiteBudgets(t *testing.T) {
-	RunGuardedBudgets(
+	families.RunGuardedBudgets(
 		t,
 		guardedIdle,
-		conform.Ceilings(GuardedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(GuardedChecks.Match.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.GuardedChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.GuardedChecks.Match.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			GuardedChecks.Put.Smoke(),
+			families.GuardedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Put.Cancel(),
+			families.GuardedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Put.IfMatch(),
+			families.GuardedChecks.Put.IfMatch(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Match.Smoke(),
+			families.GuardedChecks.Match.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Match.Cancel(),
+			families.GuardedChecks.Match.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5068,28 +5269,28 @@ func TestGuardedSuiteBudgets(t *testing.T) {
 // FuzzGuardedSuitePut registers the fuzz target of Guarded.Put on
 // guardedIdle, with every check of the suite excused.
 func FuzzGuardedSuitePut(f *testing.F) {
-	FuzzGuardedSuite(
+	families.FuzzGuardedSuite(
 		f,
-		GuardedChecks.Put.Callable,
+		families.GuardedChecks.Put.Callable,
 		guardedIdle,
 		conform.Excuse(
-			GuardedChecks.Put.Smoke(),
+			families.GuardedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Put.Cancel(),
+			families.GuardedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Put.IfMatch(),
+			families.GuardedChecks.Put.IfMatch(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Match.Smoke(),
+			families.GuardedChecks.Match.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Match.Cancel(),
+			families.GuardedChecks.Match.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5098,28 +5299,28 @@ func FuzzGuardedSuitePut(f *testing.F) {
 // FuzzGuardedSuiteMatch registers the fuzz target of Guarded.Match on
 // guardedIdle, with every check of the suite excused.
 func FuzzGuardedSuiteMatch(f *testing.F) {
-	FuzzGuardedSuite(
+	families.FuzzGuardedSuite(
 		f,
-		GuardedChecks.Match.Callable,
+		families.GuardedChecks.Match.Callable,
 		guardedIdle,
 		conform.Excuse(
-			GuardedChecks.Put.Smoke(),
+			families.GuardedChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Put.Cancel(),
+			families.GuardedChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Put.IfMatch(),
+			families.GuardedChecks.Put.IfMatch(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Match.Smoke(),
+			families.GuardedChecks.Match.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			GuardedChecks.Match.Cancel(),
+			families.GuardedChecks.Match.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5129,16 +5330,16 @@ func FuzzGuardedSuiteMatch(f *testing.F) {
 // guardedIdle.
 func BenchmarkGuardedSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchGuardedSuite(b, GuardedChecks.Put.Callable, guardedIdle)
+		families.BenchGuardedSuite(b, families.GuardedChecks.Put.Callable, guardedIdle)
 	})
 	b.Run("Match", func(b *testing.B) {
-		BenchGuardedSuite(b, GuardedChecks.Match.Callable, guardedIdle)
+		families.BenchGuardedSuite(b, families.GuardedChecks.Match.Callable, guardedIdle)
 	})
 }
 
-// scopeSubjectEmbedded is Scope under the name of the field that
+// scopeSubjectEmbedded is families.Scope under the name of the field that
 // scopeSubject embeds.
-type scopeSubjectEmbedded = Scope
+type scopeSubjectEmbedded = families.Scope
 
 // scopeSubject is a value of Scope that only TestScopeSuite builds.
 type scopeSubject struct{ scopeSubjectEmbedded }
@@ -5150,57 +5351,57 @@ func TestScopeSuite(t *testing.T) {
 
 	t.Run("ScopeSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, ScopeSuite())
+		conform.Falsify(t, families.ScopeSuite())
 	})
 
 	t.Run("RunScopeSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *scopeSubject
-		RunScopeSuite(
+		families.RunScopeSuite(
 			t,
 			func() *scopeSubject {
 				built = &scopeSubject{}
 				return built
 			},
-			conform.With(ScopeCheck{
+			conform.With(families.ScopeCheck{
 				ID:        "Scope/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ScopeHandle) {
+				Apply: func(h *families.ScopeHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Scope(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Scope(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ScopeHandle) Scope { return &scopeSubject{} },
+				Defect: func(*families.ScopeHandle) families.Scope { return &scopeSubject{} },
 			}),
 			conform.Excuse(
-				ScopeChecks.Run.Smoke(),
+				families.ScopeChecks.Run.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Run.Cancel(),
+				families.ScopeChecks.Run.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Run.Transaction(),
+				families.ScopeChecks.Run.Transaction(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Put.Smoke(),
+				families.ScopeChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Put.Cancel(),
+				families.ScopeChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Get.Smoke(),
+				families.ScopeChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Get.Cancel(),
+				families.ScopeChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Get.ZeroOnError(),
+				families.ScopeChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5209,51 +5410,51 @@ func TestScopeSuite(t *testing.T) {
 	t.Run("RunScopeSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *scopeSubject
-		RunScopeSuiteFromHandle(
+		families.RunScopeSuiteFromHandle(
 			t,
-			func(*ScopeHandle) *scopeSubject {
+			func(*families.ScopeHandle) *scopeSubject {
 				built = &scopeSubject{}
 				return built
 			},
-			conform.With(ScopeCheck{
+			conform.With(families.ScopeCheck{
 				ID:        "Scope/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ScopeHandle) {
+				Apply: func(h *families.ScopeHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Scope(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Scope(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ScopeHandle) Scope { return &scopeSubject{} },
+				Defect: func(*families.ScopeHandle) families.Scope { return &scopeSubject{} },
 			}),
 			conform.Excuse(
-				ScopeChecks.Run.Smoke(),
+				families.ScopeChecks.Run.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Run.Cancel(),
+				families.ScopeChecks.Run.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Run.Transaction(),
+				families.ScopeChecks.Run.Transaction(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Put.Smoke(),
+				families.ScopeChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Put.Cancel(),
+				families.ScopeChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Get.Smoke(),
+				families.ScopeChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Get.Cancel(),
+				families.ScopeChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopeChecks.Get.ZeroOnError(),
+				families.ScopeChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5262,8 +5463,8 @@ func TestScopeSuite(t *testing.T) {
 
 // scopeIdle returns the planted defect of a ceiling of Scope with a spend
 // of nothing, a subject that answers each call at once.
-func scopeIdle(h *ScopeHandle) Scope {
-	return ScopeSuite().Calls[0].Over(h, func() {})
+func scopeIdle(h *families.ScopeHandle) families.Scope {
+	return families.ScopeSuite().Calls[0].Over(h, func() {})
 }
 
 // TestScopeSuiteBudgets applies the allocation ceilings of the suite of
@@ -5271,42 +5472,42 @@ func scopeIdle(h *ScopeHandle) Scope {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestScopeSuiteBudgets(t *testing.T) {
-	RunScopeBudgets(
+	families.RunScopeBudgets(
 		t,
 		scopeIdle,
-		conform.Ceilings(ScopeChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ScopeChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ScopeChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.ScopeChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.ScopeChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.ScopeChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			ScopeChecks.Run.Smoke(),
+			families.ScopeChecks.Run.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Run.Cancel(),
+			families.ScopeChecks.Run.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Run.Transaction(),
+			families.ScopeChecks.Run.Transaction(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Put.Smoke(),
+			families.ScopeChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Put.Cancel(),
+			families.ScopeChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.Smoke(),
+			families.ScopeChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.Cancel(),
+			families.ScopeChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.ZeroOnError(),
+			families.ScopeChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5315,40 +5516,40 @@ func TestScopeSuiteBudgets(t *testing.T) {
 // FuzzScopeSuiteRun registers the fuzz target of Scope.Run on scopeIdle,
 // with every check of the suite excused.
 func FuzzScopeSuiteRun(f *testing.F) {
-	FuzzScopeSuite(
+	families.FuzzScopeSuite(
 		f,
-		ScopeChecks.Run.Callable,
+		families.ScopeChecks.Run.Callable,
 		scopeIdle,
 		conform.Excuse(
-			ScopeChecks.Run.Smoke(),
+			families.ScopeChecks.Run.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Run.Cancel(),
+			families.ScopeChecks.Run.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Run.Transaction(),
+			families.ScopeChecks.Run.Transaction(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Put.Smoke(),
+			families.ScopeChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Put.Cancel(),
+			families.ScopeChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.Smoke(),
+			families.ScopeChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.Cancel(),
+			families.ScopeChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.ZeroOnError(),
+			families.ScopeChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5357,40 +5558,40 @@ func FuzzScopeSuiteRun(f *testing.F) {
 // FuzzScopeSuitePut registers the fuzz target of Scope.Put on scopeIdle,
 // with every check of the suite excused.
 func FuzzScopeSuitePut(f *testing.F) {
-	FuzzScopeSuite(
+	families.FuzzScopeSuite(
 		f,
-		ScopeChecks.Put.Callable,
+		families.ScopeChecks.Put.Callable,
 		scopeIdle,
 		conform.Excuse(
-			ScopeChecks.Run.Smoke(),
+			families.ScopeChecks.Run.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Run.Cancel(),
+			families.ScopeChecks.Run.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Run.Transaction(),
+			families.ScopeChecks.Run.Transaction(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Put.Smoke(),
+			families.ScopeChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Put.Cancel(),
+			families.ScopeChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.Smoke(),
+			families.ScopeChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.Cancel(),
+			families.ScopeChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.ZeroOnError(),
+			families.ScopeChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5399,40 +5600,40 @@ func FuzzScopeSuitePut(f *testing.F) {
 // FuzzScopeSuiteGet registers the fuzz target of Scope.Get on scopeIdle,
 // with every check of the suite excused.
 func FuzzScopeSuiteGet(f *testing.F) {
-	FuzzScopeSuite(
+	families.FuzzScopeSuite(
 		f,
-		ScopeChecks.Get.Callable,
+		families.ScopeChecks.Get.Callable,
 		scopeIdle,
 		conform.Excuse(
-			ScopeChecks.Run.Smoke(),
+			families.ScopeChecks.Run.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Run.Cancel(),
+			families.ScopeChecks.Run.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Run.Transaction(),
+			families.ScopeChecks.Run.Transaction(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Put.Smoke(),
+			families.ScopeChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Put.Cancel(),
+			families.ScopeChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.Smoke(),
+			families.ScopeChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.Cancel(),
+			families.ScopeChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopeChecks.Get.ZeroOnError(),
+			families.ScopeChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5442,19 +5643,19 @@ func FuzzScopeSuiteGet(f *testing.F) {
 // scopeIdle.
 func BenchmarkScopeSuite(b *testing.B) {
 	b.Run("Run", func(b *testing.B) {
-		BenchScopeSuite(b, ScopeChecks.Run.Callable, scopeIdle)
+		families.BenchScopeSuite(b, families.ScopeChecks.Run.Callable, scopeIdle)
 	})
 	b.Run("Put", func(b *testing.B) {
-		BenchScopeSuite(b, ScopeChecks.Put.Callable, scopeIdle)
+		families.BenchScopeSuite(b, families.ScopeChecks.Put.Callable, scopeIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchScopeSuite(b, ScopeChecks.Get.Callable, scopeIdle)
+		families.BenchScopeSuite(b, families.ScopeChecks.Get.Callable, scopeIdle)
 	})
 }
 
-// eventsSubjectEmbedded is Events under the name of the field that
-// eventsSubject embeds.
-type eventsSubjectEmbedded = Events
+// eventsSubjectEmbedded is families.Events under the name of the field
+// that eventsSubject embeds.
+type eventsSubjectEmbedded = families.Events
 
 // eventsSubject is a value of Events that only TestEventsSuite builds.
 type eventsSubject struct{ eventsSubjectEmbedded }
@@ -5466,41 +5667,41 @@ func TestEventsSuite(t *testing.T) {
 
 	t.Run("EventsSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, EventsSuite())
+		conform.Falsify(t, families.EventsSuite())
 	})
 
 	t.Run("RunEventsSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *eventsSubject
-		RunEventsSuite(
+		families.RunEventsSuite(
 			t,
 			func() *eventsSubject {
 				built = &eventsSubject{}
 				return built
 			},
-			conform.With(EventsCheck{
+			conform.With(families.EventsCheck{
 				ID:        "Events/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *EventsHandle) {
+				Apply: func(h *families.EventsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Events(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Events(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*EventsHandle) Events { return &eventsSubject{} },
+				Defect: func(*families.EventsHandle) families.Events { return &eventsSubject{} },
 			}),
 			conform.Excuse(
-				EventsChecks.Fire.Smoke(),
+				families.EventsChecks.Fire.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				EventsChecks.Fire.Cancel(),
+				families.EventsChecks.Fire.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				EventsChecks.Fire.Hooks(),
+				families.EventsChecks.Fire.Hooks(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				EventsChecks.OnEvent.Smoke(),
+				families.EventsChecks.OnEvent.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5509,35 +5710,35 @@ func TestEventsSuite(t *testing.T) {
 	t.Run("RunEventsSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *eventsSubject
-		RunEventsSuiteFromHandle(
+		families.RunEventsSuiteFromHandle(
 			t,
-			func(*EventsHandle) *eventsSubject {
+			func(*families.EventsHandle) *eventsSubject {
 				built = &eventsSubject{}
 				return built
 			},
-			conform.With(EventsCheck{
+			conform.With(families.EventsCheck{
 				ID:        "Events/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *EventsHandle) {
+				Apply: func(h *families.EventsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Events(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Events(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*EventsHandle) Events { return &eventsSubject{} },
+				Defect: func(*families.EventsHandle) families.Events { return &eventsSubject{} },
 			}),
 			conform.Excuse(
-				EventsChecks.Fire.Smoke(),
+				families.EventsChecks.Fire.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				EventsChecks.Fire.Cancel(),
+				families.EventsChecks.Fire.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				EventsChecks.Fire.Hooks(),
+				families.EventsChecks.Fire.Hooks(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				EventsChecks.OnEvent.Smoke(),
+				families.EventsChecks.OnEvent.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5546,8 +5747,8 @@ func TestEventsSuite(t *testing.T) {
 
 // eventsIdle returns the planted defect of a ceiling of Events with a
 // spend of nothing, a subject that answers each call at once.
-func eventsIdle(h *EventsHandle) Events {
-	return EventsSuite().Calls[0].Over(h, func() {})
+func eventsIdle(h *families.EventsHandle) families.Events {
+	return families.EventsSuite().Calls[0].Over(h, func() {})
 }
 
 // TestEventsSuiteBudgets applies the allocation ceilings of the suite of
@@ -5555,25 +5756,31 @@ func eventsIdle(h *EventsHandle) Events {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestEventsSuiteBudgets(t *testing.T) {
-	RunEventsBudgets(
+	families.RunEventsBudgets(
 		t,
 		eventsIdle,
-		conform.Ceilings(EventsChecks.Fire.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(EventsChecks.OnEvent.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.EventsChecks.Fire.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.EventsChecks.OnEvent.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			EventsChecks.Fire.Smoke(),
+			families.EventsChecks.Fire.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.Fire.Cancel(),
+			families.EventsChecks.Fire.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.Fire.Hooks(),
+			families.EventsChecks.Fire.Hooks(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.OnEvent.Smoke(),
+			families.EventsChecks.OnEvent.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5582,24 +5789,24 @@ func TestEventsSuiteBudgets(t *testing.T) {
 // FuzzEventsSuiteFire registers the fuzz target of Events.Fire on
 // eventsIdle, with every check of the suite excused.
 func FuzzEventsSuiteFire(f *testing.F) {
-	FuzzEventsSuite(
+	families.FuzzEventsSuite(
 		f,
-		EventsChecks.Fire.Callable,
+		families.EventsChecks.Fire.Callable,
 		eventsIdle,
 		conform.Excuse(
-			EventsChecks.Fire.Smoke(),
+			families.EventsChecks.Fire.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.Fire.Cancel(),
+			families.EventsChecks.Fire.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.Fire.Hooks(),
+			families.EventsChecks.Fire.Hooks(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.OnEvent.Smoke(),
+			families.EventsChecks.OnEvent.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5608,24 +5815,24 @@ func FuzzEventsSuiteFire(f *testing.F) {
 // FuzzEventsSuiteOnEvent registers the fuzz target of Events.OnEvent on
 // eventsIdle, with every check of the suite excused.
 func FuzzEventsSuiteOnEvent(f *testing.F) {
-	FuzzEventsSuite(
+	families.FuzzEventsSuite(
 		f,
-		EventsChecks.OnEvent.Callable,
+		families.EventsChecks.OnEvent.Callable,
 		eventsIdle,
 		conform.Excuse(
-			EventsChecks.Fire.Smoke(),
+			families.EventsChecks.Fire.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.Fire.Cancel(),
+			families.EventsChecks.Fire.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.Fire.Hooks(),
+			families.EventsChecks.Fire.Hooks(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			EventsChecks.OnEvent.Smoke(),
+			families.EventsChecks.OnEvent.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5635,16 +5842,16 @@ func FuzzEventsSuiteOnEvent(f *testing.F) {
 // eventsIdle.
 func BenchmarkEventsSuite(b *testing.B) {
 	b.Run("Fire", func(b *testing.B) {
-		BenchEventsSuite(b, EventsChecks.Fire.Callable, eventsIdle)
+		families.BenchEventsSuite(b, families.EventsChecks.Fire.Callable, eventsIdle)
 	})
 	b.Run("OnEvent", func(b *testing.B) {
-		BenchEventsSuite(b, EventsChecks.OnEvent.Callable, eventsIdle)
+		families.BenchEventsSuite(b, families.EventsChecks.OnEvent.Callable, eventsIdle)
 	})
 }
 
-// timersSubjectEmbedded is Timers under the name of the field that
-// timersSubject embeds.
-type timersSubjectEmbedded = Timers
+// timersSubjectEmbedded is families.Timers under the name of the field
+// that timersSubject embeds.
+type timersSubjectEmbedded = families.Timers
 
 // timersSubject is a value of Timers that only TestTimersSuite builds.
 type timersSubject struct{ timersSubjectEmbedded }
@@ -5656,61 +5863,61 @@ func TestTimersSuite(t *testing.T) {
 
 	t.Run("TimersSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, TimersSuite())
+		conform.Falsify(t, families.TimersSuite())
 	})
 
 	t.Run("RunTimersSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *timersSubject
-		RunTimersSuite(
+		families.RunTimersSuite(
 			t,
 			func() *timersSubject {
 				built = &timersSubject{}
 				return built
 			},
-			conform.With(TimersCheck{
+			conform.With(families.TimersCheck{
 				ID:        "Timers/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *TimersHandle) {
+				Apply: func(h *families.TimersHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Timers(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Timers(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*TimersHandle) Timers { return &timersSubject{} },
+				Defect: func(*families.TimersHandle) families.Timers { return &timersSubject{} },
 			}),
 			conform.Excuse(
-				TimersChecks.At.Smoke(),
+				families.TimersChecks.At.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.At.Cancel(),
+				families.TimersChecks.At.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.At.Scheduled(),
+				families.TimersChecks.At.Scheduled(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Fired.Smoke(),
+				families.TimersChecks.Fired.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Fired.Cancel(),
+				families.TimersChecks.Fired.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Fired.ZeroOnError(),
+				families.TimersChecks.Fired.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Slow.Smoke(),
+				families.TimersChecks.Slow.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Slow.Cancel(),
+				families.TimersChecks.Slow.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Slow.Within(),
+				families.TimersChecks.Slow.Within(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5719,55 +5926,55 @@ func TestTimersSuite(t *testing.T) {
 	t.Run("RunTimersSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *timersSubject
-		RunTimersSuiteFromHandle(
+		families.RunTimersSuiteFromHandle(
 			t,
-			func(*TimersHandle) *timersSubject {
+			func(*families.TimersHandle) *timersSubject {
 				built = &timersSubject{}
 				return built
 			},
-			conform.With(TimersCheck{
+			conform.With(families.TimersCheck{
 				ID:        "Timers/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *TimersHandle) {
+				Apply: func(h *families.TimersHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Timers(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Timers(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*TimersHandle) Timers { return &timersSubject{} },
+				Defect: func(*families.TimersHandle) families.Timers { return &timersSubject{} },
 			}),
 			conform.Excuse(
-				TimersChecks.At.Smoke(),
+				families.TimersChecks.At.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.At.Cancel(),
+				families.TimersChecks.At.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.At.Scheduled(),
+				families.TimersChecks.At.Scheduled(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Fired.Smoke(),
+				families.TimersChecks.Fired.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Fired.Cancel(),
+				families.TimersChecks.Fired.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Fired.ZeroOnError(),
+				families.TimersChecks.Fired.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Slow.Smoke(),
+				families.TimersChecks.Slow.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Slow.Cancel(),
+				families.TimersChecks.Slow.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				TimersChecks.Slow.Within(),
+				families.TimersChecks.Slow.Within(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5776,8 +5983,8 @@ func TestTimersSuite(t *testing.T) {
 
 // timersIdle returns the planted defect of a ceiling of Timers with a
 // spend of nothing, a subject that answers each call at once.
-func timersIdle(h *TimersHandle) Timers {
-	return TimersSuite().Calls[0].Over(h, func() {})
+func timersIdle(h *families.TimersHandle) families.Timers {
+	return families.TimersSuite().Calls[0].Over(h, func() {})
 }
 
 // TestTimersSuiteBudgets applies the allocation ceilings of the suite of
@@ -5785,46 +5992,52 @@ func timersIdle(h *TimersHandle) Timers {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestTimersSuiteBudgets(t *testing.T) {
-	RunTimersBudgets(
+	families.RunTimersBudgets(
 		t,
 		timersIdle,
-		conform.Ceilings(TimersChecks.At.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(TimersChecks.Fired.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(TimersChecks.Slow.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.TimersChecks.At.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.TimersChecks.Fired.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.TimersChecks.Slow.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			TimersChecks.At.Smoke(),
+			families.TimersChecks.At.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.At.Cancel(),
+			families.TimersChecks.At.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.At.Scheduled(),
+			families.TimersChecks.At.Scheduled(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.Smoke(),
+			families.TimersChecks.Fired.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.Cancel(),
+			families.TimersChecks.Fired.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.ZeroOnError(),
+			families.TimersChecks.Fired.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Smoke(),
+			families.TimersChecks.Slow.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Cancel(),
+			families.TimersChecks.Slow.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Within(),
+			families.TimersChecks.Slow.Within(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5833,44 +6046,44 @@ func TestTimersSuiteBudgets(t *testing.T) {
 // FuzzTimersSuiteAt registers the fuzz target of Timers.At on timersIdle,
 // with every check of the suite excused.
 func FuzzTimersSuiteAt(f *testing.F) {
-	FuzzTimersSuite(
+	families.FuzzTimersSuite(
 		f,
-		TimersChecks.At.Callable,
+		families.TimersChecks.At.Callable,
 		timersIdle,
 		conform.Excuse(
-			TimersChecks.At.Smoke(),
+			families.TimersChecks.At.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.At.Cancel(),
+			families.TimersChecks.At.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.At.Scheduled(),
+			families.TimersChecks.At.Scheduled(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.Smoke(),
+			families.TimersChecks.Fired.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.Cancel(),
+			families.TimersChecks.Fired.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.ZeroOnError(),
+			families.TimersChecks.Fired.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Smoke(),
+			families.TimersChecks.Slow.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Cancel(),
+			families.TimersChecks.Slow.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Within(),
+			families.TimersChecks.Slow.Within(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5879,44 +6092,44 @@ func FuzzTimersSuiteAt(f *testing.F) {
 // FuzzTimersSuiteFired registers the fuzz target of Timers.Fired on
 // timersIdle, with every check of the suite excused.
 func FuzzTimersSuiteFired(f *testing.F) {
-	FuzzTimersSuite(
+	families.FuzzTimersSuite(
 		f,
-		TimersChecks.Fired.Callable,
+		families.TimersChecks.Fired.Callable,
 		timersIdle,
 		conform.Excuse(
-			TimersChecks.At.Smoke(),
+			families.TimersChecks.At.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.At.Cancel(),
+			families.TimersChecks.At.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.At.Scheduled(),
+			families.TimersChecks.At.Scheduled(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.Smoke(),
+			families.TimersChecks.Fired.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.Cancel(),
+			families.TimersChecks.Fired.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.ZeroOnError(),
+			families.TimersChecks.Fired.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Smoke(),
+			families.TimersChecks.Slow.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Cancel(),
+			families.TimersChecks.Slow.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Within(),
+			families.TimersChecks.Slow.Within(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5925,44 +6138,44 @@ func FuzzTimersSuiteFired(f *testing.F) {
 // FuzzTimersSuiteSlow registers the fuzz target of Timers.Slow on
 // timersIdle, with every check of the suite excused.
 func FuzzTimersSuiteSlow(f *testing.F) {
-	FuzzTimersSuite(
+	families.FuzzTimersSuite(
 		f,
-		TimersChecks.Slow.Callable,
+		families.TimersChecks.Slow.Callable,
 		timersIdle,
 		conform.Excuse(
-			TimersChecks.At.Smoke(),
+			families.TimersChecks.At.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.At.Cancel(),
+			families.TimersChecks.At.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.At.Scheduled(),
+			families.TimersChecks.At.Scheduled(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.Smoke(),
+			families.TimersChecks.Fired.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.Cancel(),
+			families.TimersChecks.Fired.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Fired.ZeroOnError(),
+			families.TimersChecks.Fired.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Smoke(),
+			families.TimersChecks.Slow.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Cancel(),
+			families.TimersChecks.Slow.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			TimersChecks.Slow.Within(),
+			families.TimersChecks.Slow.Within(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5972,19 +6185,19 @@ func FuzzTimersSuiteSlow(f *testing.F) {
 // timersIdle.
 func BenchmarkTimersSuite(b *testing.B) {
 	b.Run("At", func(b *testing.B) {
-		BenchTimersSuite(b, TimersChecks.At.Callable, timersIdle)
+		families.BenchTimersSuite(b, families.TimersChecks.At.Callable, timersIdle)
 	})
 	b.Run("Fired", func(b *testing.B) {
-		BenchTimersSuite(b, TimersChecks.Fired.Callable, timersIdle)
+		families.BenchTimersSuite(b, families.TimersChecks.Fired.Callable, timersIdle)
 	})
 	b.Run("Slow", func(b *testing.B) {
-		BenchTimersSuite(b, TimersChecks.Slow.Callable, timersIdle)
+		families.BenchTimersSuite(b, families.TimersChecks.Slow.Callable, timersIdle)
 	})
 }
 
-// electionSubjectEmbedded is Election under the name of the field that
-// electionSubject embeds.
-type electionSubjectEmbedded = Election
+// electionSubjectEmbedded is families.Election under the name of the field
+// that electionSubject embeds.
+type electionSubjectEmbedded = families.Election
 
 // electionSubject is a value of Election that only TestElectionSuite
 // builds.
@@ -5997,49 +6210,55 @@ func TestElectionSuite(t *testing.T) {
 
 	t.Run("ElectionSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, ElectionSuite())
+		conform.Falsify(t, families.ElectionSuite())
 	})
 
 	t.Run("RunElectionSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *electionSubject
-		RunElectionSuite(
+		families.RunElectionSuite(
 			t,
 			func() *electionSubject {
 				built = &electionSubject{}
 				return built
 			},
-			conform.With(ElectionCheck{
+			conform.With(families.ElectionCheck{
 				ID:        "Election/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ElectionHandle) {
+				Apply: func(h *families.ElectionHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Election(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Election(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*ElectionHandle) Election { return &electionSubject{} },
+				Defect: func(*families.ElectionHandle) families.Election { return &electionSubject{} },
 			}),
 			conform.Excuse(
-				ElectionChecks.Campaign.Smoke(),
+				families.ElectionChecks.Campaign.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.Campaign.Cancel(),
+				families.ElectionChecks.Campaign.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.Campaign.LeaderElection(),
+				families.ElectionChecks.Campaign.LeaderElection(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.Resign.Smoke(),
+				families.ElectionChecks.Resign.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.Resign.Cancel(),
+				families.ElectionChecks.Resign.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.IsLeader.Smoke(),
+				families.ElectionChecks.IsLeader.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6048,43 +6267,49 @@ func TestElectionSuite(t *testing.T) {
 	t.Run("RunElectionSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *electionSubject
-		RunElectionSuiteFromHandle(
+		families.RunElectionSuiteFromHandle(
 			t,
-			func(*ElectionHandle) *electionSubject {
+			func(*families.ElectionHandle) *electionSubject {
 				built = &electionSubject{}
 				return built
 			},
-			conform.With(ElectionCheck{
+			conform.With(families.ElectionCheck{
 				ID:        "Election/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ElectionHandle) {
+				Apply: func(h *families.ElectionHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Election(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Election(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*ElectionHandle) Election { return &electionSubject{} },
+				Defect: func(*families.ElectionHandle) families.Election { return &electionSubject{} },
 			}),
 			conform.Excuse(
-				ElectionChecks.Campaign.Smoke(),
+				families.ElectionChecks.Campaign.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.Campaign.Cancel(),
+				families.ElectionChecks.Campaign.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.Campaign.LeaderElection(),
+				families.ElectionChecks.Campaign.LeaderElection(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.Resign.Smoke(),
+				families.ElectionChecks.Resign.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.Resign.Cancel(),
+				families.ElectionChecks.Resign.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ElectionChecks.IsLeader.Smoke(),
+				families.ElectionChecks.IsLeader.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6093,8 +6318,8 @@ func TestElectionSuite(t *testing.T) {
 
 // electionIdle returns the planted defect of a ceiling of Election with a
 // spend of nothing, a subject that answers each call at once.
-func electionIdle(h *ElectionHandle) Election {
-	return ElectionSuite().Calls[0].Over(h, func() {})
+func electionIdle(h *families.ElectionHandle) families.Election {
+	return families.ElectionSuite().Calls[0].Over(h, func() {})
 }
 
 // TestElectionSuiteBudgets applies the allocation ceilings of the suite of
@@ -6102,34 +6327,43 @@ func electionIdle(h *ElectionHandle) Election {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestElectionSuiteBudgets(t *testing.T) {
-	RunElectionBudgets(
+	families.RunElectionBudgets(
 		t,
 		electionIdle,
-		conform.Ceilings(ElectionChecks.Campaign.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ElectionChecks.Resign.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ElectionChecks.IsLeader.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.ElectionChecks.Campaign.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.ElectionChecks.Resign.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.ElectionChecks.IsLeader.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			ElectionChecks.Campaign.Smoke(),
+			families.ElectionChecks.Campaign.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Campaign.Cancel(),
+			families.ElectionChecks.Campaign.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Campaign.LeaderElection(),
+			families.ElectionChecks.Campaign.LeaderElection(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Resign.Smoke(),
+			families.ElectionChecks.Resign.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Resign.Cancel(),
+			families.ElectionChecks.Resign.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.IsLeader.Smoke(),
+			families.ElectionChecks.IsLeader.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6138,32 +6372,32 @@ func TestElectionSuiteBudgets(t *testing.T) {
 // FuzzElectionSuiteCampaign registers the fuzz target of Election.Campaign
 // on electionIdle, with every check of the suite excused.
 func FuzzElectionSuiteCampaign(f *testing.F) {
-	FuzzElectionSuite(
+	families.FuzzElectionSuite(
 		f,
-		ElectionChecks.Campaign.Callable,
+		families.ElectionChecks.Campaign.Callable,
 		electionIdle,
 		conform.Excuse(
-			ElectionChecks.Campaign.Smoke(),
+			families.ElectionChecks.Campaign.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Campaign.Cancel(),
+			families.ElectionChecks.Campaign.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Campaign.LeaderElection(),
+			families.ElectionChecks.Campaign.LeaderElection(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Resign.Smoke(),
+			families.ElectionChecks.Resign.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Resign.Cancel(),
+			families.ElectionChecks.Resign.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.IsLeader.Smoke(),
+			families.ElectionChecks.IsLeader.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6172,32 +6406,32 @@ func FuzzElectionSuiteCampaign(f *testing.F) {
 // FuzzElectionSuiteResign registers the fuzz target of Election.Resign on
 // electionIdle, with every check of the suite excused.
 func FuzzElectionSuiteResign(f *testing.F) {
-	FuzzElectionSuite(
+	families.FuzzElectionSuite(
 		f,
-		ElectionChecks.Resign.Callable,
+		families.ElectionChecks.Resign.Callable,
 		electionIdle,
 		conform.Excuse(
-			ElectionChecks.Campaign.Smoke(),
+			families.ElectionChecks.Campaign.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Campaign.Cancel(),
+			families.ElectionChecks.Campaign.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Campaign.LeaderElection(),
+			families.ElectionChecks.Campaign.LeaderElection(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Resign.Smoke(),
+			families.ElectionChecks.Resign.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Resign.Cancel(),
+			families.ElectionChecks.Resign.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.IsLeader.Smoke(),
+			families.ElectionChecks.IsLeader.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6206,32 +6440,32 @@ func FuzzElectionSuiteResign(f *testing.F) {
 // FuzzElectionSuiteIsLeader registers the fuzz target of Election.IsLeader
 // on electionIdle, with every check of the suite excused.
 func FuzzElectionSuiteIsLeader(f *testing.F) {
-	FuzzElectionSuite(
+	families.FuzzElectionSuite(
 		f,
-		ElectionChecks.IsLeader.Callable,
+		families.ElectionChecks.IsLeader.Callable,
 		electionIdle,
 		conform.Excuse(
-			ElectionChecks.Campaign.Smoke(),
+			families.ElectionChecks.Campaign.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Campaign.Cancel(),
+			families.ElectionChecks.Campaign.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Campaign.LeaderElection(),
+			families.ElectionChecks.Campaign.LeaderElection(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Resign.Smoke(),
+			families.ElectionChecks.Resign.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.Resign.Cancel(),
+			families.ElectionChecks.Resign.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ElectionChecks.IsLeader.Smoke(),
+			families.ElectionChecks.IsLeader.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6241,19 +6475,19 @@ func FuzzElectionSuiteIsLeader(f *testing.F) {
 // on electionIdle.
 func BenchmarkElectionSuite(b *testing.B) {
 	b.Run("Campaign", func(b *testing.B) {
-		BenchElectionSuite(b, ElectionChecks.Campaign.Callable, electionIdle)
+		families.BenchElectionSuite(b, families.ElectionChecks.Campaign.Callable, electionIdle)
 	})
 	b.Run("Resign", func(b *testing.B) {
-		BenchElectionSuite(b, ElectionChecks.Resign.Callable, electionIdle)
+		families.BenchElectionSuite(b, families.ElectionChecks.Resign.Callable, electionIdle)
 	})
 	b.Run("IsLeader", func(b *testing.B) {
-		BenchElectionSuite(b, ElectionChecks.IsLeader.Callable, electionIdle)
+		families.BenchElectionSuite(b, families.ElectionChecks.IsLeader.Callable, electionIdle)
 	})
 }
 
-// poolSubjectEmbedded is Pool under the name of the field that poolSubject
-// embeds.
-type poolSubjectEmbedded = Pool
+// poolSubjectEmbedded is families.Pool under the name of the field that
+// poolSubject embeds.
+type poolSubjectEmbedded = families.Pool
 
 // poolSubject is a value of Pool that only TestPoolSuite builds.
 type poolSubject struct{ poolSubjectEmbedded }
@@ -6265,49 +6499,49 @@ func TestPoolSuite(t *testing.T) {
 
 	t.Run("PoolSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, PoolSuite())
+		conform.Falsify(t, families.PoolSuite())
 	})
 
 	t.Run("RunPoolSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *poolSubject
-		RunPoolSuite(
+		families.RunPoolSuite(
 			t,
 			func() *poolSubject {
 				built = &poolSubject{}
 				return built
 			},
-			conform.With(PoolCheck{
+			conform.With(families.PoolCheck{
 				ID:        "Pool/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PoolHandle) {
+				Apply: func(h *families.PoolHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Pool(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Pool(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PoolHandle) Pool { return &poolSubject{} },
+				Defect: func(*families.PoolHandle) families.Pool { return &poolSubject{} },
 			}),
 			conform.Excuse(
-				PoolChecks.Get.Smoke(),
+				families.PoolChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Get.Cancel(),
+				families.PoolChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Get.ZeroOnError(),
+				families.PoolChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Get.Pool(),
+				families.PoolChecks.Get.Pool(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Put.Smoke(),
+				families.PoolChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Put.Cancel(),
+				families.PoolChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6316,43 +6550,43 @@ func TestPoolSuite(t *testing.T) {
 	t.Run("RunPoolSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *poolSubject
-		RunPoolSuiteFromHandle(
+		families.RunPoolSuiteFromHandle(
 			t,
-			func(*PoolHandle) *poolSubject {
+			func(*families.PoolHandle) *poolSubject {
 				built = &poolSubject{}
 				return built
 			},
-			conform.With(PoolCheck{
+			conform.With(families.PoolCheck{
 				ID:        "Pool/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PoolHandle) {
+				Apply: func(h *families.PoolHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Pool(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Pool(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PoolHandle) Pool { return &poolSubject{} },
+				Defect: func(*families.PoolHandle) families.Pool { return &poolSubject{} },
 			}),
 			conform.Excuse(
-				PoolChecks.Get.Smoke(),
+				families.PoolChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Get.Cancel(),
+				families.PoolChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Get.ZeroOnError(),
+				families.PoolChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Get.Pool(),
+				families.PoolChecks.Get.Pool(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Put.Smoke(),
+				families.PoolChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PoolChecks.Put.Cancel(),
+				families.PoolChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6361,8 +6595,8 @@ func TestPoolSuite(t *testing.T) {
 
 // poolIdle returns the planted defect of a ceiling of Pool with a spend of
 // nothing, a subject that answers each call at once.
-func poolIdle(h *PoolHandle) Pool {
-	return PoolSuite().Calls[0].Over(h, func() {})
+func poolIdle(h *families.PoolHandle) families.Pool {
+	return families.PoolSuite().Calls[0].Over(h, func() {})
 }
 
 // TestPoolSuiteBudgets applies the allocation ceilings of the suite of
@@ -6370,33 +6604,33 @@ func poolIdle(h *PoolHandle) Pool {
 // 0 to each callable without a budget whose calls build no input of their
 // own.
 func TestPoolSuiteBudgets(t *testing.T) {
-	RunPoolBudgets(
+	families.RunPoolBudgets(
 		t,
 		poolIdle,
-		conform.Ceilings(PoolChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PoolChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.PoolChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.PoolChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			PoolChecks.Get.Smoke(),
+			families.PoolChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.Cancel(),
+			families.PoolChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.ZeroOnError(),
+			families.PoolChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.Pool(),
+			families.PoolChecks.Get.Pool(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Put.Smoke(),
+			families.PoolChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Put.Cancel(),
+			families.PoolChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6405,32 +6639,32 @@ func TestPoolSuiteBudgets(t *testing.T) {
 // FuzzPoolSuiteGet registers the fuzz target of Pool.Get on poolIdle, with
 // every check of the suite excused.
 func FuzzPoolSuiteGet(f *testing.F) {
-	FuzzPoolSuite(
+	families.FuzzPoolSuite(
 		f,
-		PoolChecks.Get.Callable,
+		families.PoolChecks.Get.Callable,
 		poolIdle,
 		conform.Excuse(
-			PoolChecks.Get.Smoke(),
+			families.PoolChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.Cancel(),
+			families.PoolChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.ZeroOnError(),
+			families.PoolChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.Pool(),
+			families.PoolChecks.Get.Pool(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Put.Smoke(),
+			families.PoolChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Put.Cancel(),
+			families.PoolChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6439,32 +6673,32 @@ func FuzzPoolSuiteGet(f *testing.F) {
 // FuzzPoolSuitePut registers the fuzz target of Pool.Put on poolIdle, with
 // every check of the suite excused.
 func FuzzPoolSuitePut(f *testing.F) {
-	FuzzPoolSuite(
+	families.FuzzPoolSuite(
 		f,
-		PoolChecks.Put.Callable,
+		families.PoolChecks.Put.Callable,
 		poolIdle,
 		conform.Excuse(
-			PoolChecks.Get.Smoke(),
+			families.PoolChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.Cancel(),
+			families.PoolChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.ZeroOnError(),
+			families.PoolChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Get.Pool(),
+			families.PoolChecks.Get.Pool(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Put.Smoke(),
+			families.PoolChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PoolChecks.Put.Cancel(),
+			families.PoolChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6474,16 +6708,16 @@ func FuzzPoolSuitePut(f *testing.F) {
 // poolIdle.
 func BenchmarkPoolSuite(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
-		BenchPoolSuite(b, PoolChecks.Get.Callable, poolIdle)
+		families.BenchPoolSuite(b, families.PoolChecks.Get.Callable, poolIdle)
 	})
 	b.Run("Put", func(b *testing.B) {
-		BenchPoolSuite(b, PoolChecks.Put.Callable, poolIdle)
+		families.BenchPoolSuite(b, families.PoolChecks.Put.Callable, poolIdle)
 	})
 }
 
-// batchSubjectEmbedded is Batch under the name of the field that
+// batchSubjectEmbedded is families.Batch under the name of the field that
 // batchSubject embeds.
-type batchSubjectEmbedded = Batch
+type batchSubjectEmbedded = families.Batch
 
 // batchSubject is a value of Batch that only TestBatchSuite builds.
 type batchSubject struct{ batchSubjectEmbedded }
@@ -6495,49 +6729,49 @@ func TestBatchSuite(t *testing.T) {
 
 	t.Run("BatchSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, BatchSuite())
+		conform.Falsify(t, families.BatchSuite())
 	})
 
 	t.Run("RunBatchSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *batchSubject
-		RunBatchSuite(
+		families.RunBatchSuite(
 			t,
 			func() *batchSubject {
 				built = &batchSubject{}
 				return built
 			},
-			conform.With(BatchCheck{
+			conform.With(families.BatchCheck{
 				ID:        "Batch/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *BatchHandle) {
+				Apply: func(h *families.BatchHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Batch(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Batch(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*BatchHandle) Batch { return &batchSubject{} },
+				Defect: func(*families.BatchHandle) families.Batch { return &batchSubject{} },
 			}),
 			conform.Excuse(
-				BatchChecks.Write.Smoke(),
+				families.BatchChecks.Write.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Write.Cancel(),
+				families.BatchChecks.Write.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Write.BatchWriter(),
+				families.BatchChecks.Write.BatchWriter(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Read.Smoke(),
+				families.BatchChecks.Read.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Read.Cancel(),
+				families.BatchChecks.Read.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Read.ZeroOnError(),
+				families.BatchChecks.Read.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6546,43 +6780,43 @@ func TestBatchSuite(t *testing.T) {
 	t.Run("RunBatchSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *batchSubject
-		RunBatchSuiteFromHandle(
+		families.RunBatchSuiteFromHandle(
 			t,
-			func(*BatchHandle) *batchSubject {
+			func(*families.BatchHandle) *batchSubject {
 				built = &batchSubject{}
 				return built
 			},
-			conform.With(BatchCheck{
+			conform.With(families.BatchCheck{
 				ID:        "Batch/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *BatchHandle) {
+				Apply: func(h *families.BatchHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Batch(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Batch(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*BatchHandle) Batch { return &batchSubject{} },
+				Defect: func(*families.BatchHandle) families.Batch { return &batchSubject{} },
 			}),
 			conform.Excuse(
-				BatchChecks.Write.Smoke(),
+				families.BatchChecks.Write.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Write.Cancel(),
+				families.BatchChecks.Write.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Write.BatchWriter(),
+				families.BatchChecks.Write.BatchWriter(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Read.Smoke(),
+				families.BatchChecks.Read.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Read.Cancel(),
+				families.BatchChecks.Read.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				BatchChecks.Read.ZeroOnError(),
+				families.BatchChecks.Read.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6591,8 +6825,8 @@ func TestBatchSuite(t *testing.T) {
 
 // batchIdle returns the planted defect of a ceiling of Batch with a spend
 // of nothing, a subject that answers each call at once.
-func batchIdle(h *BatchHandle) Batch {
-	return BatchSuite().Calls[0].Over(h, func() {})
+func batchIdle(h *families.BatchHandle) families.Batch {
+	return families.BatchSuite().Calls[0].Over(h, func() {})
 }
 
 // TestBatchSuiteBudgets applies the allocation ceilings of the suite of
@@ -6600,33 +6834,39 @@ func batchIdle(h *BatchHandle) Batch {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestBatchSuiteBudgets(t *testing.T) {
-	RunBatchBudgets(
+	families.RunBatchBudgets(
 		t,
 		batchIdle,
-		conform.Ceilings(BatchChecks.Write.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(BatchChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.BatchChecks.Write.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.BatchChecks.Read.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			BatchChecks.Write.Smoke(),
+			families.BatchChecks.Write.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Write.Cancel(),
+			families.BatchChecks.Write.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Write.BatchWriter(),
+			families.BatchChecks.Write.BatchWriter(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.Smoke(),
+			families.BatchChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.Cancel(),
+			families.BatchChecks.Read.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.ZeroOnError(),
+			families.BatchChecks.Read.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6635,32 +6875,32 @@ func TestBatchSuiteBudgets(t *testing.T) {
 // FuzzBatchSuiteWrite registers the fuzz target of Batch.Write on
 // batchIdle, with every check of the suite excused.
 func FuzzBatchSuiteWrite(f *testing.F) {
-	FuzzBatchSuite(
+	families.FuzzBatchSuite(
 		f,
-		BatchChecks.Write.Callable,
+		families.BatchChecks.Write.Callable,
 		batchIdle,
 		conform.Excuse(
-			BatchChecks.Write.Smoke(),
+			families.BatchChecks.Write.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Write.Cancel(),
+			families.BatchChecks.Write.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Write.BatchWriter(),
+			families.BatchChecks.Write.BatchWriter(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.Smoke(),
+			families.BatchChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.Cancel(),
+			families.BatchChecks.Read.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.ZeroOnError(),
+			families.BatchChecks.Read.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6669,32 +6909,32 @@ func FuzzBatchSuiteWrite(f *testing.F) {
 // FuzzBatchSuiteRead registers the fuzz target of Batch.Read on batchIdle,
 // with every check of the suite excused.
 func FuzzBatchSuiteRead(f *testing.F) {
-	FuzzBatchSuite(
+	families.FuzzBatchSuite(
 		f,
-		BatchChecks.Read.Callable,
+		families.BatchChecks.Read.Callable,
 		batchIdle,
 		conform.Excuse(
-			BatchChecks.Write.Smoke(),
+			families.BatchChecks.Write.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Write.Cancel(),
+			families.BatchChecks.Write.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Write.BatchWriter(),
+			families.BatchChecks.Write.BatchWriter(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.Smoke(),
+			families.BatchChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.Cancel(),
+			families.BatchChecks.Read.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			BatchChecks.Read.ZeroOnError(),
+			families.BatchChecks.Read.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6704,16 +6944,16 @@ func FuzzBatchSuiteRead(f *testing.F) {
 // batchIdle.
 func BenchmarkBatchSuite(b *testing.B) {
 	b.Run("Write", func(b *testing.B) {
-		BenchBatchSuite(b, BatchChecks.Write.Callable, batchIdle)
+		families.BenchBatchSuite(b, families.BatchChecks.Write.Callable, batchIdle)
 	})
 	b.Run("Read", func(b *testing.B) {
-		BenchBatchSuite(b, BatchChecks.Read.Callable, batchIdle)
+		families.BenchBatchSuite(b, families.BatchChecks.Read.Callable, batchIdle)
 	})
 }
 
-// screenedSubjectEmbedded is Screened under the name of the field that
-// screenedSubject embeds.
-type screenedSubjectEmbedded = Screened
+// screenedSubjectEmbedded is families.Screened under the name of the field
+// that screenedSubject embeds.
+type screenedSubjectEmbedded = families.Screened
 
 // screenedSubject is a value of Screened that only TestScreenedSuite
 // builds.
@@ -6726,41 +6966,47 @@ func TestScreenedSuite(t *testing.T) {
 
 	t.Run("ScreenedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, ScreenedSuite())
+		conform.Falsify(t, families.ScreenedSuite())
 	})
 
 	t.Run("RunScreenedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *screenedSubject
-		RunScreenedSuite(
+		families.RunScreenedSuite(
 			t,
 			func() *screenedSubject {
 				built = &screenedSubject{}
 				return built
 			},
-			conform.With(ScreenedCheck{
+			conform.With(families.ScreenedCheck{
 				ID:        "Screened/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ScreenedHandle) {
+				Apply: func(h *families.ScreenedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Screened(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Screened(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*ScreenedHandle) Screened { return &screenedSubject{} },
+				Defect: func(*families.ScreenedHandle) families.Screened { return &screenedSubject{} },
 			}),
 			conform.Excuse(
-				ScreenedChecks.Store.Smoke(),
+				families.ScreenedChecks.Store.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScreenedChecks.Store.Cancel(),
+				families.ScreenedChecks.Store.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScreenedChecks.Store.Validates(),
+				families.ScreenedChecks.Store.Validates(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScreenedChecks.Validate.Smoke(),
+				families.ScreenedChecks.Validate.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6769,35 +7015,41 @@ func TestScreenedSuite(t *testing.T) {
 	t.Run("RunScreenedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *screenedSubject
-		RunScreenedSuiteFromHandle(
+		families.RunScreenedSuiteFromHandle(
 			t,
-			func(*ScreenedHandle) *screenedSubject {
+			func(*families.ScreenedHandle) *screenedSubject {
 				built = &screenedSubject{}
 				return built
 			},
-			conform.With(ScreenedCheck{
+			conform.With(families.ScreenedCheck{
 				ID:        "Screened/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ScreenedHandle) {
+				Apply: func(h *families.ScreenedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Screened(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Screened(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*ScreenedHandle) Screened { return &screenedSubject{} },
+				Defect: func(*families.ScreenedHandle) families.Screened { return &screenedSubject{} },
 			}),
 			conform.Excuse(
-				ScreenedChecks.Store.Smoke(),
+				families.ScreenedChecks.Store.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScreenedChecks.Store.Cancel(),
+				families.ScreenedChecks.Store.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScreenedChecks.Store.Validates(),
+				families.ScreenedChecks.Store.Validates(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScreenedChecks.Validate.Smoke(),
+				families.ScreenedChecks.Validate.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6806,8 +7058,8 @@ func TestScreenedSuite(t *testing.T) {
 
 // screenedIdle returns the planted defect of a ceiling of Screened with a
 // spend of nothing, a subject that answers each call at once.
-func screenedIdle(h *ScreenedHandle) Screened {
-	return ScreenedSuite().Calls[0].Over(h, func() {})
+func screenedIdle(h *families.ScreenedHandle) families.Screened {
+	return families.ScreenedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestScreenedSuiteBudgets applies the allocation ceilings of the suite of
@@ -6815,25 +7067,31 @@ func screenedIdle(h *ScreenedHandle) Screened {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestScreenedSuiteBudgets(t *testing.T) {
-	RunScreenedBudgets(
+	families.RunScreenedBudgets(
 		t,
 		screenedIdle,
-		conform.Ceilings(ScreenedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ScreenedChecks.Validate.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.ScreenedChecks.Store.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.ScreenedChecks.Validate.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			ScreenedChecks.Store.Smoke(),
+			families.ScreenedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Store.Cancel(),
+			families.ScreenedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Store.Validates(),
+			families.ScreenedChecks.Store.Validates(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Validate.Smoke(),
+			families.ScreenedChecks.Validate.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6842,24 +7100,24 @@ func TestScreenedSuiteBudgets(t *testing.T) {
 // FuzzScreenedSuiteStore registers the fuzz target of Screened.Store on
 // screenedIdle, with every check of the suite excused.
 func FuzzScreenedSuiteStore(f *testing.F) {
-	FuzzScreenedSuite(
+	families.FuzzScreenedSuite(
 		f,
-		ScreenedChecks.Store.Callable,
+		families.ScreenedChecks.Store.Callable,
 		screenedIdle,
 		conform.Excuse(
-			ScreenedChecks.Store.Smoke(),
+			families.ScreenedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Store.Cancel(),
+			families.ScreenedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Store.Validates(),
+			families.ScreenedChecks.Store.Validates(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Validate.Smoke(),
+			families.ScreenedChecks.Validate.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6868,24 +7126,24 @@ func FuzzScreenedSuiteStore(f *testing.F) {
 // FuzzScreenedSuiteValidate registers the fuzz target of Screened.Validate
 // on screenedIdle, with every check of the suite excused.
 func FuzzScreenedSuiteValidate(f *testing.F) {
-	FuzzScreenedSuite(
+	families.FuzzScreenedSuite(
 		f,
-		ScreenedChecks.Validate.Callable,
+		families.ScreenedChecks.Validate.Callable,
 		screenedIdle,
 		conform.Excuse(
-			ScreenedChecks.Store.Smoke(),
+			families.ScreenedChecks.Store.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Store.Cancel(),
+			families.ScreenedChecks.Store.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Store.Validates(),
+			families.ScreenedChecks.Store.Validates(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScreenedChecks.Validate.Smoke(),
+			families.ScreenedChecks.Validate.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -6895,16 +7153,16 @@ func FuzzScreenedSuiteValidate(f *testing.F) {
 // on screenedIdle.
 func BenchmarkScreenedSuite(b *testing.B) {
 	b.Run("Store", func(b *testing.B) {
-		BenchScreenedSuite(b, ScreenedChecks.Store.Callable, screenedIdle)
+		families.BenchScreenedSuite(b, families.ScreenedChecks.Store.Callable, screenedIdle)
 	})
 	b.Run("Validate", func(b *testing.B) {
-		BenchScreenedSuite(b, ScreenedChecks.Validate.Callable, screenedIdle)
+		families.BenchScreenedSuite(b, families.ScreenedChecks.Validate.Callable, screenedIdle)
 	})
 }
 
-// limiterSubjectEmbedded is Limiter under the name of the field that
-// limiterSubject embeds.
-type limiterSubjectEmbedded = Limiter
+// limiterSubjectEmbedded is families.Limiter under the name of the field
+// that limiterSubject embeds.
+type limiterSubjectEmbedded = families.Limiter
 
 // limiterSubject is a value of Limiter that only TestLimiterSuite builds.
 type limiterSubject struct{ limiterSubjectEmbedded }
@@ -6916,37 +7174,43 @@ func TestLimiterSuite(t *testing.T) {
 
 	t.Run("LimiterSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, LimiterSuite())
+		conform.Falsify(t, families.LimiterSuite())
 	})
 
 	t.Run("RunLimiterSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *limiterSubject
-		RunLimiterSuite(
+		families.RunLimiterSuite(
 			t,
 			func() *limiterSubject {
 				built = &limiterSubject{}
 				return built
 			},
-			conform.With(LimiterCheck{
+			conform.With(families.LimiterCheck{
 				ID:        "Limiter/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LimiterHandle) {
+				Apply: func(h *families.LimiterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Limiter(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Limiter(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*LimiterHandle) Limiter { return &limiterSubject{} },
+				Defect: func(*families.LimiterHandle) families.Limiter { return &limiterSubject{} },
 			}),
 			conform.Excuse(
-				LimiterChecks.Run.Smoke(),
+				families.LimiterChecks.Run.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LimiterChecks.Run.Cancel(),
+				families.LimiterChecks.Run.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LimiterChecks.Run.RateLimit(),
+				families.LimiterChecks.Run.RateLimit(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6955,31 +7219,37 @@ func TestLimiterSuite(t *testing.T) {
 	t.Run("RunLimiterSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *limiterSubject
-		RunLimiterSuiteFromHandle(
+		families.RunLimiterSuiteFromHandle(
 			t,
-			func(*LimiterHandle) *limiterSubject {
+			func(*families.LimiterHandle) *limiterSubject {
 				built = &limiterSubject{}
 				return built
 			},
-			conform.With(LimiterCheck{
+			conform.With(families.LimiterCheck{
 				ID:        "Limiter/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LimiterHandle) {
+				Apply: func(h *families.LimiterHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Limiter(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Limiter(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*LimiterHandle) Limiter { return &limiterSubject{} },
+				Defect: func(*families.LimiterHandle) families.Limiter { return &limiterSubject{} },
 			}),
 			conform.Excuse(
-				LimiterChecks.Run.Smoke(),
+				families.LimiterChecks.Run.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LimiterChecks.Run.Cancel(),
+				families.LimiterChecks.Run.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LimiterChecks.Run.RateLimit(),
+				families.LimiterChecks.Run.RateLimit(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -6988,8 +7258,8 @@ func TestLimiterSuite(t *testing.T) {
 
 // limiterIdle returns the planted defect of a ceiling of Limiter with a
 // spend of nothing, a subject that answers each call at once.
-func limiterIdle(h *LimiterHandle) Limiter {
-	return LimiterSuite().Calls[0].Over(h, func() {})
+func limiterIdle(h *families.LimiterHandle) families.Limiter {
+	return families.LimiterSuite().Calls[0].Over(h, func() {})
 }
 
 // TestLimiterSuiteBudgets applies the allocation ceilings of the suite of
@@ -6997,20 +7267,23 @@ func limiterIdle(h *LimiterHandle) Limiter {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestLimiterSuiteBudgets(t *testing.T) {
-	RunLimiterBudgets(
+	families.RunLimiterBudgets(
 		t,
 		limiterIdle,
-		conform.Ceilings(LimiterChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.LimiterChecks.Run.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			LimiterChecks.Run.Smoke(),
+			families.LimiterChecks.Run.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimiterChecks.Run.Cancel(),
+			families.LimiterChecks.Run.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimiterChecks.Run.RateLimit(),
+			families.LimiterChecks.Run.RateLimit(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7019,20 +7292,20 @@ func TestLimiterSuiteBudgets(t *testing.T) {
 // FuzzLimiterSuiteRun registers the fuzz target of Limiter.Run on
 // limiterIdle, with every check of the suite excused.
 func FuzzLimiterSuiteRun(f *testing.F) {
-	FuzzLimiterSuite(
+	families.FuzzLimiterSuite(
 		f,
-		LimiterChecks.Run.Callable,
+		families.LimiterChecks.Run.Callable,
 		limiterIdle,
 		conform.Excuse(
-			LimiterChecks.Run.Smoke(),
+			families.LimiterChecks.Run.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimiterChecks.Run.Cancel(),
+			families.LimiterChecks.Run.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LimiterChecks.Run.RateLimit(),
+			families.LimiterChecks.Run.RateLimit(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7042,13 +7315,13 @@ func FuzzLimiterSuiteRun(f *testing.F) {
 // limiterIdle.
 func BenchmarkLimiterSuite(b *testing.B) {
 	b.Run("Run", func(b *testing.B) {
-		BenchLimiterSuite(b, LimiterChecks.Run.Callable, limiterIdle)
+		families.BenchLimiterSuite(b, families.LimiterChecks.Run.Callable, limiterIdle)
 	})
 }
 
-// rendererSubjectEmbedded is Renderer under the name of the field that
-// rendererSubject embeds.
-type rendererSubjectEmbedded = Renderer
+// rendererSubjectEmbedded is families.Renderer under the name of the field
+// that rendererSubject embeds.
+type rendererSubjectEmbedded = families.Renderer
 
 // rendererSubject is a value of Renderer that only TestRendererSuite
 // builds.
@@ -7061,57 +7334,63 @@ func TestRendererSuite(t *testing.T) {
 
 	t.Run("RendererSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, RendererSuite())
+		conform.Falsify(t, families.RendererSuite())
 	})
 
 	t.Run("RunRendererSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *rendererSubject
-		RunRendererSuite(
+		families.RunRendererSuite(
 			t,
 			func() *rendererSubject {
 				built = &rendererSubject{}
 				return built
 			},
-			conform.With(RendererCheck{
+			conform.With(families.RendererCheck{
 				ID:        "Renderer/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *RendererHandle) {
+				Apply: func(h *families.RendererHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Renderer(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Renderer(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*RendererHandle) Renderer { return &rendererSubject{} },
+				Defect: func(*families.RendererHandle) families.Renderer { return &rendererSubject{} },
 			}),
 			conform.Excuse(
-				RendererChecks.Render.Smoke(),
+				families.RendererChecks.Render.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Render.Cancel(),
+				families.RendererChecks.Render.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Render.ZeroOnError(),
+				families.RendererChecks.Render.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Render.XSSSafe(),
+				families.RendererChecks.Render.XSSSafe(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Classify.Smoke(),
+				families.RendererChecks.Classify.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Classify.Cancel(),
+				families.RendererChecks.Classify.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Classify.ZeroOnError(),
+				families.RendererChecks.Classify.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Classify.Total(),
+				families.RendererChecks.Classify.Total(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -7120,51 +7399,57 @@ func TestRendererSuite(t *testing.T) {
 	t.Run("RunRendererSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *rendererSubject
-		RunRendererSuiteFromHandle(
+		families.RunRendererSuiteFromHandle(
 			t,
-			func(*RendererHandle) *rendererSubject {
+			func(*families.RendererHandle) *rendererSubject {
 				built = &rendererSubject{}
 				return built
 			},
-			conform.With(RendererCheck{
+			conform.With(families.RendererCheck{
 				ID:        "Renderer/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *RendererHandle) {
+				Apply: func(h *families.RendererHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Renderer(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Renderer(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*RendererHandle) Renderer { return &rendererSubject{} },
+				Defect: func(*families.RendererHandle) families.Renderer { return &rendererSubject{} },
 			}),
 			conform.Excuse(
-				RendererChecks.Render.Smoke(),
+				families.RendererChecks.Render.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Render.Cancel(),
+				families.RendererChecks.Render.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Render.ZeroOnError(),
+				families.RendererChecks.Render.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Render.XSSSafe(),
+				families.RendererChecks.Render.XSSSafe(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Classify.Smoke(),
+				families.RendererChecks.Classify.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Classify.Cancel(),
+				families.RendererChecks.Classify.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Classify.ZeroOnError(),
+				families.RendererChecks.Classify.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				RendererChecks.Classify.Total(),
+				families.RendererChecks.Classify.Total(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -7173,8 +7458,8 @@ func TestRendererSuite(t *testing.T) {
 
 // rendererIdle returns the planted defect of a ceiling of Renderer with a
 // spend of nothing, a subject that answers each call at once.
-func rendererIdle(h *RendererHandle) Renderer {
-	return RendererSuite().Calls[0].Over(h, func() {})
+func rendererIdle(h *families.RendererHandle) families.Renderer {
+	return families.RendererSuite().Calls[0].Over(h, func() {})
 }
 
 // TestRendererSuiteBudgets applies the allocation ceilings of the suite of
@@ -7182,41 +7467,47 @@ func rendererIdle(h *RendererHandle) Renderer {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestRendererSuiteBudgets(t *testing.T) {
-	RunRendererBudgets(
+	families.RunRendererBudgets(
 		t,
 		rendererIdle,
-		conform.Ceilings(RendererChecks.Render.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(RendererChecks.Classify.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.RendererChecks.Render.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.RendererChecks.Classify.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			RendererChecks.Render.Smoke(),
+			families.RendererChecks.Render.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.Cancel(),
+			families.RendererChecks.Render.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.ZeroOnError(),
+			families.RendererChecks.Render.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.XSSSafe(),
+			families.RendererChecks.Render.XSSSafe(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Smoke(),
+			families.RendererChecks.Classify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Cancel(),
+			families.RendererChecks.Classify.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.ZeroOnError(),
+			families.RendererChecks.Classify.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Total(),
+			families.RendererChecks.Classify.Total(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7225,40 +7516,40 @@ func TestRendererSuiteBudgets(t *testing.T) {
 // FuzzRendererSuiteRender registers the fuzz target of Renderer.Render on
 // rendererIdle, with every check of the suite excused.
 func FuzzRendererSuiteRender(f *testing.F) {
-	FuzzRendererSuite(
+	families.FuzzRendererSuite(
 		f,
-		RendererChecks.Render.Callable,
+		families.RendererChecks.Render.Callable,
 		rendererIdle,
 		conform.Excuse(
-			RendererChecks.Render.Smoke(),
+			families.RendererChecks.Render.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.Cancel(),
+			families.RendererChecks.Render.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.ZeroOnError(),
+			families.RendererChecks.Render.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.XSSSafe(),
+			families.RendererChecks.Render.XSSSafe(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Smoke(),
+			families.RendererChecks.Classify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Cancel(),
+			families.RendererChecks.Classify.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.ZeroOnError(),
+			families.RendererChecks.Classify.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Total(),
+			families.RendererChecks.Classify.Total(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7267,40 +7558,40 @@ func FuzzRendererSuiteRender(f *testing.F) {
 // FuzzRendererSuiteClassify registers the fuzz target of Renderer.Classify
 // on rendererIdle, with every check of the suite excused.
 func FuzzRendererSuiteClassify(f *testing.F) {
-	FuzzRendererSuite(
+	families.FuzzRendererSuite(
 		f,
-		RendererChecks.Classify.Callable,
+		families.RendererChecks.Classify.Callable,
 		rendererIdle,
 		conform.Excuse(
-			RendererChecks.Render.Smoke(),
+			families.RendererChecks.Render.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.Cancel(),
+			families.RendererChecks.Render.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.ZeroOnError(),
+			families.RendererChecks.Render.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Render.XSSSafe(),
+			families.RendererChecks.Render.XSSSafe(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Smoke(),
+			families.RendererChecks.Classify.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Cancel(),
+			families.RendererChecks.Classify.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.ZeroOnError(),
+			families.RendererChecks.Classify.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			RendererChecks.Classify.Total(),
+			families.RendererChecks.Classify.Total(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7310,16 +7601,16 @@ func FuzzRendererSuiteClassify(f *testing.F) {
 // on rendererIdle.
 func BenchmarkRendererSuite(b *testing.B) {
 	b.Run("Render", func(b *testing.B) {
-		BenchRendererSuite(b, RendererChecks.Render.Callable, rendererIdle)
+		families.BenchRendererSuite(b, families.RendererChecks.Render.Callable, rendererIdle)
 	})
 	b.Run("Classify", func(b *testing.B) {
-		BenchRendererSuite(b, RendererChecks.Classify.Callable, rendererIdle)
+		families.BenchRendererSuite(b, families.RendererChecks.Classify.Callable, rendererIdle)
 	})
 }
 
-// lifecycleSubjectEmbedded is Lifecycle under the name of the field that
-// lifecycleSubject embeds.
-type lifecycleSubjectEmbedded = Lifecycle
+// lifecycleSubjectEmbedded is families.Lifecycle under the name of the
+// field that lifecycleSubject embeds.
+type lifecycleSubjectEmbedded = families.Lifecycle
 
 // lifecycleSubject is a value of Lifecycle that only TestLifecycleSuite
 // builds.
@@ -7332,57 +7623,63 @@ func TestLifecycleSuite(t *testing.T) {
 
 	t.Run("LifecycleSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, LifecycleSuite())
+		conform.Falsify(t, families.LifecycleSuite())
 	})
 
 	t.Run("RunLifecycleSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *lifecycleSubject
-		RunLifecycleSuite(
+		families.RunLifecycleSuite(
 			t,
 			func() *lifecycleSubject {
 				built = &lifecycleSubject{}
 				return built
 			},
-			conform.With(LifecycleCheck{
+			conform.With(families.LifecycleCheck{
 				ID:        "Lifecycle/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LifecycleHandle) {
+				Apply: func(h *families.LifecycleHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Lifecycle(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Lifecycle(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*LifecycleHandle) Lifecycle { return &lifecycleSubject{} },
+				Defect: func(*families.LifecycleHandle) families.Lifecycle { return &lifecycleSubject{} },
 			}),
 			conform.Excuse(
-				LifecycleChecks.Stop.Smoke(),
+				families.LifecycleChecks.Stop.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Stop.RepeatSurvives(),
+				families.LifecycleChecks.Stop.RepeatSurvives(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Put.Smoke(),
+				families.LifecycleChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Put.Cancel(),
+				families.LifecycleChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Put.Idempotent(),
+				families.LifecycleChecks.Put.Idempotent(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Sync.Smoke(),
+				families.LifecycleChecks.Sync.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Sync.Cancel(),
+				families.LifecycleChecks.Sync.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Sync.RetrySucceeds(),
+				families.LifecycleChecks.Sync.RetrySucceeds(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -7391,51 +7688,57 @@ func TestLifecycleSuite(t *testing.T) {
 	t.Run("RunLifecycleSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *lifecycleSubject
-		RunLifecycleSuiteFromHandle(
+		families.RunLifecycleSuiteFromHandle(
 			t,
-			func(*LifecycleHandle) *lifecycleSubject {
+			func(*families.LifecycleHandle) *lifecycleSubject {
 				built = &lifecycleSubject{}
 				return built
 			},
-			conform.With(LifecycleCheck{
+			conform.With(families.LifecycleCheck{
 				ID:        "Lifecycle/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *LifecycleHandle) {
+				Apply: func(h *families.LifecycleHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Lifecycle(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Lifecycle(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*LifecycleHandle) Lifecycle { return &lifecycleSubject{} },
+				Defect: func(*families.LifecycleHandle) families.Lifecycle { return &lifecycleSubject{} },
 			}),
 			conform.Excuse(
-				LifecycleChecks.Stop.Smoke(),
+				families.LifecycleChecks.Stop.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Stop.RepeatSurvives(),
+				families.LifecycleChecks.Stop.RepeatSurvives(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Put.Smoke(),
+				families.LifecycleChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Put.Cancel(),
+				families.LifecycleChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Put.Idempotent(),
+				families.LifecycleChecks.Put.Idempotent(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Sync.Smoke(),
+				families.LifecycleChecks.Sync.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Sync.Cancel(),
+				families.LifecycleChecks.Sync.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LifecycleChecks.Sync.RetrySucceeds(),
+				families.LifecycleChecks.Sync.RetrySucceeds(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -7444,8 +7747,8 @@ func TestLifecycleSuite(t *testing.T) {
 
 // lifecycleIdle returns the planted defect of a ceiling of Lifecycle with
 // a spend of nothing, a subject that answers each call at once.
-func lifecycleIdle(h *LifecycleHandle) Lifecycle {
-	return LifecycleSuite().Calls[0].Over(h, func() {})
+func lifecycleIdle(h *families.LifecycleHandle) families.Lifecycle {
+	return families.LifecycleSuite().Calls[0].Over(h, func() {})
 }
 
 // TestLifecycleSuiteBudgets applies the allocation ceilings of the suite
@@ -7453,42 +7756,51 @@ func lifecycleIdle(h *LifecycleHandle) Lifecycle {
 // a ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestLifecycleSuiteBudgets(t *testing.T) {
-	RunLifecycleBudgets(
+	families.RunLifecycleBudgets(
 		t,
 		lifecycleIdle,
-		conform.Ceilings(LifecycleChecks.Stop.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LifecycleChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(LifecycleChecks.Sync.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.LifecycleChecks.Stop.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.LifecycleChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.LifecycleChecks.Sync.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			LifecycleChecks.Stop.Smoke(),
+			families.LifecycleChecks.Stop.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Stop.RepeatSurvives(),
+			families.LifecycleChecks.Stop.RepeatSurvives(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Smoke(),
+			families.LifecycleChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Cancel(),
+			families.LifecycleChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Idempotent(),
+			families.LifecycleChecks.Put.Idempotent(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.Smoke(),
+			families.LifecycleChecks.Sync.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.Cancel(),
+			families.LifecycleChecks.Sync.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.RetrySucceeds(),
+			families.LifecycleChecks.Sync.RetrySucceeds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7497,40 +7809,40 @@ func TestLifecycleSuiteBudgets(t *testing.T) {
 // FuzzLifecycleSuiteStop registers the fuzz target of Lifecycle.Stop on
 // lifecycleIdle, with every check of the suite excused.
 func FuzzLifecycleSuiteStop(f *testing.F) {
-	FuzzLifecycleSuite(
+	families.FuzzLifecycleSuite(
 		f,
-		LifecycleChecks.Stop.Callable,
+		families.LifecycleChecks.Stop.Callable,
 		lifecycleIdle,
 		conform.Excuse(
-			LifecycleChecks.Stop.Smoke(),
+			families.LifecycleChecks.Stop.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Stop.RepeatSurvives(),
+			families.LifecycleChecks.Stop.RepeatSurvives(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Smoke(),
+			families.LifecycleChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Cancel(),
+			families.LifecycleChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Idempotent(),
+			families.LifecycleChecks.Put.Idempotent(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.Smoke(),
+			families.LifecycleChecks.Sync.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.Cancel(),
+			families.LifecycleChecks.Sync.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.RetrySucceeds(),
+			families.LifecycleChecks.Sync.RetrySucceeds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7539,40 +7851,40 @@ func FuzzLifecycleSuiteStop(f *testing.F) {
 // FuzzLifecycleSuitePut registers the fuzz target of Lifecycle.Put on
 // lifecycleIdle, with every check of the suite excused.
 func FuzzLifecycleSuitePut(f *testing.F) {
-	FuzzLifecycleSuite(
+	families.FuzzLifecycleSuite(
 		f,
-		LifecycleChecks.Put.Callable,
+		families.LifecycleChecks.Put.Callable,
 		lifecycleIdle,
 		conform.Excuse(
-			LifecycleChecks.Stop.Smoke(),
+			families.LifecycleChecks.Stop.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Stop.RepeatSurvives(),
+			families.LifecycleChecks.Stop.RepeatSurvives(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Smoke(),
+			families.LifecycleChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Cancel(),
+			families.LifecycleChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Idempotent(),
+			families.LifecycleChecks.Put.Idempotent(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.Smoke(),
+			families.LifecycleChecks.Sync.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.Cancel(),
+			families.LifecycleChecks.Sync.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.RetrySucceeds(),
+			families.LifecycleChecks.Sync.RetrySucceeds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7581,40 +7893,40 @@ func FuzzLifecycleSuitePut(f *testing.F) {
 // FuzzLifecycleSuiteSync registers the fuzz target of Lifecycle.Sync on
 // lifecycleIdle, with every check of the suite excused.
 func FuzzLifecycleSuiteSync(f *testing.F) {
-	FuzzLifecycleSuite(
+	families.FuzzLifecycleSuite(
 		f,
-		LifecycleChecks.Sync.Callable,
+		families.LifecycleChecks.Sync.Callable,
 		lifecycleIdle,
 		conform.Excuse(
-			LifecycleChecks.Stop.Smoke(),
+			families.LifecycleChecks.Stop.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Stop.RepeatSurvives(),
+			families.LifecycleChecks.Stop.RepeatSurvives(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Smoke(),
+			families.LifecycleChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Cancel(),
+			families.LifecycleChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Put.Idempotent(),
+			families.LifecycleChecks.Put.Idempotent(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.Smoke(),
+			families.LifecycleChecks.Sync.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.Cancel(),
+			families.LifecycleChecks.Sync.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LifecycleChecks.Sync.RetrySucceeds(),
+			families.LifecycleChecks.Sync.RetrySucceeds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7624,19 +7936,19 @@ func FuzzLifecycleSuiteSync(f *testing.F) {
 // on lifecycleIdle.
 func BenchmarkLifecycleSuite(b *testing.B) {
 	b.Run("Stop", func(b *testing.B) {
-		BenchLifecycleSuite(b, LifecycleChecks.Stop.Callable, lifecycleIdle)
+		families.BenchLifecycleSuite(b, families.LifecycleChecks.Stop.Callable, lifecycleIdle)
 	})
 	b.Run("Put", func(b *testing.B) {
-		BenchLifecycleSuite(b, LifecycleChecks.Put.Callable, lifecycleIdle)
+		families.BenchLifecycleSuite(b, families.LifecycleChecks.Put.Callable, lifecycleIdle)
 	})
 	b.Run("Sync", func(b *testing.B) {
-		BenchLifecycleSuite(b, LifecycleChecks.Sync.Callable, lifecycleIdle)
+		families.BenchLifecycleSuite(b, families.LifecycleChecks.Sync.Callable, lifecycleIdle)
 	})
 }
 
-// shardsSubjectEmbedded is Shards under the name of the field that
-// shardsSubject embeds.
-type shardsSubjectEmbedded = Shards
+// shardsSubjectEmbedded is families.Shards under the name of the field
+// that shardsSubject embeds.
+type shardsSubjectEmbedded = families.Shards
 
 // shardsSubject is a value of Shards that only TestShardsSuite builds.
 type shardsSubject struct{ shardsSubjectEmbedded }
@@ -7648,49 +7960,49 @@ func TestShardsSuite(t *testing.T) {
 
 	t.Run("ShardsSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, ShardsSuite())
+		conform.Falsify(t, families.ShardsSuite())
 	})
 
 	t.Run("RunShardsSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *shardsSubject
-		RunShardsSuite(
+		families.RunShardsSuite(
 			t,
 			func() *shardsSubject {
 				built = &shardsSubject{}
 				return built
 			},
-			conform.With(ShardsCheck{
+			conform.With(families.ShardsCheck{
 				ID:        "Shards/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ShardsHandle) {
+				Apply: func(h *families.ShardsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Shards(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Shards(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ShardsHandle) Shards { return &shardsSubject{} },
+				Defect: func(*families.ShardsHandle) families.Shards { return &shardsSubject{} },
 			}),
 			conform.Excuse(
-				ShardsChecks.Put.Smoke(),
+				families.ShardsChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Put.Cancel(),
+				families.ShardsChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Put.Partition(),
+				families.ShardsChecks.Put.Partition(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Get.Smoke(),
+				families.ShardsChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Get.Cancel(),
+				families.ShardsChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Get.ZeroOnError(),
+				families.ShardsChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -7699,43 +8011,43 @@ func TestShardsSuite(t *testing.T) {
 	t.Run("RunShardsSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *shardsSubject
-		RunShardsSuiteFromHandle(
+		families.RunShardsSuiteFromHandle(
 			t,
-			func(*ShardsHandle) *shardsSubject {
+			func(*families.ShardsHandle) *shardsSubject {
 				built = &shardsSubject{}
 				return built
 			},
-			conform.With(ShardsCheck{
+			conform.With(families.ShardsCheck{
 				ID:        "Shards/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ShardsHandle) {
+				Apply: func(h *families.ShardsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Shards(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Shards(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ShardsHandle) Shards { return &shardsSubject{} },
+				Defect: func(*families.ShardsHandle) families.Shards { return &shardsSubject{} },
 			}),
 			conform.Excuse(
-				ShardsChecks.Put.Smoke(),
+				families.ShardsChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Put.Cancel(),
+				families.ShardsChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Put.Partition(),
+				families.ShardsChecks.Put.Partition(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Get.Smoke(),
+				families.ShardsChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Get.Cancel(),
+				families.ShardsChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ShardsChecks.Get.ZeroOnError(),
+				families.ShardsChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -7744,8 +8056,8 @@ func TestShardsSuite(t *testing.T) {
 
 // shardsIdle returns the planted defect of a ceiling of Shards with a
 // spend of nothing, a subject that answers each call at once.
-func shardsIdle(h *ShardsHandle) Shards {
-	return ShardsSuite().Calls[0].Over(h, func() {})
+func shardsIdle(h *families.ShardsHandle) families.Shards {
+	return families.ShardsSuite().Calls[0].Over(h, func() {})
 }
 
 // TestShardsSuiteBudgets applies the allocation ceilings of the suite of
@@ -7753,33 +8065,39 @@ func shardsIdle(h *ShardsHandle) Shards {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestShardsSuiteBudgets(t *testing.T) {
-	RunShardsBudgets(
+	families.RunShardsBudgets(
 		t,
 		shardsIdle,
-		conform.Ceilings(ShardsChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ShardsChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.ShardsChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.ShardsChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			ShardsChecks.Put.Smoke(),
+			families.ShardsChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Put.Cancel(),
+			families.ShardsChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Put.Partition(),
+			families.ShardsChecks.Put.Partition(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.Smoke(),
+			families.ShardsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.Cancel(),
+			families.ShardsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.ZeroOnError(),
+			families.ShardsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7788,32 +8106,32 @@ func TestShardsSuiteBudgets(t *testing.T) {
 // FuzzShardsSuitePut registers the fuzz target of Shards.Put on
 // shardsIdle, with every check of the suite excused.
 func FuzzShardsSuitePut(f *testing.F) {
-	FuzzShardsSuite(
+	families.FuzzShardsSuite(
 		f,
-		ShardsChecks.Put.Callable,
+		families.ShardsChecks.Put.Callable,
 		shardsIdle,
 		conform.Excuse(
-			ShardsChecks.Put.Smoke(),
+			families.ShardsChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Put.Cancel(),
+			families.ShardsChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Put.Partition(),
+			families.ShardsChecks.Put.Partition(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.Smoke(),
+			families.ShardsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.Cancel(),
+			families.ShardsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.ZeroOnError(),
+			families.ShardsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7822,32 +8140,32 @@ func FuzzShardsSuitePut(f *testing.F) {
 // FuzzShardsSuiteGet registers the fuzz target of Shards.Get on
 // shardsIdle, with every check of the suite excused.
 func FuzzShardsSuiteGet(f *testing.F) {
-	FuzzShardsSuite(
+	families.FuzzShardsSuite(
 		f,
-		ShardsChecks.Get.Callable,
+		families.ShardsChecks.Get.Callable,
 		shardsIdle,
 		conform.Excuse(
-			ShardsChecks.Put.Smoke(),
+			families.ShardsChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Put.Cancel(),
+			families.ShardsChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Put.Partition(),
+			families.ShardsChecks.Put.Partition(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.Smoke(),
+			families.ShardsChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.Cancel(),
+			families.ShardsChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ShardsChecks.Get.ZeroOnError(),
+			families.ShardsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7857,16 +8175,16 @@ func FuzzShardsSuiteGet(f *testing.F) {
 // shardsIdle.
 func BenchmarkShardsSuite(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
-		BenchShardsSuite(b, ShardsChecks.Put.Callable, shardsIdle)
+		families.BenchShardsSuite(b, families.ShardsChecks.Put.Callable, shardsIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchShardsSuite(b, ShardsChecks.Get.Callable, shardsIdle)
+		families.BenchShardsSuite(b, families.ShardsChecks.Get.Callable, shardsIdle)
 	})
 }
 
-// scopedSubjectEmbedded is Scoped under the name of the field that
-// scopedSubject embeds.
-type scopedSubjectEmbedded = Scoped
+// scopedSubjectEmbedded is families.Scoped under the name of the field
+// that scopedSubject embeds.
+type scopedSubjectEmbedded = families.Scoped
 
 // scopedSubject is a value of Scoped that only TestScopedSuite builds.
 type scopedSubject struct{ scopedSubjectEmbedded }
@@ -7878,45 +8196,45 @@ func TestScopedSuite(t *testing.T) {
 
 	t.Run("ScopedSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, ScopedSuite())
+		conform.Falsify(t, families.ScopedSuite())
 	})
 
 	t.Run("RunScopedSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *scopedSubject
-		RunScopedSuite(
+		families.RunScopedSuite(
 			t,
 			func() *scopedSubject {
 				built = &scopedSubject{}
 				return built
 			},
-			conform.With(ScopedCheck{
+			conform.With(families.ScopedCheck{
 				ID:        "Scoped/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ScopedHandle) {
+				Apply: func(h *families.ScopedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Scoped(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Scoped(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ScopedHandle) Scoped { return &scopedSubject{} },
+				Defect: func(*families.ScopedHandle) families.Scoped { return &scopedSubject{} },
 			}),
 			conform.Excuse(
-				ScopedChecks.Set.Smoke(),
+				families.ScopedChecks.Set.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopedChecks.Set.Cancel(),
+				families.ScopedChecks.Set.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopedChecks.Set.Partition(),
+				families.ScopedChecks.Set.Partition(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopedChecks.Get.Smoke(),
+				families.ScopedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopedChecks.Get.Cancel(),
+				families.ScopedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -7925,39 +8243,39 @@ func TestScopedSuite(t *testing.T) {
 	t.Run("RunScopedSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *scopedSubject
-		RunScopedSuiteFromHandle(
+		families.RunScopedSuiteFromHandle(
 			t,
-			func(*ScopedHandle) *scopedSubject {
+			func(*families.ScopedHandle) *scopedSubject {
 				built = &scopedSubject{}
 				return built
 			},
-			conform.With(ScopedCheck{
+			conform.With(families.ScopedCheck{
 				ID:        "Scoped/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *ScopedHandle) {
+				Apply: func(h *families.ScopedHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Scoped(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Scoped(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*ScopedHandle) Scoped { return &scopedSubject{} },
+				Defect: func(*families.ScopedHandle) families.Scoped { return &scopedSubject{} },
 			}),
 			conform.Excuse(
-				ScopedChecks.Set.Smoke(),
+				families.ScopedChecks.Set.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopedChecks.Set.Cancel(),
+				families.ScopedChecks.Set.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopedChecks.Set.Partition(),
+				families.ScopedChecks.Set.Partition(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopedChecks.Get.Smoke(),
+				families.ScopedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				ScopedChecks.Get.Cancel(),
+				families.ScopedChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -7966,8 +8284,8 @@ func TestScopedSuite(t *testing.T) {
 
 // scopedIdle returns the planted defect of a ceiling of Scoped with a
 // spend of nothing, a subject that answers each call at once.
-func scopedIdle(h *ScopedHandle) Scoped {
-	return ScopedSuite().Calls[0].Over(h, func() {})
+func scopedIdle(h *families.ScopedHandle) families.Scoped {
+	return families.ScopedSuite().Calls[0].Over(h, func() {})
 }
 
 // TestScopedSuiteBudgets applies the allocation ceilings of the suite of
@@ -7975,29 +8293,35 @@ func scopedIdle(h *ScopedHandle) Scoped {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestScopedSuiteBudgets(t *testing.T) {
-	RunScopedBudgets(
+	families.RunScopedBudgets(
 		t,
 		scopedIdle,
-		conform.Ceilings(ScopedChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(ScopedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.ScopedChecks.Set.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			families.ScopedChecks.Get.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			ScopedChecks.Set.Smoke(),
+			families.ScopedChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Set.Cancel(),
+			families.ScopedChecks.Set.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Set.Partition(),
+			families.ScopedChecks.Set.Partition(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Get.Smoke(),
+			families.ScopedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Get.Cancel(),
+			families.ScopedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8006,28 +8330,28 @@ func TestScopedSuiteBudgets(t *testing.T) {
 // FuzzScopedSuiteSet registers the fuzz target of Scoped.Set on
 // scopedIdle, with every check of the suite excused.
 func FuzzScopedSuiteSet(f *testing.F) {
-	FuzzScopedSuite(
+	families.FuzzScopedSuite(
 		f,
-		ScopedChecks.Set.Callable,
+		families.ScopedChecks.Set.Callable,
 		scopedIdle,
 		conform.Excuse(
-			ScopedChecks.Set.Smoke(),
+			families.ScopedChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Set.Cancel(),
+			families.ScopedChecks.Set.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Set.Partition(),
+			families.ScopedChecks.Set.Partition(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Get.Smoke(),
+			families.ScopedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Get.Cancel(),
+			families.ScopedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8036,28 +8360,28 @@ func FuzzScopedSuiteSet(f *testing.F) {
 // FuzzScopedSuiteGet registers the fuzz target of Scoped.Get on
 // scopedIdle, with every check of the suite excused.
 func FuzzScopedSuiteGet(f *testing.F) {
-	FuzzScopedSuite(
+	families.FuzzScopedSuite(
 		f,
-		ScopedChecks.Get.Callable,
+		families.ScopedChecks.Get.Callable,
 		scopedIdle,
 		conform.Excuse(
-			ScopedChecks.Set.Smoke(),
+			families.ScopedChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Set.Cancel(),
+			families.ScopedChecks.Set.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Set.Partition(),
+			families.ScopedChecks.Set.Partition(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Get.Smoke(),
+			families.ScopedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			ScopedChecks.Get.Cancel(),
+			families.ScopedChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8067,16 +8391,16 @@ func FuzzScopedSuiteGet(f *testing.F) {
 // scopedIdle.
 func BenchmarkScopedSuite(b *testing.B) {
 	b.Run("Set", func(b *testing.B) {
-		BenchScopedSuite(b, ScopedChecks.Set.Callable, scopedIdle)
+		families.BenchScopedSuite(b, families.ScopedChecks.Set.Callable, scopedIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchScopedSuite(b, ScopedChecks.Get.Callable, scopedIdle)
+		families.BenchScopedSuite(b, families.ScopedChecks.Get.Callable, scopedIdle)
 	})
 }
 
-// plainSubjectEmbedded is Plain under the name of the field that
+// plainSubjectEmbedded is families.Plain under the name of the field that
 // plainSubject embeds.
-type plainSubjectEmbedded = Plain
+type plainSubjectEmbedded = families.Plain
 
 // plainSubject is a value of Plain that only TestPlainSuite builds.
 type plainSubject struct{ plainSubjectEmbedded }
@@ -8088,57 +8412,57 @@ func TestPlainSuite(t *testing.T) {
 
 	t.Run("PlainSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, PlainSuite())
+		conform.Falsify(t, families.PlainSuite())
 	})
 
 	t.Run("RunPlainSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *plainSubject
-		RunPlainSuite(
+		families.RunPlainSuite(
 			t,
 			func() *plainSubject {
 				built = &plainSubject{}
 				return built
 			},
-			conform.With(PlainCheck{
+			conform.With(families.PlainCheck{
 				ID:        "Plain/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PlainHandle) {
+				Apply: func(h *families.PlainHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Plain(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Plain(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PlainHandle) Plain { return &plainSubject{} },
+				Defect: func(*families.PlainHandle) families.Plain { return &plainSubject{} },
 			}),
 			conform.Excuse(
-				PlainChecks.Set.Smoke(),
+				families.PlainChecks.Set.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Get.Smoke(),
+				families.PlainChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Get.Cancel(),
+				families.PlainChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Get.ZeroOnError(),
+				families.PlainChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Get.ReadAfterWrite(),
+				families.PlainChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Watch.Smoke(),
+				families.PlainChecks.Watch.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Watch.Cancel(),
+				families.PlainChecks.Watch.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.All.Smoke(),
+				families.PlainChecks.All.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -8147,51 +8471,51 @@ func TestPlainSuite(t *testing.T) {
 	t.Run("RunPlainSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *plainSubject
-		RunPlainSuiteFromHandle(
+		families.RunPlainSuiteFromHandle(
 			t,
-			func(*PlainHandle) *plainSubject {
+			func(*families.PlainHandle) *plainSubject {
 				built = &plainSubject{}
 				return built
 			},
-			conform.With(PlainCheck{
+			conform.With(families.PlainCheck{
 				ID:        "Plain/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *PlainHandle) {
+				Apply: func(h *families.PlainHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Plain(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, families.Plain(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*PlainHandle) Plain { return &plainSubject{} },
+				Defect: func(*families.PlainHandle) families.Plain { return &plainSubject{} },
 			}),
 			conform.Excuse(
-				PlainChecks.Set.Smoke(),
+				families.PlainChecks.Set.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Get.Smoke(),
+				families.PlainChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Get.Cancel(),
+				families.PlainChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Get.ZeroOnError(),
+				families.PlainChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Get.ReadAfterWrite(),
+				families.PlainChecks.Get.ReadAfterWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Watch.Smoke(),
+				families.PlainChecks.Watch.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.Watch.Cancel(),
+				families.PlainChecks.Watch.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				PlainChecks.All.Smoke(),
+				families.PlainChecks.All.Smoke(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -8200,8 +8524,8 @@ func TestPlainSuite(t *testing.T) {
 
 // plainIdle returns the planted defect of a ceiling of Plain with a spend
 // of nothing, a subject that answers each call at once.
-func plainIdle(h *PlainHandle) Plain {
-	return PlainSuite().Calls[0].Over(h, func() {})
+func plainIdle(h *families.PlainHandle) families.Plain {
+	return families.PlainSuite().Calls[0].Over(h, func() {})
 }
 
 // TestPlainSuiteBudgets applies the allocation ceilings of the suite of
@@ -8209,43 +8533,46 @@ func plainIdle(h *PlainHandle) Plain {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestPlainSuiteBudgets(t *testing.T) {
-	RunPlainBudgets(
+	families.RunPlainBudgets(
 		t,
 		plainIdle,
-		conform.Ceilings(PlainChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PlainChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PlainChecks.Watch.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(PlainChecks.All.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.PlainChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(families.PlainChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.PlainChecks.Watch.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(families.PlainChecks.All.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			PlainChecks.Set.Smoke(),
+			families.PlainChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Smoke(),
+			families.PlainChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Cancel(),
+			families.PlainChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ZeroOnError(),
+			families.PlainChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ReadAfterWrite(),
+			families.PlainChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Smoke(),
+			families.PlainChecks.Watch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Cancel(),
+			families.PlainChecks.Watch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.All.Smoke(),
+			families.PlainChecks.All.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8254,40 +8581,40 @@ func TestPlainSuiteBudgets(t *testing.T) {
 // FuzzPlainSuiteSet registers the fuzz target of Plain.Set on plainIdle,
 // with every check of the suite excused.
 func FuzzPlainSuiteSet(f *testing.F) {
-	FuzzPlainSuite(
+	families.FuzzPlainSuite(
 		f,
-		PlainChecks.Set.Callable,
+		families.PlainChecks.Set.Callable,
 		plainIdle,
 		conform.Excuse(
-			PlainChecks.Set.Smoke(),
+			families.PlainChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Smoke(),
+			families.PlainChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Cancel(),
+			families.PlainChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ZeroOnError(),
+			families.PlainChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ReadAfterWrite(),
+			families.PlainChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Smoke(),
+			families.PlainChecks.Watch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Cancel(),
+			families.PlainChecks.Watch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.All.Smoke(),
+			families.PlainChecks.All.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8296,40 +8623,40 @@ func FuzzPlainSuiteSet(f *testing.F) {
 // FuzzPlainSuiteGet registers the fuzz target of Plain.Get on plainIdle,
 // with every check of the suite excused.
 func FuzzPlainSuiteGet(f *testing.F) {
-	FuzzPlainSuite(
+	families.FuzzPlainSuite(
 		f,
-		PlainChecks.Get.Callable,
+		families.PlainChecks.Get.Callable,
 		plainIdle,
 		conform.Excuse(
-			PlainChecks.Set.Smoke(),
+			families.PlainChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Smoke(),
+			families.PlainChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Cancel(),
+			families.PlainChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ZeroOnError(),
+			families.PlainChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ReadAfterWrite(),
+			families.PlainChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Smoke(),
+			families.PlainChecks.Watch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Cancel(),
+			families.PlainChecks.Watch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.All.Smoke(),
+			families.PlainChecks.All.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8338,40 +8665,40 @@ func FuzzPlainSuiteGet(f *testing.F) {
 // FuzzPlainSuiteWatch registers the fuzz target of Plain.Watch on
 // plainIdle, with every check of the suite excused.
 func FuzzPlainSuiteWatch(f *testing.F) {
-	FuzzPlainSuite(
+	families.FuzzPlainSuite(
 		f,
-		PlainChecks.Watch.Callable,
+		families.PlainChecks.Watch.Callable,
 		plainIdle,
 		conform.Excuse(
-			PlainChecks.Set.Smoke(),
+			families.PlainChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Smoke(),
+			families.PlainChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Cancel(),
+			families.PlainChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ZeroOnError(),
+			families.PlainChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ReadAfterWrite(),
+			families.PlainChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Smoke(),
+			families.PlainChecks.Watch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Cancel(),
+			families.PlainChecks.Watch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.All.Smoke(),
+			families.PlainChecks.All.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8380,40 +8707,40 @@ func FuzzPlainSuiteWatch(f *testing.F) {
 // FuzzPlainSuiteAll registers the fuzz target of Plain.All on plainIdle,
 // with every check of the suite excused.
 func FuzzPlainSuiteAll(f *testing.F) {
-	FuzzPlainSuite(
+	families.FuzzPlainSuite(
 		f,
-		PlainChecks.All.Callable,
+		families.PlainChecks.All.Callable,
 		plainIdle,
 		conform.Excuse(
-			PlainChecks.Set.Smoke(),
+			families.PlainChecks.Set.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Smoke(),
+			families.PlainChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.Cancel(),
+			families.PlainChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ZeroOnError(),
+			families.PlainChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Get.ReadAfterWrite(),
+			families.PlainChecks.Get.ReadAfterWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Smoke(),
+			families.PlainChecks.Watch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.Watch.Cancel(),
+			families.PlainChecks.Watch.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			PlainChecks.All.Smoke(),
+			families.PlainChecks.All.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8423,22 +8750,22 @@ func FuzzPlainSuiteAll(f *testing.F) {
 // plainIdle.
 func BenchmarkPlainSuite(b *testing.B) {
 	b.Run("Set", func(b *testing.B) {
-		BenchPlainSuite(b, PlainChecks.Set.Callable, plainIdle)
+		families.BenchPlainSuite(b, families.PlainChecks.Set.Callable, plainIdle)
 	})
 	b.Run("Get", func(b *testing.B) {
-		BenchPlainSuite(b, PlainChecks.Get.Callable, plainIdle)
+		families.BenchPlainSuite(b, families.PlainChecks.Get.Callable, plainIdle)
 	})
 	b.Run("Watch", func(b *testing.B) {
-		BenchPlainSuite(b, PlainChecks.Watch.Callable, plainIdle)
+		families.BenchPlainSuite(b, families.PlainChecks.Watch.Callable, plainIdle)
 	})
 	b.Run("All", func(b *testing.B) {
-		BenchPlainSuite(b, PlainChecks.All.Callable, plainIdle)
+		families.BenchPlainSuite(b, families.PlainChecks.All.Callable, plainIdle)
 	})
 }
 
-// sessionsSubjectEmbedded is Sessions under the name of the field that
-// sessionsSubject embeds.
-type sessionsSubjectEmbedded = Sessions
+// sessionsSubjectEmbedded is families.Sessions under the name of the field
+// that sessionsSubject embeds.
+type sessionsSubjectEmbedded = families.Sessions
 
 // sessionsSubject is a value of Sessions that only TestSessionsSuite
 // builds.
@@ -8451,37 +8778,43 @@ func TestSessionsSuite(t *testing.T) {
 
 	t.Run("SessionsSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, SessionsSuite())
+		conform.Falsify(t, families.SessionsSuite())
 	})
 
 	t.Run("RunSessionsSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *sessionsSubject
-		RunSessionsSuite(
+		families.RunSessionsSuite(
 			t,
 			func() *sessionsSubject {
 				built = &sessionsSubject{}
 				return built
 			},
-			conform.With(SessionsCheck{
+			conform.With(families.SessionsCheck{
 				ID:        "Sessions/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *SessionsHandle) {
+				Apply: func(h *families.SessionsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Sessions(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Sessions(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*SessionsHandle) Sessions { return &sessionsSubject{} },
+				Defect: func(*families.SessionsHandle) families.Sessions { return &sessionsSubject{} },
 			}),
 			conform.Excuse(
-				SessionsChecks.Open.Smoke(),
+				families.SessionsChecks.Open.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Open.Cancel(),
+				families.SessionsChecks.Open.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Open.ZeroOnError(),
+				families.SessionsChecks.Open.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -8490,31 +8823,37 @@ func TestSessionsSuite(t *testing.T) {
 	t.Run("RunSessionsSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *sessionsSubject
-		RunSessionsSuiteFromHandle(
+		families.RunSessionsSuiteFromHandle(
 			t,
-			func(*SessionsHandle) *sessionsSubject {
+			func(*families.SessionsHandle) *sessionsSubject {
 				built = &sessionsSubject{}
 				return built
 			},
-			conform.With(SessionsCheck{
+			conform.With(families.SessionsCheck{
 				ID:        "Sessions/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *SessionsHandle) {
+				Apply: func(h *families.SessionsHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Sessions(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(
+						h,
+						got,
+						families.Sessions(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
 				},
-				Defect: func(*SessionsHandle) Sessions { return &sessionsSubject{} },
+				Defect: func(*families.SessionsHandle) families.Sessions { return &sessionsSubject{} },
 			}),
 			conform.Excuse(
-				SessionsChecks.Open.Smoke(),
+				families.SessionsChecks.Open.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Open.Cancel(),
+				families.SessionsChecks.Open.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				SessionsChecks.Open.ZeroOnError(),
+				families.SessionsChecks.Open.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -8523,8 +8862,8 @@ func TestSessionsSuite(t *testing.T) {
 
 // sessionsIdle returns the planted defect of a ceiling of Sessions with a
 // spend of nothing, a subject that answers each call at once.
-func sessionsIdle(h *SessionsHandle) Sessions {
-	return SessionsSuite().Calls[0].Over(h, func() {})
+func sessionsIdle(h *families.SessionsHandle) families.Sessions {
+	return families.SessionsSuite().Calls[0].Over(h, func() {})
 }
 
 // TestSessionsSuiteBudgets applies the allocation ceilings of the suite of
@@ -8532,20 +8871,23 @@ func sessionsIdle(h *SessionsHandle) Sessions {
 // ceiling of 0 to each callable without a budget whose calls build no
 // input of their own.
 func TestSessionsSuiteBudgets(t *testing.T) {
-	RunSessionsBudgets(
+	families.RunSessionsBudgets(
 		t,
 		sessionsIdle,
-		conform.Ceilings(SessionsChecks.Open.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			families.SessionsChecks.Open.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
 		conform.Excuse(
-			SessionsChecks.Open.Smoke(),
+			families.SessionsChecks.Open.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Open.Cancel(),
+			families.SessionsChecks.Open.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Open.ZeroOnError(),
+			families.SessionsChecks.Open.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8554,20 +8896,20 @@ func TestSessionsSuiteBudgets(t *testing.T) {
 // FuzzSessionsSuiteOpen registers the fuzz target of Sessions.Open on
 // sessionsIdle, with every check of the suite excused.
 func FuzzSessionsSuiteOpen(f *testing.F) {
-	FuzzSessionsSuite(
+	families.FuzzSessionsSuite(
 		f,
-		SessionsChecks.Open.Callable,
+		families.SessionsChecks.Open.Callable,
 		sessionsIdle,
 		conform.Excuse(
-			SessionsChecks.Open.Smoke(),
+			families.SessionsChecks.Open.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Open.Cancel(),
+			families.SessionsChecks.Open.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			SessionsChecks.Open.ZeroOnError(),
+			families.SessionsChecks.Open.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -8577,6 +8919,6 @@ func FuzzSessionsSuiteOpen(f *testing.F) {
 // on sessionsIdle.
 func BenchmarkSessionsSuite(b *testing.B) {
 	b.Run("Open", func(b *testing.B) {
-		BenchSessionsSuite(b, SessionsChecks.Open.Callable, sessionsIdle)
+		families.BenchSessionsSuite(b, families.SessionsChecks.Open.Callable, sessionsIdle)
 	})
 }

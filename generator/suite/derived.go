@@ -362,6 +362,7 @@ func (k *caller) derived(s *Suite) {
 			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refusal{
 				Claim:    c.Claim.ID,
 				Callable: c.Facts.Callable,
+				Key:      c.Key,
 				Why:      "the handle that " + c.Facts.Callable + " returns is not an interface, so no planted handle can replace it",
 				Remedy:   "return the handle of " + c.Facts.Callable + " as an interface",
 			})
@@ -369,7 +370,7 @@ func (k *caller) derived(s *Suite) {
 		}
 		if !k.referableArgs(d.Args) || !k.referableDefect(defect) {
 			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refusal{
-				Claim: c.Claim.ID, Callable: c.Facts.Callable,
+				Claim: c.Claim.ID, Callable: c.Facts.Callable, Key: c.Key,
 				Why:    "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy: "author a sample of each input of " + c.Facts.Callable + " with the directive sample",
 			})

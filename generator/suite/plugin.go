@@ -695,7 +695,11 @@ func New() sdk.Dual {
 		Options(g.settings).
 		Keys(g.register).
 		Output(plugin.Output{Per: plugin.PerSource, Word: Word, Template: suiteTemplate}).
-		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, External: true, Word: Word, Template: conformTemplate})
+		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, External: true, Word: Word, Template: conformTemplate}).
+		Output(plugin.Output{
+			Tag: LockTag, Per: plugin.PerPlan, Word: lockWord, Name: LockName, LineSet: true, Template: lockTemplate,
+		}).
+		Removed(lost)
 	lang.Register(b, parts)
 	return b.Handle(
 		sdk.Directive(suiteSchema,
@@ -1473,6 +1477,8 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	decls = append(decls, alias(n.Handle), alias(n.Check), alias(n.Option),
 		&emit.Function{Origin: *origin, Name: n.Subjects, Visibility: symbol.VisibilityPackage})
 	e.File().Record(*s, decls...)
+	e.PlanFile(LockTag).Record(lockOf(s),
+		&emit.Struct{Name: e.JoinName(lockWord, s.Declaration), Visibility: symbol.VisibilityPackage})
 	record := &emit.Struct{
 		Origin: *origin, Name: e.JoinName(proofsWord, s.Declaration), Visibility: symbol.VisibilityPackage,
 	}

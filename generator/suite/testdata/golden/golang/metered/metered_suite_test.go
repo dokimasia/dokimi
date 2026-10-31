@@ -1,9 +1,11 @@
-package metered
+package metered_test
 
 import (
 	"testing"
 	"time"
 
+	"example.com/shop/meter"
+	"example.com/shop/metered"
 	"go.dokimi.dev/conform"
 )
 
@@ -12,17 +14,17 @@ import (
 func TestMeterConformsToMeter(t *testing.T) {
 	t.Parallel()
 
-	RunMeterSuite(t, New)
+	meter.RunMeterSuite(t, metered.New)
 }
 
 // TestMeterConformsToMeterAllocs applies the allocation ceilings and the
 // checks that count allocations of the suite of Meter to Meter.
 func TestMeterConformsToMeterAllocs(t *testing.T) {
-	RunMeterBudgets(
+	meter.RunMeterBudgets(
 		t,
-		func(*MeterHandle) *Meter { return New() },
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 		conform.Ceilings(
-			MeterChecks.Merge.Callable,
+			meter.MeterChecks.Merge.Callable,
 			conform.Budget{
 				Allocs:  new(uint64(0)),
 				Latency: time.Millisecond,
@@ -34,9 +36,9 @@ func TestMeterConformsToMeterAllocs(t *testing.T) {
 // BenchmarkMeterConformsToMeter measures each callable of the suite of
 // Meter on Meter.
 func BenchmarkMeterConformsToMeter(b *testing.B) {
-	opts := []MeterOption{
+	opts := []meter.MeterOption{
 		conform.Ceilings(
-			MeterChecks.Merge.Callable,
+			meter.MeterChecks.Merge.Callable,
 			conform.Budget{
 				Allocs:  new(uint64(0)),
 				Latency: time.Millisecond,
@@ -44,31 +46,31 @@ func BenchmarkMeterConformsToMeter(b *testing.B) {
 		),
 	}
 	b.Run("Count", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Count.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Count.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Record", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Record.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Record.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Merge", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Merge.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Merge.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Total", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Total.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Total.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 }
@@ -77,9 +79,9 @@ func BenchmarkMeterConformsToMeter(b *testing.B) {
 // suite of Meter that admits concurrent calls on Meter, on GOMAXPROCS
 // goroutines at once.
 func BenchmarkMeterConformsToMeterParallel(b *testing.B) {
-	opts := []MeterOption{
+	opts := []meter.MeterOption{
 		conform.Ceilings(
-			MeterChecks.Merge.Callable,
+			meter.MeterChecks.Merge.Callable,
 			conform.Budget{
 				Allocs:  new(uint64(0)),
 				Latency: time.Millisecond,
@@ -87,10 +89,10 @@ func BenchmarkMeterConformsToMeterParallel(b *testing.B) {
 		),
 	}
 	b.Run("Count", func(b *testing.B) {
-		BenchMeterSuiteParallel(
+		meter.BenchMeterSuiteParallel(
 			b,
-			MeterChecks.Count.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Count.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 }
@@ -98,25 +100,41 @@ func BenchmarkMeterConformsToMeterParallel(b *testing.B) {
 // FuzzMeterConformsToMeterCount fuzzes the property checks of Meter.Count
 // on Meter.
 func FuzzMeterConformsToMeterCount(f *testing.F) {
-	FuzzMeterSuite(f, MeterChecks.Count.Callable, func(*MeterHandle) *Meter { return New() })
+	meter.FuzzMeterSuite(
+		f,
+		meter.MeterChecks.Count.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
+	)
 }
 
 // FuzzMeterConformsToMeterRecord fuzzes the property checks of
 // Meter.Record on Meter.
 func FuzzMeterConformsToMeterRecord(f *testing.F) {
-	FuzzMeterSuite(f, MeterChecks.Record.Callable, func(*MeterHandle) *Meter { return New() })
+	meter.FuzzMeterSuite(
+		f,
+		meter.MeterChecks.Record.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
+	)
 }
 
 // FuzzMeterConformsToMeterMerge fuzzes the property checks of Meter.Merge
 // on Meter.
 func FuzzMeterConformsToMeterMerge(f *testing.F) {
-	FuzzMeterSuite(f, MeterChecks.Merge.Callable, func(*MeterHandle) *Meter { return New() })
+	meter.FuzzMeterSuite(
+		f,
+		meter.MeterChecks.Merge.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
+	)
 }
 
 // FuzzMeterConformsToMeterTotal fuzzes the property checks of Meter.Total
 // on Meter.
 func FuzzMeterConformsToMeterTotal(f *testing.F) {
-	FuzzMeterSuite(f, MeterChecks.Total.Callable, func(*MeterHandle) *Meter { return New() })
+	meter.FuzzMeterSuite(
+		f,
+		meter.MeterChecks.Total.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
+	)
 }
 
 // TestPlainConformsToMeter applies the checks of the suite of Meter to
@@ -124,11 +142,11 @@ func FuzzMeterConformsToMeterTotal(f *testing.F) {
 func TestPlainConformsToMeter(t *testing.T) {
 	t.Parallel()
 
-	RunMeterSuite(
+	meter.RunMeterSuite(
 		t,
-		New,
+		metered.New,
 		conform.Excuse(
-			MeterChecks.Count.LatencyBudget(),
+			meter.MeterChecks.Count.LatencyBudget(),
 			"the meter scans every sample",
 		),
 	)
@@ -137,11 +155,11 @@ func TestPlainConformsToMeter(t *testing.T) {
 // TestPlainConformsToMeterAllocs applies the allocation ceilings and the
 // checks that count allocations of the suite of Meter to Plain.
 func TestPlainConformsToMeterAllocs(t *testing.T) {
-	RunMeterBudgets(
+	meter.RunMeterBudgets(
 		t,
-		func(*MeterHandle) *Meter { return New() },
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 		conform.Excuse(
-			MeterChecks.Count.LatencyBudget(),
+			meter.MeterChecks.Count.LatencyBudget(),
 			"the meter scans every sample",
 		),
 	)
@@ -150,38 +168,38 @@ func TestPlainConformsToMeterAllocs(t *testing.T) {
 // BenchmarkPlainConformsToMeter measures each callable of the suite of
 // Meter on Plain.
 func BenchmarkPlainConformsToMeter(b *testing.B) {
-	opts := []MeterOption{
+	opts := []meter.MeterOption{
 		conform.Excuse(
-			MeterChecks.Count.LatencyBudget(),
+			meter.MeterChecks.Count.LatencyBudget(),
 			"the meter scans every sample",
 		),
 	}
 	b.Run("Count", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Count.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Count.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Record", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Record.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Record.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Merge", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Merge.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Merge.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Total", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Total.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Total.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 }
@@ -190,17 +208,17 @@ func BenchmarkPlainConformsToMeter(b *testing.B) {
 // suite of Meter that admits concurrent calls on Plain, on GOMAXPROCS
 // goroutines at once.
 func BenchmarkPlainConformsToMeterParallel(b *testing.B) {
-	opts := []MeterOption{
+	opts := []meter.MeterOption{
 		conform.Excuse(
-			MeterChecks.Count.LatencyBudget(),
+			meter.MeterChecks.Count.LatencyBudget(),
 			"the meter scans every sample",
 		),
 	}
 	b.Run("Count", func(b *testing.B) {
-		BenchMeterSuiteParallel(
+		meter.BenchMeterSuiteParallel(
 			b,
-			MeterChecks.Count.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Count.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 }
@@ -208,12 +226,12 @@ func BenchmarkPlainConformsToMeterParallel(b *testing.B) {
 // FuzzPlainConformsToMeterCount fuzzes the property checks of Meter.Count
 // on Plain.
 func FuzzPlainConformsToMeterCount(f *testing.F) {
-	FuzzMeterSuite(
+	meter.FuzzMeterSuite(
 		f,
-		MeterChecks.Count.Callable,
-		func(*MeterHandle) *Meter { return New() },
+		meter.MeterChecks.Count.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 		conform.Excuse(
-			MeterChecks.Count.LatencyBudget(),
+			meter.MeterChecks.Count.LatencyBudget(),
 			"the meter scans every sample",
 		),
 	)
@@ -222,12 +240,12 @@ func FuzzPlainConformsToMeterCount(f *testing.F) {
 // FuzzPlainConformsToMeterRecord fuzzes the property checks of
 // Meter.Record on Plain.
 func FuzzPlainConformsToMeterRecord(f *testing.F) {
-	FuzzMeterSuite(
+	meter.FuzzMeterSuite(
 		f,
-		MeterChecks.Record.Callable,
-		func(*MeterHandle) *Meter { return New() },
+		meter.MeterChecks.Record.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 		conform.Excuse(
-			MeterChecks.Count.LatencyBudget(),
+			meter.MeterChecks.Count.LatencyBudget(),
 			"the meter scans every sample",
 		),
 	)
@@ -236,12 +254,12 @@ func FuzzPlainConformsToMeterRecord(f *testing.F) {
 // FuzzPlainConformsToMeterMerge fuzzes the property checks of Meter.Merge
 // on Plain.
 func FuzzPlainConformsToMeterMerge(f *testing.F) {
-	FuzzMeterSuite(
+	meter.FuzzMeterSuite(
 		f,
-		MeterChecks.Merge.Callable,
-		func(*MeterHandle) *Meter { return New() },
+		meter.MeterChecks.Merge.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 		conform.Excuse(
-			MeterChecks.Count.LatencyBudget(),
+			meter.MeterChecks.Count.LatencyBudget(),
 			"the meter scans every sample",
 		),
 	)
@@ -250,12 +268,12 @@ func FuzzPlainConformsToMeterMerge(f *testing.F) {
 // FuzzPlainConformsToMeterTotal fuzzes the property checks of Meter.Total
 // on Plain.
 func FuzzPlainConformsToMeterTotal(f *testing.F) {
-	FuzzMeterSuite(
+	meter.FuzzMeterSuite(
 		f,
-		MeterChecks.Total.Callable,
-		func(*MeterHandle) *Meter { return New() },
+		meter.MeterChecks.Total.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 		conform.Excuse(
-			MeterChecks.Count.LatencyBudget(),
+			meter.MeterChecks.Count.LatencyBudget(),
 			"the meter scans every sample",
 		),
 	)
@@ -266,17 +284,17 @@ func FuzzPlainConformsToMeterTotal(f *testing.F) {
 func TestWarmedConformsToMeter(t *testing.T) {
 	t.Parallel()
 
-	RunMeterSuite(t, New)
+	meter.RunMeterSuite(t, metered.New)
 }
 
 // TestWarmedConformsToMeterAllocs applies the allocation ceilings and the
 // checks that count allocations of the suite of Meter to Warmed.
 func TestWarmedConformsToMeterAllocs(t *testing.T) {
-	RunMeterBudgets(
+	meter.RunMeterBudgets(
 		t,
-		func(*MeterHandle) *Meter { return New() },
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 		conform.Ceilings(
-			MeterChecks.Merge.Callable,
+			meter.MeterChecks.Merge.Callable,
 			conform.Budget{
 				Warmup: new(300),
 			},
@@ -287,40 +305,40 @@ func TestWarmedConformsToMeterAllocs(t *testing.T) {
 // BenchmarkWarmedConformsToMeter measures each callable of the suite of
 // Meter on Warmed.
 func BenchmarkWarmedConformsToMeter(b *testing.B) {
-	opts := []MeterOption{
+	opts := []meter.MeterOption{
 		conform.Ceilings(
-			MeterChecks.Merge.Callable,
+			meter.MeterChecks.Merge.Callable,
 			conform.Budget{
 				Warmup: new(300),
 			},
 		),
 	}
 	b.Run("Count", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Count.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Count.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Record", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Record.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Record.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Merge", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Merge.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Merge.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 	b.Run("Total", func(b *testing.B) {
-		BenchMeterSuite(
+		meter.BenchMeterSuite(
 			b,
-			MeterChecks.Total.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Total.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 }
@@ -329,19 +347,19 @@ func BenchmarkWarmedConformsToMeter(b *testing.B) {
 // suite of Meter that admits concurrent calls on Warmed, on GOMAXPROCS
 // goroutines at once.
 func BenchmarkWarmedConformsToMeterParallel(b *testing.B) {
-	opts := []MeterOption{
+	opts := []meter.MeterOption{
 		conform.Ceilings(
-			MeterChecks.Merge.Callable,
+			meter.MeterChecks.Merge.Callable,
 			conform.Budget{
 				Warmup: new(300),
 			},
 		),
 	}
 	b.Run("Count", func(b *testing.B) {
-		BenchMeterSuiteParallel(
+		meter.BenchMeterSuiteParallel(
 			b,
-			MeterChecks.Count.Callable,
-			func(*MeterHandle) *Meter { return New() },
+			meter.MeterChecks.Count.Callable,
+			func(*meter.MeterHandle) *metered.Meter { return metered.New() },
 			opts...)
 	})
 }
@@ -349,23 +367,39 @@ func BenchmarkWarmedConformsToMeterParallel(b *testing.B) {
 // FuzzWarmedConformsToMeterCount fuzzes the property checks of Meter.Count
 // on Warmed.
 func FuzzWarmedConformsToMeterCount(f *testing.F) {
-	FuzzMeterSuite(f, MeterChecks.Count.Callable, func(*MeterHandle) *Meter { return New() })
+	meter.FuzzMeterSuite(
+		f,
+		meter.MeterChecks.Count.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
+	)
 }
 
 // FuzzWarmedConformsToMeterRecord fuzzes the property checks of
 // Meter.Record on Warmed.
 func FuzzWarmedConformsToMeterRecord(f *testing.F) {
-	FuzzMeterSuite(f, MeterChecks.Record.Callable, func(*MeterHandle) *Meter { return New() })
+	meter.FuzzMeterSuite(
+		f,
+		meter.MeterChecks.Record.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
+	)
 }
 
 // FuzzWarmedConformsToMeterMerge fuzzes the property checks of Meter.Merge
 // on Warmed.
 func FuzzWarmedConformsToMeterMerge(f *testing.F) {
-	FuzzMeterSuite(f, MeterChecks.Merge.Callable, func(*MeterHandle) *Meter { return New() })
+	meter.FuzzMeterSuite(
+		f,
+		meter.MeterChecks.Merge.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
+	)
 }
 
 // FuzzWarmedConformsToMeterTotal fuzzes the property checks of Meter.Total
 // on Warmed.
 func FuzzWarmedConformsToMeterTotal(f *testing.F) {
-	FuzzMeterSuite(f, MeterChecks.Total.Callable, func(*MeterHandle) *Meter { return New() })
+	meter.FuzzMeterSuite(
+		f,
+		meter.MeterChecks.Total.Callable,
+		func(*meter.MeterHandle) *metered.Meter { return metered.New() },
+	)
 }

@@ -1,15 +1,16 @@
-package store
+package store_test
 
 import (
 	"testing"
 
+	"example.com/shop/store"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/conform"
 )
 
-// storeSubjectEmbedded is Store under the name of the field that
+// storeSubjectEmbedded is store.Store under the name of the field that
 // storeSubject embeds.
-type storeSubjectEmbedded = Store
+type storeSubjectEmbedded = store.Store
 
 // storeSubject is a value of Store that only TestStoreSuite builds.
 type storeSubject struct{ storeSubjectEmbedded }
@@ -21,49 +22,49 @@ func TestStoreSuite(t *testing.T) {
 
 	t.Run("StoreSuite", func(t *testing.T) {
 		t.Parallel()
-		conform.Falsify(t, StoreSuite())
+		conform.Falsify(t, store.StoreSuite())
 	})
 
 	t.Run("RunStoreSuite", func(t *testing.T) {
 		t.Parallel()
 		var built *storeSubject
-		RunStoreSuite(
+		store.RunStoreSuite(
 			t,
 			func() *storeSubject {
 				built = &storeSubject{}
 				return built
 			},
-			conform.With(StoreCheck{
+			conform.With(store.StoreCheck{
 				ID:        "Store/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *StoreHandle) {
+				Apply: func(h *store.StoreHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Store(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, store.Store(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*StoreHandle) Store { return &storeSubject{} },
+				Defect: func(*store.StoreHandle) store.Store { return &storeSubject{} },
 			}),
 			conform.Excuse(
-				StoreChecks.Get.Smoke(),
+				store.StoreChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.Cancel(),
+				store.StoreChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.ZeroOnError(),
+				store.StoreChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Put.Smoke(),
+				store.StoreChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Put.Cancel(),
+				store.StoreChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Put.RefusesACancelledPut(),
+				store.StoreChecks.Put.RefusesACancelledPut(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -72,43 +73,43 @@ func TestStoreSuite(t *testing.T) {
 	t.Run("RunStoreSuiteFromHandle", func(t *testing.T) {
 		t.Parallel()
 		var built *storeSubject
-		RunStoreSuiteFromHandle(
+		store.RunStoreSuiteFromHandle(
 			t,
-			func(*StoreHandle) *storeSubject {
+			func(*store.StoreHandle) *storeSubject {
 				built = &storeSubject{}
 				return built
 			},
-			conform.With(StoreCheck{
+			conform.With(store.StoreCheck{
 				ID:        "Store/builds-the-subject",
 				Statement: "the subject of a check is the value that the factory builds",
-				Apply: func(h *StoreHandle) {
+				Apply: func(h *store.StoreHandle) {
 					got := h.Subject()
-					assert.Equal(h, got, Store(built), h.Statement(), assert.ByIdentity())
+					assert.Equal(h, got, store.Store(built), h.Statement(), assert.ByIdentity())
 				},
-				Defect: func(*StoreHandle) Store { return &storeSubject{} },
+				Defect: func(*store.StoreHandle) store.Store { return &storeSubject{} },
 			}),
 			conform.Excuse(
-				StoreChecks.Get.Smoke(),
+				store.StoreChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.Cancel(),
+				store.StoreChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Get.ZeroOnError(),
+				store.StoreChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Put.Smoke(),
+				store.StoreChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Put.Cancel(),
+				store.StoreChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				StoreChecks.Put.RefusesACancelledPut(),
+				store.StoreChecks.Put.RefusesACancelledPut(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -118,7 +119,7 @@ func TestStoreSuite(t *testing.T) {
 		t.Parallel()
 		assert.Equal(
 			t,
-			string(StoreChecks.Put.RefusesACancelledPut()),
+			string(store.StoreChecks.Put.RefusesACancelledPut()),
 			"Store.Put/refuses-a-cancelled-put",
 			"the identity of the check joins the callable and the segment of the check",
 		)
@@ -127,8 +128,8 @@ func TestStoreSuite(t *testing.T) {
 
 // storeIdle returns the planted defect of a ceiling of Store with a spend
 // of nothing, a subject that answers each call at once.
-func storeIdle(h *StoreHandle) Store {
-	return StoreSuite().Calls[0].Over(h, func() {})
+func storeIdle(h *store.StoreHandle) store.Store {
+	return store.StoreSuite().Calls[0].Over(h, func() {})
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
@@ -136,33 +137,33 @@ func storeIdle(h *StoreHandle) Store {
 // of 0 to each callable without a budget whose calls build no input of
 // their own.
 func TestStoreSuiteBudgets(t *testing.T) {
-	RunStoreBudgets(
+	store.RunStoreBudgets(
 		t,
 		storeIdle,
-		conform.Ceilings(StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Ceilings(StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(store.StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(store.StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			store.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			store.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			store.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			store.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			store.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.RefusesACancelledPut(),
+			store.StoreChecks.Put.RefusesACancelledPut(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -171,32 +172,32 @@ func TestStoreSuiteBudgets(t *testing.T) {
 // FuzzStoreSuiteGet registers the fuzz target of Store.Get on storeIdle,
 // with every check of the suite excused.
 func FuzzStoreSuiteGet(f *testing.F) {
-	FuzzStoreSuite(
+	store.FuzzStoreSuite(
 		f,
-		StoreChecks.Get.Callable,
+		store.StoreChecks.Get.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			store.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			store.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			store.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			store.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			store.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.RefusesACancelledPut(),
+			store.StoreChecks.Put.RefusesACancelledPut(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -205,32 +206,32 @@ func FuzzStoreSuiteGet(f *testing.F) {
 // FuzzStoreSuitePut registers the fuzz target of Store.Put on storeIdle,
 // with every check of the suite excused.
 func FuzzStoreSuitePut(f *testing.F) {
-	FuzzStoreSuite(
+	store.FuzzStoreSuite(
 		f,
-		StoreChecks.Put.Callable,
+		store.StoreChecks.Put.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Get.Smoke(),
+			store.StoreChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.Cancel(),
+			store.StoreChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Get.ZeroOnError(),
+			store.StoreChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Smoke(),
+			store.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.Cancel(),
+			store.StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			StoreChecks.Put.RefusesACancelledPut(),
+			store.StoreChecks.Put.RefusesACancelledPut(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -240,9 +241,9 @@ func FuzzStoreSuitePut(f *testing.F) {
 // storeIdle.
 func BenchmarkStoreSuite(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Get.Callable, storeIdle)
+		store.BenchStoreSuite(b, store.StoreChecks.Get.Callable, storeIdle)
 	})
 	b.Run("Put", func(b *testing.B) {
-		BenchStoreSuite(b, StoreChecks.Put.Callable, storeIdle)
+		store.BenchStoreSuite(b, store.StoreChecks.Put.Callable, storeIdle)
 	})
 }

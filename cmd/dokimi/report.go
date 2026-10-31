@@ -46,7 +46,7 @@ func reportRun(_ context.Context, run *gocli.Run[cli.Global, reportOptions]) err
 	for _, f := range run.Config().Files {
 		r, err := run.Open(f)
 		if err != nil {
-			return fmt.Errorf("open %s: %w", f, err)
+			return fmt.Errorf("read the run: %w", err)
 		}
 		read, err := report.Read(r)
 		// A file that the command only reads loses nothing on a close that fails.

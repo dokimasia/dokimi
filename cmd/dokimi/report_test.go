@@ -157,11 +157,12 @@ func TestReport(t *testing.T) {
 
 		t.Run("fails for a file that does not exist", func(t *testing.T) {
 			t.Parallel()
+			path := filepath.Join("absent", runFile)
 
-			_, stderr, status := runReport(t, t.TempDir(), filepath.Join("absent", runFile))
+			_, stderr, status := runReport(t, t.TempDir(), path)
 
 			assert.NotEqual(t, status, 0, "the run fails")
-			assert.Contains(t, stderr, "open absent/run.json", "the error names the file")
+			assert.Contains(t, stderr, "read the run: open "+path+": ", "the error names the file once")
 		})
 	})
 }

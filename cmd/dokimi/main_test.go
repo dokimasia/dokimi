@@ -5,12 +5,16 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/assert/files"
 	"go.dokimi.dev/eidos/cli/acceptancetest"
 	gotesting "go.dokimi.dev/eidos/lang/go/testing"
 
@@ -40,6 +44,87 @@ const (
 		"\tSlots int `default:\"many\"`\n}\n"
 	fileMode = 0o644
 )
+
+// The source of the package store of the shop, its file and the file of the
+// lock of the plan go. Store has a check of zero-on-error that the samples of
+// Item need, and Index has a check of read-after-write with the partner Add.
+const (
+	storeFile   = "store/store.go"
+	lockFile    = "dokimi.go.lock"
+	storeSource = `// Package store keeps the items of the shop under two suites.
+package store
+
+import (
+	"context"
+	"fmt"
+)
+
+// Item is an item of the shop. eidos derives no value of its field Owner, so
+// the directive sample names the functions that a check writes it with.
+//
+//dokimi:sample value=NewItem() alternate=OtherItem()
+type Item struct {
+	// Owner is the owner of the item.
+	Owner fmt.Stringer
+}
+
+// NewItem returns the item that the checks write.
+func NewItem() Item { return Item{Owner: owner("shop")} }
+
+// OtherItem returns the second item that the checks write.
+func OtherItem() Item { return Item{Owner: owner("supplier")} }
+
+// owner is a fmt.Stringer with its name.
+type owner string
+
+// String returns the name of the owner.
+func (o owner) String() string { return string(o) }
+
+// Store keeps the items by key.
+//
+//dokimi:suite
+type Store interface {
+	// Get returns the item under the key.
+	Get(ctx context.Context, key string) (Item, error)
+}
+
+// Index keeps the values by key.
+//
+//dokimi:suite
+type Index interface {
+	// Find returns the value that Add stored under the key.
+	//
+	//dokimi:mixin read-after-write write=Add
+	Find(ctx context.Context, key string) (string, error)
+
+	// Add stores the value under the key.
+	Add(ctx context.Context, key, value string) error
+}
+`
+)
+
+// shop returns the tree of a module with the package store of source.
+func shop(source string) files.Tree {
+	return files.Tree{
+		"go.mod":       files.Text("module example.com/shop\n\ngo 1.27.2\n"),
+		".dokimi.yaml": files.Text("version: 1\n"),
+		storeFile:      files.Text(source),
+	}
+}
+
+// dokimiRun runs the binary bin with args and --no-color in the directory dir,
+// and returns its output and its exit status.
+func dokimiRun(t *testing.T, bin, dir string, args ...string) (string, int) {
+	t.Helper()
+	cmd := exec.CommandContext(t.Context(), bin, append(args, "--no-color")...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if exit := (*exec.ExitError)(nil); errors.As(err, &exit) {
+		return string(out), exit.ExitCode()
+	}
+	assert.NoError(t, err, "the binary runs")
+	return string(out), 0
+}
 
 func TestMain(m *testing.M) {
 	if os.Getenv(childVar) != "" {
@@ -92,6 +177,109 @@ func TestDokimi(t *testing.T) {
 				c.check(t, f, bin, t.TempDir())
 			})
 		}
+
+		t.Run("writes the lock of the plan go at the root of the workspace", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, shop(storeSource))
+
+			out, status := dokimiRun(t, bin, dir, "run")
+
+			assert.Equal(t, status, 0, "the run passes: "+out)
+			files.HasContent(t, filepath.Join(dir, lockFile), "# dokimi lock 1\n"+
+				"# Each line is one check, ceiling, refusal or unclaimed classification. Commit this file.\n"+
+				"example.com/shop/store\tindex.add\tshape:composite-writer\tsilent\t-\n"+
+				"example.com/shop/store\tindex.add/cancel\tcancel\tcheck\t-\n"+
+				"example.com/shop/store\tindex.add/smoke\tsmoke\tcheck\t-\n"+
+				"example.com/shop/store\tindex.find/cancel\tcancel\tcheck\t-\n"+
+				"example.com/shop/store\tindex.find/read-after-write\tread-after-write\tcheck\twrite=index.add\n"+
+				"example.com/shop/store\tindex.find/smoke\tsmoke\tcheck\t-\n"+
+				"example.com/shop/store\tindex.find/zero-on-error\tzero-on-error\tcheck\t-\n"+
+				"example.com/shop/store\tstore.get/cancel\tcancel\tcheck\t-\n"+
+				"example.com/shop/store\tstore.get/smoke\tsmoke\tcheck\t-\n"+
+				"example.com/shop/store\tstore.get/zero-on-error\tzero-on-error\tcheck\t-\n",
+				"the lock has a line for each check of both suites")
+		})
+
+		losses := []struct {
+			name     string
+			giveFrom string
+			giveTo   string
+			wantLost []string
+		}{
+			{
+				name:     "fails --check with LostCheck for each check of a suite without its directive",
+				giveFrom: "//\n//dokimi:suite\ntype Index", giveTo: "type Index",
+				wantLost: []string{"index.find/read-after-write (read-after-write)", "index.add/smoke (smoke)"},
+			},
+			{
+				name:     "fails --check with LostCheck for a check that becomes a refusal",
+				giveFrom: "//dokimi:sample value=NewItem() alternate=OtherItem()\n", giveTo: "",
+				wantLost: []string{"store.get/zero-on-error (zero-on-error)"},
+			},
+			{
+				name:     "fails --check with LostCheck for a check whose partner changes",
+				giveFrom: "Add", giveTo: "Insert",
+				wantLost: []string{"index.find/read-after-write (read-after-write)"},
+			},
+		}
+		for _, tt := range losses {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				dir := files.Workspace(t, shop(storeSource))
+				out, status := dokimiRun(t, bin, dir, "run")
+				assert.Equal(t, status, 0, "the first run writes the lock: "+out)
+				edited := strings.ReplaceAll(storeSource, tt.giveFrom, tt.giveTo)
+				files.Write(t, dir, files.Tree{storeFile: files.Text(edited)})
+
+				out, status = dokimiRun(t, bin, dir, "run", "--check")
+
+				assert.Equal(t, status, 1, "the check fails")
+				for _, lost := range tt.wantLost {
+					expect.Contains(t, out, lost+" of example.com/shop/store is no longer generated as the lock states",
+						"the check names the lost check")
+				}
+			})
+		}
+
+		t.Run("fails --check with the lock out of date where no suite of the plan remains", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, shop(storeSource))
+			out, status := dokimiRun(t, bin, dir, "run")
+			assert.Equal(t, status, 0, "the first run writes the lock: "+out)
+			unsuited := strings.ReplaceAll(storeSource, "//\n//dokimi:suite\n", "")
+			files.Write(t, dir, files.Tree{storeFile: files.Text(unsuited)})
+
+			out, status = dokimiRun(t, bin, dir, "run", "--check")
+
+			assert.Equal(t, status, 1, "the check fails")
+			expect.Contains(t, out, lockFile+" is out of date", "the check reports the lock that the run would delete")
+		})
+
+		t.Run("passes --check once the run writes the regenerated lock", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, shop(storeSource))
+			out, status := dokimiRun(t, bin, dir, "run")
+			assert.Equal(t, status, 0, "the first run writes the lock: "+out)
+			files.Write(t, dir, files.Tree{storeFile: files.Text(strings.Replace(storeSource,
+				"//\n//dokimi:suite\ntype Index", "type Index", 1))})
+			out, status = dokimiRun(t, bin, dir, "run")
+			assert.Equal(t, status, 0, "the run writes the regenerated lock: "+out)
+
+			out, status = dokimiRun(t, bin, dir, "run", "--check")
+
+			assert.Equal(t, status, 0, "the check passes with the regenerated lock: "+out)
+		})
+
+		t.Run("writes the same bytes of the lock in every run of one source", func(t *testing.T) {
+			t.Parallel()
+			first, second := files.Workspace(t, shop(storeSource)), files.Workspace(t, shop(storeSource))
+			_, firstStatus := dokimiRun(t, bin, first, "run")
+			_, secondStatus := dokimiRun(t, bin, second, "run")
+			assert.Equal(t, []int{firstStatus, secondStatus}, []int{0, 0}, "both runs pass")
+
+			files.HasContent(t, filepath.Join(second, lockFile), files.Read(t, filepath.Join(first, lockFile)),
+				"two runs of one source write one lock")
+		})
 	})
 }
 

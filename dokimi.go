@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"go.dokimi.dev/eidos/core/authored"
+	"go.dokimi.dev/eidos/core/layout"
 	"go.dokimi.dev/eidos/core/workspace"
 	golang "go.dokimi.dev/eidos/lang/go"
 	goannotate "go.dokimi.dev/eidos/lang/go/annotate"
@@ -67,7 +68,8 @@ func Base() *workspace.Builder {
 // that a store provides, such as the standard library of Go. A double of an
 // interface that embeds io.Closer then has the method Close. Both plans share
 // one instance of each generator: builder, stub, enum and sentinel. The plan
-// go also runs suite, which writes the suites of Go. builder also has an
+// go also runs suite, which writes the suites of Go and the lock of their
+// checks at the root of the workspace as dokimi.go.lock. builder also has an
 // annotate half, which the workspace runs with the annotators. It stamps the
 // names of each builder, which the stub generator reads for the default
 // results of a double. Each call returns new plugin instances.
@@ -79,6 +81,9 @@ func Plans() []workspace.Plan {
 			Sources:    workspace.Sources{Lang: golang.Lang},
 			Generators: append(slices.Clone(generators), suite.New()),
 			Backend:    gobackend.New(),
+			Layout: layout.Config{Families: map[layout.Family]layout.Refinement{
+				{Plugin: suite.ID, Tag: suite.LockTag}: {Dir: ".", File: "dokimi." + GoPlan + ".lock"},
+			}},
 		},
 		{
 			Name:       TypeScriptPlan,

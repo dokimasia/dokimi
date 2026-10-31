@@ -227,9 +227,22 @@ and where one error value matches another.
    `<file>_<generator>_test.go` beside the source, or into the package of `out`.
 3. Run `go test ./...`. The generated specs check the generated code, and a suite falsifies each of
    its checks on a planted defect.
-4. Commit the generated files with the directives that produce them.
+4. Commit the generated files and `dokimi.go.lock` with the directives that produce them. The lock
+   has a line for each check, each ceiling, each refusal and each unclaimed classification of the
+   suites of the module.
 5. Run `dokimi run --check --strict ./...` in CI. It fails on a file that a run would change and on
-   every warning.
+   every warning. It reports `DOKIMISUITE-0012` for each check that the committed lock lists and the
+   run no longer generates.
+
+A check disappears from the lock when you make one of these changes:
+
+- Remove its directive.
+- Rename its callable.
+- Delete the samples that it needs.
+- Move its partner, such as the `write=Add` of a check of read-after-write.
+
+The diff of `dokimi.go.lock` shows the line of the lost check. Commit the regenerated lock to
+approve the loss.
 
 If a run reports a finding, run `dokimi explain` on the file or the declaration to see what the
 run recorded about it. Run `dokimi doctor` to check the config and the directives. Run

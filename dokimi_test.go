@@ -15,6 +15,7 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/eidos/cli"
+	"go.dokimi.dev/eidos/core/layout"
 	"go.dokimi.dev/eidos/core/ledger"
 	"go.dokimi.dev/eidos/core/workspace"
 	"go.dokimi.dev/eidos/core/workspace/workspacetest"
@@ -94,6 +95,13 @@ func TestDokimi(t *testing.T) {
 			t.Parallel()
 
 			generator(t, dokimi.Plans()[0], suite.ID)
+		})
+
+		t.Run("returns a plan go that writes its lock as dokimi.go.lock at the root", func(t *testing.T) {
+			t.Parallel()
+
+			expect.Equal(t, dokimi.Plans()[0].Layout.Families[layout.Family{Plugin: suite.ID, Tag: suite.LockTag}],
+				layout.Refinement{Dir: ".", File: "dokimi.go.lock"}, "the lock of the plan has the name of the plan")
 		})
 
 		t.Run("returns a plan typescript that runs no suite", func(t *testing.T) {

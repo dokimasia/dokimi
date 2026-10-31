@@ -166,7 +166,8 @@ func rendered(t *testing.T) fstest.MapFS {
 	t.Helper()
 
 	p := builder.New()
-	_, res := phases(t, fixture(t, golang.Target, goTree, p, catalogPackage, seededPackage, genericPackage,
-		companionsPackage), p)
-	return gentest.Rendered(t, res, p, gobackend.New())
+	f := fixture(t, golang.Target, goTree, p, catalogPackage, seededPackage, genericPackage, companionsPackage,
+		hiddenPackage)
+	_, res := phases(t, f, p)
+	return gentest.Rendered(t, f, res, p, gobackend.New())
 }

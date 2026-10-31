@@ -9,7 +9,9 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert"
+	golang "go.dokimi.dev/eidos/lang/go"
 	goannotate "go.dokimi.dev/eidos/lang/go/annotate"
+	gobackend "go.dokimi.dev/eidos/lang/go/backend"
 	"go.dokimi.dev/eidos/sdk/authored"
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/emit"
@@ -30,6 +32,7 @@ const (
 	seededPackage     = "example.com/shop/seeded"
 	genericPackage    = "example.com/shop/generic"
 	companionsPackage = "example.com/shop/companions"
+	hiddenPackage     = "example.com/shop/hidden"
 	catalogModule     = "catalog"
 	aliasedModule     = "aliased"
 	builderTemplate   = "builder.tmpl"
@@ -57,8 +60,8 @@ type generated struct {
 }
 
 // fixture returns a fixture over the packages pkgs of the tree dir, loaded
-// under the context of tb, with the target of the plan and the plugin
-// builder p. The annotators of the composition stamp the fixture: the
+// under the context of tb, with the target and the spoke of the plan and the
+// plugin builder p. The annotators of the composition stamp the fixture: the
 // authored samples and witnesses, the facts of Go and the defaults.
 func fixture(tb assert.TB, target plugin.Target, dir string, p plugin.Plugin, pkgs ...string) *gentest.Fixture {
 	tb.Helper()
@@ -67,10 +70,16 @@ func fixture(tb assert.TB, target plugin.Target, dir string, p plugin.Plugin, pk
 		Dir:        dir,
 		Packages:   pkgs,
 		Target:     target,
+		Types:      spokes[target],
 		Plugins:    []plugin.Plugin{p},
 		Annotators: []plugin.Annotator{authored.Sample(), authored.Witness(), goannotate.New(), defaults.New()},
 	})
 }
+
+// spokes are the spokes of the fixtures by their target. The Go backend
+// previews the package of each routed file, as the plan of the composition
+// previews it.
+var spokes = map[plugin.Target]plugin.TypeSpeller{golang.Target: gobackend.New()}
 
 // generate runs a new builder over the packages pkgs of the tree dir with
 // the target of the plan, and returns what it records.

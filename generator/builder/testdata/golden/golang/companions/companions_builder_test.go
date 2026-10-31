@@ -1,8 +1,9 @@
-package companions
+package companions_test
 
 import (
 	"testing"
 
+	"example.com/shop/companions"
 	"go.dokimi.dev/assert"
 )
 
@@ -17,20 +18,20 @@ func TestTakenBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Taken
+			var seed companions.Taken
 			seed.Name = "Name-a"
-			got := NewTakenBuilderFrom(seed).Build()
+			got := companions.NewTakenBuilderFrom(seed).Build()
 			assert.Equal(t, got.Name, seed.Name, "NewTakenBuilderFrom keeps Name")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewTakenBuilder()
+			b := companions.NewTakenBuilder()
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewTakenBuilderFrom(want).Build(),
+				companions.NewTakenBuilderFrom(want).Build(),
 				want,
 				"NewTakenBuilderFrom keeps the value of its argument",
 			)
@@ -45,7 +46,7 @@ func TestTakenBuilder(t *testing.T) {
 
 			var want string
 			want = "Name-a"
-			got := NewTakenBuilder().WithName(want).Build()
+			got := companions.NewTakenBuilder().WithName(want).Build()
 			assert.Equal(t, got.Name, want, "WithName writes its argument to Name")
 		})
 
@@ -55,7 +56,7 @@ func TestTakenBuilder(t *testing.T) {
 			var first, want string
 			first = "Name-a"
 			want = "Name-b"
-			got := NewTakenBuilder().WithName(first).WithName(want).Build()
+			got := companions.NewTakenBuilder().WithName(first).WithName(want).Build()
 			assert.Equal(t, got.Name, want, "the second call of WithName replaces the first")
 		})
 	})
@@ -66,9 +67,9 @@ func TestTakenBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Taken
-			record := func(v *Taken) { got = append(got, v) }
-			NewTakenBuilder().Mutate(record).Mutate(record)
+			var got []*companions.Taken
+			record := func(v *companions.Taken) { got = append(got, v) }
+			companions.NewTakenBuilder().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -86,7 +87,7 @@ func TestTakenBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewTakenBuilder()
+			original := companions.NewTakenBuilder()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -99,7 +100,7 @@ func TestTakenBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewTakenBuilder()
+			b := companions.NewTakenBuilder()
 			assert.Equal(
 				t,
 				b.Clone().Build(),
@@ -115,10 +116,10 @@ func TestTakenBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Taken
+			var seed companions.Taken
 			seed.Name = "Name-a"
-			b := NewTakenBuilder()
-			b.Mutate(func(v *Taken) { *v = seed })
+			b := companions.NewTakenBuilder()
+			b.Mutate(func(v *companions.Taken) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})
@@ -135,20 +136,20 @@ func TestPairedBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Paired
+			var seed companions.Paired
 			seed.Name = "Name-a"
-			got := NewPairedBuilderFrom(seed).Build()
+			got := companions.NewPairedBuilderFrom(seed).Build()
 			assert.Equal(t, got.Name, seed.Name, "NewPairedBuilderFrom keeps Name")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewPairedBuilder()
+			b := companions.NewPairedBuilder()
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewPairedBuilderFrom(want).Build(),
+				companions.NewPairedBuilderFrom(want).Build(),
 				want,
 				"NewPairedBuilderFrom keeps the value of its argument",
 			)
@@ -163,7 +164,7 @@ func TestPairedBuilder(t *testing.T) {
 
 			var want string
 			want = "Name-a"
-			got := NewPairedBuilder().WithName(want).Build()
+			got := companions.NewPairedBuilder().WithName(want).Build()
 			assert.Equal(t, got.Name, want, "WithName writes its argument to Name")
 		})
 
@@ -173,7 +174,7 @@ func TestPairedBuilder(t *testing.T) {
 			var first, want string
 			first = "Name-a"
 			want = "Name-b"
-			got := NewPairedBuilder().WithName(first).WithName(want).Build()
+			got := companions.NewPairedBuilder().WithName(first).WithName(want).Build()
 			assert.Equal(t, got.Name, want, "the second call of WithName replaces the first")
 		})
 	})
@@ -184,9 +185,9 @@ func TestPairedBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Paired
-			record := func(v *Paired) { got = append(got, v) }
-			NewPairedBuilder().Mutate(record).Mutate(record)
+			var got []*companions.Paired
+			record := func(v *companions.Paired) { got = append(got, v) }
+			companions.NewPairedBuilder().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -204,7 +205,7 @@ func TestPairedBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewPairedBuilder()
+			original := companions.NewPairedBuilder()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -217,7 +218,7 @@ func TestPairedBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewPairedBuilder()
+			b := companions.NewPairedBuilder()
 			assert.Equal(
 				t,
 				b.Clone().Build(),
@@ -233,10 +234,10 @@ func TestPairedBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Paired
+			var seed companions.Paired
 			seed.Name = "Name-a"
-			b := NewPairedBuilder()
-			b.Mutate(func(v *Paired) { *v = seed })
+			b := companions.NewPairedBuilder()
+			b.Mutate(func(v *companions.Paired) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})
@@ -252,20 +253,20 @@ func TestBareBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Bare
+			var seed companions.Bare
 			seed.Name = "Name-a"
-			got := NewBareBuilderFrom(seed).Build()
+			got := companions.NewBareBuilderFrom(seed).Build()
 			assert.Equal(t, got.Name, seed.Name, "NewBareBuilderFrom keeps Name")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewBareBuilder()
+			b := companions.NewBareBuilder()
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewBareBuilderFrom(want).Build(),
+				companions.NewBareBuilderFrom(want).Build(),
 				want,
 				"NewBareBuilderFrom keeps the value of its argument",
 			)
@@ -280,7 +281,7 @@ func TestBareBuilder(t *testing.T) {
 
 			var want string
 			want = "Name-a"
-			got := NewBareBuilder().WithName(want).Build()
+			got := companions.NewBareBuilder().WithName(want).Build()
 			assert.Equal(t, got.Name, want, "WithName writes its argument to Name")
 		})
 
@@ -290,7 +291,7 @@ func TestBareBuilder(t *testing.T) {
 			var first, want string
 			first = "Name-a"
 			want = "Name-b"
-			got := NewBareBuilder().WithName(first).WithName(want).Build()
+			got := companions.NewBareBuilder().WithName(first).WithName(want).Build()
 			assert.Equal(t, got.Name, want, "the second call of WithName replaces the first")
 		})
 	})
@@ -301,9 +302,9 @@ func TestBareBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Bare
-			record := func(v *Bare) { got = append(got, v) }
-			NewBareBuilder().Mutate(record).Mutate(record)
+			var got []*companions.Bare
+			record := func(v *companions.Bare) { got = append(got, v) }
+			companions.NewBareBuilder().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -321,7 +322,7 @@ func TestBareBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewBareBuilder()
+			original := companions.NewBareBuilder()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -334,7 +335,7 @@ func TestBareBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewBareBuilder()
+			b := companions.NewBareBuilder()
 			assert.Equal(
 				t,
 				b.Clone().Build(),
@@ -350,10 +351,10 @@ func TestBareBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Bare
+			var seed companions.Bare
 			seed.Name = "Name-a"
-			b := NewBareBuilder()
-			b.Mutate(func(v *Bare) { *v = seed })
+			b := companions.NewBareBuilder()
+			b.Mutate(func(v *companions.Bare) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})
@@ -370,20 +371,20 @@ func TestOtherBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Other
+			var seed companions.Other
 			seed.Name = "Name-a"
-			got := NewOtherBuilderFrom(seed).Build()
+			got := companions.NewOtherBuilderFrom(seed).Build()
 			assert.Equal(t, got.Name, seed.Name, "NewOtherBuilderFrom keeps Name")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewOtherBuilder()
+			b := companions.NewOtherBuilder()
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewOtherBuilderFrom(want).Build(),
+				companions.NewOtherBuilderFrom(want).Build(),
 				want,
 				"NewOtherBuilderFrom keeps the value of its argument",
 			)
@@ -398,7 +399,7 @@ func TestOtherBuilder(t *testing.T) {
 
 			var want string
 			want = "Name-a"
-			got := NewOtherBuilder().WithName(want).Build()
+			got := companions.NewOtherBuilder().WithName(want).Build()
 			assert.Equal(t, got.Name, want, "WithName writes its argument to Name")
 		})
 
@@ -408,7 +409,7 @@ func TestOtherBuilder(t *testing.T) {
 			var first, want string
 			first = "Name-a"
 			want = "Name-b"
-			got := NewOtherBuilder().WithName(first).WithName(want).Build()
+			got := companions.NewOtherBuilder().WithName(first).WithName(want).Build()
 			assert.Equal(t, got.Name, want, "the second call of WithName replaces the first")
 		})
 	})
@@ -419,9 +420,9 @@ func TestOtherBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Other
-			record := func(v *Other) { got = append(got, v) }
-			NewOtherBuilder().Mutate(record).Mutate(record)
+			var got []*companions.Other
+			record := func(v *companions.Other) { got = append(got, v) }
+			companions.NewOtherBuilder().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -439,7 +440,7 @@ func TestOtherBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewOtherBuilder()
+			original := companions.NewOtherBuilder()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -452,7 +453,7 @@ func TestOtherBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewOtherBuilder()
+			b := companions.NewOtherBuilder()
 			assert.Equal(
 				t,
 				b.Clone().Build(),
@@ -468,10 +469,10 @@ func TestOtherBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Other
+			var seed companions.Other
 			seed.Name = "Name-a"
-			b := NewOtherBuilder()
-			b.Mutate(func(v *Other) { *v = seed })
+			b := companions.NewOtherBuilder()
+			b.Mutate(func(v *companions.Other) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})

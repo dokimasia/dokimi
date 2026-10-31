@@ -248,7 +248,7 @@ func renderedTypeScript(t *testing.T) fstest.MapFS {
 	t.Helper()
 
 	p := builder.New()
-	_, res := phases(t, fixture(t, typescript.Target, tsTree, p, catalogModule, immutableModule, shadowModule,
-		aliasedModule), p)
-	return gentest.Rendered(t, res, p, tsbackend.New())
+	f := fixture(t, typescript.Target, tsTree, p, catalogModule, immutableModule, shadowModule, aliasedModule)
+	_, res := phases(t, f, p)
+	return gentest.Rendered(t, f, res, p, tsbackend.New())
 }

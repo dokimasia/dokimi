@@ -1,9 +1,10 @@
-package seeded
+package seeded_test
 
 import (
 	"runtime"
 	"testing"
 
+	"example.com/shop/seeded"
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 )
@@ -21,7 +22,7 @@ func TestAccountBuilder(t *testing.T) {
 
 			var want string
 			want = "owner"
-			got := NewAccountBuilder().Build()
+			got := seeded.NewAccountBuilder().Build()
 			assert.Equal(
 				t,
 				got.Owner,
@@ -37,10 +38,10 @@ func TestAccountBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Account
+			var seed seeded.Account
 			seed.Owner = "Owner-a"
 			seed.Plan = "Plan-a"
-			got := NewAccountBuilderFrom(seed).Build()
+			got := seeded.NewAccountBuilderFrom(seed).Build()
 			expect.Equal(t, got.Owner, seed.Owner, "NewAccountBuilderFrom keeps Owner")
 			expect.Equal(t, got.Plan, seed.Plan, "NewAccountBuilderFrom keeps Plan")
 		})
@@ -48,11 +49,11 @@ func TestAccountBuilder(t *testing.T) {
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewAccountBuilder()
+			b := seeded.NewAccountBuilder()
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewAccountBuilderFrom(want).Build(),
+				seeded.NewAccountBuilderFrom(want).Build(),
 				want,
 				"NewAccountBuilderFrom keeps the value of its argument",
 			)
@@ -67,7 +68,7 @@ func TestAccountBuilder(t *testing.T) {
 
 			var want string
 			want = "Owner-a"
-			got := NewAccountBuilder().WithOwner(want).Build()
+			got := seeded.NewAccountBuilder().WithOwner(want).Build()
 			assert.Equal(t, got.Owner, want, "WithOwner writes its argument to Owner")
 		})
 
@@ -77,7 +78,7 @@ func TestAccountBuilder(t *testing.T) {
 			var first, want string
 			first = "Owner-a"
 			want = "Owner-b"
-			got := NewAccountBuilder().WithOwner(first).WithOwner(want).Build()
+			got := seeded.NewAccountBuilder().WithOwner(first).WithOwner(want).Build()
 			assert.Equal(t, got.Owner, want, "the second call of WithOwner replaces the first")
 		})
 	})
@@ -90,7 +91,7 @@ func TestAccountBuilder(t *testing.T) {
 
 			var want string
 			want = "Plan-a"
-			got := NewAccountBuilder().WithPlan(want).Build()
+			got := seeded.NewAccountBuilder().WithPlan(want).Build()
 			assert.Equal(t, got.Plan, want, "WithPlan writes its argument to Plan")
 		})
 
@@ -100,7 +101,7 @@ func TestAccountBuilder(t *testing.T) {
 			var first, want string
 			first = "Plan-a"
 			want = "Plan-b"
-			got := NewAccountBuilder().WithPlan(first).WithPlan(want).Build()
+			got := seeded.NewAccountBuilder().WithPlan(first).WithPlan(want).Build()
 			assert.Equal(t, got.Plan, want, "the second call of WithPlan replaces the first")
 		})
 	})
@@ -111,9 +112,9 @@ func TestAccountBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Account
-			record := func(v *Account) { got = append(got, v) }
-			NewAccountBuilder().Mutate(record).Mutate(record)
+			var got []*seeded.Account
+			record := func(v *seeded.Account) { got = append(got, v) }
+			seeded.NewAccountBuilder().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -131,7 +132,7 @@ func TestAccountBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewAccountBuilder()
+			original := seeded.NewAccountBuilder()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -144,7 +145,7 @@ func TestAccountBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewAccountBuilder()
+			b := seeded.NewAccountBuilder()
 			assert.Equal(
 				t,
 				b.Clone().Build(),
@@ -160,11 +161,11 @@ func TestAccountBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Account
+			var seed seeded.Account
 			seed.Owner = "Owner-a"
 			seed.Plan = "Plan-a"
-			b := NewAccountBuilder()
-			b.Mutate(func(v *Account) { *v = seed })
+			b := seeded.NewAccountBuilder()
+			b.Mutate(func(v *seeded.Account) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})
@@ -181,20 +182,20 @@ func TestPolicyBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Policy
+			var seed seeded.Policy
 			seed.Attempts = 42
-			got := NewPolicyBuilderFrom(seed).Build()
+			got := seeded.NewPolicyBuilderFrom(seed).Build()
 			assert.Equal(t, got.Attempts, seed.Attempts, "NewPolicyBuilderFrom keeps Attempts")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewPolicyBuilder()
+			b := seeded.NewPolicyBuilder()
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewPolicyBuilderFrom(want).Build(),
+				seeded.NewPolicyBuilderFrom(want).Build(),
 				want,
 				"NewPolicyBuilderFrom keeps the value of its argument",
 			)
@@ -209,7 +210,7 @@ func TestPolicyBuilder(t *testing.T) {
 
 			var want int
 			want = 42
-			got := NewPolicyBuilder().WithAttempts(want).Build()
+			got := seeded.NewPolicyBuilder().WithAttempts(want).Build()
 			assert.Equal(t, got.Attempts, want, "WithAttempts writes its argument to Attempts")
 		})
 
@@ -219,7 +220,7 @@ func TestPolicyBuilder(t *testing.T) {
 			var first, want int
 			first = 42
 			want = 7
-			got := NewPolicyBuilder().WithAttempts(first).WithAttempts(want).Build()
+			got := seeded.NewPolicyBuilder().WithAttempts(first).WithAttempts(want).Build()
 			assert.Equal(
 				t,
 				got.Attempts,
@@ -235,9 +236,9 @@ func TestPolicyBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Policy
-			record := func(v *Policy) { got = append(got, v) }
-			NewPolicyBuilder().Mutate(record).Mutate(record)
+			var got []*seeded.Policy
+			record := func(v *seeded.Policy) { got = append(got, v) }
+			seeded.NewPolicyBuilder().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -255,7 +256,7 @@ func TestPolicyBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewPolicyBuilder()
+			original := seeded.NewPolicyBuilder()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -268,7 +269,7 @@ func TestPolicyBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewPolicyBuilder()
+			b := seeded.NewPolicyBuilder()
 			assert.Equal(
 				t,
 				b.Clone().Build(),
@@ -284,10 +285,10 @@ func TestPolicyBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Policy
+			var seed seeded.Policy
 			seed.Attempts = 42
-			b := NewPolicyBuilder()
-			b.Mutate(func(v *Policy) { *v = seed })
+			b := seeded.NewPolicyBuilder()
+			b.Mutate(func(v *seeded.Policy) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})
@@ -303,20 +304,20 @@ func TestTierBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Tier
+			var seed seeded.Tier
 			seed.Level = 42
-			got := NewTierBuilderFrom(seed).Build()
+			got := seeded.NewTierBuilderFrom(seed).Build()
 			assert.Equal(t, got.Level, seed.Level, "NewTierBuilderFrom keeps Level")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewTierBuilder()
+			b := seeded.NewTierBuilder()
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewTierBuilderFrom(want).Build(),
+				seeded.NewTierBuilderFrom(want).Build(),
 				want,
 				"NewTierBuilderFrom keeps the value of its argument",
 			)
@@ -331,7 +332,7 @@ func TestTierBuilder(t *testing.T) {
 
 			var want int
 			want = 42
-			got := NewTierBuilder().WithLevel(want).Build()
+			got := seeded.NewTierBuilder().WithLevel(want).Build()
 			assert.Equal(t, got.Level, want, "WithLevel writes its argument to Level")
 		})
 
@@ -341,7 +342,7 @@ func TestTierBuilder(t *testing.T) {
 			var first, want int
 			first = 42
 			want = 7
-			got := NewTierBuilder().WithLevel(first).WithLevel(want).Build()
+			got := seeded.NewTierBuilder().WithLevel(first).WithLevel(want).Build()
 			assert.Equal(t, got.Level, want, "the second call of WithLevel replaces the first")
 		})
 	})
@@ -352,9 +353,9 @@ func TestTierBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Tier
-			record := func(v *Tier) { got = append(got, v) }
-			NewTierBuilder().Mutate(record).Mutate(record)
+			var got []*seeded.Tier
+			record := func(v *seeded.Tier) { got = append(got, v) }
+			seeded.NewTierBuilder().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -372,7 +373,7 @@ func TestTierBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewTierBuilder()
+			original := seeded.NewTierBuilder()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -385,7 +386,7 @@ func TestTierBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewTierBuilder()
+			b := seeded.NewTierBuilder()
 			assert.Equal(
 				t,
 				b.Clone().Build(),
@@ -401,10 +402,10 @@ func TestTierBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Tier
+			var seed seeded.Tier
 			seed.Level = 42
-			b := NewTierBuilder()
-			b.Mutate(func(v *Tier) { *v = seed })
+			b := seeded.NewTierBuilder()
+			b.Mutate(func(v *seeded.Tier) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})
@@ -421,9 +422,9 @@ func TestDeploymentBuilder(t *testing.T) {
 		t.Run("applies the declared default of Mode", func(t *testing.T) {
 			t.Parallel()
 
-			var want Code
+			var want seeded.Code
 			want = "true"
-			got := NewDeploymentBuilder().Build()
+			got := seeded.NewDeploymentBuilder().Build()
 			assert.Equal(
 				t,
 				got.Mode,
@@ -436,8 +437,8 @@ func TestDeploymentBuilder(t *testing.T) {
 			t.Parallel()
 
 			var want string
-			want = Region
-			got := NewDeploymentBuilder().Build()
+			want = seeded.Region
+			got := seeded.NewDeploymentBuilder().Build()
 			assert.Equal(
 				t,
 				got.Region,
@@ -446,26 +447,12 @@ func TestDeploymentBuilder(t *testing.T) {
 			)
 		})
 
-		t.Run("applies the declared default of Zone", func(t *testing.T) {
-			t.Parallel()
-
-			var want string
-			want = zone()
-			got := NewDeploymentBuilder().Build()
-			assert.Equal(
-				t,
-				got.Zone,
-				want,
-				"NewDeploymentBuilder applies the declared default of Zone",
-			)
-		})
-
 		t.Run("applies the declared default of System", func(t *testing.T) {
 			t.Parallel()
 
 			var want string
 			want = runtime.GOOS
-			got := NewDeploymentBuilder().Build()
+			got := seeded.NewDeploymentBuilder().Build()
 			assert.Equal(
 				t,
 				got.System,
@@ -479,7 +466,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "web"
-			got := NewDeploymentBuilder().Build()
+			got := seeded.NewDeploymentBuilder().Build()
 			assert.Equal(
 				t,
 				got.Name,
@@ -493,7 +480,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "a b"
-			got := NewDeploymentBuilder().Build()
+			got := seeded.NewDeploymentBuilder().Build()
 			assert.Equal(
 				t,
 				got.Label,
@@ -507,7 +494,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "true"
-			got := NewDeploymentBuilder().Build()
+			got := seeded.NewDeploymentBuilder().Build()
 			assert.Equal(
 				t,
 				got.Flag,
@@ -523,15 +510,15 @@ func TestDeploymentBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Deployment
-			seed.Mode = Code("Mode-a")
+			var seed seeded.Deployment
+			seed.Mode = seeded.Code("Mode-a")
 			seed.Region = "Region-a"
 			seed.Zone = "Zone-a"
 			seed.System = "System-a"
 			seed.Name = "Name-a"
 			seed.Label = "Label-a"
 			seed.Flag = "Flag-a"
-			got := NewDeploymentBuilderFrom(seed).Build()
+			got := seeded.NewDeploymentBuilderFrom(seed).Build()
 			expect.Equal(t, got.Mode, seed.Mode, "NewDeploymentBuilderFrom keeps Mode")
 			expect.Equal(t, got.Region, seed.Region, "NewDeploymentBuilderFrom keeps Region")
 			expect.Equal(t, got.Zone, seed.Zone, "NewDeploymentBuilderFrom keeps Zone")
@@ -544,11 +531,11 @@ func TestDeploymentBuilder(t *testing.T) {
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewDeploymentBuilder()
+			b := seeded.NewDeploymentBuilder()
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewDeploymentBuilderFrom(want).Build(),
+				seeded.NewDeploymentBuilderFrom(want).Build(),
 				want,
 				"NewDeploymentBuilderFrom keeps the value of its argument",
 			)
@@ -561,19 +548,19 @@ func TestDeploymentBuilder(t *testing.T) {
 		t.Run("writes its argument to Mode", func(t *testing.T) {
 			t.Parallel()
 
-			var want Code
-			want = Code("Mode-a")
-			got := NewDeploymentBuilder().WithMode(want).Build()
+			var want seeded.Code
+			want = seeded.Code("Mode-a")
+			got := seeded.NewDeploymentBuilder().WithMode(want).Build()
 			assert.Equal(t, got.Mode, want, "WithMode writes its argument to Mode")
 		})
 
 		t.Run("replaces the value of Mode", func(t *testing.T) {
 			t.Parallel()
 
-			var first, want Code
-			first = Code("Mode-a")
-			want = Code("Mode-b")
-			got := NewDeploymentBuilder().WithMode(first).WithMode(want).Build()
+			var first, want seeded.Code
+			first = seeded.Code("Mode-a")
+			want = seeded.Code("Mode-b")
+			got := seeded.NewDeploymentBuilder().WithMode(first).WithMode(want).Build()
 			assert.Equal(t, got.Mode, want, "the second call of WithMode replaces the first")
 		})
 	})
@@ -586,7 +573,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "Region-a"
-			got := NewDeploymentBuilder().WithRegion(want).Build()
+			got := seeded.NewDeploymentBuilder().WithRegion(want).Build()
 			assert.Equal(t, got.Region, want, "WithRegion writes its argument to Region")
 		})
 
@@ -596,7 +583,7 @@ func TestDeploymentBuilder(t *testing.T) {
 			var first, want string
 			first = "Region-a"
 			want = "Region-b"
-			got := NewDeploymentBuilder().WithRegion(first).WithRegion(want).Build()
+			got := seeded.NewDeploymentBuilder().WithRegion(first).WithRegion(want).Build()
 			assert.Equal(t, got.Region, want, "the second call of WithRegion replaces the first")
 		})
 	})
@@ -609,7 +596,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "Zone-a"
-			got := NewDeploymentBuilder().WithZone(want).Build()
+			got := seeded.NewDeploymentBuilder().WithZone(want).Build()
 			assert.Equal(t, got.Zone, want, "WithZone writes its argument to Zone")
 		})
 
@@ -619,7 +606,7 @@ func TestDeploymentBuilder(t *testing.T) {
 			var first, want string
 			first = "Zone-a"
 			want = "Zone-b"
-			got := NewDeploymentBuilder().WithZone(first).WithZone(want).Build()
+			got := seeded.NewDeploymentBuilder().WithZone(first).WithZone(want).Build()
 			assert.Equal(t, got.Zone, want, "the second call of WithZone replaces the first")
 		})
 	})
@@ -632,7 +619,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "System-a"
-			got := NewDeploymentBuilder().WithSystem(want).Build()
+			got := seeded.NewDeploymentBuilder().WithSystem(want).Build()
 			assert.Equal(t, got.System, want, "WithSystem writes its argument to System")
 		})
 
@@ -642,7 +629,7 @@ func TestDeploymentBuilder(t *testing.T) {
 			var first, want string
 			first = "System-a"
 			want = "System-b"
-			got := NewDeploymentBuilder().WithSystem(first).WithSystem(want).Build()
+			got := seeded.NewDeploymentBuilder().WithSystem(first).WithSystem(want).Build()
 			assert.Equal(t, got.System, want, "the second call of WithSystem replaces the first")
 		})
 	})
@@ -655,7 +642,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "Name-a"
-			got := NewDeploymentBuilder().WithName(want).Build()
+			got := seeded.NewDeploymentBuilder().WithName(want).Build()
 			assert.Equal(t, got.Name, want, "WithName writes its argument to Name")
 		})
 
@@ -665,7 +652,7 @@ func TestDeploymentBuilder(t *testing.T) {
 			var first, want string
 			first = "Name-a"
 			want = "Name-b"
-			got := NewDeploymentBuilder().WithName(first).WithName(want).Build()
+			got := seeded.NewDeploymentBuilder().WithName(first).WithName(want).Build()
 			assert.Equal(t, got.Name, want, "the second call of WithName replaces the first")
 		})
 	})
@@ -678,7 +665,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "Label-a"
-			got := NewDeploymentBuilder().WithLabel(want).Build()
+			got := seeded.NewDeploymentBuilder().WithLabel(want).Build()
 			assert.Equal(t, got.Label, want, "WithLabel writes its argument to Label")
 		})
 
@@ -688,7 +675,7 @@ func TestDeploymentBuilder(t *testing.T) {
 			var first, want string
 			first = "Label-a"
 			want = "Label-b"
-			got := NewDeploymentBuilder().WithLabel(first).WithLabel(want).Build()
+			got := seeded.NewDeploymentBuilder().WithLabel(first).WithLabel(want).Build()
 			assert.Equal(t, got.Label, want, "the second call of WithLabel replaces the first")
 		})
 	})
@@ -701,7 +688,7 @@ func TestDeploymentBuilder(t *testing.T) {
 
 			var want string
 			want = "Flag-a"
-			got := NewDeploymentBuilder().WithFlag(want).Build()
+			got := seeded.NewDeploymentBuilder().WithFlag(want).Build()
 			assert.Equal(t, got.Flag, want, "WithFlag writes its argument to Flag")
 		})
 
@@ -711,7 +698,7 @@ func TestDeploymentBuilder(t *testing.T) {
 			var first, want string
 			first = "Flag-a"
 			want = "Flag-b"
-			got := NewDeploymentBuilder().WithFlag(first).WithFlag(want).Build()
+			got := seeded.NewDeploymentBuilder().WithFlag(first).WithFlag(want).Build()
 			assert.Equal(t, got.Flag, want, "the second call of WithFlag replaces the first")
 		})
 	})
@@ -722,9 +709,9 @@ func TestDeploymentBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Deployment
-			record := func(v *Deployment) { got = append(got, v) }
-			NewDeploymentBuilder().Mutate(record).Mutate(record)
+			var got []*seeded.Deployment
+			record := func(v *seeded.Deployment) { got = append(got, v) }
+			seeded.NewDeploymentBuilder().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -742,7 +729,7 @@ func TestDeploymentBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewDeploymentBuilder()
+			original := seeded.NewDeploymentBuilder()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -755,7 +742,7 @@ func TestDeploymentBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewDeploymentBuilder()
+			b := seeded.NewDeploymentBuilder()
 			assert.Equal(
 				t,
 				b.Clone().Build(),
@@ -771,16 +758,16 @@ func TestDeploymentBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Deployment
-			seed.Mode = Code("Mode-a")
+			var seed seeded.Deployment
+			seed.Mode = seeded.Code("Mode-a")
 			seed.Region = "Region-a"
 			seed.Zone = "Zone-a"
 			seed.System = "System-a"
 			seed.Name = "Name-a"
 			seed.Label = "Label-a"
 			seed.Flag = "Flag-a"
-			b := NewDeploymentBuilder()
-			b.Mutate(func(v *Deployment) { *v = seed })
+			b := seeded.NewDeploymentBuilder()
+			b.Mutate(func(v *seeded.Deployment) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})

@@ -41,6 +41,11 @@ func TestCodes(t *testing.T) {
 			Name: "Empty", Give: builder.Empty, WantCode: "DOKIMIBUILDER-0006",
 			WantMeaning: "a declaration under the directive builder has no field that a builder can set",
 		},
+		{
+			Name: "Unimportable", Give: builder.Unimportable, WantCode: "DOKIMIBUILDER-0007",
+			WantMeaning: "the builder of a declaration refers to a declaration that the file of the builder " +
+				"cannot import",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

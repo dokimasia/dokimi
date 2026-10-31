@@ -5,6 +5,7 @@ package builder
 
 import (
 	"embed"
+	"go/token"
 	"strings"
 
 	golang "go.dokimi.dev/eidos/lang/go"
@@ -20,11 +21,14 @@ import (
 const golangEmptyStruct = "struct{}"
 
 // The name of each constructor of a builder opens with golangNew and the
-// name of the builder, such as NewAddressBuilder. The name of the
-// constructor from a value ends with golangFrom.
+// name of the builder, such as NewAddressBuilder. The name of each
+// constructor of an unexported builder opens with golangNewUnexported and the
+// name of the builder in Pascal case, such as newConfigBuilder. The name of
+// the constructor from a value ends with golangFrom.
 const (
-	golangNew  = "New"
-	golangFrom = "From"
+	golangNew           = "New"
+	golangNewUnexported = "new"
+	golangFrom          = "From"
 )
 
 // The setter of a member opens with golangWith, and the appender of a list
@@ -71,9 +75,14 @@ func (golangPart) companion(name, word string) string { return name + naming.Pas
 // constructors returns NewAddressBuilder and NewAddressBuilderFrom for the
 // builder AddressBuilder. A constructor of Go opens with New and the type
 // that it returns, so it never has the name of a constructor of the
-// declaration itself, such as NewAddress.
+// declaration itself, such as NewAddress. The constructors of an unexported
+// builder are unexported, such as newConfigBuilder and newConfigBuilderFrom
+// for configBuilder.
 func (golangPart) constructors(builder string) (fromSeed, fromValue string) {
 	fromSeed = golangNew + builder
+	if !token.IsExported(builder) {
+		fromSeed = golangNewUnexported + naming.Pascal(builder)
+	}
 	return fromSeed, fromSeed + golangFrom
 }
 
@@ -103,6 +112,10 @@ func (golangPart) names(field string, form Form) Names {
 // selectable reports true, because the name of a field of Go is an
 // identifier, which a selector writes after a dot.
 func (golangPart) selectable(string) bool { return true }
+
+// referable reports true, because the file of a builder is in the package of
+// its struct.
+func (golangPart) referable(symbol.Visibility) bool { return true }
 
 // set returns the key of a map whose values are the empty struct, the set
 // of Go, and false for every other type. A map of Go has its key and its

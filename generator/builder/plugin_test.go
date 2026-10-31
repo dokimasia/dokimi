@@ -4,6 +4,7 @@
 package builder_test
 
 import (
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -11,7 +12,9 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 	golang "go.dokimi.dev/eidos/lang/go"
+	goannotate "go.dokimi.dev/eidos/lang/go/annotate"
 	"go.dokimi.dev/eidos/lang/typescript"
+	"go.dokimi.dev/eidos/sdk/authored"
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/meta"
@@ -19,6 +22,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/plugintest"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
+	"go.dokimi.dev/dokimi/annotator/defaults"
 	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/internal/gentest"
 )
@@ -31,8 +35,11 @@ const (
 	instancedPackage     = "example.com/shop/instanced"
 	parameterizedPackage = "example.com/shop/parameterized"
 	badPackage           = "example.com/shop/bad"
+	movedPackage         = "example.com/shop/moved"
+	movedtestPackage     = "example.com/shop/moved/movedtest"
 	ticketModule         = "ticket"
 	badModule            = "bad"
+	hiddenModule         = "hidden"
 	shopPackage          = "shop"
 )
 
@@ -68,7 +75,16 @@ const (
 	levelName    = "level"
 	tierName     = "Tier"
 	deployName   = "Deployment"
+	siteName     = "Site"
+	poolName     = "Pool"
+	plainName    = "Plain"
 	nameField    = "Name"
+)
+
+// The declarations whose package or module does not export them.
+const (
+	configName     = "config"
+	unexportedName = "Config"
 )
 
 // otherRegistrant is the registrant that claims the namespace of builder
@@ -135,6 +151,12 @@ func TestBuilder(t *testing.T) {
 					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{aliasedPackage, catalogPackage},
 					giveKind: symbol.KindAlias, give: mirrorName,
 					want: facts{name: "MirrorBuilder", seed: "NewMirrorBuilder", stamped: true},
+				},
+				{
+					name:       "stamps the unexported names of the builder of an unexported struct",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{hiddenPackage},
+					giveKind: symbol.KindStruct, give: configName,
+					want: facts{name: "configBuilder", seed: "newConfigBuilder", stamped: true},
 				},
 				{
 					name:       "stamps nothing on a struct that it reports",
@@ -909,6 +931,78 @@ func TestBuilder(t *testing.T) {
 			expect.Empty(t, got.checks[keyedName].Setters, "Keyed has no checks")
 		})
 
+		t.Run("records no check of a default that the external test package cannot refer to", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, seededPackage)
+			expect.Equal(t, strings.Join(got.checks[deployName].Defaults, " "), "Mode Region System Name Label Flag",
+				"the default of Zone calls the unexported function zone, so it has no check")
+		})
+
+		t.Run("records no check of a setter whose sample the external test package cannot refer to",
+			func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, golang.Target, goTree, hiddenPackage).checks[siteName]
+				expect.Equal(t, checked(got.Setters), "Zone", "the samples of Host are results of unexported functions")
+				expect.Equal(t, strings.Join(got.Seeds, " "), "Zone", "the seed sets the sample of Zone alone")
+			})
+
+		t.Run("records no check of a replacement whose alternate the external test package cannot refer to",
+			func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, golang.Target, goTree, hiddenPackage)
+				expect.Empty(t, names(bound(got.tests[siteName], got.checks[siteName].Setters, replacement)),
+					"the alternate of Zone is the result of the unexported function otherZone")
+			})
+
+		t.Run("records no check of a member whose type the external test package cannot refer to", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, hiddenPackage).checks[siteName]
+			expect.Equal(t, probed(got.Probes), "with WithHost, with WithHosts, append AppendHosts",
+				"Region has the unexported type region, so it has no probe")
+			expect.Equal(t, checkedFields(got.Fills), "Hosts",
+				"the check of a clone fills no member of the type region")
+		})
+
+		t.Run("records the builder of an unexported struct without checks", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, hiddenPackage)
+			assert.Contains(t, got.models, configName, "builder records the model of config")
+			model := got.models[configName]
+			expect.Equal(t, []string{model.New, model.From}, []string{"newConfigBuilder", "newConfigBuilderFrom"},
+				"the constructors of configBuilder are unexported")
+			expect.NotContains(t, got.checks, configName, "a test outside the package cannot refer to config")
+		})
+
+		t.Run("leaves each value to the layout where the plan previews no package", func(t *testing.T) {
+			t.Parallel()
+
+			p := builder.New()
+			f := gentest.New(t, &gentest.Spec{
+				Dir: goTree, Packages: []string{hiddenPackage}, Target: golang.Target, Plugins: []plugin.Plugin{p},
+				Annotators: []plugin.Annotator{authored.Sample(), authored.Witness(), goannotate.New(), defaults.New()},
+			})
+			_, res := phases(t, f, p)
+			checks := gentest.Records(t, res, testTemplate, builder.TestTag,
+				func(c builder.Checks) string { return c.Subject })
+			expect.Equal(t, checked(checks[siteName].Data.Setters), "Host Zone Region Hosts",
+				"each member of Site keeps its checks, because the layout checks each reference")
+			expect.True(t, checks[poolName].Data.Instantiable, "the checks of Pool run at the witness slot")
+		})
+
+		t.Run("records no checks of a generic struct whose witness the external test package cannot refer to",
+			func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, golang.Target, goTree, hiddenPackage)
+				assert.Contains(t, got.checks, poolName, "builder records the note of Pool")
+				expect.False(t, got.checks[poolName].Instantiable, "the witness of T is the unexported type slot")
+			})
+
 		aliases := []struct {
 			name       string
 			target     plugin.Target
@@ -1108,6 +1202,12 @@ func TestBuilder(t *testing.T) {
 					"of a struct without them",
 			},
 			{
+				name: "reports Unimportable at a class that its module does not export", target: typescript.Target,
+				tree: tsTree, pkgs: []string{hiddenModule}, wantCode: builder.Unimportable,
+				wantAt: symbol.KindStruct, wantName: unexportedName,
+				wantMsg: "Config is not exported, so the file of its builder cannot refer to it",
+			},
+			{
 				name: "reports Unconstructed at a class whose constructor takes a parameter", target: typescript.Target,
 				tree: tsTree, pkgs: []string{ticketModule}, wantCode: builder.Unconstructed,
 				wantAt: symbol.KindStruct, wantName: ticketName,
@@ -1164,6 +1264,63 @@ func TestBuilder(t *testing.T) {
 				gentest.Unrecorded(t, res, subject)
 			})
 		}
+
+		moves := []struct {
+			name    string
+			give    string
+			wantMsg string
+		}{
+			{
+				name: "reports Unimportable at an unexported struct whose builder moves to another package",
+				give: configName,
+				wantMsg: "the builder of config refers to config, which its file in the package " + movedtestPackage +
+					" cannot import, so config has no builder: golang: config is not exported from " + movedPackage +
+					", and the code is in " + movedtestPackage,
+			},
+			{
+				name: "reports Unimportable at a struct with a member of a type that its moved builder cannot import",
+				give: siteName,
+				wantMsg: "the builder of Site refers to the type region of Region, which its file in the package " +
+					movedtestPackage + " cannot import, so Site has no builder: golang: region is not exported from " +
+					movedPackage + ", and the code is in " + movedtestPackage,
+			},
+			{
+				name: "reports Unimportable at a struct with a default that its moved builder cannot call",
+				give: deployName,
+				wantMsg: "the builder of Deployment refers to the default of Zone, which its file in the package " +
+					movedtestPackage + " cannot import, so Deployment has no builder: golang: zone is not exported " +
+					"from " + movedPackage + ", and the code is in " + movedtestPackage,
+			},
+			{
+				name: "reports Unimportable at a struct with a seed function that its moved builder cannot call",
+				give: policyName,
+				wantMsg: "the builder of Policy refers to the function defaultPolicy, which its file in the package " +
+					movedtestPackage + " cannot import, so Policy has no builder: golang: defaultPolicy is not " +
+					"exported from " + movedPackage + ", and the code is in " + movedtestPackage,
+			},
+		}
+		for _, tt := range moves {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				p := builder.New()
+				f := fixture(t, golang.Target, goTree, p, movedPackage)
+				_, res := phases(t, f, p)
+				at := f.Find(t, symbol.KindStruct, "", tt.give)
+				got := gentest.Finding(t, res, at)
+				expect.Equal(t, got.Code, builder.Unimportable, "the generate half reports the code Unimportable")
+				expect.Equal(t, got.Msg, tt.wantMsg, "the message contains the reference and the reason")
+				gentest.Unrecorded(t, res, at)
+			})
+		}
+
+		t.Run("records the builder that the directive out moves where it imports each reference", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, movedPackage)
+			expect.Equal(t, slices.Sorted(maps.Keys(got.models)), []string{plainName},
+				"the builder of Plain refers to no unexported declaration")
+		})
 	})
 }
 

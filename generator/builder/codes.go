@@ -66,3 +66,17 @@ var Empty = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  6,
 	Meaning: "a declaration under the directive builder has no field that a builder can set",
 })
+
+// Unimportable reports a declaration under the directive builder whose
+// builder refers to a declaration that the file of the builder cannot import.
+// Such a declaration is a TypeScript class that its module does not export,
+// because the module of a TypeScript builder imports the class from the
+// module of the class. It is also an unexported declaration of a Go package
+// whose builder the directive out moves into another package. So are the
+// type of a member, a default and a seed function that the package does not
+// export. The finding is an Error at the declaration, and builder writes
+// nothing for it.
+var Unimportable = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  7,
+	Meaning: "the builder of a declaration refers to a declaration that the file of the builder cannot import",
+})

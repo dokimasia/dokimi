@@ -6,6 +6,7 @@ package builder
 import (
 	"cmp"
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 
@@ -208,8 +209,8 @@ type Names struct {
 // and Args are the witnesses. Struct is the struct that the checks
 // construct. For an alias it is the struct of the alias. Instantiable
 // reports that the checks can name the types that they run at. It is false
-// for a generic declaration whose type parameters have no witnesses, which
-// has no checks.
+// for a generic declaration whose type parameters have no witnesses that the
+// checks can refer to, which has no checks.
 //
 // Seeds are the fields that the first function of the record seeds, which
 // the check of the constructor from a value compares one by one. Defaults
@@ -341,6 +342,9 @@ type part interface {
 	// selectable reports whether code of the language writes a field named
 	// name after a dot, as a builder reads and assigns each member.
 	selectable(name string) bool
+	// referable reports whether the file of a builder can refer to a
+	// declaration of the visibility v.
+	referable(v symbol.Visibility) bool
 }
 
 // parts are the parts of builder, one for each language that it serves.
@@ -416,10 +420,14 @@ var schema = directive.Schema{
 // each builder into the family [Word] under the tag [TestTag]. The template of
 // that family writes the checks of the builder. The checks test the builder
 // through the exported API of its package, so a Go file of the family is in
-// the external test package of its directory. builder also records the Checks
-// of a generic declaration whose type parameters have no witnesses, and the
-// template writes a note in place of its checks. The [Options] name the
-// builders and the companion functions, and can leave the checks out.
+// the external test package of its directory, and they leave out each value
+// and each member that the file cannot refer to. builder also records the
+// Checks of a generic declaration whose type parameters have no witnesses
+// that the file can refer to, and the template writes a note in place of its
+// checks. A declaration that its package does not export has a builder
+// without checks, and the constructors of its Go builder are unexported. The
+// [Options] name the builders and the companion functions, and can leave the
+// checks out.
 //
 // The members of a builder are the public fields of the instance that are
 // not immutable. They include the embedded fields, which a builder sets
@@ -443,7 +451,9 @@ var schema = directive.Schema{
 // at a field whose tag [SkipTag] has another value than [SkipValue]. It
 // reports [NotStruct] at an alias whose target is not a struct of the
 // workspace, and at an alias that has type parameters or refers to a generic
-// struct. It reports [Unconstructed] at a declaration whose public
+// struct. It reports [Unimportable] at a declaration that the file of its
+// builder cannot refer to, such as a TypeScript class that its module does
+// not export. It reports [Unconstructed] at a declaration whose public
 // constructors each take a parameter that a caller must pass, [Empty] at a
 // declaration without a member, and [Collision] at a declaration whose
 // builder would have two methods of one name. builder stamps and records
@@ -523,7 +533,8 @@ func (g *generator) concludeAlias(m *sdk.AliasMatch, p part, st *sdk.Stamper) er
 
 // conclude stamps [KeyName] and [KeySeed] on sub where builder can write the
 // builder of sub. p is the part of the language of sub. conclude reports
-// [Unconstructed] at a declaration whose public constructors each take a
+// [Unimportable] at a declaration that the file of its builder cannot refer
+// to, [Unconstructed] at a declaration whose public constructors each take a
 // parameter that a caller must pass, [Empty] at a declaration without a
 // member, [BadDefault] at a field whose default is no value of its type, and
 // [Collision] at a declaration whose builder would have two methods of one
@@ -532,6 +543,10 @@ func (g *generator) concludeAlias(m *sdk.AliasMatch, p part, st *sdk.Stamper) er
 // such a member keeps its setter.
 func (g *generator) conclude(m sdk.SubjectMatch, p part, st *sdk.Stamper, sub *subject) {
 	in := &invocation{options: g.options, m: m, p: p, sub: sub, b: m.Rules()}
+	if !p.referable(sub.visibility) {
+		m.Errorf(Unimportable, "%s is not exported, so the file of its builder cannot refer to it", sub.name)
+		return
+	}
 	if !in.constructible() {
 		m.Errorf(Unconstructed, "each public constructor of %s takes a parameter that a caller must pass, "+
 			"and a builder constructs %s without arguments", sub.decl.Name, sub.name)
@@ -580,13 +595,18 @@ func (g *generator) generateAlias(m *sdk.AliasMatch, p part, e *sdk.Emitter) err
 
 // write records the model of the builder of sub into the family of the
 // builders, under the name of [KeyName] on sub. It records the checks of the
-// builder into the family of the tests, unless the option no-tests is set. p
-// is the part of the language of sub. The annotate half stamps the facts on a
-// declaration whose builder write can record alone, so write reports nothing.
+// builder into the family of the tests, unless the option no-tests is set or
+// the package of sub does not export it. A test outside the package cannot
+// refer to such a declaration. p is the part of the language of sub. The
+// annotate half stamps the facts on a declaration whose builder write can
+// record alone, so write reports nothing.
 func (g *generator) write(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *subject) {
 	in := &invocation{options: g.options, m: m, p: p, e: e, sub: sub, b: m.Rules()}
 	members := in.members()
 	start, seed, values, _ := in.start(members)
+	if !in.placeable(members, values) {
+		return
+	}
 	name, _ := sdk.Fact(m, g.name)
 	builder := &emit.Struct{
 		Origin:     sub.origin,
@@ -609,7 +629,7 @@ func (g *generator) write(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *subje
 		record = append(record, in.function(fromSeed), in.function(fromValue))
 	}
 	e.File().Record(model, record...)
-	if g.options.NoTests {
+	if g.options.NoTests || sub.visibility != symbol.VisibilityPublic {
 		return
 	}
 	test, checks := in.tests(builder.Name, members, &model, values)
@@ -617,6 +637,50 @@ func (g *generator) write(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *subje
 		test.Fields.Append(in.referent(fromSeed), in.referent(fromValue))
 	}
 	e.File(TestTag).Record(checks, test)
+}
+
+// placeable reports whether the file of the builder can import each
+// declaration that the builder refers to: the subject, the type of each of
+// members, each default of values and the function that seeds the builder.
+// The directive out can move the file into another package, which cannot
+// import an unexported declaration. placeable reports [Unimportable] at the
+// subject for the first declaration that the file cannot import. It checks
+// the package that the plan previews for the file, and reports true where
+// the plan previews no package, because the layout then checks each
+// reference itself.
+func (in *invocation) placeable(members []member, values map[string]emit.Value) bool {
+	pkg, placed := in.e.File().Package()
+	if placed != nil {
+		return true
+	}
+	sub := in.sub
+	refuse := func(what string, err error) bool {
+		in.m.Errorf(Unimportable, "the builder of %s refers to %s, which its file in the package %s cannot import, "+
+			"so %s has no builder: %v", sub.name, what, pkg.Package, sub.name, err)
+		return false
+	}
+	if err := in.b.Importable(pkg, &node.TypeRef{Spelling: sub.name, Target: sub.origin}); err != nil {
+		return refuse(sub.name, err)
+	}
+	for i := range members {
+		if err := in.b.Importable(pkg, members[i].ref); err != nil {
+			return refuse(fmt.Sprintf("the type %s of %s", members[i].ref.Spelling, members[i].name), err)
+		}
+	}
+	for i := range members {
+		if value, declared := values[members[i].name]; declared {
+			if err := in.b.ImportableValue(pkg, value); err != nil {
+				return refuse("the default of "+members[i].name, err)
+			}
+		}
+	}
+	if call, seeded := in.seed(); seeded {
+		fn := &node.TypeRef{Spelling: call.Ref.Name, Target: *call.Ref}
+		if err := in.b.Importable(pkg, fn); err != nil {
+			return refuse("the function "+call.Ref.Name, err)
+		}
+	}
+	return true
 }
 
 // function returns the declaration of the function named name, which the
@@ -706,8 +770,14 @@ func (in *invocation) start(members []member) (*emit.Method, Seed, map[string]em
 // setter, and the method of the check of its replacement where the member
 // has an alternate. tests checks a generic declaration at the witnesses of
 // its type parameters. For a declaration whose type parameters have no
-// witnesses, it returns checks without a check of a member, and Instantiable
-// is false.
+// witnesses that the file of the tests can refer to, it returns checks
+// without a check of a member, and Instantiable is false.
+//
+// The file of the tests is in the external test package of its directory.
+// tests leaves out each member whose type the file cannot refer to, and each
+// default, sample and alternate that refers to a declaration that the file
+// cannot refer to, such as a default that calls an unexported function. A
+// member whose sample the file cannot refer to is a member without a sample.
 func (in *invocation) tests(
 	name string, members []member, model *Model, values map[string]emit.Value,
 ) (*emit.Struct, Checks) {
@@ -715,7 +785,7 @@ func (in *invocation) tests(
 	checks := Checks{Subject: sub.name, New: model.New, From: model.From}
 	test := &emit.Struct{Origin: sub.origin, Name: name, Visibility: sub.visibility}
 	witnesses := in.b.Witnesses(sub.params)
-	if len(sub.params) > 0 && witnesses == nil {
+	if len(sub.params) > 0 && (witnesses == nil || !in.importable(witnesses...)) {
 		return test, checks
 	}
 	checks.Instantiable = true
@@ -729,6 +799,9 @@ func (in *invocation) tests(
 	for i := range members {
 		mem := &members[i]
 		ref := rules.Substitute(mem.ref, sub.params, witnesses)
+		if !in.importable(ref) {
+			continue
+		}
 		at, comps := in.memberOf(mem, ref)
 		base := Probe{
 			Type: at.Type, Elem: at.Elem, Key: at.Key, Value: at.Value, Zeros: in.zerosOf(&comps),
@@ -756,7 +829,7 @@ func (in *invocation) checkField(
 	test *emit.Struct, seed *emit.Method, checks *Checks, mem *member, at *Member, ref *node.TypeRef,
 	values map[string]emit.Value,
 ) (setter, replace int) {
-	if value, declared := values[mem.name]; declared {
+	if value, declared := values[mem.name]; declared && in.referable(&value) {
 		// ZeroValue returns the zero value of emit for a type without a
 		// zero value, and no default equals it.
 		if zero, _ := in.b.ZeroValue(ref); !reflect.DeepEqual(value, zero) {
@@ -768,9 +841,10 @@ func (in *invocation) checkField(
 	}
 	argument := in.argumentOf(at.Form, mem.field, ref)
 	sample, alternate := in.b.SamplesOf(mem.id, argument, mem.name)
-	if !sample.OK() {
+	if !sample.OK() || !in.referable(&sample.Value) {
 		return -1, -1
 	}
+	paired := alternate.OK() && in.referable(&alternate.Value)
 	if at.Form == FormScalar {
 		seed.Body.Stmts = append(seed.Body.Stmts, assigned(seedLocal+selector+mem.name, &sample.Value))
 		checks.Seeds = append(checks.Seeds, mem.name)
@@ -782,13 +856,13 @@ func (in *invocation) checkField(
 	}
 	test.Methods.Append(in.bind(in.method(in.e.JoinName(mem.name, setterCheck), wantLocal), typ,
 		assigned(wantLocal, &sample.Value)))
-	if alternate.OK() {
+	if paired {
 		check.Replace = test.Methods.Len()
 		test.Methods.Append(in.bind(in.method(in.e.JoinName(mem.name, replaceCheck), firstLocal, wantLocal), typ,
 			assigned(firstLocal, &sample.Value), assigned(wantLocal, &alternate.Value)))
 	}
 	checks.Setters = append(checks.Setters, check)
-	if at.Copied && alternate.OK() {
+	if at.Copied && paired {
 		clone := check
 		clone.Method, clone.Replace = test.Methods.Len(), -1
 		test.Methods.Append(in.bind(in.method(in.e.JoinName(mem.name, cloneCheck), wantLocal, otherLocal), typ,
@@ -796,6 +870,31 @@ func (in *invocation) checkField(
 		checks.Clones = append(checks.Clones, clone)
 	}
 	return check.Method, check.Replace
+}
+
+// importable reports whether the file of the tests can refer to each type of
+// refs. It reports true where the plan does not preview the package of the
+// file, because the layout then checks each reference itself.
+func (in *invocation) importable(refs ...*node.TypeRef) bool {
+	pkg, placed := in.e.File(TestTag).Package()
+	if placed != nil {
+		return true
+	}
+	for _, ref := range refs {
+		if in.b.Importable(pkg, ref) != nil {
+			return false
+		}
+	}
+	return true
+}
+
+// referable reports whether the file of the tests can refer to each
+// declaration of the value v, such as a function that a default or a sample
+// calls. It reports true where the plan does not preview the package of the
+// file, as importable does.
+func (in *invocation) referable(v *emit.Value) bool {
+	pkg, placed := in.e.File(TestTag).Package()
+	return placed != nil || in.b.ImportableValue(pkg, *v) == nil
 }
 
 // probes returns the probes of the methods of a member that the checks of

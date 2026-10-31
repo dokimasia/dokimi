@@ -139,6 +139,10 @@ func (typescriptPart) selectable(name string) bool {
 		!strings.ContainsFunc(name[size:], func(r rune) bool { return !typescript.IsIdentifierPart(r) })
 }
 
+// referable reports whether the class is exported, because the module of a
+// builder imports its class from the module of the class.
+func (typescriptPart) referable(v symbol.Visibility) bool { return v == symbol.VisibilityPublic }
+
 // set returns the type argument of a reference to the global class Set, the
 // set of TypeScript, and false for every other type. A property without a
 // type annotation has a nil type. TypeScript requires the one type argument

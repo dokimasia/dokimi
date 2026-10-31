@@ -3,8 +3,9 @@
 {{- $c := .Data}}
 {{- if not $c.Instantiable}}
 
-{{docs (wrapdocs (printf `[%s] is generic, and its type parameters have no witnesses, so the file has
-no checks of %s. A test in the package of a consumer instantiates it.` $c.Subject $t.Name))}}
+{{docs (wrapdocs (printf `[%s] is generic, and its type parameters have no witnesses that a test outside
+its package can refer to, so the file has no checks of %s. A test in the package of a consumer
+instantiates it.` $c.Subject $t.Name))}}
 {{- else}}
 {{- use "testing"}}{{use "go.dokimi.dev/assert"}}
 {{- $seed := index $t.Types.Items 0}}

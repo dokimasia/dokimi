@@ -1,9 +1,10 @@
-package generic
+package generic_test
 
 import (
 	"slices"
 	"testing"
 
+	"example.com/shop/generic"
 	"go.dokimi.dev/assert"
 )
 
@@ -19,7 +20,7 @@ func TestPageBuilder(t *testing.T) {
 
 			var want int
 			want = 1
-			got := NewPageBuilder[int]().Build()
+			got := generic.NewPageBuilder[int]().Build()
 			assert.Equal(t, got.Next, want, "NewPageBuilder applies the declared default of Next")
 		})
 	})
@@ -30,21 +31,21 @@ func TestPageBuilder(t *testing.T) {
 		t.Run("keeps each member of its value", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Page[int]
+			var seed generic.Page[int]
 			seed.Next = 42
-			got := NewPageBuilderFrom[int](seed).Build()
+			got := generic.NewPageBuilderFrom[int](seed).Build()
 			assert.Equal(t, got.Next, seed.Next, "NewPageBuilderFrom keeps Next")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewPageBuilder[int]()
+			b := generic.NewPageBuilder[int]()
 			b.WithItems(0)
 			want := b.Build()
 			assert.Equal(
 				t,
-				NewPageBuilderFrom[int](want).Build(),
+				generic.NewPageBuilderFrom[int](want).Build(),
 				want,
 				"NewPageBuilderFrom keeps the value of its argument",
 			)
@@ -59,7 +60,7 @@ func TestPageBuilder(t *testing.T) {
 
 			var want []int
 			want = []int{42}
-			got := NewPageBuilder[int]().WithItems(want...).Build()
+			got := generic.NewPageBuilder[int]().WithItems(want...).Build()
 			assert.Equal(t, got.Items, want, "WithItems writes its argument to Items")
 		})
 
@@ -69,7 +70,7 @@ func TestPageBuilder(t *testing.T) {
 			var first, want []int
 			first = []int{42}
 			want = []int{7}
-			got := NewPageBuilder[int]().WithItems(first...).WithItems(want...).Build()
+			got := generic.NewPageBuilder[int]().WithItems(first...).WithItems(want...).Build()
 			assert.Equal(t, got.Items, want, "the second call of WithItems replaces the first")
 		})
 	})
@@ -82,7 +83,7 @@ func TestPageBuilder(t *testing.T) {
 
 			var want int
 			want = 42
-			got := NewPageBuilder[int]().WithNext(want).Build()
+			got := generic.NewPageBuilder[int]().WithNext(want).Build()
 			assert.Equal(t, got.Next, want, "WithNext writes its argument to Next")
 		})
 
@@ -92,7 +93,7 @@ func TestPageBuilder(t *testing.T) {
 			var first, want int
 			first = 42
 			want = 7
-			got := NewPageBuilder[int]().WithNext(first).WithNext(want).Build()
+			got := generic.NewPageBuilder[int]().WithNext(first).WithNext(want).Build()
 			assert.Equal(t, got.Next, want, "the second call of WithNext replaces the first")
 		})
 	})
@@ -106,7 +107,7 @@ func TestPageBuilder(t *testing.T) {
 			var first, want []int
 			first = []int{42}
 			want = []int{7}
-			got := NewPageBuilder[int]().WithItems(first...).AppendItems(want...).Build()
+			got := generic.NewPageBuilder[int]().WithItems(first...).AppendItems(want...).Build()
 			assert.Equal(
 				t,
 				got.Items,
@@ -122,9 +123,9 @@ func TestPageBuilder(t *testing.T) {
 		t.Run("passes the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var got []*Page[int]
-			record := func(v *Page[int]) { got = append(got, v) }
-			NewPageBuilder[int]().Mutate(record).Mutate(record)
+			var got []*generic.Page[int]
+			record := func(v *generic.Page[int]) { got = append(got, v) }
+			generic.NewPageBuilder[int]().Mutate(record).Mutate(record)
 			assert.Length(t, got, 2, "Mutate calls each function once")
 			assert.Equal(
 				t,
@@ -142,7 +143,7 @@ func TestPageBuilder(t *testing.T) {
 		t.Run("returns a builder of its own", func(t *testing.T) {
 			t.Parallel()
 
-			original := NewPageBuilder[int]()
+			original := generic.NewPageBuilder[int]()
 			assert.NotEqual(
 				t,
 				original.Clone(),
@@ -155,7 +156,7 @@ func TestPageBuilder(t *testing.T) {
 		t.Run("builds the value of its original", func(t *testing.T) {
 			t.Parallel()
 
-			b := NewPageBuilder[int]()
+			b := generic.NewPageBuilder[int]()
 			b.WithItems(0)
 			assert.Equal(
 				t,
@@ -171,10 +172,10 @@ func TestPageBuilder(t *testing.T) {
 			var want, other []int
 			want = []int{42}
 			other = []int{7}
-			original := NewPageBuilder[int]().WithItems(want...)
+			original := generic.NewPageBuilder[int]().WithItems(want...)
 			before := slices.Clone(want)
 			clone := original.Clone()
-			clone.Mutate(func(v *Page[int]) { copy(v.Items, other) })
+			clone.Mutate(func(v *generic.Page[int]) { copy(v.Items, other) })
 			assert.Equal(
 				t,
 				original.Build().Items,
@@ -190,10 +191,10 @@ func TestPageBuilder(t *testing.T) {
 		t.Run("returns the value under construction", func(t *testing.T) {
 			t.Parallel()
 
-			var seed Page[int]
+			var seed generic.Page[int]
 			seed.Next = 42
-			b := NewPageBuilder[int]()
-			b.Mutate(func(v *Page[int]) { *v = seed })
+			b := generic.NewPageBuilder[int]()
+			b.Mutate(func(v *generic.Page[int]) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})

@@ -71,6 +71,18 @@ var documents = []document{
 	{name: "stances", typ: reflect.TypeFor[stancesDoc]()},
 }
 
+// keysDoc is the document of keys.json: each identity of keys.yaml with its
+// key, which the test of each runtime checks its key form against.
+type keysDoc struct {
+	Keys []keyVector `json:"keys"`
+}
+
+// keyVector is one identity of keys.yaml with its key.
+type keyVector struct {
+	Identity string `json:"identity"`
+	Key      string `json:"key"`
+}
+
 // records are the records that a runtime writes, whose schemas Render writes
 // without a rendered file.
 var records = []document{
@@ -165,8 +177,10 @@ func schemaOptions() *jsonschema.ForOptions {
 
 // Render renders the YAML file of each name of Files in dir into its JSON
 // file and its schema under dir/schemas, and writes dir/names.gen.go and
-// dir/naming.json. It also writes dir/schemas/suite.schema.json, the schema
-// of the suite record that a runtime writes.
+// dir/naming.json. It writes the key of each identity of dir/keys.yaml into
+// dir/keys.json with its schema. It also writes
+// dir/schemas/suite.schema.json, the schema of the suite record that a
+// runtime writes.
 //
 // # Errors
 //
@@ -220,6 +234,9 @@ func render(root *os.Root) error {
 			}
 		}
 	}
+	if err := renderKeys(root, opts); err != nil {
+		return err
+	}
 	for _, r := range records {
 		schema, err := jsonschema.ForType(r.typ, opts)
 		//dokimi:mutate-skip ror-true: ForType returns an error only for a type without a JSON Schema, and each record has one
@@ -236,6 +253,42 @@ func render(root *os.Root) error {
 		return err
 	}
 	return writeNames(root, consts)
+}
+
+// renderKeys renders keys.yaml in root into keys.json with the key of each
+// identity in the order of the file, and writes the schema of keys.json. It
+// refuses a field that keys.yaml does not have.
+func renderKeys(root *os.Root, opts *jsonschema.ForOptions) error {
+	var source struct {
+		Identities []string `yaml:"identities"`
+	}
+	data, err := root.ReadFile("keys.yaml")
+	if err == nil {
+		dec := yaml.NewDecoder(bytes.NewReader(data))
+		dec.KnownFields(true)
+		err = dec.Decode(&source)
+	}
+	if err != nil {
+		return fmt.Errorf("keys.yaml: %w", err)
+	}
+	doc := keysDoc{Keys: make([]keyVector, len(source.Identities))}
+	for i, id := range source.Identities {
+		doc.Keys[i] = keyVector{Identity: id, Key: spec.Key(id)}
+	}
+	err = writeJSON(root, "keys.json", doc)
+	if err != nil {
+		return err
+	}
+	schema, err := jsonschema.ForType(reflect.TypeFor[keysDoc](), opts)
+	//dokimi:mutate-skip ror-true: ForType returns an error only for a type without a JSON Schema, and keysDoc has one
+	if err == nil {
+		schema.Schema = draft
+		err = writeJSON(root, "schemas/keys.schema.json", schema)
+	}
+	if err != nil {
+		return fmt.Errorf("the schema of keys: %w", err)
+	}
+	return nil
 }
 
 // open lets each object of the schema s and of its properties and items have

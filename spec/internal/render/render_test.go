@@ -13,6 +13,7 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/files"
 
+	"go.dokimi.dev/dokimi/spec"
 	"go.dokimi.dev/dokimi/spec/internal/render"
 )
 
@@ -100,6 +101,9 @@ unclaimed:
     stance: silent
     note: The mixin documents the callable.
 `),
+		"keys.yaml": files.Text(
+			"identities:\n  - Store.ReadAll/zero-on-error\n  - HTTPServer.Serve/cancel#0-generated\n",
+		),
 	}
 }
 
@@ -289,19 +293,39 @@ func TestRender(t *testing.T) {
 			},
 		)
 
+		t.Run("writes the key of each identity of keys.yaml", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, minimal())
+
+			assert.NoError(t, render.Render(dir), "the spec renders")
+
+			var got struct {
+				Keys []map[string]string `json:"keys"`
+			}
+			assert.NoError(t, json.Unmarshal([]byte(files.Read(t, filepath.Join(dir, "keys.json"))), &got),
+				"keys.json decodes")
+			first, second := "Store.ReadAll/zero-on-error", "HTTPServer.Serve/cancel#0-generated"
+			assert.Equal(t, got.Keys, []map[string]string{
+				{"identity": first, "key": spec.Key(first)},
+				{"identity": second, "key": spec.Key(second)},
+			}, "each identity has the key of the spec, in the order of keys.yaml")
+		})
+
 		t.Run("writes a schema that accepts its rendered file", func(t *testing.T) {
 			t.Parallel()
 			dir := files.Workspace(t, minimal())
 
 			assert.NoError(t, render.Render(dir), "the spec renders")
 
-			for _, name := range render.Files() {
+			for _, name := range append(render.Files(), "keys") {
 				var schema jsonschema.Schema
 				assert.NoError(
 					t,
 					json.Unmarshal([]byte(files.Read(t, filepath.Join(dir, "schemas", name+".schema.json"))), &schema),
 					"the schema decodes",
 				)
+				assert.Equal(t, schema.Schema, "https://json-schema.org/draft/2020-12/schema",
+					"the schema of "+name+" states its draft")
 				resolved, err := schema.Resolve(nil)
 				assert.NoError(t, err, "the schema resolves")
 				var doc any
@@ -498,6 +522,14 @@ unclaimed: {}
 				name: "returns an error for an identifier that is no Go name", giveFile: "laws.yaml",
 				giveText: "laws:\n  9a:\n    statement: s\n", wantErr: "names.gen.go:",
 			},
+			{
+				name: "returns an error for keys that do not parse", giveFile: "keys.yaml",
+				giveText: "identities: [\n", wantErr: "keys.yaml: yaml:",
+			},
+			{
+				name: "returns an error for a field that keys.yaml does not have", giveFile: "keys.yaml",
+				giveText: "identity: [Store.Get/smoke]\n", wantErr: "keys.yaml: yaml: unmarshal errors",
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -522,6 +554,42 @@ unclaimed: {}
 			err := render.Render(dir)
 
 			assert.ErrorIs(t, err, fs.ErrNotExist, "the missing file fails the render")
+		})
+
+		t.Run("returns an error for keys.yaml that is missing", func(t *testing.T) {
+			t.Parallel()
+			tree := minimal()
+			delete(tree, "keys.yaml")
+			dir := files.Workspace(t, tree)
+
+			err := render.Render(dir)
+
+			assert.ErrorIs(t, err, fs.ErrNotExist, "the missing keys fail the render")
+			assert.Contains(t, err.Error(), "keys.yaml:", "the error names the file")
+		})
+
+		t.Run("returns an error for keys.json that it cannot write", func(t *testing.T) {
+			t.Parallel()
+			tree := minimal()
+			tree["keys.json/keep"] = files.Text("a directory in place of the file\n")
+			dir := files.Workspace(t, tree)
+
+			err := render.Render(dir)
+
+			pathErr := assert.ErrorAs[*fs.PathError](t, err, "the directory in place of keys.json fails the render")
+			assert.Equal(t, pathErr.Path, "keys.json", "the error comes from the creation of keys.json")
+		})
+
+		t.Run("returns an error for the schema of the keys that it cannot write", func(t *testing.T) {
+			t.Parallel()
+			tree := minimal()
+			tree["schemas/keys.schema.json/keep"] = files.Text("a directory in place of the schema\n")
+			dir := files.Workspace(t, tree)
+
+			err := render.Render(dir)
+
+			assert.HasError(t, err, "the directory in place of the schema fails the render")
+			assert.Contains(t, err.Error(), "the schema of keys:", "the error names the schema")
 		})
 
 		t.Run("returns an error for a rendered file that it cannot write", func(t *testing.T) {

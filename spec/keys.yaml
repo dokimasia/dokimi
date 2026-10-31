@@ -1,0 +1,31 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The identities whose keys each runtime checks its key form against. go
+# generate ./spec writes the key of each identity into keys.json. Each
+# identity shows one rule of the word split of a name.
+identities:
+  - Store.Read/zero-on-error
+  - Store.ReadAll/zero-on-error
+  - Store.readAll/zero-on-error
+  - Store.read_all/zero-on-error
+  - Store.read-all/zero-on-error
+  - HTTPServer.Serve/cancel
+  - httpServer.serve/cancel
+  - http_server.serve/cancel
+  - URLPath.Join/smoke
+  - Store.GetID/smoke
+  - Store.GetIPv4/smoke
+  - Store.$Get/smoke
+  - Store.__init__/smoke
+  - UserIDs.List/stable-order
+  - URLsToFetch.Add/smoke
+  - IDsort.Get/smoke
+  - Int64Value.Get/smoke
+  - Version2.Get/smoke
+  - Größe.Get/smoke
+  - Store.Get/expires#0-generated
+  - Store.Get/zero-on-error#generated
+  - OrderStore/agrees-with-the-reference
+  - slug/round-trip
+  - Store.PutAll

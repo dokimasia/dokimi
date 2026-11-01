@@ -20,10 +20,12 @@ import (
 )
 
 // The template of the primary family of the recorder that writes a comment
-// for each record, and a template that writes no Go.
+// for each record, a template that writes no Go, and a template that imports
+// strings under the name of the struct Address.
 const (
 	commentBody = "{{range .Records}}// {{.Data.Name}} is recorded.\n{{end}}"
 	brokenBody  = "{{range .Records}}func {{end}}"
+	importBody  = `{{range .Records}}var _ = {{import "strings" "Address"}}.ToUpper` + "\n{{end}}"
 )
 
 // The paths at which the render routes the two files of the recorder, in the
@@ -97,6 +99,17 @@ func TestRendered(t *testing.T) {
 			assert.NoError(t, err, "the files of the render list")
 			assert.Equal(t, paths, []string{recordPath, checkPath},
 				"the render returns the files of the recorder alone")
+		})
+
+		t.Run("binds an import under a name that no source file of the package declares", func(t *testing.T) {
+			t.Parallel()
+
+			p, f, res := generate(t, recording{records: []string{addressName}, body: importBody})
+			got := string(gentest.Rendered(t, f, res, p, gobackend.New())[recordPath].Data)
+
+			expect.Contains(t, got, `Address2 "strings"`,
+				"the file imports strings under the lowest free suffix of the name Address")
+			expect.Contains(t, got, "var _ = Address2.ToUpper", "the template qualifies the import with that name")
 		})
 
 		t.Run("renders the helpers of the plugin", func(t *testing.T) {

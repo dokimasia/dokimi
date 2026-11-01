@@ -12,8 +12,10 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/eidos/sdk/backend"
 	"go.dokimi.dev/eidos/sdk/backendtest"
+	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/plugintest"
+	"go.dokimi.dev/eidos/sdk/symbol"
 )
 
 // Rendered renders the units of the phase call res through the backend b, as
@@ -24,9 +26,11 @@ import (
 // or where an out directive moves it, and the file of each family of one file
 // per plan to the root of the tree. The render reads the template tree, the
 // helpers and the overrides that each generator of the plan declares for the
-// target of b. Rendered returns the files of p by their routed paths, so a
-// spec matches them with golden.MatchTree. It stops the test where a
-// generator of the plan declares no template tree for the target of b, and
+// target of b. It also reads the declarations of the source files of the
+// packages of f, so an import of a template takes no name that a source file
+// of its package declares. Rendered returns the files of p by their routed
+// paths, so a spec matches them with golden.MatchTree. It stops the test where
+// a generator of the plan declares no template tree for the target of b, and
 // where the layout or the render reports a finding, because such a finding
 // is a defect of a template or of what a generator records.
 func Rendered(
@@ -37,11 +41,12 @@ func Rendered(
 	target := b.Target()
 	plan := append(slices.Clone(before), p)
 	fixture := &backendtest.Fixture{
-		Emit:      res.Emit,
-		Trees:     map[plugin.ID]fs.FS{},
-		Funcs:     map[plugin.ID]template.FuncMap{},
-		Overrides: map[plugin.ID][]string{},
-		Layout:    f.Layout(tb, plan...),
+		Emit:         res.Emit,
+		Trees:        map[plugin.ID]fs.FS{},
+		Funcs:        map[plugin.ID]template.FuncMap{},
+		Overrides:    map[plugin.ID][]string{},
+		Declarations: declarations(f),
+		Layout:       f.Layout(tb, plan...),
 	}
 	for _, q := range plan {
 		templates, provides := q.(plugin.TemplateProvider)
@@ -64,4 +69,20 @@ func Rendered(
 		}
 	}
 	return out
+}
+
+// declarations returns the declarations of the fixture f for the render. The
+// function calls yield with the path and the declarations of each source file
+// of the package at a path, as a run of the composition does for the packages
+// that it loads.
+func declarations(f *Fixture) func(path string, yield func(file string, decls []symbol.Symbol)) {
+	files := map[string][]*node.File{}
+	for pkg := range f.Graph.Packages() {
+		files[pkg.ID.Package] = pkg.Files
+	}
+	return func(path string, yield func(file string, decls []symbol.Symbol)) {
+		for _, file := range files[path] {
+			yield(file.Path, file.Decls)
+		}
+	}
 }

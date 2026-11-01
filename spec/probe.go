@@ -50,6 +50,22 @@ const (
 	// KindValues are named values that the check covers as one set, such as
 	// the members of an enumeration or the error values of a package.
 	KindValues InputKind = "values"
+
+	// KindActions are the actions of a machine over the subject. Each action
+	// calls one callable and records the call in the history of the case.
+	KindActions InputKind = "actions"
+
+	// KindOperation is the name of a callable as the history of a case
+	// records its calls.
+	KindOperation InputKind = "operation"
+
+	// KindApply is a function that calls a partner with the arguments of a
+	// call that the history recorded, and returns its output.
+	KindApply InputKind = "apply"
+
+	// KindReference is a function that applies an operation of the history
+	// to a subject by the name of its callable.
+	KindReference InputKind = "reference"
 )
 
 // Input is one input of a probe.

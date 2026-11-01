@@ -82,13 +82,7 @@ unclaimed:
   contract:single-flight/fn:
     stance: needs
     note: The claims of the contract need concurrent callers.
-  mixin:bounded:
-    stance: needs
-    note: The claims of the mixin need generated sequences.
   mixin:conservative:
-    stance: needs
-    note: The claims of the mixin need generated sequences.
-  mixin:crdt-merge:
     stance: needs
     note: The claims of the mixin need generated sequences.
   mixin:stream-reflects-mutations:
@@ -115,36 +109,9 @@ unclaimed:
   contract:watcher/trigger:
     stance: needs
     note: The claims of the contract need generated sequences.
-  contract:workflow/fn:
-    stance: needs
-    note: The claims of the contract need generated sequences.
   mixin:durable:
     stance: needs
     note: The claims of the mixin need a killable process or a breakable medium.
   mixin:default-on-error:
     stance: blocked
     note: The mixin declares no default value for a check to compare.
-  shape:batch-reader:
-    stance: gap
-    note: No claim states what a batch read returns for a key that it does not find.
-  shape:stream-reader:
-    stance: gap
-    note: No claim states what a stream returns after its end.
-  shape:poison-accessor:
-    stance: gap
-    note: No claim states what the accessor of a poisoned subject returns.
-  mixin:indexed:
-    stance: gap
-    note: No claim states that a read by index returns the element at that index.
-  mixin:wrapped-via:
-    stance: gap
-    note: No claim states that the error of the callable wraps the declared error.
-  contract:chain/verify:
-    stance: gap
-    note: No claim states that the verify of a chain refuses a chain that an append did not produce.
-  contract:lease/release:
-    stance: gap
-    note: No claim states that a released lease is granted again.
-  contract:pool/stats:
-    stance: gap
-    note: No claim states that the stats of a pool count each loan and each return.

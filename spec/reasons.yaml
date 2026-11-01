@@ -214,3 +214,36 @@ reasons:
   grouping-dependent:
     meaning: The two groupings of three inputs returned two values.
     since: 1.0.0
+  lost-a-key:
+    meaning: A batch read returned no stored value for a key.
+    since: 1.0.0
+  false-poison:
+    meaning: The accessor of a fresh receiver reported an error.
+    since: 1.0.0
+  out-of-bounds:
+    meaning: The callable refused a position below the size, or admitted the position equal to the size.
+    since: 1.0.0
+  diverged-from-the-sibling:
+    meaning: The callable returned something other than its sibling for one input.
+    since: 1.0.0
+  false-tamper:
+    meaning: The verify reported a change of a chain that appends alone produced.
+    since: 1.0.0
+  kept-after-release:
+    meaning: An acquire after a release reported the taken error.
+    since: 1.0.0
+  uncounted-loan:
+    meaning: The stats after a loan were the stats before it.
+    since: 1.0.0
+  diverges-from-the-reference:
+    meaning: A call returned on the subject something other than what it returned on the reference.
+    since: 1.0.0
+  exceeded-bound:
+    meaning: The use that the reader of the resource read was below the lower bound or above the upper bound.
+    since: 1.0.0
+  order-dependent-merge:
+    meaning: Two merges in opposite orders read two states.
+    since: 1.0.0
+  forbidden-transition:
+    meaning: A call moved the state to a state that the graph does not list as a successor.
+    since: 1.0.0

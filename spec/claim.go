@@ -78,7 +78,7 @@ type Classification struct {
 }
 
 // Licence is one classification that licenses a claim. Exactly one of
-// Callable, Context and the classification is set.
+// Callable, Context, Declaration and the classification is set.
 type Licence struct {
 	Classification
 
@@ -100,6 +100,12 @@ type Licence struct {
 	// Context licenses the claim on every callable with a parameter in the
 	// role context.
 	Context bool `json:"context,omitempty"`
+
+	// Declaration licenses the claim once on every declaration, for a claim
+	// with the scope declaration. The claim binds on the first callable of the
+	// declaration that passes its gates, or on its first callable where none
+	// does.
+	Declaration bool `json:"declaration,omitempty"`
 }
 
 // Unless withdraws a claim from a subject. A claim of suite names a mixin.
@@ -203,6 +209,11 @@ const (
 	// FromClock is the controlled clock of the run.
 	FromClock SourceKind = "clock"
 
+	// FromDeclaration is a function that the generator writes once for the
+	// declaration: the actions of its callables, or the function that applies
+	// an operation of a history to a subject by the name of its callable.
+	FromDeclaration SourceKind = "declaration"
+
 	// FromMembers are the members of an enumeration with their names.
 	FromMembers SourceKind = "members"
 
@@ -244,6 +255,11 @@ type Source struct {
 
 	// Param is the param of a FromParam source.
 	Param string `json:"param,omitempty"`
+
+	// Default is the value of a FromParam source whose param the
+	// classification does not set. A source without a default needs the
+	// param.
+	Default string `json:"default,omitempty"`
 
 	// Partner is the name of the partner of a FromPartner source.
 	Partner string `json:"partner,omitempty"`

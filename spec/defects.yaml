@@ -316,3 +316,128 @@ forms:
     does: The callable returns its first input where that input equals the value of its first call.
     min-steps: 4
     since: 1.0.0
+  drops-the-last-key:
+    changes: callable
+    does: The callable returns the list of the fresh subject without its last value.
+    min-steps: 2
+    since: 1.0.0
+  reports-poison:
+    changes: callable
+    does: The callable fails with an error that no directive declares on every call.
+    min-steps: 1
+    since: 1.0.0
+  admits-the-size:
+    changes: callable
+    does: The callable returns its second samples and no error for every position.
+    min-steps: 2
+    since: 1.0.0
+  stops-delegating:
+    changes: callable
+    does: The callable returns its second samples and no error on every call.
+    min-steps: 2
+    since: 1.0.0
+  reports-tamper:
+    changes: callable
+    does: The verify fails with an error that no directive declares on every call.
+    min-steps: 2
+    since: 1.0.0
+  release-keeps-the-lease:
+    changes: partner:release
+    does: The release returns no error and does nothing.
+    min-steps: 3
+    since: 1.0.0
+  frozen-stats:
+    changes: callable
+    does: The stats return the zero value on every call.
+    min-steps: 2
+    since: 1.0.0
+  goes-back-after-three:
+    changes: callable
+    does: The callable returns its first result again from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  reads-the-past-after-three:
+    changes: callable
+    does: The callable returns its first value again from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  reorders-after-three:
+    changes: callable
+    does: The callable reverses the elements that it returns from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  reorders-writes-after-three:
+    changes: partner:write
+    does: The write stores nothing from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  reads-a-stale-version-after-three:
+    changes: callable
+    does: The callable returns its first value again from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  stamps-the-past-after-three:
+    changes: partner:write
+    does: The write returns each value with the version 0 from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  descends-after-three:
+    changes: callable
+    does: The callable returns the position 0 from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  reverses-after-three:
+    changes: partner:replay
+    does: The replay reverses the entries that it returns from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  repeats-after-three:
+    changes: callable
+    does: The callable returns its first element twice from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  drops-after-three:
+    changes: callable
+    does: The callable drops the last element that it returns from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  drops-a-repeat-after-three:
+    changes: callable
+    does: The callable returns no error and does nothing from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  reads-a-stale-value-after-three:
+    changes: callable
+    does: The callable returns its first value again from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  drops-a-write-after-three:
+    changes: callable
+    does: The callable returns no error and does nothing from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  serves-a-stale-value-after-three:
+    changes: callable
+    does: The callable returns its first value again from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  diverges-after-three:
+    changes: declaration
+    does: The first callable of the declaration with a value result returns its second sample from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  grows-past-the-limit-after-three:
+    changes: partner:observe
+    does: The reader of the use returns a use one above the limit from its fourth call on.
+    min-steps: 4
+    since: 1.0.0
+  ignores-the-other-replica:
+    changes: callable
+    does: The merge returns no error and does nothing on every call.
+    min-steps: 1
+    since: 1.0.0
+  admits-any-transition-after-three:
+    changes: callable
+    does: The callable makes its transition twice from its fourth call on.
+    min-steps: 4
+    since: 1.0.0

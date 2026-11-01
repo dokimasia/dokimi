@@ -76,7 +76,7 @@ var directiveParams = map[string][]string{
 var sources = map[string][]spec.SourceKind{
 	"suite": {
 		spec.FromCallable, spec.FromPartner, spec.FromInput, spec.FromSample, spec.FromZero, spec.FromParam,
-		spec.FromClock,
+		spec.FromClock, spec.FromDeclaration,
 	},
 	"enum": {
 		spec.FromMembers,
@@ -209,7 +209,7 @@ func TestClaim(t *testing.T) {
 					"claim "+id+" has licences when its generator is suite",
 				)
 				for _, l := range c.Licences {
-					if l.Callable || l.Context {
+					if l.Callable || l.Context || l.Declaration {
 						expect.Equal(
 							t,
 							l.Classification,

@@ -4,7 +4,7 @@
 {{- $t := spell $m.Type}}
 {{- $n := $m.Names}}
 {{- if $m.Generate.Render}}
-{{- if $m.Table}}{{use "strconv"}}
+{{- if $m.Table}}
 {{- $tab := $m.Table}}
 {{- $s := $m.Subject}}
 
@@ -31,7 +31,7 @@ var _{{$s}}_map = map[{{$t}}]string{
 	if str, ok := _{{$s}}_map[v]; ok {
 		return str
 	}
-	return "{{$s}}(" + strconv.FormatInt(int64(v), 10) + ")"
+	return "{{$s}}(" + {{import "strconv"}}.FormatInt(int64(v), 10) + ")"
 }
 {{- else if eq (len $tab.Runs) 1}}
 {{- $r := index $tab.Runs 0}}
@@ -44,7 +44,7 @@ var _{{$s}}_index = [...]uint{{$r.Bits}}{{"{"}}{{range $i, $o := $r.Index}}{{if 
 {{- ""}}func (v {{$t}}) {{$n.Render}}() string {
 	idx := int(v) - {{$r.Low}}
 	if v < {{$r.Low}} || idx >= len(_{{$s}}_index)-1 {
-		return "{{$s}}(" + strconv.FormatInt(int64(v), 10) + ")"
+		return "{{$s}}(" + {{import "strconv"}}.FormatInt(int64(v), 10) + ")"
 	}
 	return _{{$s}}_name[_{{$s}}_index[idx]:_{{$s}}_index[idx+1]]
 }
@@ -86,7 +86,7 @@ var (
 {{- end}}
 {{- end}}
 	default:
-		return "{{$s}}(" + strconv.FormatInt(int64(v), 10) + ")"
+		return "{{$s}}(" + {{import "strconv"}}.FormatInt(int64(v), 10) + ")"
 	}
 }
 {{- end}}
@@ -108,19 +108,19 @@ var (
 	}
 {{- if $m.Textual}}
 	return string(v)
-{{- else}}{{use "fmt"}}
-	return fmt.Sprintf("{{$m.Subject}}({{$m.Format}})", {{spell $m.Fallback}}(v))
+{{- else}}
+	return {{import "fmt"}}.Sprintf("{{$m.Subject}}({{$m.Format}})", {{spell $m.Fallback}}(v))
 {{- end}}
 }
 {{- end}}
 {{- end}}
-{{- if $m.Generate.Error}}{{use "errors"}}
+{{- if $m.Generate.Error}}
 
 {{docs (wrapdocs (printf `%s is the error of a text that does not match a declared variant. The error of
 [%s] wraps it with the text.` $n.Sentinel $n.Parse))}}
-{{- ""}}var {{$n.Sentinel}} = errors.New("{{$m.Package}}: unknown {{$m.Subject}} value")
+{{- ""}}var {{$n.Sentinel}} = {{import "errors"}}.New("{{$m.Package}}: unknown {{$m.Subject}} value")
 {{- end}}
-{{- if $m.Generate.Parse}}{{use "fmt"}}
+{{- if $m.Generate.Parse}}
 
 {{docs (wrapdocs (printf `%s returns the variant of %s whose text is s. It is the inverse of
 [%s.%s] on the declared variants. It returns an error that wraps [%s] for
@@ -133,7 +133,7 @@ a text that does not match a declared variant.` $n.Parse $m.Subject $m.Subject $
 {{- end}}
 	}
 	var zero {{$t}}
-	return zero, fmt.Errorf("%w %q", {{$n.Sentinel}}, s)
+	return zero, {{import "fmt"}}.Errorf("%w %q", {{$n.Sentinel}}, s)
 }
 {{- end}}
 {{- if $m.Generate.Values}}
@@ -161,7 +161,7 @@ underlying type can make any other value.` $n.Valid))}}
 	}
 }
 {{- end}}
-{{- if $m.Generate.Encode}}{{use "fmt"}}
+{{- if $m.Generate.Encode}}
 {{- $sentinel := or $m.Generate.Error $m.ErrorRef}}
 
 {{docs (wrapdocs (printf `%s implements [encoding.TextMarshaler] with the text of v. encoding/json
@@ -170,9 +170,9 @@ uses it for a value and for a map key. It returns an error%s for a value that
 {{- ""}}func (v {{$t}}) {{$n.Encode}}() ([]byte, error) {
 	if !v.{{$n.Valid}}() {
 {{- if $sentinel}}
-		return nil, fmt.Errorf("%w %q", {{$n.Sentinel}}, v.{{$n.Render}}())
+		return nil, {{import "fmt"}}.Errorf("%w %q", {{$n.Sentinel}}, v.{{$n.Render}}())
 {{- else}}
-		return nil, fmt.Errorf("{{$m.Package}}: unknown {{$m.Subject}} value %q", v.{{$n.Render}}())
+		return nil, {{import "fmt"}}.Errorf("{{$m.Package}}: unknown {{$m.Subject}} value %q", v.{{$n.Render}}())
 {{- end}}
 	}
 	return []byte(v.{{$n.Render}}()), nil

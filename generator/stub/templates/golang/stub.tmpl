@@ -1,4 +1,4 @@
-{{- use "time"}}{{use "math/rand/v2"}}{{use "go.dokimi.dev/assert"}}{{use "go.dokimi.dev/stub"}}
+{{- $time := import "time"}}{{$rand := import "math/rand/v2"}}{{$assert := import "go.dokimi.dev/assert"}}{{$stubpkg := import "go.dokimi.dev/stub"}}
 {{- range .Records}}
 {{- $d := .Decl}}
 {{- $c := .Data}}
@@ -36,7 +36,7 @@ precedence over the function and the fixed results.` $m.Stub $m.Name))}}
 armed through it fails the test.` $m.Stub $m.Name $m.Name))}}
 {{- end}}
 {{- ""}}type {{$m.Stub}}{{$tp}} struct {
-	*stub.MethodStub[{{$m.Call}}{{$ta}}]
+	*{{$stubpkg}}.MethodStub[{{$m.Call}}{{$ta}}]
 
 	fn func({{template "stub.paramtypes" $m}}){{template "stub.results" $m}}
 {{- if $m.Returns}}
@@ -124,12 +124,12 @@ succeed.` .Helper $m.Name .Name))}}
 	return s
 }
 {{- end}}
-{{- if $m.Retry}}{{use "go.dokimi.dev/fault"}}
+{{- if $m.Retry}}
 
 {{docs (wrapdocs (printf `RetrySchedule makes %s fail with err on every call before call %d. Call %d
 and every call after it succeed.` $m.Name $m.Retry $m.Retry))}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) RetrySchedule(err error) *{{$m.Stub}}{{$ta}} {
-	s.SetFault(fault.NewRetryFault[{{$m.Call}}{{$ta}}](err, {{$m.Retry}}))
+	s.SetFault({{import "go.dokimi.dev/fault"}}.NewRetryFault[{{$m.Call}}{{$ta}}](err, {{$m.Retry}}))
 	return s
 }
 {{- end}}
@@ -153,14 +153,15 @@ from key. The fault leaves the calls of the partition of key alone.` $m.Name $p.
 {{- end}}
 {{- end}}
 
-// The reference to stub.CompatV1 fails the build against another major
+// The reference to {{$stubpkg}}.CompatV1 fails the build against another major
 // version of the runtime of doubles.
-var _ = stub.CompatV1
+var _ = {{$stubpkg}}.CompatV1
 {{- if $retries}}
+{{- $fault := import "go.dokimi.dev/fault"}}
 
-// The reference to fault.CompatV1 fails the build against another major
+// The reference to {{$fault}}.CompatV1 fails the build against another major
 // version of the fault strategies.
-var _ = fault.CompatV1
+var _ = {{$fault}}.CompatV1
 {{- end}}
 
 {{docs (wrapdocs (printf `%sOption configures a [%s] at its construction.` $stub $stub))}}
@@ -195,13 +196,13 @@ still records the call.` $stub $iface $iface))}}
 {{docs (wrapdocs (printf `%sWithClock returns the option that sets the clock of the double to clk.
 The double takes the latency, the windows of the faults and the instants of
 the calls from clk. A latency on a controlled clock costs no real time.` $stub))}}
-{{- ""}}func {{$stub}}WithClock{{$tp}}(clk assert.Clock) {{$stub}}Option{{$ta}} {
+{{- ""}}func {{$stub}}WithClock{{$tp}}(clk {{$assert}}.Clock) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.group.SetClock(clk) }
 }
 
 {{docs (wrapdocs (printf `%sWithRandSource returns the option that sets the random source of the
 probabilistic faults to src. A seeded source repeats the faults of a run.` $stub))}}
-{{- ""}}func {{$stub}}WithRandSource{{$tp}}(src rand.Source) {{$stub}}Option{{$ta}} {
+{{- ""}}func {{$stub}}WithRandSource{{$tp}}(src {{$rand}}.Source) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.group.SetRandSource(src) }
 }
 
@@ -213,7 +214,7 @@ methods still return their results.` $stub))}}
 
 {{docs (wrapdocs (printf `%sWithLatency returns the option that makes every method sleep d before it
 returns. Without %sWithClock, d passes in real time.` $stub $stub))}}
-{{- ""}}func {{$stub}}WithLatency{{$tp}}(d time.Duration) {{$stub}}Option{{$ta}} {
+{{- ""}}func {{$stub}}WithLatency{{$tp}}(d {{$time}}.Duration) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.group.SetLatency(d) }
 }
 {{- if $c.Fallible}}
@@ -256,10 +257,10 @@ builder, and every other result is its zero value.` $stub $iface))}}
 {{- end}}
 
 	// group contains the stub of each method.
-	group *stub.Group
+	group *{{$stubpkg}}.Group
 {{- if $c.Ordered}}
 
-	order *stub.OrderTracker
+	order *{{$stubpkg}}.OrderTracker
 {{- end}}
 	strict bool
 }
@@ -278,13 +279,13 @@ parameters. The double does not branch on its type parameters, so it implements
 {{docs (wrapdocs (printf `%s returns a double of %s that reports its failures to tb and applies
 opts. The double checks the expected counts of calls at the end of the test.
 With a nil tb, the double reports nothing.` $new $iface))}}
-{{- ""}}func {{$new}}{{$tp}}(tb assert.TB, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
+{{- ""}}func {{$new}}{{$tp}}(tb {{$assert}}.TB, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
 	s := &{{$stub}}{{$ta}}{
 {{- range $c.Methods}}
-		{{.Field}}: &{{.Stub}}{{$ta}}{MethodStub: stub.NewMethodStub[{{.Call}}{{$ta}}](tb, "{{.Qualified}}")},
+		{{.Field}}: &{{.Stub}}{{$ta}}{MethodStub: {{$stubpkg}}.NewMethodStub[{{.Call}}{{$ta}}](tb, "{{.Qualified}}")},
 {{- end}}
 	}
-	s.group = stub.NewGroup(
+	s.group = {{$stubpkg}}.NewGroup(
 {{- range $c.Methods}}
 		s.{{.Field}}.MethodStub,
 {{- end}}
@@ -298,7 +299,7 @@ With a nil tb, the double reports nothing.` $new $iface))}}
 {{- if $c.Ordered}}
 	// The tracker fails the test in strict mode alone, so it follows the
 	// options.
-	s.order = stub.NewOrderTracker(tb, s.strict)
+	s.order = {{$stubpkg}}.NewOrderTracker(tb, s.strict)
 {{- end}}
 	s.group.Bind(tb)
 	return s
@@ -306,7 +307,7 @@ With a nil tb, the double reports nothing.` $new $iface))}}
 
 {{docs (wrapdocs (printf `%sDelayed returns a double whose methods sleep d on clk before they
 return. It applies opts after the clock and the latency.` $new))}}
-{{- ""}}func {{$new}}Delayed{{$tp}}(tb assert.TB, d time.Duration, clk assert.Clock, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
+{{- ""}}func {{$new}}Delayed{{$tp}}(tb {{$assert}}.TB, d {{$time}}.Duration, clk {{$assert}}.Clock, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
 	return {{$new}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{
 		{{$stub}}WithClock{{$ta}}(clk),
 		{{$stub}}WithLatency{{$ta}}(d),
@@ -316,7 +317,7 @@ return. It applies opts after the clock and the latency.` $new))}}
 
 {{docs (wrapdocs (printf `%sFailing returns a double on which each call of a method that can
 fail fails with err. It applies opts after the failure.` $new))}}
-{{- ""}}func {{$new}}Failing{{$tp}}(tb assert.TB, err error, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
+{{- ""}}func {{$new}}Failing{{$tp}}(tb {{$assert}}.TB, err error, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
 	return {{$new}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{ {{- $stub}}Failing{{$ta}}(err)}, opts...)...)
 }
 {{- end}}
@@ -377,7 +378,7 @@ Func, then the results of Returns, and then the %s.` $m.Name (or (and $m.Default
 {{- end}}
 	{{$m.Record}} := {{$m.Call}}{{$ta}}{{"{"}}{{range $j, $p := $m.Params}}{{if $j}}, {{end}}{{$p.Field}}: {{$p.Name}}{{end}}{{"}"}}
 {{- if $m.Returns}}
-	{{$m.Answer}} := stub.Answer({{$m.Receiver}}.{{$m.Field}}.MethodStub, {{$m.Record}}, stub.Arms[{{$m.Call}}{{$ta}}, {{$m.Return}}{{$ta}}]{
+	{{$m.Answer}} := {{$stubpkg}}.Answer({{$m.Receiver}}.{{$m.Field}}.MethodStub, {{$m.Record}}, {{$stubpkg}}.Arms[{{$m.Call}}{{$ta}}, {{$m.Return}}{{$ta}}]{
 		Invoke:   {{$m.Receiver}}.{{$m.Field}}.invoke({{template "stub.args" $m}}),
 		Fallback: {{$m.Receiver}}.{{$m.Field}}.fallback,
 {{- if ge $m.Err 0}}
@@ -400,7 +401,7 @@ Func, then the results of Returns, and then the %s.` $m.Name (or (and $m.Default
 	})
 	return {{range $j, $r := $m.Returns}}{{if $j}}, {{end}}{{$m.Answer}}.{{$r.Field}}{{end}}
 {{- else}}
-	stub.Answer({{$m.Receiver}}.{{$m.Field}}.MethodStub, {{$m.Record}}, stub.Arms[{{$m.Call}}{{$ta}}, struct{}]{
+	{{$stubpkg}}.Answer({{$m.Receiver}}.{{$m.Field}}.MethodStub, {{$m.Record}}, {{$stubpkg}}.Arms[{{$m.Call}}{{$ta}}, struct{}]{
 		Invoke: {{$m.Receiver}}.{{$m.Field}}.invokeVoid({{template "stub.args" $m}}),
 	})
 {{- end}}

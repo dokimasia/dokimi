@@ -20,6 +20,12 @@ import (
 	"go.dokimi.dev/dokimi/internal/gentest"
 )
 
+// The packages of the Go tree that this spec alone reads.
+const (
+	scopedPackage     = "example.com/shop/scoped"
+	scopedTestPackage = "example.com/shop/scoped_test"
+)
+
 // The part of Go declares the target golang with the template of each family
 // and its helpers. It sets a pointer receiver on each method of a double, and
 // returns the names of the member that configures a method, of the fields of
@@ -253,7 +259,8 @@ func rendered(t *testing.T) fstest.MapFS {
 
 	p := stub.New()
 	f, b := planned(t, golang.Target, goTree, p, catalogPackage, parityPackage, genericPackage, edgePackage,
-		handlesPackage, mixedPackage, sequencePackage, builtPackage, billingPackage, hiddenPackage)
+		handlesPackage, mixedPackage, sequencePackage, builtPackage, billingPackage, hiddenPackage, scopedPackage,
+		scopedTestPackage)
 	assert.NoError(t, f.Generate(t, b).Err, "builder runs whole")
 	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")

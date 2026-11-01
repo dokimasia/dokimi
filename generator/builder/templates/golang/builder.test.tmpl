@@ -7,7 +7,7 @@
 its package can refer to, so the file has no checks of %s. A test in the package of a consumer
 instantiates it.` $c.Subject $t.Name))}}
 {{- else}}
-{{- use "testing"}}{{use "go.dokimi.dev/assert"}}
+{{- $testing := import "testing"}}{{$assert := import "go.dokimi.dev/assert"}}
 {{- $seed := index $t.Types.Items 0}}
 {{- $ta := typeargs $c.Args}}
 {{- $v := spell $c.Value}}
@@ -15,32 +15,32 @@ instantiates it.` $c.Subject $t.Name))}}
 {{- $from := spell (index $t.Fields.Items 1).Type}}
 
 {{docs (wrapdocs (printf `Test%s checks the constructors and the methods of %s.` $t.Name $t.Name))}}
-{{- ""}}func Test{{$t.Name}}(t *testing.T) {
+{{- ""}}func Test{{$t.Name}}(t *{{$testing}}.T) {
 	t.Parallel()
 {{- if $c.Defaults}}
 
-	t.Run("{{$c.New}}", func(t *testing.T) {
+	t.Run("{{$c.New}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 {{- range $i, $check := slice $t.Types.Items 1}}
 {{- $field := index $c.Defaults $i}}
 
-		t.Run("applies the declared default of {{$field}}", func(t *testing.T) {
+		t.Run("applies the declared default of {{$field}}", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			var want {{spell (index $check.Params.Items 0).Type}}
 {{body $check}}			got := {{$new}}{{$ta}}().Build()
-			assert.Equal(t, got.{{$field}}, want, "{{$c.New}} applies the declared default of {{$field}}")
+			{{$assert}}.Equal(t, got.{{$field}}, want, "{{$c.New}} applies the declared default of {{$field}}")
 		})
 {{- end}}
 	})
 {{- end}}
 
-	t.Run("{{$c.From}}", func(t *testing.T) {
+	t.Run("{{$c.From}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 {{- if $c.Seeds}}
-{{- $check := "assert"}}{{if gt (len $c.Seeds) 1}}{{$check = "expect"}}{{use "go.dokimi.dev/assert/expect"}}{{end}}
+{{- $check := $assert}}{{if gt (len $c.Seeds) 1}}{{$check = import "go.dokimi.dev/assert/expect"}}{{end}}
 
-		t.Run("keeps each member of its value", func(t *testing.T) {
+		t.Run("keeps each member of its value", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			var seed {{$v}}
@@ -51,54 +51,54 @@ instantiates it.` $c.Subject $t.Name))}}
 		})
 {{- end}}
 
-		t.Run("keeps the value of its argument", func(t *testing.T) {
+		t.Run("keeps the value of its argument", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			b := {{$new}}{{$ta}}()
 {{- template "builder.fills" $c}}
 			want := b.Build()
-			assert.Equal(t, {{$from}}{{$ta}}(want).Build(), want, "{{$c.From}} keeps the value of its argument")
+			{{$assert}}.Equal(t, {{$from}}{{$ta}}(want).Build(), want, "{{$c.From}} keeps the value of its argument")
 		})
 	})
 {{- range $c.Setters}}
 {{- $m := index $t.Methods.Items .Method}}
 {{- $spread := ""}}{{if eq .Form "list"}}{{$spread = "..."}}{{end}}
 
-	t.Run("{{.Setter}}", func(t *testing.T) {
+	t.Run("{{.Setter}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 {{- if eq .Form "optional"}}
 
-		t.Run("points {{.Field}} at its argument", func(t *testing.T) {
+		t.Run("points {{.Field}} at its argument", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			var want {{spell .Type}}
 {{body $m}}			got := {{$new}}{{$ta}}().{{.Setter}}(want{{$spread}}).Build()
-			assert.NotNil(t, got.{{.Field}}, "{{.Setter}} points {{.Field}} at a value")
-			assert.Equal(t, *got.{{.Field}}, want, "{{.Setter}} points {{.Field}} at its argument")
+			{{$assert}}.NotNil(t, got.{{.Field}}, "{{.Setter}} points {{.Field}} at a value")
+			{{$assert}}.Equal(t, *got.{{.Field}}, want, "{{.Setter}} points {{.Field}} at its argument")
 		})
 {{- else}}
 
-		t.Run("writes its argument to {{.Field}}", func(t *testing.T) {
+		t.Run("writes its argument to {{.Field}}", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			var want {{spell .Type}}
 {{body $m}}			got := {{$new}}{{$ta}}().{{.Setter}}(want{{$spread}}).Build()
-			assert.Equal(t, got.{{.Field}}, want, "{{.Setter}} writes its argument to {{.Field}}")
+			{{$assert}}.Equal(t, got.{{.Field}}, want, "{{.Setter}} writes its argument to {{.Field}}")
 		})
 {{- end}}
 {{- if ge .Replace 0}}
 {{- $r := index $t.Methods.Items .Replace}}
 
-		t.Run("replaces the value of {{.Field}}", func(t *testing.T) {
+		t.Run("replaces the value of {{.Field}}", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			var first, want {{spell .Type}}
 {{body $r}}			got := {{$new}}{{$ta}}().{{.Setter}}(first{{$spread}}).{{.Setter}}(want{{$spread}}).Build()
 {{- if eq .Form "optional"}}
-			assert.NotNil(t, got.{{.Field}}, "{{.Setter}} points {{.Field}} at a value")
-			assert.Equal(t, *got.{{.Field}}, want, "the second call of {{.Setter}} replaces the first")
+			{{$assert}}.NotNil(t, got.{{.Field}}, "{{.Setter}} points {{.Field}} at a value")
+			{{$assert}}.Equal(t, *got.{{.Field}}, want, "the second call of {{.Setter}} replaces the first")
 {{- else}}
-			assert.Equal(t, got.{{.Field}}, want, "the second call of {{.Setter}} replaces the first")
+			{{$assert}}.Equal(t, got.{{.Field}}, want, "the second call of {{.Setter}} replaces the first")
 {{- end}}
 		})
 {{- end}}
@@ -106,187 +106,187 @@ instantiates it.` $c.Subject $t.Name))}}
 {{- end}}
 {{- range $c.Probes}}
 
-	t.Run("{{.Method}}", func(t *testing.T) {
+	t.Run("{{.Method}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 {{- if and (eq .Kind "with") (eq .Form "scalar")}}
 
-		t.Run("returns its builder", func(t *testing.T) {
+		t.Run("returns its builder", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			b := {{$new}}{{$ta}}()
-			assert.Equal(t, b.{{.Method}}(b.Build().{{.Field}}), b, "{{.Method}} returns its builder for the next call",
-				assert.ByIdentity())
+			{{$assert}}.Equal(t, b.{{.Method}}(b.Build().{{.Field}}), b, "{{.Method}} returns its builder for the next call",
+				{{$assert}}.ByIdentity())
 		})
 {{- else if and (eq .Kind "with") (eq .Form "optional")}}
 
-		t.Run("points {{.Field}} at its argument", func(t *testing.T) {
+		t.Run("points {{.Field}} at its argument", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			got := {{$new}}{{$ta}}().{{.Method}}({{value .Zeros.Elem}}).Build()
-			assert.NotNil(t, got.{{.Field}}, "{{.Method}} points {{.Field}} at a value")
-			assert.Equal(t, *got.{{.Field}}, {{value .Zeros.Elem}}, "{{.Method}} points {{.Field}} at its argument")
+			{{$assert}}.NotNil(t, got.{{.Field}}, "{{.Method}} points {{.Field}} at a value")
+			{{$assert}}.Equal(t, *got.{{.Field}}, {{value .Zeros.Elem}}, "{{.Method}} points {{.Field}} at its argument")
 		})
 {{- else if eq .Kind "with"}}
 
-		t.Run("writes its argument to {{.Field}}", func(t *testing.T) {
+		t.Run("writes its argument to {{.Field}}", func(t *{{$testing}}.T) {
 			t.Parallel()
 {{- if eq .Form "list"}}
 
 			got := {{$new}}{{$ta}}().{{.Method}}({{value .Zeros.Elem}}).Build()
-			assert.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Elem}}}, "{{.Method}} writes its argument to {{.Field}}")
+			{{$assert}}.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Elem}}}, "{{.Method}} writes its argument to {{.Field}}")
 {{- else if eq .Form "map"}}
 
 			want := {{spell .Type}}{ {{- value .Zeros.Key}}: {{value .Zeros.Value}}}
 			got := {{$new}}{{$ta}}().{{.Method}}(want).Build()
-			assert.Equal(t, got.{{.Field}}, want, "{{.Method}} writes its argument to {{.Field}}")
+			{{$assert}}.Equal(t, got.{{.Field}}, want, "{{.Method}} writes its argument to {{.Field}}")
 {{- else if eq .Form "set"}}
 
 			want := {{spell .Type}}{ {{- value .Zeros.Elem}}: {}}
 			got := {{$new}}{{$ta}}().{{.Method}}(want).Build()
-			assert.Equal(t, got.{{.Field}}, want, "{{.Method}} writes its argument to {{.Field}}")
+			{{$assert}}.Equal(t, got.{{.Field}}, want, "{{.Method}} writes its argument to {{.Field}}")
 {{- else}}
 
 			want := {{spell .Type}}{0}
 			got := {{$new}}{{$ta}}().{{.Method}}(want).Build()
-			assert.Equal(t, got.{{.Field}}, want, "{{.Method}} writes its argument to {{.Field}}")
+			{{$assert}}.Equal(t, got.{{.Field}}, want, "{{.Method}} writes its argument to {{.Field}}")
 {{- end}}
 		})
 {{- else if eq .Kind "append"}}
 
-		t.Run("appends to the elements of {{.Field}}", func(t *testing.T) {
+		t.Run("appends to the elements of {{.Field}}", func(t *{{$testing}}.T) {
 			t.Parallel()
-{{- if ge .Pair 0}}{{use "slices"}}
+{{- if ge .Pair 0}}
 {{- $r := index $t.Methods.Items .Pair}}
 
 			var first, want {{spell .Type}}
 {{body $r}}			got := {{$new}}{{$ta}}().{{.With}}(first...).{{.Method}}(want...).Build()
-			assert.Equal(t, got.{{.Field}}, slices.Concat(first, want), "{{.Method}} appends its elements after those of {{.With}}")
-{{- else if ge .Sample 0}}{{use "slices"}}
+			{{$assert}}.Equal(t, got.{{.Field}}, {{import "slices"}}.Concat(first, want), "{{.Method}} appends its elements after those of {{.With}}")
+{{- else if ge .Sample 0}}
 {{- $m := index $t.Methods.Items .Sample}}
 
 			var want {{spell .Type}}
 {{body $m}}			got := {{$new}}{{$ta}}().{{.With}}(want...).{{.Method}}(want...).Build()
-			assert.Equal(t, got.{{.Field}}, slices.Concat(want, want), "{{.Method}} appends its elements after those of {{.With}}")
+			{{$assert}}.Equal(t, got.{{.Field}}, {{import "slices"}}.Concat(want, want), "{{.Method}} appends its elements after those of {{.With}}")
 {{- else}}
 
 			got := {{$new}}{{$ta}}().{{.With}}({{value .Zeros.Elem}}).{{.Method}}({{value .Zeros.Elem}}).Build()
-			assert.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Elem}}, {{value .Zeros.Elem}}},
+			{{$assert}}.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Elem}}, {{value .Zeros.Elem}}},
 				"{{.Method}} appends its elements after those of {{.With}}")
 {{- end}}
 		})
 {{- else if eq .Kind "entry"}}
 
-		t.Run("adds one key to {{.Field}}", func(t *testing.T) {
+		t.Run("adds one key to {{.Field}}", func(t *{{$testing}}.T) {
 			t.Parallel()
 {{- if eq .Form "map"}}
 
 			got := {{$new}}{{$ta}}().{{.With}}(nil).{{.Method}}({{value .Zeros.Key}}, {{value .Zeros.Value}}).Build()
-			assert.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Key}}: {{value .Zeros.Value}}}, "{{.Method}} adds the key to a nil map")
+			{{$assert}}.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Key}}: {{value .Zeros.Value}}}, "{{.Method}} adds the key to a nil map")
 {{- else}}
 
 			got := {{$new}}{{$ta}}().{{.With}}(nil).{{.Method}}({{value .Zeros.Elem}}).Build()
-			assert.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Elem}}: {}}, "{{.Method}} adds the key to a nil set")
+			{{$assert}}.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Elem}}: {}}, "{{.Method}} adds the key to a nil set")
 {{- end}}
 		})
 {{- else if eq .Kind "entries"}}
 
-		t.Run("adds each key to {{.Field}}", func(t *testing.T) {
+		t.Run("adds each key to {{.Field}}", func(t *{{$testing}}.T) {
 			t.Parallel()
-{{- if and (eq .Form "map") (ge .Pair 0)}}{{use "maps"}}
+{{- if and (eq .Form "map") (ge .Pair 0)}}
 {{- $r := index $t.Methods.Items .Pair}}
 
 			var first, want {{spell .Type}}
-{{body $r}}			merged := maps.Clone(first)
-			maps.Copy(merged, want)
+{{body $r}}			merged := {{import "maps"}}.Clone(first)
+			{{import "maps"}}.Copy(merged, want)
 			got := {{$new}}{{$ta}}().{{.With}}(nil).{{.Method}}(first).{{.Method}}(want).Build()
-			assert.Equal(t, got.{{.Field}}, merged, "{{.Method}} keeps the entries of its earlier call")
+			{{$assert}}.Equal(t, got.{{.Field}}, merged, "{{.Method}} keeps the entries of its earlier call")
 {{- else if eq .Form "map"}}
 
 			entries := {{spell .Type}}{ {{- value .Zeros.Key}}: {{value .Zeros.Value}}}
 			got := {{$new}}{{$ta}}().{{.With}}(nil).{{.Method}}(entries).Build()
-			assert.Equal(t, got.{{.Field}}, entries, "{{.Method}} copies its entries into a nil map")
+			{{$assert}}.Equal(t, got.{{.Field}}, entries, "{{.Method}} copies its entries into a nil map")
 {{- else}}
 
 			got := {{$new}}{{$ta}}().{{.With}}(nil).{{.Method}}({{value .Zeros.Elem}}, {{value .Zeros.Elem}}).Build()
-			assert.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Elem}}: {}}, "{{.Method}} adds two equal keys as one key")
+			{{$assert}}.Equal(t, got.{{.Field}}, {{spell .Type}}{ {{- value .Zeros.Elem}}: {}}, "{{.Method}} adds two equal keys as one key")
 {{- end}}
 		})
 {{- else}}
 
-		t.Run("writes the bytes of the text to {{.Field}}", func(t *testing.T) {
+		t.Run("writes the bytes of the text to {{.Field}}", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			got := {{$new}}{{$ta}}().{{.Method}}("a").Build()
-			assert.Equal(t, got.{{.Field}}, {{spell .Type}}("a"), "{{.Method}} writes the bytes of the text")
+			{{$assert}}.Equal(t, got.{{.Field}}, {{spell .Type}}("a"), "{{.Method}} writes the bytes of the text")
 		})
 {{- end}}
 	})
 {{- end}}
 
-	t.Run("Mutate", func(t *testing.T) {
+	t.Run("Mutate", func(t *{{$testing}}.T) {
 		t.Parallel()
 
-		t.Run("passes the value under construction", func(t *testing.T) {
+		t.Run("passes the value under construction", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			var got []*{{$v}}
 			record := func(v *{{$v}}) { got = append(got, v) }
 			{{$new}}{{$ta}}().Mutate(record).Mutate(record)
-			assert.Length(t, got, 2, "Mutate calls each function once")
-			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+			{{$assert}}.Length(t, got, 2, "Mutate calls each function once")
+			{{$assert}}.Equal(t, got[0], got[1], "the two functions get the same value", {{$assert}}.ByIdentity())
 		})
 	})
 
-	t.Run("Clone", func(t *testing.T) {
+	t.Run("Clone", func(t *{{$testing}}.T) {
 		t.Parallel()
 
-		t.Run("returns a builder of its own", func(t *testing.T) {
+		t.Run("returns a builder of its own", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			original := {{$new}}{{$ta}}()
-			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+			{{$assert}}.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", {{$assert}}.ByIdentity())
 		})
 
-		t.Run("builds the value of its original", func(t *testing.T) {
+		t.Run("builds the value of its original", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			b := {{$new}}{{$ta}}()
 {{- template "builder.fills" $c}}
-			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+			{{$assert}}.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
 		})
 {{- range $c.Clones}}
 {{- $m := index $t.Methods.Items .Method}}
 
-		t.Run("copies {{.Field}} into the clone", func(t *testing.T) {
+		t.Run("copies {{.Field}} into the clone", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			var want, other {{spell .Type}}
 {{body $m}}
-{{- if or (eq .Form "list") (eq .Form "bytes")}}{{use "slices"}}			original := {{$new}}{{$ta}}().{{.Setter}}(want{{if eq .Form "list"}}...{{end}})
-			before := slices.Clone(want)
+{{- if or (eq .Form "list") (eq .Form "bytes")}}			original := {{$new}}{{$ta}}().{{.Setter}}(want{{if eq .Form "list"}}...{{end}})
+			before := {{import "slices"}}.Clone(want)
 			clone := original.Clone()
 			clone.Mutate(func(v *{{$v}}) { copy(v.{{.Field}}, other) })
-{{- else}}{{use "maps"}}			original := {{$new}}{{$ta}}().{{.Setter}}(want)
-			before := maps.Clone(want)
+{{- else}}			original := {{$new}}{{$ta}}().{{.Setter}}(want)
+			before := {{import "maps"}}.Clone(want)
 			clone := original.Clone()
-			clone.Mutate(func(v *{{$v}}) { maps.Copy(v.{{.Field}}, other) })
+			clone.Mutate(func(v *{{$v}}) { {{import "maps"}}.Copy(v.{{.Field}}, other) })
 {{- end}}
-			assert.Equal(t, original.Build().{{.Field}}, before, "a change of {{.Field}} in the clone leaves the original unchanged")
+			{{$assert}}.Equal(t, original.Build().{{.Field}}, before, "a change of {{.Field}} in the clone leaves the original unchanged")
 		})
 {{- end}}
 	})
 {{- if $c.Seeds}}
 
-	t.Run("Build", func(t *testing.T) {
+	t.Run("Build", func(t *{{$testing}}.T) {
 		t.Parallel()
 
-		t.Run("returns the value under construction", func(t *testing.T) {
+		t.Run("returns the value under construction", func(t *{{$testing}}.T) {
 			t.Parallel()
 
 			var seed {{$v}}
 {{body $seed}}			b := {{$new}}{{$ta}}()
 			b.Mutate(func(v *{{$v}}) { *v = seed })
-			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+			{{$assert}}.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
 		})
 	})
 {{- end}}

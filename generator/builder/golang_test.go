@@ -24,6 +24,12 @@ import (
 // shopModule is the module of the Go tree.
 const shopModule = "example.com/shop"
 
+// The packages of the Go tree that this spec alone reads.
+const (
+	scopedPackage     = "example.com/shop/scoped"
+	scopedTestPackage = "example.com/shop/scoped_test"
+)
+
 // The part of Go declares the target golang with the template of each
 // family, and writes a map whose values are the empty struct as a set. It
 // names the constructors after the builder and declares them as functions of
@@ -167,7 +173,7 @@ func rendered(t *testing.T) fstest.MapFS {
 
 	p := builder.New()
 	f := fixture(t, golang.Target, goTree, p, catalogPackage, seededPackage, genericPackage, companionsPackage,
-		hiddenPackage)
+		hiddenPackage, scopedPackage, scopedTestPackage)
 	_, res := phases(t, f, p)
 	return gentest.Rendered(t, f, res, p, gobackend.New())
 }

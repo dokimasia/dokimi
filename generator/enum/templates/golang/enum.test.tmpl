@@ -1,4 +1,4 @@
-{{- use "testing"}}{{use "go.dokimi.dev/assert"}}
+{{- $testing := import "testing"}}{{$assert := import "go.dokimi.dev/assert"}}
 {{- define "enum.variants"}}[]{{spell .Type}}{
 {{- range .Variants}}
 		{{value .Value}},
@@ -12,39 +12,39 @@
 {{- $n := $c.Names}}
 
 {{docs (wrapdocs (printf `Test%s checks the functions and the methods of the enumeration %s.` $c.Subject $c.Subject))}}
-{{- ""}}func Test{{$c.Subject}}(t *testing.T) {
+{{- ""}}func Test{{$c.Subject}}(t *{{$testing}}.T) {
 	t.Parallel()
 
-	t.Run("gives each variant a value of its own", func(t *testing.T) {
+	t.Run("gives each variant a value of its own", func(t *{{$testing}}.T) {
 		t.Parallel()
 		seen := map[{{$t}}]bool{}
 		for _, v := range {{template "enum.variants" $c}} {
-			assert.False(t, seen[v], "each variant has a value of its own")
+			{{$assert}}.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
 	})
 {{- if $c.Calls.Values}}
 {{- $values := spell (fieldType $d "values")}}
 
-	t.Run("{{$n.Values}}", func(t *testing.T) {
+	t.Run("{{$n.Values}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 
-		t.Run("returns the declared variants in the order of their declaration", func(t *testing.T) {
+		t.Run("returns the declared variants in the order of their declaration", func(t *{{$testing}}.T) {
 			t.Parallel()
 			want := {{template "enum.variants" $c}}
-			assert.Equal(t, {{$values}}(), want, "{{$n.Values}} returns the declared variants")
+			{{$assert}}.Equal(t, {{$values}}(), want, "{{$n.Values}} returns the declared variants")
 		})
 
-		t.Run("returns a new slice for each call", func(t *testing.T) {
+		t.Run("returns a new slice for each call", func(t *{{$testing}}.T) {
 			t.Parallel()
 			first, second := {{$values}}(), {{$values}}()
-			assert.NotEqual(t, &first[0], &second[0], "the two calls return two slices", assert.ByIdentity())
+			{{$assert}}.NotEqual(t, &first[0], &second[0], "the two calls return two slices", {{$assert}}.ByIdentity())
 		})
 	})
 {{- end}}
 {{- if $c.Calls.Render}}
 
-	t.Run("{{$n.Render}}", func(t *testing.T) {
+	t.Run("{{$n.Render}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 {{- if $c.Stated}}
 
@@ -60,28 +60,28 @@
 {{- end}}
 		}
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
+			t.Run(tt.name, func(t *{{$testing}}.T) {
 				t.Parallel()
-				assert.Equal(t, tt.give.{{$n.Render}}(), tt.want, "{{$n.Render}} returns the declared text of the variant")
+				{{$assert}}.Equal(t, tt.give.{{$n.Render}}(), tt.want, "{{$n.Render}} returns the declared text of the variant")
 			})
 		}
 {{- end}}
 
-		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+		t.Run("returns a text of its own for each variant", func(t *{{$testing}}.T) {
 			t.Parallel()
 			seen := map[string]bool{}
 			for _, v := range {{template "enum.variants" $c}} {
-				assert.False(t, seen[v.{{$n.Render}}()], "each variant has a text of its own")
+				{{$assert}}.False(t, seen[v.{{$n.Render}}()], "each variant has a text of its own")
 				seen[v.{{$n.Render}}()] = true
 			}
 		})
 {{- if and $c.OutOfRange $c.Generate.Render}}
 
-		t.Run("renders a value outside the declared set with a text of its own", func(t *testing.T) {
+		t.Run("renders a value outside the declared set with a text of its own", func(t *{{$testing}}.T) {
 			t.Parallel()
 			out := {{$t}}({{$c.OutOfRange}})
 			for _, v := range {{template "enum.variants" $c}} {
-				assert.NotEqual(t, out.{{$n.Render}}(), v.{{$n.Render}}(), "an undeclared value has a text of its own")
+				{{$assert}}.NotEqual(t, out.{{$n.Render}}(), v.{{$n.Render}}(), "an undeclared value has a text of its own")
 			}
 		})
 {{- end}}
@@ -89,7 +89,7 @@
 {{- end}}
 {{- if $c.Calls.Valid}}
 
-	t.Run("{{$n.Valid}}", func(t *testing.T) {
+	t.Run("{{$n.Valid}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 
 		tests := []struct {
@@ -101,32 +101,32 @@
 {{- end}}
 		}
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
+			t.Run(tt.name, func(t *{{$testing}}.T) {
 				t.Parallel()
-				assert.True(t, tt.give.{{$n.Valid}}(), "{{$n.Valid}} accepts each declared variant")
+				{{$assert}}.True(t, tt.give.{{$n.Valid}}(), "{{$n.Valid}} accepts each declared variant")
 			})
 		}
 {{- if $c.OutOfRange}}
 
-		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+		t.Run("refuses a value outside the declared set", func(t *{{$testing}}.T) {
 			t.Parallel()
-			assert.False(t, {{$t}}({{$c.OutOfRange}}).{{$n.Valid}}(), "{{$n.Valid}} refuses an undeclared value")
+			{{$assert}}.False(t, {{$t}}({{$c.OutOfRange}}).{{$n.Valid}}(), "{{$n.Valid}} refuses an undeclared value")
 		})
 {{- end}}
 {{- if $c.Zero}}
 
-		t.Run("accepts the zero value {{$c.Zero.Name}}", func(t *testing.T) {
+		t.Run("accepts the zero value {{$c.Zero.Name}}", func(t *{{$testing}}.T) {
 			t.Parallel()
 			var zero {{$t}}
-			assert.Equal(t, zero, {{value $c.Zero.Value}}, "the zero value is {{$c.Zero.Name}}")
-			assert.True(t, zero.{{$n.Valid}}(), "{{$n.Valid}} accepts the zero value")
+			{{$assert}}.Equal(t, zero, {{value $c.Zero.Value}}, "the zero value is {{$c.Zero.Name}}")
+			{{$assert}}.True(t, zero.{{$n.Valid}}(), "{{$n.Valid}} accepts the zero value")
 		})
 {{- else}}
 
-		t.Run("refuses the zero value", func(t *testing.T) {
+		t.Run("refuses the zero value", func(t *{{$testing}}.T) {
 			t.Parallel()
 			var zero {{$t}}
-			assert.False(t, zero.{{$n.Valid}}(), "{{$n.Valid}} refuses the zero value")
+			{{$assert}}.False(t, zero.{{$n.Valid}}(), "{{$n.Valid}} refuses the zero value")
 		})
 {{- end}}
 	})
@@ -134,7 +134,7 @@
 {{- if $c.Calls.Parse}}
 {{- $parse := spell (fieldType $d "parse")}}
 
-	t.Run("{{$n.Parse}}", func(t *testing.T) {
+	t.Run("{{$n.Parse}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 
 		tests := []struct {
@@ -146,31 +146,31 @@
 {{- end}}
 		}
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
+			t.Run(tt.name, func(t *{{$testing}}.T) {
 				t.Parallel()
 				got, err := {{$parse}}(tt.give.{{$n.Render}}())
-				assert.NoError(t, err, "{{$n.Parse}} accepts the text of the variant")
-				assert.Equal(t, got, tt.give, "{{$n.Parse}} returns the variant of the text")
+				{{$assert}}.NoError(t, err, "{{$n.Parse}} accepts the text of the variant")
+				{{$assert}}.Equal(t, got, tt.give, "{{$n.Parse}} returns the variant of the text")
 			})
 		}
 
-		t.Run("refuses a text that no variant has", func(t *testing.T) {
+		t.Run("refuses a text that no variant has", func(t *{{$testing}}.T) {
 			t.Parallel()
 			_, err := {{$parse}}({{$c.Unknown}})
 {{- if $c.Calls.Error}}
-			assert.ErrorIs(t, err, {{spell (fieldType $d "error")}}, "{{$n.Parse}} refuses the text with {{$n.Sentinel}}")
+			{{$assert}}.ErrorIs(t, err, {{spell (fieldType $d "error")}}, "{{$n.Parse}} refuses the text with {{$n.Sentinel}}")
 {{- else}}
-			assert.HasError(t, err, "{{$n.Parse}} refuses the text")
+			{{$assert}}.HasError(t, err, "{{$n.Parse}} refuses the text")
 {{- end}}
 {{- if $c.Generate.Parse}}
-			assert.Contains(t, err.Error(), {{$c.Unknown}}, "the error contains the refused text")
+			{{$assert}}.Contains(t, err.Error(), {{$c.Unknown}}, "the error contains the refused text")
 {{- end}}
 		})
 	})
 {{- end}}
 {{- if and $c.Calls.Encode $c.Calls.Render}}
 
-	t.Run("{{$n.Encode}}", func(t *testing.T) {
+	t.Run("{{$n.Encode}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 
 		tests := []struct {
@@ -182,16 +182,16 @@
 {{- end}}
 		}
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
+			t.Run(tt.name, func(t *{{$testing}}.T) {
 				t.Parallel()
 				text, err := tt.give.{{$n.Encode}}()
-				assert.NoError(t, err, "{{$n.Encode}} encodes the variant")
-				assert.Equal(t, string(text), tt.give.{{$n.Render}}(), "the encoding of the variant is its text")
+				{{$assert}}.NoError(t, err, "{{$n.Encode}} encodes the variant")
+				{{$assert}}.Equal(t, string(text), tt.give.{{$n.Render}}(), "the encoding of the variant is its text")
 			})
 		}
 {{- if and $c.Generate.Encode (or $c.OutOfRange (not $c.Zero))}}
 
-		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+		t.Run("refuses a value outside the declared set", func(t *{{$testing}}.T) {
 			t.Parallel()
 {{- if $c.OutOfRange}}
 			out := {{$t}}({{$c.OutOfRange}})
@@ -200,17 +200,17 @@
 {{- end}}
 			_, err := out.{{$n.Encode}}()
 {{- if $c.Calls.Error}}
-			assert.ErrorIs(t, err, {{spell (fieldType $d "error")}}, "{{$n.Encode}} refuses the value with {{$n.Sentinel}}")
+			{{$assert}}.ErrorIs(t, err, {{spell (fieldType $d "error")}}, "{{$n.Encode}} refuses the value with {{$n.Sentinel}}")
 {{- else}}
-			assert.HasError(t, err, "{{$n.Encode}} refuses the value")
+			{{$assert}}.HasError(t, err, "{{$n.Encode}} refuses the value")
 {{- end}}
-			assert.Contains(t, err.Error(), out.{{$n.Render}}(), "the error contains the text of the value")
+			{{$assert}}.Contains(t, err.Error(), out.{{$n.Render}}(), "the error contains the text of the value")
 		})
 {{- end}}
 	})
 {{- if $c.Calls.Decode}}
 
-	t.Run("{{$n.Decode}}", func(t *testing.T) {
+	t.Run("{{$n.Decode}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 
 		tests := []struct {
@@ -222,20 +222,20 @@
 {{- end}}
 		}
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
+			t.Run(tt.name, func(t *{{$testing}}.T) {
 				t.Parallel()
 				text, err := tt.give.{{$n.Encode}}()
-				assert.NoError(t, err, "{{$n.Encode}} encodes the variant")
+				{{$assert}}.NoError(t, err, "{{$n.Encode}} encodes the variant")
 				var got {{$t}}
-				assert.NoError(t, got.{{$n.Decode}}(text), "{{$n.Decode}} decodes the encoding")
-				assert.Equal(t, got, tt.give, "{{$n.Decode}} returns the encoded variant")
+				{{$assert}}.NoError(t, got.{{$n.Decode}}(text), "{{$n.Decode}} decodes the encoding")
+				{{$assert}}.Equal(t, got, tt.give, "{{$n.Decode}} returns the encoded variant")
 			})
 		}
 
-		t.Run("refuses a text that no variant has", func(t *testing.T) {
+		t.Run("refuses a text that no variant has", func(t *{{$testing}}.T) {
 			t.Parallel()
 			var got {{$t}}
-			assert.HasError(t, got.{{$n.Decode}}([]byte({{$c.Unknown}})), "{{$n.Decode}} refuses the text")
+			{{$assert}}.HasError(t, got.{{$n.Decode}}([]byte({{$c.Unknown}})), "{{$n.Decode}} refuses the text")
 		})
 	})
 {{- end}}

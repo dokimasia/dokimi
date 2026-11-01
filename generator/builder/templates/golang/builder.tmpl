@@ -97,7 +97,7 @@ empties %s.` $n.With $f $f))}}
 	}
 	return b
 }
-{{- else if eq .Form "map"}}{{use "maps"}}
+{{- else if eq .Form "map"}}
 
 {{docs (wrapdocs (printf `%s replaces %s with v. The builder keeps v without a copy.` $n.With $f))}}
 {{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.With}}(v {{spell .Type}}) *{{$b.Name}}{{$ta}} {
@@ -120,7 +120,7 @@ value of that key in %s. It allocates the map where %s is nil.` $n.Entries $f $f
 	if b.v.{{$f}} == nil {
 		b.v.{{$f}} = make({{spell .Type}}, len(entries))
 	}
-	maps.Copy(b.v.{{$f}}, entries)
+	{{import "maps"}}.Copy(b.v.{{$f}}, entries)
 	return b
 }
 {{- else if eq .Form "optional"}}
@@ -156,10 +156,10 @@ func (b *{{$b.Name}}{{$ta}}) Clone() *{{$b.Name}}{{$ta}} {
 	out := &{{$b.Name}}{{$ta}}{v: b.v}
 {{- range $m.Members}}
 {{- if .Copied}}
-{{- if or (eq .Form "map") (eq .Form "set")}}{{use "maps"}}
-	out.v.{{.Field}} = maps.Clone(b.v.{{.Field}})
-{{- else}}{{use "slices"}}
-	out.v.{{.Field}} = slices.Clone(b.v.{{.Field}})
+{{- if or (eq .Form "map") (eq .Form "set")}}
+	out.v.{{.Field}} = {{import "maps"}}.Clone(b.v.{{.Field}})
+{{- else}}
+	out.v.{{.Field}} = {{import "slices"}}.Clone(b.v.{{.Field}})
 {{- end}}
 {{- end}}
 {{- end}}

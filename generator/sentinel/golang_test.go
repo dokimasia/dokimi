@@ -20,6 +20,12 @@ import (
 	"go.dokimi.dev/dokimi/internal/gentest"
 )
 
+// The packages of the Go tree that this spec alone reads.
+const (
+	scopedPackage     = "example.com/shop/scoped"
+	scopedTestPackage = "example.com/shop/scoped_test"
+)
+
 // The part of Go declares the target golang with the template of the family
 // and its helper, and opens each message with the name of its package.
 func TestGolang(t *testing.T) {
@@ -67,7 +73,7 @@ func rendered(t *testing.T) fstest.MapFS {
 
 	p := sentinel.New()
 	f := fixture(t, golang.Target, goTree, p, storePackage, neighbourPackage, embeddedPackage, noprefixPackage,
-		splitPackage, typedPackage, relayPackage)
+		splitPackage, typedPackage, relayPackage, scopedPackage, scopedTestPackage)
 	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
 	return gentest.Rendered(t, f, res, p, gobackend.New())

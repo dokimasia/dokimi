@@ -26,10 +26,12 @@ import (
 
 // The packages of the Go tree that this spec alone reads.
 const (
-	gapPackage     = "example.com/shop/gap"
-	remotePackage  = "example.com/shop/remote"
-	shapedPackage  = "example.com/shop/shaped"
-	machinePackage = "example.com/shop/machine"
+	gapPackage        = "example.com/shop/gap"
+	remotePackage     = "example.com/shop/remote"
+	shapedPackage     = "example.com/shop/shaped"
+	machinePackage    = "example.com/shop/machine"
+	scopedPackage     = "example.com/shop/scoped"
+	scopedTestPackage = "example.com/shop/scoped_test"
 )
 
 // The part of Go declares the target golang with the template of each
@@ -445,7 +447,7 @@ func rendered(t *testing.T) fstest.MapFS {
 	p := enum.New()
 	f := fixture(t, golang.Target, goTree, p, statusPackage, "example.com/shop/priority", regionPackage,
 		"example.com/shop/split", handwrittenPackage, declaredPackage, quietPackage, commentedPackage, gapPackage,
-		remotePackage, shapedPackage, machinePackage)
+		remotePackage, shapedPackage, machinePackage, scopedPackage, scopedTestPackage)
 	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
 	return gentest.Rendered(t, f, res, p, gobackend.New())

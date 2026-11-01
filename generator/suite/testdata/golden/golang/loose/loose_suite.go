@@ -15,6 +15,9 @@ import (
 // The derived checks of Printer:
 //
 // Printer.Print/smoke: Print returns without a panic for derived inputs.
+//
+// Printer.Print/smoke#generated: Print returns without a panic for derived
+// inputs.
 
 // The derived checks of Printer that witness their laws at the shallow
 // end:
@@ -51,6 +54,12 @@ func (c printerPrint) Smoke() conform.ID[Printer] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Print returns
+// without a panic for derived inputs.
+func (c printerPrint) SmokeGenerated() conform.ID[Printer] {
+	return c.Check("smoke#generated")
+}
+
 // PrinterSuite returns the checks of Printer, and the calls and the
 // budgets of its callables.
 func PrinterSuite() conform.Suite[Printer] {
@@ -71,6 +80,24 @@ func PrinterSuite() conform.Suite[Printer] {
 				Apply: func(h *PrinterHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Print(string("msg-a"), any("values-a"))
+						return nil
+					})
+				},
+				Defect: printerPrintPanics,
+			},
+			{
+				ID:          PrinterChecks.Print.SmokeGenerated(),
+				Statement:   "Print returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PrinterHandle, c *prop.Case) {
+					drawnMsg := c.Draw(prop.Of[string](), "msg")
+					drawnValues := c.Draw(prop.Of[any](), "values")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Print(drawnMsg, drawnValues)
 						return nil
 					})
 				},
@@ -215,6 +242,9 @@ func printerPrintPanics(h *PrinterHandle) Printer {
 // The derived checks of Recorder:
 //
 // Recorder.Field/smoke: Field returns without a panic for derived inputs.
+//
+// Recorder.Field/smoke#generated: Field returns without a panic for
+// derived inputs.
 
 // The derived checks of Recorder that witness their laws at the shallow
 // end:
@@ -251,6 +281,12 @@ func (c recorderField) Smoke() conform.ID[Recorder] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Field returns
+// without a panic for derived inputs.
+func (c recorderField) SmokeGenerated() conform.ID[Recorder] {
+	return c.Check("smoke#generated")
+}
+
 // RecorderSuite returns the checks of Recorder, and the calls and the
 // budgets of its callables.
 func RecorderSuite() conform.Suite[Recorder] {
@@ -271,6 +307,24 @@ func RecorderSuite() conform.Suite[Recorder] {
 				Apply: func(h *RecorderHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Field(string("name-a"), interface{}("value-a"))
+						return nil
+					})
+				},
+				Defect: recorderFieldPanics,
+			},
+			{
+				ID:          RecorderChecks.Field.SmokeGenerated(),
+				Statement:   "Field returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RecorderHandle, c *prop.Case) {
+					drawnName := c.Draw(prop.Of[string](), "name")
+					drawnValue := c.Draw(prop.Of[interface{}](), "value")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Field(drawnName, drawnValue)
 						return nil
 					})
 				},
@@ -415,6 +469,9 @@ func recorderFieldPanics(h *RecorderHandle) Recorder {
 // The derived checks of Journal:
 //
 // Journal.Put/smoke: Put returns without a panic for derived inputs.
+//
+// Journal.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
 
 // The derived checks of Journal that witness their laws at the shallow
 // end:
@@ -456,6 +513,12 @@ func (c journalPut) Smoke() conform.ID[Journal] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c journalPut) SmokeGenerated() conform.ID[Journal] {
+	return c.Check("smoke#generated")
+}
+
 // JournalSuite returns the checks of Journal, and the calls and the
 // budgets of its callables.
 func JournalSuite() conform.Suite[Journal] {
@@ -476,6 +539,23 @@ func JournalSuite() conform.Suite[Journal] {
 				Apply: func(h *JournalHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Put(Entry{Value: "Value-a"})
+						return nil
+					})
+				},
+				Defect: journalPutPanics,
+			},
+			{
+				ID:          JournalChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Entry](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Put(drawnE)
 						return nil
 					})
 				},
@@ -627,6 +707,9 @@ func journalPutPanics(h *JournalHandle) Journal {
 // The derived checks of Plain:
 //
 // Plain.Print/smoke: Print returns without a panic for derived inputs.
+//
+// Plain.Print/smoke#generated: Print returns without a panic for derived
+// inputs.
 
 // The derived checks of Plain that witness their laws at the shallow end:
 //
@@ -667,6 +750,12 @@ func (c plainPrint) Smoke() conform.ID[Plain] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Print returns
+// without a panic for derived inputs.
+func (c plainPrint) SmokeGenerated() conform.ID[Plain] {
+	return c.Check("smoke#generated")
+}
+
 // PlainSuite returns the checks of Plain, and the calls and the budgets of
 // its callables.
 func PlainSuite() conform.Suite[Plain] {
@@ -687,6 +776,23 @@ func PlainSuite() conform.Suite[Plain] {
 				Apply: func(h *PlainHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Print(string("msg-a"))
+						return nil
+					})
+				},
+				Defect: plainPrintPanics,
+			},
+			{
+				ID:          PlainChecks.Print.SmokeGenerated(),
+				Statement:   "Print returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PlainHandle, c *prop.Case) {
+					drawnMsg := c.Draw(prop.Of[string](), "msg")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Print(drawnMsg)
 						return nil
 					})
 				},

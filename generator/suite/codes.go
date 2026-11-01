@@ -55,11 +55,12 @@ var UnknownCallable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // returns the planted defect alone. BadCheck also reports a door of the
 // defect with another signature than its door. Each door returns its subject
 // alone. A reference and a second take the handle, a restart the handle and
-// the planted defect, and a crash the handle, the planted defect and a func()
-// of the call that it crashes. BadCheck also reports the options of a check
-// without a *prop.Case, and options that do not take the handle alone and
-// return a []prop.Option. It reports an environment of a check that does not
-// take a *testing.T and a func(*testing.T), or that returns a result.
+// the planted defect, a crash the handle, the planted defect and a func() of
+// the call that it crashes, and a door faults the handle and its injector.
+// BadCheck also reports the options of a check without a *prop.Case, and
+// options that do not take the handle alone and return a []prop.Option. It
+// reports an environment of a check that does not take a *testing.T and a
+// func(*testing.T), or that returns a result.
 // BadCheck also reports a check of a function with the identity of a check
 // that the test of the suite adds to the forms of its application, and a
 // check with the segment of a ceiling of a budget, such as allocation-budget.
@@ -158,4 +159,14 @@ var BadOptions = diag.MustRegister(CodePrefix, diag.CodeSpec{
 var LostCheck = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  12,
 	Meaning: "a check of the committed lock is no longer generated",
+})
+
+// UnknownMachinery reports a value of the param machineries of the directive
+// suite that names no machinery of a consumer. The values of the param are
+// faults, reference, second and medium. The finding is an Error at the
+// directive, and suite derives the suite of the declaration with the other
+// values.
+var UnknownMachinery = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  13,
+	Meaning: "the param machineries of the directive suite names a machinery that the consumer does not supply",
 })

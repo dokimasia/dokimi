@@ -14,10 +14,19 @@ import (
 //
 // Cache.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Cache.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Cache.Get/zero-on-miss: Get returns the zero value beside a false
 // presence flag.
 //
+// Cache.Get/zero-on-miss#generated: Get returns the zero value beside a
+// false presence flag.
+//
 // Cache.Set/smoke: Set returns without a panic for derived inputs.
+//
+// Cache.Set/smoke#generated: Set returns without a panic for derived
+// inputs.
 
 // The derived checks of Cache that witness their laws at the shallow end:
 //
@@ -56,10 +65,22 @@ func (c cacheGet) Smoke() conform.ID[Cache[int, int]] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c cacheGet) SmokeGenerated() conform.ID[Cache[int, int]] {
+	return c.Check("smoke#generated")
+}
+
 // ZeroOnMiss returns the identity of the check that Get returns the zero
 // value beside a false presence flag.
 func (c cacheGet) ZeroOnMiss() conform.ID[Cache[int, int]] {
 	return c.Check("zero-on-miss")
+}
+
+// ZeroOnMissGenerated returns the identity of the check that Get returns
+// the zero value beside a false presence flag.
+func (c cacheGet) ZeroOnMissGenerated() conform.ID[Cache[int, int]] {
+	return c.Check("zero-on-miss#generated")
 }
 
 // cacheSet is the name of Cache.Set, with the identities of its checks.
@@ -71,6 +92,12 @@ type cacheSet struct {
 // for derived inputs.
 func (c cacheSet) Smoke() conform.ID[Cache[int, int]] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Set returns
+// without a panic for derived inputs.
+func (c cacheSet) SmokeGenerated() conform.ID[Cache[int, int]] {
+	return c.Check("smoke#generated")
 }
 
 // CacheSuite returns the checks of Cache, and the calls and the budgets of
@@ -99,6 +126,23 @@ func CacheSuite() conform.Suite[Cache[int, int]] {
 				Defect: cacheGetPanics,
 			},
 			{
+				ID:          CacheChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *CacheHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[int](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Get(drawnKey)
+						return nil
+					})
+				},
+				Defect: cacheGetPanics,
+			},
+			{
 				ID:          CacheChecks.Get.ZeroOnMiss(),
 				Statement:   "Get returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
@@ -109,6 +153,22 @@ func CacheSuite() conform.Suite[Cache[int, int]] {
 				Apply: func(h *CacheHandle) {
 					probe.ZeroBesideFalse(h, func(ctx context.Context) (int, bool) {
 						return h.Subject().Get(int(42))
+					}, int(0))
+				},
+				Defect: cacheGetValueBesideAFalseFlag,
+			},
+			{
+				ID:          CacheChecks.Get.ZeroOnMissGenerated(),
+				Statement:   "Get returns the zero value beside a false presence flag",
+				Claim:       spec.ZeroOnMiss,
+				Probe:       spec.ZeroBesideFalse,
+				Reason:      spec.ValueBesideFalse,
+				Law:         spec.NoValueBesideAFalseFlag,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *CacheHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[int](), "key")
+					probe.ZeroBesideFalse(h, func(ctx context.Context) (int, bool) {
+						return h.Subject().Get(drawnKey)
 					}, int(0))
 				},
 				Defect: cacheGetValueBesideAFalseFlag,
@@ -125,6 +185,24 @@ func CacheSuite() conform.Suite[Cache[int, int]] {
 				Apply: func(h *CacheHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Set(int(42), int(42))
+						return nil
+					})
+				},
+				Defect: cacheSetPanics,
+			},
+			{
+				ID:          CacheChecks.Set.SmokeGenerated(),
+				Statement:   "Set returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *CacheHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[int](), "key")
+					drawnValue := c.Draw(prop.Of[int](), "value")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Set(drawnKey, drawnValue)
 						return nil
 					})
 				},

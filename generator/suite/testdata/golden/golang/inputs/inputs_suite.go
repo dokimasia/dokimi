@@ -16,7 +16,13 @@ import (
 //
 // Pipeline.Each/smoke: Each returns without a panic for derived inputs.
 //
+// Pipeline.Each/smoke#generated: Each returns without a panic for derived
+// inputs.
+//
 // Pipeline.Do/smoke: Do returns without a panic for derived inputs.
+//
+// Pipeline.Do/smoke#generated: Do returns without a panic for derived
+// inputs.
 //
 // Pipeline.Notify/smoke: Notify returns without a panic for derived
 // inputs.
@@ -25,7 +31,13 @@ import (
 //
 // Pipeline.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Pipeline.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Pipeline.Label/smoke: Label returns without a panic for derived inputs.
+//
+// Pipeline.Label/smoke#generated: Label returns without a panic for
+// derived inputs.
 
 // The derived checks of Pipeline that witness their laws at the shallow
 // end:
@@ -166,6 +178,12 @@ func (c pipelineEach) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Each returns
+// without a panic for derived inputs.
+func (c pipelineEach) SmokeGenerated() conform.ID[Pipeline] {
+	return c.Check("smoke#generated")
+}
+
 // pipelineHandle is the name of Pipeline.Handle, with the identities of
 // its checks.
 type pipelineHandle struct {
@@ -182,6 +200,12 @@ type pipelineDo struct {
 // for derived inputs.
 func (c pipelineDo) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Do returns without
+// a panic for derived inputs.
+func (c pipelineDo) SmokeGenerated() conform.ID[Pipeline] {
+	return c.Check("smoke#generated")
 }
 
 // pipelineNotify is the name of Pipeline.Notify, with the identities of
@@ -226,6 +250,12 @@ func (c pipelinePut) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c pipelinePut) SmokeGenerated() conform.ID[Pipeline] {
+	return c.Check("smoke#generated")
+}
+
 // pipelineCount is the name of Pipeline.Count, with the identities of its
 // checks.
 type pipelineCount struct {
@@ -268,6 +298,12 @@ func (c pipelineLabel) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Label returns
+// without a panic for derived inputs.
+func (c pipelineLabel) SmokeGenerated() conform.ID[Pipeline] {
+	return c.Check("smoke#generated")
+}
+
 // PipelineSuite returns the checks of Pipeline, and the calls and the
 // budgets of its callables.
 func PipelineSuite() conform.Suite[Pipeline] {
@@ -294,6 +330,33 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Defect: pipelineEachPanics,
 			},
 			{
+				ID:          PipelineChecks.Each.SmokeGenerated(),
+				Statement:   "Each returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PipelineHandle, c *prop.Case) {
+					fnResults := c.Draw(prop.List(prop.Of[bool]()), "fn")
+					drawnFn := func() func(Item) bool {
+						var fnAt atomic.Int64
+						return func(Item) (r0 bool) {
+							i := int(fnAt.Add(1) - 1)
+							if i >= len(fnResults) {
+								return r0
+							}
+							return fnResults[i]
+						}
+					}
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Each(drawnFn())
+						return nil
+					})
+				},
+				Defect: pipelineEachPanics,
+			},
+			{
 				ID:          PipelineChecks.Do.Smoke(),
 				Statement:   "Do returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -305,6 +368,43 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Apply: func(h *PipelineHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Do(func() (int, error) { return 0, nil })
+						return nil
+					})
+				},
+				Defect: pipelineDoPanics,
+			},
+			{
+				ID:          PipelineChecks.Do.SmokeGenerated(),
+				Statement:   "Do returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PipelineHandle, c *prop.Case) {
+					opResults0 := c.Draw(prop.List(prop.Of[int]()), "op-0")
+					opResults1 := c.Draw(
+						prop.List(
+							prop.SampledFrom[error](nil, conform.ErrGenerated),
+							prop.MinSize(len(opResults0)),
+							prop.MaxSize(len(opResults0)),
+						),
+						"op-1",
+					)
+					drawnOp := func() func() (int, error) {
+						var opAt atomic.Int64
+						return func() (r0 int, r1 error) {
+							i := int(opAt.Add(1) - 1)
+							if i >= len(opResults0) {
+								r1 = conform.ErrGenerated
+								return r0, r1
+							}
+							return opResults0[i],
+								opResults1[i]
+						}
+					}
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Do(drawnOp())
 						return nil
 					})
 				},
@@ -361,6 +461,24 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Defect: pipelinePutPanics,
 			},
 			{
+				ID:          PipelineChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PipelineHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[Item](), "item")
+					drawnLine := c.Draw(prop.Of[Line](), "line")
+					drawnNote := c.Draw(prop.Of[Note](), "note")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(drawnItem, drawnLine, drawnNote)
+					})
+				},
+				Defect: pipelinePutPanics,
+			},
+			{
 				ID:          PipelineChecks.Label.Smoke(),
 				Statement:   "Label returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -378,29 +496,54 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				},
 				Defect: pipelineLabelPanics,
 			},
+			{
+				ID:          PipelineChecks.Label.SmokeGenerated(),
+				Statement:   "Label returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PipelineHandle, c *prop.Case) {
+					drawnTag := c.Draw(prop.Of[Tag](), "tag")
+					drawnCode := c.Draw(prop.Of[Code](), "code")
+					drawnLevel := c.Draw(prop.Of[Level](), "level")
+					drawnText := c.Draw(prop.Of[Text](), "text")
+					drawnBag := c.Draw(prop.Of[Bag[int]](), "bag")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Label(drawnTag, drawnCode, drawnLevel, drawnText, drawnBag)
+						return nil
+					})
+				},
+				Defect: pipelineLabelPanics,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Cancel,
 				Callable: "Pipeline.Pump",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter from of Pump",
 				Remedy:   "author a sample of the parameter from with the directive sample",
 			},
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Pipeline.Pump",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter from of Pump",
 				Remedy:   "author a sample of the parameter from with the directive sample",
 			},
 			{
 				Claim:    spec.Cancel,
 				Callable: "Pipeline.Fold",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter items of Fold",
 				Remedy:   "author a sample of the parameter items with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Pipeline.Count",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter ints of Count",
 				Remedy:   "author a sample of the parameter ints with the directive sample",
 			},

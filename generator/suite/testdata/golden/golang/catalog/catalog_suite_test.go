@@ -54,11 +54,23 @@ func TestCatalogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				catalog.CatalogChecks.Find.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				catalog.CatalogChecks.Find.ZeroOnMiss(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				catalog.CatalogChecks.Find.ZeroOnMissGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				catalog.CatalogChecks.Add.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				catalog.CatalogChecks.Add.SmokeGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -97,11 +109,23 @@ func TestCatalogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				catalog.CatalogChecks.Find.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				catalog.CatalogChecks.Find.ZeroOnMiss(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				catalog.CatalogChecks.Find.ZeroOnMissGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				catalog.CatalogChecks.Add.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				catalog.CatalogChecks.Add.SmokeGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -159,11 +183,23 @@ func TestCatalogSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			catalog.CatalogChecks.Find.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			catalog.CatalogChecks.Find.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			catalog.CatalogChecks.Find.ZeroOnMissGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			catalog.CatalogChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			catalog.CatalogChecks.Add.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -185,11 +221,23 @@ func FuzzCatalogSuiteFind(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			catalog.CatalogChecks.Find.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			catalog.CatalogChecks.Find.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			catalog.CatalogChecks.Find.ZeroOnMissGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			catalog.CatalogChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			catalog.CatalogChecks.Add.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -211,11 +259,23 @@ func FuzzCatalogSuiteAdd(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			catalog.CatalogChecks.Find.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			catalog.CatalogChecks.Find.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			catalog.CatalogChecks.Find.ZeroOnMissGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			catalog.CatalogChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			catalog.CatalogChecks.Add.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(

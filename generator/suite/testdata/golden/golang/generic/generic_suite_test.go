@@ -54,11 +54,23 @@ func TestCacheSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				generic.CacheChecks.Get.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				generic.CacheChecks.Get.ZeroOnMiss(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				generic.CacheChecks.Get.ZeroOnMissGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				generic.CacheChecks.Set.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				generic.CacheChecks.Set.SmokeGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -93,11 +105,23 @@ func TestCacheSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				generic.CacheChecks.Get.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				generic.CacheChecks.Get.ZeroOnMiss(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				generic.CacheChecks.Get.ZeroOnMissGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				generic.CacheChecks.Set.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				generic.CacheChecks.Set.SmokeGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -125,11 +149,23 @@ func TestCacheSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			generic.CacheChecks.Get.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			generic.CacheChecks.Get.ZeroOnMissGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			generic.CacheChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			generic.CacheChecks.Set.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -147,11 +183,23 @@ func FuzzCacheSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			generic.CacheChecks.Get.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			generic.CacheChecks.Get.ZeroOnMissGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			generic.CacheChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			generic.CacheChecks.Set.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -169,11 +217,23 @@ func FuzzCacheSuiteSet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			generic.CacheChecks.Get.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			generic.CacheChecks.Get.ZeroOnMiss(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			generic.CacheChecks.Get.ZeroOnMissGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			generic.CacheChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			generic.CacheChecks.Set.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)

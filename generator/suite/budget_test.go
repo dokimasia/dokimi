@@ -187,6 +187,16 @@ func TestBudget(t *testing.T) {
 				giveKind: symbol.KindFunction, give: "Doze",
 				wantMsg: []string{"Doze waits for another call, so its budget has no check"},
 			},
+			{
+				name:     "reports BadBudget at a budget of a method that runs until its context ends",
+				giveKind: symbol.KindMethod, giveOwn: "Gauge", give: "Spin",
+				wantMsg: []string{"Gauge.Spin runs until its context ends, so its budget has no check"},
+			},
+			{
+				name:     "reports BadBudget at a budget of a function that runs until its context ends",
+				giveKind: symbol.KindFunction, give: "Idle",
+				wantMsg: []string{"Idle runs until its context ends, so its budget has no check"},
+			},
 		}
 		for _, tt := range findings {
 			t.Run(tt.name, func(t *testing.T) {
@@ -320,6 +330,11 @@ func TestBudget(t *testing.T) {
 			{
 				name: "reports BadBudget at a budget of a callable that waits for another call", give: "Patient",
 				wantMsg: []string{"Patient states a budget of Gauge.Block, which waits for another call, so the " +
+					"budget has no check"},
+			},
+			{
+				name: "reports BadBudget at a budget of a callable that runs until its context ends", give: "Endless",
+				wantMsg: []string{"Endless states a budget of Gauge.Spin, which runs until its context ends, so the " +
 					"budget has no check"},
 			},
 		}

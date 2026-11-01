@@ -59,6 +59,8 @@ const (
 	deepPackage        = "example.com/shop/lib/internal/deep"
 	derivedPackage     = "example.com/shop/derived"
 	familiesPackage    = "example.com/shop/families"
+	faultsPackage      = "example.com/shop/faults"
+	drawnPackage       = "example.com/shop/drawn"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )

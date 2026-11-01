@@ -198,6 +198,28 @@ func CrashesTheText(h any) {}
 //dokimi:check store.Store.Get defect=broken reference=referencesTwo
 func ReferencesTwo(h any) {}
 
+// FailsWithoutTheInjector checks that Get returns an error when its backing
+// fails.
+//
+//dokimi:check store.Store.Get defect=broken faults=faultsAlone
+func FailsWithoutTheInjector(h any) {}
+
+// OpensAlone checks that the backend serves the item that Put stored.
+//
+//dokimi:check store.Store.Get defect=broken values=[opensAlone]
+func OpensAlone(h any) {}
+
+// OpensTwo checks that the backend serves the item of the planted defect.
+//
+//dokimi:check store.Store.Get defect=broken values=[opensTwo]
+func OpensTwo(h any) {}
+
+// OpensOneTypeTwice checks that the backend of the primary and the backend of
+// the replica serve the item.
+//
+//dokimi:check store.Store.Get defect=broken values=[opensPrimary, opensReplica]
+func OpensOneTypeTwice(h any) {}
+
 // OptionsOfAnApply checks that Get returns the item under options.
 //
 //dokimi:check store.Store.Get defect=broken options=sharesOfAnApply
@@ -277,6 +299,28 @@ func crashesText(any, store.Store, string) store.Store { return nil }
 
 // referencesTwo returns a reference and an error.
 func referencesTwo(any) (store.Store, error) { return nil, nil }
+
+// faultsAlone returns a store over failing dependencies without the injector
+// of the handle.
+func faultsAlone(any) store.Store { return nil }
+
+// Backend is the backend of a store, which serves its items to a client.
+type Backend interface {
+	// Serve returns the item under the key.
+	Serve(key string) string
+}
+
+// opensAlone returns a backend without the planted defect that it serves.
+func opensAlone(any) Backend { return nil }
+
+// opensTwo returns a backend and an error.
+func opensTwo(any, store.Store) (Backend, error) { return nil, nil }
+
+// opensPrimary returns the backend of the primary of the planted defect.
+func opensPrimary(any, store.Store) Backend { return nil }
+
+// opensReplica returns the backend of the replica of the planted defect.
+func opensReplica(any, store.Store) Backend { return nil }
 
 // shapeless returns a store without the handle of a check.
 func shapeless() store.Store { return nil }

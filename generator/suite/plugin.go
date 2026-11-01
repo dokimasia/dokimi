@@ -22,6 +22,7 @@ import (
 
 	"go.dokimi.dev/dokimi/internal/derive"
 	"go.dokimi.dev/dokimi/internal/lang"
+	"go.dokimi.dev/dokimi/spec"
 )
 
 // ID is the name of the plugin.
@@ -31,7 +32,9 @@ const ID plugin.ID = "suite"
 // includes it.
 const Version = "0.1.0"
 
-// SuiteDirective puts an interface, a struct or a function under suite.
+// SuiteDirective puts an interface, a struct or a function under suite. Its
+// param MachineriesParam lists the machineries that the consumer supplies to
+// the checks of the suite, such as faults.
 // SubjectDirective marks a struct of a consumer as a subject of the suite of a
 // declaration. Its positional param DeclarationParam contains the name of the
 // declaration, and its param NewParam contains the name of the factory of the
@@ -41,19 +44,22 @@ const Version = "0.1.0"
 // a function of a consumer to a callable of a suite as a check. Its
 // positional param CallableParam contains the callable, and its param
 // DefectParam contains the name of the function of the planted defect. Its
-// params ReferenceParam, SecondParam, RestartParam and CrashParam contain the
-// names of the functions of the doors of the planted defect. Its param
-// CountedParam marks a check that counts the allocations of the whole process,
-// and its param AroundParam contains the name of the function that runs each
-// run of the check inside an environment, such as a testing/synctest bubble.
-// ExcuseDirective excuses a check of the suite from the conformance test of a
-// subject. Its positional param IdentityParam contains the identity of the
-// check, and its param ReasonParam contains the reason.
+// params ReferenceParam, SecondParam, RestartParam, CrashParam and FaultsParam
+// contain the names of the functions of the doors of the planted defect, and
+// its param ValuesParam lists the functions of the doors of values. Its
+// param CountedParam marks a check that counts the allocations of the whole
+// process, and its param AroundParam contains the name of the function that
+// runs each run of the check inside an environment, such as a
+// testing/synctest bubble. ExcuseDirective excuses a check of the suite from
+// the conformance test of a subject. Its positional param IdentityParam
+// contains the identity of the check, and its param ReasonParam contains the
+// reason.
 const (
 	SuiteDirective   directive.Name     = "suite"
 	SubjectDirective directive.Name     = "subject"
 	CheckDirective   directive.Name     = "check"
 	ExcuseDirective  directive.Name     = "excuse"
+	MachineriesParam directive.ParamKey = "machineries"
 	DeclarationParam directive.ParamKey = "declaration"
 	NewParam         directive.ParamKey = "new"
 	CasesParam       directive.ParamKey = "cases"
@@ -64,6 +70,8 @@ const (
 	SecondParam      directive.ParamKey = "second"
 	RestartParam     directive.ParamKey = "restart"
 	CrashParam       directive.ParamKey = "crash"
+	FaultsParam      directive.ParamKey = "faults"
+	ValuesParam      directive.ParamKey = "values"
 	CountedParam     directive.ParamKey = "counted"
 	AroundParam      directive.ParamKey = "around"
 	IdentityParam    directive.ParamKey = "identity"
@@ -80,8 +88,12 @@ const (
 // that contains the identity of the function of the options of the property
 // run of the check, and KeyAround the key of the fact that contains the
 // identity of the function of its environment. KeyReference, KeySecond,
-// KeyRestart and KeyCrash are the keys of the facts that contain the identity
-// of the function of each door of the planted defect.
+// KeyRestart, KeyCrash and KeyFaults are the keys of the facts that contain
+// the identity of the function of each door of the planted defect, and
+// KeyValues the key of the fact that contains the identities of the functions
+// of its doors of values. KeyMachineries is the key of the fact that the annotate half stamps on each
+// declaration under SuiteDirective with the param [MachineriesParam]. The
+// fact contains the identity of each machinery that the param names.
 const (
 	KeyDeclaration meta.KeyName = "suite.declaration"
 	KeyCallable    meta.KeyName = "suite.callable"
@@ -96,6 +108,9 @@ const (
 	KeySecond      meta.KeyName = "suite.second"
 	KeyRestart     meta.KeyName = "suite.restart"
 	KeyCrash       meta.KeyName = "suite.crash"
+	KeyFaults      meta.KeyName = "suite.faults"
+	KeyValues      meta.KeyName = "suite.values"
+	KeyMachineries meta.KeyName = "suite.machineries"
 )
 
 // door is one door of the planted defect of a check. Its param of the
@@ -105,14 +120,16 @@ const (
 // parameters of the function, and needs contains the words for the
 // parameters after the handle in the finding of another signature. A crash
 // takes the call that it crashes as its third parameter. doc is the doc of
-// the param.
+// the param. machinery is the machinery whose checks build their subjects
+// through the door, and empty for a door that a check calls itself.
 type door struct {
-	param directive.ParamKey
-	key   meta.KeyName
-	field string
-	needs string
-	doc   string
-	takes int
+	param     directive.ParamKey
+	key       meta.KeyName
+	machinery spec.MachineryID
+	field     string
+	needs     string
+	doc       string
+	takes     int
 }
 
 // doors are the doors of a planted defect in the order of the fields of
@@ -135,6 +152,13 @@ var doors = [...]door{
 		needs: ", the planted defect and the call that it crashes",
 		doc: "the function that runs a call against the planted defect, crashes the medium of the defect during the " +
 			"call, and returns the defect as the crash left it",
+	},
+	{
+		param: FaultsParam, key: KeyFaults, field: "Faults", takes: 2, needs: " and the injector of the handle",
+		machinery: spec.CallThatFailsOnDemand,
+		doc: "the function that returns a fresh subject whose dependencies ask the injector of the handle, from the " +
+			"handle of a check on the planted defect and its injector. The check lists the machinery " +
+			"call-that-fails-on-demand",
 	},
 }
 
@@ -342,23 +366,30 @@ type Callable struct {
 // the check. Counted reports that the check counts the allocations of the
 // whole process, so the runtime runs it with the allocation ceilings. Doors
 // are the doors of the planted defect in the order of the fields of
-// conform.Doors, and empty for a check without a door. Options refers to the
-// function of the options of the property run of the check, and is nil for a
-// check without options. Around refers to the function of the environment of
-// the runs of the check, and is nil for a check without one.
+// conform.Doors, and empty for a check without a door. Values refer to the
+// functions of the doors of values of the planted defect, in the order of the
+// directive, and are empty for a check without one. Machineries are the
+// names of the constants of the package spec of the Go runtime of the
+// machineries whose door the planted defect states, so the handle builds the
+// subjects of the check through that door. Options refers to the function of
+// the options of the property run of the check, and is nil for a check
+// without options. Around refers to the function of the environment of the
+// runs of the check, and is nil for a check without one.
 type Check struct {
-	Apply     *emit.TypeRef
-	Defect    *emit.TypeRef
-	Options   *emit.TypeRef
-	Around    *emit.TypeRef
-	Field     string
-	Type      string
-	Method    string
-	Segment   string
-	Statement string
-	Doors     []Door
-	Property  bool
-	Counted   bool
+	Apply       *emit.TypeRef
+	Defect      *emit.TypeRef
+	Options     *emit.TypeRef
+	Around      *emit.TypeRef
+	Field       string
+	Type        string
+	Method      string
+	Segment     string
+	Statement   string
+	Doors       []Door
+	Values      []*emit.TypeRef
+	Machineries []string
+	Property    bool
+	Counted     bool
 }
 
 // Door is one door of the planted defect of a check. Field is the field of
@@ -518,6 +549,11 @@ var parts = []part{golangPart{}}
 // suiteSchema is the directive of a suite.
 var suiteSchema = directive.Schema{
 	Name: SuiteDirective,
+	Params: []directive.ParamSpec{{
+		Key: MachineriesParam, Type: directive.TypeList, ListOf: directive.TypeString,
+		Doc: "the machineries that the consumer supplies to the checks of the suite through the doors of its " +
+			"application, by their params: " + listed(consumedParams, "and"),
+	}},
 	Doc: "generates the suite of the declaration: the names of its callables, the identities and the checks of " +
 		"its callables, the functions that apply the checks to a subject, and the test of its planted defects",
 }
@@ -586,6 +622,12 @@ var checkSchema = directive.Schema{
 			Doc: "the function that runs each run of the check inside an environment, such as a testing/synctest " +
 				"bubble, from a *testing.T and the run, as synctest.Test does",
 		},
+		{
+			Key: ValuesParam, Type: directive.TypeList, ListOf: directive.TypeReference,
+			Resolution: directive.ResolveCallableInScope,
+			Doc: "the functions of the doors of values of the planted defect, each of which returns the value of " +
+				"its type from the handle of a check on the planted defect and the defect",
+		},
 	}, doorParams()...),
 	Doc: "binds the function to a callable of a suite as a check of the consumer, with its planted defect",
 }
@@ -594,7 +636,7 @@ var checkSchema = directive.Schema{
 // planted defect.
 func doorParams() []directive.ParamSpec {
 	out := make([]directive.ParamSpec, 0, len(doors))
-	for _, d := range doors {
+	for _, d := range &doors {
 		out = append(out, directive.ParamSpec{
 			Key: d.param, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope, Doc: d.doc,
 		})
@@ -645,6 +687,8 @@ type generator struct {
 	warmup      meta.Key[int64]
 	options     meta.Key[symbol.Identity]
 	around      meta.Key[symbol.Identity]
+	machineries meta.Key[[]string]
+	values      meta.Key[[]symbol.Identity]
 	doors       [len(doors)]meta.Key[symbol.Identity]
 }
 
@@ -656,9 +700,12 @@ type Options struct {
 // New returns suite, a plugin with an annotate half and a generate half. The
 // annotate half stamps the facts of a check on each function under
 // [CheckDirective] whose directive names a callable of a declaration under
-// [SuiteDirective]. The generate half records a [Suite] into the family of the
-// suites for each interface, struct or function under SuiteDirective, with the
-// checks that the annotate half binds to its callables. The template of the
+// [SuiteDirective]. It also stamps the machineries that the param
+// [MachineriesParam] of each declaration under SuiteDirective names. The
+// generate half records a [Suite] into the family of the suites for each
+// interface, struct or function under SuiteDirective, with the checks that
+// the annotate half binds to its callables and the checks that the claims of
+// the conformance spec derive with those machineries. The template of the
 // family writes the suite in the conventions of the language of the plan.
 //
 // suite records a [Conformance] into the family of the tag [TestTag] for each
@@ -684,8 +731,9 @@ type Options struct {
 // cannot call, and [BadOptions] at a subject whose function of the options a
 // test cannot call.
 // It reports [UnknownCallable] and [BadCheck] at the directive of a check that
-// it cannot bind, and [UnknownExcusal] at an excusal of a check that the suite
-// does not have.
+// it cannot bind, [UnknownExcusal] at an excusal of a check that the suite
+// does not have, and [UnknownMachinery] at a value of the param machineries
+// that names no machinery of a consumer.
 // suite records and stamps nothing for a declaration that it reports. Each
 // call returns a new plugin.
 func New() sdk.Dual {
@@ -703,6 +751,9 @@ func New() sdk.Dual {
 	lang.Register(b, parts)
 	return b.Handle(
 		sdk.Directive(suiteSchema,
+			sdk.OnInterface(lang.Served(parts, g.machineriesOfInterface)),
+			sdk.OnStruct(lang.Served(parts, g.machineriesOfStruct)),
+			sdk.OnFunction(lang.Served(parts, g.machineriesOfFunction)),
 			sdk.OnInterface(lang.Served(parts, g.suiteOfInterface)),
 			sdk.OnStruct(lang.Served(parts, g.suiteOfStruct)),
 			sdk.OnFunction(lang.Served(parts, g.suiteOfFunction))),
@@ -717,7 +768,7 @@ func New() sdk.Dual {
 }
 
 // register claims the namespace of suite and registers the keys of the facts
-// of a check and of a budget.
+// of a check, of a budget and of the machineries of a declaration.
 //
 // # Errors
 //
@@ -725,25 +776,26 @@ func New() sdk.Dual {
 // registrant claimed, joined with the errors of the registrations, such as a
 // key that the registrant registered with another type.
 func (g *generator) register(r *meta.Registry) error {
-	spec := func(name meta.KeyName, doc string) meta.KeySpec {
+	checkKey := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindFunction}, Doc: doc}
 	}
 	budgetKey := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindMethod, symbol.KindFunction}, Doc: doc}
 	}
-	var errs [15 + len(doors)]error
+	var errs [17]error
+	var doorErrs [len(doors)]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
-	g.declaration, errs[1] = meta.Register[symbol.Identity](r, spec(KeyDeclaration,
+	g.declaration, errs[1] = meta.Register[symbol.Identity](r, checkKey(KeyDeclaration,
 		"contains the identity of the declaration under the directive suite whose suite the check joins"))
-	g.callable, errs[2] = meta.Register[string](r, spec(KeyCallable,
+	g.callable, errs[2] = meta.Register[string](r, checkKey(KeyCallable,
 		"contains the name of the callable of the check, such as Store.Get"))
-	g.segment, errs[3] = meta.Register[string](r, spec(KeySegment,
+	g.segment, errs[3] = meta.Register[string](r, checkKey(KeySegment,
 		"contains the last part of the identity of the check, such as keeps-the-item"))
-	g.statement, errs[4] = meta.Register[string](r, spec(KeyStatement,
+	g.statement, errs[4] = meta.Register[string](r, checkKey(KeyStatement,
 		"contains the sentence that the check proves of a subject"))
-	g.defect, errs[5] = meta.Register[symbol.Identity](r, spec(KeyDefect,
+	g.defect, errs[5] = meta.Register[symbol.Identity](r, checkKey(KeyDefect,
 		"contains the identity of the function that returns the planted defect of the check"))
-	g.property, errs[6] = meta.Register[bool](r, spec(KeyProperty,
+	g.property, errs[6] = meta.Register[bool](r, checkKey(KeyProperty,
 		"reports that the check takes a case of the property engine after the handle of its check"))
 	g.allocs, errs[7] = meta.Register[int64](r, budgetKey(KeyAllocs,
 		"contains the most heap allocations of one call of the callable"))
@@ -755,17 +807,24 @@ func (g *generator) register(r *meta.Registry) error {
 		"contains the highest mean latency of one call of the callable, in nanoseconds"))
 	g.warmup, errs[11] = meta.Register[int64](r, budgetKey(KeyWarmup,
 		"contains the number of iterations that each benchmark of the callable runs before it measures"))
-	g.counted, errs[12] = meta.Register[bool](r, spec(KeyCounted,
+	g.counted, errs[12] = meta.Register[bool](r, checkKey(KeyCounted,
 		"reports that the check counts the allocations of the whole process"))
-	g.options, errs[13] = meta.Register[symbol.Identity](r, spec(KeyOptions,
+	g.options, errs[13] = meta.Register[symbol.Identity](r, checkKey(KeyOptions,
 		"contains the identity of the function of the options of the property run of the check"))
-	g.around, errs[14] = meta.Register[symbol.Identity](r, spec(KeyAround,
+	g.around, errs[14] = meta.Register[symbol.Identity](r, checkKey(KeyAround,
 		"contains the identity of the function that runs each run of the check inside an environment"))
-	for i, d := range doors {
-		g.doors[i], errs[15+i] = meta.Register[symbol.Identity](r, spec(d.key,
+	g.machineries, errs[15] = meta.Register[[]string](r, meta.KeySpec{
+		Name: KeyMachineries, Kinds: []symbol.Kind{symbol.KindInterface, symbol.KindStruct, symbol.KindFunction},
+		Doc: "contains the identity of each machinery that the consumer supplies to the checks of the suite of the " +
+			"declaration",
+	})
+	g.values, errs[16] = meta.Register[[]symbol.Identity](r, checkKey(KeyValues,
+		"contains the identity of the function of each door of a value of the planted defect of the check"))
+	for i, d := range &doors {
+		g.doors[i], doorErrs[i] = meta.Register[symbol.Identity](r, checkKey(d.key,
 			"contains the identity of the function of the door "+string(d.param)+" of the planted defect of the check"))
 	}
-	return errors.Join(errs[:]...)
+	return errors.Join(append(errs[:], doorErrs[:]...)...)
 }
 
 // concludeCheck stamps the facts of a check on a function under the directive
@@ -789,7 +848,7 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper)
 		return nil
 	}
 	property, ok := signed(m, d, fn)
-	if !ok || !doored(m, d, fn) || !optioned(m, d, fn, property) || !arounded(m, d, fn) {
+	if !ok || !doored(m, d, fn) || !valued(m, d, fn) || !optioned(m, d, fn, property) || !arounded(m, d, fn) {
 		return nil
 	}
 	segment := naming.Kebab(fn.Name)
@@ -808,10 +867,17 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper)
 	sdk.Stamp(st, g.segment, segment)
 	sdk.Stamp(st, g.statement, statement)
 	sdk.Stamp(st, g.defect, d.Params[DefectParam].Target)
-	for i, door := range doors {
+	for i, door := range &doors {
 		if opened, stated := d.Param(door.param); stated {
 			sdk.Stamp(st, g.doors[i], opened.Target)
 		}
+	}
+	if listed, stated := d.Param(ValuesParam); stated {
+		values := make([]symbol.Identity, 0, len(listed.List))
+		for i := range listed.List {
+			values = append(values, listed.List[i].Target)
+		}
+		sdk.Stamp(st, g.values, values)
 	}
 	if options, stated := d.Param(OptionsParam); stated {
 		sdk.Stamp(st, g.options, options.Target)
@@ -958,12 +1024,12 @@ func signed(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) (pr
 // doored reports whether each door of the planted defect of the check fn has
 // the signature of its door. A door returns its subject alone. A reference
 // and a second take the handle of the check, a restart the handle and the
-// planted defect, and a crash the handle, the planted defect and the call that
-// it crashes, a function. doored reports [BadCheck] at the directive d where a
-// signature differs.
+// planted defect, a crash the handle, the planted defect and the call that it
+// crashes, a function, and a door faults the handle and its injector. doored
+// reports [BadCheck] at the directive d where a signature differs.
 func doored(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) bool {
 	b := m.Rules()
-	for _, door := range doors {
+	for _, door := range &doors {
 		param, stated := d.Param(door.param)
 		if !stated {
 			continue
@@ -989,6 +1055,43 @@ func doored(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) boo
 	}
 	return true
 }
+
+// valued reports whether each door of a value of the check fn takes the
+// handle of its check and the planted defect, returns one value, and returns
+// a value of a type of its own. valued reports [BadCheck] at the directive d
+// at the first door that differs.
+func valued(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) bool {
+	listed, _ := d.Param(ValuesParam)
+	b := m.Rules()
+	types := make(map[string]string, len(listed.List))
+	for i := range listed.List {
+		target := listed.List[i].Target
+		found, _ := m.Reader().Lookup(target)
+		view, _ := b.CallableOf(found)
+		switch {
+		case len(view.Params) != valueTakes:
+			m.ErrorfAt(BadCheck, d.Pos, "the door of a value %s of %s takes %s, and a door of a value takes the "+
+				"handle of its check and the planted defect", target.Name, fn.Name, parameters(len(view.Params)))
+			return false
+		case len(view.Returns) != 1:
+			m.ErrorfAt(BadCheck, d.Pos, "the door of a value %s of %s returns %d results, and a door of a value "+
+				"returns its value alone", target.Name, fn.Name, len(view.Returns))
+			return false
+		}
+		of := view.Returns[0].Ref.Spelling
+		if other, seen := types[of]; seen {
+			m.ErrorfAt(BadCheck, d.Pos, "the doors of values %s and %s of %s return values of the type %s, and a "+
+				"check has one door of a value of each type", other, target.Name, fn.Name, of)
+			return false
+		}
+		types[of] = target.Name
+	}
+	return true
+}
+
+// valueTakes is the number of the parameters of the function of a door of a
+// value: the handle of a check and the planted defect.
+const valueTakes = 2
 
 // optioned reports whether the options of the check fn have the signature of
 // the options of a property run. The options apply to the property run of a
@@ -1121,6 +1224,7 @@ type bound struct {
 	options   symbol.Identity
 	around    symbol.Identity
 	doors     [len(doors)]symbol.Identity
+	values    []symbol.Identity
 	property  bool
 	counted   bool
 }
@@ -1143,6 +1247,7 @@ func (g *generator) boundTo(m sdk.Matcher, origin *symbol.Identity) []bound {
 		for i := range doors {
 			b.doors[i], _ = sdk.FactOf(m, id, g.doors[i])
 		}
+		b.values, _ = sdk.FactOf(m, id, g.values)
 		b.property, _ = sdk.FactOf(m, id, g.property)
 		b.counted, _ = sdk.FactOf(m, id, g.counted)
 		out = append(out, b)
@@ -1159,9 +1264,13 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 	for i := range checks {
 		b := &checks[i]
 		var opened []Door
-		for i, door := range doors {
+		var machineries []string
+		for i, door := range &doors {
 			if fn := b.doors[i]; fn != (symbol.Identity{}) {
 				opened = append(opened, Door{Field: door.field, Func: &emit.TypeRef{Spelling: fn.Name, Target: fn}})
+				if door.machinery != "" {
+					machineries = append(machineries, goName(door.machinery))
+				}
 			}
 		}
 		var options, around *emit.TypeRef
@@ -1171,11 +1280,15 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 		if fn := b.around; fn != (symbol.Identity{}) {
 			around = &emit.TypeRef{Spelling: fn.Name, Target: fn}
 		}
+		var values []*emit.TypeRef
+		for _, fn := range b.values {
+			values = append(values, &emit.TypeRef{Spelling: fn.Name, Target: fn})
+		}
 		byCallable[b.callable] = append(byCallable[b.callable], Check{
 			Apply:  &emit.TypeRef{Spelling: b.fn.Name, Target: b.fn},
 			Defect: &emit.TypeRef{Spelling: b.defect.Name, Target: b.defect},
-			Method: b.fn.Name, Segment: b.segment, Statement: b.statement, Doors: opened, Options: options,
-			Around: around, Property: b.property, Counted: b.counted,
+			Method: b.fn.Name, Segment: b.segment, Statement: b.statement, Doors: opened, Values: values,
+			Machineries: machineries, Options: options, Around: around, Property: b.property, Counted: b.counted,
 		})
 	}
 	var out []Check
@@ -1258,7 +1371,8 @@ func (g *generator) excusalsOf(
 // derivationOf returns the checks that the suite of the declaration declared
 // derives for its callables, at the witnesses of the type parameters of a
 // generic interface, as [generator.suiteOfInterface] derives them. e is the
-// emitter of the conformance test.
+// emitter of the conformance test. The call generator of each callable
+// decides whether a check of samples has a generated binding.
 func (g *generator) derivationOf(
 	m *sdk.StructMatch, e *sdk.Emitter, declared *symbol.Identity, callables []*node.Method,
 ) derive.Suite {
@@ -1268,10 +1382,13 @@ func (g *generator) derivationOf(
 		k.typeParams, k.witnesses = i.TypeParams, k.b.Witnesses(i.TypeParams)
 	}
 	syms := make([]symbol.Symbol, 0, len(callables))
-	for _, c := range callables {
-		syms = append(syms, c)
+	calls := make([]Call, 0, len(callables))
+	for _, method := range callables {
+		syms = append(syms, method)
+		c := callableOf(e, declared.Name, method.Name)
+		calls = append(calls, k.call(&c, method, &method.ID))
 	}
-	_, d := k.derive(declared.Name, syms)
+	_, d := k.derive(declared.Name, syms, calls)
 	return d
 }
 
@@ -1522,7 +1639,7 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 			&emit.Field{Name: benchWord, Type: emitted(n.Bench)},
 		)
 		test.Targets = []Target{{Name: e.JoinName(s.Declaration, fuzzWord)}}
-		if !s.Calls[0].Waits {
+		if s.Calls[0].repeatable() {
 			test.benchmarks(e, s.Declaration, allocated, s.Calls[0].Concurrent)
 		}
 	} else if len(s.Calls) > 0 {
@@ -1573,7 +1690,7 @@ func (c *Conformance) idle(e *sdk.Emitter, n *Names, calls []Call) {
 	for i := range calls {
 		call := &calls[i]
 		c.Targets = append(c.Targets, Target{Name: e.JoinName(call.Field, fuzz), Field: call.Field})
-		if call.Waits {
+		if !call.repeatable() {
 			continue
 		}
 		builds := slices.ContainsFunc(call.Params, func(p Param) bool { return p.Input != "" || p.Receive })
@@ -1688,7 +1805,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	levels := make([]Level, 0, len(methods))
 	for _, method := range methods {
 		allocated = allocated || g.budgetFact(m, &method.ID).Allocs != nil
-		if mixed(m, &method.ID, shape.Waits) {
+		if unrepeatable(m, &method.ID) != "" {
 			continue
 		}
 		concurrent := mixed(m, &method.ID, shape.Concurrent) || mixed(m, &method.ID, shape.ConcurrentReaders)

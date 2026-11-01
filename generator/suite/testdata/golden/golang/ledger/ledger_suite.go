@@ -14,11 +14,20 @@ import (
 //
 // Ledger.Credit/smoke: Credit returns without a panic for derived inputs.
 //
+// Ledger.Credit/smoke#generated: Credit returns without a panic for
+// derived inputs.
+//
 // Ledger.Balance/smoke: Balance returns without a panic for derived
 // inputs.
 //
+// Ledger.Balance/smoke#generated: Balance returns without a panic for
+// derived inputs.
+//
 // Ledger.Balance/deterministic: Balance returns the same value for the
 // same inputs.
+//
+// Ledger.Balance/deterministic#generated: Balance returns the same value
+// for the same inputs.
 
 // The derived checks of Ledger that witness their laws at the shallow end:
 //
@@ -60,6 +69,12 @@ func (c ledgerCredit) Smoke() conform.ID[Ledger] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Credit returns
+// without a panic for derived inputs.
+func (c ledgerCredit) SmokeGenerated() conform.ID[Ledger] {
+	return c.Check("smoke#generated")
+}
+
 // ledgerBalance is the name of Ledger.Balance, with the identities of its
 // checks.
 type ledgerBalance struct {
@@ -72,10 +87,22 @@ func (c ledgerBalance) Smoke() conform.ID[Ledger] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Balance returns
+// without a panic for derived inputs.
+func (c ledgerBalance) SmokeGenerated() conform.ID[Ledger] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that Balance returns the
 // same value for the same inputs.
 func (c ledgerBalance) Deterministic() conform.ID[Ledger] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Balance
+// returns the same value for the same inputs.
+func (c ledgerBalance) DeterministicGenerated() conform.ID[Ledger] {
+	return c.Check("deterministic#generated")
 }
 
 // LedgerSuite returns the checks of Ledger, and the calls and the budgets
@@ -104,6 +131,24 @@ func LedgerSuite() conform.Suite[Ledger] {
 				Defect: ledgerCreditPanics,
 			},
 			{
+				ID:          LedgerChecks.Credit.SmokeGenerated(),
+				Statement:   "Credit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LedgerHandle, c *prop.Case) {
+					drawnAccount := c.Draw(prop.Of[string](), "account")
+					drawnAmount := c.Draw(prop.Of[int](), "amount")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Credit(drawnAccount, drawnAmount)
+						return nil
+					})
+				},
+				Defect: ledgerCreditPanics,
+			},
+			{
 				ID:          LedgerChecks.Balance.Smoke(),
 				Statement:   "Balance returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -115,6 +160,23 @@ func LedgerSuite() conform.Suite[Ledger] {
 				Apply: func(h *LedgerHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Balance(string("account-a"))
+						return nil
+					})
+				},
+				Defect: ledgerBalancePanics,
+			},
+			{
+				ID:          LedgerChecks.Balance.SmokeGenerated(),
+				Statement:   "Balance returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LedgerHandle, c *prop.Case) {
+					drawnAccount := c.Draw(prop.Of[string](), "account")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Balance(drawnAccount)
 						return nil
 					})
 				},
@@ -133,6 +195,24 @@ func LedgerSuite() conform.Suite[Ledger] {
 				Apply: func(h *LedgerHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject().Balance(string("account-a"))
+						return r0, nil
+					})
+				},
+				Defect: ledgerBalanceDrifts,
+			},
+			{
+				ID:          LedgerChecks.Balance.DeterministicGenerated(),
+				Statement:   "Balance returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[Ledger]{LedgerChecks.Balance.SmokeGenerated()},
+				Property: func(h *LedgerHandle, c *prop.Case) {
+					drawnAccount := c.Draw(prop.Of[string](), "account")
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Balance(drawnAccount)
 						return r0, nil
 					})
 				},

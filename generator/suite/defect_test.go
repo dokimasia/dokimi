@@ -4,6 +4,7 @@
 package suite_test
 
 import (
+	"maps"
 	"slices"
 	"testing"
 	"time"
@@ -27,8 +28,13 @@ func TestDefect(t *testing.T) {
 	t.Parallel()
 
 	families := generate(t, goTree, familiesPackage).suites
+	faults := generate(t, goTree, faultsPackage).suites
+	maps.Copy(families, generate(t, goTree, drawnPackage).suites)
 	family := func(name string) *suite.Suite {
-		s := families[name]
+		s, found := families[name]
+		if !found {
+			s = faults[name]
+		}
 		return &s
 	}
 
@@ -40,10 +46,13 @@ func TestDefect(t *testing.T) {
 			giveSuite     string
 			give          string
 			wantBody      string
+			wantAcquire   string
 			wantInput     int
+			wantSecond    int
 			wantBudget    time.Duration
 			wantDelegates bool
 			wantCounts    bool
+			wantKeeps     bool
 		}{
 			{
 				name: "writes a panic without a call of the subject", giveSuite: "Store", give: "StoreGetPanics",
@@ -129,6 +138,54 @@ func TestDefect(t *testing.T) {
 				name: "returns a sample where the read of the subject succeeds", giveSuite: "Store",
 				give: "StoreGetReadsAnotherValue", wantBody: "sample-success", wantDelegates: true,
 			},
+			{
+				name: "succeeds in place of the read of the subject until a dependency fails", giveSuite: "Scope",
+				give: "ScopeGetKeepsFailedWrites", wantBody: "zero-before-failure", wantDelegates: true,
+				wantKeeps: true,
+			},
+			{
+				name: "returns no error where a dependency of the subject fails", giveSuite: "Cache",
+				give: "CacheGetSwallowsFailure", wantBody: "swallow", wantDelegates: true, wantKeeps: true,
+			},
+			{
+				name: "fails each call once a dependency of the subject failed", giveSuite: "Syncer",
+				give: "SyncerSyncGivesUpEarly", wantBody: "fail-after-failure", wantDelegates: true, wantKeeps: true,
+			},
+			{
+				name: "reads a sample once a dependency of the subject failed", giveSuite: "Writer",
+				give: "WriterGetHalfApplied", wantBody: "sample-after-failure", wantDelegates: true, wantKeeps: true,
+			},
+			{
+				name: "reads a sample once a commit of the subject failed", giveSuite: "Account",
+				give: "AccountGetCommitsOnFailure", wantBody: "sample-after-failure", wantDelegates: true,
+				wantKeeps: true,
+			},
+			{
+				name: "calls a fresh breaker for each call", giveSuite: "Breaker", give: "BreakerDoNeverOpens",
+				wantBody: "fresh-each-call", wantKeeps: true,
+			},
+			{
+				name: "calls a fresh balancer for each call", giveSuite: "Balancer",
+				give: "BalancerRouteBalancesEachCall", wantBody: "fresh-each-call", wantKeeps: true,
+			},
+			{
+				name: "acquires once more where a dependency of the subject fails", giveSuite: "Copier",
+				give: "CopierCopyOpensWithoutClosing", wantBody: "open-on-failure", wantAcquire: "Open",
+				wantDelegates: true,
+			},
+			{
+				name: "returns the first input of a combination of its input type", giveSuite: "Tallies",
+				give: "TalliesMergeIgnoresTheSecondInput", wantBody: "echo",
+			},
+			{
+				name:      "passes the zero value as the second input of a combination of another type",
+				giveSuite: "Tallies", give: "TalliesDistanceIgnoresTheSecondInput", wantBody: "zero-second",
+				wantSecond: 1, wantDelegates: true,
+			},
+			{
+				name: "returns its first input where that input is the value of its first call", giveSuite: "Tallies",
+				give: "TalliesMergeKeepsItsFirstResult", wantBody: "keep-first", wantDelegates: true,
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -138,11 +195,23 @@ func TestDefect(t *testing.T) {
 				expect.Equal(t, d.Body, tt.wantBody, "the defect has the body of its form")
 				expect.Equal(t, d.Type, tt.give+"Defect", "the type of the defect adds the word Defect to its name")
 				expect.Equal(t, d.Input, tt.wantInput, "the defect knows the position of the first input")
+				expect.Equal(t, d.Second, tt.wantSecond, "the defect knows the position of the second input")
 				expect.Equal(t, d.Budget, tt.wantBudget, "the defect waits twice the budget of the timeout")
 				expect.Equal(t, d.Delegates, tt.wantDelegates, "the defect calls the subject where its body does")
 				expect.Equal(t, d.Counts, tt.wantCounts, "the defect counts its calls where its body does")
+				expect.Equal(t, d.Keeps, tt.wantKeeps, "the defect keeps its handle where its body reads it")
+				expect.Equal(t, d.Acquire, tt.wantAcquire, "the defect acquires through the callable that open names")
 			})
 		}
+
+		t.Run("acquires through the function that open names in the defect of a function", func(t *testing.T) {
+			t.Parallel()
+
+			load := faults["Load"]
+			d := defectNamed(t, &load, "LoadOpensWithoutClosing")
+			expect.Equal(t, d.Acquire, "Connect", "the defect of Load acquires through Connect")
+			expect.Equal(t, d.Type, "", "the defect of a function has no type")
+		})
 
 		t.Run("returns the error of a cancelled context before the break of its callable", func(t *testing.T) {
 			t.Parallel()
@@ -199,6 +268,52 @@ func TestDefect(t *testing.T) {
 			expect.Equal(t, d.Results[1].Role, "flag", "the second result of Load is its flag")
 			expect.Nil(t, d.Results[1].Sample, "a flag has no sample")
 		})
+
+		samples := []struct {
+			name     string
+			give     string
+			wantText string
+		}{
+			{
+				name:     "returns the sample of a struct whose field differs from its zero value",
+				give:     "Has",
+				wantText: "true",
+			},
+			{
+				name:     "returns the sample of a struct whose converted field differs from its zero value",
+				give:     "State",
+				wantText: "true",
+			},
+			{name: "returns the sample of a bool type that differs from false", give: "IsPresent", wantText: "true"},
+			{name: "returns the alternate sample of a bool type that is true", give: "IsEnabled", wantText: "true"},
+			{name: "returns the alternate sample of a list whose element is false", give: "Toggles", wantText: "false"},
+			{name: "returns the sample of an int type that differs from 0", give: "Amount", wantText: "5"},
+			{name: "returns the sample of a float type that differs from 0", give: "Ratio", wantText: "0.5"},
+			{
+				name:     "returns the sample of a string type that differs from the empty string",
+				give:     "Code",
+				wantText: "code",
+			},
+		}
+		for _, tt := range samples {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				d := defectNamed(t, family("Lookups"), "Lookups"+tt.give+"ValueBeside")
+				sample := d.Results[0].Sample
+				assert.NotNil(t, sample, "the value of "+tt.give+" has a sample")
+				assert.NotNil(t, sample.Value, "the sample is a value")
+				inner := sample.Value
+				for inner.Inner != nil || len(inner.Fields) > 0 {
+					if inner.Inner == nil {
+						inner = &inner.Fields[0].Value
+						continue
+					}
+					inner = inner.Inner
+				}
+				expect.Equal(t, inner.Text, tt.wantText, "the defect returns the sample that is not the zero value")
+			})
+		}
 
 		t.Run("records the method next of the live handle of an opened cursor", func(t *testing.T) {
 			t.Parallel()

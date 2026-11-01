@@ -17,43 +17,100 @@ import (
 //
 // Board.Place/smoke: Place returns without a panic for derived inputs.
 //
+// Board.Place/smoke#generated: Place returns without a panic for derived
+// inputs.
+//
 // Board.Clash/smoke: Clash returns without a panic for derived inputs.
+//
+// Board.Clash/smoke#generated: Clash returns without a panic for derived
+// inputs.
 //
 // Board.Clash/cancel: Clash returns an error for a cancelled context.
 //
+// Board.Clash/cancel#generated: Clash returns an error for a cancelled
+// context.
+//
 // Board.Blank/smoke: Blank returns without a panic for derived inputs.
 //
+// Board.Blank/smoke#generated: Blank returns without a panic for derived
+// inputs.
+//
 // Board.Index/smoke: Index returns without a panic for derived inputs.
+//
+// Board.Index/smoke#generated: Index returns without a panic for derived
+// inputs.
 //
 // Board.Index/deterministic: Index returns the same value for the same
 // inputs.
 //
+// Board.Index/deterministic#generated: Index returns the same value for
+// the same inputs.
+//
 // Board.Label/smoke: Label returns without a panic for derived inputs.
+//
+// Board.Label/smoke#generated: Label returns without a panic for derived
+// inputs.
 //
 // Board.Wait/smoke: Wait returns without a panic for derived inputs.
 //
+// Board.Wait/smoke#generated: Wait returns without a panic for derived
+// inputs.
+//
 // Board.Hold/smoke: Hold returns without a panic for derived inputs.
 //
+// Board.Hold/smoke#generated: Hold returns without a panic for derived
+// inputs.
+//
 // Board.Swap/smoke: Swap returns without a panic for derived inputs.
+//
+// Board.Swap/smoke#generated: Swap returns without a panic for derived
+// inputs.
 //
 // Board.Swap/deterministic: Swap returns the same value for the same
 // inputs.
 //
+// Board.Swap/deterministic#generated: Swap returns the same value for the
+// same inputs.
+//
 // Board.Mark/smoke: Mark returns without a panic for derived inputs.
+//
+// Board.Mark/smoke#generated: Mark returns without a panic for derived
+// inputs.
 //
 // Board.Paint/smoke: Paint returns without a panic for derived inputs.
 //
+// Board.Paint/smoke#generated: Paint returns without a panic for derived
+// inputs.
+//
 // Board.Repeat/smoke: Repeat returns without a panic for derived inputs.
+//
+// Board.Repeat/smoke#generated: Repeat returns without a panic for derived
+// inputs.
 //
 // Board.Keep/smoke: Keep returns without a panic for derived inputs.
 //
+// Board.Keep/smoke#generated: Keep returns without a panic for derived
+// inputs.
+//
 // Board.Stock/smoke: Stock returns without a panic for derived inputs.
+//
+// Board.Stock/smoke#generated: Stock returns without a panic for derived
+// inputs.
 //
 // Board.Discard/smoke: Discard returns without a panic for derived inputs.
 //
+// Board.Discard/smoke#generated: Discard returns without a panic for
+// derived inputs.
+//
 // Board.Twice/smoke: Twice returns without a panic for derived inputs.
 //
+// Board.Twice/smoke#generated: Twice returns without a panic for derived
+// inputs.
+//
 // Board.Gather/smoke: Gather returns without a panic for derived inputs.
+//
+// Board.Gather/smoke#generated: Gather returns without a panic for derived
+// inputs.
 
 // The derived checks of Board that witness their laws at the shallow end:
 //
@@ -178,6 +235,12 @@ func (c boardPlace) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Place returns
+// without a panic for derived inputs.
+func (c boardPlace) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // boardClash is the name of Board.Clash, with the identities of its
 // checks.
 type boardClash struct {
@@ -190,10 +253,22 @@ func (c boardClash) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Clash returns
+// without a panic for derived inputs.
+func (c boardClash) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Clash returns an error for
 // a cancelled context.
 func (c boardClash) Cancel() conform.ID[Board] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Clash returns an
+// error for a cancelled context.
+func (c boardClash) CancelGenerated() conform.ID[Board] {
+	return c.Check("cancel#generated")
 }
 
 // boardBlank is the name of Board.Blank, with the identities of its
@@ -208,6 +283,12 @@ func (c boardBlank) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Blank returns
+// without a panic for derived inputs.
+func (c boardBlank) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // boardIndex is the name of Board.Index, with the identities of its
 // checks.
 type boardIndex struct {
@@ -220,10 +301,22 @@ func (c boardIndex) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Index returns
+// without a panic for derived inputs.
+func (c boardIndex) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that Index returns the
 // same value for the same inputs.
 func (c boardIndex) Deterministic() conform.ID[Board] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Index
+// returns the same value for the same inputs.
+func (c boardIndex) DeterministicGenerated() conform.ID[Board] {
+	return c.Check("deterministic#generated")
 }
 
 // boardLabel is the name of Board.Label, with the identities of its
@@ -238,6 +331,12 @@ func (c boardLabel) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Label returns
+// without a panic for derived inputs.
+func (c boardLabel) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // boardWait is the name of Board.Wait, with the identities of its checks.
 type boardWait struct {
 	conform.Callable[Board]
@@ -247,6 +346,12 @@ type boardWait struct {
 // panic for derived inputs.
 func (c boardWait) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Wait returns
+// without a panic for derived inputs.
+func (c boardWait) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
 }
 
 // boardHold is the name of Board.Hold, with the identities of its checks.
@@ -260,6 +365,12 @@ func (c boardHold) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Hold returns
+// without a panic for derived inputs.
+func (c boardHold) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // boardSwap is the name of Board.Swap, with the identities of its checks.
 type boardSwap struct {
 	conform.Callable[Board]
@@ -271,10 +382,22 @@ func (c boardSwap) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Swap returns
+// without a panic for derived inputs.
+func (c boardSwap) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that Swap returns the
 // same value for the same inputs.
 func (c boardSwap) Deterministic() conform.ID[Board] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Swap
+// returns the same value for the same inputs.
+func (c boardSwap) DeterministicGenerated() conform.ID[Board] {
+	return c.Check("deterministic#generated")
 }
 
 // boardMark is the name of Board.Mark, with the identities of its checks.
@@ -286,6 +409,12 @@ type boardMark struct {
 // panic for derived inputs.
 func (c boardMark) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Mark returns
+// without a panic for derived inputs.
+func (c boardMark) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
 }
 
 // boardPaint is the name of Board.Paint, with the identities of its
@@ -300,6 +429,12 @@ func (c boardPaint) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Paint returns
+// without a panic for derived inputs.
+func (c boardPaint) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // boardRepeat is the name of Board.Repeat, with the identities of its
 // checks.
 type boardRepeat struct {
@@ -312,6 +447,12 @@ func (c boardRepeat) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Repeat returns
+// without a panic for derived inputs.
+func (c boardRepeat) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // boardKeep is the name of Board.Keep, with the identities of its checks.
 type boardKeep struct {
 	conform.Callable[Board]
@@ -321,6 +462,12 @@ type boardKeep struct {
 // panic for derived inputs.
 func (c boardKeep) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Keep returns
+// without a panic for derived inputs.
+func (c boardKeep) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
 }
 
 // boardStock is the name of Board.Stock, with the identities of its
@@ -335,6 +482,12 @@ func (c boardStock) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Stock returns
+// without a panic for derived inputs.
+func (c boardStock) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // boardDiscard is the name of Board.Discard, with the identities of its
 // checks.
 type boardDiscard struct {
@@ -347,6 +500,12 @@ func (c boardDiscard) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Discard returns
+// without a panic for derived inputs.
+func (c boardDiscard) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
 // boardTwice is the name of Board.Twice, with the identities of its
 // checks.
 type boardTwice struct {
@@ -357,6 +516,12 @@ type boardTwice struct {
 // panic for derived inputs.
 func (c boardTwice) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Twice returns
+// without a panic for derived inputs.
+func (c boardTwice) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
 }
 
 // boardDrain is the name of Board.Drain, with the identities of its
@@ -375,6 +540,12 @@ type boardGather struct {
 // panic for derived inputs.
 func (c boardGather) Smoke() conform.ID[Board] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Gather returns
+// without a panic for derived inputs.
+func (c boardGather) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
 }
 
 // BoardSuite returns the checks of Board, and the calls and the budgets of
@@ -402,6 +573,22 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardPlacePanics,
 			},
 			{
+				ID:          BoardChecks.Place.SmokeGenerated(),
+				Statement:   "Place returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[Point](), "p")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Place(&drawnP)
+					})
+				},
+				Defect: boardPlacePanics,
+			},
+			{
 				ID:          BoardChecks.Clash.Smoke(),
 				Statement:   "Clash returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -419,6 +606,25 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardClashPanics,
 			},
 			{
+				ID:          BoardChecks.Clash.SmokeGenerated(),
+				Statement:   "Clash returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnC0 := c.Draw(prop.Of[string](), "c")
+					drawnSubject0 := c.Draw(prop.Of[string](), "subject")
+					drawnErr0 := c.Draw(prop.Of[string](), "err")
+					drawnProp0 := c.Draw(prop.Of[int](), "prop")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Clash(ctx, drawnC0, drawnSubject0, drawnErr0, drawnProp0)
+					})
+				},
+				Defect: boardClashPanics,
+			},
+			{
 				ID:          BoardChecks.Clash.Cancel(),
 				Statement:   "Clash returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -430,6 +636,25 @@ func BoardSuite() conform.Suite[Board] {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().
 							Clash(ctx, string("c-a"), string("subject-a"), string("err-a"), int(42))
+					})
+				},
+				Defect: boardClashIgnoresCancel,
+			},
+			{
+				ID:          BoardChecks.Clash.CancelGenerated(),
+				Statement:   "Clash returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnC0 := c.Draw(prop.Of[string](), "c")
+					drawnSubject0 := c.Draw(prop.Of[string](), "subject")
+					drawnErr0 := c.Draw(prop.Of[string](), "err")
+					drawnProp0 := c.Draw(prop.Of[int](), "prop")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Clash(ctx, drawnC0, drawnSubject0, drawnErr0, drawnProp0)
 					})
 				},
 				Defect: boardClashIgnoresCancel,
@@ -452,6 +677,24 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardBlankPanics,
 			},
 			{
+				ID:          BoardChecks.Blank.SmokeGenerated(),
+				Statement:   "Blank returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnA0 := c.Draw(prop.Of[string](), "a0")
+					drawnA1 := c.Draw(prop.Of[int](), "a1")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Blank(drawnA0, drawnA1)
+						return nil
+					})
+				},
+				Defect: boardBlankPanics,
+			},
+			{
 				ID:          BoardChecks.Index.Smoke(),
 				Statement:   "Index returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -463,6 +706,23 @@ func BoardSuite() conform.Suite[Board] {
 				Apply: func(h *BoardHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Index(map[Shape][]Point{Shape(1): {{X: 42}}})
+						return nil
+					})
+				},
+				Defect: boardIndexPanics,
+			},
+			{
+				ID:          BoardChecks.Index.SmokeGenerated(),
+				Statement:   "Index returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnPoints := c.Draw(prop.Of[map[Shape][]Point](), "points")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Index(drawnPoints)
 						return nil
 					})
 				},
@@ -487,6 +747,24 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardIndexDrifts,
 			},
 			{
+				ID:          BoardChecks.Index.DeterministicGenerated(),
+				Statement:   "Index returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[Board]{BoardChecks.Index.SmokeGenerated()},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnPoints := c.Draw(prop.Of[map[Shape][]Point](), "points")
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Index(drawnPoints)
+						return r0, nil
+					})
+				},
+				Defect: boardIndexDrifts,
+			},
+			{
 				ID:          BoardChecks.Label.Smoke(),
 				Statement:   "Label returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -498,6 +776,23 @@ func BoardSuite() conform.Suite[Board] {
 				Apply: func(h *BoardHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Label(string("string-a"))
+						return nil
+					})
+				},
+				Defect: boardLabelPanics,
+			},
+			{
+				ID:          BoardChecks.Label.SmokeGenerated(),
+				Statement:   "Label returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnString0 := c.Draw(prop.Of[string](), "string")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Label(drawnString0)
 						return nil
 					})
 				},
@@ -521,6 +816,24 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardWaitPanics,
 			},
 			{
+				ID:          BoardChecks.Wait.SmokeGenerated(),
+				Statement:   "Wait returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnTime0 := c.Draw(prop.Of[int](), "time")
+					drawnDelays := c.Draw(prop.Of[[]time.Duration](), "delays")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Wait(drawnTime0, drawnDelays)
+						return nil
+					})
+				},
+				Defect: boardWaitPanics,
+			},
+			{
 				ID:          BoardChecks.Hold.Smoke(),
 				Statement:   "Hold returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -538,6 +851,24 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardHoldPanics,
 			},
 			{
+				ID:          BoardChecks.Hold.SmokeGenerated(),
+				Statement:   "Hold returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnTime0 := c.Draw(prop.Of[int](), "time")
+					drawnPair := c.Draw(prop.Of[Pair[time.Month]](), "pair")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Hold(drawnTime0, drawnPair)
+						return nil
+					})
+				},
+				Defect: boardHoldPanics,
+			},
+			{
 				ID:          BoardChecks.Swap.Smoke(),
 				Statement:   "Swap returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -549,6 +880,23 @@ func BoardSuite() conform.Suite[Board] {
 				Apply: func(h *BoardHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Swap(Pair[Tint]{First: Tint(1)})
+						return nil
+					})
+				},
+				Defect: boardSwapPanics,
+			},
+			{
+				ID:          BoardChecks.Swap.SmokeGenerated(),
+				Statement:   "Swap returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnPair := c.Draw(prop.Of[Pair[Tint]](), "pair")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Swap(drawnPair)
 						return nil
 					})
 				},
@@ -573,6 +921,24 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardSwapDrifts,
 			},
 			{
+				ID:          BoardChecks.Swap.DeterministicGenerated(),
+				Statement:   "Swap returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[Board]{BoardChecks.Swap.SmokeGenerated()},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnPair := c.Draw(prop.Of[Pair[Tint]](), "pair")
+					probe.RepeatAgrees(h, func(ctx context.Context) (Pair[Tint], error) {
+						r0 := h.Subject().Swap(drawnPair)
+						return r0, nil
+					})
+				},
+				Defect: boardSwapDrifts,
+			},
+			{
 				ID:          BoardChecks.Mark.Smoke(),
 				Statement:   "Mark returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -589,6 +955,22 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardMarkPanics,
 			},
 			{
+				ID:          BoardChecks.Mark.SmokeGenerated(),
+				Statement:   "Mark returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnCell := c.Draw(prop.Of[Cell](), "cell")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Mark(drawnCell)
+					})
+				},
+				Defect: boardMarkPanics,
+			},
+			{
 				ID:          BoardChecks.Paint.Smoke(),
 				Statement:   "Paint returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -600,6 +982,23 @@ func BoardSuite() conform.Suite[Board] {
 				Apply: func(h *BoardHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Paint(Palette{Hue(1)})
+						return nil
+					})
+				},
+				Defect: boardPaintPanics,
+			},
+			{
+				ID:          BoardChecks.Paint.SmokeGenerated(),
+				Statement:   "Paint returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnPalette := c.Draw(prop.Of[Palette](), "palette")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Paint(drawnPalette)
 						return nil
 					})
 				},
@@ -623,6 +1022,23 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardRepeatPanics,
 			},
 			{
+				ID:          BoardChecks.Repeat.SmokeGenerated(),
+				Statement:   "Repeat returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnCalls0 := c.Draw(prop.Of[int](), "calls")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Repeat(drawnCalls0)
+						return nil
+					})
+				},
+				Defect: boardRepeatPanics,
+			},
+			{
 				ID:          BoardChecks.Keep.Smoke(),
 				Statement:   "Keep returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -634,6 +1050,24 @@ func BoardSuite() conform.Suite[Board] {
 				Apply: func(h *BoardHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Keep(int(42), store.Item{ID: "ID-a"})
+						return nil
+					})
+				},
+				Defect: boardKeepPanics,
+			},
+			{
+				ID:          BoardChecks.Keep.SmokeGenerated(),
+				Statement:   "Keep returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnStore0 := c.Draw(prop.Of[int](), "store")
+					drawnItem := c.Draw(prop.Of[store.Item](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Keep(drawnStore0, drawnItem)
 						return nil
 					})
 				},
@@ -657,6 +1091,24 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardStockPanics,
 			},
 			{
+				ID:          BoardChecks.Stock.SmokeGenerated(),
+				Statement:   "Stock returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnShop0 := c.Draw(prop.Of[int](), "shop")
+					drawnItem := c.Draw(prop.Of[store.Item](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Stock(drawnShop0, drawnItem)
+						return nil
+					})
+				},
+				Defect: boardStockPanics,
+			},
+			{
 				ID:          BoardChecks.Discard.Smoke(),
 				Statement:   "Discard returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -668,6 +1120,23 @@ func BoardSuite() conform.Suite[Board] {
 				Apply: func(h *BoardHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Discard(string("_-a"))
+						return nil
+					})
+				},
+				Defect: boardDiscardPanics,
+			},
+			{
+				ID:          BoardChecks.Discard.SmokeGenerated(),
+				Statement:   "Discard returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnA0 := c.Draw(prop.Of[string](), "a0")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Discard(drawnA0)
 						return nil
 					})
 				},
@@ -691,6 +1160,24 @@ func BoardSuite() conform.Suite[Board] {
 				Defect: boardTwicePanics,
 			},
 			{
+				ID:          BoardChecks.Twice.SmokeGenerated(),
+				Statement:   "Twice returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnC0 := c.Draw(prop.Of[string](), "c")
+					drawnC00 := c.Draw(prop.Of[string](), "c0")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Twice(drawnC0, drawnC00)
+						return nil
+					})
+				},
+				Defect: boardTwicePanics,
+			},
+			{
 				ID:          BoardChecks.Gather.Smoke(),
 				Statement:   "Gather returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -702,6 +1189,35 @@ func BoardSuite() conform.Suite[Board] {
 				Apply: func(h *BoardHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Gather(func() int { return 0 }, int(42), int(42))
+						return nil
+					})
+				},
+				Defect: boardGatherPanics,
+			},
+			{
+				ID:          BoardChecks.Gather.SmokeGenerated(),
+				Statement:   "Gather returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					fnResults := c.Draw(prop.List(prop.Of[int]()), "fn")
+					drawnFn := func() func() int {
+						var fnAt atomic.Int64
+						return func() (r0 int) {
+							i := int(fnAt.Add(1) - 1)
+							if i >= len(fnResults) {
+								return r0
+							}
+							return fnResults[i]
+						}
+					}
+					drawnFnResults0 := c.Draw(prop.Of[int](), "fn-results")
+					drawnFnAt0 := c.Draw(prop.Of[int](), "fn-at")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Gather(drawnFn(), drawnFnResults0, drawnFnAt0)
 						return nil
 					})
 				},

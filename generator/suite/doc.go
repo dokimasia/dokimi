@@ -18,6 +18,19 @@
 //		Get(ctx context.Context, id string) (Item, error)
 //	}
 //
+// # Derived checks
+//
+// The suite contains a check for each claim of the conformance spec that a
+// callable binds, such as Store.Get/zero-on-error. Such a derived check passes
+// samples of the inputs of its calls to the probe of its claim. Beside each
+// derived check whose calls take samples, the suite writes its generated
+// binding, such as Store.Get/zero-on-error#generated. The generated binding is
+// a property check whose calls take inputs that each case draws by the rules
+// of the call generators. The calls of one case share the value of each
+// parameter with one name and one type, so a write and its read take one key.
+// The claims commutative and associative of a callable of two inputs of one
+// type bind as property checks alone.
+//
 // # Checks of a consumer
 //
 // The directive check binds a function of the package of the generated suite
@@ -76,6 +89,15 @@
 //	//dokimi:check Store.Get defect=forgetsOnRestart restart=forget
 //	func KeepsTheItemAcrossARestart(h *StoreHandle) { … }
 //
+// The param values lists the doors of values of the planted defect. Each
+// function takes a handle of the check and the defect, and returns the value
+// of its type, such as the backend of the store that the defect wraps. A check
+// reads the value with conform.Open, and the generated check passes each door
+// through conform.Supply:
+//
+//	//dokimi:check Store.Get defect=servesAnotherItem values=[backendOf]
+//	func ServesTheItem(h *StoreHandle) { … }
+//
 // # Subjects
 //
 // A consumer applies the suite to a subject, and adds checks of its own:
@@ -109,7 +131,8 @@
 // suite from the conformance test of the subject. Its positional param is the
 // identity of the check, and its param reason states why the subject does not
 // pass the check. The test passes each excusal to the application through
-// conform.Excuse, and the application skips the check with the reason:
+// conform.Excuse, and the application skips the check with the reason. The
+// excusal of a derived check also excuses its generated binding:
 //
 //	//dokimi:subject store.Store new=New
 //	//dokimi:excuse Store.Get/keeps-the-item reason="the store drops each item"

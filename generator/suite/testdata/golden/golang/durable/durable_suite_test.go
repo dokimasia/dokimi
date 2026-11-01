@@ -48,7 +48,15 @@ func TestKeeperSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				durable.KeeperChecks.Put.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				durable.KeeperChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durable.KeeperChecks.Put.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -56,11 +64,23 @@ func TestKeeperSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				durable.KeeperChecks.Get.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				durable.KeeperChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				durable.KeeperChecks.Get.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				durable.KeeperChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -73,6 +93,10 @@ func TestKeeperSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				durable.KeeperChecks.Get.KeepsTheLastPut(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durable.KeeperChecks.Get.ServesTheStoredValue(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -101,7 +125,15 @@ func TestKeeperSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				durable.KeeperChecks.Put.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				durable.KeeperChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durable.KeeperChecks.Put.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -109,11 +141,23 @@ func TestKeeperSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				durable.KeeperChecks.Get.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				durable.KeeperChecks.Get.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				durable.KeeperChecks.Get.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				durable.KeeperChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -126,6 +170,10 @@ func TestKeeperSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				durable.KeeperChecks.Get.KeepsTheLastPut(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durable.KeeperChecks.Get.ServesTheStoredValue(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -149,6 +197,12 @@ func TestKeeperSuite(t *testing.T) {
 			t,
 			string(durable.KeeperChecks.Get.KeepsTheLastPut()),
 			"Keeper.Get/keeps-the-last-put",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(durable.KeeperChecks.Get.ServesTheStoredValue()),
+			"Keeper.Get/serves-the-stored-value",
 			"the identity of the check joins the callable and the segment of the check",
 		)
 	})
@@ -175,7 +229,15 @@ func TestKeeperSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Put.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -183,11 +245,23 @@ func TestKeeperSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Get.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Get.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -200,6 +274,10 @@ func TestKeeperSuiteBudgets(t *testing.T) {
 		),
 		conform.Excuse(
 			durable.KeeperChecks.Get.KeepsTheLastPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Get.ServesTheStoredValue(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -217,7 +295,15 @@ func FuzzKeeperSuitePut(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Put.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -225,11 +311,23 @@ func FuzzKeeperSuitePut(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Get.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Get.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -242,6 +340,10 @@ func FuzzKeeperSuitePut(f *testing.F) {
 		),
 		conform.Excuse(
 			durable.KeeperChecks.Get.KeepsTheLastPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Get.ServesTheStoredValue(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -259,7 +361,15 @@ func FuzzKeeperSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Put.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -267,11 +377,23 @@ func FuzzKeeperSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Get.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Get.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			durable.KeeperChecks.Get.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durable.KeeperChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -284,6 +406,10 @@ func FuzzKeeperSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			durable.KeeperChecks.Get.KeepsTheLastPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durable.KeeperChecks.Get.ServesTheStoredValue(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)

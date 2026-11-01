@@ -419,7 +419,15 @@ func TestHireSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				nested.HireChecks.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				nested.HireChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nested.HireChecks.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -445,7 +453,15 @@ func TestHireSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				nested.HireChecks.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				nested.HireChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nested.HireChecks.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)

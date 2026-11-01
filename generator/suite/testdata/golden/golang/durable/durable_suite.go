@@ -14,13 +14,28 @@ import (
 //
 // Keeper.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Keeper.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Keeper.Put/cancel: Put returns an error for a cancelled context.
+//
+// Keeper.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 //
 // Keeper.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Keeper.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Keeper.Get/cancel: Get returns an error for a cancelled context.
 //
+// Keeper.Get/cancel#generated: Get returns an error for a cancelled
+// context.
+//
 // Keeper.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Keeper.Get/zero-on-error#generated: Get returns the zero value beside an
+// error.
 
 // The derived checks of Keeper that witness their laws at the shallow end:
 //
@@ -70,10 +85,22 @@ func (c keeperPut) Smoke() conform.ID[Keeper] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c keeperPut) SmokeGenerated() conform.ID[Keeper] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c keeperPut) Cancel() conform.ID[Keeper] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c keeperPut) CancelGenerated() conform.ID[Keeper] {
+	return c.Check("cancel#generated")
 }
 
 // keeperGet is the name of Keeper.Get, with the identities of its checks.
@@ -93,10 +120,22 @@ func (c keeperGet) KeepsTheLastPut() conform.ID[Keeper] {
 	return c.Check("keeps-the-last-put")
 }
 
+// ServesTheStoredValue returns the identity of the check that the backend
+// of a Keeper serves the value that Put stored.
+func (c keeperGet) ServesTheStoredValue() conform.ID[Keeper] {
+	return c.Check("serves-the-stored-value")
+}
+
 // Smoke returns the identity of the check that Get returns without a panic
 // for derived inputs.
 func (c keeperGet) Smoke() conform.ID[Keeper] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c keeperGet) SmokeGenerated() conform.ID[Keeper] {
+	return c.Check("smoke#generated")
 }
 
 // Cancel returns the identity of the check that Get returns an error for a
@@ -105,10 +144,22 @@ func (c keeperGet) Cancel() conform.ID[Keeper] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c keeperGet) CancelGenerated() conform.ID[Keeper] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c keeperGet) ZeroOnError() conform.ID[Keeper] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c keeperGet) ZeroOnErrorGenerated() conform.ID[Keeper] {
+	return c.Check("zero-on-error#generated")
 }
 
 // KeeperSuite returns the checks of Keeper, and the calls and the budgets
@@ -136,6 +187,23 @@ func KeeperSuite() conform.Suite[Keeper] {
 				Defect: keeperPutPanics,
 			},
 			{
+				ID:          KeeperChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *KeeperHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
+					})
+				},
+				Defect: keeperPutPanics,
+			},
+			{
 				ID:          KeeperChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -146,6 +214,23 @@ func KeeperSuite() conform.Suite[Keeper] {
 				Apply: func(h *KeeperHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: keeperPutIgnoresCancel,
+			},
+			{
+				ID:          KeeperChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *KeeperHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
 					})
 				},
 				Defect: keeperPutIgnoresCancel,
@@ -168,6 +253,23 @@ func KeeperSuite() conform.Suite[Keeper] {
 				Defect: keeperGetPanics,
 			},
 			{
+				ID:          KeeperChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *KeeperHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: keeperGetPanics,
+			},
+			{
 				ID:          KeeperChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -184,6 +286,23 @@ func KeeperSuite() conform.Suite[Keeper] {
 				Defect: keeperGetIgnoresCancel,
 			},
 			{
+				ID:          KeeperChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *KeeperHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: keeperGetIgnoresCancel,
+			},
+			{
 				ID:          KeeperChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -194,6 +313,22 @@ func KeeperSuite() conform.Suite[Keeper] {
 				Apply: func(h *KeeperHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
 						return h.Subject().Get(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: keeperGetValueBeside,
+			},
+			{
+				ID:          KeeperChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *KeeperHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, drawnKey)
 					}, string(""))
 				},
 				Defect: keeperGetValueBeside,
@@ -218,6 +353,18 @@ func KeeperSuite() conform.Suite[Keeper] {
 				Property:  KeepsTheLastPut,
 				Defect:    keepsTheFirstPut,
 				Options:   putShares,
+			},
+			{
+				ID:        KeeperChecks.Get.ServesTheStoredValue(),
+				Statement: "the backend of a Keeper serves the value that Put stored",
+				Apply:     ServesTheStoredValue,
+				Defect:    servesAnotherValue,
+				Doors: conform.Doors[Keeper]{
+					Values: []conform.Supplied[Keeper]{
+						conform.Supply(backendOf),
+						conform.Supply(clockOf),
+					},
+				},
 			},
 		},
 		Unclaimed: []conform.Unclaimed{

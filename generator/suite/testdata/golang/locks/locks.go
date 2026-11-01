@@ -36,6 +36,26 @@ func Await(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// Worker runs the loop of a worker.
+//
+//dokimi:suite
+type Worker interface {
+	// Run runs the loop until ctx ends, and returns nil when ctx ends.
+	//dokimi:mixin runs-until-cancelled
+	Run(ctx context.Context) error
+	// Stop ends the loop.
+	Stop()
+}
+
+// Serve serves until ctx ends, and returns nil when ctx ends.
+//
+//dokimi:suite
+//dokimi:mixin runs-until-cancelled
+func Serve(ctx context.Context) error {
+	<-ctx.Done()
+	return nil
+}
+
 // Mutex is a lock in memory.
 //
 //dokimi:subject Lock new=NewMutex
@@ -92,5 +112,34 @@ func (t *Turnstile) Pass(ctx context.Context) error {
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
+	}
+}
+
+// Loop is a worker in memory.
+//
+//dokimi:subject Worker new=NewLoop
+type Loop struct {
+	stopped chan struct{}
+}
+
+// NewLoop returns a loop that runs.
+func NewLoop() *Loop {
+	return &Loop{stopped: make(chan struct{}, 1)}
+}
+
+// Run waits until ctx ends or Stop ends the loop, and returns nil.
+func (l *Loop) Run(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+	case <-l.stopped:
+	}
+	return nil
+}
+
+// Stop ends the loop.
+func (l *Loop) Stop() {
+	select {
+	case l.stopped <- struct{}{}:
+	default:
 	}
 }

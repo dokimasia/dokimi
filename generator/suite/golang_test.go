@@ -14,6 +14,12 @@ import (
 	"go.dokimi.dev/dokimi/internal/gentest"
 )
 
+// The packages of the Go tree that this spec alone reads.
+const (
+	scopedPackage     = "example.com/shop/scoped"
+	scopedTestPackage = "example.com/shop/scoped_test"
+)
+
 // The part of Go declares the target golang with the template of each family,
 // and its templates write the suites and the conformance tests in the
 // conventions of Go.
@@ -33,7 +39,7 @@ func TestGolang(t *testing.T) {
 		f := fixture(t, goTree, p, storePackage, genericPackage, catalogPackage, slugPackage, memoryPackage,
 			cachedPackage, sessionPackage, meterPackage, meteredPackage, callsPackage, inputsPackage, ledgerPackage,
 			loosePackage, nestedPackage, wrapPackage, toolPackage, deepPackage, kindsPackage, durablePackage,
-			taggedPackage, locksPackage, familiesPackage)
+			taggedPackage, locksPackage, familiesPackage, faultsPackage, drawnPackage, scopedPackage, scopedTestPackage)
 		_, res := phases(t, f, p)
 		golden.MatchTree(t, "golang", gentest.Rendered(t, f, res, p, gobackend.New()), golden.ShouldUpdate())
 	})

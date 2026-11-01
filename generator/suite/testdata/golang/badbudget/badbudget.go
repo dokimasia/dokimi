@@ -60,7 +60,24 @@ type Gauge interface {
 	//dokimi:mixin waits
 	//dokimi:budget allocs=1
 	Block()
+	// Spin runs until its context ends and states a budget.
+	//dokimi:mixin runs-until-cancelled
+	//dokimi:budget allocs=1
+	Spin()
 }
+
+// Endless states a budget of a callable that runs until its context ends.
+//
+//dokimi:subject Gauge new=NewGauge
+//dokimi:budget Gauge.Spin allocs=1
+type Endless struct{ Gauge }
+
+// Idle runs until its context ends and states a budget.
+//
+//dokimi:suite
+//dokimi:mixin runs-until-cancelled
+//dokimi:budget allocs=1
+func Idle() {}
 
 // Patient states a budget of a callable that waits for another call.
 //

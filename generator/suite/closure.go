@@ -18,13 +18,16 @@ import (
 
 // The names that a closure declares: the value that a write writes, the
 // value of a round trip and the delay of a registration, the parameter of a
-// closure that takes a value, the handle of a call, the hook of a registrar,
-// the body of a scope, the error of a call and the context of a call.
+// closure that takes a value, the two parameters of a closure that combines
+// two values, the handle of a call, the hook of a registrar, the body of a
+// scope, the error of a call and the context of a call.
 const (
 	writtenName = "w"
 	inName      = "in"
 	delayName   = "d"
 	takenName   = "v"
+	firstName   = "x"
+	secondName  = "y"
 	handleName  = "handle"
 	hookName    = "hook"
 	bodyName    = "body"
@@ -42,13 +45,16 @@ const nilWord = "nil"
 // does neither. with is the value that the first input of the call takes in
 // place of its sample, and nil for the sample. stamps is the field of the
 // stamp of an entry, and handle the type of the handle of a call. changed is
-// the field of the value of a guarded write that the predicate judges.
+// the field of the value of a guarded write that the predicate judges. drawn
+// are the draws of a generated binding, whose values the calls take in place
+// of their samples, and nil for a sample binding.
 type input struct {
 	sl      *slot
 	f       *derive.Facts
 	pair    *derive.Pair
 	with    *Expr
 	handle  *node.TypeRef
+	drawn   *draws
 	method  string
 	stamps  string
 	changed string
@@ -56,7 +62,7 @@ type input struct {
 
 // closure returns the closure of the input in of a probe.
 func (k *caller) closure(in *input) *Closure {
-	sl, f, pair, with := in.sl, in.f, in.pair, in.with
+	sl, f, pair, with, d := in.sl, in.f, in.pair, in.with, in.drawn
 	c := &Closure{}
 	if sl.form == formHandle {
 		c.Param = &ClosureParam{Name: handleName, Type: k.typeOf(in.handle)}
@@ -68,7 +74,7 @@ func (k *caller) closure(in *input) *Closure {
 	if f.Declaration != "" {
 		c.Method = f.Callable
 	}
-	c.Args = k.argsOf(f, pair)
+	c.Args = k.argsOf(d, f, pair)
 	// The forms that write take the write of the pair as f.
 	written := pair != nil && pair.Written >= 0
 	switch sl.form {
@@ -78,19 +84,19 @@ func (k *caller) closure(in *input) *Closure {
 			index = pair.Written
 		}
 		at := inputAt(f, index)
-		c.Lets = []Let{{Name: writtenName, Value: k.sampleOf(f, index, 0)}}
+		c.Lets = []Let{{Name: writtenName, Value: k.argOf(d, f, index, 0)}}
 		switch sl.form {
 		case formRewritten:
 			if pair.Changed != "" {
-				first, _ := k.fieldSamples(f, index, pair.Changed)
+				first, _ := k.fieldValues(d, f, index, pair.Changed)
 				c.Lets = append(c.Lets, Let{Name: writtenName, Select: pair.Changed, Value: first})
 			}
-			c.Later = []Let{k.rewrite(f, pair, index)}
+			c.Later = []Let{k.rewrite(d, f, pair, index)}
 			if pair.Changed == "" {
-				k.repartition(c, f, pair)
+				k.repartition(c, d, f, pair)
 			}
 		case formActs:
-			c.Later = []Let{{Name: writtenName, Value: k.sampleOf(f, index, 1)}}
+			c.Later = []Let{{Name: writtenName, Value: k.argOf(d, f, index, 1)}}
 		default:
 		}
 		c.Args[at] = Expr{Name: writtenName}
@@ -109,11 +115,25 @@ func (k *caller) closure(in *input) *Closure {
 		return c
 	case formAct:
 		if written && pair.Changed != "" {
+			// The first write sets the changed field to its first value, and
+			// every later write to its second value, so a read between two
+			// writes sees the field change.
 			at := inputAt(f, pair.Written)
-			c.Lets = []Let{{Name: writtenName, Value: k.sampleOf(f, pair.Written, 0)}, k.rewrite(f, pair, pair.Written)}
+			first, _ := k.fieldValues(d, f, pair.Written, pair.Changed)
+			c.Lets = []Let{
+				{Name: writtenName, Value: k.argOf(d, f, pair.Written, 0)},
+				{Name: writtenName, Select: pair.Changed, Value: first},
+			}
+			c.Later = []Let{k.rewrite(d, f, pair, pair.Written)}
 			c.Args[at] = Expr{Name: writtenName}
 		}
 		k.act(c, f)
+		return c
+	case formCombine:
+		c.Param = &ClosureParam{Name: firstName, Other: secondName, Type: k.typeOf(k.inputRef(f, 0))}
+		c.Args[inputAt(f, 0)] = Expr{Name: firstName}
+		c.Args[inputAt(f, 1)] = Expr{Name: secondName}
+		k.values(c, f)
 		return c
 	case formTaking, formInverse, formHook, formScope:
 		param := &ClosureParam{Name: takenName}
@@ -139,7 +159,7 @@ func (k *caller) closure(in *input) *Closure {
 		k.act(c, f)
 		return c
 	case formRoundTrip:
-		c.Lets = []Let{{Name: inName, Value: k.sampleOf(f, 0, 0)}}
+		c.Lets = []Let{{Name: inName, Value: k.argOf(d, f, 0, 0)}}
 		c.Args[inputAt(f, 0)] = Expr{Name: inName}
 		in := k.typeOf(k.inputRef(f, 0))
 		out := k.typeOf(k.resultRef(f, 0))
@@ -151,7 +171,7 @@ func (k *caller) closure(in *input) *Closure {
 		}}}, errorOf(c)...)
 		return c
 	case formDelay:
-		c.Lets = []Let{{Name: delayName, Value: k.sampleOf(f, 0, 0)}}
+		c.Lets = []Let{{Name: delayName, Value: k.argOf(d, f, 0, 0)}}
 		c.Args[inputAt(f, 0)] = Expr{Name: delayName}
 		c.Returns = []*emit.TypeRef{k.typeOf(k.inputRef(f, 0))}
 		k.returnsBeside(c, f, delayName)
@@ -197,9 +217,9 @@ func (k *caller) matched(c *Closure, in *input) {
 	index := slices.IndexFunc(write.Inputs, func(v derive.Value) bool {
 		return slices.ContainsFunc(v.Fields, func(fd derive.Field) bool { return fd.Name == in.changed })
 	})
-	first, second := k.fieldSamples(write, index, in.changed)
+	first, second := k.fieldValues(in.drawn, write, index, in.changed)
 	changed := Let{Name: writtenName, Select: in.changed, Value: second}
-	c.Lets = []Let{{Name: writtenName, Value: k.sampleOf(write, index, 0)}}
+	c.Lets = []Let{{Name: writtenName, Value: k.argOf(in.drawn, write, index, 0)}}
 	if in.sl.form == formMatched {
 		c.Lets = append(c.Lets, Let{Name: writtenName, Select: in.changed, Value: first})
 		c.Later = []Let{changed}
@@ -215,6 +235,8 @@ func (k *caller) matched(c *Closure, in *input) {
 
 // method makes c call the method name of the handle of the type ref for its
 // error, with the context of the closure and the first sample of each input.
+// A method of a handle has no call generator in the suite, so a generated
+// binding passes the samples of its inputs too.
 func (k *caller) method(c *Closure, ref *node.TypeRef, name string) {
 	if ref.Form == symbol.FormOptional {
 		ref = ref.Elems[0]
@@ -224,29 +246,29 @@ func (k *caller) method(c *Closure, ref *node.TypeRef, name string) {
 	methods := methodsOf(&b, decl)
 	f := k.factsOf(methods[slices.IndexFunc(methods, func(m *node.Method) bool { return m.Name == name })])
 	c.Receiver, c.Method = &Expr{Name: handleName}, name
-	c.Args = k.argsOf(&f, nil)
+	c.Args = k.argsOf(nil, &f, nil)
 	k.act(c, &f)
 }
 
 // rewrite returns the assignment of the second write of the written input i
 // of the callable of f: the field that the second write of pair changes, from
-// the second sample of the field, or the whole second sample where pair names
+// the second value of the field, or the whole second value where pair names
 // no field. Each probe that writes twice has the pair of the write and its
-// read.
-func (k *caller) rewrite(f *derive.Facts, pair *derive.Pair, i int) Let {
+// read. d are the draws of a generated binding, and nil for a sample binding.
+func (k *caller) rewrite(d *draws, f *derive.Facts, pair *derive.Pair, i int) Let {
 	if pair.Changed == "" {
-		return Let{Name: writtenName, Select: "", Value: k.sampleOf(f, i, 1)}
+		return Let{Name: writtenName, Select: "", Value: k.argOf(d, f, i, 1)}
 	}
-	_, second := k.fieldSamples(f, i, pair.Changed)
+	_, second := k.fieldValues(d, f, i, pair.Changed)
 	return Let{Name: writtenName, Select: pair.Changed, Value: second}
 }
 
 // fieldSamples returns the two samples of the field name of the struct that
 // the i-th input of the callable of f takes, or points to, each converted to
-// the type of the field. The sample of a struct sets one field alone, so a
+// the type t of the field. The sample of a struct sets one field alone, so a
 // write that changes another field takes its values from the samples of the
 // field itself.
-func (k *caller) fieldSamples(f *derive.Facts, i int, name string) (first, second Expr) {
+func (k *caller) fieldSamples(f *derive.Facts, i int, name string) (first, second Expr, t *emit.TypeRef) {
 	ref := k.inputRef(f, i)
 	if ref.Form == symbol.FormOptional {
 		ref = ref.Elems[0]
@@ -257,23 +279,24 @@ func (k *caller) fieldSamples(f *derive.Facts, i int, name string) (first, secon
 	// struct.
 	field := st.Fields[slices.IndexFunc(st.Fields, func(fd *node.Field) bool { return fd.Name == name })]
 	v := k.valueOf(&field.ID, field.Name, field.Type)
-	t := k.typeOf(k.instance(field.Type))
-	return Expr{Value: typed(t, &v.Samples[0].Value)}, Expr{Value: typed(t, &v.Samples[1].Value)}
+	t = k.typeOf(k.instance(field.Type))
+	return Expr{Value: typed(t, &v.Samples[0].Value)}, Expr{Value: typed(t, &v.Samples[1].Value)}, t
 }
 
 // repartition makes the later calls of c write into another partition: each
 // input of the write of pair that the read takes by its name, such as the
 // scope and the key of Set(ctx, scope, key, value), takes a variable of its
-// own, with the first sample on the first call and the second sample on every
-// later call.
-func (k *caller) repartition(c *Closure, f *derive.Facts, pair *derive.Pair) {
+// own, with the first value on the first call and the second value on every
+// later call. d are the draws of a generated binding, and nil for a sample
+// binding.
+func (k *caller) repartition(c *Closure, d *draws, f *derive.Facts, pair *derive.Pair) {
 	for i := range f.Inputs {
 		if !slices.ContainsFunc(pair.Read.Inputs, func(r derive.Value) bool { return r.Name == f.Inputs[i].Name }) {
 			continue
 		}
 		name := selectorName + strconv.Itoa(i)
-		c.Lets = append(c.Lets, Let{Name: name, Value: k.sampleOf(f, i, 0)})
-		c.Later = append(c.Later, Let{Name: name, Value: k.sampleOf(f, i, 1)})
+		c.Lets = append(c.Lets, Let{Name: name, Value: k.argOf(d, f, i, 0)})
+		c.Later = append(c.Later, Let{Name: name, Value: k.argOf(d, f, i, 1)})
 		c.Args[inputAt(f, i)] = Expr{Name: name}
 	}
 }
@@ -283,12 +306,13 @@ func (k *caller) repartition(c *Closure, f *derive.Facts, pair *derive.Pair) {
 const selectorName = "s"
 
 // argsOf returns the arguments of a call of the callable of f: the context of
-// the closure for a parameter in the role context, and the first sample of
+// the closure for a parameter in the role context, and the first value of
 // each input. The read of pair takes the arguments that the pair binds, and
-// the write of pair the first sample of the written input. A parameter that
-// the pair leaves to its own sample takes it, and a closure of the probe
-// replaces the sample of a function that the probe supplies.
-func (k *caller) argsOf(f *derive.Facts, pair *derive.Pair) []Expr {
+// the write of pair the first value of the written input. A parameter that
+// the pair leaves to its own value takes it, and a closure of the probe
+// replaces the value of a function that the probe supplies. d are the draws
+// of a generated binding, and nil for a sample binding.
+func (k *caller) argsOf(d *draws, f *derive.Facts, pair *derive.Pair) []Expr {
 	out := make([]Expr, 0, len(f.Signature.Params))
 	if pair != nil && same(pair.Read, f) {
 		for _, a := range pair.Arguments {
@@ -297,13 +321,13 @@ func (k *caller) argsOf(f *derive.Facts, pair *derive.Pair) []Expr {
 				out = append(out, Expr{Word: ctxName})
 			case derive.ArgShared:
 				i := slices.IndexFunc(pair.Write.Inputs, func(v derive.Value) bool { return v.Name == a.Param })
-				out = append(out, k.sampleOf(pair.Write, i, 0))
+				out = append(out, k.argOf(d, pair.Write, i, 0))
 			case derive.ArgField:
-				written := k.sampleOf(pair.Write, pair.Written, 0)
+				written := k.argOf(d, pair.Write, pair.Written, 0)
 				out = append(out, Expr{Of: &written, Select: a.Field})
 			case derive.ArgOwn:
 				i := slices.IndexFunc(f.Inputs, func(v derive.Value) bool { return v.Name == a.Name })
-				out = append(out, k.sampleOf(f, i, 0))
+				out = append(out, k.argOf(d, f, i, 0))
 			}
 		}
 		return out
@@ -314,7 +338,7 @@ func (k *caller) argsOf(f *derive.Facts, pair *derive.Pair) []Expr {
 			out = append(out, Expr{Word: ctxName})
 			continue
 		}
-		out = append(out, k.sampleOf(f, i, 0))
+		out = append(out, k.argOf(d, f, i, 0))
 		i++
 	}
 	return out

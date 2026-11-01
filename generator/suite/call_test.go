@@ -355,6 +355,29 @@ func TestCall(t *testing.T) {
 			})
 		}
 
+		runs := []struct {
+			name     string
+			giveDecl string
+			give     string
+			want     bool
+		}{
+			{
+				name: "reports the mixin runs-until-cancelled of a method", giveDecl: "Worker", give: "Run",
+				want: true,
+			},
+			{name: "reports the mixin runs-until-cancelled of a function", giveDecl: "Serve", want: true},
+			{name: "reports no loop of a method without the mixin", giveDecl: "Worker", give: "Stop"},
+		}
+		for _, tt := range runs {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := called(t, generate(t, goTree, locksPackage).suites[tt.giveDecl], tt.give)
+				expect.Equal(t, got.RunsUntilCancelled, tt.want,
+					"a benchmark and a ceiling leave out a call that runs until its context ends")
+			})
+		}
+
 		t.Run("reports the mixin concurrent-readers of a method", func(t *testing.T) {
 			t.Parallel()
 

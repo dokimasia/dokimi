@@ -33,16 +33,21 @@ import (
 // the parameters in a call. Results are the results of the callable.
 //
 // Version is the field of the version of a value, Budget the time that a
-// slow callable waits, twice its budget, and Input the position of the first
-// input. Handle is the handle that a callable of the form opens-a-live-handle
+// slow callable waits, twice its budget, and Input and Second the positions
+// of the first and the second input. Handle is the handle that a callable of the form opens-a-live-handle
 // returns in place of its own, and Handled the type of the handle that it
 // wraps. Delegates reports a body that calls the callable of the fresh
-// subject, and Counts a body that counts its calls. Context is the parameter
-// of the context of the callable, and empty for a callable without one.
-// Guards reports a body that returns the error of a cancelled context first,
-// so the defect reports a cancelled context as the callable does. A panic, a
-// body that breaks cancellation and a body that reads the error of the fresh
-// subject have no guard.
+// subject, and Counts a body that counts its calls. Keeps reports a body that
+// keeps the handle that builds the defect, to read the injector of the handle
+// or to build a fresh subject for each call. Acquire is the callable that the
+// param open of the mixin leak-free names, which a body of the form
+// opens-without-closing calls once more on a dependency of its own, and empty
+// for any other body. Context is the parameter of the context of the
+// callable, and empty for a callable without one. Guards reports a body that
+// returns the error of a cancelled context first, so the defect reports a
+// cancelled context as the callable does. A panic, a body that breaks
+// cancellation and a body that reads the error of the fresh subject have no
+// guard.
 type Defect struct {
 	Method    *emit.Method
 	Handle    *Defect
@@ -53,12 +58,15 @@ type Defect struct {
 	Body      string
 	Version   string
 	Context   string
+	Acquire   string
 	Args      []string
 	Results   []Outcome
 	Budget    time.Duration
 	Input     int
+	Second    int
 	Delegates bool
 	Counts    bool
+	Keeps     bool
 	Guards    bool
 }
 
@@ -105,6 +113,14 @@ const (
 	bodyLiveHandle     = "live-handle"
 	bodyLead           = "lead"
 	bodyFirstPage      = "first-page"
+	bodyZeroBefore     = "zero-before-failure"
+	bodySwallow        = "swallow"
+	bodyFailAfter      = "fail-after-failure"
+	bodySampleAfter    = "sample-after-failure"
+	bodyFreshEachCall  = "fresh-each-call"
+	bodyOpenOnFailure  = "open-on-failure"
+	bodyZeroSecond     = "zero-second"
+	bodyKeepFirst      = "keep-first"
 )
 
 // bodies contains the body of the override of each defect form that a suite
@@ -146,11 +162,20 @@ var bodies = map[spec.DefectFormID]string{
 	spec.ReplaysReversed:        bodyReverse,
 	spec.OpensALiveHandle:       bodyLiveHandle,
 	spec.LeadsOn:                bodyLead,
-	spec.KeepsFailedWrites:      bodyZero,
+	spec.KeepsFailedWrites:      bodyZeroBefore,
 	spec.PutRefuses:             bodyFail,
 	spec.CompensationRefuses:    bodyFail,
 	spec.FilesRefusedWrite:      bodySample,
 	spec.ServesOnePage:          bodyFirstPage,
+	spec.SwallowsFailure:        bodySwallow,
+	spec.GivesUpEarly:           bodyFailAfter,
+	spec.HalfApplied:            bodySampleAfter,
+	spec.CommitsOnFailure:       bodySampleAfter,
+	spec.NeverOpens:             bodyFreshEachCall,
+	spec.BalancesEachCall:       bodyFreshEachCall,
+	spec.OpensWithoutClosing:    bodyOpenOnFailure,
+	spec.IgnoresTheSecondInput:  bodyEcho,
+	spec.KeepsItsFirstResult:    bodyKeepFirst,
 }
 
 // partnerOf returns the pair of the partner name of the check c: the partner
@@ -164,17 +189,20 @@ func partnerOf(c *derive.Check, name string) *derive.Pair {
 	return c.Pairs[c.Claim.Partners[i].Name]
 }
 
-// delegating are the bodies that call the callable of the fresh subject, and
-// counting the bodies that count the calls of the override.
+// delegating are the bodies that call the callable of the fresh subject,
+// counting the bodies that count the calls of the override, and keeping the
+// bodies that keep the handle that builds the defect.
 var (
 	delegating = []string{
 		bodyPanicLater, bodyFailLater, bodyFailSuccess, bodyZeroLater, bodyBesideFalse, bodyBesideError,
 		bodySampleSuccess, bodyUncancelled, bodyVersionZero, bodyDrainTwice, bodyReorder, bodyReverse, bodySlow,
-		bodyFirstPage, bodyLiveHandle,
+		bodyFirstPage, bodyLiveHandle, bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyOpenOnFailure,
+		bodyZeroSecond, bodyKeepFirst,
 	}
 	counting = []string{
 		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyDrift, bodyDescend, bodyVersionDescend, bodyReorder,
 	}
+	keeping = []string{bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyFreshEachCall}
 )
 
 // cancelling are the bodies that do not return the error of a cancelled
@@ -182,8 +210,13 @@ var (
 // answer to a cancelled context.
 var cancelling = []string{bodyPanic, bodyBesideError, bodyUncancelled}
 
-// budgetParam is the param of the mixin timeout that states the budget.
-const budgetParam = "duration"
+// budgetParam is the param of the mixin timeout that states the budget, and
+// openParam the param of the mixin leak-free whose value is the callable that
+// acquires a resource.
+const (
+	budgetParam = "duration"
+	openParam   = "open"
+)
 
 // defect returns the planted defect of the check c, and whether s already has
 // it, because each break of each callable has one planted defect.
@@ -204,11 +237,24 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 		}
 	}
 	d := &Defect{Name: name, Doc: c.Clause, Body: bodies[form.ID]}
-	if d.Body == bodyEcho || d.Body == bodyFirstPage {
+	if form.ID == spec.IgnoresTheSecondInput && !reflect.DeepEqual(f.Results[0].Shape, f.Inputs[0].Shape) {
+		// A callable whose result has another type cannot return its first
+		// input, so it calls with a zero second input.
+		d.Body = bodyZeroSecond
+	}
+	switch d.Body {
+	case bodyEcho, bodyFirstPage, bodyKeepFirst:
 		d.Input = inputAt(f, 0)
+	case bodyZeroSecond:
+		d.Second = inputAt(f, 1)
+	default:
 	}
 	d.Delegates = slices.Contains(delegating, d.Body)
 	d.Counts = slices.Contains(counting, d.Body)
+	d.Keeps = slices.Contains(keeping, d.Body)
+	if d.Body == bodyOpenOnFailure {
+		d.Acquire = nameOf(b.param(openParam))
+	}
 	if f.Declaration != "" {
 		d.Type = k.e.JoinName(defectWord, name)
 	}
@@ -283,6 +329,42 @@ func (k *caller) signatureOf(f *derive.Facts) (*emit.Method, []string) {
 	return m, args
 }
 
+// spellsZero reports whether the value v spells the zero value of its type:
+// false, the number 0, the empty string, nil, a conversion of such a value,
+// or a composite literal whose entries are named fields that each spell a
+// zero value. eidos writes a number as its shortest decimal text, so 0 is the
+// only text of a zero number. A list or a map literal with an entry is not
+// nil, so it does not spell a zero value. A name and a call do not spell a
+// zero value either, because their text does not show their value.
+func spellsZero(v *emit.Value) bool {
+	switch v.Kind {
+	case emit.ValueLiteral:
+		switch v.Literal {
+		case emit.LiteralBool:
+			return v.Text == falseSpelling
+		case emit.LiteralInt, emit.LiteralFloat:
+			return v.Text == zeroSpelling
+		default:
+			return v.Text == ""
+		}
+	case emit.ValueConversion:
+		return spellsZero(v.Inner)
+	case emit.ValueComposite:
+		return !slices.ContainsFunc(v.Fields, func(f emit.ValueField) bool {
+			return f.Name == "" || !spellsZero(&f.Value)
+		})
+	default:
+		return false
+	}
+}
+
+// falseSpelling is the text of the literal false, and zeroSpelling the text
+// of the number 0.
+const (
+	falseSpelling = "false"
+	zeroSpelling  = "0"
+)
+
 // outcomesOf returns the results of the callable of f, each with its role
 // and a sample that is not its zero value.
 func (k *caller) outcomesOf(f *derive.Facts) []Outcome {
@@ -306,7 +388,7 @@ func (k *caller) outcomesOf(f *derive.Facts) []Outcome {
 			// defect that returns it is seen. The two samples differ, so
 			// one of them is not the zero value.
 			sample := &v.Samples[1].Value
-			if reflect.DeepEqual(*sample, v.Zero) {
+			if spellsZero(sample) {
 				sample = &v.Samples[0].Value
 			}
 			res.Sample = &Expr{Value: typed(ref, sample)}

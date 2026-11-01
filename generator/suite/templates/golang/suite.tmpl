@@ -1,4 +1,4 @@
-{{- use "testing"}}{{use "go.dokimi.dev/conform"}}
+{{- $testing := import "testing"}}{{$conform := import "go.dokimi.dev/conform"}}
 {{- range .Records}}
 {{- $d := .Decl}}
 {{- $c := .Data}}
@@ -21,17 +21,16 @@
 {{- $over := suiteCamel $n.Over}}
 {{- $newOver := suiteCamel $n.NewOver}}
 {{- $subjects := suiteCamel $n.Subjects}}
-{{- if $c.Calls}}{{use "context"}}{{use "go.dokimi.dev/assert/prop"}}{{end}}
 {{- template "suite.header" $c}}
 
 // The suite refers to the compatibility witness of its runtime.
-var _ = conform.CompatV1
+var _ = {{$conform}}.CompatV1
 
 {{docs (wrapdocs (printf `The names that a test of %s writes.` $c.Declaration))}}
 {{- ""}}type (
-	{{$handle}} = conform.Handle[{{$s}}]
-	{{$check}} = conform.Check[{{$s}}]
-	{{$option}} = conform.Option[{{$s}}]
+	{{$handle}} = {{$conform}}.Handle[{{$s}}]
+	{{$check}} = {{$conform}}.Check[{{$s}}]
+	{{$option}} = {{$conform}}.Option[{{$s}}]
 )
 {{- with $c.Methods}}
 
@@ -70,14 +69,14 @@ var _ = conform.CompatV1
 
 {{docs (wrapdocs (printf `%s is the name of %s, with the identities of its checks.` $type .Name))}}
 {{- ""}}type {{$type}} struct {
-	conform.Callable[{{$s}}]
+	{{$conform}}.Callable[{{$s}}]
 }
 {{- range $c.Checks}}
 {{- if eq .Type $callable.Type}}
 {{- $method := suitePascal .Method}}
 
 {{docs (wrapdocs (printf `%s returns the identity of the check that %s.` $method .Statement))}}
-{{- ""}}func (c {{$type}}) {{$method}}() conform.ID[{{$s}}] {
+{{- ""}}func (c {{$type}}) {{$method}}() {{$conform}}.ID[{{$s}}] {
 	return c.Check({{printf "%q" .Segment}})
 }
 {{- end}}
@@ -86,7 +85,7 @@ var _ = conform.CompatV1
 {{- if eq .Type $callable.Type}}
 
 {{docs (wrapdocs (printf `%s returns the identity of the check that %s.` .Method .Statement))}}
-{{- ""}}func (c {{$type}}) {{.Method}}() conform.ID[{{$s}}] {
+{{- ""}}func (c {{$type}}) {{.Method}}() {{$conform}}.ID[{{$s}}] {
 	return c.Check({{printf "%q" .Segment}})
 }
 {{- end}}
@@ -97,7 +96,7 @@ var _ = conform.CompatV1
 {{- $method := suitePascal .}}
 
 {{docs (wrapdocs (printf `%s returns the identity of the check %s/%s.` $method $callable.Name .))}}
-{{- ""}}func (c {{$type}}) {{$method}}() conform.ID[{{$s}}] {
+{{- ""}}func (c {{$type}}) {{$method}}() {{$conform}}.ID[{{$s}}] {
 	return c.Check({{printf "%q" .}})
 }
 {{- end}}
@@ -106,34 +105,41 @@ var _ = conform.CompatV1
 {{- end}}
 
 {{docs (wrapdocs (printf `%s returns the checks of %s, and the calls and the budgets of its callables.` $suite $c.Declaration))}}
-{{- ""}}func {{$suite}}() conform.Suite[{{$s}}] {
-	return conform.Suite[{{$s}}]{
+{{- ""}}func {{$suite}}() {{$conform}}.Suite[{{$s}}] {
+	return {{$conform}}.Suite[{{$s}}]{
 		Declaration: {{printf "%q" $c.Declaration}},
 		Package:     {{printf "%q" $c.Package}},
-		Generator:   conform.Generator{Name: "dokimi", Version: {{printf "%q" $c.Version}}},
+		Generator:   {{$conform}}.Generator{Name: "dokimi", Version: {{printf "%q" $c.Version}}},
 {{- if or $c.Checks $c.Derived}}
-		Checks: []conform.Check[{{$s}}]{
-{{- range $c.Derived}}{{use "go.dokimi.dev/spec"}}{{use "go.dokimi.dev/conform/probe"}}
+		Checks: []{{$conform}}.Check[{{$s}}]{
+{{- range $c.Derived}}{{$spec := import "go.dokimi.dev/spec"}}{{$probe := import "go.dokimi.dev/conform/probe"}}
 			{
 				ID:          {{$checks}}{{with .Field}}.{{.}}{{end}}.{{.Method}}(),
 				Statement:   {{printf "%q" .Statement}},
-				Claim:       spec.{{.Claim}},
-				Probe:       spec.{{.Probe}},
-				Reason:      spec.{{.Reason}},
-				Law:         spec.{{.Law}},
-				Machineries: []spec.MachineryID{ {{- range $i, $m := .Machineries}}{{if $i}}, {{end}}spec.{{$m}}{{end -}} },
+				Claim:       {{$spec}}.{{.Claim}},
+				Probe:       {{$spec}}.{{.Probe}},
+				Reason:      {{$spec}}.{{.Reason}},
+				Law:         {{$spec}}.{{.Law}},
+				Machineries: []{{$spec}}.MachineryID{ {{- range $i, $m := .Machineries}}{{if $i}}, {{end}}{{$spec}}.{{$m}}{{end -}} },
 {{- if .Shallow}}
 				Shallow:     true,
 {{- end}}
 {{- with .Entails}}
-				Entails:     []conform.ID[{{$s}}]{ {{- range $i, $e := .}}{{if $i}}, {{end}}{{$checks}}{{with $e.Field}}.{{.}}{{end}}.{{$e.Method}}(){{end -}} },
+				Entails:     []{{$conform}}.ID[{{$s}}]{ {{- range $i, $e := .}}{{if $i}}, {{end}}{{$checks}}{{with $e.Field}}.{{.}}{{end}}.{{$e.Method}}(){{end -}} },
 {{- end}}
-				Apply: func(h *{{$handle}}) {
-					probe.{{.Probe}}(h{{range .Args}}, {{template "suite.arg" .}}{{end}})
+{{- if .Generated}}
+				Property: func(h *{{$handle}}, c *{{import "go.dokimi.dev/assert/prop"}}.Case) {
+{{- range .Draws}}{{template "suite.draw" .}}{{end}}
+					{{$probe}}.{{.Probe}}(h{{range .Args}}, {{template "suite.arg" .}}{{end}})
 				},
+{{- else}}
+				Apply: func(h *{{$handle}}) {
+					{{$probe}}.{{.Probe}}(h{{range .Args}}, {{template "suite.arg" .}}{{end}})
+				},
+{{- end}}
 				Defect: {{suiteCamel .Defect}},
-{{- if .Clock}}{{use "testing/synctest"}}
-				Around: synctest.Test,
+{{- if .Clock}}
+				Around: {{import "testing/synctest"}}.Test,
 {{- end}}
 			},
 {{- end}}
@@ -147,8 +153,11 @@ var _ = conform.CompatV1
 				Apply:     {{spell .Apply}},
 {{- end}}
 				Defect:    {{spell .Defect}},
-{{- with .Doors}}
-				Doors:     conform.Doors[{{$s}}]{{"{"}}{{range $i, $d := .}}{{if $i}}, {{end}}{{$d.Field}}: {{spell $d.Func}}{{end}}{{"}"}},
+{{- if or .Doors .Values}}
+				Doors:     {{$conform}}.Doors[{{$s}}]{{"{"}}{{range $i, $d := .Doors}}{{if $i}}, {{end}}{{$d.Field}}: {{spell $d.Func}}{{end}}{{if and .Doors .Values}}, {{end}}{{with .Values}}Values: []{{$conform}}.Supplied[{{$s}}]{{"{"}}{{range $i, $v := .}}{{if $i}}, {{end}}{{$conform}}.Supply({{spell $v}}){{end}}{{"}"}}{{end}}{{"}"}},
+{{- end}}
+{{- with .Machineries}}{{$spec := import "go.dokimi.dev/spec"}}
+				Machineries: []{{$spec}}.MachineryID{ {{- range $i, $m := .}}{{if $i}}, {{end}}{{$spec}}.{{$m}}{{end -}} },
 {{- end}}
 {{- with .Options}}
 				Options:   {{spell .}},
@@ -163,32 +172,33 @@ var _ = conform.CompatV1
 {{- end}}
 		},
 {{- end}}
-{{- with $c.Derivation.Refusals}}{{use "go.dokimi.dev/spec"}}
-		Refusals: []conform.Refusal{
+{{- with $c.Derivation.Refusals}}{{$spec := import "go.dokimi.dev/spec"}}
+		Refusals: []{{$conform}}.Refusal{
 {{- range .}}
 			{
-				Claim:    spec.{{suitePascal (print .Claim)}},
+				Claim:    {{$spec}}.{{suitePascal (print .Claim)}},
 				Callable: {{printf "%q" (suiteIdentity $c.Declaration (not $c.Func) .Callable "")}},
+				Gate:     {{$spec}}.{{suitePascal (print .Gate)}},
 				Why:      {{printf "%q" .Why}},
 				Remedy:   {{printf "%q" .Remedy}},
 			},
 {{- end}}
 		},
 {{- end}}
-{{- with $c.Derivation.Unclaimed}}{{use "go.dokimi.dev/spec"}}
-		Unclaimed: []conform.Unclaimed{
+{{- with $c.Derivation.Unclaimed}}{{$spec := import "go.dokimi.dev/spec"}}
+		Unclaimed: []{{$conform}}.Unclaimed{
 {{- range .}}
 			{
 				Classification: {{printf "%q" .Classification}},
 				Callable:       {{printf "%q" (suiteIdentity $c.Declaration (not $c.Func) .Callable "")}},
-				Stance:         spec.{{suitePascal (print .Stance)}},
+				Stance:         {{$spec}}.{{suitePascal (print .Stance)}},
 				Note:           {{printf "%q" .Note}},
 			},
 {{- end}}
 		},
 {{- end}}
 {{- with $c.Calls}}
-		Calls: []conform.Call[{{$s}}]{
+		Calls: []{{$conform}}.Call[{{$s}}]{
 {{- range .}}
 			{
 				Calls:    {{suiteCamel .Var}},
@@ -203,74 +213,77 @@ var _ = conform.CompatV1
 {{- if .Waits}}
 				Waits: true,
 {{- end}}
+{{- if .RunsUntilCancelled}}
+				RunsUntilCancelled: true,
+{{- end}}
 			},
 {{- end}}
 		},
 {{- end}}
-{{- if or $c.Using $c.Starts $c.Generated $c.Variants $c.Streams $c.Readers $c.Constants $c.Dynamic $c.Errors}}
-		Using: []prop.Option{
+{{- if or $c.Using $c.Starts $c.Generated $c.Variants $c.Streams $c.Readers $c.Constants $c.Dynamic $c.Errors}}{{$prop := import "go.dokimi.dev/assert/prop"}}
+		Using: []{{$prop}}.Option{
 {{- range $c.Using}}
-			prop.Using(prop.SampledFrom({{range $i, $m := .Members}}{{if $i}}, {{end}}{{value $m}}{{end}})),
+			{{$prop}}.Using({{$prop}}.SampledFrom({{range $i, $m := .Members}}{{if $i}}, {{end}}{{value $m}}{{end}})),
 {{- end}}
 {{- range $c.Starts}}
-			prop.Using({{suiteCamel .Name}}),
+			{{$prop}}.Using({{suiteCamel .Name}}),
 {{- end}}
 {{- range $c.Generated}}
 {{- if .Leaves}}
-			prop.Using(prop.Recursive({{template "suite.basis" .}},
-				func(prop.Generator[{{spell .Type}}]) prop.Generator[{{spell .Type}}] {
+			{{$prop}}.Using({{$prop}}.Recursive({{template "suite.basis" .}},
+				func({{$prop}}.Generator[{{spell .Type}}]) {{$prop}}.Generator[{{spell .Type}}] {
 					return {{template "suite.generated" .}}
-				}, prop.MaxLeaves({{.Leaves}}))),
+				}, {{$prop}}.MaxLeaves({{.Leaves}}))),
 {{- else}}
-			prop.Using({{template "suite.generated" .}}),
+			{{$prop}}.Using({{template "suite.generated" .}}),
 {{- end}}
 {{- end}}
 {{- range $c.Variants}}
 {{- $interface := spell .Type}}
-			prop.Using(prop.OneOf(
+			{{$prop}}.Using({{$prop}}.OneOf(
 {{- range .Members}}
-				prop.Composite(func(c *prop.Case) {{$interface}} {
+				{{$prop}}.Composite(func(c *{{$prop}}.Case) {{$interface}} {
 {{- if .Address}}
-					v := c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+					v := c.Draw({{$prop}}.Of[{{spell .Type}}](), {{printf "%q" .Label}})
 					return &v
 {{- else}}
-					return c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+					return c.Draw({{$prop}}.Of[{{spell .Type}}](), {{printf "%q" .Label}})
 {{- end}}
 				}),
 {{- end}}
 			)),
 {{- end}}
 {{- range $c.Streams}}
-			prop.Using(conform.Stream[{{spell .Type}}](prop.Of[{{spell .Elem}}]())),
+			{{$prop}}.Using({{$conform}}.Stream[{{spell .Type}}]({{$prop}}.Of[{{spell .Elem}}]())),
 {{- end}}
 {{- range $c.Readers}}
-			prop.Using(prop.Composite(func(c *prop.Case) {{spell .Type}} {
-				return {{if .Wrap.Kind}}{{value .Wrap}}({{end}}conform.NewBytes(c.Draw(prop.Of[[]byte](), {{printf "%q" .Label}})){{if .Wrap.Kind}}){{end}}
+			{{$prop}}.Using({{$prop}}.Composite(func(c *{{$prop}}.Case) {{spell .Type}} {
+				return {{if .Wrap.Kind}}{{value .Wrap}}({{end}}{{$conform}}.NewBytes(c.Draw({{$prop}}.Of[[]byte](), {{printf "%q" .Label}})){{if .Wrap.Kind}}){{end}}
 			})),
 {{- end}}
 {{- range $c.Constants}}
-			prop.Using(prop.Composite(func(*prop.Case) {{spell .Type}} { return {{value .Value}} })),
+			{{$prop}}.Using({{$prop}}.Composite(func(*{{$prop}}.Case) {{spell .Type}} { return {{value .Value}} })),
 {{- end}}
 {{- if $c.Dynamic}}
-			prop.Using(prop.Composite(func(c *prop.Case) any {
-				switch c.Draw(prop.Integer(0, 2), "any") {
+			{{$prop}}.Using({{$prop}}.Composite(func(c *{{$prop}}.Case) any {
+				switch c.Draw({{$prop}}.Integer(0, 2), "any") {
 				case 0:
-					return c.Draw(prop.String(), "any.string")
+					return c.Draw({{$prop}}.String(), "any.string")
 				case 1:
-					return c.Draw(prop.Of[int](), "any.int")
+					return c.Draw({{$prop}}.Of[int](), "any.int")
 				}
-				return c.Draw(prop.Boolean(), "any.bool")
+				return c.Draw({{$prop}}.Boolean(), "any.bool")
 			})),
 {{- end}}
 {{- if $c.Errors}}
-			prop.Using(prop.SampledFrom[error](nil, conform.ErrGenerated)),
+			{{$prop}}.Using({{$prop}}.SampledFrom[error](nil, {{$conform}}.ErrGenerated)),
 {{- end}}
 		},
 {{- end}}
 {{- with $c.Sinks}}
-		Sinks: []conform.Sink{
+		Sinks: []{{$conform}}.Sink{
 {{- range .}}
-			conform.SinkOf[{{spell .}}](),
+			{{$conform}}.SinkOf[{{spell .}}](),
 {{- end}}
 		},
 {{- end}}
@@ -279,41 +292,41 @@ var _ = conform.CompatV1
 {{- if $c.Func}}
 
 {{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to subject.` $run $c.Declaration))}}
-{{- ""}}func {{$run}}(t *testing.T, subject {{$s}}, opts ...{{$option}}) {
+{{- ""}}func {{$run}}(t *{{$testing}}.T, subject {{$s}}, opts ...{{$option}}) {
 	t.Helper()
 	{{$fromHandle}}(t, {{$subjects}}(subject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s applies the same checks to a subject that newSubject builds from the handle of each check.` $fromHandle))}}
-{{- ""}}func {{$fromHandle}}(t *testing.T, newSubject func(h *{{$handle}}) {{$s}}, opts ...{{$option}}) {
+{{- ""}}func {{$fromHandle}}(t *{{$testing}}.T, newSubject func(h *{{$handle}}) {{$s}}, opts ...{{$option}}) {
 	t.Helper()
-	conform.Run(t, {{$suite}}(), newSubject, opts...)
+	{{$conform}}.Run(t, {{$suite}}(), newSubject, opts...)
 }
 
 {{docs (wrapdocs (printf `%s registers on f the fuzz target of the property checks of %s on subject.` $fuzz $c.Declaration))}}
-{{- ""}}func {{$fuzz}}(f *testing.F, subject {{$s}}, opts ...{{$option}}) {
+{{- ""}}func {{$fuzz}}(f *{{$testing}}.F, subject {{$s}}, opts ...{{$option}}) {
 	f.Helper()
-	conform.Fuzz(f, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
+	{{$conform}}.Fuzz(f, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s applies the allocation ceiling of %s and its checks that count allocations, and the ceilings and the checks that opts add, to subject.` $budgets $c.Declaration))}}
-{{- ""}}func {{$budgets}}(t *testing.T, subject {{$s}}, opts ...{{$option}}) {
+{{- ""}}func {{$budgets}}(t *{{$testing}}.T, subject {{$s}}, opts ...{{$option}}) {
 	t.Helper()
-	conform.RunBudgets(t, {{$suite}}(), {{$subjects}}(subject), opts...)
+	{{$conform}}.RunBudgets(t, {{$suite}}(), {{$subjects}}(subject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s measures subject under the ceilings of the budget of %s.` $bench $c.Declaration))}}
-{{- ""}}func {{$bench}}(b conform.B, subject {{$s}}, opts ...{{$option}}) {
+{{- ""}}func {{$bench}}(b {{$conform}}.B, subject {{$s}}, opts ...{{$option}}) {
 	b.Helper()
-	conform.Bench(b, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
+	{{$conform}}.Bench(b, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
 }
 
 {{- if $n.BenchParallel}}
 
 {{docs (wrapdocs (printf `%s measures subject on GOMAXPROCS goroutines at once, under the ceilings of the budget of %s.` $benchParallel $c.Declaration))}}
-{{- ""}}func {{$benchParallel}}(b *testing.B, subject {{$s}}, opts ...{{$option}}) {
+{{- ""}}func {{$benchParallel}}(b *{{$testing}}.B, subject {{$s}}, opts ...{{$option}}) {
 	b.Helper()
-	conform.BenchParallel(b, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
+	{{$conform}}.BenchParallel(b, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
 }
 {{- end}}
 
@@ -324,40 +337,40 @@ var _ = conform.CompatV1
 {{- else}}
 
 {{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to a fresh subject of newSubject for each check.` $run $c.Declaration))}}
-{{- ""}}func {{$run}}[T {{$s}}](t *testing.T, newSubject func() T, opts ...{{$option}}) {
+{{- ""}}func {{$run}}[T {{$s}}](t *{{$testing}}.T, newSubject func() T, opts ...{{$option}}) {
 	t.Helper()
 	{{$fromHandle}}(t, func(*{{$handle}}) T { return newSubject() }, opts...)
 }
 
 {{docs (wrapdocs (printf `%s applies the same checks to a subject that newSubject builds from the handle of each check.` $fromHandle))}}
-{{- ""}}func {{$fromHandle}}[T {{$s}}](t *testing.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+{{- ""}}func {{$fromHandle}}[T {{$s}}](t *{{$testing}}.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	t.Helper()
-	conform.Run(t, {{$suite}}(), {{$subjects}}(newSubject), opts...)
+	{{$conform}}.Run(t, {{$suite}}(), {{$subjects}}(newSubject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s registers on f the fuzz target of the property checks of callable, on a subject that newSubject builds from the handle of each case.` $fuzz))}}
-{{- ""}}func {{$fuzz}}[T {{$s}}](f *testing.F, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+{{- ""}}func {{$fuzz}}[T {{$s}}](f *{{$testing}}.F, callable {{$conform}}.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	f.Helper()
-	conform.Fuzz(f, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
+	{{$conform}}.Fuzz(f, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s applies the allocation ceilings of %s and its checks that count allocations, and the ceilings and the checks that opts add, to a fresh subject of newSubject for each case.` $budgets $c.Declaration))}}
-{{- ""}}func {{$budgets}}[T {{$s}}](t *testing.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+{{- ""}}func {{$budgets}}[T {{$s}}](t *{{$testing}}.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	t.Helper()
-	conform.RunBudgets(t, {{$suite}}(), {{$subjects}}(newSubject), opts...)
+	{{$conform}}.RunBudgets(t, {{$suite}}(), {{$subjects}}(newSubject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s measures callable on a subject of newSubject, under the ceilings of its budget.` $bench))}}
-{{- ""}}func {{$bench}}[T {{$s}}](b conform.B, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+{{- ""}}func {{$bench}}[T {{$s}}](b {{$conform}}.B, callable {{$conform}}.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	b.Helper()
-	conform.Bench(b, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
+	{{$conform}}.Bench(b, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
 }
 {{- if $n.BenchParallel}}
 
 {{docs (wrapdocs (printf `%s measures callable on a subject of newSubject on GOMAXPROCS goroutines at once, under the ceilings of its budget.` $benchParallel))}}
-{{- ""}}func {{$benchParallel}}[T {{$s}}](b *testing.B, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+{{- ""}}func {{$benchParallel}}[T {{$s}}](b *{{$testing}}.B, callable {{$conform}}.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	b.Helper()
-	conform.BenchParallel(b, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
+	{{$conform}}.BenchParallel(b, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
 }
 {{- end}}
 
@@ -367,6 +380,7 @@ var _ = conform.CompatV1
 }
 {{- end}}
 {{- range $c.Calls}}
+{{- $prop := import "go.dokimi.dev/assert/prop"}}
 {{- $name := $c.Declaration}}
 {{- with .Field}}{{$name = printf "%s.%s" $c.Declaration .}}{{end}}
 {{- $drawn := false}}
@@ -380,26 +394,16 @@ var _ = conform.CompatV1
 {{- end}}
 
 {{docs (wrapdocs (printf `%s generates the calls of %s with the inputs that each case draws.` (suiteCamel .Var) $name))}}
-{{- ""}}var {{suiteCamel .Var}} = prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) func(context.Context, {{$s}}) error {
+{{- ""}}var {{suiteCamel .Var}} = {{$prop}}.Composite(func({{if $drawn}}c {{end}}*{{$prop}}.Case) func({{import "context"}}.Context, {{$s}}) error {
 {{- range .Params}}
 {{- if .Sample}}
 	{{.Name}} := {{if .Variadic}}[]{{spell .Type}}{ {{- value .Sample -}} }{{else}}{{value .Sample}}{{end}}
-{{- else if or .Funcs .Input}}
-{{- range .Funcs}}{{template "suite.results" .}}{{end}}
-{{- if .Input}}
-	{{.Name}} := &{{suiteCamel .Input}}{
-{{- range .Funcs}}
-		{{suiteCamel .Field}}: {{template "suite.func" .}},
-{{- end}}
-	}
-{{- else}}
-	{{.Name}} := {{template "suite.func" (index .Funcs 0)}}
-{{- end}}
+{{- else if or .Funcs .Input}}{{template "suite.generated.param" .}}
 {{- else if not (or .Context .Omitted)}}
-	{{.Name}} := c.Draw({{if or .Variadic .Receive}}prop.List(prop.Of[{{spell .Type}}]()){{else}}prop.Of[{{spell .Type}}](){{end}}, {{printf "%q" .Label}})
+	{{.Name}} := c.Draw({{if or .Variadic .Receive}}{{$prop}}.List({{$prop}}.Of[{{spell .Type}}]()){{else}}{{$prop}}.Of[{{spell .Type}}](){{end}}, {{printf "%q" .Label}})
 {{- end}}
 {{- end}}
-	return func({{if $context}}ctx{{else}}_{{end}} context.Context, subject {{$s}}) error {
+	return func({{if $context}}ctx{{else}}_{{end}} {{import "context"}}.Context, subject {{$s}}) error {
 {{- if .Returns}}
 		{{with .Assign}}{{.}} {{end}}{{template "suite.call" .}}
 		return {{.Returns}}
@@ -410,30 +414,31 @@ var _ = conform.CompatV1
 })
 {{- end}}
 {{- range $c.Starts}}
+{{- $prop := import "go.dokimi.dev/assert/prop"}}
 {{- $start := suiteCamel .Name}}
 {{- $doc := printf `%s generates the values of %s that keep or change each field of its starting value.` $start .Type.Spelling}}
 {{- if .Whole}}{{$doc = printf `%s generates the values of %s that keep or change its starting value.` $start .Type.Spelling}}
 {{- else if not .Fields}}{{$doc = printf `%s generates the starting value of %s, which has no field to change.` $start .Type.Spelling}}{{end}}
 
 {{docs (wrapdocs $doc)}}
-{{- ""}}var {{$start}} = prop.Composite(func({{if or .Whole .Fields}}c {{end}}*prop.Case) {{spell .Type}} {
+{{- ""}}var {{$start}} = {{$prop}}.Composite(func({{if or .Whole .Fields}}c {{end}}*{{$prop}}.Case) {{spell .Type}} {
 {{- if .Whole}}
-	changed := c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
-	if c.Draw(prop.Boolean(), {{printf "%q" (printf "%s.changed" .Label)}}) {
+	changed := c.Draw({{$prop}}.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+	if c.Draw({{$prop}}.Boolean(), {{printf "%q" (printf "%s.changed" .Label)}}) {
 		return changed
 	}
 	return {{value .Value}}
 {{- else if not .Fields}}
 	return {{if .Seed}}{{spell .Seed}}().Build(){{else}}{{value .Value}}{{end}}
 {{- else}}
-	changed := c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+	changed := c.Draw({{$prop}}.Of[{{spell .Type}}](), {{printf "%q" .Label}})
 {{- if .Seed}}
 	value := {{spell .Seed}}().Build()
 {{- else}}
 	value := {{value .Value}}
 {{- end}}
 {{- range .Fields}}
-	if c.Draw(prop.Boolean(), {{printf "%q" .Label}}) {
+	if c.Draw({{$prop}}.Boolean(), {{printf "%q" .Label}}) {
 		value.{{.Name}} = changed.{{.Name}}
 	}
 {{- end}}
@@ -585,13 +590,22 @@ classification with its stance and its note.
 {{- if $d.Counts}}
 	calls int
 {{- end}}
-{{- if eq $d.Body "slow"}}{{use "go.dokimi.dev/assert"}}
-	clock assert.Clock
+{{- if $d.Keeps}}
+	h *{{.Handle}}
+{{- end}}
+{{- if $d.Acquire}}
+	leak *{{import "go.dokimi.dev/conform"}}.Dependency
+{{- end}}
+{{- if eq $d.Body "slow"}}
+	clock {{import "go.dokimi.dev/assert"}}.Clock
+{{- end}}
+{{- if eq $d.Body "keep-first"}}
+	first *{{spell (index $d.Method.Returns.Items 0).Type}}
 {{- end}}
 }
 
 {{docs (wrapdocs (printf `%s is the override of the planted defect.` $d.Method.Name))}}
-{{- ""}}func ({{if or $d.Delegates $d.Counts}}d {{end}}*{{$type}}) {{$d.Method.Name}}({{params $d.Method.Params}}){{results $d.Method.Returns}} {
+{{- ""}}func ({{if or $d.Delegates $d.Counts $d.Keeps}}d {{end}}*{{$type}}) {{$d.Method.Name}}({{params $d.Method.Params}}){{results $d.Method.Returns}} {
 {{- template "suite.defect.body" (suiteBody $d (printf "d.%s.%s" .Embedded $d.Method.Name) "d.")}}
 }
 {{- with $d.Handle}}
@@ -610,7 +624,7 @@ classification with its stance and its note.
 
 {{docs (wrapdocs (printf `%s returns the planted defect of %s over a fresh subject.` $new $d.Doc))}}
 {{- ""}}func {{$new}}(h *{{.Handle}}) {{.Subject}} {
-	return &{{$type}}{ {{- .Embedded}}: h.Fresh(){{if eq $d.Body "slow"}}, clock: h.Clock(){{end -}} }
+	return &{{$type}}{ {{- .Embedded}}: h.Fresh(){{if $d.Keeps}}, h: h{{end}}{{if $d.Acquire}}, leak: h.Injector().Dependency(){{end}}{{if eq $d.Body "slow"}}, clock: h.Clock(){{end -}} }
 }
 {{- else}}
 
@@ -622,8 +636,14 @@ classification with its stance and its note.
 {{- if $d.Counts}}
 	calls := 0
 {{- end}}
+{{- if $d.Acquire}}
+	leak := h.Injector().Dependency()
+{{- end}}
 {{- if eq $d.Body "slow"}}
 	clock := h.Clock()
+{{- end}}
+{{- if eq $d.Body "keep-first"}}
+	var first *{{spell (index $d.Method.Returns.Items 0).Type}}
 {{- end}}
 	return func({{params $d.Method.Params}}){{results $d.Method.Returns}} {
 {{- template "suite.defect.body" (suiteBody $d "fresh" "")}}
@@ -635,7 +655,9 @@ classification with its stance and its note.
 {{- /*
 suite.defect.body writes the body of the override of a planted defect. Call
 is the call of the callable of the fresh subject, and State the prefix of the
-counter and of the clock of the defect.
+counter, the clock, the handle, the dependency and the first result of the
+defect. A body that keeps the handle reads the injector of the handle, or
+builds a fresh subject of the handle for each call.
 */}}
 {{- define "suite.defect.body"}}
 {{- $d := .Defect}}
@@ -748,19 +770,19 @@ counter and of the clock of the defect.
 		r0 = append(r0[:1:1], r0...)
 	}
 	return
-{{- else if eq $d.Body "reorder"}}{{use "slices"}}
+{{- else if eq $d.Body "reorder"}}
 	{{$all}} = {{$call}}
 	{{.State}}calls++
 	if {{.State}}calls > 1 {
-		slices.Reverse(r0)
+		{{import "slices"}}.Reverse(r0)
 	}
 	return
-{{- else if eq $d.Body "reverse"}}{{use "slices"}}
+{{- else if eq $d.Body "reverse"}}
 	{{$all}} = {{$call}}
-	slices.Reverse(r0)
+	{{import "slices"}}.Reverse(r0)
 	return
-{{- else if eq $d.Body "slow"}}{{use "time"}}
-	{{.State}}clock.Sleep({{suiteDuration $d.Budget}})
+{{- else if eq $d.Body "slow"}}
+	{{.State}}clock.Sleep({{suiteDuration $d.Budget (import "time")}})
 	{{if $d.Results}}return {{end}}{{$call}}
 {{- else if eq $d.Body "lead"}}
 	r0 = true
@@ -772,6 +794,67 @@ counter and of the clock of the defect.
 	{{$all}} = {{$call}}
 	r0 = {{suiteCamel $d.Handle.Type}}{r0}
 	return
+{{- else if eq $d.Body "zero-before-failure"}}
+	if {{.State}}h.Injector().Failures() == 0 {
+		return
+	}
+	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "swallow"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
+	before := {{.State}}h.Injector().Failures()
+	{{$all}} = {{$call}}
+	if {{$err}} != nil && {{.State}}h.Injector().Failures() > before {
+{{- range $d.Method.Returns.Items}}{{if ne .Name $err}}
+		{{.Name}} = *new({{spell .Type}})
+{{- end}}{{end}}
+		{{$err}} = nil
+	}
+	return
+{{- else if eq $d.Body "fail-after-failure"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
+	{{$all}} = {{$call}}
+	if {{.State}}h.Injector().Failures() > 0 {
+{{- range $d.Method.Returns.Items}}{{if ne .Name $err}}
+		{{.Name}} = *new({{spell .Type}})
+{{- end}}{{end}}
+{{- template "suite.defect.fail" $d}}
+	}
+	return
+{{- else if eq $d.Body "sample-after-failure"}}
+	failed := {{.State}}h.Injector().Failures() > 0
+	{{$all}} = {{$call}}
+	if failed {
+{{- template "suite.defect.samples" $d}}
+{{- range $d.Results}}
+{{- if eq .Role "error"}}
+		{{.Name}} = nil
+{{- else if eq .Role "flag"}}
+		{{.Name}} = true
+{{- end}}
+{{- end}}
+	}
+	return
+{{- else if eq $d.Body "fresh-each-call"}}
+	{{if $d.Results}}return {{end}}{{.State}}h.Fresh(){{if $d.Type}}.{{$d.Method.Name}}{{end}}({{suiteJoin $d.Args}})
+{{- else if eq $d.Body "open-on-failure"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
+	{{$all}} = {{$call}}
+	if {{$err}} != nil {
+		_ = {{.State}}leak.Call({{printf "%q" $d.Acquire}})
+	}
+	return
+{{- else if eq $d.Body "zero-second"}}
+	{{if $d.Results}}return {{end}}{{.Call}}({{range $i, $a := $d.Args}}{{if $i}}, {{end}}{{if eq $i $d.Second}}*new({{spell (index $d.Method.Params.Items $i).Type}}){{else}}{{$a}}{{end}}{{end}})
+{{- else if eq $d.Body "keep-first"}}
+	if {{.State}}first != nil && {{import "reflect"}}.DeepEqual(p{{$d.Input}}, *{{.State}}first) {
+		r0 = p{{$d.Input}}
+		return
+	}
+	{{$all}} = {{$call}}
+	if {{.State}}first == nil {
+		{{.State}}first = &r0
+	}
+	return
 {{- end}}
 {{- end}}
 
@@ -781,7 +864,7 @@ error that the runtime generates, which no directive declares.
 */}}
 {{- define "suite.defect.fail"}}
 {{- range .Results}}{{if eq .Role "error"}}
-	{{.Name}} = conform.ErrGenerated
+	{{.Name}} = {{import "go.dokimi.dev/conform"}}.ErrGenerated
 {{- end}}{{end}}
 {{- end}}
 
@@ -802,7 +885,7 @@ suite.arg writes one argument of the probe of a derived check.
 {{- if .Closure}}{{template "suite.closure" .Closure}}
 {{- else if .Expr}}{{template "suite.expr" .Expr}}
 {{- else if .Projection}}func(v {{spell .Projection.Type}}) {{spell .Projection.Result}} { return v.{{.Projection.Field}} }
-{{- else}}{{use "time"}}{{suiteDuration .Duration}}
+{{- else}}{{suiteDuration .Duration (import "time")}}
 {{- end}}
 {{- end}}
 
@@ -811,9 +894,10 @@ suite.expr writes one expression of a derived check.
 */}}
 {{- define "suite.expr"}}
 {{- if .Value}}{{value .Value}}
+{{- else if .Drawn}}{{if .Drawn.Address}}&{{end}}{{.Drawn.Draw.Name}}{{if or .Drawn.Draw.Funcs .Drawn.Draw.Input}}(){{else if .Drawn.Draw.Pair}}[{{if .Drawn.Second}}1{{else}}0{{end}}]{{end}}
 {{- else if .Of}}({{template "suite.expr" .Of}}).{{.Select}}
 {{- else if .Hook}}func({{range $i, $p := slice .Hook.Elems 0 .Hook.Split}}{{if $i}}, {{end}}_ {{spell $p}}{{end}}) { {{- .Name}}() }
-{{- else if .Pair}}probe.Pair[{{spell (index .Pair.Types 0)}}, {{spell (index .Pair.Types 1)}}]{First: {{template "suite.expr" (index .Pair.Values 0)}}, Second: {{template "suite.expr" (index .Pair.Values 1)}}}
+{{- else if .Pair}}{{import "go.dokimi.dev/conform/probe"}}.Pair[{{spell (index .Pair.Types 0)}}, {{spell (index .Pair.Types 1)}}]{First: {{template "suite.expr" (index .Pair.Values 0)}}, Second: {{template "suite.expr" (index .Pair.Values 1)}}}
 {{- else if .Name}}{{.Name}}
 {{- else}}{{.Word}}
 {{- end}}
@@ -824,7 +908,7 @@ suite.closure writes a closure that a derived check passes to its probe. A
 closure with assignments on its later calls counts its calls in a variable of
 the function that returns it.
 */}}
-{{- define "suite.closure"}}{{use "context"}}
+{{- define "suite.closure"}}
 {{- if .Later}}func() {{template "suite.closure.signature" .}} {
 	calls := 0
 	return {{end}}{{template "suite.closure.signature" .}} {
@@ -865,7 +949,7 @@ the function that returns it.
 suite.closure.signature writes the signature of a closure: the context, its
 parameter and its results.
 */}}
-{{- define "suite.closure.signature"}}func(ctx context.Context{{with .Param}}, {{.Name}} {{if .Hook}}func(){{else if .Body}}probe.Act{{else}}{{spell .Type}}{{end}}{{end}}) {{template "suite.closure.returns" .}}
+{{- define "suite.closure.signature"}}func(ctx {{import "context"}}.Context{{with .Param}}, {{.Name}}{{with .Other}}, {{.}}{{end}} {{if .Hook}}func(){{else if .Body}}{{import "go.dokimi.dev/conform/probe"}}.Act{{else}}{{spell .Type}}{{end}}{{end}}) {{template "suite.closure.returns" .}}
 {{- end}}
 
 {{- /*
@@ -873,7 +957,7 @@ suite.closure.returns writes the results of a closure.
 */}}
 {{- define "suite.closure.returns"}}
 {{- if and (not .Returns) .Error}}error
-{{- else}}({{if .Pair}}probe.Pair[{{spell (index .Returns 0)}}, {{spell (index .Returns 1)}}]{{else}}{{range $i, $r := .Returns}}{{if $i}}, {{end}}{{if $.Stamps}}[]{{end}}{{spell $r}}{{end}}{{end}}{{if .Error}}, error{{end}}{{if .Flag}}, bool{{end}})
+{{- else}}({{if .Pair}}{{import "go.dokimi.dev/conform/probe"}}.Pair[{{spell (index .Returns 0)}}, {{spell (index .Returns 1)}}]{{else}}{{range $i, $r := .Returns}}{{if $i}}, {{end}}{{if $.Stamps}}[]{{end}}{{spell $r}}{{end}}{{end}}{{if .Error}}, error{{end}}{{if .Flag}}, bool{{end}})
 {{- end}}
 {{- end}}
 
@@ -897,18 +981,18 @@ suite.budget writes a budget as a literal of conform.Budget, with a field on
 a line of its own for each ceiling and for the warm-up that the budget
 states.
 */}}
-{{- define "suite.budget"}}conform.Budget{
+{{- define "suite.budget"}}{{import "go.dokimi.dev/conform"}}.Budget{
 {{- with .Allocs}}
 	Allocs: new(uint64({{.}})),
 {{- end}}
 {{- with .Bytes}}
 	Bytes: new(uint64({{.}})),
 {{- end}}
-{{- with .Latency}}{{use "time"}}
-	Latency: {{suiteDuration .}},
+{{- with .Latency}}
+	Latency: {{suiteDuration . (import "time")}},
 {{- end}}
-{{- with .Mean}}{{use "time"}}
-	Mean: {{suiteDuration .}},
+{{- with .Mean}}
+	Mean: {{suiteDuration . (import "time")}},
 {{- end}}
 {{- with .Warmup}}
 	Warmup: new({{.}}),
@@ -923,6 +1007,52 @@ context of the call and the value that the generator draws for each other
 parameter.
 */}}
 {{- define "suite.call"}}subject{{with .Field}}.{{.}}{{end}}({{range $i, $p := .Params}}{{if not .Omitted}}{{if $i}}, {{end}}{{if .Context}}ctx{{else if .Address}}&{{.Name}}{{else if .Receive}}{{template "suite.channel" .}}{{else}}{{.Name}}{{if .Variadic}}...{{end}}{{end}}{{end}}{{end}}){{end}}
+
+{{- /*
+suite.generated.param writes the value of a parameter of a function type or
+of an interface that a call generator draws: the lists of the results of
+each generated function, and the function, or the address of the
+implementation with a function of each method.
+*/}}
+{{- define "suite.generated.param"}}
+{{- range .Funcs}}{{template "suite.results" .}}{{end}}
+{{- if .Input}}
+	{{.Name}} := &{{suiteCamel .Input}}{
+{{- range .Funcs}}
+		{{suiteCamel .Field}}: {{template "suite.func" .}},
+{{- end}}
+	}
+{{- else}}
+	{{.Name}} := {{template "suite.func" (index .Funcs 0)}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.draw writes one draw of a generated check: the lists of the results of
+a generated function or implementation with a function that builds it anew
+for each call, two distinct values of a type, or one value of a type.
+*/}}
+{{- define "suite.draw"}}
+{{- if or .Funcs .Input}}
+{{- range .Funcs}}{{template "suite.lists" .}}{{end}}
+	{{.Name}} := func() {{spell .Type}} {
+{{- range .Funcs}}{{template "suite.counter" .}}{{end}}
+{{- if .Input}}
+		return &{{suiteCamel .Input}}{
+{{- range .Funcs}}
+			{{suiteCamel .Field}}: {{template "suite.func" .}},
+{{- end}}
+		}
+{{- else}}
+		return {{template "suite.func" (index .Funcs 0)}}
+{{- end}}
+	}
+{{- else if .Pair}}{{$prop := import "go.dokimi.dev/assert/prop"}}
+	{{.Name}} := c.Draw({{$prop}}.List({{$prop}}.Of[{{spell .Type}}](), {{$prop}}.Unique(), {{$prop}}.MinSize(2), {{$prop}}.MaxSize(2)), {{printf "%q" .Label}})
+{{- else}}
+	{{.Name}} := c.Draw({{import "go.dokimi.dev/assert/prop"}}.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+{{- end}}
+{{- end}}
 
 {{- /*
 suite.channel writes a new channel of the drawn list of a parameter that the
@@ -947,7 +1077,8 @@ comparable, and its address is.
 */}}
 {{- define "suite.generated"}}
 {{- $drawn := false}}
-{{- range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) {{spell .Type}} {
+{{- $prop := import "go.dokimi.dev/assert/prop"}}
+{{- range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}{{$prop}}.Composite(func({{if $drawn}}c {{end}}*{{$prop}}.Case) {{spell .Type}} {
 {{- range .Funcs}}{{template "suite.results" .}}{{end}}
 {{- if .Input}}
 	return &{{suiteCamel .Input}}{
@@ -970,10 +1101,11 @@ one value.
 {{- $ends := false}}
 {{- $sinks := false}}
 {{- range .Funcs}}{{range .Results}}{{if .End}}{{$ends = true}}{{end}}{{if .Sink}}{{$sinks = true}}{{end}}{{end}}{{end}}
-{{- if $ends}}prop.Composite(func({{if $sinks}}c {{end}}*prop.Case) {{spell .Type}} {
+{{- $prop := import "go.dokimi.dev/assert/prop"}}
+{{- if $ends}}{{$prop}}.Composite(func({{if $sinks}}c {{end}}*{{$prop}}.Case) {{spell .Type}} {
 {{- range .Funcs}}{{template "suite.ends" .}}{{end}}
 	return {{template "suite.base" .}}
-}){{else}}prop.Just[{{spell .Type}}]({{template "suite.base" .}}){{end}}
+}){{else}}{{$prop}}.Just[{{spell .Type}}]({{template "suite.base" .}}){{end}}
 {{- end}}
 
 {{- /*
@@ -997,7 +1129,7 @@ value of any other result.
 {{- define "suite.end"}}func({{params .Signature.Params}}){{results .Signature.Returns}} {
 {{- range .Results}}
 {{- if .Error}}
-	{{.Return}} = {{with .Errors}}{{value (index . 0)}}{{else}}conform.ErrGenerated{{end}}
+	{{.Return}} = {{with .Errors}}{{value (index . 0)}}{{else}}{{import "go.dokimi.dev/conform"}}.ErrGenerated{{end}}
 {{- else if .End}}
 	{{.Return}} = {{.End}}
 {{- end}}
@@ -1014,18 +1146,35 @@ calls. Each list after the first has the length of the first, so the lists
 hold the results of the same calls.
 */}}
 {{- define "suite.results"}}
+{{- template "suite.lists" .}}
+{{- template "suite.counter" .}}
+{{- end}}
+
+{{- /*
+suite.lists writes the draw of the list of each result of a generated
+function and the end value of each channel result.
+*/}}
+{{- define "suite.lists"}}
 {{- $first := ""}}
 {{- range $i, $r := .Results}}
+{{- $prop := import "go.dokimi.dev/assert/prop"}}
 {{- if $i}}
-	{{.Name}} := c.Draw(prop.List({{template "suite.value" .}}, prop.MinSize(len({{$first}})), prop.MaxSize(len({{$first}}))), {{printf "%q" .Label}})
+	{{.Name}} := c.Draw({{$prop}}.List({{template "suite.value" .}}, {{$prop}}.MinSize(len({{$first}})), {{$prop}}.MaxSize(len({{$first}}))), {{printf "%q" .Label}})
 {{- else}}
 {{- $first = .Name}}
-	{{.Name}} := c.Draw(prop.List({{template "suite.value" .}}), {{printf "%q" .Label}})
+	{{.Name}} := c.Draw({{$prop}}.List({{template "suite.value" .}}), {{printf "%q" .Label}})
 {{- end}}
 {{- end}}
 {{- template "suite.ends" .}}
-{{- with .Index}}{{use "sync/atomic"}}
-	var {{.}} atomic.Int64
+{{- end}}
+
+{{- /*
+suite.counter writes the counter of the calls of a generated function with
+results.
+*/}}
+{{- define "suite.counter"}}
+{{- with .Index}}
+	var {{.}} {{import "sync/atomic"}}.Int64
 {{- end}}
 {{- end}}
 
@@ -1038,7 +1187,7 @@ channel.
 {{- define "suite.ends"}}
 {{- range .Results}}
 {{- if .End}}
-	{{.End}} := {{if .Sink}}c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" (printf "%s-end" .Label)}}){{else}}conform.Closed[{{spell .Type}}](){{end}}
+	{{.End}} := {{if .Sink}}c.Draw({{import "go.dokimi.dev/assert/prop"}}.Of[{{spell .Type}}](), {{printf "%q" (printf "%s-end" .Label)}}){{else}}{{import "go.dokimi.dev/conform"}}.Closed[{{spell .Type}}](){{end}}
 {{- end}}
 {{- end}}
 {{- end}}
@@ -1049,8 +1198,9 @@ function. An error result takes nil and the declared errors of its method,
 or conform.ErrGenerated without them.
 */}}
 {{- define "suite.value"}}
-{{- if .Error}}prop.SampledFrom[error](nil{{range .Errors}}, {{value .}}{{else}}, conform.ErrGenerated{{end}})
-{{- else}}prop.Of[{{spell .Type}}](){{end}}
+{{- $prop := import "go.dokimi.dev/assert/prop"}}
+{{- if .Error}}{{$prop}}.SampledFrom[error](nil{{range .Errors}}, {{value .}}{{else}}, {{import "go.dokimi.dev/conform"}}.ErrGenerated{{end}})
+{{- else}}{{$prop}}.Of[{{spell .Type}}](){{end}}
 {{- end}}
 
 {{- /*
@@ -1066,7 +1216,7 @@ value of any other result.
 		if i >= len({{(index $.Results 0).Name}}) {
 {{- range $.Results}}
 {{- if .Error}}
-			{{.Return}} = {{with .Errors}}{{value (index . 0)}}{{else}}conform.ErrGenerated{{end}}
+			{{.Return}} = {{with .Errors}}{{value (index . 0)}}{{else}}{{import "go.dokimi.dev/conform"}}.ErrGenerated{{end}}
 {{- else if .End}}
 			{{.Return}} = {{.End}}
 {{- end}}

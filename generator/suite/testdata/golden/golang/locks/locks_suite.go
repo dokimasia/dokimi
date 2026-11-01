@@ -858,3 +858,437 @@ func awaitIgnoresCancel(h *AwaitHandle) AwaitFunc {
 		return fresh(p0)
 	}
 }
+
+// The derived checks of Worker:
+//
+// Worker.Stop/smoke: Stop returns without a panic for derived inputs.
+//
+// Worker.Stop/repeat-survives: Stop returns without a panic when it is
+// called twice.
+
+// The derived checks of Worker that witness their laws at the shallow end:
+//
+// Worker.Stop/smoke
+
+// The refused claims of Worker:
+//
+// Worker.Run/cancel: Run runs until its context ends. The remedy is to
+// check Run with a check of the consumer that ends its context.
+
+// The unclaimed classifications of Worker:
+//
+// The shape:lifecycle of Worker.Run has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The mixin:runs-until-cancelled of Worker.Run has the stance silent. The
+// mixin documents that the callable runs until its context ends.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Worker writes.
+type (
+	WorkerHandle = conform.Handle[Worker]
+	WorkerCheck  = conform.Check[Worker]
+	WorkerOption = conform.Option[Worker]
+)
+
+// WorkerChecks contains the name of each callable of Worker, with the
+// identities of its checks.
+var WorkerChecks = struct {
+	Run  workerRun
+	Stop workerStop
+}{
+	Run:  workerRun{"Worker.Run"},
+	Stop: workerStop{"Worker.Stop"},
+}
+
+// workerRun is the name of Worker.Run, with the identities of its checks.
+type workerRun struct {
+	conform.Callable[Worker]
+}
+
+// workerStop is the name of Worker.Stop, with the identities of its
+// checks.
+type workerStop struct {
+	conform.Callable[Worker]
+}
+
+// Smoke returns the identity of the check that Stop returns without a
+// panic for derived inputs.
+func (c workerStop) Smoke() conform.ID[Worker] {
+	return c.Check("smoke")
+}
+
+// RepeatSurvives returns the identity of the check that Stop returns
+// without a panic when it is called twice.
+func (c workerStop) RepeatSurvives() conform.ID[Worker] {
+	return c.Check("repeat-survives")
+}
+
+// WorkerSuite returns the checks of Worker, and the calls and the budgets
+// of its callables.
+func WorkerSuite() conform.Suite[Worker] {
+	return conform.Suite[Worker]{
+		Declaration: "Worker",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Worker]{
+			{
+				ID:          WorkerChecks.Stop.Smoke(),
+				Statement:   "Stop returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WorkerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Stop()
+						return nil
+					})
+				},
+				Defect: workerStopPanics,
+			},
+			{
+				ID:          WorkerChecks.Stop.RepeatSurvives(),
+				Statement:   "Stop returns without a panic when it is called twice",
+				Claim:       spec.RepeatSurvives,
+				Probe:       spec.SurvivesRepeat,
+				Reason:      spec.PanickedRepeat,
+				Law:         spec.RepeatedCallSurvives,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WorkerHandle) {
+					probe.SurvivesRepeat(h, func(ctx context.Context) error {
+						h.Subject().Stop()
+						return nil
+					})
+				},
+				Defect: workerStopPanicsOnRepeat,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Worker.Run",
+				Gate:     spec.ReturnsBeforeCancel,
+				Why:      "Run runs until its context ends",
+				Remedy:   "check Run with a check of the consumer that ends its context",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Worker.Run",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "mixin:runs-until-cancelled",
+				Callable:       "Worker.Run",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable runs until its context ends.",
+			},
+		},
+		Calls: []conform.Call[Worker]{
+			{
+				Calls:              workerRunCalls,
+				Over:               newWorkerOver,
+				Callable:           WorkerChecks.Run.Callable,
+				RunsUntilCancelled: true,
+			},
+			{
+				Calls:    workerStopCalls,
+				Over:     newWorkerOver,
+				Callable: WorkerChecks.Stop.Callable,
+			},
+		},
+	}
+}
+
+// RunWorkerSuite applies the checks of Worker, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunWorkerSuite[T Worker](t *testing.T, newSubject func() T, opts ...WorkerOption) {
+	t.Helper()
+	RunWorkerSuiteFromHandle(t, func(*WorkerHandle) T { return newSubject() }, opts...)
+}
+
+// RunWorkerSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunWorkerSuiteFromHandle[T Worker](
+	t *testing.T,
+	newSubject func(h *WorkerHandle) T,
+	opts ...WorkerOption,
+) {
+	t.Helper()
+	conform.Run(t, WorkerSuite(), workerSubjects(newSubject), opts...)
+}
+
+// FuzzWorkerSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzWorkerSuite[T Worker](
+	f *testing.F,
+	callable conform.Callable[Worker],
+	newSubject func(h *WorkerHandle) T,
+	opts ...WorkerOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, WorkerSuite(), callable, workerSubjects(newSubject), opts...)
+}
+
+// RunWorkerBudgets applies the allocation ceilings of Worker and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunWorkerBudgets[T Worker](
+	t *testing.T,
+	newSubject func(h *WorkerHandle) T,
+	opts ...WorkerOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, WorkerSuite(), workerSubjects(newSubject), opts...)
+}
+
+// BenchWorkerSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchWorkerSuite[T Worker](
+	b conform.B,
+	callable conform.Callable[Worker],
+	newSubject func(h *WorkerHandle) T,
+	opts ...WorkerOption,
+) {
+	b.Helper()
+	conform.Bench(b, WorkerSuite(), callable, workerSubjects(newSubject), opts...)
+}
+
+// workerSubjects returns the factory of the subjects of Worker that calls
+// newSubject with the handle of each check.
+func workerSubjects[T Worker](newSubject func(h *WorkerHandle) T) func(h *WorkerHandle) Worker {
+	return func(h *WorkerHandle) Worker { return newSubject(h) }
+}
+
+// workerRunCalls generates the calls of Worker.Run with the inputs that
+// each case draws.
+var workerRunCalls = prop.Composite(func(*prop.Case) func(context.Context, Worker) error {
+	return func(ctx context.Context, subject Worker) error {
+		return subject.Run(ctx)
+	}
+})
+
+// workerStopCalls generates the calls of Worker.Stop with the inputs that
+// each case draws.
+var workerStopCalls = prop.Composite(func(*prop.Case) func(context.Context, Worker) error {
+	return func(_ context.Context, subject Worker) error {
+		subject.Stop()
+		return nil
+	}
+})
+
+// workerOverEmbedded is Worker under the name of the field that workerOver
+// embeds.
+type workerOverEmbedded = Worker
+
+// workerOver is a subject of Worker whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type workerOver struct {
+	workerOverEmbedded
+	spend func()
+}
+
+// Run calls spend and returns its zero results.
+func (o workerOver) Run(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Stop calls spend and returns its zero results.
+func (o workerOver) Stop() {
+	o.spend()
+}
+
+// newWorkerOver returns the planted defect of a ceiling of Worker, whose
+// callables call spend.
+func newWorkerOver(_ *WorkerHandle, spend func()) Worker {
+	return workerOver{spend: spend}
+}
+
+// workerStopPanicsDefect is the planted defect of a Worker whose Stop
+// panics.
+type workerStopPanicsDefect struct {
+	workerOverEmbedded
+}
+
+// Stop is the override of the planted defect.
+func (*workerStopPanicsDefect) Stop() {
+	panic("the planted defect of a Worker whose Stop panics")
+}
+
+// workerStopPanics returns the planted defect of a Worker whose Stop
+// panics over a fresh subject.
+func workerStopPanics(h *WorkerHandle) Worker {
+	return &workerStopPanicsDefect{workerOverEmbedded: h.Fresh()}
+}
+
+// workerStopPanicsOnRepeatDefect is the planted defect of a Worker whose
+// Stop panics on the repeat.
+type workerStopPanicsOnRepeatDefect struct {
+	workerOverEmbedded
+	calls int
+}
+
+// Stop is the override of the planted defect.
+func (d *workerStopPanicsOnRepeatDefect) Stop() {
+	d.calls++
+	if d.calls > 1 {
+		panic("the planted defect of a Worker whose Stop panics on the repeat")
+	}
+	d.workerOverEmbedded.Stop()
+}
+
+// workerStopPanicsOnRepeat returns the planted defect of a Worker whose
+// Stop panics on the repeat over a fresh subject.
+func workerStopPanicsOnRepeat(h *WorkerHandle) Worker {
+	return &workerStopPanicsOnRepeatDefect{workerOverEmbedded: h.Fresh()}
+}
+
+// The refused claims of Serve:
+//
+// Serve/cancel: Serve runs until its context ends. The remedy is to check
+// Serve with a check of the consumer that ends its context.
+
+// The unclaimed classifications of Serve:
+//
+// The shape:lifecycle of Serve has the stance silent. A lifecycle call
+// returns nothing that a check could compare.
+//
+// The mixin:runs-until-cancelled of Serve has the stance silent. The mixin
+// documents that the callable runs until its context ends.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Serve writes.
+type (
+	ServeHandle = conform.Handle[ServeFunc]
+	ServeCheck  = conform.Check[ServeFunc]
+	ServeOption = conform.Option[ServeFunc]
+)
+
+// ServeFunc is the type of the function Serve. Each subject of the suite
+// of Serve has it.
+type ServeFunc func(ctx context.Context) error
+
+// ServeChecks contains the name of each callable of Serve, with the
+// identities of its checks.
+var ServeChecks = serveCallable{"Serve"}
+
+// serveCallable is the name of Serve, with the identities of its checks.
+type serveCallable struct {
+	conform.Callable[ServeFunc]
+}
+
+// ServeSuite returns the checks of Serve, and the calls and the budgets of
+// its callables.
+func ServeSuite() conform.Suite[ServeFunc] {
+	return conform.Suite[ServeFunc]{
+		Declaration: "Serve",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Serve",
+				Gate:     spec.ReturnsBeforeCancel,
+				Why:      "Serve runs until its context ends",
+				Remedy:   "check Serve with a check of the consumer that ends its context",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Serve",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "mixin:runs-until-cancelled",
+				Callable:       "Serve",
+				Stance:         spec.Silent,
+				Note:           "The mixin documents that the callable runs until its context ends.",
+			},
+		},
+		Calls: []conform.Call[ServeFunc]{
+			{
+				Calls:              serveCalls,
+				Over:               newServeOver,
+				Callable:           ServeChecks.Callable,
+				RunsUntilCancelled: true,
+			},
+		},
+	}
+}
+
+// RunServeSuite applies the checks of Serve, and the checks that opts add,
+// to subject.
+func RunServeSuite(t *testing.T, subject ServeFunc, opts ...ServeOption) {
+	t.Helper()
+	RunServeSuiteFromHandle(t, serveSubjects(subject), opts...)
+}
+
+// RunServeSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunServeSuiteFromHandle(
+	t *testing.T,
+	newSubject func(h *ServeHandle) ServeFunc,
+	opts ...ServeOption,
+) {
+	t.Helper()
+	conform.Run(t, ServeSuite(), newSubject, opts...)
+}
+
+// FuzzServeSuite registers on f the fuzz target of the property checks of
+// Serve on subject.
+func FuzzServeSuite(f *testing.F, subject ServeFunc, opts ...ServeOption) {
+	f.Helper()
+	conform.Fuzz(f, ServeSuite(), ServeChecks.Callable, serveSubjects(subject), opts...)
+}
+
+// RunServeBudgets applies the allocation ceiling of Serve and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to subject.
+func RunServeBudgets(t *testing.T, subject ServeFunc, opts ...ServeOption) {
+	t.Helper()
+	conform.RunBudgets(t, ServeSuite(), serveSubjects(subject), opts...)
+}
+
+// BenchServeSuite measures subject under the ceilings of the budget of
+// Serve.
+func BenchServeSuite(b conform.B, subject ServeFunc, opts ...ServeOption) {
+	b.Helper()
+	conform.Bench(b, ServeSuite(), ServeChecks.Callable, serveSubjects(subject), opts...)
+}
+
+// serveSubjects returns the factory of the subjects of Serve that returns
+// subject for each handle.
+func serveSubjects(subject ServeFunc) func(*ServeHandle) ServeFunc {
+	return func(*ServeHandle) ServeFunc { return subject }
+}
+
+// serveCalls generates the calls of Serve with the inputs that each case
+// draws.
+var serveCalls = prop.Composite(func(*prop.Case) func(context.Context, ServeFunc) error {
+	return func(ctx context.Context, subject ServeFunc) error {
+		return subject(ctx)
+	}
+})
+
+// newServeOver returns the planted defect of a ceiling of Serve, which
+// calls spend and returns its zero results.
+func newServeOver(_ *ServeHandle, spend func()) ServeFunc {
+	return func(context.Context) (r0 error) {
+		spend()
+		return r0
+	}
+}

@@ -9,6 +9,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/eidos/sdk/emit"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/derive"
@@ -77,11 +78,98 @@ func TestDerived(t *testing.T) {
 			)
 		})
 
+		tallies := generate(t, goTree, drawnPackage).suites["Tallies"]
+		lacks := func(s *suite.Suite, field, segment string) bool {
+			return !slices.ContainsFunc(s.Derived, func(d suite.Derived) bool {
+				return d.Field == field && d.Segment == segment
+			})
+		}
+
+		t.Run("records the generated binding of a check whose calls take samples", func(t *testing.T) {
+			t.Parallel()
+
+			d := derivedNamed(t, &tallies, "Limit", "smoke#generated")
+			expect.True(t, d.Generated, "the check generates the inputs of its calls")
+			expect.Equal(t, d.Method, "SmokeGenerated", "the method of the identity adds the word Generated")
+			expect.Equal(t, d.Machineries, []string{"GeneratedInputs", "NothingBeyondACaller"},
+				"the machineries add generated-inputs before nothing-beyond-a-caller")
+			expect.False(t, derivedNamed(t, &tallies, "Limit", "smoke").Generated,
+				"the sample binding passes the samples of the inputs")
+		})
+
+		t.Run("records no generated binding of a check whose calls take no input", func(t *testing.T) {
+			t.Parallel()
+
+			derivedNamed(t, &tallies, "Count", "smoke")
+			expect.True(t, lacks(&tallies, "Count", "smoke#generated"), "the check of Count draws no input")
+		})
+
+		t.Run("passes the drawn inputs of a combining callable to the probe of commutative", func(t *testing.T) {
+			t.Parallel()
+
+			d := derivedNamed(t, &tallies, "Merge", "commutative")
+			expect.True(t, d.Generated, "the claim of generated-inputs generates the inputs of its calls")
+			assert.Length(t, d.Args, 3, "the probe takes the call and the two inputs")
+			expect.NotNil(t, d.Args[0].Closure, "the call is a closure")
+			expect.Equal(t, drawnOf(t, d.Args[1].Expr).Draw.Name, "drawnA", "the first input is the drawn a")
+			expect.Equal(t, drawnOf(t, d.Args[2].Expr).Draw.Name, "drawnB", "the second input is the drawn b")
+		})
+
+		t.Run("passes a second value of the second input to the probe of associative", func(t *testing.T) {
+			t.Parallel()
+
+			d := derivedNamed(t, &tallies, "Merge", "associative")
+			assert.Length(t, d.Args, 4, "the probe takes the call and the three inputs")
+			third := drawnOf(t, d.Args[3].Expr)
+			expect.Equal(t, third.Draw.Name, "drawnB", "the third input is a value of b")
+			expect.True(t, third.Second, "the third input is the second value of b")
+			expect.False(t, drawnOf(t, d.Args[2].Expr).Second, "the second input is the first value of b")
+			expect.True(t, third.Draw.Pair, "the check draws two distinct values of b")
+		})
+
+		faults := generate(t, goTree, faultsPackage).suites
+
+		t.Run("passes the names of the callables of open and close to the probe of a release", func(t *testing.T) {
+			t.Parallel()
+
+			copier := faults["Copier"]
+			d := derivedNamed(t, &copier, "Copy", "releases-on-every-path")
+			assert.Length(t, d.Args, 3, "the probe takes the call, the acquire and the release")
+			assert.NotNil(t, d.Args[0].Closure, "the call is a closure")
+			expect.Equal(t, d.Args[0].Closure.Method, "Copy", "the call calls Copy")
+			expect.Equal(t, d.Args[1].Expr, &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Open"))},
+				"the acquire is the name of the callable that open names")
+			expect.Equal(t, d.Args[2].Expr, &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Close"))},
+				"the release is the name of the callable that close names")
+		})
+
+		t.Run("passes the read of the mixin atomic to the probe of a failed call", func(t *testing.T) {
+			t.Parallel()
+
+			writer := faults["Writer"]
+			d := derivedNamed(t, &writer, "Put", "no-partial-write")
+			assert.Length(t, d.Args, 2, "the probe takes the call and the read")
+			call, read := d.Args[0].Closure, d.Args[1].Closure
+			assert.NotNil(t, call, "the call is a closure")
+			assert.NotNil(t, read, "the read is a closure")
+			expect.Equal(t, call.Method, "Put", "the call calls Put")
+			expect.Equal(t, read.Method, "Get", "the read calls the reader that read names")
+		})
+
 		families := generate(t, goTree, familiesPackage).suites
 		family := func(name string) *suite.Suite {
 			s := families[name]
 			return &s
 		}
+		t.Run("records no generated binding of a check whose probe fills each input of its calls", func(t *testing.T) {
+			t.Parallel()
+
+			screened := family("Screened")
+			derivedNamed(t, screened, "Store", "validates")
+			expect.True(t, lacks(screened, "Store", "validates#generated"),
+				"the probe of validates passes each value that Store takes")
+		})
+
 		reach := generate(t, goTree, wrapPackage, toolPackage, deepPackage).suites["Reach"]
 		refusals := []struct {
 			name     string

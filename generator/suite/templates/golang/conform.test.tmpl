@@ -1,4 +1,4 @@
-{{- use "testing"}}
+{{- $testing := import "testing"}}
 {{- range .Records}}
 {{- $r := .}}
 {{- $c := .Data}}
@@ -6,7 +6,6 @@
 {{- $test := suitePascal $c.Test}}
 {{- if $c.Subject}}
 {{- $options := or $c.Ceilings $c.Excusals}}
-{{- if or $options $c.Cases $c.Isolate}}{{use "go.dokimi.dev/conform"}}{{end}}
 {{- $checks := spell (index $refs 2).Type}}
 {{- $factory := spell (index $refs 1).Type}}
 {{- if not $c.FromHandle}}
@@ -17,7 +16,7 @@
 {{- with $c.Options}}{{$opts = printf "%s()..." (spell .)}}{{end}}
 
 {{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $test $c.Declaration $c.Subject))}}
-{{- ""}}func {{$test}}(t *testing.T) {
+{{- ""}}func {{$test}}(t *{{$testing}}.T) {
 	t.Parallel()
 {{- if and $c.Options (or $c.Excusals $c.Cases $c.Isolate)}}
 
@@ -48,7 +47,7 @@
 {{- $allocs := suitePascal .}}
 
 {{docs (wrapdocs (printf `%s applies the allocation ceilings and the checks that count allocations of the suite of %s to %s.` $allocs $c.Declaration $c.Subject))}}
-{{- ""}}func {{$allocs}}(t *testing.T) {
+{{- ""}}func {{$allocs}}(t *{{$testing}}.T) {
 {{- if and $c.Options (or $options $c.Cases)}}
 	opts := append([]{{$option}}{
 {{- template "suite.cases" $r}}
@@ -75,10 +74,10 @@
 {{- $benchmark := suitePascal $c.Benchmark}}
 
 {{docs (wrapdocs (printf `%s measures each callable of the suite of %s on %s.` $benchmark $c.Declaration $c.Subject))}}
-{{- ""}}func {{$benchmark}}(b *testing.B) {
+{{- ""}}func {{$benchmark}}(b *{{$testing}}.B) {
 {{- template "suite.options" $r}}
 {{- range $c.Levels}}
-	b.Run("{{.Field}}", func(b *testing.B) {
+	b.Run("{{.Field}}", func(b *{{$testing}}.B) {
 		{{spell (index $refs 7).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if or $options $c.Options}}, opts...{{end}})
 	})
 {{- end}}
@@ -88,11 +87,11 @@
 {{- $parallel := suitePascal .}}
 
 {{docs (wrapdocs (printf `%s measures each callable of the suite of %s that admits concurrent calls on %s, on GOMAXPROCS goroutines at once.` $parallel $c.Declaration $c.Subject))}}
-{{- ""}}func {{$parallel}}(b *testing.B) {
+{{- ""}}func {{$parallel}}(b *{{$testing}}.B) {
 {{- template "suite.options" $r}}
 {{- range $c.Levels}}
 {{- if .Concurrent}}
-	b.Run("{{.Field}}", func(b *testing.B) {
+	b.Run("{{.Field}}", func(b *{{$testing}}.B) {
 		{{spell (index $refs 10).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if or $options $c.Options}}, opts...{{end}})
 	})
 {{- end}}
@@ -103,7 +102,7 @@
 {{- $target := suitePascal .Name}}
 
 {{docs (wrapdocs (printf `%s fuzzes the property checks of %s.%s on %s.` $target $c.Declaration .Field $c.Subject))}}
-{{- ""}}func {{$target}}(f *testing.F) {
+{{- ""}}func {{$target}}(f *{{$testing}}.F) {
 {{- if and $c.Options $c.Excusals}}
 	opts := append([]{{$option}}{
 {{- template "suite.excusals" $r}}
@@ -123,7 +122,7 @@
 {{- end}}
 }
 {{- end}}
-{{- else}}{{use "go.dokimi.dev/conform"}}{{use "go.dokimi.dev/assert"}}
+{{- else}}{{$conform := import "go.dokimi.dev/conform"}}{{$assert := import "go.dokimi.dev/assert"}}
 {{- $suite := index $refs 0}}
 {{- $run := index $refs 1}}
 {{- $fromHandle := index $refs 2}}
@@ -142,33 +141,33 @@
 {{- end}}
 
 {{docs (wrapdocs (printf `%s checks the suite of %s and the two forms of its application.` $test $c.Declaration))}}
-{{- ""}}func {{$test}}(t *testing.T) {
+{{- ""}}func {{$test}}(t *{{$testing}}.T) {
 	t.Parallel()
 
-	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *testing.T) {
+	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *{{$testing}}.T) {
 		t.Parallel()
-		conform.Falsify(t, {{spell $suite.Type}}())
+		{{$conform}}.Falsify(t, {{spell $suite.Type}}())
 	})
 {{- if $c.Function}}
 
-	t.Run("{{$c.Declaration}}", func(t *testing.T) {
+	t.Run("{{$c.Declaration}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 		{{spell $run.Type}}(t, {{spell (index $refs 7).Type}})
 	})
 {{- end}}
 
-	t.Run("{{suitePascal $run.Type.Spelling}}", func(t *testing.T) {
+	t.Run("{{suitePascal $run.Type.Spelling}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 {{- if $c.Function}}
 {{- $fn := spell (index $refs 7).Type}}
 		{{spell $run.Type}}(
 			t,
 			{{$fn}},
-			conform.With({{$check}}{
+			{{$conform}}.With({{$check}}{
 				ID:        "{{$c.Declaration}}/{{$c.Receives}}",
 				Statement: "the subject of a check is the function of the application",
 				Apply: func(h *{{$handle}}) {
-					assert.Equal(h, h.Subject(), {{$subject}}({{$fn}}), h.Statement())
+					{{$assert}}.Equal(h, h.Subject(), {{$subject}}({{$fn}}), h.Statement())
 				},
 				Defect: func(*{{$handle}}) {{$subject}} { return nil },
 			}),
@@ -187,7 +186,7 @@
 {{- end}}
 	})
 
-	t.Run("{{suitePascal $fromHandle.Type.Spelling}}", func(t *testing.T) {
+	t.Run("{{suitePascal $fromHandle.Type.Spelling}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 {{- if $c.Function}}
 {{- $fn := spell (index $refs 7).Type}}
@@ -196,11 +195,11 @@
 			func(*{{$handle}}) {{$subject}} {
 				return {{$fn}}
 			},
-			conform.With({{$check}}{
+			{{$conform}}.With({{$check}}{
 				ID:        "{{$c.Declaration}}/{{$c.Builds}}",
 				Statement: "the subject of a check is the function that the factory returns",
 				Apply: func(h *{{$handle}}) {
-					assert.Equal(h, h.Subject(), {{$subject}}({{$fn}}), h.Statement())
+					{{$assert}}.Equal(h, h.Subject(), {{$subject}}({{$fn}}), h.Statement())
 				},
 				Defect: func(*{{$handle}}) {{$subject}} { return nil },
 			}),
@@ -221,10 +220,10 @@
 {{- with $c.Identities}}
 {{- $checks := index $refs 6}}
 
-	t.Run("{{suitePascal $checks.Type.Spelling}}", func(t *testing.T) {
+	t.Run("{{suitePascal $checks.Type.Spelling}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 {{- range .}}
-		assert.Equal(
+		{{$assert}}.Equal(
 			t,
 			string({{spell $checks.Type}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}()),
 			{{printf "%q" .ID}},
@@ -238,9 +237,9 @@
 {{- $allocs := suitePascal .}}
 
 {{docs (wrapdocs (printf `%s falsifies the allocation ceilings and the checks that count allocations of the suite of %s.` $allocs $c.Declaration))}}
-{{- ""}}func {{$allocs}}(t *testing.T) {
-	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *testing.T) {
-		conform.FalsifyAllocs(t, {{spell $suite.Type}}())
+{{- ""}}func {{$allocs}}(t *{{$testing}}.T) {
+	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *{{$testing}}.T) {
+		{{$conform}}.FalsifyAllocs(t, {{spell $suite.Type}}())
 	})
 }
 {{- end}}
@@ -253,7 +252,7 @@
 {{- $allocs := suitePascal .}}
 
 {{docs (wrapdocs (printf `%s applies the allocation ceiling and the checks that count allocations of %s to %s.` $allocs $c.Declaration $c.Declaration))}}
-{{- ""}}func {{$allocs}}(t *testing.T) {
+{{- ""}}func {{$allocs}}(t *{{$testing}}.T) {
 	{{spell (index $refs 9).Type}}(t, {{$fn}})
 }
 {{- end}}
@@ -261,7 +260,7 @@
 {{- $benchmark := suitePascal .}}
 
 {{docs (wrapdocs (printf `%s measures %s.` $benchmark $c.Declaration))}}
-{{- ""}}func {{$benchmark}}(b *testing.B) {
+{{- ""}}func {{$benchmark}}(b *{{$testing}}.B) {
 	{{spell (index $refs 10).Type}}(b, {{$fn}})
 }
 {{- end}}
@@ -269,7 +268,7 @@
 {{- $parallel := suitePascal .}}
 
 {{docs (wrapdocs (printf `%s measures %s on GOMAXPROCS goroutines at once.` $parallel $c.Declaration))}}
-{{- ""}}func {{$parallel}}(b *testing.B) {
+{{- ""}}func {{$parallel}}(b *{{$testing}}.B) {
 	{{spell (index $refs 11).Type}}(b, {{$fn}})
 }
 {{- end}}
@@ -277,7 +276,7 @@
 {{- $target := suitePascal .Name}}
 
 {{docs (wrapdocs (printf `%s fuzzes the property checks of %s.` $target $c.Declaration))}}
-{{- ""}}func {{$target}}(f *testing.F) {
+{{- ""}}func {{$target}}(f *{{$testing}}.F) {
 	{{spell (index $refs 8).Type}}(f, {{spell (index $refs 7).Type}})
 }
 {{- end}}
@@ -291,7 +290,7 @@ isolate of the generator, and nothing otherwise.
 */}}
 {{- define "suite.isolate"}}
 {{- if .Data.Isolate}}
-		conform.Isolate[{{spell (index $.Decl.Fields.Items 9).Type}}](),
+		{{import "go.dokimi.dev/conform"}}.Isolate[{{spell (index $.Decl.Fields.Items 9).Type}}](),
 {{- end}}
 {{- end}}
 
@@ -302,7 +301,7 @@ none.
 */}}
 {{- define "suite.cases"}}
 {{- with .Data.Cases}}
-		conform.Cases[{{spell (index $.Decl.Fields.Items 9).Type}}]({{.}}),
+		{{import "go.dokimi.dev/conform"}}.Cases[{{spell (index $.Decl.Fields.Items 9).Type}}]({{.}}),
 {{- end}}
 {{- end}}
 
@@ -337,7 +336,7 @@ refers to.
 {{- define "suite.excusals"}}
 {{- $checks := spell (index .Decl.Fields.Items 2).Type}}
 {{- range .Data.Excusals}}
-		conform.Excuse(
+		{{import "go.dokimi.dev/conform"}}.Excuse(
 			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
 			{{printf "%q" .Reason}},
 		),
@@ -352,7 +351,7 @@ refers to.
 {{- define "suite.ceilings"}}
 {{- $checks := spell (index .Decl.Fields.Items 2).Type}}
 {{- range .Data.Ceilings}}
-		conform.Ceilings(
+		{{import "go.dokimi.dev/conform"}}.Ceilings(
 			{{$checks}}.{{.Field}}.Callable,
 			{{template "suite.budget" .Budget}},
 		),
@@ -364,18 +363,18 @@ suite.budget writes a budget as a literal of conform.Budget, with a field on
 a line of its own for each ceiling and for the warm-up that the budget
 states.
 */}}
-{{- define "suite.budget"}}conform.Budget{
+{{- define "suite.budget"}}{{import "go.dokimi.dev/conform"}}.Budget{
 {{- with .Allocs}}
 	Allocs: new(uint64({{.}})),
 {{- end}}
 {{- with .Bytes}}
 	Bytes: new(uint64({{.}})),
 {{- end}}
-{{- with .Latency}}{{use "time"}}
-	Latency: {{suiteDuration .}},
+{{- with .Latency}}
+	Latency: {{suiteDuration . (import "time")}},
 {{- end}}
-{{- with .Mean}}{{use "time"}}
-	Mean: {{suiteDuration .}},
+{{- with .Mean}}
+	Mean: {{suiteDuration . (import "time")}},
 {{- end}}
 {{- with .Warmup}}
 	Warmup: new({{.}}),
@@ -395,12 +394,13 @@ test built last, by identity.
 {{- $handle := spell (index $refs 3).Type}}
 {{- $subject := spell (index $refs 5).Type}}
 {{- $value := printf "%sSubject" (suiteCamel $c.Declaration)}}
-			conform.With({{spell (index $refs 4).Type}}{
+{{- $assert := import "go.dokimi.dev/assert"}}
+			{{import "go.dokimi.dev/conform"}}.With({{spell (index $refs 4).Type}}{
 				ID:        "{{$c.Declaration}}/{{$c.Builds}}",
 				Statement: "the subject of a check is the value that the factory builds",
 				Apply: func(h *{{$handle}}) {
 					got := h.Subject()
-					assert.Equal(h, got, {{$subject}}(built), h.Statement(), assert.ByIdentity())
+					{{$assert}}.Equal(h, got, {{$subject}}(built), h.Statement(), {{$assert}}.ByIdentity())
 				},
 				Defect: func(*{{$handle}}) {{$subject}} { return &{{$value}}{} },
 			}),
@@ -418,6 +418,7 @@ every check of the suite, because a check that counts allocations runs with
 the ceilings.
 */}}
 {{- define "suite.idle"}}
+{{- $testing := import "testing"}}
 {{- $c := .Data}}
 {{- $refs := .Decl.Fields.Items}}
 {{- $suite := spell (index $refs 0).Type}}
@@ -434,17 +435,17 @@ the ceilings.
 {{- $budgets := suitePascal $c.Budgets}}
 
 {{docs (wrapdocs (printf `%s applies the allocation ceilings of the suite of %s to %s with every check of the suite excused, and a ceiling of 0 to each callable without a budget whose calls build no input of their own.` $budgets $c.Declaration $idle))}}
-{{- ""}}func {{$budgets}}(t *testing.T) {
+{{- ""}}func {{$budgets}}(t *{{$testing}}.T) {
 	{{spell (index $refs 8).Type}}(
 		t,
 		{{$idle}},
 {{- range $c.Levels}}
 {{- if .Ceiled}}
-		conform.Ceilings({{$checks}}.{{.Field}}.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		{{import "go.dokimi.dev/conform"}}.Ceilings({{$checks}}.{{.Field}}.Callable, {{import "go.dokimi.dev/conform"}}.Budget{Allocs: new(uint64(0))}),
 {{- end}}
 {{- end}}
 {{- range $c.Excusals}}
-		conform.Excuse(
+		{{import "go.dokimi.dev/conform"}}.Excuse(
 			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
 			{{printf "%q" $zero}},
 		),
@@ -455,13 +456,13 @@ the ceilings.
 {{- $target := suitePascal .Name}}
 
 {{docs (wrapdocs (printf `%s registers the fuzz target of %s.%s on %s, with every check of the suite excused.` $target $c.Declaration .Field $idle))}}
-{{- ""}}func {{$target}}(f *testing.F) {
+{{- ""}}func {{$target}}(f *{{$testing}}.F) {
 	{{spell (index $refs 7).Type}}(
 		f,
 		{{$checks}}.{{.Field}}.Callable,
 		{{$idle}},
 {{- range $c.Excusals}}
-		conform.Excuse(
+		{{import "go.dokimi.dev/conform"}}.Excuse(
 			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
 			{{printf "%q" $zero}},
 		),
@@ -473,9 +474,9 @@ the ceilings.
 {{- $benchmark := suitePascal $c.Benchmark}}
 
 {{docs (wrapdocs (printf `%s measures each callable of the suite of %s on %s.` $benchmark $c.Declaration $idle))}}
-{{- ""}}func {{$benchmark}}(b *testing.B) {
+{{- ""}}func {{$benchmark}}(b *{{$testing}}.B) {
 {{- range $c.Levels}}
-	b.Run("{{.Field}}", func(b *testing.B) {
+	b.Run("{{.Field}}", func(b *{{$testing}}.B) {
 		{{spell (index $refs 9).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$idle}})
 	})
 {{- end}}
@@ -485,10 +486,10 @@ the ceilings.
 {{- $parallel := suitePascal .}}
 
 {{docs (wrapdocs (printf `%s measures each callable of the suite of %s that admits concurrent calls on %s, on GOMAXPROCS goroutines at once.` $parallel $c.Declaration $idle))}}
-{{- ""}}func {{$parallel}}(b *testing.B) {
+{{- ""}}func {{$parallel}}(b *{{$testing}}.B) {
 {{- range $c.Levels}}
 {{- if .Concurrent}}
-	b.Run("{{.Field}}", func(b *testing.B) {
+	b.Run("{{.Field}}", func(b *{{$testing}}.B) {
 		{{spell (index $refs 10).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$idle}})
 	})
 {{- end}}
@@ -504,7 +505,7 @@ the suite applies its own check alone.
 {{- define "suite.alone"}}
 {{- $checks := spell (index .Decl.Fields.Items 6).Type}}
 {{- range .Data.Excusals}}
-			conform.Excuse(
+			{{import "go.dokimi.dev/conform"}}.Excuse(
 				{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
 				{{printf "%q" .Reason}},
 			),

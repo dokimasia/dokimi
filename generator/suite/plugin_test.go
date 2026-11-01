@@ -75,6 +75,10 @@ func TestSuite(t *testing.T) {
 					name:    "returns from Keys the error of a key of a door registered with another type",
 					giveKey: suite.KeyCrash,
 				},
+				{
+					name:    "returns from Keys the error of the key of the doors of values registered with another type",
+					giveKey: suite.KeyValues,
+				},
 			}
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -143,10 +147,15 @@ func TestSuite(t *testing.T) {
 			alone := "the test applies the check of its option alone"
 			expect.Equal(t, got.Data.Excusals, []suite.Excusal{
 				{Field: "Get", Method: "Smoke", Reason: alone},
+				{Field: "Get", Method: "SmokeGenerated", Reason: alone},
 				{Field: "Get", Method: "Cancel", Reason: alone},
+				{Field: "Get", Method: "CancelGenerated", Reason: alone},
 				{Field: "Get", Method: "ZeroOnError", Reason: alone},
+				{Field: "Get", Method: "ZeroOnErrorGenerated", Reason: alone},
 				{Field: "Put", Method: "Smoke", Reason: alone},
+				{Field: "Put", Method: "SmokeGenerated", Reason: alone},
 				{Field: "Put", Method: "Cancel", Reason: alone},
+				{Field: "Put", Method: "CancelGenerated", Reason: alone},
 				{Field: "Get", Method: "KeepsTheItem", Reason: alone},
 				{Field: "Put", Method: "RefusesACancelledPut", Reason: alone},
 			}, "the test excuses each check of the suite where it applies a check of its own")
@@ -403,6 +412,16 @@ func TestSuite(t *testing.T) {
 					wantParallel: "BenchmarkLockSuiteParallel",
 				},
 				{name: "records no level of a suite whose callables each wait", give: "TestGateSuite"},
+				{
+					name:       "records no level of a callable that runs until its context ends in a subject",
+					give:       "TestLoopConformsToWorker",
+					wantLevels: []suite.Level{{Field: "Stop"}},
+				},
+				{
+					name:       "records no level of a callable that runs until its context ends in a suite",
+					give:       "TestWorkerSuite",
+					wantLevels: []suite.Level{{Field: "Stop", Ceiled: true}},
+				},
 			}
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -440,6 +459,17 @@ func TestSuite(t *testing.T) {
 			expect.Equal(t, [3]string{got.Data.Benchmark, got.Data.Parallel, got.Data.Allocs}, [3]string{},
 				"the test of a function that waits declares no benchmark and no allocation test")
 			expect.Equal(t, got.Data.Targets, []suite.Target{{Name: "FuzzAwait"}},
+				"the test of the function keeps its fuzz target")
+		})
+
+		t.Run("records no benchmark of a function that runs until its context ends", func(t *testing.T) {
+			t.Parallel()
+
+			got, found := generate(t, goTree, locksPackage).tests["TestServeSuite"]
+			assert.True(t, found, "suite records the test of the suite of Serve")
+			expect.Equal(t, [3]string{got.Data.Benchmark, got.Data.Parallel, got.Data.Allocs}, [3]string{},
+				"the test of a function that runs until its context ends declares no benchmark and no allocation test")
+			expect.Equal(t, got.Data.Targets, []suite.Target{{Name: "FuzzServe"}},
 				"the test of the function keeps its fuzz target")
 		})
 
@@ -1270,7 +1300,8 @@ func TestSuite(t *testing.T) {
 			}
 			expect.Equal(t, got, []string{"Meter.Count/keeps-the-count is no check of the suite of Meter, so " +
 				"Unexcused has no conformance test. The checks of Meter.Count are Meter.Count/smoke, " +
-				"Meter.Count/cancel, Meter.Count/zero-on-error, Meter.Count/allocation-budget, " +
+				"Meter.Count/smoke#generated, Meter.Count/cancel, Meter.Count/cancel#generated, " +
+				"Meter.Count/zero-on-error, Meter.Count/zero-on-error#generated, Meter.Count/allocation-budget, " +
 				"Meter.Count/byte-budget, Meter.Count/latency-budget and Meter.Count/mean-latency-budget"},
 				"the message lists the derived checks and the ceilings of the budget of the callable")
 			gentest.Unrecorded(t, res, subject)
@@ -1381,14 +1412,15 @@ func TestSuite(t *testing.T) {
 					name: "reports UnknownExcusal at an excusal of a callable with checks", give: "Priceless",
 					wantMsg: "Store.Get/keeps-the-price is no check of the suite of Store, so Priceless has no " +
 						"conformance test. The checks of Store.Get are Store.Get/keeps-an-item, " +
-						"Store.Get/keeps-the-item, Store.Get/smoke, Store.Get/cancel and Store.Get/zero-on-error",
+						"Store.Get/keeps-the-item, Store.Get/smoke, Store.Get/smoke#generated, Store.Get/cancel, " +
+						"Store.Get/cancel#generated, Store.Get/zero-on-error and Store.Get/zero-on-error#generated",
 				},
 				{
 					name: "reports UnknownExcusal at an excusal of a callable with a check and derived checks",
 					give: "Misplaced",
 					wantMsg: "Store.Put/keeps-the-item is no check of the suite of Store, so Misplaced has no " +
 						"conformance test. The checks of Store.Put are Store.Put/refuses-a-cancelled-put, " +
-						"Store.Put/smoke and Store.Put/cancel",
+						"Store.Put/smoke, Store.Put/smoke#generated, Store.Put/cancel and Store.Put/cancel#generated",
 				},
 				{
 					name: "reports UnknownExcusal at an excusal of a callable with one check", give: "Unflushed",
@@ -1540,7 +1572,28 @@ func TestSuite(t *testing.T) {
 					Statement: "Get returns the value of the last Put of a key", Options: ref(t, f, "putShares"),
 					Property: true,
 				},
+				{
+					Apply: ref(t, f, "ServesTheStoredValue"), Defect: ref(t, f, "servesAnotherValue"), Field: "Get",
+					Type: "KeeperGet", Method: "ServesTheStoredValue", Segment: "serves-the-stored-value",
+					Statement: "the backend of a Keeper serves the value that Put stored",
+					Values:    []*emit.TypeRef{ref(t, f, "backendOf"), ref(t, f, "clockOf")},
+				},
 			}, "each check binds the doors of its planted defect and the options of its property run")
+		})
+
+		t.Run("binds the door faults of a check with the machinery of failing calls", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, faultsPackage)
+			got := recorded(t, f, p).suites["Cache"]
+			expect.Equal(t, got.Checks, []suite.Check{{
+				Apply: ref(t, f, "ServesTheStoredValue"), Defect: ref(t, f, "servesStaleValues"), Field: "Get",
+				Type: "CacheGet", Method: "ServesTheStoredValue", Segment: "serves-the-stored-value",
+				Statement:   "Get returns the value that the backing store keeps, after a failed call of the store",
+				Doors:       []suite.Door{{Field: "Faults", Func: ref(t, f, "faulty")}},
+				Machineries: []string{"CallThatFailsOnDemand"},
+			}}, "the check lists the machinery whose door its planted defect states")
 		})
 
 		t.Run("binds the environment of a check", func(t *testing.T) {
@@ -1749,6 +1802,34 @@ func TestSuite(t *testing.T) {
 					wantCode: suite.BadCheck,
 					wantMsg: "the door reference referencesTwo of ReferencesTwo returns 2 results, and a door returns " +
 						"its subject alone",
+				},
+				{
+					name:     "reports BadCheck at a door faults without the injector",
+					give:     "FailsWithoutTheInjector",
+					wantCode: suite.BadCheck,
+					wantMsg: "the door faults faultsAlone of FailsWithoutTheInjector takes 1 parameter, and the door " +
+						"faults takes the handle of its check and the injector of the handle",
+				},
+				{
+					name:     "reports BadCheck at a door of a value without the planted defect",
+					give:     "OpensAlone",
+					wantCode: suite.BadCheck,
+					wantMsg: "the door of a value opensAlone of OpensAlone takes 1 parameter, and a door of a value " +
+						"takes the handle of its check and the planted defect",
+				},
+				{
+					name:     "reports BadCheck at a door of a value of two results",
+					give:     "OpensTwo",
+					wantCode: suite.BadCheck,
+					wantMsg: "the door of a value opensTwo of OpensTwo returns 2 results, and a door of a value returns " +
+						"its value alone",
+				},
+				{
+					name:     "reports BadCheck at two doors of values of one type",
+					give:     "OpensOneTypeTwice",
+					wantCode: suite.BadCheck,
+					wantMsg: "the doors of values opensPrimary and opensReplica of OpensOneTypeTwice return values of " +
+						"the type Backend, and a check has one door of a value of each type",
 				},
 				{
 					name:     "reports BadCheck at options of a check without a case",

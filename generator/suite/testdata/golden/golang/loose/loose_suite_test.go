@@ -47,6 +47,10 @@ func TestPrinterSuite(t *testing.T) {
 				loose.PrinterChecks.Print.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				loose.PrinterChecks.Print.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +74,10 @@ func TestPrinterSuite(t *testing.T) {
 			}),
 			conform.Excuse(
 				loose.PrinterChecks.Print.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				loose.PrinterChecks.Print.SmokeGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -98,6 +106,10 @@ func TestPrinterSuiteBudgets(t *testing.T) {
 			loose.PrinterChecks.Print.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			loose.PrinterChecks.Print.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +122,10 @@ func FuzzPrinterSuitePrint(f *testing.F) {
 		printerIdle,
 		conform.Excuse(
 			loose.PrinterChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			loose.PrinterChecks.Print.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -163,6 +179,10 @@ func TestRecorderSuite(t *testing.T) {
 				loose.RecorderChecks.Field.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				loose.RecorderChecks.Field.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -186,6 +206,10 @@ func TestRecorderSuite(t *testing.T) {
 			}),
 			conform.Excuse(
 				loose.RecorderChecks.Field.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				loose.RecorderChecks.Field.SmokeGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -214,6 +238,10 @@ func TestRecorderSuiteBudgets(t *testing.T) {
 			loose.RecorderChecks.Field.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			loose.RecorderChecks.Field.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -226,6 +254,10 @@ func FuzzRecorderSuiteField(f *testing.F) {
 		recorderIdle,
 		conform.Excuse(
 			loose.RecorderChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			loose.RecorderChecks.Field.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -278,6 +310,10 @@ func TestJournalSuite(t *testing.T) {
 				loose.JournalChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				loose.JournalChecks.Put.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -303,6 +339,10 @@ func TestJournalSuite(t *testing.T) {
 				loose.JournalChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				loose.JournalChecks.Put.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -326,6 +366,10 @@ func TestJournalSuiteBudgets(t *testing.T) {
 			loose.JournalChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			loose.JournalChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -338,6 +382,10 @@ func FuzzJournalSuitePut(f *testing.F) {
 		journalIdle,
 		conform.Excuse(
 			loose.JournalChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			loose.JournalChecks.Put.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -390,6 +438,10 @@ func TestPlainSuite(t *testing.T) {
 				loose.PlainChecks.Print.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				loose.PlainChecks.Print.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -415,6 +467,10 @@ func TestPlainSuite(t *testing.T) {
 				loose.PlainChecks.Print.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				loose.PlainChecks.Print.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -438,6 +494,10 @@ func TestPlainSuiteBudgets(t *testing.T) {
 			loose.PlainChecks.Print.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			loose.PlainChecks.Print.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -450,6 +510,10 @@ func FuzzPlainSuitePrint(f *testing.F) {
 		plainIdle,
 		conform.Excuse(
 			loose.PlainChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			loose.PlainChecks.Print.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)

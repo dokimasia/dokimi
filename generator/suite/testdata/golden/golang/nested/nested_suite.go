@@ -566,48 +566,56 @@ func TrackerSuite() conform.Suite[Tracker] {
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Tracker.Route",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter root of Route",
 				Remedy:   "author a sample of the parameter root with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Tracker.Follow",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter b of Follow",
 				Remedy:   "author a sample of the parameter b with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Tracker.Walk",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter s of Walk",
 				Remedy:   "author a sample of the parameter s with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Tracker.Volley",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter p of Volley",
 				Remedy:   "author a sample of the parameter p with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Tracker.Track",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter l of Track",
 				Remedy:   "author a sample of the parameter l with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Tracker.Pick",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter c of Pick",
 				Remedy:   "author a sample of the parameter c with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Tracker.Play",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter m of Play",
 				Remedy:   "author a sample of the parameter m with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Tracker.Link",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter l of Link",
 				Remedy:   "author a sample of the parameter l with the directive sample",
 			},
@@ -1273,7 +1281,12 @@ func newTrackerOver(_ *TrackerHandle, spend func()) Tracker {
 //
 // Hire/smoke: Hire returns without a panic for derived inputs.
 //
+// Hire/smoke#generated: Hire returns without a panic for derived inputs.
+//
 // Hire/deterministic: Hire returns the same value for the same inputs.
+//
+// Hire/deterministic#generated: Hire returns the same value for the same
+// inputs.
 
 // The derived checks of Hire that witness their laws at the shallow end:
 //
@@ -1310,10 +1323,22 @@ func (c hireCallable) Smoke() conform.ID[HireFunc] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Hire returns
+// without a panic for derived inputs.
+func (c hireCallable) SmokeGenerated() conform.ID[HireFunc] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that Hire returns the
 // same value for the same inputs.
 func (c hireCallable) Deterministic() conform.ID[HireFunc] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Hire
+// returns the same value for the same inputs.
+func (c hireCallable) DeterministicGenerated() conform.ID[HireFunc] {
+	return c.Check("deterministic#generated")
 }
 
 // HireSuite returns the checks of Hire, and the calls and the budgets of
@@ -1342,6 +1367,33 @@ func HireSuite() conform.Suite[HireFunc] {
 				Defect: hirePanics,
 			},
 			{
+				ID:          HireChecks.SmokeGenerated(),
+				Statement:   "Hire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *HireHandle, c *prop.Case) {
+					hireResults := c.Draw(prop.List(prop.Of[Labeler]()), "hire")
+					drawnHire := func() func() Labeler {
+						var hireAt atomic.Int64
+						return func() (r0 Labeler) {
+							i := int(hireAt.Add(1) - 1)
+							if i >= len(hireResults) {
+								return r0
+							}
+							return hireResults[i]
+						}
+					}
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject()(drawnHire())
+						return nil
+					})
+				},
+				Defect: hirePanics,
+			},
+			{
 				ID:          HireChecks.Deterministic(),
 				Statement:   "Hire returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
@@ -1354,6 +1406,34 @@ func HireSuite() conform.Suite[HireFunc] {
 				Apply: func(h *HireHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject()(func() Labeler { return nil })
+						return r0, nil
+					})
+				},
+				Defect: hireDrifts,
+			},
+			{
+				ID:          HireChecks.DeterministicGenerated(),
+				Statement:   "Hire returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[HireFunc]{HireChecks.SmokeGenerated()},
+				Property: func(h *HireHandle, c *prop.Case) {
+					hireResults := c.Draw(prop.List(prop.Of[Labeler]()), "hire")
+					drawnHire := func() func() Labeler {
+						var hireAt atomic.Int64
+						return func() (r0 Labeler) {
+							i := int(hireAt.Add(1) - 1)
+							if i >= len(hireResults) {
+								return r0
+							}
+							return hireResults[i]
+						}
+					}
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject()(drawnHire())
 						return r0, nil
 					})
 				},

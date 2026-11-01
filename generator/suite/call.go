@@ -35,20 +35,44 @@ import (
 // Budget is the budget of the callable, and Concurrent reports that the
 // callable has the mixin concurrent or concurrent-readers. Waits reports that
 // the callable has the mixin waits, so no benchmark and no ceiling repeats its
-// calls on one subject. Over is the signature of the callable in the planted
+// calls on one subject. RunsUntilCancelled reports that the callable has the
+// mixin runs-until-cancelled, so no benchmark and no ceiling calls it with a
+// context that does not end. Over is the signature of the callable in the planted
 // defect of a ceiling, whose parameters have no names and whose results have
 // the names r0, r1 and so on.
 type Call struct {
-	Over       *emit.Method
-	Var        string
-	Field      string
-	Type       string
-	Assign     string
-	Returns    string
-	Params     []Param
-	Budget     Budget
-	Concurrent bool
-	Waits      bool
+	Over               *emit.Method
+	Var                string
+	Field              string
+	Type               string
+	Assign             string
+	Returns            string
+	Params             []Param
+	Budget             Budget
+	Concurrent         bool
+	Waits              bool
+	RunsUntilCancelled bool
+}
+
+// repeatable reports whether a benchmark and a ceiling can repeat the calls
+// of c on one subject with a context that does not end.
+func (c *Call) repeatable() bool {
+	return !c.Waits && !c.RunsUntilCancelled
+}
+
+// unrepeatable returns why a benchmark and a ceiling cannot repeat the calls
+// of the callable id on one subject: that it waits for another call, or that
+// it runs until its context ends. It returns the empty string for any other
+// callable.
+func unrepeatable(m sdk.Matcher, id *symbol.Identity) string {
+	switch {
+	case mixed(m, id, shape.Waits):
+		return "waits for another call"
+	case mixed(m, id, shape.RunsUntilCancelled):
+		return "runs until its context ends"
+	default:
+		return ""
+	}
 }
 
 // Param is one parameter of a call. Name is the name of the value that the
@@ -142,9 +166,10 @@ func (k *caller) call(c *Callable, sym symbol.Symbol, id *symbol.Identity) Call 
 	return Call{
 		Var: name, Field: c.Field, Type: c.Type, Params: k.params(&view, nodes, mixed(k.m, id, shape.NilSafe), c.Name),
 		Assign: assign, Returns: returns, Budget: k.g.budgetFact(k.m, id),
-		Concurrent: mixed(k.m, id, shape.Concurrent) || mixed(k.m, id, shape.ConcurrentReaders),
-		Waits:      mixed(k.m, id, shape.Waits),
-		Over:       k.over(&view, id),
+		Concurrent:         mixed(k.m, id, shape.Concurrent) || mixed(k.m, id, shape.ConcurrentReaders),
+		Waits:              mixed(k.m, id, shape.Waits),
+		RunsUntilCancelled: mixed(k.m, id, shape.RunsUntilCancelled),
+		Over:               k.over(&view, id),
 	}
 }
 

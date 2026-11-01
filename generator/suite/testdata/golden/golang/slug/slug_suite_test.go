@@ -41,7 +41,15 @@ func TestSlugSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				slug.SlugChecks.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				slug.SlugChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				slug.SlugChecks.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -75,7 +83,15 @@ func TestSlugSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				slug.SlugChecks.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				slug.SlugChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				slug.SlugChecks.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(

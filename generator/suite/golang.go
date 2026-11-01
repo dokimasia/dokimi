@@ -79,8 +79,8 @@ func viewOfDefect(d *Defect, embedded, handle, subject string) defectView {
 }
 
 // bodyView is the body of the override of the planted defect Defect: Call is
-// the callable of the fresh subject, and State the prefix of the counter and
-// the clock of the defect.
+// the callable of the fresh subject, and State the prefix of the counter, the
+// clock, the handle and the dependency of the defect.
 type bodyView struct {
 	Defect *Defect
 	Call   string
@@ -119,9 +119,9 @@ var units = []struct {
 }
 
 // golangDuration returns the Go expression of the duration d in its largest
-// unit that divides it, such as time.Millisecond or 2 * time.Microsecond. A
-// template that writes the expression imports the package time.
-func golangDuration(d time.Duration) string {
+// unit that divides it, such as time.Millisecond or 2 * time.Microsecond. pkg
+// is the name under which the file imports the package time.
+func golangDuration(d time.Duration, pkg string) string {
 	unit, name := time.Nanosecond, "Nanosecond"
 	for _, u := range units {
 		if d%u.unit == 0 {
@@ -130,9 +130,9 @@ func golangDuration(d time.Duration) string {
 		}
 	}
 	if n := d / unit; n != 1 {
-		return fmt.Sprintf("%d * time.%s", n, name)
+		return fmt.Sprintf("%d * %s.%s", n, pkg, name)
 	}
-	return "time." + name
+	return pkg + "." + name
 }
 
 // golangPart is the part of suite for Go.

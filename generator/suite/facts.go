@@ -4,6 +4,8 @@
 package suite
 
 import (
+	"slices"
+
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/emit"
@@ -30,30 +32,38 @@ var runtime = func() []spec.MachineryID {
 
 // derivation records into s the facts of each callable of the suite and the
 // checks that the claims of the conformance spec derive from them. syms are
-// the methods or the function of the callables, in the order of s.Callables.
-// The suite of a function has no declaration beside the function.
+// the methods or the function of the callables, in the order of s.Callables
+// and s.Calls. The suite of a function has no declaration beside the function.
 func (k *caller) derivation(s *Suite, syms []symbol.Symbol) {
 	declaration := s.Declaration
 	if s.Func != nil {
 		declaration = ""
 	}
-	s.Facts, s.Derivation = k.derive(declaration, syms)
+	s.Facts, s.Derivation = k.derive(declaration, syms, s.Calls)
 	k.derived(s)
 }
 
 // derive returns the facts of the callables syms of the declaration named
 // declaration, and the checks that the claims of the conformance spec derive
-// from them. A function has no declaration, so its declaration is empty.
-func (k *caller) derive(declaration string, syms []symbol.Symbol) ([]derive.Facts, derive.Suite) {
+// from them with the machineries that the declaration states. A function has
+// no declaration, so its declaration is empty. calls are the call generators
+// of the callables, in the order of syms. A check of samples gets a generated
+// binding where that binding takes a choice of the case for an input of one
+// of its calls.
+func (k *caller) derive(declaration string, syms []symbol.Symbol, calls []Call) ([]derive.Facts, derive.Suite) {
 	facts := make([]derive.Facts, 0, len(syms))
 	for _, sym := range syms {
 		f := k.factsOf(sym)
 		f.Declaration = declaration
 		facts = append(facts, f)
 	}
+	draws := func(c *derive.Check) bool {
+		b := binder{k: k, check: c, drawn: k.newDraws(facts, calls)}
+		return slices.ContainsFunc(used(b.args()), (*Draw).choosing)
+	}
 	// The callables of one declaration have distinct names, so their keys
 	// differ and Derive returns no error.
-	d, _ := derive.Derive(facts, spec.Claims(), nil, runtime)
+	d, _ := derive.Derive(facts, spec.Claims(), k.g.machineriesOfDeclaration(k.m, &k.origin), runtime, draws)
 	return facts, d
 }
 

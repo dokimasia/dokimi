@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/meta"
@@ -117,19 +116,20 @@ var budgetSchema = directive.Schema{
 // under the directive suite. It reports [BadBudget] at the budget of a method
 // of another declaration and of a method that is not exported, because no
 // suite has such a callable. It also reports the budget of a method with the
-// mixin waits, because a ceiling repeats the calls of its callable on one
-// subject.
+// mixin waits or runs-until-cancelled, because a ceiling repeats the calls of
+// its callable on one subject with a context that does not end.
 func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) error {
 	method := m.Method
 	name := method.ID.Owner + "." + method.Name
+	why := unrepeatable(m, &method.ID)
 	switch {
 	case !suited(m, &method.Host):
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s has no directive suite, so the budget of %s has no check",
 			method.ID.Owner, name)
 	case method.Visibility != symbol.VisibilityPublic:
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s is not exported, so its budget has no check", name)
-	case mixed(m, &method.ID, shape.Waits):
-		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s waits for another call, so its budget has no check", name)
+	case why != "":
+		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s %s, so its budget has no check", name, why)
 	default:
 		g.stamp(m, name, st)
 	}
@@ -138,15 +138,17 @@ func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) 
 
 // budgetOfFunction stamps the facts of the budget of a function under the
 // directive suite. It reports [BadBudget] at the budget of another function,
-// and at the budget of a function with the mixin waits.
+// and at the budget of a function with the mixin waits or
+// runs-until-cancelled.
 func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, _ part, st *sdk.Stamper) error {
 	fn := m.Function
+	why := unrepeatable(m, &fn.ID)
 	switch {
 	case !suited(m, &fn.ID):
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s has no directive suite, so the budget of %s has no check",
 			fn.Name, fn.Name)
-	case mixed(m, &fn.ID, shape.Waits):
-		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s waits for another call, so its budget has no check", fn.Name)
+	case why != "":
+		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s %s, so its budget has no check", fn.Name, why)
 	default:
 		g.stamp(m, fn.Name, st)
 	}
@@ -378,8 +380,10 @@ func (g *generator) ceilingsOf(
 			}
 		}
 		var ofDeclaration Budget
+		why := ""
 		if at >= 0 {
 			ofDeclaration = g.budgetFact(m, &methods[at].ID)
+			why = unrepeatable(m, &methods[at].ID)
 		}
 		switch {
 		case at < 0:
@@ -390,9 +394,9 @@ func (g *generator) ceilingsOf(
 			m.ErrorfAt(BadBudget, d.Pos, "%s states %d budgets of %s, and a callable has one budget",
 				subject, written[callable], callable)
 			stated = false
-		case mixed(m, &methods[at].ID, shape.Waits):
-			m.ErrorfAt(BadBudget, d.Pos, "%s states a budget of %s, which waits for another call, so the budget "+
-				"has no check", subject, callable)
+		case why != "":
+			m.ErrorfAt(BadBudget, d.Pos, "%s states a budget of %s, which %s, so the budget has no check",
+				subject, callable, why)
 			stated = false
 		case ofDeclaration != (Budget{}):
 			advice := ""

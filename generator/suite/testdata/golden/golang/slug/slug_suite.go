@@ -14,7 +14,12 @@ import (
 //
 // Slug/smoke: Slug returns without a panic for derived inputs.
 //
+// Slug/smoke#generated: Slug returns without a panic for derived inputs.
+//
 // Slug/deterministic: Slug returns the same value for the same inputs.
+//
+// Slug/deterministic#generated: Slug returns the same value for the same
+// inputs.
 
 // The derived checks of Slug that witness their laws at the shallow end:
 //
@@ -63,10 +68,22 @@ func (c slugCallable) Smoke() conform.ID[SlugFunc] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Slug returns
+// without a panic for derived inputs.
+func (c slugCallable) SmokeGenerated() conform.ID[SlugFunc] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that Slug returns the
 // same value for the same inputs.
 func (c slugCallable) Deterministic() conform.ID[SlugFunc] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Slug
+// returns the same value for the same inputs.
+func (c slugCallable) DeterministicGenerated() conform.ID[SlugFunc] {
+	return c.Check("deterministic#generated")
 }
 
 // SlugSuite returns the checks of Slug, and the calls and the budgets of
@@ -95,6 +112,24 @@ func SlugSuite() conform.Suite[SlugFunc] {
 				Defect: slugPanics,
 			},
 			{
+				ID:          SlugChecks.SmokeGenerated(),
+				Statement:   "Slug returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *SlugHandle, c *prop.Case) {
+					drawnTitle := c.Draw(prop.Of[string](), "title")
+					drawnKeep := c.Draw(prop.Of[string](), "keep")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject()(drawnTitle, drawnKeep)
+						return nil
+					})
+				},
+				Defect: slugPanics,
+			},
+			{
 				ID:          SlugChecks.Deterministic(),
 				Statement:   "Slug returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
@@ -107,6 +142,25 @@ func SlugSuite() conform.Suite[SlugFunc] {
 				Apply: func(h *SlugHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
 						r0 := h.Subject()(string("title-a"), string("keep-a"))
+						return r0, nil
+					})
+				},
+				Defect: slugDrifts,
+			},
+			{
+				ID:          SlugChecks.DeterministicGenerated(),
+				Statement:   "Slug returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[SlugFunc]{SlugChecks.SmokeGenerated()},
+				Property: func(h *SlugHandle, c *prop.Case) {
+					drawnTitle := c.Draw(prop.Of[string](), "title")
+					drawnKeep := c.Draw(prop.Of[string](), "keep")
+					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
+						r0 := h.Subject()(drawnTitle, drawnKeep)
 						return r0, nil
 					})
 				},

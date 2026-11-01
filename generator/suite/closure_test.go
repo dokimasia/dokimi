@@ -39,6 +39,21 @@ func TestClosure(t *testing.T) {
 	t.Run("New", func(t *testing.T) {
 		t.Parallel()
 
+		t.Run("takes the two inputs of a call that combines two values", func(t *testing.T) {
+			t.Parallel()
+
+			tallies := generate(t, goTree, drawnPackage).suites["Tallies"]
+			c := derivedNamed(t, &tallies, "Merge", "commutative").Args[0].Closure
+			assert.NotNil(t, c, "the call is a closure")
+			assert.NotNil(t, c.Param, "the closure takes the two values")
+			expect.Equal(t, c.Param.Name, "x", "the first value is x")
+			expect.Equal(t, c.Param.Other, "y", "the second value is y")
+			expect.Equal(t, spelled(c.Param.Type), "Tally", "the values have the type of the inputs")
+			expect.Equal(t, c.Args, []suite.Expr{{Name: "x"}, {Name: "y"}}, "the call passes the two values")
+			expect.Equal(t, c.Results, []suite.Expr{{Name: "r0"}, {Word: "nil"}},
+				"the closure returns the value beside a nil error")
+		})
+
 		t.Run("returns the call of a callable that returns one value beside an error", func(t *testing.T) {
 			t.Parallel()
 
@@ -177,6 +192,9 @@ func TestClosure(t *testing.T) {
 			c := closure(t, "Snapshots", "Get", "point-in-time", 1)
 			assert.Length(t, c.Lets, 2, "the write declares its value and changes one field of it")
 			expect.NotEqual(t, c.Lets[1].Select, "", "the second variable changes a field")
+			assert.Length(t, c.Later, 1, "the later writes change the field again")
+			expect.Equal(t, c.Later[0].Select, c.Lets[1].Select, "the later writes change the same field")
+			expect.NotEqual(t, c.Later[0].Value, c.Lets[1].Value, "the later writes take another value of the field")
 		})
 
 		t.Run("changes the judged field on the later calls of a guarded write", func(t *testing.T) {

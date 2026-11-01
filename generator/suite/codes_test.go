@@ -68,6 +68,15 @@ func TestCodes(t *testing.T) {
 			WantMeaning: "the function of the param options of the directive subject is not a function of the " +
 				"options of an application",
 		},
+		{
+			Name: "LostCheck", Give: suite.LostCheck, WantCode: "DOKIMISUITE-0012",
+			WantMeaning: "a check of the committed lock is no longer generated",
+		},
+		{
+			Name: "UnknownMachinery", Give: suite.UnknownMachinery, WantCode: "DOKIMISUITE-0013",
+			WantMeaning: "the param machineries of the directive suite names a machinery that the consumer does " +
+				"not supply",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

@@ -14,16 +14,27 @@ import (
 
 // The derived checks of Reach:
 //
+// Reach.Store/smoke#generated: Store returns without a panic for derived
+// inputs.
+//
+// Reach.Store/cancel#generated: Store returns an error for a cancelled
+// context.
+//
 // Reach.Current/smoke: Current returns without a panic for derived inputs.
 //
 // Reach.Current/cancel: Current returns an error for a cancelled context.
 //
 // Reach.Current/zero-on-error: Current returns the zero value beside an
 // error.
+//
+// Reach.Current/read-after-write#generated: Current returns what Store
+// stored before it.
 
 // The derived checks of Reach that witness their laws at the shallow end:
 //
 // Reach.Current/smoke
+//
+// Reach.Current/read-after-write#generated
 
 // The refused claims of Reach:
 //
@@ -84,6 +95,18 @@ type reachStore struct {
 	conform.Callable[Reach]
 }
 
+// SmokeGenerated returns the identity of the check that Store returns
+// without a panic for derived inputs.
+func (c reachStore) SmokeGenerated() conform.ID[Reach] {
+	return c.Check("smoke#generated")
+}
+
+// CancelGenerated returns the identity of the check that Store returns an
+// error for a cancelled context.
+func (c reachStore) CancelGenerated() conform.ID[Reach] {
+	return c.Check("cancel#generated")
+}
+
 // reachCurrent is the name of Reach.Current, with the identities of its
 // checks.
 type reachCurrent struct {
@@ -108,6 +131,12 @@ func (c reachCurrent) ZeroOnError() conform.ID[Reach] {
 	return c.Check("zero-on-error")
 }
 
+// ReadAfterWriteGenerated returns the identity of the check that Current
+// returns what Store stored before it.
+func (c reachCurrent) ReadAfterWriteGenerated() conform.ID[Reach] {
+	return c.Check("read-after-write#generated")
+}
+
 // reachGear is the name of Reach.Gear, with the identities of its checks.
 type reachGear struct {
 	conform.Callable[Reach]
@@ -121,6 +150,38 @@ func ReachSuite() conform.Suite[Reach] {
 		Package:     "example.com/shop/wrap",
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Reach]{
+			{
+				ID:          ReachChecks.Store.SmokeGenerated(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReachHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnP)
+					})
+				},
+				Defect: reachStorePanics,
+			},
+			{
+				ID:          ReachChecks.Store.CancelGenerated(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReachHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnP)
+					})
+				},
+				Defect: reachStoreIgnoresCancel,
+			},
 			{
 				ID:          ReachChecks.Current.Smoke(),
 				Statement:   "Current returns without a panic for derived inputs",
@@ -169,41 +230,68 @@ func ReachSuite() conform.Suite[Reach] {
 				},
 				Defect: reachCurrentValueBeside,
 			},
+			{
+				ID:          ReachChecks.Current.ReadAfterWriteGenerated(),
+				Statement:   "Current returns what Store stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *ReachHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.WriteThenRead(h, func(ctx context.Context) (tool.Pitch, error) {
+						return h.Subject().Current(ctx)
+					}, func(ctx context.Context) (tool.Pitch, error) {
+						w := drawnP
+						err := h.Subject().Store(ctx, w)
+						return w, err
+					})
+				},
+				Defect: reachCurrentReadsAnotherValue,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Smoke,
 				Callable: "Reach.Store",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Store with the directive sample",
 			},
 			{
 				Claim:    spec.Cancel,
 				Callable: "Reach.Store",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Store with the directive sample",
 			},
 			{
 				Claim:    spec.ReadAfterWrite,
 				Callable: "Reach.Current",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Current with the directive sample",
 			},
 			{
 				Claim:    spec.Smoke,
 				Callable: "Reach.Gear",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Gear with the directive sample",
 			},
 			{
 				Claim:    spec.Cancel,
 				Callable: "Reach.Gear",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Gear with the directive sample",
 			},
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Reach.Gear",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Gear with the directive sample",
 			},
@@ -360,6 +448,43 @@ func newReachOver(_ *ReachHandle, spend func()) Reach {
 	return reachOver{spend: spend}
 }
 
+// reachStorePanicsDefect is the planted defect of a Reach whose Store
+// panics.
+type reachStorePanicsDefect struct {
+	reachOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*reachStorePanicsDefect) Store(p0 context.Context, p1 tool.Pitch) (r0 error) {
+	panic("the planted defect of a Reach whose Store panics")
+}
+
+// reachStorePanics returns the planted defect of a Reach whose Store
+// panics over a fresh subject.
+func reachStorePanics(h *ReachHandle) Reach {
+	return &reachStorePanicsDefect{reachOverEmbedded: h.Fresh()}
+}
+
+// reachStoreIgnoresCancelDefect is the planted defect of a Reach whose
+// Store ignores the context.
+type reachStoreIgnoresCancelDefect struct {
+	reachOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (d *reachStoreIgnoresCancelDefect) Store(p0 context.Context, p1 tool.Pitch) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.reachOverEmbedded.Store(p0, p1)
+}
+
+// reachStoreIgnoresCancel returns the planted defect of a Reach whose
+// Store ignores the context over a fresh subject.
+func reachStoreIgnoresCancel(h *ReachHandle) Reach {
+	return &reachStoreIgnoresCancelDefect{reachOverEmbedded: h.Fresh()}
+}
+
 // reachCurrentPanicsDefect is the planted defect of a Reach whose Current
 // panics.
 type reachCurrentPanicsDefect struct {
@@ -416,6 +541,34 @@ func (d *reachCurrentValueBesideDefect) Current(p0 context.Context) (r0 tool.Pit
 // Current returns a value beside an error over a fresh subject.
 func reachCurrentValueBeside(h *ReachHandle) Reach {
 	return &reachCurrentValueBesideDefect{reachOverEmbedded: h.Fresh()}
+}
+
+// reachCurrentReadsAnotherValueDefect is the planted defect of a Reach
+// whose Current returns a value that Store did not write.
+type reachCurrentReadsAnotherValueDefect struct {
+	reachOverEmbedded
+}
+
+// Current is the override of the planted defect.
+func (d *reachCurrentReadsAnotherValueDefect) Current(
+	p0 context.Context,
+) (r0 tool.Pitch, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.reachOverEmbedded.Current(p0)
+	if r1 == nil {
+		r0 = tool.Pitch(7)
+	}
+	return r0, r1
+}
+
+// reachCurrentReadsAnotherValue returns the planted defect of a Reach
+// whose Current returns a value that Store did not write over a fresh
+// subject.
+func reachCurrentReadsAnotherValue(h *ReachHandle) Reach {
+	return &reachCurrentReadsAnotherValueDefect{reachOverEmbedded: h.Fresh()}
 }
 
 // The refused claims of Tuned:
@@ -484,6 +637,7 @@ func TunedSuite() conform.Suite[Tuned] {
 			{
 				Claim:    spec.Smoke,
 				Callable: "Tuned.Tune",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Tune with the directive sample",
 			},
@@ -704,10 +858,28 @@ func newTunedOver(_ *TunedHandle, spend func()) Tuned {
 //
 // Limited.Limit/smoke: Limit returns without a panic for derived inputs.
 //
+// Limited.Limit/smoke#generated: Limit returns without a panic for derived
+// inputs.
+//
+// Limited.Grip/smoke#generated: Grip returns without a panic for derived
+// inputs.
+//
+// Limited.Span/smoke#generated: Span returns without a panic for derived
+// inputs.
+//
+// Limited.Pitch/smoke#generated: Pitch returns without a panic for derived
+// inputs.
+//
 // Limited.Measure/smoke: Measure returns without a panic for derived
 // inputs.
 //
+// Limited.Measure/smoke#generated: Measure returns without a panic for
+// derived inputs.
+//
 // Limited.Phase/smoke: Phase returns without a panic for derived inputs.
+//
+// Limited.Phase/smoke#generated: Phase returns without a panic for derived
+// inputs.
 
 // The derived checks of Limited that witness their laws at the shallow
 // end:
@@ -812,10 +984,22 @@ func (c limitedLimit) Smoke() conform.ID[Limited] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Limit returns
+// without a panic for derived inputs.
+func (c limitedLimit) SmokeGenerated() conform.ID[Limited] {
+	return c.Check("smoke#generated")
+}
+
 // limitedGrip is the name of Limited.Grip, with the identities of its
 // checks.
 type limitedGrip struct {
 	conform.Callable[Limited]
+}
+
+// SmokeGenerated returns the identity of the check that Grip returns
+// without a panic for derived inputs.
+func (c limitedGrip) SmokeGenerated() conform.ID[Limited] {
+	return c.Check("smoke#generated")
 }
 
 // limitedClamp is the name of Limited.Clamp, with the identities of its
@@ -842,10 +1026,22 @@ type limitedSpan struct {
 	conform.Callable[Limited]
 }
 
+// SmokeGenerated returns the identity of the check that Span returns
+// without a panic for derived inputs.
+func (c limitedSpan) SmokeGenerated() conform.ID[Limited] {
+	return c.Check("smoke#generated")
+}
+
 // limitedPitch is the name of Limited.Pitch, with the identities of its
 // checks.
 type limitedPitch struct {
 	conform.Callable[Limited]
+}
+
+// SmokeGenerated returns the identity of the check that Pitch returns
+// without a panic for derived inputs.
+func (c limitedPitch) SmokeGenerated() conform.ID[Limited] {
+	return c.Check("smoke#generated")
 }
 
 // limitedMeasure is the name of Limited.Measure, with the identities of
@@ -860,6 +1056,12 @@ func (c limitedMeasure) Smoke() conform.ID[Limited] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Measure returns
+// without a panic for derived inputs.
+func (c limitedMeasure) SmokeGenerated() conform.ID[Limited] {
+	return c.Check("smoke#generated")
+}
+
 // limitedPhase is the name of Limited.Phase, with the identities of its
 // checks.
 type limitedPhase struct {
@@ -870,6 +1072,12 @@ type limitedPhase struct {
 // panic for derived inputs.
 func (c limitedPhase) Smoke() conform.ID[Limited] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Phase returns
+// without a panic for derived inputs.
+func (c limitedPhase) SmokeGenerated() conform.ID[Limited] {
+	return c.Check("smoke#generated")
 }
 
 // limitedSense is the name of Limited.Sense, with the identities of its
@@ -904,6 +1112,74 @@ func LimitedSuite() conform.Suite[Limited] {
 				Defect: limitedLimitPanics,
 			},
 			{
+				ID:          LimitedChecks.Limit.SmokeGenerated(),
+				Statement:   "Limit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LimitedHandle, c *prop.Case) {
+					drawnL := c.Draw(prop.Of[tool.Limits](), "l")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Limit(drawnL)
+						return nil
+					})
+				},
+				Defect: limitedLimitPanics,
+			},
+			{
+				ID:          LimitedChecks.Grip.SmokeGenerated(),
+				Statement:   "Grip returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LimitedHandle, c *prop.Case) {
+					drawnG := c.Draw(prop.Of[tool.Grip](), "g")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Grip(drawnG)
+						return nil
+					})
+				},
+				Defect: limitedGripPanics,
+			},
+			{
+				ID:          LimitedChecks.Span.SmokeGenerated(),
+				Statement:   "Span returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LimitedHandle, c *prop.Case) {
+					drawnS := c.Draw(prop.Of[tool.Span](), "s")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Span(drawnS)
+						return nil
+					})
+				},
+				Defect: limitedSpanPanics,
+			},
+			{
+				ID:          LimitedChecks.Pitch.SmokeGenerated(),
+				Statement:   "Pitch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LimitedHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Pitch(drawnP)
+						return nil
+					})
+				},
+				Defect: limitedPitchPanics,
+			},
+			{
 				ID:          LimitedChecks.Measure.Smoke(),
 				Statement:   "Measure returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -915,6 +1191,23 @@ func LimitedSuite() conform.Suite[Limited] {
 				Apply: func(h *LimitedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Measure(tool.Unit(1))
+						return nil
+					})
+				},
+				Defect: limitedMeasurePanics,
+			},
+			{
+				ID:          LimitedChecks.Measure.SmokeGenerated(),
+				Statement:   "Measure returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LimitedHandle, c *prop.Case) {
+					drawnU := c.Draw(prop.Of[tool.Unit](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Measure(drawnU)
 						return nil
 					})
 				},
@@ -937,23 +1230,43 @@ func LimitedSuite() conform.Suite[Limited] {
 				},
 				Defect: limitedPhasePanics,
 			},
+			{
+				ID:          LimitedChecks.Phase.SmokeGenerated(),
+				Statement:   "Phase returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LimitedHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Phase](), "p")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Phase(drawnP)
+						return nil
+					})
+				},
+				Defect: limitedPhasePanics,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Smoke,
 				Callable: "Limited.Grip",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Grip with the directive sample",
 			},
 			{
 				Claim:    spec.Smoke,
 				Callable: "Limited.Span",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Span with the directive sample",
 			},
 			{
 				Claim:    spec.Smoke,
 				Callable: "Limited.Pitch",
+				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Pitch with the directive sample",
 			},
@@ -1448,6 +1761,57 @@ func (*limitedLimitPanicsDefect) Limit(p0 tool.Limits) {
 // panics over a fresh subject.
 func limitedLimitPanics(h *LimitedHandle) Limited {
 	return &limitedLimitPanicsDefect{limitedOverEmbedded: h.Fresh()}
+}
+
+// limitedGripPanicsDefect is the planted defect of a Limited whose Grip
+// panics.
+type limitedGripPanicsDefect struct {
+	limitedOverEmbedded
+}
+
+// Grip is the override of the planted defect.
+func (*limitedGripPanicsDefect) Grip(p0 tool.Grip) {
+	panic("the planted defect of a Limited whose Grip panics")
+}
+
+// limitedGripPanics returns the planted defect of a Limited whose Grip
+// panics over a fresh subject.
+func limitedGripPanics(h *LimitedHandle) Limited {
+	return &limitedGripPanicsDefect{limitedOverEmbedded: h.Fresh()}
+}
+
+// limitedSpanPanicsDefect is the planted defect of a Limited whose Span
+// panics.
+type limitedSpanPanicsDefect struct {
+	limitedOverEmbedded
+}
+
+// Span is the override of the planted defect.
+func (*limitedSpanPanicsDefect) Span(p0 tool.Span) {
+	panic("the planted defect of a Limited whose Span panics")
+}
+
+// limitedSpanPanics returns the planted defect of a Limited whose Span
+// panics over a fresh subject.
+func limitedSpanPanics(h *LimitedHandle) Limited {
+	return &limitedSpanPanicsDefect{limitedOverEmbedded: h.Fresh()}
+}
+
+// limitedPitchPanicsDefect is the planted defect of a Limited whose Pitch
+// panics.
+type limitedPitchPanicsDefect struct {
+	limitedOverEmbedded
+}
+
+// Pitch is the override of the planted defect.
+func (*limitedPitchPanicsDefect) Pitch(p0 tool.Pitch) {
+	panic("the planted defect of a Limited whose Pitch panics")
+}
+
+// limitedPitchPanics returns the planted defect of a Limited whose Pitch
+// panics over a fresh subject.
+func limitedPitchPanics(h *LimitedHandle) Limited {
+	return &limitedPitchPanicsDefect{limitedOverEmbedded: h.Fresh()}
 }
 
 // limitedMeasurePanicsDefect is the planted defect of a Limited whose

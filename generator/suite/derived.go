@@ -26,12 +26,16 @@ import (
 // [Callable] contains them, and Method and Segment are the method and the
 // segment of its identity. Claim, Probe, Reason and Law are the names of the
 // constants of the package spec of the Go runtime, Machineries those of the
-// machineries of the claim, the deepest first, and Entails the identities of
+// machineries of the check, the deepest first, and Entails the identities of
 // the shallower checks that the law of the check implies. Args are the
 // arguments of the probe after the handle. Defect is the name of the function
 // that returns the planted defect, which every check with the same break of
 // the same callable shares. Clock reports a probe of the clock, which runs
 // inside a testing/synctest bubble.
+//
+// Generated reports a check whose inputs the property engine generates. The
+// template writes it as a property check that makes the draws Draws for each
+// case before it calls its probe.
 type Derived struct {
 	Field       string
 	Type        string
@@ -46,8 +50,10 @@ type Derived struct {
 	Machineries []string
 	Entails     []Identity
 	Args        []Arg
+	Draws       []*Draw
 	Shallow     bool
 	Clock       bool
+	Generated   bool
 }
 
 // Arg is one argument of a probe: a closure that calls the subject, an
@@ -68,12 +74,13 @@ type Projection struct {
 }
 
 // Expr is one expression of a derived check: the name of a variable, a
-// value, the field Select of another expression, a pair of two expressions,
-// or a word of Go such as nil or true. Where Hook is set, the expression is a
-// function of the function type Hook that calls the function Name and
-// ignores its arguments.
+// value, the value of a draw, the field Select of another expression, a pair
+// of two expressions, or a word of Go such as nil or true. Where Hook is set,
+// the expression is a function of the function type Hook that calls the
+// function Name and ignores its arguments.
 type Expr struct {
 	Value  *emit.Value
+	Drawn  *Drawn
 	Of     *Expr
 	Pair   *PairExpr
 	Hook   *emit.TypeRef
@@ -120,12 +127,15 @@ type Closure struct {
 
 // ClosureParam is the parameter of a closure after the context. Hook and
 // Body report the hook func() of a registrar and the body probe.Act of a
-// scope, and Type is the type of any other parameter.
+// scope, and Type is the type of any other parameter. Other is the name of a
+// second parameter of the type Type, for a closure that combines two values,
+// and empty for a closure of one parameter.
 type ClosureParam struct {
-	Type *emit.TypeRef
-	Name string
-	Hook bool
-	Body bool
+	Type  *emit.TypeRef
+	Name  string
+	Other string
+	Hook  bool
+	Body  bool
 }
 
 // Let is a variable that a closure declares before its call, or the
@@ -179,6 +189,10 @@ const (
 	formZero
 	// formValue is the value of a param.
 	formValue
+	// formName is the name of the declaration that a param refers to, as a
+	// string, such as the callable that the param open of the mixin leak-free
+	// names.
+	formName
 	// formInt is the int of a param.
 	formInt
 	// formDuration is the duration of a param.
@@ -193,6 +207,12 @@ const (
 	// formMatch calls the predicate of a guarded writer with the value of the
 	// later calls of formMatched, and returns its verdict beside the error.
 	formMatch
+	// formCombine takes values for the first two inputs and returns the
+	// value beside the error.
+	formCombine
+	// formInput is a value that a generated binding draws for an input of
+	// the callable, by the position of the input and the index of the value.
+	formInput
 )
 
 // slot is one input of a probe: its name in the entry of the spec, its form,
@@ -213,6 +233,8 @@ const (
 	inObserve  = "observe"
 	inPut      = "put"
 	inDrain    = "drain"
+	inAttempts = "attempts"
+	inClose    = "close"
 )
 
 // The inputs that many probes share.
@@ -226,6 +248,7 @@ var (
 	writes   = slot{name: inWrite, form: formActs}
 	put      = slot{name: inPut, form: formAct}
 	observe  = slot{name: inObserve, form: formCall}
+	attempts = slot{name: inAttempts, form: formInt}
 )
 
 // probes contains the inputs of each probe that a suite calls, in the order
@@ -249,7 +272,7 @@ var probes = map[spec.ProbeID][]slot{
 	spec.EscapesTheUnsafe:      {{name: inCall, of: "unsafe", form: formCall}, {name: "unsafe", form: formValue}},
 	spec.AcceptsTheEdge:        {{name: inCall, form: formTaking}, {name: "edge", form: formValue}},
 	spec.RemainsPoisoned:       {act, {name: "induce", form: formAct}},
-	spec.SucceedsWithin:        {act, {name: "attempts", form: formInt}},
+	spec.SucceedsWithin:        {act, attempts},
 	spec.RefusesTheSecondWrite: {act, sentinel},
 	spec.RefusesPastTheBurst:   {act, {name: "burst", form: formInt}, sentinel},
 	spec.RefusesEarly:          {act, sentinel},
@@ -259,15 +282,15 @@ var probes = map[spec.ProbeID][]slot{
 	spec.KeepsPartitionsApart:  {{name: inWrite, form: formRewritten}, read},
 	spec.RoundTrips:            {{name: inCall, form: formRoundTrip}, {name: "inverse", form: formInverse}},
 	spec.WorksAfter:            {act, {name: "ready", form: formAct}},
-	spec.ReportsSealed:         {act, {name: "close", form: formAct}, sentinel},
+	spec.ReportsSealed:         {act, {name: inClose, form: formAct}, sentinel},
 	spec.SealsAfterClose: {
-		call, {name: "close", of: inCall, form: formHandle}, {name: "after", of: inCall, form: formHandle}, sentinel,
+		call, {name: inClose, of: inCall, form: formHandle}, {name: "after", of: inCall, form: formHandle}, sentinel,
 	},
 	spec.MovesObservation:    {act, observe},
 	spec.EachCallCompounds:   {act, observe},
 	spec.SettlesThenObserves: {act, {name: "settle", form: formAct}, observe},
 	spec.DetectsTamper:       {act, {name: "verify", form: formAct}, {name: "tamper", form: formAct}},
-	spec.ConvergesAfter:      {act, {name: "begin", form: formAct}, {name: "attempts", form: formInt}},
+	spec.ConvergesAfter:      {act, {name: "begin", form: formAct}, attempts},
 	spec.RunsTheHook:         {act, {name: "register", form: formHook}},
 	spec.RefusesTheInvalid: {
 		{name: inCall, form: formTaking}, {name: "validate", form: formTaking}, {name: "invalid", form: formValue},
@@ -309,7 +332,25 @@ var probes = map[spec.ProbeID][]slot{
 	spec.ExpiresAfter: {
 		read, {name: inWrite, form: formAct}, {name: "lifetime", form: formDuration}, sentinel,
 	},
+	spec.ReportsAFailedDependency: {act},
+	spec.FailsWithoutEffect:       {act, read},
+	spec.SucceedsAfterAFailure:    {act, attempts},
+	spec.RollsBackUnderFaults: {
+		{name: inCall, form: formScope}, {name: inWrite, form: formAct}, {name: inRead, form: formAct}, sentinel,
+	},
+	spec.RefusesWithoutTheDependency: {act},
+	spec.UsesOneInstance:             {act},
+	spec.ReleasesWhatItAcquires:      {act, {name: "open", form: formName}, {name: inClose, form: formName}},
+	spec.EitherOrderAgrees:           {combined, firstInput, secondInput},
+	spec.EitherGroupingAgrees:        {combined, firstInput, secondInput, {name: "third", form: formInput}},
 }
+
+// The inputs that the probes of a callable that combines two values share.
+var (
+	combined    = slot{name: inCall, form: formCombine}
+	firstInput  = slot{name: "first", form: formInput}
+	secondInput = slot{name: "second", form: formInput}
+)
 
 // clockProbes are the probes that advance the clock of the handle.
 var clockProbes = []spec.ProbeID{
@@ -332,7 +373,8 @@ func identityOf(s *Suite, c *derive.Check) (Callable, string, string) {
 }
 
 // derived records into s the derived check of each check of the derivation of
-// s, with its planted defect.
+// s, with its planted defect. A generated binding draws the inputs of its
+// calls by the rules of the call generators of s.
 func (k *caller) derived(s *Suite) {
 	for i := range s.Derivation.Checks {
 		c := &s.Derivation.Checks[i]
@@ -341,8 +383,9 @@ func (k *caller) derived(s *Suite) {
 			Field: callable.Field, Type: callable.Type, Method: method, Segment: segment, Statement: c.Statement,
 			Claim: goName(c.Claim.ID), Probe: goName(c.Claim.Probe), Reason: goName(c.Claim.Defect.Reason),
 			Law: goName(c.Claim.Law), Shallow: c.Shallow, Clock: slices.Contains(clockProbes, c.Claim.Probe),
+			Generated: c.Generated,
 		}
-		for _, m := range c.Claim.Machineries {
+		for _, m := range c.Machineries() {
 			d.Machineries = append(d.Machineries, goName(m))
 		}
 		for _, e := range s.Derivation.Edges {
@@ -354,26 +397,20 @@ func (k *caller) derived(s *Suite) {
 			d.Entails = append(d.Entails, Identity{Field: shallow.Field, Method: shallowMethod, ID: e.Shallower})
 		}
 		b := binder{k: k, check: c}
-		for _, sl := range probes[c.Claim.Probe] {
-			d.Args = append(d.Args, b.arg(&sl))
+		if c.Generated {
+			b.drawn = k.newDraws(s.Facts, s.Calls)
+		}
+		d.Args = b.args()
+		if c.Generated {
+			d.Draws = used(d.Args)
 		}
 		defect, known := k.defect(s, c, &b)
 		if defect.Body == bodyLiveHandle && defect.Handle == nil {
-			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refusal{
-				Claim:    c.Claim.ID,
-				Callable: c.Facts.Callable,
-				Key:      c.Key,
-				Why:      "the handle that " + c.Facts.Callable + " returns is not an interface, so no planted handle can replace it",
-				Remedy:   "return the handle of " + c.Facts.Callable + " as an interface",
-			})
+			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refuse(c, spec.InterfaceHandle))
 			continue
 		}
 		if !k.referableArgs(d.Args) || !k.referableDefect(defect) {
-			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refusal{
-				Claim: c.Claim.ID, Callable: c.Facts.Callable, Key: c.Key,
-				Why:    "a sample of the check refers to a declaration that the file of the suite cannot import",
-				Remedy: "author a sample of each input of " + c.Facts.Callable + " with the directive sample",
-			})
+			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refuse(c, spec.ImportableSamples))
 			continue
 		}
 		if !known {
@@ -417,9 +454,22 @@ func (k *caller) referableDefect(d *Defect) bool {
 }
 
 // binder binds the inputs of a derived check to the arguments of its probe.
+// drawn are the draws of a generated binding, and nil for a sample binding.
 type binder struct {
 	k     *caller
 	check *derive.Check
+	drawn *draws
+}
+
+// args returns the argument of the probe of the check for each input of the
+// probe, in the order of the parameters of its Go function after the handle.
+func (b *binder) args() []Arg {
+	slots := probes[b.check.Claim.Probe]
+	out := make([]Arg, 0, len(slots))
+	for i := range slots {
+		out = append(out, b.arg(&slots[i]))
+	}
+	return out
 }
 
 // binding returns the binding of the input name of the claim of the check.
@@ -475,6 +525,9 @@ func (b *binder) arg(sl *slot) Arg {
 		return Arg{Expr: b.k.zeroOf(f)}
 	case formValue:
 		return Arg{Expr: b.k.valueOfParam(b.param(b.binding(sl.name).Param))}
+	case formName:
+		name := nameOf(b.param(b.binding(sl.name).Param))
+		return Arg{Expr: &Expr{Value: new(emit.Literal(emit.LiteralString, name))}}
 	case formInt:
 		return Arg{Expr: &Expr{Word: intOf(b.param(b.binding(sl.name).Param))}}
 	case formDuration:
@@ -485,9 +538,13 @@ func (b *binder) arg(sl *slot) Arg {
 		field := nameOf(b.param(b.binding(sl.name).Param))
 		ref := b.k.resultRef(f, 0)
 		return Arg{Projection: &Projection{Type: b.k.typeOf(ref), Result: b.k.fieldRef(ref, field), Field: field}}
+	case formInput:
+		bound := b.binding(sl.name)
+		v := b.drawn.value(b.check.Facts, bound.Position, bound.Sample)
+		return Arg{Expr: &v}
 	default:
 	}
-	in := &input{sl: sl}
+	in := &input{sl: sl, drawn: b.drawn}
 	switch sl.form {
 	case formHandle:
 		call, _ := b.facts(sl.of)

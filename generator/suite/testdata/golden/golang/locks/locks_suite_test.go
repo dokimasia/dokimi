@@ -457,6 +457,207 @@ func FuzzAwait(f *testing.F) {
 	locks.FuzzAwaitSuite(f, locks.Await)
 }
 
+// workerSubjectEmbedded is locks.Worker under the name of the field that
+// workerSubject embeds.
+type workerSubjectEmbedded = locks.Worker
+
+// workerSubject is a value of Worker that only TestWorkerSuite builds.
+type workerSubject struct{ workerSubjectEmbedded }
+
+// TestWorkerSuite checks the suite of Worker and the two forms of its
+// application.
+func TestWorkerSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("WorkerSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, locks.WorkerSuite())
+	})
+
+	t.Run("RunWorkerSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *workerSubject
+		locks.RunWorkerSuite(
+			t,
+			func() *workerSubject {
+				built = &workerSubject{}
+				return built
+			},
+			conform.With(locks.WorkerCheck{
+				ID:        "Worker/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *locks.WorkerHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, locks.Worker(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*locks.WorkerHandle) locks.Worker { return &workerSubject{} },
+			}),
+			conform.Excuse(
+				locks.WorkerChecks.Stop.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				locks.WorkerChecks.Stop.RepeatSurvives(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunWorkerSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *workerSubject
+		locks.RunWorkerSuiteFromHandle(
+			t,
+			func(*locks.WorkerHandle) *workerSubject {
+				built = &workerSubject{}
+				return built
+			},
+			conform.With(locks.WorkerCheck{
+				ID:        "Worker/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *locks.WorkerHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, locks.Worker(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*locks.WorkerHandle) locks.Worker { return &workerSubject{} },
+			}),
+			conform.Excuse(
+				locks.WorkerChecks.Stop.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				locks.WorkerChecks.Stop.RepeatSurvives(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// workerIdle returns the planted defect of a ceiling of Worker with a
+// spend of nothing, a subject that answers each call at once.
+func workerIdle(h *locks.WorkerHandle) locks.Worker {
+	return locks.WorkerSuite().Calls[0].Over(h, func() {})
+}
+
+// TestWorkerSuiteBudgets applies the allocation ceilings of the suite of
+// Worker to workerIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestWorkerSuiteBudgets(t *testing.T) {
+	locks.RunWorkerBudgets(
+		t,
+		workerIdle,
+		conform.Ceilings(locks.WorkerChecks.Stop.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			locks.WorkerChecks.Stop.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			locks.WorkerChecks.Stop.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWorkerSuiteRun registers the fuzz target of Worker.Run on
+// workerIdle, with every check of the suite excused.
+func FuzzWorkerSuiteRun(f *testing.F) {
+	locks.FuzzWorkerSuite(
+		f,
+		locks.WorkerChecks.Run.Callable,
+		workerIdle,
+		conform.Excuse(
+			locks.WorkerChecks.Stop.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			locks.WorkerChecks.Stop.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWorkerSuiteStop registers the fuzz target of Worker.Stop on
+// workerIdle, with every check of the suite excused.
+func FuzzWorkerSuiteStop(f *testing.F) {
+	locks.FuzzWorkerSuite(
+		f,
+		locks.WorkerChecks.Stop.Callable,
+		workerIdle,
+		conform.Excuse(
+			locks.WorkerChecks.Stop.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			locks.WorkerChecks.Stop.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkWorkerSuite measures each callable of the suite of Worker on
+// workerIdle.
+func BenchmarkWorkerSuite(b *testing.B) {
+	b.Run("Stop", func(b *testing.B) {
+		locks.BenchWorkerSuite(b, locks.WorkerChecks.Stop.Callable, workerIdle)
+	})
+}
+
+// TestServeSuite checks the suite of Serve and the two forms of its
+// application.
+func TestServeSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ServeSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, locks.ServeSuite())
+	})
+
+	t.Run("Serve", func(t *testing.T) {
+		t.Parallel()
+		locks.RunServeSuite(t, locks.Serve)
+	})
+
+	t.Run("RunServeSuite", func(t *testing.T) {
+		t.Parallel()
+		locks.RunServeSuite(
+			t,
+			locks.Serve,
+			conform.With(locks.ServeCheck{
+				ID:        "Serve/receives-the-function",
+				Statement: "the subject of a check is the function of the application",
+				Apply: func(h *locks.ServeHandle) {
+					assert.Equal(h, h.Subject(), locks.ServeFunc(locks.Serve), h.Statement())
+				},
+				Defect: func(*locks.ServeHandle) locks.ServeFunc { return nil },
+			}),
+		)
+	})
+
+	t.Run("RunServeSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		locks.RunServeSuiteFromHandle(
+			t,
+			func(*locks.ServeHandle) locks.ServeFunc {
+				return locks.Serve
+			},
+			conform.With(locks.ServeCheck{
+				ID:        "Serve/builds-the-subject",
+				Statement: "the subject of a check is the function that the factory returns",
+				Apply: func(h *locks.ServeHandle) {
+					assert.Equal(h, h.Subject(), locks.ServeFunc(locks.Serve), h.Statement())
+				},
+				Defect: func(*locks.ServeHandle) locks.ServeFunc { return nil },
+			}),
+		)
+	})
+}
+
+// FuzzServe fuzzes the property checks of Serve.
+func FuzzServe(f *testing.F) {
+	locks.FuzzServeSuite(f, locks.Serve)
+}
+
 // TestMutexConformsToLock applies the checks of the suite of Lock to
 // Mutex.
 func TestMutexConformsToLock(t *testing.T) {
@@ -542,5 +743,45 @@ func FuzzTurnstileConformsToGatePass(f *testing.F) {
 		f,
 		locks.GateChecks.Pass.Callable,
 		func(*locks.GateHandle) *locks.Turnstile { return locks.NewTurnstile() },
+	)
+}
+
+// TestLoopConformsToWorker applies the checks of the suite of Worker to
+// Loop.
+func TestLoopConformsToWorker(t *testing.T) {
+	t.Parallel()
+
+	locks.RunWorkerSuite(t, locks.NewLoop)
+}
+
+// BenchmarkLoopConformsToWorker measures each callable of the suite of
+// Worker on Loop.
+func BenchmarkLoopConformsToWorker(b *testing.B) {
+	b.Run("Stop", func(b *testing.B) {
+		locks.BenchWorkerSuite(
+			b,
+			locks.WorkerChecks.Stop.Callable,
+			func(*locks.WorkerHandle) *locks.Loop { return locks.NewLoop() },
+		)
+	})
+}
+
+// FuzzLoopConformsToWorkerRun fuzzes the property checks of Worker.Run on
+// Loop.
+func FuzzLoopConformsToWorkerRun(f *testing.F) {
+	locks.FuzzWorkerSuite(
+		f,
+		locks.WorkerChecks.Run.Callable,
+		func(*locks.WorkerHandle) *locks.Loop { return locks.NewLoop() },
+	)
+}
+
+// FuzzLoopConformsToWorkerStop fuzzes the property checks of Worker.Stop
+// on Loop.
+func FuzzLoopConformsToWorkerStop(f *testing.F) {
+	locks.FuzzWorkerSuite(
+		f,
+		locks.WorkerChecks.Stop.Callable,
+		func(*locks.WorkerHandle) *locks.Loop { return locks.NewLoop() },
 	)
 }

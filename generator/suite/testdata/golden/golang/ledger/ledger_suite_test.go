@@ -48,11 +48,23 @@ func TestLedgerSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				ledger.LedgerChecks.Credit.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				ledger.LedgerChecks.Balance.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				ledger.LedgerChecks.Balance.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				ledger.LedgerChecks.Balance.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ledger.LedgerChecks.Balance.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -81,11 +93,23 @@ func TestLedgerSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				ledger.LedgerChecks.Credit.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				ledger.LedgerChecks.Balance.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				ledger.LedgerChecks.Balance.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				ledger.LedgerChecks.Balance.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ledger.LedgerChecks.Balance.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -119,11 +143,23 @@ func TestLedgerSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			ledger.LedgerChecks.Credit.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			ledger.LedgerChecks.Balance.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			ledger.LedgerChecks.Balance.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			ledger.LedgerChecks.Balance.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ledger.LedgerChecks.Balance.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -141,11 +177,23 @@ func FuzzLedgerSuiteCredit(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			ledger.LedgerChecks.Credit.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			ledger.LedgerChecks.Balance.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			ledger.LedgerChecks.Balance.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			ledger.LedgerChecks.Balance.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ledger.LedgerChecks.Balance.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -163,11 +211,23 @@ func FuzzLedgerSuiteBalance(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			ledger.LedgerChecks.Credit.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			ledger.LedgerChecks.Balance.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			ledger.LedgerChecks.Balance.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			ledger.LedgerChecks.Balance.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ledger.LedgerChecks.Balance.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)

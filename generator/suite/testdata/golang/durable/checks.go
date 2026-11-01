@@ -1,6 +1,10 @@
 package durable
 
-import "go.dokimi.dev/assert/prop"
+import (
+	"time"
+
+	"go.dokimi.dev/assert/prop"
+)
 
 // LeavesTheWholeValue checks that a crash during Put leaves the whole value or
 // no value.
@@ -18,6 +22,34 @@ func KeepsEachPutAcrossARestart(h *KeeperHandle) {}
 //
 //dokimi:check Keeper.Get defect=keepsTheFirstPut options=putShares
 func KeepsTheLastPut(h *KeeperHandle, c *prop.Case) {}
+
+// ServesTheStoredValue checks that the backend of a Keeper serves the value
+// that Put stored.
+//
+//dokimi:check Keeper.Get defect=servesAnotherValue values=[backendOf, clockOf]
+func ServesTheStoredValue(h *KeeperHandle) {}
+
+// Backend is the backend of a Keeper, which serves its values to a client
+// without the Keeper.
+type Backend interface {
+	// Serve returns the value under the key.
+	Serve(key string) string
+}
+
+// Clock is the clock of the backend of a Keeper.
+type Clock interface {
+	// Now returns the time of the clock.
+	Now() time.Time
+}
+
+// servesAnotherValue returns a Keeper whose backend serves another value.
+func servesAnotherValue(*KeeperHandle) Keeper { return nil }
+
+// backendOf returns the backend of the Keeper k.
+func backendOf(*KeeperHandle, Keeper) Backend { return nil }
+
+// clockOf returns the clock of the backend of the Keeper k.
+func clockOf(*KeeperHandle, Keeper) Clock { return nil }
 
 // tearsWrites returns a Keeper whose Put writes a value in parts.
 func tearsWrites(*KeeperHandle) Keeper { return nil }

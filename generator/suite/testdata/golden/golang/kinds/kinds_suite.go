@@ -24,50 +24,113 @@ import (
 //
 // Params.Bool/smoke: Bool returns without a panic for derived inputs.
 //
+// Params.Bool/smoke#generated: Bool returns without a panic for derived
+// inputs.
+//
 // Params.Int/smoke: Int returns without a panic for derived inputs.
+//
+// Params.Int/smoke#generated: Int returns without a panic for derived
+// inputs.
 //
 // Params.Int8/smoke: Int8 returns without a panic for derived inputs.
 //
+// Params.Int8/smoke#generated: Int8 returns without a panic for derived
+// inputs.
+//
 // Params.Int16/smoke: Int16 returns without a panic for derived inputs.
+//
+// Params.Int16/smoke#generated: Int16 returns without a panic for derived
+// inputs.
 //
 // Params.Int32/smoke: Int32 returns without a panic for derived inputs.
 //
+// Params.Int32/smoke#generated: Int32 returns without a panic for derived
+// inputs.
+//
 // Params.Int64/smoke: Int64 returns without a panic for derived inputs.
+//
+// Params.Int64/smoke#generated: Int64 returns without a panic for derived
+// inputs.
 //
 // Params.Uint/smoke: Uint returns without a panic for derived inputs.
 //
+// Params.Uint/smoke#generated: Uint returns without a panic for derived
+// inputs.
+//
 // Params.Uint8/smoke: Uint8 returns without a panic for derived inputs.
+//
+// Params.Uint8/smoke#generated: Uint8 returns without a panic for derived
+// inputs.
 //
 // Params.Uint16/smoke: Uint16 returns without a panic for derived inputs.
 //
+// Params.Uint16/smoke#generated: Uint16 returns without a panic for
+// derived inputs.
+//
 // Params.Uint32/smoke: Uint32 returns without a panic for derived inputs.
 //
+// Params.Uint32/smoke#generated: Uint32 returns without a panic for
+// derived inputs.
+//
 // Params.Uint64/smoke: Uint64 returns without a panic for derived inputs.
+//
+// Params.Uint64/smoke#generated: Uint64 returns without a panic for
+// derived inputs.
 //
 // Params.Uintptr/smoke: Uintptr returns without a panic for derived
 // inputs.
 //
+// Params.Uintptr/smoke#generated: Uintptr returns without a panic for
+// derived inputs.
+//
 // Params.Float32/smoke: Float32 returns without a panic for derived
 // inputs.
+//
+// Params.Float32/smoke#generated: Float32 returns without a panic for
+// derived inputs.
 //
 // Params.Float64/smoke: Float64 returns without a panic for derived
 // inputs.
 //
+// Params.Float64/smoke#generated: Float64 returns without a panic for
+// derived inputs.
+//
 // Params.Complex64/smoke: Complex64 returns without a panic for derived
 // inputs.
+//
+// Params.Complex64/smoke#generated: Complex64 returns without a panic for
+// derived inputs.
 //
 // Params.Complex128/smoke: Complex128 returns without a panic for derived
 // inputs.
 //
+// Params.Complex128/smoke#generated: Complex128 returns without a panic
+// for derived inputs.
+//
 // Params.Array/smoke: Array returns without a panic for derived inputs.
+//
+// Params.Array/smoke#generated: Array returns without a panic for derived
+// inputs.
 //
 // Params.Func/smoke: Func returns without a panic for derived inputs.
 //
+// Params.Func/smoke#generated: Func returns without a panic for derived
+// inputs.
+//
 // Params.Map/smoke: Map returns without a panic for derived inputs.
+//
+// Params.Map/smoke#generated: Map returns without a panic for derived
+// inputs.
 //
 // Params.Slice/smoke: Slice returns without a panic for derived inputs.
 //
+// Params.Slice/smoke#generated: Slice returns without a panic for derived
+// inputs.
+//
 // Params.String/smoke: String returns without a panic for derived inputs.
+//
+// Params.String/smoke#generated: String returns without a panic for
+// derived inputs.
 
 // The derived checks of Params that witness their laws at the shallow end:
 //
@@ -274,6 +337,12 @@ func (c paramsBool) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Bool returns
+// without a panic for derived inputs.
+func (c paramsBool) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsInt is the name of Params.Int, with the identities of its checks.
 type paramsInt struct {
 	conform.Callable[Params]
@@ -283,6 +352,12 @@ type paramsInt struct {
 // for derived inputs.
 func (c paramsInt) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Int returns
+// without a panic for derived inputs.
+func (c paramsInt) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsInt8 is the name of Params.Int8, with the identities of its
@@ -297,6 +372,12 @@ func (c paramsInt8) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Int8 returns
+// without a panic for derived inputs.
+func (c paramsInt8) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsInt16 is the name of Params.Int16, with the identities of its
 // checks.
 type paramsInt16 struct {
@@ -307,6 +388,12 @@ type paramsInt16 struct {
 // panic for derived inputs.
 func (c paramsInt16) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Int16 returns
+// without a panic for derived inputs.
+func (c paramsInt16) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsInt32 is the name of Params.Int32, with the identities of its
@@ -321,6 +408,12 @@ func (c paramsInt32) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Int32 returns
+// without a panic for derived inputs.
+func (c paramsInt32) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsInt64 is the name of Params.Int64, with the identities of its
 // checks.
 type paramsInt64 struct {
@@ -331,6 +424,12 @@ type paramsInt64 struct {
 // panic for derived inputs.
 func (c paramsInt64) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Int64 returns
+// without a panic for derived inputs.
+func (c paramsInt64) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsUint is the name of Params.Uint, with the identities of its
@@ -345,6 +444,12 @@ func (c paramsUint) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Uint returns
+// without a panic for derived inputs.
+func (c paramsUint) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsUint8 is the name of Params.Uint8, with the identities of its
 // checks.
 type paramsUint8 struct {
@@ -355,6 +460,12 @@ type paramsUint8 struct {
 // panic for derived inputs.
 func (c paramsUint8) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Uint8 returns
+// without a panic for derived inputs.
+func (c paramsUint8) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsUint16 is the name of Params.Uint16, with the identities of its
@@ -369,6 +480,12 @@ func (c paramsUint16) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Uint16 returns
+// without a panic for derived inputs.
+func (c paramsUint16) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsUint32 is the name of Params.Uint32, with the identities of its
 // checks.
 type paramsUint32 struct {
@@ -379,6 +496,12 @@ type paramsUint32 struct {
 // panic for derived inputs.
 func (c paramsUint32) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Uint32 returns
+// without a panic for derived inputs.
+func (c paramsUint32) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsUint64 is the name of Params.Uint64, with the identities of its
@@ -393,6 +516,12 @@ func (c paramsUint64) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Uint64 returns
+// without a panic for derived inputs.
+func (c paramsUint64) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsUintptr is the name of Params.Uintptr, with the identities of its
 // checks.
 type paramsUintptr struct {
@@ -403,6 +532,12 @@ type paramsUintptr struct {
 // panic for derived inputs.
 func (c paramsUintptr) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Uintptr returns
+// without a panic for derived inputs.
+func (c paramsUintptr) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsFloat32 is the name of Params.Float32, with the identities of its
@@ -417,6 +552,12 @@ func (c paramsFloat32) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Float32 returns
+// without a panic for derived inputs.
+func (c paramsFloat32) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsFloat64 is the name of Params.Float64, with the identities of its
 // checks.
 type paramsFloat64 struct {
@@ -427,6 +568,12 @@ type paramsFloat64 struct {
 // panic for derived inputs.
 func (c paramsFloat64) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Float64 returns
+// without a panic for derived inputs.
+func (c paramsFloat64) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsComplex64 is the name of Params.Complex64, with the identities of
@@ -441,6 +588,12 @@ func (c paramsComplex64) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Complex64 returns
+// without a panic for derived inputs.
+func (c paramsComplex64) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsComplex128 is the name of Params.Complex128, with the identities
 // of its checks.
 type paramsComplex128 struct {
@@ -453,6 +606,12 @@ func (c paramsComplex128) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Complex128 returns
+// without a panic for derived inputs.
+func (c paramsComplex128) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsArray is the name of Params.Array, with the identities of its
 // checks.
 type paramsArray struct {
@@ -463,6 +622,12 @@ type paramsArray struct {
 // panic for derived inputs.
 func (c paramsArray) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Array returns
+// without a panic for derived inputs.
+func (c paramsArray) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsChan is the name of Params.Chan, with the identities of its
@@ -483,6 +648,12 @@ func (c paramsFunc) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Func returns
+// without a panic for derived inputs.
+func (c paramsFunc) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsInterface is the name of Params.Interface, with the identities of
 // its checks.
 type paramsInterface struct {
@@ -498,6 +669,12 @@ type paramsMap struct {
 // for derived inputs.
 func (c paramsMap) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Map returns
+// without a panic for derived inputs.
+func (c paramsMap) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsPtr is the name of Params.Ptr, with the identities of its checks.
@@ -517,6 +694,12 @@ func (c paramsSlice) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Slice returns
+// without a panic for derived inputs.
+func (c paramsSlice) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
+}
+
 // paramsString is the name of Params.String, with the identities of its
 // checks.
 type paramsString struct {
@@ -527,6 +710,12 @@ type paramsString struct {
 // panic for derived inputs.
 func (c paramsString) Smoke() conform.ID[Params] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that String returns
+// without a panic for derived inputs.
+func (c paramsString) SmokeGenerated() conform.ID[Params] {
+	return c.Check("smoke#generated")
 }
 
 // paramsStruct is the name of Params.Struct, with the identities of its
@@ -567,6 +756,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsBoolPanics,
 			},
 			{
+				ID:          ParamsChecks.Bool.SmokeGenerated(),
+				Statement:   "Bool returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[bool](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Bool(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsBoolPanics,
+			},
+			{
 				ID:          ParamsChecks.Int.Smoke(),
 				Statement:   "Int returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -578,6 +784,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Int(int(42))
+						return nil
+					})
+				},
+				Defect: paramsIntPanics,
+			},
+			{
+				ID:          ParamsChecks.Int.SmokeGenerated(),
+				Statement:   "Int returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[int](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int(drawnV)
 						return nil
 					})
 				},
@@ -601,6 +824,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsInt8Panics,
 			},
 			{
+				ID:          ParamsChecks.Int8.SmokeGenerated(),
+				Statement:   "Int8 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[int8](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int8(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsInt8Panics,
+			},
+			{
 				ID:          ParamsChecks.Int16.Smoke(),
 				Statement:   "Int16 returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -612,6 +852,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Int16(int16(42))
+						return nil
+					})
+				},
+				Defect: paramsInt16Panics,
+			},
+			{
+				ID:          ParamsChecks.Int16.SmokeGenerated(),
+				Statement:   "Int16 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[int16](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int16(drawnV)
 						return nil
 					})
 				},
@@ -635,6 +892,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsInt32Panics,
 			},
 			{
+				ID:          ParamsChecks.Int32.SmokeGenerated(),
+				Statement:   "Int32 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[int32](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int32(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsInt32Panics,
+			},
+			{
 				ID:          ParamsChecks.Int64.Smoke(),
 				Statement:   "Int64 returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -646,6 +920,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Int64(int64(42))
+						return nil
+					})
+				},
+				Defect: paramsInt64Panics,
+			},
+			{
+				ID:          ParamsChecks.Int64.SmokeGenerated(),
+				Statement:   "Int64 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[int64](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int64(drawnV)
 						return nil
 					})
 				},
@@ -669,6 +960,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsUintPanics,
 			},
 			{
+				ID:          ParamsChecks.Uint.SmokeGenerated(),
+				Statement:   "Uint returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[uint](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsUintPanics,
+			},
+			{
 				ID:          ParamsChecks.Uint8.Smoke(),
 				Statement:   "Uint8 returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -680,6 +988,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Uint8(uint8(1))
+						return nil
+					})
+				},
+				Defect: paramsUint8Panics,
+			},
+			{
+				ID:          ParamsChecks.Uint8.SmokeGenerated(),
+				Statement:   "Uint8 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[uint8](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint8(drawnV)
 						return nil
 					})
 				},
@@ -703,6 +1028,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsUint16Panics,
 			},
 			{
+				ID:          ParamsChecks.Uint16.SmokeGenerated(),
+				Statement:   "Uint16 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[uint16](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint16(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsUint16Panics,
+			},
+			{
 				ID:          ParamsChecks.Uint32.Smoke(),
 				Statement:   "Uint32 returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -714,6 +1056,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Uint32(uint32(42))
+						return nil
+					})
+				},
+				Defect: paramsUint32Panics,
+			},
+			{
+				ID:          ParamsChecks.Uint32.SmokeGenerated(),
+				Statement:   "Uint32 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[uint32](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint32(drawnV)
 						return nil
 					})
 				},
@@ -737,6 +1096,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsUint64Panics,
 			},
 			{
+				ID:          ParamsChecks.Uint64.SmokeGenerated(),
+				Statement:   "Uint64 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[uint64](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint64(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsUint64Panics,
+			},
+			{
 				ID:          ParamsChecks.Uintptr.Smoke(),
 				Statement:   "Uintptr returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -748,6 +1124,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Uintptr(uintptr(42))
+						return nil
+					})
+				},
+				Defect: paramsUintptrPanics,
+			},
+			{
+				ID:          ParamsChecks.Uintptr.SmokeGenerated(),
+				Statement:   "Uintptr returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[uintptr](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uintptr(drawnV)
 						return nil
 					})
 				},
@@ -771,6 +1164,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsFloat32Panics,
 			},
 			{
+				ID:          ParamsChecks.Float32.SmokeGenerated(),
+				Statement:   "Float32 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[float32](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Float32(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsFloat32Panics,
+			},
+			{
 				ID:          ParamsChecks.Float64.Smoke(),
 				Statement:   "Float64 returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -782,6 +1192,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Float64(float64(1.5))
+						return nil
+					})
+				},
+				Defect: paramsFloat64Panics,
+			},
+			{
+				ID:          ParamsChecks.Float64.SmokeGenerated(),
+				Statement:   "Float64 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[float64](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Float64(drawnV)
 						return nil
 					})
 				},
@@ -805,6 +1232,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsComplex64Panics,
 			},
 			{
+				ID:          ParamsChecks.Complex64.SmokeGenerated(),
+				Statement:   "Complex64 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[complex64](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Complex64(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsComplex64Panics,
+			},
+			{
 				ID:          ParamsChecks.Complex128.Smoke(),
 				Statement:   "Complex128 returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -816,6 +1260,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Complex128(complex128(1.5))
+						return nil
+					})
+				},
+				Defect: paramsComplex128Panics,
+			},
+			{
+				ID:          ParamsChecks.Complex128.SmokeGenerated(),
+				Statement:   "Complex128 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[complex128](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Complex128(drawnV)
 						return nil
 					})
 				},
@@ -839,6 +1300,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsArrayPanics,
 			},
 			{
+				ID:          ParamsChecks.Array.SmokeGenerated(),
+				Statement:   "Array returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[[2]int](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Array(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsArrayPanics,
+			},
+			{
 				ID:          ParamsChecks.Func.Smoke(),
 				Statement:   "Func returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -850,6 +1328,33 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Func(func() int { return 0 })
+						return nil
+					})
+				},
+				Defect: paramsFuncPanics,
+			},
+			{
+				ID:          ParamsChecks.Func.SmokeGenerated(),
+				Statement:   "Func returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					vResults := c.Draw(prop.List(prop.Of[int]()), "v")
+					drawnV := func() func() int {
+						var vAt atomic.Int64
+						return func() (r0 int) {
+							i := int(vAt.Add(1) - 1)
+							if i >= len(vResults) {
+								return r0
+							}
+							return vResults[i]
+						}
+					}
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Func(drawnV())
 						return nil
 					})
 				},
@@ -873,6 +1378,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsMapPanics,
 			},
 			{
+				ID:          ParamsChecks.Map.SmokeGenerated(),
+				Statement:   "Map returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[map[string]int](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Map(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsMapPanics,
+			},
+			{
 				ID:          ParamsChecks.Slice.Smoke(),
 				Statement:   "Slice returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -890,6 +1412,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Defect: paramsSlicePanics,
 			},
 			{
+				ID:          ParamsChecks.Slice.SmokeGenerated(),
+				Statement:   "Slice returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[[]int](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Slice(drawnV)
+						return nil
+					})
+				},
+				Defect: paramsSlicePanics,
+			},
+			{
 				ID:          ParamsChecks.String.Smoke(),
 				Statement:   "String returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -901,6 +1440,23 @@ func ParamsSuite() conform.Suite[Params] {
 				Apply: func(h *ParamsHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().String(string("v-a"))
+						return nil
+					})
+				},
+				Defect: paramsStringPanics,
+			},
+			{
+				ID:          ParamsChecks.String.SmokeGenerated(),
+				Statement:   "String returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ParamsHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[string](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().String(drawnV)
 						return nil
 					})
 				},
@@ -3164,12 +3720,14 @@ func RouterSuite() conform.Suite[Router] {
 			{
 				Claim:    spec.Cancel,
 				Callable: "Router.Route",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter f of Route",
 				Remedy:   "author a sample of the parameter f with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Router.Read",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter in of Read",
 				Remedy:   "author a sample of the parameter in with the directive sample",
 			},
@@ -3563,24 +4121,28 @@ func DrawerSuite() conform.Suite[Drawer] {
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Drawer.Draw",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter s of Draw",
 				Remedy:   "author a sample of the parameter s with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Drawer.Count",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter shapes of Count",
 				Remedy:   "author a sample of the parameter shapes with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Drawer.Name",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter names of Name",
 				Remedy:   "author a sample of the parameter names with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Drawer.Pick",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter p of Pick",
 				Remedy:   "author a sample of the parameter p with the directive sample",
 			},
@@ -3983,6 +4545,7 @@ func OddSuite() conform.Suite[Odd] {
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Odd.Embed",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter v of Embed",
 				Remedy:   "author a sample of the parameter v with the directive sample",
 			},
@@ -4285,7 +4848,13 @@ func oddKeepPanics(h *OddHandle) Odd {
 //
 // Std.Pair/smoke: Pair returns without a panic for derived inputs.
 //
+// Std.Pair/smoke#generated: Pair returns without a panic for derived
+// inputs.
+//
 // Std.Meet/smoke: Meet returns without a panic for derived inputs.
+//
+// Std.Meet/smoke#generated: Meet returns without a panic for derived
+// inputs.
 
 // The derived checks of Std that witness their laws at the shallow end:
 //
@@ -4443,6 +5012,12 @@ func (c stdPair) Smoke() conform.ID[Std] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Pair returns
+// without a panic for derived inputs.
+func (c stdPair) SmokeGenerated() conform.ID[Std] {
+	return c.Check("smoke#generated")
+}
+
 // stdMeet is the name of Std.Meet, with the identities of its checks.
 type stdMeet struct {
 	conform.Callable[Std]
@@ -4452,6 +5027,12 @@ type stdMeet struct {
 // panic for derived inputs.
 func (c stdMeet) Smoke() conform.ID[Std] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Meet returns
+// without a panic for derived inputs.
+func (c stdMeet) SmokeGenerated() conform.ID[Std] {
+	return c.Check("smoke#generated")
 }
 
 // StdSuite returns the checks of Std, and the calls and the budgets of its
@@ -4511,6 +5092,23 @@ func StdSuite() conform.Suite[Std] {
 				Defect: stdPairPanics,
 			},
 			{
+				ID:          StdChecks.Pair.SmokeGenerated(),
+				Statement:   "Pair returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StdHandle, c *prop.Case) {
+					drawnT := c.Draw(prop.Of[[]Twins](), "t")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Pair(drawnT)
+						return nil
+					})
+				},
+				Defect: stdPairPanics,
+			},
+			{
 				ID:          StdChecks.Meet.Smoke(),
 				Statement:   "Meet returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -4522,6 +5120,23 @@ func StdSuite() conform.Suite[Std] {
 				Apply: func(h *StdHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						h.Subject().Meet(Clash{Name: "Name-a"})
+						return nil
+					})
+				},
+				Defect: stdMeetPanics,
+			},
+			{
+				ID:          StdChecks.Meet.SmokeGenerated(),
+				Statement:   "Meet returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StdHandle, c *prop.Case) {
+					drawnC0 := c.Draw(prop.Of[Clash](), "c")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Meet(drawnC0)
 						return nil
 					})
 				},

@@ -14,13 +14,28 @@ import (
 //
 // Store.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Store.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Store.Get/cancel: Get returns an error for a cancelled context.
+//
+// Store.Get/cancel#generated: Get returns an error for a cancelled
+// context.
 //
 // Store.Get/zero-on-error: Get returns the zero value beside an error.
 //
+// Store.Get/zero-on-error#generated: Get returns the zero value beside an
+// error.
+//
 // Store.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Store.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Store.Put/cancel: Put returns an error for a cancelled context.
+//
+// Store.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 
 // The derived checks of Store that witness their laws at the shallow end:
 //
@@ -64,16 +79,34 @@ func (c storeGet) Smoke() conform.ID[Store] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c storeGet) SmokeGenerated() conform.ID[Store] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c storeGet) Cancel() conform.ID[Store] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c storeGet) CancelGenerated() conform.ID[Store] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c storeGet) ZeroOnError() conform.ID[Store] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c storeGet) ZeroOnErrorGenerated() conform.ID[Store] {
+	return c.Check("zero-on-error#generated")
 }
 
 // storePut is the name of Store.Put, with the identities of its checks.
@@ -93,10 +126,22 @@ func (c storePut) Smoke() conform.ID[Store] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c storePut) SmokeGenerated() conform.ID[Store] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c storePut) Cancel() conform.ID[Store] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c storePut) CancelGenerated() conform.ID[Store] {
+	return c.Check("cancel#generated")
 }
 
 // StoreSuite returns the checks of Store, and the calls and the budgets of
@@ -125,6 +170,23 @@ func StoreSuite() conform.Suite[Store] {
 				Defect: storeGetPanics,
 			},
 			{
+				ID:          StoreChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					drawnID := c.Draw(prop.Of[string](), "id")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnID)
+						return err
+					})
+				},
+				Defect: storeGetPanics,
+			},
+			{
 				ID:          StoreChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -135,6 +197,23 @@ func StoreSuite() conform.Suite[Store] {
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Get(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: storeGetIgnoresCancel,
+			},
+			{
+				ID:          StoreChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					drawnID := c.Draw(prop.Of[string](), "id")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnID)
 						return err
 					})
 				},
@@ -156,6 +235,22 @@ func StoreSuite() conform.Suite[Store] {
 				Defect: storeGetValueBeside,
 			},
 			{
+				ID:          StoreChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					drawnID := c.Draw(prop.Of[string](), "id")
+					probe.ZeroBesideError(h, func(ctx context.Context) (Item, error) {
+						return h.Subject().Get(ctx, drawnID)
+					}, Item{})
+				},
+				Defect: storeGetValueBeside,
+			},
+			{
 				ID:          StoreChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -172,6 +267,22 @@ func StoreSuite() conform.Suite[Store] {
 				Defect: storePutPanics,
 			},
 			{
+				ID:          StoreChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[Item](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnItem)
+					})
+				},
+				Defect: storePutPanics,
+			},
+			{
 				ID:          StoreChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -182,6 +293,22 @@ func StoreSuite() conform.Suite[Store] {
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, Item{ID: "ID-a"})
+					})
+				},
+				Defect: storePutIgnoresCancel,
+			},
+			{
+				ID:          StoreChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[Item](), "item")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnItem)
 					})
 				},
 				Defect: storePutIgnoresCancel,

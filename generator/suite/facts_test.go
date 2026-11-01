@@ -60,8 +60,11 @@ func TestFacts(t *testing.T) {
 			got := generate(t, goTree, storePackage).suites["Store"]
 
 			assert.Equal(t, derivedOf(&got.Derivation), []string{
-				"Store.Get/smoke", "Store.Get/cancel", "Store.Get/zero-on-error", "Store.Put/smoke", "Store.Put/cancel",
-			}, "each callable takes the claims of every callable, of a context and of its shape")
+				"Store.Get/smoke", "Store.Get/smoke#generated", "Store.Get/cancel", "Store.Get/cancel#generated",
+				"Store.Get/zero-on-error", "Store.Get/zero-on-error#generated", "Store.Put/smoke",
+				"Store.Put/smoke#generated", "Store.Put/cancel", "Store.Put/cancel#generated",
+			}, "each callable takes the claims of every callable, of a context and of its shape, each beside its "+
+				"generated binding")
 		})
 
 		t.Run("binds the claims of the classifications of a callable", func(t *testing.T) {
@@ -106,8 +109,10 @@ func TestFacts(t *testing.T) {
 
 			got := generate(t, goTree, slugPackage).suites["Slug"]
 
-			assert.Equal(t, derivedOf(&got.Derivation), []string{"Slug/smoke", "Slug/deterministic"},
-				"a computation without a context takes the claims of every callable and of its shape")
+			assert.Equal(t, derivedOf(&got.Derivation), []string{
+				"Slug/smoke", "Slug/smoke#generated", "Slug/deterministic", "Slug/deterministic#generated",
+			}, "a computation without a context takes the claims of every callable and of its shape, each beside its "+
+				"generated binding")
 		})
 
 		t.Run("records the derived checks of the methods of a struct", func(t *testing.T) {

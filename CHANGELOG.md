@@ -1,5 +1,89 @@
 # go.dokimi.dev/dokimi
 
+## 0.7.0
+
+### Minor Changes
+
+- deab4c1: Add the seven claims of the machinery `call-that-fails-on-demand` to the spec, with their laws, reasons, probes and defect forms.
+- 8e6e7cf: Add the 19 claims of the generated sequences of a declaration, with their laws, probes, reasons, gates and defect forms.
+- 8e6e7cf: Add the claims of the eight classifications without one, and remove the stance `gap` from the unclaimed table.
+- 4302828: Add the command `dokimi conform`, which judges the corpus of a language by the expected outcomes of its fixtures.
+- 027e24b: Add the command `dokimi report`, which prints the suite records of a run of `go test -json`.
+- 6812b3b: Add the package `spec` with the laws, claims, gates, probes, reason codes, defect forms, machineries and stances of the conformance spec.
+- edd824f: Add the door `faults` of the directive `check`, which lists the machinery `call-that-fails-on-demand` in the check.
+- deab4c1: **Breaking:** Add the required field `gate` to each refusal of the suite record and to `spec.RefusalRecord`.
+- 2a3df20: Add the gate `partner-arguments` to the conformance spec.
+- 3b020ed: Add the gate `returns-unaided`, which withdraws the claims of a fresh subject from a callable with the mixin `waits`.
+- deab4c1: Add the gates `input-samples`, `classification-params`, `interface-handle` and `importable-samples`, so every refusal has a gate of the spec.
+- 4538348: Add the inputs `list`, `valid`, `outside` and `name` of the probes of enumerations to the conformance spec.
+- e2c0508: Add `spec.Key` and the key vectors of `spec/keys.yaml` for the key form of a check identity.
+- a18d071: Add `dokimi.go.lock` with a line for each check, ceiling, refusal and unclaimed classification of the suites of the plan go.
+- 8d892c5: Add the option `isolate` to the generator `suite`, which passes `conform.Isolate` in the conformance test of each subject.
+- edd824f: Add the param `machineries` of the directive `suite`, and `DOKIMISUITE-0013` for a value that names no machinery of a consumer.
+- 1357933: Add the param `normalize` to the directive `suite` to map the values of each call of a generated sequence.
+- ef3d7eb: Add `spec.SuiteRecord`, `spec.ValidateSuiteRecord` and `schemas/suite.schema.json` to the conformance spec.
+- 8e6e7cf: Add the licence of every declaration, the source `declaration`, the default of a param and four input kinds of a probe to the spec.
+- 6caeec8: Bind a claim of a whole declaration once, on its first callable that passes the gates of the claim.
+- 6caeec8: Bind a claim of generated sequences once, without a generated binding and without the gate `input-samples`.
+- 6caeec8: Bind a partner that a probe of generated sequences calls by its name without a binding of its arguments.
+- 1357933: Bind the probes of the classifications without a claim in the suite generator.
+- 3b020ed: Add the derived checks and their planted defects to the Go suites of the generator `suite`.
+- 1357933: Drain the `iter.Seq` or `iter.Seq2` that a callable returns into a list for the probes of a drain.
+- 027e24b: Fail `dokimi report` for a suite record whose field `ended` lists the problems that stopped its application.
+- 6caeec8: Pair a batch read with the writer of the elements of its list.
+- 027e24b: Print each problem of the field `ended` on a line of the report of its suite.
+- cb1a9a5: Add `DOKIMIBUILDER-0007` at a declaration whose builder refers to a declaration that the file of the builder cannot import.
+- 3485cf2: Add `DOKIMISUITE-0012`, which `dokimi run --check` reports for each check of the committed lock that the run no longer generates.
+- ef3d7eb: State `checks[].counterexample` of the suite record as the list of entries of the counterexample of a run of assert-spec.
+- b21bf98: Add the package, the generator, the refusals and the unclaimed classifications to each Go suite of the generator `suite`.
+- 1357933: Write the actions, the call functions and the reference of a declaration whose claims run generated sequences.
+- 1357933: Write the checks of generated sequences with their planted defects, and refuse them by the gates `countable-use`, `takes-a-replica` and `graph-of-states`.
+- edd824f: **Breaking:** Write the gate of each refusal into the generated suite of Go, which needs `conform.Refusal.Gate`.
+- 8d892c5: Add the header of a generated suite, which lists its derived checks, its refused claims and its unclaimed classifications.
+- 453d5eb: Add `spec/naming.json` with the Go and TypeScript spelling of each identifier of the conformance spec.
+
+### Patch Changes
+
+- 8d892c5: Add ADR-0018, which keeps the tests of enumerations and errors as fixed templates.
+- 8d892c5: Fix the planted defect of the claim `cancel` with the new defect form `ignores-cancel`, which succeeds for a cancelled context and calls the subject for any other.
+- 3b020ed: Fix the planted defect of the claim `if-match` with the new defect form `ignores-the-predicate`, which applies its first write and accepts every later write.
+- 8d892c5: Replace the defect form `forgets-writes` with `reads-another-value`, which breaks the read of a read-after-write law instead of its write.
+- 3b020ed: Fix the planted defect of the claim `tx` with the new defect form `settles-twice`, whose rollback settles a committed transaction.
+- 8d892c5: Fix the planted defect of the claim `writes-follow-reads` with the new defect form `stamps-the-past`.
+- 8d892c5: Fix the partner mode `derived` to bind the callable that takes the value whose field the param names.
+- 3b020ed: Fix `//dokimi:excuse` to accept the identity of a derived check, such as `Store.Get/zero-on-error`.
+- 8d892c5: Fix the defect form `fails-always` to fail each call where the call of the subject succeeds.
+- edd824f: Fix the note of a needed machinery to spell the param `machineries` as a list, such as `machineries=[faults]`.
+- 4538348: Fix the claim `partition` to read its partner in the mode `reader`.
+- 3b020ed: Fix the claim `total` to need the gate `failure`.
+- 8d892c5: Fix each planted defect of a callable with a context and an error to return the error of a cancelled context first.
+- edd824f: Fix the defect form `keeps-failed-writes` to return its zero results only until a call of a dependency fails.
+- 3efcbb7: Fix a strict run that refuses an interface with two embedded interfaces of one bare name.
+- cb1a9a5: Fix the tests of `builder` to leave out each default, sample, member and witness that only the package of its declaration can refer to.
+- aca5bc3: Fix the tests of `stub` to leave out each sample and witness that only the package of its declaration can refer to.
+- aca5bc3: Fix `stub` to write the double of an unexported interface with unexported constructors and options and without checks.
+- 7ffbb81: Fix the error of `dokimi report` for a file that does not exist to name the file once.
+- 6caeec8: Fix the pairing of a callable without a value with the named partner that reads what it writes, such as the `observe` of `accumulates`.
+- 3b020ed: Fix the partner mode `role` to pair a callable without results as the write.
+- 6caeec8: Fix the panic of the suite generator on a read of `writes-follow-reads` whose write returns no value of its type.
+- 71b3508: Fix `dokimi conform` to report a group of fixtures that is a file on Windows.
+- aca5bc3: Fix `stub` to report `DOKIMISTUB-0003` at an unexported subject whose double the directive `out` moves into another package.
+- 3b020ed: Require `go.dokimi.dev/assert` v0.12.0.
+- c238979: Warn about a directive whose brand is near the brand dokimi, through the eidos modules at 482b0bb7.
+- 1738f06: Require the eidos modules at 8d191b8e, which bound the zero value of a cycle of aliases.
+- 8d892c5: Fix the five test modules of the generators and the command to require `go.dokimi.dev/assert` v0.12.0 again.
+- 8d892c5: Fix the defect forms `value-beside` and `values-beside` to return a sample beside the error of a failed call of the subject alone.
+- 1357933: Return an empty stream in place of a nil stream from the planted defect of a callable that returns a stream.
+- 8d892c5: Fix the write of a derived check to return the value that the write returns of the type that it writes.
+- 3b020ed: Fix the second write of a derived check to take the changed field from the samples of the field.
+- 8d892c5: Fix the derivation to take two function literals of one spelling as two samples of an input.
+- 3b020ed: Fix the written value of a pair to skip an input that the read takes by its name.
+- 8d892c5: Fix the edges of the conformance spec to the edge from `deterministic` to `smoke`, which its probe proves.
+- ef3d7eb: Fix the vacuous conditions of five probes in the conformance spec to name each guard that ends the probe.
+- 8d892c5: Fix the arguments of a partner to give a function parameter, and each parameter of a read whose write takes no input, its own sample.
+- cb1a9a5: Fix `builder` to write the builder of an unexported struct with unexported constructors and without checks.
+- 3b020ed: Fix the check of the claim `if-match` to write a first value and judge a second value that differs in the field of the param `field`.
+
 ## 0.6.0
 
 ### Minor Changes

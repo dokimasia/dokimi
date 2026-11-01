@@ -127,9 +127,30 @@ type Check struct {
 	// each partner in place.
 	Statement, Clause string
 
-	// Shallow is true when the machineries of the claim do not include the
+	// Shallow is true when the machineries of the check do not include the
 	// depth of its law.
 	Shallow bool
+
+	// Generated is true for a check whose inputs the property engine
+	// generates. Such a check is the generated binding of a claim of samples,
+	// or the check of a claim of the machinery generated-inputs.
+	Generated bool
+}
+
+// Machineries returns the machineries of the check, the deepest first. They
+// are the machineries of its claim. A generated binding of a claim of samples
+// adds generated-inputs before nothing-beyond-a-caller, or at the end of a
+// list without it.
+func (c *Check) Machineries() []spec.MachineryID {
+	m := c.Claim.Machineries
+	if !c.Generated || slices.Contains(m, spec.GeneratedInputs) {
+		return m
+	}
+	at := slices.Index(m, spec.NothingBeyondACaller)
+	if at < 0 {
+		at = len(m)
+	}
+	return slices.Insert(slices.Clone(m), at, spec.GeneratedInputs)
 }
 
 // Refusal is a licensed claim whose gate failed on a callable.
@@ -137,9 +158,13 @@ type Refusal struct {
 	Claim    spec.ClaimID
 	Callable string
 
-	// Key is the key of the check that the refusal stands for, such as
+	// Key is the key of the check that the refusal replaces, such as
 	// store.scan/zero-on-error.
 	Key string
+
+	// Gate is the gate that fails for the callable. Why and Remedy are the
+	// reason and the remedy of the gate with the names of the callable.
+	Gate spec.GateID
 
 	Why, Remedy string
 }
@@ -180,13 +205,22 @@ type licensing struct {
 // runtime supply, and the machineries that the declaration states belong to
 // suite.
 //
+// draws reports whether a check passes a sample to an input of one of its
+// calls, which the language of the suite decides. Derive adds the generated
+// binding of each such check after it. The generated binding has the case
+// generated, as Store.Get/zero-on-error#generated, or the suffix -generated
+// after the id of an instance, as Store.Get/cache#a-generated. A nil draws
+// does not add a generated binding. A claim of the machinery generated-inputs
+// binds once, as a check that the property engine generates.
+//
 // # Errors
 //
 // Derive returns an error that wraps [ErrKey] for two callables of decl
 // whose names have one key.
-func Derive(decl []Facts, table []spec.Claim, suite, runtime []spec.MachineryID) (Suite, error) {
-	supplied := slices.Concat(suite, runtime)
-	var out Suite
+func Derive(
+	decl []Facts, table []spec.Claim, suite, runtime []spec.MachineryID, draws func(c *Check) bool,
+) (Suite, error) {
+	d := derivation{supplied: slices.Concat(suite, runtime), draws: draws}
 	keys := map[string]string{}
 	for i := range decl {
 		f := &decl[i]
@@ -195,14 +229,25 @@ func Derive(decl []Facts, table []spec.Claim, suite, runtime []spec.MachineryID)
 			return Suite{}, fmt.Errorf("%w: %s and %s have the key %s", ErrKey, other, f.Callable, key)
 		}
 		keys[key] = f.Callable
-		deriveCallable(&out, f, decl, table, supplied)
+		d.callable(f, decl, table)
 	}
-	return out, nil
+	return d.out, nil
 }
 
-// deriveCallable adds the checks, the refusals, the unclaimed classifications
-// and the edges of the callable of f to out.
-func deriveCallable(out *Suite, f *Facts, decl []Facts, table []spec.Claim, supplied []spec.MachineryID) {
+// derivation is the derivation of one declaration. supplied are the
+// machineries that the suite generator and the runtime supply, and draws
+// reports whether a check draws an input in the language of the suite. out is
+// the suite that the derivation adds to.
+type derivation struct {
+	draws    func(c *Check) bool
+	supplied []spec.MachineryID
+	out      Suite
+}
+
+// callable adds the checks, the refusals, the unclaimed classifications and
+// the edges of the callable of f to the suite of d.
+func (d *derivation) callable(f *Facts, decl []Facts, table []spec.Claim) {
+	out, supplied := &d.out, d.supplied
 	covered := map[string]bool{}
 	needs := map[string]string{}
 	first := len(out.Checks)
@@ -233,6 +278,9 @@ func deriveCallable(out *Suite, f *Facts, decl []Facts, table []spec.Claim, supp
 				out.Refusals = append(out.Refusals, *refusal)
 			default:
 				out.Checks = append(out.Checks, check)
+				if !check.Generated && d.draws != nil && d.draws(&check) {
+					out.Checks = append(out.Checks, generatedOf(&check))
+				}
 			}
 			covered[l.classification] = true
 		}
@@ -275,38 +323,27 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 	if l.instance != "" {
 		identity += "#" + l.instance
 	}
-	refuse := func(why, remedy string) (Check, *Refusal, bool) {
+	refuse := func(gate *spec.Gate, names map[string]string) (Check, *Refusal, bool) {
 		if everyCallable {
 			return Check{}, nil, true
 		}
-		return Check{}, &Refusal{Claim: c.ID, Callable: f.Callable, Key: spec.Key(identity), Why: why, Remedy: remedy},
-			false
+		r := refusal(c.ID, f, spec.Key(identity), gate, names)
+		return Check{}, &r, false
 	}
-	declaration := f.Declaration
-	if declaration == "" {
-		declaration = f.Callable
-	}
-	names := map[string]string{"callable": f.Callable, "declaration": declaration}
+	names := namesOf(f)
 	for _, g := range c.Gates {
 		if passes, defined := Passes(g, f); defined && !passes {
-			gate, _ := spec.GateOf(g)
-			return refuse(fill(gate.Why, names), fill(gate.Remedy, names))
+			return refuse(gateOf(g), names)
 		}
 	}
 	for i := range f.Inputs {
 		if in := &f.Inputs[i]; !in.sampled() && !in.made() {
-			return refuse(
-				fmt.Sprintf("eidos derives no sample of the parameter %s of %s", in.Name, f.Callable),
-				fmt.Sprintf("author a sample of the parameter %s with the directive sample", in.Name),
-			)
+			return refuse(gateOf(spec.InputSamples), mapWith(names, "param", in.Name))
 		}
 	}
 	for _, b := range c.Inputs {
 		if b.Kind == spec.FromParam && !hasClassParam(f, b.Param) {
-			return refuse(
-				fmt.Sprintf("the classification of %s sets no param %s", f.Callable, b.Param),
-				fmt.Sprintf("set the param %s in the directive of %s", b.Param, f.Callable),
-			)
+			return refuse(gateOf(spec.ClassificationParams), mapWith(names, "param", b.Param))
 		}
 	}
 	pairs := map[string]*Pair{}
@@ -314,8 +351,7 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		p := &c.Partners[pi]
 		pair, gate := Partner(p, f, decl)
 		if gate != nil {
-			named := mapWith(names, "partner", p.Name)
-			return refuse(fill(gate.Why, named), fill(gate.Remedy, named))
+			return refuse(gate, mapWith(names, "partner", p.Name))
 		}
 		pairs[p.Name] = pair
 		names[p.Name] = pair.Partner.Callable
@@ -325,8 +361,60 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		Claim: c, Facts: f, Pairs: pairs,
 		Identity: identity, Key: spec.Key(identity),
 		Statement: fill(c.Statement, names), Clause: fill(c.Defect.Clause, names),
-		Shallow: !slices.Contains(c.Machineries, law.Depth),
+		Shallow:   !slices.Contains(c.Machineries, law.Depth),
+		Generated: slices.Contains(c.Machineries, spec.GeneratedInputs),
 	}, nil, false
+}
+
+// GeneratedOf returns the identity of the generated binding of the check of
+// samples with the identity id: id with the case generated, as
+// Store.Get/zero-on-error#generated, or with the suffix -generated after the
+// id of an instance, as Store.Get/cache#a-generated. For the key of a check
+// it returns the key of the generated binding.
+func GeneratedOf(id string) string {
+	if strings.Contains(id, "#") {
+		return id + "-generated"
+	}
+	return id + "#generated"
+}
+
+// generatedOf returns the generated binding of the check c of samples: the
+// check with the case generated in its identity and its key, and the depth of
+// its machineries.
+func generatedOf(c *Check) Check {
+	g := *c
+	g.Identity = GeneratedOf(g.Identity)
+	g.Key = spec.Key(g.Identity)
+	g.Generated = true
+	law, _ := spec.LawOf(g.Claim.Law)
+	g.Shallow = !slices.Contains(g.Machineries(), law.Depth)
+	return g
+}
+
+// Refuse returns the refusal of the check c by the gate id. The suite
+// generator of a language refuses a derived check by a gate on the code that
+// it writes, such as importable-samples.
+func Refuse(c *Check, id spec.GateID) Refusal {
+	return refusal(c.Claim.ID, c.Facts, c.Key, gateOf(id), namesOf(c.Facts))
+}
+
+// refusal returns the refusal of the claim on the callable of f by gate. The
+// reason and the remedy of the refusal are those of gate with names in place.
+func refusal(claim spec.ClaimID, f *Facts, key string, gate *spec.Gate, names map[string]string) Refusal {
+	return Refusal{
+		Claim: claim, Callable: f.Callable, Key: key, Gate: gate.ID,
+		Why: fill(gate.Why, names), Remedy: fill(gate.Remedy, names),
+	}
+}
+
+// namesOf returns the names that the text of a claim or of a gate refers to:
+// the callable of f and its declaration. A function is its own declaration.
+func namesOf(f *Facts) map[string]string {
+	declaration := f.Declaration
+	if declaration == "" {
+		declaration = f.Callable
+	}
+	return map[string]string{"callable": f.Callable, "declaration": declaration}
 }
 
 // licensed returns each way in which the callable of f has a licence of c.
@@ -449,7 +537,7 @@ func needsNote(claim spec.ClaimID, m spec.MachineryID) string {
 	machinery, _ := spec.MachineryOf(m)
 	if machinery.Param != "" {
 		return fmt.Sprintf(
-			"The claim %s needs the param machineries=%s of the directive suite.",
+			"The claim %s needs the param machineries=[%s] of the directive suite.",
 			claim,
 			machinery.Param,
 		)
@@ -457,12 +545,13 @@ func needsNote(claim spec.ClaimID, m spec.MachineryID) string {
 	return fmt.Sprintf("The claim %s needs %s.", claim, m)
 }
 
-// edgesOf returns the edges between the checks of one callable.
+// edgesOf returns the edges between the checks of one callable. An edge joins
+// two sample bindings or two generated bindings.
 func edgesOf(checks []Check) []Edge {
 	var out []Edge
 	for _, c := range checks {
 		for _, e := range c.Claim.Entails {
-			i := slices.IndexFunc(checks, func(o Check) bool { return o.Claim.ID == e })
+			i := slices.IndexFunc(checks, func(o Check) bool { return o.Claim.ID == e && o.Generated == c.Generated })
 			if i >= 0 {
 				out = append(out, Edge{Deeper: c.Identity, Shallower: checks[i].Identity})
 			}

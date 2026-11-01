@@ -150,6 +150,89 @@ func TestGate(t *testing.T) {
 				name: "fails returns-unaided for a callable with the mixin waits", giveGate: spec.ReturnsUnaided,
 				give: withMixins(reader(), "idempotent", "waits"), want: false,
 			},
+			{
+				name:     "passes returns-before-cancel for a callable without the mixin runs-until-cancelled",
+				giveGate: spec.ReturnsBeforeCancel,
+				give:     withMixins(reader(), "waits"),
+				want:     true,
+			},
+			{
+				name:     "fails returns-before-cancel for a callable with the mixin runs-until-cancelled",
+				giveGate: spec.ReturnsBeforeCancel,
+				give:     withMixins(reader(), "idempotent", "runs-until-cancelled"),
+				want:     false,
+			},
+			{
+				name: "passes two-inputs-of-one-type for two inputs of one type", giveGate: spec.TwoInputsOfOneType,
+				give: combiner(), want: true,
+			},
+			{
+				name: "fails two-inputs-of-one-type for one input", giveGate: spec.TwoInputsOfOneType,
+				give: reader(), want: false,
+			},
+			{
+				name: "fails two-inputs-of-one-type for two inputs of two types", giveGate: spec.TwoInputsOfOneType,
+				give: withInput(combiner(), symbol.FormText), want: false,
+			},
+			{
+				name:     "passes result-of-the-input-type for one value of the input type",
+				giveGate: spec.ResultOfTheInputType, give: combiner(), want: true,
+			},
+			{
+				name: "passes context-or-input for a callable with a context", giveGate: spec.ContextOrInput,
+				give: stream(), want: true,
+			},
+			{
+				name: "passes context-or-input for a callable with an input", giveGate: spec.ContextOrInput,
+				give: pure(), want: true,
+			},
+			{
+				name:     "fails context-or-input for a callable without a context or an input",
+				giveGate: spec.ContextOrInput,
+				want:     false,
+				give: derive.Facts{
+					Declaration: "Store", Callable: "Count",
+					Signature: signature("Count", false, nil,
+						[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn),
+					Results: []derive.Value{text("")},
+				},
+			},
+			{
+				name: "passes exact-fidelity for a codec without a fidelity", giveGate: spec.ExactFidelity,
+				give: reader(), want: true,
+			},
+			{
+				name: "passes exact-fidelity for a codec of the fidelity exact", giveGate: spec.ExactFidelity,
+				give: withParam(reader(), "codec", "fidelity", "exact"), want: true,
+			},
+			{
+				name: "fails exact-fidelity for a codec of the fidelity lossy", giveGate: spec.ExactFidelity,
+				give: withParam(reader(), "codec", "fidelity", "lossy"), want: false,
+			},
+			{
+				name: "fails result-of-the-input-type for a value of another type", giveGate: spec.ResultOfTheInputType,
+				give: withResult(combiner(), symbol.FormText), want: false,
+			},
+			{
+				name:     "fails result-of-the-input-type for two values of the input type",
+				giveGate: spec.ResultOfTheInputType,
+				give: func() derive.Facts {
+					f := combiner()
+					f.Results = append(f.Results, item(""))
+					return f
+				}(),
+				want: false,
+			},
+			{
+				name:     "fails result-of-the-input-type for a callable without inputs",
+				giveGate: spec.ResultOfTheInputType,
+				give: func() derive.Facts {
+					f := combiner()
+					f.Inputs = nil
+					return f
+				}(),
+				want: false,
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

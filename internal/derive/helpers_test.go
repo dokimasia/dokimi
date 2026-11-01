@@ -122,6 +122,17 @@ func pure() derive.Facts {
 	}
 }
 
+// combiner returns the facts of Store.Merge(first, second Item) Item.
+func combiner() derive.Facts {
+	inputs := []derive.Value{item("first"), item("second")}
+	return derive.Facts{
+		Declaration: "Store", Callable: "Merge",
+		Signature: signature("Merge", false, inputs, []rules.ReturnRole{rules.ReturnValue}, rules.ErrorsNone),
+		Inputs:    inputs,
+		Results:   []derive.Value{item("")},
+	}
+}
+
 // stream returns the facts of Store.Watch(ctx) (<-chan Item, error).
 func stream() derive.Facts {
 	return derive.Facts{

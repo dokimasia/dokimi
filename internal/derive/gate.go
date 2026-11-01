@@ -4,6 +4,7 @@
 package derive
 
 import (
+	"reflect"
 	"slices"
 
 	"go.dokimi.dev/eidos/plugin/shape"
@@ -39,13 +40,37 @@ var conditions = map[spec.GateID]func(f *Facts) bool{
 		return slices.ContainsFunc(f.Inputs, func(v Value) bool { return v.Shape.Form == symbol.FormOptional })
 	},
 	spec.ReturnsUnaided: func(f *Facts) bool { return !slices.Contains(f.Class.Mixins, shape.Waits) },
+	spec.ReturnsBeforeCancel: func(f *Facts) bool {
+		return !slices.Contains(f.Class.Mixins, shape.RunsUntilCancelled)
+	},
+	spec.TwoInputsOfOneType: func(f *Facts) bool {
+		return len(f.Inputs) == 2 && reflect.DeepEqual(f.Inputs[0].Shape, f.Inputs[1].Shape)
+	},
+	spec.ResultOfTheInputType: func(f *Facts) bool {
+		return len(f.Results) == 1 && len(f.Inputs) > 0 && reflect.DeepEqual(f.Results[0].Shape, f.Inputs[0].Shape)
+	},
+	spec.ContextOrInput: func(f *Facts) bool { return hasParam(f, rules.ParamContext) || len(f.Inputs) > 0 },
+	spec.ExactFidelity: func(f *Facts) bool {
+		for _, params := range f.Class.Params {
+			if params[shape.CodecFidelity] == lossy {
+				return false
+			}
+		}
+		return true
+	},
 }
 
-// OtherGates are the gates of the spec that another part of the derivation
-// judges: the partner resolution judges the partner of a claim, and the
-// derivation of an enumeration and of the errors of a package judges their
-// facts.
+// lossy is the fidelity of a codec whose round trip drops a part of a value.
+const lossy = "lossy"
+
+// OtherGates are the gates of the spec that another part of dokimi judges.
+// The binding of a claim judges the samples of the inputs of the callable and
+// the params that the claim reads. The partner resolution judges the partner
+// of a claim. The derivation of an enumeration and of the errors of a package
+// judges their facts. The suite generator of a language judges the code that
+// it writes for a derived check.
 var OtherGates = []spec.GateID{
+	spec.InputSamples, spec.ClassificationParams, spec.InterfaceHandle, spec.ImportableSamples,
 	spec.PartnerFound, spec.OnePartner, spec.PartnerArguments, spec.Rewritable,
 	spec.Members, spec.TwoMembers, spec.ListFunction, spec.ValidFunction, spec.OutsideValue, spec.ParseFunction,
 	spec.TextEncoding,

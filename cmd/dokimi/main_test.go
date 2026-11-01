@@ -47,7 +47,8 @@ const (
 
 // The source of the package store of the shop, its file and the file of the
 // lock of the plan go. Store has a check of zero-on-error that the samples of
-// Item need, and Index has a check of read-after-write with the partner Add.
+// Item need. Index has the checks of read-after-write and of
+// reads-each-last-write with the partner Add.
 const (
 	storeFile   = "store/store.go"
 	lockFile    = "dokimi.go.lock"
@@ -197,6 +198,8 @@ func TestDokimi(t *testing.T) {
 				"example.com/shop/store\tindex.find/read-after-write\tread-after-write\tcheck\twrite=index.add\n"+
 				"example.com/shop/store\tindex.find/read-after-write#generated\tread-after-write\tcheck\t"+
 				"write=index.add\n"+
+				"example.com/shop/store\tindex.find/reads-each-last-write\treads-each-last-write\tcheck\t"+
+				"write=index.add\n"+
 				"example.com/shop/store\tindex.find/smoke\tsmoke\tcheck\t-\n"+
 				"example.com/shop/store\tindex.find/smoke#generated\tsmoke\tcheck\t-\n"+
 				"example.com/shop/store\tindex.find/zero-on-error\tzero-on-error\tcheck\t-\n"+
@@ -207,7 +210,7 @@ func TestDokimi(t *testing.T) {
 				"example.com/shop/store\tstore.get/smoke#generated\tsmoke\tcheck\t-\n"+
 				"example.com/shop/store\tstore.get/zero-on-error\tzero-on-error\tcheck\t-\n"+
 				"example.com/shop/store\tstore.get/zero-on-error#generated\tzero-on-error\tcheck\t-\n",
-				"the lock has a line for each check of both suites, each beside its generated binding")
+				"the lock has a line for each check and for each generated binding of both suites")
 		})
 
 		losses := []struct {

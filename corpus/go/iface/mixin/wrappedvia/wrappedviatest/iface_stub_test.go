@@ -13,122 +13,135 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia/wrappedviatest"
 	"go.dokimi.dev/stub"
 )
 
-// mixedStubOpenArgs returns the samples of the arguments of Open.
-func mixedStubOpenArgs(tb assert.TB) (context.Context, string) {
+// mixedStubGetArgs returns the samples of the arguments of Get.
+func mixedStubGetArgs(tb assert.TB) (context.Context, string) {
 	tb.Helper()
 	a0 := assert.Context(tb)
 	var a1 string
-	a1 = "Open-a"
+	a1 = "Get-a"
 	return a0, a1
 }
 
-// mixedStubOpen calls Open of s with the samples of its arguments.
-func mixedStubOpen(tb assert.TB, s *wrappedviatest.MixedStub) error {
+// mixedStubGet calls Get of s with the samples of its arguments.
+func mixedStubGet(tb assert.TB, s *wrappedviatest.MixedStub) (wrappedvia.Value, error) {
 	tb.Helper()
-	a0, a1 := mixedStubOpenArgs(tb)
-	return s.Open(a0, a1)
+	a0, a1 := mixedStubGetArgs(tb)
+	return s.Get(a0, a1)
 }
 
-// mixedStubOpenPins returns the samples of the results of Open, with a new
+// mixedStubGetPins returns the samples of the results of Get, with a new
 // error as its error result.
-func mixedStubOpenPins() error {
-	want0 := errors.New("Open-returns")
-	return want0
+func mixedStubGetPins() (wrappedvia.Value, error) {
+	var want0 wrappedvia.Value
+	want1 := errors.New("Get-returns")
+	want0 = wrappedvia.Value{Key: "Key-a"}
+	return want0, want1
 }
 
-// mixedStubCauseArgs returns the samples of the arguments of Cause.
-func mixedStubCauseArgs(tb assert.TB) context.Context {
+// mixedStubTracedGetArgs returns the samples of the arguments of
+// TracedGet.
+func mixedStubTracedGetArgs(tb assert.TB) (context.Context, string) {
 	tb.Helper()
 	a0 := assert.Context(tb)
-	return a0
+	var a1 string
+	a1 = "TracedGet-a"
+	return a0, a1
 }
 
-// mixedStubCause calls Cause of s with the samples of its arguments.
-func mixedStubCause(tb assert.TB, s *wrappedviatest.MixedStub) error {
+// mixedStubTracedGet calls TracedGet of s with the samples of its
+// arguments.
+func mixedStubTracedGet(tb assert.TB, s *wrappedviatest.MixedStub) (wrappedvia.Value, error) {
 	tb.Helper()
-	a0 := mixedStubCauseArgs(tb)
-	return s.Cause(a0)
+	a0, a1 := mixedStubTracedGetArgs(tb)
+	return s.TracedGet(a0, a1)
 }
 
-// mixedStubCausePins returns the samples of the results of Cause, with a
-// new error as its error result.
-func mixedStubCausePins() error {
-	want0 := errors.New("Cause-returns")
-	return want0
+// mixedStubTracedGetPins returns the samples of the results of TracedGet,
+// with a new error as its error result.
+func mixedStubTracedGetPins() (wrappedvia.Value, error) {
+	var want0 wrappedvia.Value
+	want1 := errors.New("TracedGet-returns")
+	want0 = wrappedvia.Value{Key: "Key-a"}
+	return want0, want1
 }
 
-// mixedStubOpenSubject returns the subject of [stub.Behaviour] for Open.
-// The subject calls a new double that reports to tb.
-func mixedStubOpenSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedOpenCall, wrappedviatest.MixedOpenReturn] {
+// mixedStubGetSubject returns the subject of [stub.Behaviour] for Get. The
+// subject calls a new double that reports to tb.
+func mixedStubGetSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedGetCall, wrappedviatest.MixedGetReturn] {
 	tb.Helper()
 	s := wrappedviatest.NewMixedStub(tb)
-	return stub.Subject[wrappedviatest.MixedOpenCall, wrappedviatest.MixedOpenReturn]{
-		Stub: s.OnOpen.MethodStub,
+	return stub.Subject[wrappedviatest.MixedGetCall, wrappedviatest.MixedGetReturn]{
+		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			_ = mixedStubOpen(tb, s)
+			_, _ = mixedStubGet(tb, s)
 		},
-		Result: func() wrappedviatest.MixedOpenReturn {
-			got0 := mixedStubOpen(tb, s)
-			return wrappedviatest.MixedOpenReturn{Err: got0}
+		Result: func() wrappedviatest.MixedGetReturn {
+			got0, got1 := mixedStubGet(tb, s)
+			return wrappedviatest.MixedGetReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
-			s.OnOpen.Func(func(_ context.Context, _ string) error {
+			s.OnGet.Func(func(_ context.Context, _ string) (wrappedvia.Value, error) {
 				mark()
-				var z0 error
-				return z0
+				var z0 wrappedvia.Value
+				var z1 error
+				return z0, z1
 			})
 		},
 		Fails: func() error {
-			r0 := mixedStubOpen(tb, s)
-			return r0
+			_, r1 := mixedStubGet(tb, s)
+			return r1
 		},
 	}
 }
 
-// mixedStubCauseSubject returns the subject of [stub.Behaviour] for Cause.
-// The subject calls a new double that reports to tb.
-func mixedStubCauseSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedCauseCall, wrappedviatest.MixedCauseReturn] {
+// mixedStubTracedGetSubject returns the subject of [stub.Behaviour] for
+// TracedGet. The subject calls a new double that reports to tb.
+func mixedStubTracedGetSubject(
+	tb assert.TB,
+) stub.Subject[wrappedviatest.MixedTracedGetCall, wrappedviatest.MixedTracedGetReturn] {
 	tb.Helper()
 	s := wrappedviatest.NewMixedStub(tb)
-	return stub.Subject[wrappedviatest.MixedCauseCall, wrappedviatest.MixedCauseReturn]{
-		Stub: s.OnCause.MethodStub,
+	return stub.Subject[wrappedviatest.MixedTracedGetCall, wrappedviatest.MixedTracedGetReturn]{
+		Stub: s.OnTracedGet.MethodStub,
 		Call: func() {
-			_ = mixedStubCause(tb, s)
+			_, _ = mixedStubTracedGet(tb, s)
 		},
-		Result: func() wrappedviatest.MixedCauseReturn {
-			got0 := mixedStubCause(tb, s)
-			return wrappedviatest.MixedCauseReturn{Err: got0}
+		Result: func() wrappedviatest.MixedTracedGetReturn {
+			got0, got1 := mixedStubTracedGet(tb, s)
+			return wrappedviatest.MixedTracedGetReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
-			s.OnCause.Func(func(_ context.Context) error {
+			s.OnTracedGet.Func(func(_ context.Context, _ string) (wrappedvia.Value, error) {
 				mark()
-				var z0 error
-				return z0
+				var z0 wrappedvia.Value
+				var z1 error
+				return z0, z1
 			})
 		},
 		Fails: func() error {
-			r0 := mixedStubCause(tb, s)
-			return r0
+			_, r1 := mixedStubTracedGet(tb, s)
+			return r1
 		},
 	}
 }
 
 // mixedStubInstance is the instance of a wrappedviatest.MixedStub that the
 // checks of the constructors and the options drive.
-type mixedStubInstance = stub.Instance[wrappedviatest.MixedOpenCall]
+type mixedStubInstance = stub.Instance[wrappedviatest.MixedGetCall]
 
 // mixedStubInstanceOf returns the instance of s. The options apply to the
-// whole double, so the checks call Open alone.
+// whole double, so the checks call Get alone.
 func mixedStubInstanceOf(tb assert.TB, s *wrappedviatest.MixedStub) mixedStubInstance {
 	tb.Helper()
 	return mixedStubInstance{
-		Stub: s.OnOpen.MethodStub,
+		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			_ = mixedStubOpen(tb, s)
+			_, _ = mixedStubGet(tb, s)
 		},
 		Reset: s.ResetCalls,
 	}
@@ -139,52 +152,53 @@ func mixedStubInstanceOf(tb assert.TB, s *wrappedviatest.MixedStub) mixedStubIns
 func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Open", func(t *testing.T) {
+	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
-		stub.Behaviour(t, "Open", mixedStubOpenSubject)
+		stub.Behaviour(t, "Get", mixedStubGetSubject)
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			_ = mixedStubOpen(t, s)
-			got := s.OnOpen.AssertCalledOnce(t, "Open records the call")
-			a0, a1 := mixedStubOpenArgs(t)
+			_, _ = mixedStubGet(t, s)
+			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
+			a0, a1 := mixedStubGetArgs(t)
 			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Name, a1, "the call records Name")
+			expect.Equal(t, got.Key, a1, "the call records Key")
 		})
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			var seen []wrappedviatest.MixedOpenCall
-			s.OnOpen.OnRecord(func(c wrappedviatest.MixedOpenCall) { seen = append(seen, c) })
-			_ = mixedStubOpen(t, s)
-			_ = mixedStubOpen(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Open")
+			var seen []wrappedviatest.MixedGetCall
+			s.OnGet.OnRecord(func(c wrappedviatest.MixedGetCall) { seen = append(seen, c) })
+			_, _ = mixedStubGet(t, s)
+			_, _ = mixedStubGet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
 		})
 	})
 
-	t.Run("Cause", func(t *testing.T) {
+	t.Run("TracedGet", func(t *testing.T) {
 		t.Parallel()
-		stub.Behaviour(t, "Cause", mixedStubCauseSubject)
+		stub.Behaviour(t, "TracedGet", mixedStubTracedGetSubject)
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			_ = mixedStubCause(t, s)
-			got := s.OnCause.AssertCalledOnce(t, "Cause records the call")
-			a0 := mixedStubCauseArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+			_, _ = mixedStubTracedGet(t, s)
+			got := s.OnTracedGet.AssertCalledOnce(t, "TracedGet records the call")
+			a0, a1 := mixedStubTracedGetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
 		})
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			var seen []wrappedviatest.MixedCauseCall
-			s.OnCause.OnRecord(func(c wrappedviatest.MixedCauseCall) { seen = append(seen, c) })
-			_ = mixedStubCause(t, s)
-			_ = mixedStubCause(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Cause")
+			var seen []wrappedviatest.MixedTracedGetCall
+			s.OnTracedGet.OnRecord(func(c wrappedviatest.MixedTracedGetCall) { seen = append(seen, c) })
+			_, _ = mixedStubTracedGet(t, s)
+			_, _ = mixedStubTracedGet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of TracedGet")
 		})
 	})
 
@@ -194,40 +208,42 @@ func TestMixedStub(t *testing.T) {
 			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStub(tb))
 		})
 
-		t.Run("clears the recorded calls of Open", func(t *testing.T) {
+		t.Run("clears the recorded calls of Get", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			_ = mixedStubOpen(t, s)
+			_, _ = mixedStubGet(t, s)
 			s.ResetCalls()
-			assert.Equal(t, s.OnOpen.CallCount(), 0, "ResetCalls clears the calls of Open")
+			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
 		})
 
-		t.Run("keeps the results of Returns of Open", func(t *testing.T) {
+		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			want0 := mixedStubOpenPins()
-			s.OnOpen.Returns(want0)
+			want0, want1 := mixedStubGetPins()
+			s.OnGet.Returns(want0, want1)
 			s.ResetCalls()
-			got0 := mixedStubOpen(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Open")
+			got0, got1 := mixedStubGet(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
 		})
 
-		t.Run("clears the recorded calls of Cause", func(t *testing.T) {
+		t.Run("clears the recorded calls of TracedGet", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			_ = mixedStubCause(t, s)
+			_, _ = mixedStubTracedGet(t, s)
 			s.ResetCalls()
-			assert.Equal(t, s.OnCause.CallCount(), 0, "ResetCalls clears the calls of Cause")
+			assert.Equal(t, s.OnTracedGet.CallCount(), 0, "ResetCalls clears the calls of TracedGet")
 		})
 
-		t.Run("keeps the results of Returns of Cause", func(t *testing.T) {
+		t.Run("keeps the results of Returns of TracedGet", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			want0 := mixedStubCausePins()
-			s.OnCause.Returns(want0)
+			want0, want1 := mixedStubTracedGetPins()
+			s.OnTracedGet.Returns(want0, want1)
 			s.ResetCalls()
-			got0 := mixedStubCause(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Cause")
+			got0, got1 := mixedStubTracedGet(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of TracedGet")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of TracedGet")
 		})
 	})
 
@@ -241,20 +257,20 @@ func TestMixedStub(t *testing.T) {
 	t.Run("NewMixedStubFailing", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("fails Open with its error", func(t *testing.T) {
+		t.Run("fails Get with its error", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Open-failing")
+			want := errors.New("Get-failing")
 			s := wrappedviatest.NewMixedStubFailing(t, want)
-			r0 := mixedStubOpen(t, s)
-			assert.ErrorIs(t, r0, want, "Open fails with the error of NewMixedStubFailing")
+			_, r1 := mixedStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of NewMixedStubFailing")
 		})
 
-		t.Run("fails Cause with its error", func(t *testing.T) {
+		t.Run("fails TracedGet with its error", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Cause-failing")
+			want := errors.New("TracedGet-failing")
 			s := wrappedviatest.NewMixedStubFailing(t, want)
-			r0 := mixedStubCause(t, s)
-			assert.ErrorIs(t, r0, want, "Cause fails with the error of NewMixedStubFailing")
+			_, r1 := mixedStubTracedGet(t, s)
+			assert.ErrorIs(t, r1, want, "TracedGet fails with the error of NewMixedStubFailing")
 		})
 	})
 
@@ -268,40 +284,40 @@ func TestMixedStub(t *testing.T) {
 	t.Run("MixedStubDelegateTo", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("passes Open to the implementation", func(t *testing.T) {
+		t.Run("passes Get to the implementation", func(t *testing.T) {
 			t.Parallel()
 			inner := wrappedviatest.NewMixedStub(t)
 			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
-			_ = mixedStubOpen(t, s)
-			inner.OnOpen.AssertCalledOnce(t, "Open calls the implementation")
+			_, _ = mixedStubGet(t, s)
+			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
 		})
 
-		t.Run("fails Open with the error of the implementation", func(t *testing.T) {
+		t.Run("fails Get with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Open-delegate")
+			want := errors.New("Get-delegate")
 			inner := wrappedviatest.NewMixedStub(t)
-			inner.OnOpen.Faults(want, 1)
+			inner.OnGet.Faults(want, 1)
 			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
-			r0 := mixedStubOpen(t, s)
-			assert.ErrorIs(t, r0, want, "Open fails with the error of the implementation")
+			_, r1 := mixedStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of the implementation")
 		})
 
-		t.Run("passes Cause to the implementation", func(t *testing.T) {
+		t.Run("passes TracedGet to the implementation", func(t *testing.T) {
 			t.Parallel()
 			inner := wrappedviatest.NewMixedStub(t)
 			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
-			_ = mixedStubCause(t, s)
-			inner.OnCause.AssertCalledOnce(t, "Cause calls the implementation")
+			_, _ = mixedStubTracedGet(t, s)
+			inner.OnTracedGet.AssertCalledOnce(t, "TracedGet calls the implementation")
 		})
 
-		t.Run("fails Cause with the error of the implementation", func(t *testing.T) {
+		t.Run("fails TracedGet with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Cause-delegate")
+			want := errors.New("TracedGet-delegate")
 			inner := wrappedviatest.NewMixedStub(t)
-			inner.OnCause.Faults(want, 1)
+			inner.OnTracedGet.Faults(want, 1)
 			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
-			r0 := mixedStubCause(t, s)
-			assert.ErrorIs(t, r0, want, "Cause fails with the error of the implementation")
+			_, r1 := mixedStubTracedGet(t, s)
+			assert.ErrorIs(t, r1, want, "TracedGet fails with the error of the implementation")
 		})
 	})
 
@@ -343,152 +359,168 @@ func TestMixedStub(t *testing.T) {
 	t.Run("MixedStubFailing", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("fails Open with its error", func(t *testing.T) {
+		t.Run("fails Get with its error", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Open-failing")
+			want := errors.New("Get-failing")
 			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubFailing(want))
-			r0 := mixedStubOpen(t, s)
-			assert.ErrorIs(t, r0, want, "Open fails with the error of MixedStubFailing")
+			_, r1 := mixedStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of MixedStubFailing")
 		})
 
-		t.Run("fails Cause with its error", func(t *testing.T) {
+		t.Run("fails TracedGet with its error", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Cause-failing")
+			want := errors.New("TracedGet-failing")
 			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubFailing(want))
-			r0 := mixedStubCause(t, s)
-			assert.ErrorIs(t, r0, want, "Cause fails with the error of MixedStubFailing")
+			_, r1 := mixedStubTracedGet(t, s)
+			assert.ErrorIs(t, r1, want, "TracedGet fails with the error of MixedStubFailing")
 		})
 	})
 
-	t.Run("WithMixedOpen", func(t *testing.T) {
+	t.Run("WithMixedGet", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("sets the function of Open", func(t *testing.T) {
+		t.Run("sets the function of Get", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := wrappedviatest.NewMixedStub(t, wrappedviatest.WithMixedOpen(func(_ context.Context, _ string) error {
-				called = true
-				var z0 error
-				return z0
-			}))
-			_ = mixedStubOpen(t, s)
-			assert.True(t, called, "WithMixedOpen sets the function of Open")
+			s := wrappedviatest.NewMixedStub(
+				t,
+				wrappedviatest.WithMixedGet(func(_ context.Context, _ string) (wrappedvia.Value, error) {
+					called = true
+					var z0 wrappedvia.Value
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubGet(t, s)
+			assert.True(t, called, "WithMixedGet sets the function of Get")
 		})
 	})
 
-	t.Run("WithMixedCause", func(t *testing.T) {
+	t.Run("WithMixedTracedGet", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("sets the function of Cause", func(t *testing.T) {
+		t.Run("sets the function of TracedGet", func(t *testing.T) {
 			t.Parallel()
 			called := false
-			s := wrappedviatest.NewMixedStub(t, wrappedviatest.WithMixedCause(func(_ context.Context) error {
-				called = true
-				var z0 error
-				return z0
-			}))
-			_ = mixedStubCause(t, s)
-			assert.True(t, called, "WithMixedCause sets the function of Cause")
+			s := wrappedviatest.NewMixedStub(
+				t,
+				wrappedviatest.WithMixedTracedGet(func(_ context.Context, _ string) (wrappedvia.Value, error) {
+					called = true
+					var z0 wrappedvia.Value
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubTracedGet(t, s)
+			assert.True(t, called, "WithMixedTracedGet sets the function of TracedGet")
 		})
 	})
 }
 
-// TestMixedOpenStub checks the methods of MixedOpenStub, which configures
-// Open.
-func TestMixedOpenStub(t *testing.T) {
+// TestMixedGetStub checks the methods of MixedGetStub, which configures
+// Get.
+func TestMixedGetStub(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Returns", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("sets the results of each call of Open", func(t *testing.T) {
+		t.Run("sets the results of each call of Get", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			want0 := mixedStubOpenPins()
-			s.OnOpen.Returns(want0)
-			got0 := mixedStubOpen(t, s)
-			assert.ErrorIs(t, got0, want0, "Open returns the error that Returns sets")
+			want0, want1 := mixedStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			got0, got1 := mixedStubGet(t, s)
+			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
 		})
 
-		t.Run("configures Open for strict mode", func(t *testing.T) {
+		t.Run("configures Get for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
 			s := wrappedviatest.NewMixedStub(r)
-			s.OnOpen.Strict()
-			var want0 error
-			s.OnOpen.Returns(want0)
-			_ = mixedStubOpen(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Open")
+			s.OnGet.Strict()
+			var want0 wrappedvia.Value
+			var want1 error
+			s.OnGet.Returns(want0, want1)
+			_, _ = mixedStubGet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
 		})
 	})
 
 	t.Run("Func", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("passes the arguments of each call of Open to the function", func(t *testing.T) {
+		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
 			var got0 context.Context
 			var got1 string
-			s.OnOpen.Func(func(p0 context.Context, p1 string) error {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (wrappedvia.Value, error) {
 				got0, got1 = p0, p1
-				var z0 error
-				return z0
+				var z0 wrappedvia.Value
+				var z1 error
+				return z0, z1
 			})
-			_ = mixedStubOpen(t, s)
-			a0, a1 := mixedStubOpenArgs(t)
+			_, _ = mixedStubGet(t, s)
+			a0, a1 := mixedStubGetArgs(t)
 			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Name")
+			expect.Equal(t, got1, a1, "the function receives Key")
 		})
 	})
 }
 
-// TestMixedCauseStub checks the methods of MixedCauseStub, which
-// configures Cause.
-func TestMixedCauseStub(t *testing.T) {
+// TestMixedTracedGetStub checks the methods of MixedTracedGetStub, which
+// configures TracedGet.
+func TestMixedTracedGetStub(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Returns", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("sets the results of each call of Cause", func(t *testing.T) {
+		t.Run("sets the results of each call of TracedGet", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
-			want0 := mixedStubCausePins()
-			s.OnCause.Returns(want0)
-			got0 := mixedStubCause(t, s)
-			assert.ErrorIs(t, got0, want0, "Cause returns the error that Returns sets")
+			want0, want1 := mixedStubTracedGetPins()
+			s.OnTracedGet.Returns(want0, want1)
+			got0, got1 := mixedStubTracedGet(t, s)
+			expect.Equal(t, got0, want0, "TracedGet returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "TracedGet returns the error that Returns sets")
 		})
 
-		t.Run("configures Cause for strict mode", func(t *testing.T) {
+		t.Run("configures TracedGet for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
 			s := wrappedviatest.NewMixedStub(r)
-			s.OnCause.Strict()
-			var want0 error
-			s.OnCause.Returns(want0)
-			_ = mixedStubCause(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Cause")
+			s.OnTracedGet.Strict()
+			var want0 wrappedvia.Value
+			var want1 error
+			s.OnTracedGet.Returns(want0, want1)
+			_, _ = mixedStubTracedGet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of TracedGet")
 		})
 	})
 
 	t.Run("Func", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("passes the arguments of each call of Cause to the function", func(t *testing.T) {
+		t.Run("passes the arguments of each call of TracedGet to the function", func(t *testing.T) {
 			t.Parallel()
 			s := wrappedviatest.NewMixedStub(t)
 			var got0 context.Context
-			s.OnCause.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
+			var got1 string
+			s.OnTracedGet.Func(func(p0 context.Context, p1 string) (wrappedvia.Value, error) {
+				got0, got1 = p0, p1
+				var z0 wrappedvia.Value
+				var z1 error
+				return z0, z1
 			})
-			_ = mixedStubCause(t, s)
-			a0 := mixedStubCauseArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+			_, _ = mixedStubTracedGet(t, s)
+			a0, a1 := mixedStubTracedGetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
 		})
 	})
 }
 
-// dokimi:provenance sha256:afdee79e9a434fa7d2e5d3c935464ddfcb79e13d8365dddc0818d102bf2b79aa
+// dokimi:provenance sha256:bedc9efbfd56642ec23eb7a0547460e476513905876c9426d6077b165cd4b1b0

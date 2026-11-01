@@ -20,6 +20,12 @@ import (
 //
 // Mixed.Stream/smoke: Stream returns without a panic for derived inputs.
 //
+// Mixed.Stream/streams-what-was-stored: Stream yields each value that Add
+// stored.
+//
+// Mixed.Stream/streams-what-was-stored#generated: Stream yields each value
+// that Add stored.
+//
 // Mixed.Add/smoke: Add returns without a panic for derived inputs.
 //
 // Mixed.Add/smoke#generated: Add returns without a panic for derived
@@ -44,6 +50,10 @@ import (
 //
 // Mixed.Stream/smoke
 //
+// Mixed.Stream/streams-what-was-stored
+//
+// Mixed.Stream/streams-what-was-stored#generated
+//
 // Mixed.Add/smoke
 //
 // Mixed.Remove/smoke
@@ -54,9 +64,6 @@ import (
 // error result.
 
 // The unclaimed classifications of Mixed:
-//
-// The shape:stream-reader of Mixed.Stream has the stance gap. No claim
-// states what a stream returns after its end.
 //
 // The mixin:stream-reflects-mutations of Mixed.Stream has the stance
 // needs. The claims of the mixin need generated sequences.
@@ -99,6 +106,18 @@ type mixedStream struct {
 // panic for derived inputs.
 func (c mixedStream) Smoke() conform.ID[streamreflectsmutations.Mixed] {
 	return c.Check("smoke")
+}
+
+// StreamsWhatWasStored returns the identity of the check that Stream
+// yields each value that Add stored.
+func (c mixedStream) StreamsWhatWasStored() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("streams-what-was-stored")
+}
+
+// StreamsWhatWasStoredGenerated returns the identity of the check that
+// Stream yields each value that Add stored.
+func (c mixedStream) StreamsWhatWasStoredGenerated() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("streams-what-was-stored#generated")
 }
 
 // mixedAdd is the name of Mixed.Add, with the identities of its checks.
@@ -184,6 +203,78 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 					})
 				},
 				Defect: mixedStreamPanics,
+			},
+			{
+				ID:          MixedChecks.Stream.StreamsWhatWasStored(),
+				Statement:   "Stream yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]string, error) {
+						r0 := h.Subject().Stream(ctx)
+						var drained []string
+						for e, err := range r0 {
+							if err != nil {
+								return drained, err
+							}
+							drained = append(drained, e)
+						}
+						return drained, nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := string("item-a")
+							if calls > 1 {
+								w = string("item-b")
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: mixedStreamDrainsNothing,
+			},
+			{
+				ID:          MixedChecks.Stream.StreamsWhatWasStoredGenerated(),
+				Statement:   "Stream yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(
+						prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(2), prop.MaxSize(2)),
+						"item",
+					)
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]string, error) {
+						r0 := h.Subject().Stream(ctx)
+						var drained []string
+						for e, err := range r0 {
+							if err != nil {
+								return drained, err
+							}
+							drained = append(drained, e)
+						}
+						return drained, nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := drawnItem[0]
+							if calls > 1 {
+								w = drawnItem[1]
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: mixedStreamDrainsNothing,
 			},
 			{
 				ID:          MixedChecks.Add.Smoke(),
@@ -322,12 +413,6 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
-			{
-				Classification: "shape:stream-reader",
-				Callable:       "Mixed.Stream",
-				Stance:         spec.Gap,
-				Note:           "No claim states what a stream returns after its end.",
-			},
 			{
 				Classification: "mixin:stream-reflects-mutations",
 				Callable:       "Mixed.Stream",
@@ -510,6 +595,24 @@ func mixedStreamPanics(h *MixedHandle) streamreflectsmutations.Mixed {
 	return &mixedStreamPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedStreamDrainsNothingDefect is the planted defect of a Mixed whose
+// Stream loses what Add stored.
+type mixedStreamDrainsNothingDefect struct {
+	mixedOverEmbedded
+}
+
+// Stream is the override of the planted defect.
+func (*mixedStreamDrainsNothingDefect) Stream(p0 context.Context) (r0 iter.Seq2[string, error]) {
+	r0 = func(func(string, error) bool) {}
+	return r0
+}
+
+// mixedStreamDrainsNothing returns the planted defect of a Mixed whose
+// Stream loses what Add stored over a fresh subject.
+func mixedStreamDrainsNothing(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedStreamDrainsNothingDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedAddPanicsDefect is the planted defect of a Mixed whose Add panics.
 type mixedAddPanicsDefect struct {
 	mixedOverEmbedded
@@ -583,4 +686,4 @@ func mixedRemoveIgnoresCancel(h *MixedHandle) streamreflectsmutations.Mixed {
 	return &mixedRemoveIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c9e6d7c4730de10caf3d7580a81394c104f7e0efe729f186d958e2119fec5191
+// dokimi:provenance sha256:45b0e1e43319008d4679fc05f4b0eb0c307888de4c679dc796b66396d0a36579

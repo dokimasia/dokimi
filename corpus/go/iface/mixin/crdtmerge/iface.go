@@ -1,25 +1,24 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
-// Package crdtmerge is the mixin-axis fixture for the crdtmerge mixin, which
-// declares that replicas converge to the same state regardless of merge order.
+// Package crdtmerge is the fixture of the mixin crdt-merge, which declares
+// that replicas reach the same state whatever the order of their merges.
 //
-// The interface carries whatever methods the law needs to be stateable.
-// A mixin whose law spans two calls cannot be hosted by a single method:
-// there would be nothing to compare against, and the generated subtest
-// would pass by having nothing to check.
+// The check makes two replicas diverge through the write that the param write
+// names, merges them in both orders, and compares the states that the read of
+// the param read returns. The interface therefore declares the merge, the
+// write and the read.
 //
-// There is no negated form here. eidos declares the mixin directive
-// DenyNegation, because a mixin is opt-in and deleting the directive is
-// the suppression (docs/adr/0016).
+// The fixture has no negated form. A mixin is opt-in, so eidos refuses the
+// negation of its directive.
 package crdtmerge
 
 import (
 	"context"
 )
 
-// Replica is the peer Merge folds in. The law compares two replicas merged in
-// opposite orders, so the type has to be nameable in the signature.
+// Replica is the peer that Merge reads. A subject of Mixed implements it, so
+// a check can pass one replica to the merge of another.
 //
 //dokimi:stub
 //dokimi:out path=crdtmergetest/
@@ -33,15 +32,13 @@ type Replica interface {
 //dokimi:suite
 //dokimi:out path=crdtmergetest/
 type Mixed interface {
-	// Merge folds another replica in. Convergence is a statement about two
-	// merges in opposite orders, so the method has to take a peer rather than
-	// a value.
-	//dokimi:mixin crdt-merge
+	// Merge adds the items of peer.
+	//dokimi:mixin crdt-merge write=Add read=Items
 	Merge(ctx context.Context, peer Replica) error
 
-	// Add introduces divergence for the merge to reconcile.
+	// Add adds an item, which makes the replicas diverge.
 	Add(ctx context.Context, item string) error
 
-	// Items observes convergence.
+	// Items returns the items of the replica.
 	Items(ctx context.Context) ([]string, error)
 }

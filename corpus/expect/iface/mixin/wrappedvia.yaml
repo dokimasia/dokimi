@@ -9,40 +9,67 @@ controls: []
 declarations:
   mixed:
     checks:
-      mixed.cause/cancel:
+      mixed.get/cancel:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
-      mixed.cause/smoke:
-        claim: smoke
-        law: no-panic-on-any-input
-        reason: panicked
-      mixed.open/cancel:
+      mixed.get/cancel#generated:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
-      mixed.open/cancel#generated:
+      mixed.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.traced-get/agrees-with-its-sibling:
+        claim: agrees-with-its-sibling
+        partners:
+          fn: mixed.get
+        law: wrapper-returns-what-its-sibling-returns
+        reason: diverged-from-the-sibling
+      mixed.traced-get/agrees-with-its-sibling#generated:
+        claim: agrees-with-its-sibling
+        partners:
+          fn: mixed.get
+        law: wrapper-returns-what-its-sibling-returns
+        reason: diverged-from-the-sibling
+      mixed.traced-get/cancel:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
-      mixed.open/smoke:
+      mixed.traced-get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.traced-get/smoke:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
-      mixed.open/smoke#generated:
+      mixed.traced-get/smoke#generated:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      mixed.traced-get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.traced-get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
     authored: []
     ceilings: []
     refusals: {}
-    unclaimed:
-      - classification: shape:lifecycle
-        callable: mixed.cause
-        stance: silent
-      - classification: mixin:wrapped-via
-        callable: mixed.open
-        stance: gap
-      - classification: shape:writer
-        callable: mixed.open
-        stance: silent
+    unclaimed: []

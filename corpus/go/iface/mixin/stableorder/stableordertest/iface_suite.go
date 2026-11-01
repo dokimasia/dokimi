@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/stableorder"
@@ -39,6 +40,10 @@ import (
 //
 // Mixed.Items/stable-order#generated: two calls of Items return the
 // elements in the same order.
+//
+// Mixed.Items/keeps-its-order: two calls of Items without another call
+// between them yield their elements in one order, over any sequence of
+// calls.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -138,6 +143,13 @@ func (c mixedItems) StableOrder() conform.ID[stableorder.Mixed] {
 // Items return the elements in the same order.
 func (c mixedItems) StableOrderGenerated() conform.ID[stableorder.Mixed] {
 	return c.Check("stable-order#generated")
+}
+
+// KeepsItsOrder returns the identity of the check that two calls of Items
+// without another call between them yield their elements in one order,
+// over any sequence of calls.
+func (c mixedItems) KeepsItsOrder() conform.ID[stableorder.Mixed] {
+	return c.Check("keeps-its-order")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -314,6 +326,20 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 					}())
 				},
 				Defect: mixedItemsReordersDrain,
+			},
+			{
+				ID:          MixedChecks.Items.KeepsItsOrder(),
+				Statement:   "two calls of Items without another call between them yield their elements in one order, over any sequence of calls",
+				Claim:       spec.KeepsItsOrder,
+				Probe:       spec.DrainsAgreeBetweenWrites,
+				Reason:      spec.ReorderedDrain,
+				Law:         spec.TwoDrainsAgreeOnOrder,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[stableorder.Mixed]{MixedChecks.Items.StableOrder()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.DrainsAgreeBetweenWrites(h, c, mixedActions, "Items")
+				},
+				Defect: mixedItemsReordersAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -565,4 +591,76 @@ func mixedItemsReordersDrain(h *MixedHandle) stableorder.Mixed {
 	return &mixedItemsReordersDrainDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:38b5085eafe1d70ef9dc667bbee76a6922f93b4df9a8512705e41b6525ac1d66
+// mixedItemsReordersAfterThreeDefect is the planted defect of a Mixed
+// whose Items reverses its elements from its fourth call on.
+type mixedItemsReordersAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Items is the override of the planted defect.
+func (d *mixedItemsReordersAfterThreeDefect) Items(p0 context.Context) (r0 []stableorder.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Items(p0)
+	d.calls++
+	if d.calls > 3 {
+		slices.Reverse(r0)
+	}
+	return r0, r1
+}
+
+// mixedItemsReordersAfterThree returns the planted defect of a Mixed whose
+// Items reverses its elements from its fourth call on over a fresh
+// subject.
+func mixedItemsReordersAfterThree(h *MixedHandle) stableorder.Mixed {
+	return &mixedItemsReordersAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() stableorder.Mixed) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[stableorder.Value](), "add.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := mixedAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Items",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Items", args)
+				values, err := mixedItemsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedAddCall(ctx context.Context, subject stableorder.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(stableorder.Value)
+	return nil, subject.Add(ctx, a0)
+}
+
+// mixedItemsCall calls Items on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedItemsCall(ctx context.Context, subject stableorder.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Items(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:b5d277a0ab97f0333c3e1091217a93120a56d42c778f02a31168dc9479244286

@@ -35,6 +35,12 @@ import (
 // Contract.Acquire/lease#generated: a second Acquire for one key fails
 // with the declared sentinel.
 //
+// Contract.Acquire/release-frees-the-lease: Acquire grants a lease again
+// after Release released it.
+//
+// Contract.Acquire/release-frees-the-lease#generated: Acquire grants a
+// lease again after Release released it.
+//
 // Contract.Release/smoke: Release returns without a panic for derived
 // inputs.
 //
@@ -65,9 +71,6 @@ import (
 //
 // The shape:writer of Contract.Release has the stance silent. A write is
 // an input of the other checks, and its result is an error alone.
-//
-// The contract:lease/release of Contract.Release has the stance gap. No
-// claim states that a released lease is granted again.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -129,6 +132,18 @@ func (c contractAcquire) Lease() conform.ID[lease.Contract] {
 // for one key fails with the declared sentinel.
 func (c contractAcquire) LeaseGenerated() conform.ID[lease.Contract] {
 	return c.Check("lease#generated")
+}
+
+// ReleaseFreesTheLease returns the identity of the check that Acquire
+// grants a lease again after Release released it.
+func (c contractAcquire) ReleaseFreesTheLease() conform.ID[lease.Contract] {
+	return c.Check("release-frees-the-lease")
+}
+
+// ReleaseFreesTheLeaseGenerated returns the identity of the check that
+// Acquire grants a lease again after Release released it.
+func (c contractAcquire) ReleaseFreesTheLeaseGenerated() conform.ID[lease.Contract] {
+	return c.Check("release-frees-the-lease#generated")
 }
 
 // contractRelease is the name of Contract.Release, with the identities of
@@ -266,6 +281,41 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractAcquireSucceedsAlways,
 			},
 			{
+				ID:          ContractChecks.Acquire.ReleaseFreesTheLease(),
+				Statement:   "Acquire grants a lease again after Release released it",
+				Claim:       spec.ReleaseFreesTheLease,
+				Probe:       spec.GrantsAfterRelease,
+				Reason:      spec.KeptAfterRelease,
+				Law:         spec.ReleasedLeaseIsGrantedAgain,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.GrantsAfterRelease(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					}, func(ctx context.Context) error {
+						return h.Subject().Release(ctx, string("key-a"))
+					})
+				},
+				Defect: contractReleaseReleaseKeepsTheLease,
+			},
+			{
+				ID:          ContractChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+				Statement:   "Acquire grants a lease again after Release released it",
+				Claim:       spec.ReleaseFreesTheLease,
+				Probe:       spec.GrantsAfterRelease,
+				Reason:      spec.KeptAfterRelease,
+				Law:         spec.ReleasedLeaseIsGrantedAgain,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.GrantsAfterRelease(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, drawnKey)
+					}, func(ctx context.Context) error {
+						return h.Subject().Release(ctx, drawnKey)
+					})
+				},
+				Defect: contractReleaseReleaseKeepsTheLease,
+			},
+			{
 				ID:          ContractChecks.Release.Smoke(),
 				Statement:   "Release returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -341,12 +391,6 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Callable:       "Contract.Release",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "contract:lease/release",
-				Callable:       "Contract.Release",
-				Stance:         spec.Gap,
-				Note:           "No claim states that a released lease is granted again.",
 			},
 		},
 		Calls: []conform.Call[lease.Contract]{
@@ -527,6 +571,27 @@ func contractAcquireSucceedsAlways(h *ContractHandle) lease.Contract {
 	return &contractAcquireSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractReleaseReleaseKeepsTheLeaseDefect is the planted defect of a
+// Contract whose Release keeps the lease.
+type contractReleaseReleaseKeepsTheLeaseDefect struct {
+	contractOverEmbedded
+}
+
+// Release is the override of the planted defect.
+func (*contractReleaseReleaseKeepsTheLeaseDefect) Release(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	return r0
+}
+
+// contractReleaseReleaseKeepsTheLease returns the planted defect of a
+// Contract whose Release keeps the lease over a fresh subject.
+func contractReleaseReleaseKeepsTheLease(h *ContractHandle) lease.Contract {
+	return &contractReleaseReleaseKeepsTheLeaseDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractReleasePanicsDefect is the planted defect of a Contract whose
 // Release panics.
 type contractReleasePanicsDefect struct {
@@ -564,4 +629,4 @@ func contractReleaseIgnoresCancel(h *ContractHandle) lease.Contract {
 	return &contractReleaseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c7121e1cebe6cf3d2ea40179cbc734c23363ab487205b43bef0ead4e16a4a024
+// dokimi:provenance sha256:0d860affd89ab7cb35190d1db435549518cf2114c5b2ac8bada9e3790f708a84

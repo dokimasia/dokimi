@@ -46,6 +46,9 @@ import (
 //
 // Ranked.At/zero-on-error#generated: At returns the zero value beside an
 // error.
+//
+// Ranked.At/respects-its-bounds: At admits each position below the size
+// that Len reports and refuses the size.
 
 // The derived checks of Ranked that witness their laws at the shallow end:
 //
@@ -59,9 +62,6 @@ import (
 //
 // The shape:writer of Ranked.Add has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
-//
-// The mixin:indexed of Ranked.At has the stance gap. No claim states that
-// a read by index returns the element at that index.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -176,6 +176,12 @@ func (c rankedAt) ZeroOnError() conform.ID[indexed.Ranked] {
 // the zero value beside an error.
 func (c rankedAt) ZeroOnErrorGenerated() conform.ID[indexed.Ranked] {
 	return c.Check("zero-on-error#generated")
+}
+
+// RespectsItsBounds returns the identity of the check that At admits each
+// position below the size that Len reports and refuses the size.
+func (c rankedAt) RespectsItsBounds() conform.ID[indexed.Ranked] {
+	return c.Check("respects-its-bounds")
 }
 
 // RankedSuite returns the checks of Ranked, and the calls and the budgets
@@ -395,6 +401,24 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 				},
 				Defect: rankedAtValueBeside,
 			},
+			{
+				ID:          RankedChecks.At.RespectsItsBounds(),
+				Statement:   "At admits each position below the size that Len reports and refuses the size",
+				Claim:       spec.RespectsItsBounds,
+				Probe:       spec.BoundedByTheSize,
+				Reason:      spec.OutOfBounds,
+				Law:         spec.PositionsAreBelowTheSize,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *RankedHandle) {
+					probe.BoundedByTheSize(h, func(ctx context.Context, position int) error {
+						_, err := h.Subject().At(ctx, position)
+						return err
+					}, func(ctx context.Context) (int, error) {
+						return h.Subject().Len(ctx)
+					})
+				},
+				Defect: rankedAtAdmitsTheSize,
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -402,12 +426,6 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 				Callable:       "Ranked.Add",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "mixin:indexed",
-				Callable:       "Ranked.At",
-				Stance:         spec.Gap,
-				Note:           "No claim states that a read by index returns the element at that index.",
 			},
 		},
 		Calls: []conform.Call[indexed.Ranked]{
@@ -703,4 +721,26 @@ func rankedAtValueBeside(h *RankedHandle) indexed.Ranked {
 	return &rankedAtValueBesideDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f4b52f4d6dd47f9d3dbb42208fcab036d68472e8d2d2d6c3c2384a800c935d70
+// rankedAtAdmitsTheSizeDefect is the planted defect of a Ranked whose At
+// admits the position equal to the size.
+type rankedAtAdmitsTheSizeDefect struct {
+	rankedOverEmbedded
+}
+
+// At is the override of the planted defect.
+func (*rankedAtAdmitsTheSizeDefect) At(p0 context.Context, p1 int) (r0 indexed.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0 = indexed.Value{Key: "Key-b"}
+	return r0, r1
+}
+
+// rankedAtAdmitsTheSize returns the planted defect of a Ranked whose At
+// admits the position equal to the size over a fresh subject.
+func rankedAtAdmitsTheSize(h *RankedHandle) indexed.Ranked {
+	return &rankedAtAdmitsTheSizeDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:e58af7460fdf53e86af9805281ae06ec58193db7bb03dc7a54b837fa1d7a4aef

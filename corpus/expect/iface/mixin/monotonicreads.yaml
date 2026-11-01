@@ -29,6 +29,10 @@ declarations:
           write: mixed.store
         law: reads-never-go-backwards
         reason: regressed
+      mixed.get/reads-never-go-back:
+        claim: reads-never-go-back
+        law: reads-never-go-backwards
+        reason: regressed
       mixed.get/smoke:
         claim: smoke
         law: no-panic-on-any-input

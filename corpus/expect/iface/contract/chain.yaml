@@ -57,6 +57,18 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      contract.verify/verifies-what-it-appended:
+        claim: verifies-what-it-appended
+        partners:
+          append: contract.append
+        law: appended-chain-verifies
+        reason: false-tamper
+      contract.verify/verifies-what-it-appended#generated:
+        claim: verifies-what-it-appended
+        partners:
+          append: contract.append
+        law: appended-chain-verifies
+        reason: false-tamper
     authored: []
     ceilings: []
     refusals: {}
@@ -64,9 +76,6 @@ declarations:
       - classification: shape:writer
         callable: contract.append
         stance: silent
-      - classification: contract:chain/verify
-        callable: contract.verify
-        stance: gap
       - classification: shape:lifecycle
         callable: contract.verify
         stance: silent

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cache"
@@ -43,6 +44,9 @@ import (
 //
 // Contract.Lookup/zero-on-error#generated: Lookup returns the zero value
 // beside an error.
+//
+// Contract.Lookup/cache-agrees-over-sequences: Lookup returns what Fetch
+// returns for its arguments, over any sequence of calls.
 //
 // Contract.Fetch/smoke: Fetch returns without a panic for derived inputs.
 //
@@ -172,6 +176,13 @@ func (c contractLookup) ZeroOnError() conform.ID[cache.Contract] {
 // returns the zero value beside an error.
 func (c contractLookup) ZeroOnErrorGenerated() conform.ID[cache.Contract] {
 	return c.Check("zero-on-error#generated")
+}
+
+// CacheAgreesOverSequences returns the identity of the check that Lookup
+// returns what Fetch returns for its arguments, over any sequence of
+// calls.
+func (c contractLookup) CacheAgreesOverSequences() conform.ID[cache.Contract] {
+	return c.Check("cache-agrees-over-sequences")
 }
 
 // contractFetch is the name of Contract.Fetch, with the identities of its
@@ -386,6 +397,28 @@ func ContractSuite() conform.Suite[cache.Contract] {
 					}, cache.Value{})
 				},
 				Defect: contractLookupValueBeside,
+			},
+			{
+				ID:          ContractChecks.Lookup.CacheAgreesOverSequences(),
+				Statement:   "Lookup returns what Fetch returns for its arguments, over any sequence of calls",
+				Claim:       spec.CacheAgreesOverSequences,
+				Probe:       spec.ReadsAgreeWithTheBacking,
+				Reason:      spec.CacheDisagrees,
+				Law:         spec.CacheAgreesWithItsBacking,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.ReadsAgreeWithTheBacking(
+						h,
+						c,
+						contractActions,
+						"Lookup",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := contractFetchCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+					)
+				},
+				Defect: contractLookupServesAStaleValueAfterThree,
 			},
 			{
 				ID:          ContractChecks.Fetch.Smoke(),
@@ -741,6 +774,43 @@ func contractLookupValueBeside(h *ContractHandle) cache.Contract {
 	return &contractLookupValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractLookupServesAStaleValueAfterThreeDefect is the planted defect of
+// a Contract whose Lookup returns its first value again from its fourth
+// call on.
+type contractLookupServesAStaleValueAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+	first *cache.Value
+}
+
+// Lookup is the override of the planted defect.
+func (d *contractLookupServesAStaleValueAfterThreeDefect) Lookup(
+	p0 context.Context,
+	p1 string,
+) (r0 cache.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.contractOverEmbedded.Lookup(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// contractLookupServesAStaleValueAfterThree returns the planted defect of
+// a Contract whose Lookup returns its first value again from its fourth
+// call on over a fresh subject.
+func contractLookupServesAStaleValueAfterThree(h *ContractHandle) cache.Contract {
+	return &contractLookupServesAStaleValueAfterThreeDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractFetchPanicsDefect is the planted defect of a Contract whose
 // Fetch panics.
 type contractFetchPanicsDefect struct {
@@ -799,4 +869,77 @@ func contractFetchValueBeside(h *ContractHandle) cache.Contract {
 	return &contractFetchValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2097e67cc2ccec7ed17574a4ec016251ffa3997f52db3b90ff59d53e59d9426b
+// contractActions returns the actions of the generated sequences of
+// Contract over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func contractActions(c *prop.Case, subject func() cache.Contract) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "store.key")
+				v := c.Draw(prop.Of[cache.Value](), "store.v")
+				return []any{key, v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Store", args, args[0])
+				values, err := contractStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Lookup",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "lookup.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Lookup", args, args[0])
+				values, err := contractLookupCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Fetch",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "fetch.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Fetch", args, args[0])
+				values, err := contractFetchCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// contractStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractStoreCall(ctx context.Context, subject cache.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(cache.Value)
+	return nil, subject.Store(ctx, a0, a1)
+}
+
+// contractLookupCall calls Lookup on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractLookupCall(ctx context.Context, subject cache.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Lookup(ctx, a0)
+	return []any{r0}, err
+}
+
+// contractFetchCall calls Fetch on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractFetchCall(ctx context.Context, subject cache.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Fetch(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:577919a1359af76b156c8978149b0a42dadbe93321f3dc3612a0b37aa6805007

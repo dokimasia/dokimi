@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonicreads"
@@ -47,6 +48,9 @@ import (
 //
 // Mixed.Get/monotonic-reads#generated: Get never returns an older version
 // than one that it returned before.
+//
+// Mixed.Get/reads-never-go-back: Get never returns a version below one
+// that it returned before, over any sequence of calls.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -164,6 +168,13 @@ func (c mixedGet) MonotonicReads() conform.ID[monotonicreads.Mixed] {
 // returns an older version than one that it returned before.
 func (c mixedGet) MonotonicReadsGenerated() conform.ID[monotonicreads.Mixed] {
 	return c.Check("monotonic-reads#generated")
+}
+
+// ReadsNeverGoBack returns the identity of the check that Get never
+// returns a version below one that it returned before, over any sequence
+// of calls.
+func (c mixedGet) ReadsNeverGoBack() conform.ID[monotonicreads.Mixed] {
+	return c.Check("reads-never-go-back")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -371,6 +382,26 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 					}, func(v monotonicreads.Value) int64 { return v.Rev })
 				},
 				Defect: mixedGetVersionDescends,
+			},
+			{
+				ID:          MixedChecks.Get.ReadsNeverGoBack(),
+				Statement:   "Get never returns a version below one that it returned before, over any sequence of calls",
+				Claim:       spec.ReadsNeverGoBack,
+				Probe:       spec.ReadVersionsNeverFall,
+				Reason:      spec.Regressed,
+				Law:         spec.ReadsNeverGoBackwards,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[monotonicreads.Mixed]{MixedChecks.Get.MonotonicReads()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.ReadVersionsNeverFall(
+						h,
+						c,
+						mixedActions,
+						"Get",
+						func(v monotonicreads.Value) int64 { return v.Rev },
+					)
+				},
+				Defect: mixedGetReadsThePastAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -627,4 +658,89 @@ func mixedGetVersionDescends(h *MixedHandle) monotonicreads.Mixed {
 	return &mixedGetVersionDescendsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:113d8bf447d1df2de083354482ec50c5b08d4a6a15fd79a672c01e3c1fe9d9d6
+// mixedGetReadsThePastAfterThreeDefect is the planted defect of a Mixed
+// whose Get returns its first value again from its fourth call on.
+type mixedGetReadsThePastAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+	first *monotonicreads.Value
+}
+
+// Get is the override of the planted defect.
+func (d *mixedGetReadsThePastAfterThreeDefect) Get(p0 context.Context, p1 string) (r0 monotonicreads.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// mixedGetReadsThePastAfterThree returns the planted defect of a Mixed
+// whose Get returns its first value again from its fourth call on over a
+// fresh subject.
+func mixedGetReadsThePastAfterThree(h *MixedHandle) monotonicreads.Mixed {
+	return &mixedGetReadsThePastAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() monotonicreads.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[monotonicreads.Value](), "store.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "store.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(monotonicreads.Value)
+				call := c.History().Invoke(client, "Store", args, key0.Key)
+				values, err := mixedStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedStoreCall(ctx context.Context, subject monotonicreads.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(monotonicreads.Value)
+	return nil, subject.Store(ctx, a0)
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject monotonicreads.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:ed787da9c2b0cb6fb9944880a0226b6ff4d72978f191674da49f716bac2172bd

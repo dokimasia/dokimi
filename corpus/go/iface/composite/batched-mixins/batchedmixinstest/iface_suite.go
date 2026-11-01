@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	batchedmixins "go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins"
@@ -56,6 +57,9 @@ import (
 // Batched.Read/read-after-write#generated: Read returns what Put stored
 // before it.
 //
+// Batched.Read/reads-each-last-write: Read returns what Put wrote right
+// before it, over any sequence of calls.
+//
 // Batched.List/smoke: List returns without a panic for derived inputs.
 //
 // Batched.List/cancel: List returns an error for a cancelled context.
@@ -83,6 +87,12 @@ import (
 //
 // Batched.List/pure
 
+// The refused claims of Batched:
+//
+// Batched.List/keeps-within-its-bounds: no callable of the declaration is
+// the partner observe of List. The remedy is to name the partner of List
+// with the param of the classification.
+
 // The unclaimed classifications of Batched:
 //
 // The shape:composite-writer of Batched.Put has the stance silent. A write
@@ -90,9 +100,6 @@ import (
 //
 // The mixin:concurrent of Batched.Put has the stance needs. The claims of
 // the mixin need concurrent callers.
-//
-// The mixin:bounded of Batched.List has the stance needs. The claims of
-// the mixin need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -222,6 +229,12 @@ func (c batchedRead) ReadAfterWrite() conform.ID[batchedmixins.Batched] {
 // returns what Put stored before it.
 func (c batchedRead) ReadAfterWriteGenerated() conform.ID[batchedmixins.Batched] {
 	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Read returns
+// what Put wrote right before it, over any sequence of calls.
+func (c batchedRead) ReadsEachLastWrite() conform.ID[batchedmixins.Batched] {
+	return c.Check("reads-each-last-write")
 }
 
 // batchedList is the name of Batched.List, with the identities of its
@@ -548,6 +561,33 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedReadReadsAnotherValue,
 			},
 			{
+				ID:          BatchedChecks.Read.ReadsEachLastWrite(),
+				Statement:   "Read returns what Put wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[batchedmixins.Batched]{BatchedChecks.Read.ReadAfterWrite()},
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						batchedActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := batchedReadCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) string {
+							v, _ := args[1].(string)
+							return v
+						},
+					)
+				},
+				Defect: batchedReadReadsAStaleValueAfterThree,
+			},
+			{
 				ID:          BatchedChecks.List.Smoke(),
 				Statement:   "List returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -634,6 +674,15 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect:    unbounded,
 			},
 		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.KeepsWithinItsBounds,
+				Callable: "Batched.List",
+				Gate:     spec.PartnerFound,
+				Why:      "no callable of the declaration is the partner observe of List",
+				Remedy:   "name the partner of List with the param of the classification",
+			},
+		},
 		Unclaimed: []conform.Unclaimed{
 			{
 				Classification: "shape:composite-writer",
@@ -646,12 +695,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Callable:       "Batched.Put",
 				Stance:         spec.Needs,
 				Note:           "The claims of the mixin need concurrent callers.",
-			},
-			{
-				Classification: "mixin:bounded",
-				Callable:       "Batched.List",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[batchedmixins.Batched]{
@@ -983,6 +1026,40 @@ func batchedReadReadsAnotherValue(h *BatchedHandle) batchedmixins.Batched {
 	return &batchedReadReadsAnotherValueDefect{batchedOverEmbedded: h.Fresh()}
 }
 
+// batchedReadReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Batched whose Read returns its first value again from its fourth call
+// on.
+type batchedReadReadsAStaleValueAfterThreeDefect struct {
+	batchedOverEmbedded
+	calls int
+	first *string
+}
+
+// Read is the override of the planted defect.
+func (d *batchedReadReadsAStaleValueAfterThreeDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.batchedOverEmbedded.Read(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// batchedReadReadsAStaleValueAfterThree returns the planted defect of a
+// Batched whose Read returns its first value again from its fourth call on
+// over a fresh subject.
+func batchedReadReadsAStaleValueAfterThree(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedReadReadsAStaleValueAfterThreeDefect{batchedOverEmbedded: h.Fresh()}
+}
+
 // batchedListPanicsDefect is the planted defect of a Batched whose List
 // panics.
 type batchedListPanicsDefect struct {
@@ -1067,4 +1144,72 @@ func batchedListDrifts(h *BatchedHandle) batchedmixins.Batched {
 	return &batchedListDriftsDefect{batchedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4ad64842f7a306cdace50109818520ba1eb04f6f8d97c42b3d5004873744bdc5
+// batchedActions returns the actions of the generated sequences of Batched
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func batchedActions(c *prop.Case, subject func() batchedmixins.Batched) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "put.key")
+				value := c.Draw(prop.Of[string](), "put.value")
+				return []any{key, value}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args, args[0])
+				values, err := batchedPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Read",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "read.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Read", args, args[0])
+				values, err := batchedReadCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "List",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "List", args)
+				values, err := batchedListCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// batchedPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func batchedPutCall(ctx context.Context, subject batchedmixins.Batched, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// batchedReadCall calls Read on subject with the arguments args, and
+// returns the values of the call beside its error.
+func batchedReadCall(ctx context.Context, subject batchedmixins.Batched, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Read(ctx, a0)
+	return []any{r0}, err
+}
+
+// batchedListCall calls List on subject with the arguments args, and
+// returns the values of the call beside its error.
+func batchedListCall(ctx context.Context, subject batchedmixins.Batched, args []any) ([]any, error) {
+	r0, err := subject.List(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:47101dfbe4df3db4afe5d74e0bb4a7cba5f72985f31929a62cedb5bc49203c09

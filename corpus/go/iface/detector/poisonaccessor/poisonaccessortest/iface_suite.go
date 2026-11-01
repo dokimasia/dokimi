@@ -19,16 +19,14 @@ import (
 //
 // PoisonAccessor.Err/smoke: Err returns without a panic for derived
 // inputs.
+//
+// PoisonAccessor.Err/fresh-reports-no-poison: Err reports no error for a
+// fresh receiver.
 
 // The derived checks of PoisonAccessor that witness their laws at the
 // shallow end:
 //
 // PoisonAccessor.Err/smoke
-
-// The unclaimed classifications of PoisonAccessor:
-//
-// The shape:poison-accessor of PoisonAccessor.Err has the stance gap. No
-// claim states what the accessor of a poisoned subject returns.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -60,6 +58,12 @@ func (c poisonAccessorErr) Smoke() conform.ID[poisonaccessor.PoisonAccessor] {
 	return c.Check("smoke")
 }
 
+// FreshReportsNoPoison returns the identity of the check that Err reports
+// no error for a fresh receiver.
+func (c poisonAccessorErr) FreshReportsNoPoison() conform.ID[poisonaccessor.PoisonAccessor] {
+	return c.Check("fresh-reports-no-poison")
+}
+
 // PoisonAccessorSuite returns the checks of PoisonAccessor, and the calls
 // and the budgets of its callables.
 func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
@@ -84,13 +88,20 @@ func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
 				},
 				Defect: poisonAccessorErrPanics,
 			},
-		},
-		Unclaimed: []conform.Unclaimed{
 			{
-				Classification: "shape:poison-accessor",
-				Callable:       "PoisonAccessor.Err",
-				Stance:         spec.Gap,
-				Note:           "No claim states what the accessor of a poisoned subject returns.",
+				ID:          PoisonAccessorChecks.Err.FreshReportsNoPoison(),
+				Statement:   "Err reports no error for a fresh receiver",
+				Claim:       spec.FreshReportsNoPoison,
+				Probe:       spec.ReportsNoError,
+				Reason:      spec.FalsePoison,
+				Law:         spec.FreshReceiverIsHealthy,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *PoisonAccessorHandle) {
+					probe.ReportsNoError(h, func(ctx context.Context) error {
+						return h.Subject().Err()
+					})
+				},
+				Defect: poisonAccessorErrReportsPoison,
 			},
 		},
 		Calls: []conform.Call[poisonaccessor.PoisonAccessor]{
@@ -222,4 +233,23 @@ func poisonAccessorErrPanics(h *PoisonAccessorHandle) poisonaccessor.PoisonAcces
 	return &poisonAccessorErrPanicsDefect{poisonAccessorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ce121dd5071d5b12cc23b45fae6ba03ff7847b4a241232bca9d108a3a45ed194
+// poisonAccessorErrReportsPoisonDefect is the planted defect of a
+// PoisonAccessor whose Err reports an error for a fresh receiver.
+type poisonAccessorErrReportsPoisonDefect struct {
+	poisonAccessorOverEmbedded
+}
+
+// Err is the override of the planted defect.
+func (*poisonAccessorErrReportsPoisonDefect) Err() (r0 error) {
+	r0 = conform.ErrGenerated
+	return r0
+}
+
+// poisonAccessorErrReportsPoison returns the planted defect of a
+// PoisonAccessor whose Err reports an error for a fresh receiver over a
+// fresh subject.
+func poisonAccessorErrReportsPoison(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor {
+	return &poisonAccessorErrReportsPoisonDefect{poisonAccessorOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:d5db564843256ca1c4aaa06f1c7eddffce16f75832ff558317317bca98003d2c

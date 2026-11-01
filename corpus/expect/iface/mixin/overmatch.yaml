@@ -29,6 +29,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      mixed.items/drains-keep-what-went-in:
+        claim: drains-keep-what-went-in
+        partners:
+          write: mixed.add
+        law: drain-keeps-what-went-in
+        reason: shrunk-drain
       mixed.items/over-match:
         claim: over-match
         partners:

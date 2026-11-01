@@ -39,7 +39,8 @@ func NewInMemory() *InMemory {
 	}
 }
 
-// Store implements [cache.Contract].
+// Store implements [cache.Contract]. It writes v to the backing store and
+// drops the cached value of key, so the next Lookup of key fetches v.
 func (s *InMemory) Store(ctx context.Context, key string, v cache.Value) error {
 	if err := contextErr(ctx); err != nil {
 		return err
@@ -47,6 +48,7 @@ func (s *InMemory) Store(ctx context.Context, key string, v cache.Value) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.backing[key] = v
+	delete(s.cached, key)
 	return nil
 }
 

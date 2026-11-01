@@ -66,6 +66,10 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				workflowtest.ContractChecks.Run.FollowsItsGraph(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				workflowtest.ContractChecks.State.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -124,6 +128,10 @@ func TestContractSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				workflowtest.ContractChecks.Run.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				workflowtest.ContractChecks.Run.FollowsItsGraph(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -187,6 +195,10 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			workflowtest.ContractChecks.Run.FollowsItsGraph(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			workflowtest.ContractChecks.State.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -234,6 +246,10 @@ func FuzzContractSuiteRun(f *testing.F) {
 		),
 		conform.Excuse(
 			workflowtest.ContractChecks.Run.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			workflowtest.ContractChecks.Run.FollowsItsGraph(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -287,6 +303,10 @@ func FuzzContractSuiteState(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			workflowtest.ContractChecks.Run.FollowsItsGraph(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			workflowtest.ContractChecks.State.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -324,4 +344,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5da06c3bbcba1b066f8eb30e5d20d84e110ad7a462a1c135996bbbe673c3ba4d
+// dokimi:provenance sha256:638721123288ec4044bb99a1ea221db90a5081ca4d7c7e5b44042e13a1eb91ff

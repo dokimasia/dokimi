@@ -22,6 +22,13 @@ type BatchReaderGetAllCall struct {
 	Err    error
 }
 
+// BatchReaderPutCall records one call of BatchReader.Put.
+type BatchReaderPutCall struct {
+	Ctx context.Context
+	V   batchreader.Value
+	Err error
+}
+
 // BatchReaderGetAllStub configures GetAll and records its calls. A fault
 // armed through it takes precedence over the function and the fixed
 // results.
@@ -54,6 +61,34 @@ func (s *BatchReaderGetAllStub) Func(
 	return s
 }
 
+// BatchReaderPutStub configures Put and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
+type BatchReaderPutStub struct {
+	*stub.MethodStub[BatchReaderPutCall]
+
+	fn       func(context.Context, batchreader.Value) error
+	fallback *BatchReaderPutReturn
+}
+
+// BatchReaderPutReturn contains the fixed results of Put.
+type BatchReaderPutReturn struct {
+	Err error
+}
+
+// Returns sets the results of every call of Put. A function and an
+// injected fault take precedence over them.
+func (s *BatchReaderPutStub) Returns(err error) *BatchReaderPutStub {
+	s.fallback = &BatchReaderPutReturn{Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Put from its
+// arguments. An injected fault takes precedence over it.
+func (s *BatchReaderPutStub) Func(fn func(context.Context, batchreader.Value) error) *BatchReaderPutStub {
+	s.fn = fn
+	return s
+}
+
 // The reference to stub.CompatV1 fails the build against another major
 // version of the runtime of doubles.
 var _ = stub.CompatV1
@@ -73,6 +108,7 @@ func BatchReaderStubStrict() BatchReaderStubOption {
 func BatchReaderStubDelegateTo(impl batchreader.BatchReader) BatchReaderStubOption {
 	return func(s *BatchReaderStub) {
 		s.OnGetAll.Func(impl.GetAll)
+		s.OnPut.Func(impl.Put)
 	}
 }
 
@@ -109,6 +145,7 @@ func BatchReaderStubWithLatency(d time.Duration) BatchReaderStubOption {
 func BatchReaderStubFailing(err error) BatchReaderStubOption {
 	return func(s *BatchReaderStub) {
 		s.OnGetAll.Faults(err, 1)
+		s.OnPut.Faults(err, 1)
 	}
 }
 
@@ -118,11 +155,17 @@ func WithBatchReaderGetAll(fn func(context.Context, ...string) ([]batchreader.Va
 	return func(s *BatchReaderStub) { s.OnGetAll.Func(fn) }
 }
 
+// WithBatchReaderPut returns the option that sets the function of Put.
+func WithBatchReaderPut(fn func(context.Context, batchreader.Value) error) BatchReaderStubOption {
+	return func(s *BatchReaderStub) { s.OnPut.Func(fn) }
+}
+
 // BatchReaderStub is a recording test double of BatchReader. Each field
 // On<Method> configures its method. An unconfigured method records the
 // call and returns the zero values of its results.
 type BatchReaderStub struct {
 	OnGetAll *BatchReaderGetAllStub
+	OnPut    *BatchReaderPutStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -141,9 +184,11 @@ func NewBatchReaderStub(tb assert.TB, opts ...BatchReaderStubOption) *BatchReade
 		OnGetAll: &BatchReaderGetAllStub{
 			MethodStub: stub.NewMethodStub[BatchReaderGetAllCall](tb, "BatchReader.GetAll"),
 		},
+		OnPut: &BatchReaderPutStub{MethodStub: stub.NewMethodStub[BatchReaderPutCall](tb, "BatchReader.Put")},
 	}
 	s.group = stub.NewGroup(
 		s.OnGetAll.MethodStub,
+		s.OnPut.MethodStub,
 	)
 	for _, opt := range opts {
 		opt(s)
@@ -210,4 +255,32 @@ func (s *BatchReaderStub) GetAll(ctx context.Context, keys ...string) ([]batchre
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:dba3eb00f10e9ebdee4a52322430fda206cc56ea5cab1e32b977e91da645e829
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *BatchReaderPutStub) invoke(ctx context.Context, v batchreader.Value) func() BatchReaderPutReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() BatchReaderPutReturn {
+		r0 := s.fn(ctx, v)
+		return BatchReaderPutReturn{Err: r0}
+	}
+}
+
+// Put records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *BatchReaderStub) Put(ctx context.Context, v batchreader.Value) error {
+	call := BatchReaderPutCall{Ctx: ctx, V: v}
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[BatchReaderPutCall, BatchReaderPutReturn]{
+		Invoke:   s.OnPut.invoke(ctx, v),
+		Fallback: s.OnPut.fallback,
+		Fault:    func(err error) BatchReaderPutReturn { return BatchReaderPutReturn{Err: err} },
+		Stamp: func(c BatchReaderPutCall, r BatchReaderPutReturn) BatchReaderPutCall {
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r.Err
+}
+
+// dokimi:provenance sha256:9a5ac59e3af31fe29131d6191ebfb24ad88866916a9d26668b2dc31115e39bdd

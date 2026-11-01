@@ -45,6 +45,10 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      mixed.items/yields-each-once:
+        claim: yields-each-once
+        law: no-element-is-drained-twice
+        reason: repeated-element
       mixed.items/zero-on-error:
         claim: zero-on-error
         law: no-value-beside-an-error

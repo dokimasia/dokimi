@@ -53,6 +53,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      mixed.put/keeps-within-its-bounds:
+        claim: keeps-within-its-bounds
+        partners:
+          observe: mixed.len
+        law: use-is-within-its-bounds
+        reason: exceeded-bound
       mixed.put/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -66,9 +72,6 @@ declarations:
     refusals:
       mixed.get/cancel: failure
     unclaimed:
-      - classification: mixin:bounded
-        callable: mixed.len
-        stance: needs
       - classification: shape:composite-writer
         callable: mixed.put
         stance: silent

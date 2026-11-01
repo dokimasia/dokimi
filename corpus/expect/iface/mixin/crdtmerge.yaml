@@ -37,6 +37,13 @@ declarations:
         claim: zero-on-error
         law: no-value-beside-an-error
         reason: value-beside-error
+      mixed.merge/merges-in-any-order:
+        claim: merges-in-any-order
+        partners:
+          read: mixed.items
+          write: mixed.add
+        law: merge-order-does-not-matter
+        reason: order-dependent-merge
     authored: []
     ceilings: []
     refusals:
@@ -45,9 +52,6 @@ declarations:
       - classification: shape:writer
         callable: mixed.add
         stance: silent
-      - classification: mixin:crdt-merge
-        callable: mixed.merge
-        stance: needs
       - classification: shape:writer
         callable: mixed.merge
         stance: silent

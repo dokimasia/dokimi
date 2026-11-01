@@ -14,55 +14,50 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia"
 )
 
-// ErrUnderlying is the cause that the error of Open wraps. Cause returns it
-// after that error.
-var ErrUnderlying = errors.New("wrappedviatest: underlying failure")
-
-// failing is the name that Open refuses.
-const failing = "closed"
+// ErrNotFound is the error of Get for a key without a value. Get wraps it with
+// the key.
+var ErrNotFound = errors.New("wrappedviatest: not found")
 
 // InMemory implements [wrappedvia.Mixed] in memory. The corpus applies the
 // suite of Mixed to it as a subject.
 //
 //dokimi:subject wrappedvia.Mixed new=NewInMemory
 type InMemory struct {
-	last error
-	mu   sync.Mutex
+	values map[string]wrappedvia.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [wrappedvia.Mixed].
 var _ wrappedvia.Mixed = (*InMemory)(nil)
 
 // NewInMemory returns a new InMemory.
-func NewInMemory() *InMemory { return &InMemory{} }
-
-// Open implements [wrappedvia.Mixed].
-func (s *InMemory) Open(ctx context.Context, name string) error {
-	if err := contextErr(ctx); err != nil {
-		return err
-	}
-	if name != failing {
-		return nil
-	}
-	err := fmt.Errorf("opening %q: %w", name, ErrUnderlying)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.last = ErrUnderlying
-	return err
+func NewInMemory() *InMemory {
+	return &InMemory{values: map[string]wrappedvia.Value{}}
 }
 
-// Cause implements [wrappedvia.Mixed].
-func (s *InMemory) Cause(ctx context.Context) error {
+// Get implements [wrappedvia.Mixed].
+func (s *InMemory) Get(ctx context.Context, key string) (wrappedvia.Value, error) {
 	if err := contextErr(ctx); err != nil {
-		return err
+		return wrappedvia.Value{}, err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.last
+	v, ok := s.values[key]
+	if !ok {
+		return wrappedvia.Value{}, fmt.Errorf("%w: %s", ErrNotFound, key)
+	}
+	return v, nil
 }
 
-// FailingName returns the name that Open refuses.
-func FailingName() string { return failing }
+// TracedGet implements [wrappedvia.Mixed]. It delegates to Get, and wraps the
+// error of Get with the name of the call.
+func (s *InMemory) TracedGet(ctx context.Context, key string) (wrappedvia.Value, error) {
+	v, err := s.Get(ctx, key)
+	if err != nil {
+		return v, fmt.Errorf("traced get: %w", err)
+	}
+	return v, nil
+}
 
 // contextErr returns the error of a canceled or expired context, and an error
 // for a nil context.

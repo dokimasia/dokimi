@@ -30,6 +30,12 @@ declarations:
           write: mixed.write
         law: read-returns-the-write-before-it
         reason: unobserved-write
+      mixed.read/reads-each-last-write:
+        claim: reads-each-last-write
+        partners:
+          write: mixed.write
+        law: read-returns-the-write-before-it
+        reason: unobserved-write
       mixed.read/smoke:
         claim: smoke
         law: no-panic-on-any-input

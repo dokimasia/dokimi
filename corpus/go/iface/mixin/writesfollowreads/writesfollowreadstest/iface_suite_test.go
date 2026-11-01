@@ -104,6 +104,10 @@ func TestMixedSuite(t *testing.T) {
 				writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -179,6 +183,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -257,6 +265,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -321,6 +333,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -389,6 +405,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -403,4 +423,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:58d0ccb766db357dcdcaab5419c0ee1f91cf33d5405a9e06cb7f2d153329767f
+// dokimi:provenance sha256:41f78a0c2266a17d1108e622e9ee3fab5ca1189cba4b1056035e9d936ee3e5b2

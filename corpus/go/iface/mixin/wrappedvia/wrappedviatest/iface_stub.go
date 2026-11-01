@@ -14,71 +14,77 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// MixedOpenCall records one call of Mixed.Open.
-type MixedOpenCall struct {
-	Ctx  context.Context
-	Name string
-	Err  error
+// MixedGetCall records one call of Mixed.Get.
+type MixedGetCall struct {
+	Ctx    context.Context
+	Key    string
+	Result wrappedvia.Value
+	Err    error
 }
 
-// MixedCauseCall records one call of Mixed.Cause.
-type MixedCauseCall struct {
-	Ctx context.Context
-	Err error
+// MixedTracedGetCall records one call of Mixed.TracedGet.
+type MixedTracedGetCall struct {
+	Ctx    context.Context
+	Key    string
+	Result wrappedvia.Value
+	Err    error
 }
 
-// MixedOpenStub configures Open and records its calls. A fault armed
-// through it takes precedence over the function and the fixed results.
-type MixedOpenStub struct {
-	*stub.MethodStub[MixedOpenCall]
+// MixedGetStub configures Get and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
+type MixedGetStub struct {
+	*stub.MethodStub[MixedGetCall]
 
-	fn       func(context.Context, string) error
-	fallback *MixedOpenReturn
+	fn       func(context.Context, string) (wrappedvia.Value, error)
+	fallback *MixedGetReturn
 }
 
-// MixedOpenReturn contains the fixed results of Open.
-type MixedOpenReturn struct {
-	Err error
+// MixedGetReturn contains the fixed results of Get.
+type MixedGetReturn struct {
+	Result wrappedvia.Value
+	Err    error
 }
 
-// Returns sets the results of every call of Open. A function and an
+// Returns sets the results of every call of Get. A function and an
 // injected fault take precedence over them.
-func (s *MixedOpenStub) Returns(err error) *MixedOpenStub {
-	s.fallback = &MixedOpenReturn{Err: err}
+func (s *MixedGetStub) Returns(result wrappedvia.Value, err error) *MixedGetStub {
+	s.fallback = &MixedGetReturn{Result: result, Err: err}
 	return s
 }
 
-// Func sets the function that computes the results of Open from its
+// Func sets the function that computes the results of Get from its
 // arguments. An injected fault takes precedence over it.
-func (s *MixedOpenStub) Func(fn func(context.Context, string) error) *MixedOpenStub {
+func (s *MixedGetStub) Func(fn func(context.Context, string) (wrappedvia.Value, error)) *MixedGetStub {
 	s.fn = fn
 	return s
 }
 
-// MixedCauseStub configures Cause and records its calls. A fault armed
-// through it takes precedence over the function and the fixed results.
-type MixedCauseStub struct {
-	*stub.MethodStub[MixedCauseCall]
+// MixedTracedGetStub configures TracedGet and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
+type MixedTracedGetStub struct {
+	*stub.MethodStub[MixedTracedGetCall]
 
-	fn       func(context.Context) error
-	fallback *MixedCauseReturn
+	fn       func(context.Context, string) (wrappedvia.Value, error)
+	fallback *MixedTracedGetReturn
 }
 
-// MixedCauseReturn contains the fixed results of Cause.
-type MixedCauseReturn struct {
-	Err error
+// MixedTracedGetReturn contains the fixed results of TracedGet.
+type MixedTracedGetReturn struct {
+	Result wrappedvia.Value
+	Err    error
 }
 
-// Returns sets the results of every call of Cause. A function and an
+// Returns sets the results of every call of TracedGet. A function and an
 // injected fault take precedence over them.
-func (s *MixedCauseStub) Returns(err error) *MixedCauseStub {
-	s.fallback = &MixedCauseReturn{Err: err}
+func (s *MixedTracedGetStub) Returns(result wrappedvia.Value, err error) *MixedTracedGetStub {
+	s.fallback = &MixedTracedGetReturn{Result: result, Err: err}
 	return s
 }
 
-// Func sets the function that computes the results of Cause from its
+// Func sets the function that computes the results of TracedGet from its
 // arguments. An injected fault takes precedence over it.
-func (s *MixedCauseStub) Func(fn func(context.Context) error) *MixedCauseStub {
+func (s *MixedTracedGetStub) Func(fn func(context.Context, string) (wrappedvia.Value, error)) *MixedTracedGetStub {
 	s.fn = fn
 	return s
 }
@@ -100,8 +106,8 @@ func MixedStubStrict() MixedStubOption {
 // The double still records the call.
 func MixedStubDelegateTo(impl wrappedvia.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
-		s.OnOpen.Func(impl.Open)
-		s.OnCause.Func(impl.Cause)
+		s.OnGet.Func(impl.Get)
+		s.OnTracedGet.Func(impl.TracedGet)
 	}
 }
 
@@ -136,27 +142,28 @@ func MixedStubWithLatency(d time.Duration) MixedStubOption {
 // can fail. Each call of such a method then fails with err.
 func MixedStubFailing(err error) MixedStubOption {
 	return func(s *MixedStub) {
-		s.OnOpen.Faults(err, 1)
-		s.OnCause.Faults(err, 1)
+		s.OnGet.Faults(err, 1)
+		s.OnTracedGet.Faults(err, 1)
 	}
 }
 
-// WithMixedOpen returns the option that sets the function of Open.
-func WithMixedOpen(fn func(context.Context, string) error) MixedStubOption {
-	return func(s *MixedStub) { s.OnOpen.Func(fn) }
+// WithMixedGet returns the option that sets the function of Get.
+func WithMixedGet(fn func(context.Context, string) (wrappedvia.Value, error)) MixedStubOption {
+	return func(s *MixedStub) { s.OnGet.Func(fn) }
 }
 
-// WithMixedCause returns the option that sets the function of Cause.
-func WithMixedCause(fn func(context.Context) error) MixedStubOption {
-	return func(s *MixedStub) { s.OnCause.Func(fn) }
+// WithMixedTracedGet returns the option that sets the function of
+// TracedGet.
+func WithMixedTracedGet(fn func(context.Context, string) (wrappedvia.Value, error)) MixedStubOption {
+	return func(s *MixedStub) { s.OnTracedGet.Func(fn) }
 }
 
 // MixedStub is a recording test double of Mixed. Each field On<Method>
 // configures its method. An unconfigured method records the call and
 // returns the zero values of its results.
 type MixedStub struct {
-	OnOpen  *MixedOpenStub
-	OnCause *MixedCauseStub
+	OnGet       *MixedGetStub
+	OnTracedGet *MixedTracedGetStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -171,12 +178,12 @@ var _ wrappedvia.Mixed = (*MixedStub)(nil)
 // end of the test. With a nil tb, the double reports nothing.
 func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
-		OnOpen:  &MixedOpenStub{MethodStub: stub.NewMethodStub[MixedOpenCall](tb, "Mixed.Open")},
-		OnCause: &MixedCauseStub{MethodStub: stub.NewMethodStub[MixedCauseCall](tb, "Mixed.Cause")},
+		OnGet:       &MixedGetStub{MethodStub: stub.NewMethodStub[MixedGetCall](tb, "Mixed.Get")},
+		OnTracedGet: &MixedTracedGetStub{MethodStub: stub.NewMethodStub[MixedTracedGetCall](tb, "Mixed.TracedGet")},
 	}
 	s.group = stub.NewGroup(
-		s.OnOpen.MethodStub,
-		s.OnCause.MethodStub,
+		s.OnGet.MethodStub,
+		s.OnTracedGet.MethodStub,
 	)
 	for _, opt := range opts {
 		opt(s)
@@ -211,58 +218,60 @@ func (s *MixedStub) ResetCalls() {
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedOpenStub) invoke(ctx context.Context, name string) func() MixedOpenReturn {
+func (s *MixedGetStub) invoke(ctx context.Context, key string) func() MixedGetReturn {
 	if s.fn == nil {
 		return nil
 	}
-	return func() MixedOpenReturn {
-		r0 := s.fn(ctx, name)
-		return MixedOpenReturn{Err: r0}
+	return func() MixedGetReturn {
+		r0, r1 := s.fn(ctx, key)
+		return MixedGetReturn{Result: r0, Err: r1}
 	}
 }
 
-// Open records the call. An armed fault comes first, then the function of
+// Get records the call. An armed fault comes first, then the function of
 // Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) Open(ctx context.Context, name string) error {
-	call := MixedOpenCall{Ctx: ctx, Name: name}
-	r := stub.Answer(s.OnOpen.MethodStub, call, stub.Arms[MixedOpenCall, MixedOpenReturn]{
-		Invoke:   s.OnOpen.invoke(ctx, name),
-		Fallback: s.OnOpen.fallback,
-		Fault:    func(err error) MixedOpenReturn { return MixedOpenReturn{Err: err} },
-		Stamp: func(c MixedOpenCall, r MixedOpenReturn) MixedOpenCall {
+func (s *MixedStub) Get(ctx context.Context, key string) (wrappedvia.Value, error) {
+	call := MixedGetCall{Ctx: ctx, Key: key}
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
+		Invoke:   s.OnGet.invoke(ctx, key),
+		Fallback: s.OnGet.fallback,
+		Fault:    func(err error) MixedGetReturn { return MixedGetReturn{Err: err} },
+		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
+			c.Result = r.Result
 			c.Err = r.Err
 			return c
 		},
 	})
-	return r.Err
+	return r.Result, r.Err
 }
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedCauseStub) invoke(ctx context.Context) func() MixedCauseReturn {
+func (s *MixedTracedGetStub) invoke(ctx context.Context, key string) func() MixedTracedGetReturn {
 	if s.fn == nil {
 		return nil
 	}
-	return func() MixedCauseReturn {
-		r0 := s.fn(ctx)
-		return MixedCauseReturn{Err: r0}
+	return func() MixedTracedGetReturn {
+		r0, r1 := s.fn(ctx, key)
+		return MixedTracedGetReturn{Result: r0, Err: r1}
 	}
 }
 
-// Cause records the call. An armed fault comes first, then the function of
-// Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) Cause(ctx context.Context) error {
-	call := MixedCauseCall{Ctx: ctx}
-	r := stub.Answer(s.OnCause.MethodStub, call, stub.Arms[MixedCauseCall, MixedCauseReturn]{
-		Invoke:   s.OnCause.invoke(ctx),
-		Fallback: s.OnCause.fallback,
-		Fault:    func(err error) MixedCauseReturn { return MixedCauseReturn{Err: err} },
-		Stamp: func(c MixedCauseCall, r MixedCauseReturn) MixedCauseCall {
+// TracedGet records the call. An armed fault comes first, then the
+// function of Func, then the results of Returns, and then the zero values.
+func (s *MixedStub) TracedGet(ctx context.Context, key string) (wrappedvia.Value, error) {
+	call := MixedTracedGetCall{Ctx: ctx, Key: key}
+	r := stub.Answer(s.OnTracedGet.MethodStub, call, stub.Arms[MixedTracedGetCall, MixedTracedGetReturn]{
+		Invoke:   s.OnTracedGet.invoke(ctx, key),
+		Fallback: s.OnTracedGet.fallback,
+		Fault:    func(err error) MixedTracedGetReturn { return MixedTracedGetReturn{Err: err} },
+		Stamp: func(c MixedTracedGetCall, r MixedTracedGetReturn) MixedTracedGetCall {
+			c.Result = r.Result
 			c.Err = r.Err
 			return c
 		},
 	})
-	return r.Err
+	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:dc70969055a67f734982cb197d022389d979adb996fb4043d9843a942e8b329b
+// dokimi:provenance sha256:9d183398efd53c8e15ae975865023c146a93147bbb92db33efb4c425b9c059c0

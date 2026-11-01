@@ -84,6 +84,10 @@ func TestMixedSuite(t *testing.T) {
 				overmatchtest.MixedChecks.Items.OverMatchGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				overmatchtest.MixedChecks.Items.DrainsKeepWhatWentIn(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -139,6 +143,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				overmatchtest.MixedChecks.Items.OverMatchGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				overmatchtest.MixedChecks.Items.DrainsKeepWhatWentIn(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -197,6 +205,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			overmatchtest.MixedChecks.Items.OverMatchGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Items.DrainsKeepWhatWentIn(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -241,6 +253,10 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 		),
 		conform.Excuse(
 			overmatchtest.MixedChecks.Items.OverMatchGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Items.DrainsKeepWhatWentIn(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -289,6 +305,10 @@ func FuzzMixedSuiteItems(f *testing.F) {
 			overmatchtest.MixedChecks.Items.OverMatchGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Items.DrainsKeepWhatWentIn(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -303,4 +323,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:139075f90f86408a4d2f766ebe55bb4e5c2e0102f64006a024abda2f64ba64dc
+// dokimi:provenance sha256:c4769399a7038b6bee281f0d73c2a81f90f86819e5657c191cc9fbc7b5258d57

@@ -55,6 +55,10 @@ func TestPoisonAccessorSuite(t *testing.T) {
 				poisonaccessortest.PoisonAccessorChecks.Err.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				poisonaccessortest.PoisonAccessorChecks.Err.FreshReportsNoPoison(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -82,6 +86,10 @@ func TestPoisonAccessorSuite(t *testing.T) {
 				poisonaccessortest.PoisonAccessorChecks.Err.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				poisonaccessortest.PoisonAccessorChecks.Err.FreshReportsNoPoison(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -106,6 +114,10 @@ func TestPoisonAccessorSuiteBudgets(t *testing.T) {
 			poisonaccessortest.PoisonAccessorChecks.Err.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			poisonaccessortest.PoisonAccessorChecks.Err.FreshReportsNoPoison(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -119,6 +131,10 @@ func FuzzPoisonAccessorSuiteErr(f *testing.F) {
 		poisonAccessorIdle,
 		conform.Excuse(
 			poisonaccessortest.PoisonAccessorChecks.Err.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			poisonaccessortest.PoisonAccessorChecks.Err.FreshReportsNoPoison(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -136,4 +152,4 @@ func BenchmarkPoisonAccessorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2d773b842b32076ccc4ade7460eb50633b257d9d446ebe078d8e5d8a642f9472
+// dokimi:provenance sha256:fc426b62cda90dcfe213846342facaae543d582049782a668cbff698b5cdcd74

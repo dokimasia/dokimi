@@ -53,11 +53,15 @@ func (s *InMemory) GetAll(ctx context.Context, keys ...string) ([]batchreader.Va
 	return out, nil
 }
 
-// Put stores v under its key. A test seeds the reader through it.
-func (s *InMemory) Put(v batchreader.Value) {
+// Put implements [batchreader.BatchReader]. It stores v under its key.
+func (s *InMemory) Put(ctx context.Context, v batchreader.Value) error {
+	if err := contextErr(ctx); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.values[v.Key] = v
+	return nil
 }
 
 // contextErr returns the error of a canceled or expired context, and an error

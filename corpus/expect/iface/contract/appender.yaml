@@ -17,6 +17,10 @@ declarations:
         claim: appender
         law: append-returns-above-the-last
         reason: not-ascending
+      contract.run/appends-keep-ascending:
+        claim: appends-keep-ascending
+        law: append-returns-above-the-last
+        reason: not-ascending
       contract.run/cancel:
         claim: cancel
         law: cancelled-context-is-reported

@@ -29,6 +29,12 @@ declarations:
           write: mixed.store
         law: read-observes-its-own-writes
         reason: unobserved-write
+      mixed.get/reads-follow-own-writes:
+        claim: reads-follow-own-writes
+        partners:
+          write: mixed.store
+        law: read-observes-its-own-writes
+        reason: unobserved-write
       mixed.get/smoke:
         claim: smoke
         law: no-panic-on-any-input

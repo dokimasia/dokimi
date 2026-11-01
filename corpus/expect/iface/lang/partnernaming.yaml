@@ -169,6 +169,10 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      store.version/reads-never-go-back:
+        claim: reads-never-go-back
+        law: reads-never-go-backwards
+        reason: regressed
       store.version/smoke:
         claim: smoke
         law: no-panic-on-any-input

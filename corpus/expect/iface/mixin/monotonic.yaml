@@ -25,6 +25,10 @@ declarations:
         claim: monotonic
         law: results-never-decrease
         reason: regressed
+      mixed.version/never-goes-back:
+        claim: never-goes-back
+        law: results-never-decrease
+        reason: regressed
       mixed.version/smoke:
         claim: smoke
         law: no-panic-on-any-input

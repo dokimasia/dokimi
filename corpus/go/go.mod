@@ -7,8 +7,8 @@ go 1.27.2
 
 require (
 	go.dokimi.dev/assert v0.14.1
-	go.dokimi.dev/conform v0.8.1-0.20261101120654-1e87d264068e
+	go.dokimi.dev/conform v0.8.1-0.20261101202354-f0b64bdf76a2
 	go.dokimi.dev/fault v0.2.0
-	go.dokimi.dev/spec v0.0.0-20261101120654-1e87d264068e
+	go.dokimi.dev/spec v0.0.0-20261101202354-f0b64bdf76a2
 	go.dokimi.dev/stub v0.2.0
 )

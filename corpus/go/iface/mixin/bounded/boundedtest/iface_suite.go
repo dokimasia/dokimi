@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/bounded"
@@ -27,6 +28,9 @@ import (
 // Mixed.Add/cancel#generated: Add returns an error for a cancelled
 // context.
 //
+// Mixed.Add/keeps-within-its-bounds: Add keeps the use that List reads
+// within its bounds, over any sequence of calls.
+//
 // Mixed.List/smoke: List returns without a panic for derived inputs.
 //
 // Mixed.List/cancel: List returns an error for a cancelled context.
@@ -43,9 +47,6 @@ import (
 //
 // The shape:writer of Mixed.Add has the stance silent. A write is an input
 // of the other checks, and its result is an error alone.
-//
-// The mixin:bounded of Mixed.List has the stance needs. The claims of the
-// mixin need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -94,6 +95,12 @@ func (c mixedAdd) Cancel() conform.ID[bounded.Mixed] {
 // error for a cancelled context.
 func (c mixedAdd) CancelGenerated() conform.ID[bounded.Mixed] {
 	return c.Check("cancel#generated")
+}
+
+// KeepsWithinItsBounds returns the identity of the check that Add keeps
+// the use that List reads within its bounds, over any sequence of calls.
+func (c mixedAdd) KeepsWithinItsBounds() conform.ID[bounded.Mixed] {
+	return c.Check("keeps-within-its-bounds")
 }
 
 // mixedList is the name of Mixed.List, with the identities of its checks.
@@ -191,6 +198,23 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				Defect: mixedAddIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Add.KeepsWithinItsBounds(),
+				Statement:   "Add keeps the use that List reads within its bounds, over any sequence of calls",
+				Claim:       spec.KeepsWithinItsBounds,
+				Probe:       spec.UseIsWithinTheBounds,
+				Reason:      spec.ExceededBound,
+				Law:         spec.UseIsWithinItsBounds,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.UseIsWithinTheBounds(h, c, mixedActions, func(ctx context.Context) (int, error) {
+						values, err := mixedListCall(ctx, h.Subject(), []any{})
+						v, _ := values[0].([]string)
+						return len(v), err
+					}, 0, 5)
+				},
+				Defect: mixedListGrowsPastTheLimitAfterThree,
+			},
+			{
 				ID:          MixedChecks.List.Smoke(),
 				Statement:   "List returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -245,12 +269,6 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				Callable:       "Mixed.Add",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "mixin:bounded",
-				Callable:       "Mixed.List",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[bounded.Mixed]{
@@ -405,6 +423,34 @@ func mixedAddIgnoresCancel(h *MixedHandle) bounded.Mixed {
 	return &mixedAddIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedListGrowsPastTheLimitAfterThreeDefect is the planted defect of a
+// Mixed whose List reports a use above the limit from its fourth call on.
+type mixedListGrowsPastTheLimitAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// List is the override of the planted defect.
+func (d *mixedListGrowsPastTheLimitAfterThreeDefect) List(p0 context.Context) (r0 []string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.List(p0)
+	d.calls++
+	if d.calls > 3 {
+		r0 = make([]string, 5+1)
+	}
+	return r0, r1
+}
+
+// mixedListGrowsPastTheLimitAfterThree returns the planted defect of a
+// Mixed whose List reports a use above the limit from its fourth call on
+// over a fresh subject.
+func mixedListGrowsPastTheLimitAfterThree(h *MixedHandle) bounded.Mixed {
+	return &mixedListGrowsPastTheLimitAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedListPanicsDefect is the planted defect of a Mixed whose List
 // panics.
 type mixedListPanicsDefect struct {
@@ -463,4 +509,48 @@ func mixedListValueBeside(h *MixedHandle) bounded.Mixed {
 	return &mixedListValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6f525db54c279925951ed2c13b826b6ae59213fefb850e5dc3a2992685827bfc
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() bounded.Mixed) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				item := c.Draw(prop.Of[string](), "add.item")
+				return []any{item}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := mixedAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "List",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "List", args)
+				values, err := mixedListCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedAddCall(ctx context.Context, subject bounded.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Add(ctx, a0)
+}
+
+// mixedListCall calls List on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedListCall(ctx context.Context, subject bounded.Mixed, args []any) ([]any, error) {
+	r0, err := subject.List(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:de8ae50cc37f09a6d8b1bb33a9c489fdf608ed89166c6487a17979b09383d9eb

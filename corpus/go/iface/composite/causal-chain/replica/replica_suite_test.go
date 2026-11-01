@@ -30,6 +30,10 @@ func TestLogConformsToLog(t *testing.T) {
 			"a replica refuses each append, so its replay has no stamps to order",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
+			"a replica refuses each append, so its replay has no stamps to order",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsTheBody(),
 			"a replica refuses each append, so no body reaches its replay",
 		),
@@ -50,6 +54,10 @@ func BenchmarkLogConformsToLog(b *testing.B) {
 		),
 		conform.Excuse(
 			causalchaintest.LogChecks.Append.ChainCausal(),
+			"a replica refuses each append, so its replay has no stamps to order",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
 			"a replica refuses each append, so its replay has no stamps to order",
 		),
 		conform.Excuse(
@@ -93,6 +101,10 @@ func FuzzLogConformsToLogAppend(f *testing.F) {
 			"a replica refuses each append, so its replay has no stamps to order",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
+			"a replica refuses each append, so its replay has no stamps to order",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsTheBody(),
 			"a replica refuses each append, so no body reaches its replay",
 		),
@@ -119,6 +131,10 @@ func FuzzLogConformsToLogReplay(f *testing.F) {
 			"a replica refuses each append, so its replay has no stamps to order",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
+			"a replica refuses each append, so its replay has no stamps to order",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsTheBody(),
 			"a replica refuses each append, so no body reaches its replay",
 		),
@@ -129,4 +145,4 @@ func FuzzLogConformsToLogReplay(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9169ffb32ccf57a7d1d1325790bd61369e5e328853edd1845491f0046b3f1983
+// dokimi:provenance sha256:e99517ef11293927560dfcfd0f9e6aea1635b680eaae4ab1c083a2b426810814

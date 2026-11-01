@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/readafterwrite"
@@ -36,6 +37,9 @@ import (
 //
 // Mixed.Read/read-after-write#generated: Read returns what Write stored
 // before it.
+//
+// Mixed.Read/reads-each-last-write: Read returns what Write wrote right
+// before it, over any sequence of calls.
 //
 // Mixed.Write/smoke: Write returns without a panic for derived inputs.
 //
@@ -133,6 +137,12 @@ func (c mixedRead) ReadAfterWrite() conform.ID[readafterwrite.Mixed] {
 // returns what Write stored before it.
 func (c mixedRead) ReadAfterWriteGenerated() conform.ID[readafterwrite.Mixed] {
 	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Read returns
+// what Write wrote right before it, over any sequence of calls.
+func (c mixedRead) ReadsEachLastWrite() conform.ID[readafterwrite.Mixed] {
+	return c.Check("reads-each-last-write")
 }
 
 // mixedWrite is the name of Mixed.Write, with the identities of its
@@ -312,6 +322,33 @@ func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 					})
 				},
 				Defect: mixedReadReadsAnotherValue,
+			},
+			{
+				ID:          MixedChecks.Read.ReadsEachLastWrite(),
+				Statement:   "Read returns what Write wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[readafterwrite.Mixed]{MixedChecks.Read.ReadAfterWrite()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						mixedActions,
+						"Write",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := mixedReadCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) string {
+							v, _ := args[1].(string)
+							return v
+						},
+					)
+				},
+				Defect: mixedReadReadsAStaleValueAfterThree,
 			},
 			{
 				ID:          MixedChecks.Write.Smoke(),
@@ -594,6 +631,39 @@ func mixedReadReadsAnotherValue(h *MixedHandle) readafterwrite.Mixed {
 	return &mixedReadReadsAnotherValueDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedReadReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Mixed whose Read returns its first value again from its fourth call on.
+type mixedReadReadsAStaleValueAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+	first *string
+}
+
+// Read is the override of the planted defect.
+func (d *mixedReadReadsAStaleValueAfterThreeDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.mixedOverEmbedded.Read(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// mixedReadReadsAStaleValueAfterThree returns the planted defect of a
+// Mixed whose Read returns its first value again from its fourth call on
+// over a fresh subject.
+func mixedReadReadsAStaleValueAfterThree(h *MixedHandle) readafterwrite.Mixed {
+	return &mixedReadReadsAStaleValueAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedWritePanicsDefect is the planted defect of a Mixed whose Write
 // panics.
 type mixedWritePanicsDefect struct {
@@ -631,4 +701,56 @@ func mixedWriteIgnoresCancel(h *MixedHandle) readafterwrite.Mixed {
 	return &mixedWriteIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2374ada668ca4a6ef724097b031e26f9bd354692500dd8e4079285d23d82c98e
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() readafterwrite.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Read",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "read.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Read", args, args[0])
+				values, err := mixedReadCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Write",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "write.key")
+				value := c.Draw(prop.Of[string](), "write.value")
+				return []any{key, value}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Write", args, args[0])
+				values, err := mixedWriteCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedReadCall calls Read on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedReadCall(ctx context.Context, subject readafterwrite.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Read(ctx, a0)
+	return []any{r0}, err
+}
+
+// mixedWriteCall calls Write on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedWriteCall(ctx context.Context, subject readafterwrite.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	return nil, subject.Write(ctx, a0, a1)
+}
+
+// dokimi:provenance sha256:1b15e22e77bc0bf604cd16aac4a8f6a6e4169dfadffa5c893f8c80a4b5e93b29

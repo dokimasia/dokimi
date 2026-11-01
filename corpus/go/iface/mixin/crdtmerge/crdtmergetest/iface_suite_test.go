@@ -49,6 +49,10 @@ func TestMixedSuite(t *testing.T) {
 				Defect: func(*crdtmergetest.MixedHandle) crdtmerge.Mixed { return &mixedSubject{} },
 			}),
 			conform.Excuse(
+				crdtmergetest.MixedChecks.Merge.MergesInAnyOrder(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				crdtmergetest.MixedChecks.Add.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -98,6 +102,10 @@ func TestMixedSuite(t *testing.T) {
 				Defect: func(*crdtmergetest.MixedHandle) crdtmerge.Mixed { return &mixedSubject{} },
 			}),
 			conform.Excuse(
+				crdtmergetest.MixedChecks.Merge.MergesInAnyOrder(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				crdtmergetest.MixedChecks.Add.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -146,6 +154,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(crdtmergetest.MixedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(crdtmergetest.MixedChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			crdtmergetest.MixedChecks.Merge.MergesInAnyOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			crdtmergetest.MixedChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -183,6 +195,10 @@ func FuzzMixedSuiteMerge(f *testing.F) {
 		f,
 		crdtmergetest.MixedChecks.Merge.Callable,
 		mixedIdle,
+		conform.Excuse(
+			crdtmergetest.MixedChecks.Merge.MergesInAnyOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			crdtmergetest.MixedChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -222,6 +238,10 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 		crdtmergetest.MixedChecks.Add.Callable,
 		mixedIdle,
 		conform.Excuse(
+			crdtmergetest.MixedChecks.Merge.MergesInAnyOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			crdtmergetest.MixedChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -259,6 +279,10 @@ func FuzzMixedSuiteItems(f *testing.F) {
 		f,
 		crdtmergetest.MixedChecks.Items.Callable,
 		mixedIdle,
+		conform.Excuse(
+			crdtmergetest.MixedChecks.Merge.MergesInAnyOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			crdtmergetest.MixedChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -304,4 +328,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3eb7a12f327a37b1e351a74fba06690a0308315e175042e7ae270244563cc8c6
+// dokimi:provenance sha256:263c400c084ab266588f2be15f7fc901ab0bddff37ca4fde26b78d34c36381fc

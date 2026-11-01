@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonic"
@@ -26,6 +27,9 @@ import (
 //
 // Mixed.Version/monotonic: Version never returns less than it returned
 // before.
+//
+// Mixed.Version/never-goes-back: Version never returns less than a result
+// that it returned before, over any sequence of calls.
 //
 // Mixed.Advance/smoke: Advance returns without a panic for derived inputs.
 //
@@ -92,6 +96,13 @@ func (c mixedVersion) ZeroOnError() conform.ID[monotonic.Mixed] {
 // less than it returned before.
 func (c mixedVersion) Monotonic() conform.ID[monotonic.Mixed] {
 	return c.Check("monotonic")
+}
+
+// NeverGoesBack returns the identity of the check that Version never
+// returns less than a result that it returned before, over any sequence of
+// calls.
+func (c mixedVersion) NeverGoesBack() conform.ID[monotonic.Mixed] {
+	return c.Check("never-goes-back")
 }
 
 // mixedAdvance is the name of Mixed.Advance, with the identities of its
@@ -183,6 +194,20 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 					})
 				},
 				Defect: mixedVersionDescends,
+			},
+			{
+				ID:          MixedChecks.Version.NeverGoesBack(),
+				Statement:   "Version never returns less than a result that it returned before, over any sequence of calls",
+				Claim:       spec.NeverGoesBack,
+				Probe:       spec.ResultsNeverFall,
+				Reason:      spec.Regressed,
+				Law:         spec.ResultsNeverDecrease,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[monotonic.Mixed]{MixedChecks.Version.Monotonic()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.ResultsNeverFall[monotonic.Mixed, int64](h, c, mixedActions, "Version")
+				},
+				Defect: mixedVersionGoesBackAfterThree,
 			},
 			{
 				ID:          MixedChecks.Advance.Smoke(),
@@ -423,6 +448,39 @@ func mixedVersionDescends(h *MixedHandle) monotonic.Mixed {
 	return &mixedVersionDescendsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedVersionGoesBackAfterThreeDefect is the planted defect of a Mixed
+// whose Version returns its first result again from its fourth call on.
+type mixedVersionGoesBackAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+	first *int64
+}
+
+// Version is the override of the planted defect.
+func (d *mixedVersionGoesBackAfterThreeDefect) Version(p0 context.Context) (r0 int64, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.mixedOverEmbedded.Version(p0)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// mixedVersionGoesBackAfterThree returns the planted defect of a Mixed
+// whose Version returns its first result again from its fourth call on
+// over a fresh subject.
+func mixedVersionGoesBackAfterThree(h *MixedHandle) monotonic.Mixed {
+	return &mixedVersionGoesBackAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedAdvancePanicsDefect is the planted defect of a Mixed whose Advance
 // panics.
 type mixedAdvancePanicsDefect struct {
@@ -460,4 +518,43 @@ func mixedAdvanceIgnoresCancel(h *MixedHandle) monotonic.Mixed {
 	return &mixedAdvanceIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:34cf931b2edf5a6c231afa447e4fe2f5c9d072cd6680dbe9f1b3fb6e5e1c4e07
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() monotonic.Mixed) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Version",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Version", args)
+				values, err := mixedVersionCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Advance",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Advance", args)
+				values, err := mixedAdvanceCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedVersionCall calls Version on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedVersionCall(ctx context.Context, subject monotonic.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Version(ctx)
+	return []any{r0}, err
+}
+
+// mixedAdvanceCall calls Advance on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedAdvanceCall(ctx context.Context, subject monotonic.Mixed, args []any) ([]any, error) {
+	return nil, subject.Advance(ctx)
+}
+
+// dokimi:provenance sha256:6e5dc22e050a13782bc3d4aca675fa63dfb5930c3fb3fd1676d958ee8fbc8a87

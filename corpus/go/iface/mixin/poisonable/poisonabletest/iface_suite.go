@@ -24,6 +24,9 @@ import (
 // Mixed.Probe/smoke: Probe returns without a panic for derived inputs.
 //
 // Mixed.Probe/poisonable: Probe fails after Fail, and keeps failing.
+//
+// Mixed.Probe/fresh-reports-no-poison: Probe reports no error for a fresh
+// receiver.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -35,9 +38,6 @@ import (
 //
 // The shape:lifecycle of Mixed.Fail has the stance silent. A lifecycle
 // call returns nothing that a check could compare.
-//
-// The shape:poison-accessor of Mixed.Probe has the stance gap. No claim
-// states what the accessor of a poisoned subject returns.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -92,6 +92,12 @@ func (c mixedProbe) Smoke() conform.ID[poisonable.Mixed] {
 // Fail, and keeps failing.
 func (c mixedProbe) Poisonable() conform.ID[poisonable.Mixed] {
 	return c.Check("poisonable")
+}
+
+// FreshReportsNoPoison returns the identity of the check that Probe
+// reports no error for a fresh receiver.
+func (c mixedProbe) FreshReportsNoPoison() conform.ID[poisonable.Mixed] {
+	return c.Check("fresh-reports-no-poison")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -166,6 +172,21 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 				},
 				Defect: mixedProbeSucceedsAlways,
 			},
+			{
+				ID:          MixedChecks.Probe.FreshReportsNoPoison(),
+				Statement:   "Probe reports no error for a fresh receiver",
+				Claim:       spec.FreshReportsNoPoison,
+				Probe:       spec.ReportsNoError,
+				Reason:      spec.FalsePoison,
+				Law:         spec.FreshReceiverIsHealthy,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ReportsNoError(h, func(ctx context.Context) error {
+						return h.Subject().Probe()
+					})
+				},
+				Defect: mixedProbeReportsPoison,
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -173,12 +194,6 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 				Callable:       "Mixed.Fail",
 				Stance:         spec.Silent,
 				Note:           "A lifecycle call returns nothing that a check could compare.",
-			},
-			{
-				Classification: "shape:poison-accessor",
-				Callable:       "Mixed.Probe",
-				Stance:         spec.Gap,
-				Note:           "No claim states what the accessor of a poisoned subject returns.",
 			},
 		},
 		Calls: []conform.Call[poisonable.Mixed]{
@@ -366,4 +381,22 @@ func mixedProbeSucceedsAlways(h *MixedHandle) poisonable.Mixed {
 	return &mixedProbeSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7bfeeaa8e17ed4e10e7a61e8e9bbd189e6226efa28f543cf04d495ed11ee30cb
+// mixedProbeReportsPoisonDefect is the planted defect of a Mixed whose
+// Probe reports an error for a fresh receiver.
+type mixedProbeReportsPoisonDefect struct {
+	mixedOverEmbedded
+}
+
+// Probe is the override of the planted defect.
+func (*mixedProbeReportsPoisonDefect) Probe() (r0 error) {
+	r0 = conform.ErrGenerated
+	return r0
+}
+
+// mixedProbeReportsPoison returns the planted defect of a Mixed whose
+// Probe reports an error for a fresh receiver over a fresh subject.
+func mixedProbeReportsPoison(h *MixedHandle) poisonable.Mixed {
+	return &mixedProbeReportsPoisonDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:09c6a318209f712dea7ddbe5d387eb27b2bfebcabed32524625b53f5612045fc

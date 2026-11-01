@@ -96,6 +96,10 @@ func TestMixedSuite(t *testing.T) {
 				monotonicreadstest.MixedChecks.Get.MonotonicReadsGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				monotonicreadstest.MixedChecks.Get.ReadsNeverGoBack(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -163,6 +167,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				monotonicreadstest.MixedChecks.Get.MonotonicReadsGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				monotonicreadstest.MixedChecks.Get.ReadsNeverGoBack(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -233,6 +241,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			monotonicreadstest.MixedChecks.Get.MonotonicReadsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			monotonicreadstest.MixedChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -289,6 +301,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			monotonicreadstest.MixedChecks.Get.MonotonicReadsGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			monotonicreadstest.MixedChecks.Get.ReadsNeverGoBack(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -349,6 +365,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			monotonicreadstest.MixedChecks.Get.MonotonicReadsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			monotonicreadstest.MixedChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -363,4 +383,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:994d5c93be61fab2003569c3a04c922f573818cca3c92a7125337668c45e008b
+// dokimi:provenance sha256:32c962b31f24efc95da6aac095e08efb02eb1d015775653287df9b70a5673cbd

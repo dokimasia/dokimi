@@ -69,6 +69,14 @@ func TestStreamReaderSuite(t *testing.T) {
 				streamreadertest.StreamReaderChecks.List.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				streamreadertest.StreamReaderChecks.List.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				streamreadertest.StreamReaderChecks.List.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -108,6 +116,14 @@ func TestStreamReaderSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				streamreadertest.StreamReaderChecks.List.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				streamreadertest.StreamReaderChecks.List.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				streamreadertest.StreamReaderChecks.List.StreamsWhatWasStoredGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -150,6 +166,14 @@ func TestStreamReaderSuiteBudgets(t *testing.T) {
 			streamreadertest.StreamReaderChecks.List.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			streamreadertest.StreamReaderChecks.List.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreadertest.StreamReaderChecks.List.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -178,6 +202,14 @@ func FuzzStreamReaderSuiteAdd(f *testing.F) {
 		),
 		conform.Excuse(
 			streamreadertest.StreamReaderChecks.List.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreadertest.StreamReaderChecks.List.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreadertest.StreamReaderChecks.List.StreamsWhatWasStoredGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -210,6 +242,14 @@ func FuzzStreamReaderSuiteList(f *testing.F) {
 			streamreadertest.StreamReaderChecks.List.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			streamreadertest.StreamReaderChecks.List.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreadertest.StreamReaderChecks.List.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -224,4 +264,4 @@ func BenchmarkStreamReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:bf2882a584b1a411bc853c9bb1080b155155c79f5c14cfada0e9878d058832bf
+// dokimi:provenance sha256:a328a57fb19e27ce14792a06c7ebce56f21535d0b05c179991b62ad79bbbc58b

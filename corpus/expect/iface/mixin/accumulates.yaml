@@ -9,6 +9,18 @@ controls: []
 declarations:
   mixed:
     checks:
+      mixed.add/accumulates:
+        claim: accumulates
+        partners:
+          observe: mixed.total
+        law: repeated-calls-compound
+        reason: uncompounded
+      mixed.add/accumulates#generated:
+        claim: accumulates
+        partners:
+          observe: mixed.total
+        law: repeated-calls-compound
+        reason: uncompounded
       mixed.add/cancel:
         claim: cancel
         law: cancelled-context-is-reported
@@ -17,6 +29,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      mixed.add/compounds-over-sequences:
+        claim: compounds-over-sequences
+        partners:
+          observe: mixed.total
+        law: repeated-calls-compound
+        reason: uncompounded
       mixed.add/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -51,8 +69,7 @@ declarations:
         reason: value-beside-error
     authored: []
     ceilings: []
-    refusals:
-      mixed.add/accumulates: partner-arguments
+    refusals: {}
     unclaimed:
       - classification: shape:composite-writer
         callable: mixed.add

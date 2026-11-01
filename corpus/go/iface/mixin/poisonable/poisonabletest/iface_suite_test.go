@@ -64,6 +64,10 @@ func TestMixedSuite(t *testing.T) {
 				poisonabletest.MixedChecks.Probe.Poisonable(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -99,6 +103,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				poisonabletest.MixedChecks.Probe.Poisonable(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -137,6 +145,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			poisonabletest.MixedChecks.Probe.Poisonable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -161,6 +173,10 @@ func FuzzMixedSuiteFail(f *testing.F) {
 		),
 		conform.Excuse(
 			poisonabletest.MixedChecks.Probe.Poisonable(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -189,6 +205,10 @@ func FuzzMixedSuiteProbe(f *testing.F) {
 			poisonabletest.MixedChecks.Probe.Poisonable(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -203,4 +223,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:9e07c36089b243196134d2204173115717fd055f44452e097a382fbad29de772
+// dokimi:provenance sha256:40c5d9c5b015d7f787a9a1fde3e1c0eba80bc7bffe4ba1486289b2dbe6619d42

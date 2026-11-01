@@ -47,6 +47,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      contract.stats/counts-each-loan:
+        claim: counts-each-loan
+        partners:
+          get: contract.get
+        law: stats-move-with-a-loan
+        reason: uncounted-loan
       contract.stats/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -62,6 +68,3 @@ declarations:
       - classification: shape:writer
         callable: contract.put
         stance: silent
-      - classification: contract:pool/stats
-        callable: contract.stats
-        stance: gap

@@ -84,6 +84,10 @@ func TestMixedSuite(t *testing.T) {
 				noduplicatestest.MixedChecks.Items.NoDuplicatesGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				noduplicatestest.MixedChecks.Items.YieldsEachOnce(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -139,6 +143,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				noduplicatestest.MixedChecks.Items.NoDuplicatesGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				noduplicatestest.MixedChecks.Items.YieldsEachOnce(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -197,6 +205,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			noduplicatestest.MixedChecks.Items.NoDuplicatesGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			noduplicatestest.MixedChecks.Items.YieldsEachOnce(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -241,6 +253,10 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 		),
 		conform.Excuse(
 			noduplicatestest.MixedChecks.Items.NoDuplicatesGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			noduplicatestest.MixedChecks.Items.YieldsEachOnce(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -289,6 +305,10 @@ func FuzzMixedSuiteItems(f *testing.F) {
 			noduplicatestest.MixedChecks.Items.NoDuplicatesGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			noduplicatestest.MixedChecks.Items.YieldsEachOnce(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -303,4 +323,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:38b2758f1c2fdaa2b3abf3e975f0614cb125e188801355e9770b1ea99283e6aa
+// dokimi:provenance sha256:50c1080bb70db816d2b5d2d92be22ae0b7627f92dc9381aa2cbcd4e9f0f14642

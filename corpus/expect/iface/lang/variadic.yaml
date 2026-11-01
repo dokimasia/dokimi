@@ -43,8 +43,6 @@ declarations:
         reason: panicked
     authored: []
     ceilings: []
-    refusals: {}
-    unclaimed:
-      - classification: shape:batch-reader
-        callable: finder.find
-        stance: gap
+    refusals:
+      finder.find/reads-each-key: partner-found
+    unclaimed: []

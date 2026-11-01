@@ -29,6 +29,18 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      stream-reader.list/streams-what-was-stored:
+        claim: streams-what-was-stored
+        partners:
+          write: stream-reader.add
+        law: drain-keeps-what-went-in
+        reason: shrunk-drain
+      stream-reader.list/streams-what-was-stored#generated:
+        claim: streams-what-was-stored
+        partners:
+          write: stream-reader.add
+        law: drain-keeps-what-went-in
+        reason: shrunk-drain
     authored: []
     ceilings: []
     refusals:
@@ -37,6 +49,3 @@ declarations:
       - classification: shape:writer
         callable: stream-reader.add
         stance: silent
-      - classification: shape:stream-reader
-        callable: stream-reader.list
-        stance: gap

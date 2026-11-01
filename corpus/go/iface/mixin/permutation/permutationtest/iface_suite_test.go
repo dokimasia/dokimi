@@ -84,6 +84,10 @@ func TestMixedSuite(t *testing.T) {
 				permutationtest.MixedChecks.Items.PermutationGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -139,6 +143,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				permutationtest.MixedChecks.Items.PermutationGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -197,6 +205,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			permutationtest.MixedChecks.Items.PermutationGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -241,6 +253,10 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 		),
 		conform.Excuse(
 			permutationtest.MixedChecks.Items.PermutationGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -289,6 +305,10 @@ func FuzzMixedSuiteItems(f *testing.F) {
 			permutationtest.MixedChecks.Items.PermutationGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -303,4 +323,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e565c2ab9fe5030460f2f69ae6b56b4c9b128e9e6b61d0b0236933c5d118f971
+// dokimi:provenance sha256:7b328d2302ef1ee416ea3a2fe13dec480f297eadb029d8eded351adf3f3fee32

@@ -17,6 +17,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      contract.run/follows-its-graph:
+        claim: follows-its-graph
+        partners:
+          observe: contract.state
+        law: states-follow-the-graph
+        reason: forbidden-transition
       contract.run/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -53,9 +59,6 @@ declarations:
     ceilings: []
     refusals: {}
     unclaimed:
-      - classification: contract:workflow/fn
-        callable: contract.run
-        stance: needs
       - classification: shape:writer
         callable: contract.run
         stance: silent

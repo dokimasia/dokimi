@@ -14,7 +14,7 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/bounded"
 )
 
-// limit is the limit of the mixin bounded of List.
+// limit is the limit of the mixin bounded of Add.
 const limit = 5
 
 // InMemory implements [bounded.Mixed] in memory. The corpus applies the suite

@@ -28,16 +28,34 @@ import (
 //
 // BatchReader.GetAll/cancel#generated: GetAll returns an error for a
 // cancelled context.
+//
+// BatchReader.GetAll/reads-each-key: GetAll returns the value that Put
+// stored under each key.
+//
+// BatchReader.GetAll/reads-each-key#generated: GetAll returns the value
+// that Put stored under each key.
+//
+// BatchReader.Put/smoke: Put returns without a panic for derived inputs.
+//
+// BatchReader.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
+// BatchReader.Put/cancel: Put returns an error for a cancelled context.
+//
+// BatchReader.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 
 // The derived checks of BatchReader that witness their laws at the shallow
 // end:
 //
 // BatchReader.GetAll/smoke
+//
+// BatchReader.Put/smoke
 
 // The unclaimed classifications of BatchReader:
 //
-// The shape:batch-reader of BatchReader.GetAll has the stance gap. No
-// claim states what a batch read returns for a key that it does not find.
+// The shape:writer of BatchReader.Put has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -53,8 +71,10 @@ type (
 // with the identities of its checks.
 var BatchReaderChecks = struct {
 	GetAll batchReaderGetAll
+	Put    batchReaderPut
 }{
 	GetAll: batchReaderGetAll{"BatchReader.GetAll"},
+	Put:    batchReaderPut{"BatchReader.Put"},
 }
 
 // batchReaderGetAll is the name of BatchReader.GetAll, with the identities
@@ -84,6 +104,48 @@ func (c batchReaderGetAll) Cancel() conform.ID[batchreader.BatchReader] {
 // CancelGenerated returns the identity of the check that GetAll returns an
 // error for a cancelled context.
 func (c batchReaderGetAll) CancelGenerated() conform.ID[batchreader.BatchReader] {
+	return c.Check("cancel#generated")
+}
+
+// ReadsEachKey returns the identity of the check that GetAll returns the
+// value that Put stored under each key.
+func (c batchReaderGetAll) ReadsEachKey() conform.ID[batchreader.BatchReader] {
+	return c.Check("reads-each-key")
+}
+
+// ReadsEachKeyGenerated returns the identity of the check that GetAll
+// returns the value that Put stored under each key.
+func (c batchReaderGetAll) ReadsEachKeyGenerated() conform.ID[batchreader.BatchReader] {
+	return c.Check("reads-each-key#generated")
+}
+
+// batchReaderPut is the name of BatchReader.Put, with the identities of
+// its checks.
+type batchReaderPut struct {
+	conform.Callable[batchreader.BatchReader]
+}
+
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c batchReaderPut) Smoke() conform.ID[batchreader.BatchReader] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c batchReaderPut) SmokeGenerated() conform.ID[batchreader.BatchReader] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c batchReaderPut) Cancel() conform.ID[batchreader.BatchReader] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c batchReaderPut) CancelGenerated() conform.ID[batchreader.BatchReader] {
 	return c.Check("cancel#generated")
 }
 
@@ -162,13 +224,135 @@ func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 				},
 				Defect: batchReaderGetAllIgnoresCancel,
 			},
+			{
+				ID:          BatchReaderChecks.GetAll.ReadsEachKey(),
+				Statement:   "GetAll returns the value that Put stored under each key",
+				Claim:       spec.ReadsEachKey,
+				Probe:       spec.ReadsWhatWasStored,
+				Reason:      spec.LostAKey,
+				Law:         spec.BatchReadReturnsEachStoredValue,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchReaderHandle) {
+					probe.ReadsWhatWasStored(h, func(ctx context.Context) ([]batchreader.Value, error) {
+						return h.Subject().GetAll(ctx, string("Key-a"), string("Key-b"))
+					}, func() func(ctx context.Context) (batchreader.Value, error) {
+						calls := 0
+						return func(ctx context.Context) (batchreader.Value, error) {
+							calls++
+							w := batchreader.Value{Key: "Key-a"}
+							w.Key = string("Key-a")
+							if calls > 1 {
+								w.Key = string("Key-b")
+							}
+							err := h.Subject().Put(ctx, w)
+							return w, err
+						}
+					}())
+				},
+				Defect: batchReaderGetAllDropsTheLastKey,
+			},
+			{
+				ID:          BatchReaderChecks.GetAll.ReadsEachKeyGenerated(),
+				Statement:   "GetAll returns the value that Put stored under each key",
+				Claim:       spec.ReadsEachKey,
+				Probe:       spec.ReadsWhatWasStored,
+				Reason:      spec.LostAKey,
+				Law:         spec.BatchReadReturnsEachStoredValue,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchReaderHandle, c *prop.Case) {
+					drawnVKey := c.Draw(
+						prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(2), prop.MaxSize(2)),
+						"v.key",
+					)
+					drawnV := c.Draw(prop.Of[batchreader.Value](), "v")
+					probe.ReadsWhatWasStored(h, func(ctx context.Context) ([]batchreader.Value, error) {
+						return h.Subject().GetAll(ctx, drawnVKey[0], drawnVKey[1])
+					}, func() func(ctx context.Context) (batchreader.Value, error) {
+						calls := 0
+						return func(ctx context.Context) (batchreader.Value, error) {
+							calls++
+							w := drawnV
+							w.Key = drawnVKey[0]
+							if calls > 1 {
+								w.Key = drawnVKey[1]
+							}
+							err := h.Subject().Put(ctx, w)
+							return w, err
+						}
+					}())
+				},
+				Defect: batchReaderGetAllDropsTheLastKey,
+			},
+			{
+				ID:          BatchReaderChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BatchReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, batchreader.Value{Key: "Key-a"})
+					})
+				},
+				Defect: batchReaderPutPanics,
+			},
+			{
+				ID:          BatchReaderChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchReaderHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[batchreader.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
+					})
+				},
+				Defect: batchReaderPutPanics,
+			},
+			{
+				ID:          BatchReaderChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchReaderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, batchreader.Value{Key: "Key-a"})
+					})
+				},
+				Defect: batchReaderPutIgnoresCancel,
+			},
+			{
+				ID:          BatchReaderChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchReaderHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[batchreader.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
+					})
+				},
+				Defect: batchReaderPutIgnoresCancel,
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
-				Classification: "shape:batch-reader",
-				Callable:       "BatchReader.GetAll",
-				Stance:         spec.Gap,
-				Note:           "No claim states what a batch read returns for a key that it does not find.",
+				Classification: "shape:writer",
+				Callable:       "BatchReader.Put",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[batchreader.BatchReader]{
@@ -176,6 +360,11 @@ func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 				Calls:    batchReaderGetAllCalls,
 				Over:     newBatchReaderOver,
 				Callable: BatchReaderChecks.GetAll.Callable,
+			},
+			{
+				Calls:    batchReaderPutCalls,
+				Over:     newBatchReaderOver,
+				Callable: BatchReaderChecks.Put.Callable,
 			},
 		},
 	}
@@ -254,6 +443,15 @@ var batchReaderGetAllCalls = prop.Composite(func(c *prop.Case) func(context.Cont
 	}
 })
 
+// batchReaderPutCalls generates the calls of BatchReader.Put with the
+// inputs that each case draws.
+var batchReaderPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, batchreader.BatchReader) error {
+	v := c.Draw(prop.Of[batchreader.Value](), "v")
+	return func(ctx context.Context, subject batchreader.BatchReader) error {
+		return subject.Put(ctx, v)
+	}
+})
+
 // batchReaderOverEmbedded is batchreader.BatchReader under the name of the
 // field that batchReaderOver embeds.
 type batchReaderOverEmbedded = batchreader.BatchReader
@@ -270,6 +468,12 @@ type batchReaderOver struct {
 func (o batchReaderOver) GetAll(context.Context, ...string) (r0 []batchreader.Value, r1 error) {
 	o.spend()
 	return r0, r1
+}
+
+// Put calls spend and returns its zero results.
+func (o batchReaderOver) Put(context.Context, batchreader.Value) (r0 error) {
+	o.spend()
+	return r0
 }
 
 // newBatchReaderOver returns the planted defect of a ceiling of
@@ -318,4 +522,70 @@ func batchReaderGetAllIgnoresCancel(h *BatchReaderHandle) batchreader.BatchReade
 	return &batchReaderGetAllIgnoresCancelDefect{batchReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fb4f4e143cdc514106c671cc13e2079a999ec55a46fdd7b4e47f18677708f8b3
+// batchReaderGetAllDropsTheLastKeyDefect is the planted defect of a
+// BatchReader whose GetAll drops the value of its last key.
+type batchReaderGetAllDropsTheLastKeyDefect struct {
+	batchReaderOverEmbedded
+}
+
+// GetAll is the override of the planted defect.
+func (d *batchReaderGetAllDropsTheLastKeyDefect) GetAll(
+	p0 context.Context,
+	p1 ...string,
+) (r0 []batchreader.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.batchReaderOverEmbedded.GetAll(p0, p1...)
+	if len(r0) > 0 {
+		r0 = r0[:len(r0)-1]
+	}
+	return r0, r1
+}
+
+// batchReaderGetAllDropsTheLastKey returns the planted defect of a
+// BatchReader whose GetAll drops the value of its last key over a fresh
+// subject.
+func batchReaderGetAllDropsTheLastKey(h *BatchReaderHandle) batchreader.BatchReader {
+	return &batchReaderGetAllDropsTheLastKeyDefect{batchReaderOverEmbedded: h.Fresh()}
+}
+
+// batchReaderPutPanicsDefect is the planted defect of a BatchReader whose
+// Put panics.
+type batchReaderPutPanicsDefect struct {
+	batchReaderOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*batchReaderPutPanicsDefect) Put(p0 context.Context, p1 batchreader.Value) (r0 error) {
+	panic("the planted defect of a BatchReader whose Put panics")
+}
+
+// batchReaderPutPanics returns the planted defect of a BatchReader whose
+// Put panics over a fresh subject.
+func batchReaderPutPanics(h *BatchReaderHandle) batchreader.BatchReader {
+	return &batchReaderPutPanicsDefect{batchReaderOverEmbedded: h.Fresh()}
+}
+
+// batchReaderPutIgnoresCancelDefect is the planted defect of a BatchReader
+// whose Put ignores the context.
+type batchReaderPutIgnoresCancelDefect struct {
+	batchReaderOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (d *batchReaderPutIgnoresCancelDefect) Put(p0 context.Context, p1 batchreader.Value) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.batchReaderOverEmbedded.Put(p0, p1)
+}
+
+// batchReaderPutIgnoresCancel returns the planted defect of a BatchReader
+// whose Put ignores the context over a fresh subject.
+func batchReaderPutIgnoresCancel(h *BatchReaderHandle) batchreader.BatchReader {
+	return &batchReaderPutIgnoresCancelDefect{batchReaderOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:c6533a5ffe0adfd19689b4d26a19c7a93ac4e4c9de444174a3c5c092d25fc5bf

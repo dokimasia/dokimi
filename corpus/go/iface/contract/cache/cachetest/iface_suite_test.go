@@ -90,6 +90,10 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				cachetest.ContractChecks.Lookup.CacheAgreesOverSequences(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				cachetest.ContractChecks.Fetch.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -172,6 +176,10 @@ func TestContractSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				cachetest.ContractChecks.Lookup.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Lookup.CacheAgreesOverSequences(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -260,6 +268,10 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			cachetest.ContractChecks.Lookup.CacheAgreesOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			cachetest.ContractChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -331,6 +343,10 @@ func FuzzContractSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			cachetest.ContractChecks.Lookup.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.CacheAgreesOverSequences(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -408,6 +424,10 @@ func FuzzContractSuiteLookup(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			cachetest.ContractChecks.Lookup.CacheAgreesOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			cachetest.ContractChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -482,6 +502,10 @@ func FuzzContractSuiteFetch(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			cachetest.ContractChecks.Lookup.CacheAgreesOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			cachetest.ContractChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -522,4 +546,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e6cc04d856abf2cd089148c48a1a39536e3b2ffe74644d2684d00655d548b308
+// dokimi:provenance sha256:6ddc3ef28f6984557500f569298c561d2faa1d10492fe6518a01a3a337d39025

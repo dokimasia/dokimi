@@ -9,6 +9,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"sync"
 
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge"
@@ -64,18 +66,15 @@ func (s *InMemory) Merge(ctx context.Context, peer crdtmerge.Replica) error {
 	return nil
 }
 
-// Items implements [crdtmerge.Mixed].
+// Items implements [crdtmerge.Mixed]. It returns the items in their sorted
+// order, so two replicas with one state return one list.
 func (s *InMemory) Items(ctx context.Context) ([]string, error) {
 	if err := contextErr(ctx); err != nil {
 		return nil, err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	out := make([]string, 0, len(s.items))
-	for item := range s.items {
-		out = append(out, item)
-	}
-	return out, nil
+	return slices.Sorted(maps.Keys(s.items)), nil
 }
 
 // contextErr returns the error of a canceled or expired context, and an error

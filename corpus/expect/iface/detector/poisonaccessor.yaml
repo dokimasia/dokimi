@@ -9,6 +9,10 @@ controls: []
 declarations:
   poison-accessor:
     checks:
+      poison-accessor.err/fresh-reports-no-poison:
+        claim: fresh-reports-no-poison
+        law: fresh-receiver-is-healthy
+        reason: false-poison
       poison-accessor.err/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -16,7 +20,4 @@ declarations:
     authored: []
     ceilings: []
     refusals: {}
-    unclaimed:
-      - classification: shape:poison-accessor
-        callable: poison-accessor.err
-        stance: gap
+    unclaimed: []

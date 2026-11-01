@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonicwrites"
@@ -52,6 +53,9 @@ import (
 //
 // Mixed.Get/monotonic-writes#generated: Get observes the state that the
 // ordered writes of Store produced.
+//
+// Mixed.Get/writes-apply-in-order: Get returns a higher version after each
+// write of Store, over any sequence of calls.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -176,6 +180,12 @@ func (c mixedGet) MonotonicWrites() conform.ID[monotonicwrites.Mixed] {
 // observes the state that the ordered writes of Store produced.
 func (c mixedGet) MonotonicWritesGenerated() conform.ID[monotonicwrites.Mixed] {
 	return c.Check("monotonic-writes#generated")
+}
+
+// WritesApplyInOrder returns the identity of the check that Get returns a
+// higher version after each write of Store, over any sequence of calls.
+func (c mixedGet) WritesApplyInOrder() conform.ID[monotonicwrites.Mixed] {
+	return c.Check("writes-apply-in-order")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -420,6 +430,31 @@ func MixedSuite() conform.Suite[monotonicwrites.Mixed] {
 					})
 				},
 				Defect: mixedGetReadsAnotherValue,
+			},
+			{
+				ID:          MixedChecks.Get.WritesApplyInOrder(),
+				Statement:   "Get returns a higher version after each write of Store, over any sequence of calls",
+				Claim:       spec.WritesApplyInOrder,
+				Probe:       spec.WrittenVersionsRise,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.WritesApplyInIssueOrder,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[monotonicwrites.Mixed]{MixedChecks.Get.MonotonicWrites()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.WrittenVersionsRise(
+						h,
+						c,
+						mixedActions,
+						"Store",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(monotonicwrites.Value)
+							values, err := mixedGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+						func(v monotonicwrites.Value) int64 { return v.Rev },
+					)
+				},
+				Defect: mixedStoreReordersWritesAfterThree,
 			},
 		},
 		Calls: []conform.Call[monotonicwrites.Mixed]{
@@ -695,4 +730,86 @@ func mixedGetReadsAnotherValue(h *MixedHandle) monotonicwrites.Mixed {
 	return &mixedGetReadsAnotherValueDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:46d796d54b97ebe9697708f8bea24d701f475a704aef7db8696f312904919aa8
+// mixedStoreReordersWritesAfterThreeDefect is the planted defect of a
+// Mixed whose Store stores nothing from its fourth call on.
+type mixedStoreReordersWritesAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Store is the override of the planted defect.
+func (d *mixedStoreReordersWritesAfterThreeDefect) Store(
+	p0 context.Context,
+	p1 monotonicwrites.Value,
+) (r0 monotonicwrites.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Store(p0, p1)
+}
+
+// mixedStoreReordersWritesAfterThree returns the planted defect of a Mixed
+// whose Store stores nothing from its fourth call on over a fresh subject.
+func mixedStoreReordersWritesAfterThree(h *MixedHandle) monotonicwrites.Mixed {
+	return &mixedStoreReordersWritesAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() monotonicwrites.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[monotonicwrites.Value](), "store.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "store.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(monotonicwrites.Value)
+				call := c.History().Invoke(client, "Store", args, key0.Key)
+				values, err := mixedStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedStoreCall(ctx context.Context, subject monotonicwrites.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(monotonicwrites.Value)
+	r0, err := subject.Store(ctx, a0)
+	return []any{r0}, err
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject monotonicwrites.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:11a913f8513776afb9511158f0649b5954d5c6b9f117751a9f6a294b17172e74

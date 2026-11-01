@@ -1,0 +1,45 @@
+{
+  "store": 1,
+  "definition": "13.6.0",
+  "property": "each call of Run leaves the state that State reads at the state before it or at one of its successors, over any sequence of calls",
+  "identity": {
+    "assertion": "contains",
+    "file": "sequence.go",
+    "line": 466
+  },
+  "choices": "prop1:AAEDAAAAAAEAAAABAAADAAABAAADAAABAAADAQA",
+  "counterexample": [
+    {
+      "label": "keys.string",
+      "value": {
+        "type": "list",
+        "of": "string",
+        "value": [
+          ""
+        ]
+      }
+    },
+    {
+      "label": "run.key",
+      "value": {
+        "type": "string",
+        "value": ""
+      }
+    },
+    {
+      "label": "run.key",
+      "value": {
+        "type": "string",
+        "value": ""
+      }
+    },
+    {
+      "label": "run.key",
+      "value": {
+        "type": "string",
+        "value": "0"
+      }
+    }
+  ],
+  "found": "2026-11-01"
+}

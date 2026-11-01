@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/workflow"
@@ -26,6 +27,10 @@ import (
 //
 // Contract.Run/cancel#generated: Run returns an error for a cancelled
 // context.
+//
+// Contract.Run/follows-its-graph: each call of Run leaves the state that
+// State reads at the state before it or at one of its successors, over any
+// sequence of calls.
 //
 // Contract.State/smoke: State returns without a panic for derived inputs.
 //
@@ -54,9 +59,6 @@ import (
 //
 // The shape:writer of Contract.Run has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
-//
-// The contract:workflow/fn of Contract.Run has the stance needs. The
-// claims of the contract need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -106,6 +108,13 @@ func (c contractRun) Cancel() conform.ID[workflow.Contract] {
 // error for a cancelled context.
 func (c contractRun) CancelGenerated() conform.ID[workflow.Contract] {
 	return c.Check("cancel#generated")
+}
+
+// FollowsItsGraph returns the identity of the check that each call of Run
+// leaves the state that State reads at the state before it or at one of
+// its successors, over any sequence of calls.
+func (c contractRun) FollowsItsGraph() conform.ID[workflow.Contract] {
+	return c.Check("follows-its-graph")
 }
 
 // contractState is the name of Contract.State, with the identities of its
@@ -222,6 +231,29 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractRunIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Run.FollowsItsGraph(),
+				Statement:   "each call of Run leaves the state that State reads at the state before it or at one of its successors, over any sequence of calls",
+				Claim:       spec.FollowsItsGraph,
+				Probe:       spec.StatesMoveAlongTheGraph,
+				Reason:      spec.ForbiddenTransition,
+				Law:         spec.StatesFollowTheGraph,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.StatesMoveAlongTheGraph(
+						h,
+						c,
+						contractActions,
+						"Run",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := contractStateCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+						workflow.Transitions,
+					)
+				},
+				Defect: contractRunAdmitsAnyTransitionAfterThree,
+			},
+			{
 				ID:          ContractChecks.State.Smoke(),
 				Statement:   "State returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -326,12 +358,6 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Callable:       "Contract.Run",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "contract:workflow/fn",
-				Callable:       "Contract.Run",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[workflow.Contract]{
@@ -498,6 +524,33 @@ func contractRunIgnoresCancel(h *ContractHandle) workflow.Contract {
 	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractRunAdmitsAnyTransitionAfterThreeDefect is the planted defect of
+// a Contract whose Run makes its transition twice from its fourth call on.
+type contractRunAdmitsAnyTransitionAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Run is the override of the planted defect.
+func (d *contractRunAdmitsAnyTransitionAfterThreeDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		r0 = d.contractOverEmbedded.Run(p0, p1)
+	}
+	return d.contractOverEmbedded.Run(p0, p1)
+}
+
+// contractRunAdmitsAnyTransitionAfterThree returns the planted defect of a
+// Contract whose Run makes its transition twice from its fourth call on
+// over a fresh subject.
+func contractRunAdmitsAnyTransitionAfterThree(h *ContractHandle) workflow.Contract {
+	return &contractRunAdmitsAnyTransitionAfterThreeDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractStatePanicsDefect is the planted defect of a Contract whose
 // State panics.
 type contractStatePanicsDefect struct {
@@ -556,4 +609,54 @@ func contractStateValueBeside(h *ContractHandle) workflow.Contract {
 	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:27ab6e8e21b92f81cccb615eab758763c37bca2791f7534e74f5845aafa513d8
+// contractActions returns the actions of the generated sequences of
+// Contract over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func contractActions(c *prop.Case, subject func() workflow.Contract) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Run",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.Of[string](), "run.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Run", args)
+				values, err := contractRunCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "State",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "state.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "State", args, args[0])
+				values, err := contractStateCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// contractRunCall calls Run on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractRunCall(ctx context.Context, subject workflow.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Run(ctx, a0)
+}
+
+// contractStateCall calls State on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractStateCall(ctx context.Context, subject workflow.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.State(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:f8b6631c155f1e900d826a17151f86f2854cd72737ed4607618cf734aa6e024f

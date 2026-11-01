@@ -84,6 +84,10 @@ func TestMixedSuite(t *testing.T) {
 				stableordertest.MixedChecks.Items.StableOrderGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				stableordertest.MixedChecks.Items.KeepsItsOrder(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -139,6 +143,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				stableordertest.MixedChecks.Items.StableOrderGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stableordertest.MixedChecks.Items.KeepsItsOrder(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -197,6 +205,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			stableordertest.MixedChecks.Items.StableOrderGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			stableordertest.MixedChecks.Items.KeepsItsOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -241,6 +253,10 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 		),
 		conform.Excuse(
 			stableordertest.MixedChecks.Items.StableOrderGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stableordertest.MixedChecks.Items.KeepsItsOrder(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -289,6 +305,10 @@ func FuzzMixedSuiteItems(f *testing.F) {
 			stableordertest.MixedChecks.Items.StableOrderGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			stableordertest.MixedChecks.Items.KeepsItsOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -303,4 +323,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:d9eba5283c1b455490ee52582662c6ee1a092058a51e8be774bedc8d0e609a03
+// dokimi:provenance sha256:711df8670957ea1104e9a368f955cdec56363f2f607aa428692bc6579f54f09d

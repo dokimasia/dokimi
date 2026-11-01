@@ -100,6 +100,10 @@ func TestRankedSuite(t *testing.T) {
 				indexedtest.RankedChecks.At.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				indexedtest.RankedChecks.At.RespectsItsBounds(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -171,6 +175,10 @@ func TestRankedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				indexedtest.RankedChecks.At.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				indexedtest.RankedChecks.At.RespectsItsBounds(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -246,6 +254,10 @@ func TestRankedSuiteBudgets(t *testing.T) {
 			indexedtest.RankedChecks.At.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			indexedtest.RankedChecks.At.RespectsItsBounds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -306,6 +318,10 @@ func FuzzRankedSuiteAdd(f *testing.F) {
 		),
 		conform.Excuse(
 			indexedtest.RankedChecks.At.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			indexedtest.RankedChecks.At.RespectsItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -370,6 +386,10 @@ func FuzzRankedSuiteLen(f *testing.F) {
 			indexedtest.RankedChecks.At.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			indexedtest.RankedChecks.At.RespectsItsBounds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -432,6 +452,10 @@ func FuzzRankedSuiteAt(f *testing.F) {
 			indexedtest.RankedChecks.At.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			indexedtest.RankedChecks.At.RespectsItsBounds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -449,4 +473,4 @@ func BenchmarkRankedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:031b395b3260c823cb0b2c36303e5a5e02085da407e43ba36757c6e6d42ca276
+// dokimi:provenance sha256:df74a75e8c9869929421418fb67db8839541ddf0c1c233aa9552be4b301541f4

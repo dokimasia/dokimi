@@ -17,6 +17,18 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      batch-reader.get-all/reads-each-key:
+        claim: reads-each-key
+        partners:
+          write: batch-reader.put
+        law: batch-read-returns-each-stored-value
+        reason: lost-a-key
+      batch-reader.get-all/reads-each-key#generated:
+        claim: reads-each-key
+        partners:
+          write: batch-reader.put
+        law: batch-read-returns-each-stored-value
+        reason: lost-a-key
       batch-reader.get-all/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -25,10 +37,26 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      batch-reader.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batch-reader.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batch-reader.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      batch-reader.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
     authored: []
     ceilings: []
     refusals: {}
     unclaimed:
-      - classification: shape:batch-reader
-        callable: batch-reader.get-all
-        stance: gap
+      - classification: shape:writer
+        callable: batch-reader.put
+        stance: silent

@@ -1,0 +1,96 @@
+{
+  "store": 1,
+  "definition": "13.6.0",
+  "property": "Lookup returns what Fetch returns for its arguments, over any sequence of calls",
+  "identity": {
+    "assertion": "equal",
+    "file": "sequence.go",
+    "line": 331
+  },
+  "choices": "prop1:AAEDAAAAAAEAAQAAAAEAAAAAAwADAAABAAEAAAABAAAAAAMAAwEAAAEAAQAA",
+  "counterexample": [
+    {
+      "label": "keys.string",
+      "value": {
+        "type": "list",
+        "of": "string",
+        "value": [
+          ""
+        ]
+      }
+    },
+    {
+      "label": "store.key",
+      "value": {
+        "type": "string",
+        "value": ""
+      }
+    },
+    {
+      "label": "store.v",
+      "value": {
+        "type": "record",
+        "fields": [
+          [
+            "Key",
+            {
+              "type": "string",
+              "value": ""
+            }
+          ],
+          [
+            "Body",
+            {
+              "type": "string",
+              "value": ""
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "label": "lookup.key",
+      "value": {
+        "type": "string",
+        "value": ""
+      }
+    },
+    {
+      "label": "store.key",
+      "value": {
+        "type": "string",
+        "value": ""
+      }
+    },
+    {
+      "label": "store.v",
+      "value": {
+        "type": "record",
+        "fields": [
+          [
+            "Key",
+            {
+              "type": "string",
+              "value": ""
+            }
+          ],
+          [
+            "Body",
+            {
+              "type": "string",
+              "value": "0"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "label": "lookup.key",
+      "value": {
+        "type": "string",
+        "value": ""
+      }
+    }
+  ],
+  "found": "2026-11-01"
+}

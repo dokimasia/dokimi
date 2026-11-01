@@ -104,6 +104,10 @@ func TestMixedSuite(t *testing.T) {
 				monotonicwritestest.MixedChecks.Get.MonotonicWritesGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				monotonicwritestest.MixedChecks.Get.WritesApplyInOrder(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -179,6 +183,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				monotonicwritestest.MixedChecks.Get.MonotonicWritesGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				monotonicwritestest.MixedChecks.Get.WritesApplyInOrder(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -257,6 +265,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			monotonicwritestest.MixedChecks.Get.MonotonicWritesGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			monotonicwritestest.MixedChecks.Get.WritesApplyInOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -321,6 +333,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			monotonicwritestest.MixedChecks.Get.MonotonicWritesGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			monotonicwritestest.MixedChecks.Get.WritesApplyInOrder(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -389,6 +405,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			monotonicwritestest.MixedChecks.Get.MonotonicWritesGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			monotonicwritestest.MixedChecks.Get.WritesApplyInOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -403,4 +423,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:16f33180da9061a9064e3a447c785bc75e58447aefa10f54a1de0c330fdef04c
+// dokimi:provenance sha256:4cdfecbc254ed955d63dfb565f32718667b355737563a2ac8c5273b072701c1b

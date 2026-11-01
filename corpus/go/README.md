@@ -15,7 +15,7 @@ The corpus contains a fixture for each classification that the suite generator h
 
 ## Subjects and controls
 
-A subject is a type whose doc comment has the directive `subject`. The generator writes a test that applies the suite of its declaration to it with the option `isolate`. Most fixtures have one subject, their `InMemory`. `iface/composite/causal-chain` and `iface/lang/suitedhandle` have two, and 23 fixtures have none, such as those of enumerations, errors and structs.
+A subject is a type whose doc comment has the directive `subject`. The generator writes a test that applies the suite of its declaration to it with the option `isolate`. Most fixtures have one subject, their `InMemory`. `iface/door/reference` has three, `iface/composite/causal-chain` and `iface/lang/suitedhandle` have two, and 23 fixtures have none, such as those of enumerations, errors and structs.
 
 A control implements the declaration of another subject with another representation of its state. When a check fails on a control, the check rejects behaviour that the declaration permits. Each application also fails a check that never engages its claim, as vacuous, unless the subject excuses the check with a reason.
 
@@ -25,12 +25,12 @@ A shape family is a group of subjects whose state has one representation. `famil
 
 | Family | Representation of its subjects | Subjects | Control | Representation of the control |
 |---|---|---|---|---|
-| stores-and-readers | A map keyed by the input, with a counter or a revision beside it, or a single value | 64 | `iface/mixin/readafterwrite/sorted` | A sorted slice of keys, searched by binary search |
-| appenders-and-logs | A slice that grows at its end, with a position beside it | 20 | `iface/mixin/stableorder/chunked` | A list of blocks of four values |
+| stores-and-readers | A map keyed by the input, with a counter or a revision beside it, or a single value | 66 | `iface/mixin/readafterwrite/sorted` | A sorted slice of keys, searched by binary search |
+| appenders-and-logs | A slice that grows at its end, with a position beside it | 21 | `iface/mixin/stableorder/chunked` | A list of blocks of four values |
 | caches | A map in front of a backing store | 6 | `iface/contract/cache/oneentry` | A cache of one entry that each miss replaces |
-| queues | A channel, or a slice that the oldest element leaves first | 4 | `iface/door/queue/ring` | A ring buffer of two items under a mutex |
+| queues | A channel, or a slice that the oldest element leaves first | 5 | `iface/door/queue/ring` | A ring buffer of two items under a mutex |
 | publishers | A slice of the channels or the functions of the subscribers | 8 | `iface/contract/publisher/mailbox` | An unbounded mailbox and a delivering goroutine per subscriber |
-| flags-and-lifecycles | A flag or a small state machine | 14 | `iface/detector/lifecycle/atomicstate` | An atomic integer without a mutex |
+| flags-and-lifecycles | A flag or a small state machine | 13 | `iface/detector/lifecycle/atomicstate` | An atomic integer without a mutex |
 | counters | One integer | 8 | `iface/mixin/commutative/perkey` | A total for each key, summed on each read |
 | stateless | No state, or a value that the constructor sets | 13 | `iface/mixin/xsssafe/htmlescape` | `html.EscapeString` of the standard library |
 | clocked | Instants of a clock beside the values | 7 | `iface/mixin/ttl/deadline` | The deadline of each value in place of the instant of its write |
@@ -41,7 +41,7 @@ A shape family is a group of subjects whose state has one representation. `famil
 
 | Subject | Check | Reason |
 |---|---|---|
-| `iface/composite/causal-chain/replica` | `Log.Append/chain`, `Log.Append/chain-causal`, `Log.Replay/keeps-the-body`, `Log.Replay/keeps-every-body` | The replica refuses each append, so its replay never grows. |
+| `iface/composite/causal-chain/replica` | `Log.Append/chain`, `Log.Append/chain-causal`, `Log.Append/replays-in-order-over-sequences`, `Log.Replay/keeps-the-body`, `Log.Replay/keeps-every-body` | The replica refuses each append, so its replay never grows. |
 
 ## Seeded subjects
 

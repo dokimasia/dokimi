@@ -65,6 +65,10 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				boundedcachetest.MixedChecks.Put.KeepsWithinItsBounds(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				boundedcachetest.MixedChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -135,6 +139,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				boundedcachetest.MixedChecks.Put.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				boundedcachetest.MixedChecks.Put.KeepsWithinItsBounds(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -211,6 +219,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			boundedcachetest.MixedChecks.Put.KeepsWithinItsBounds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			boundedcachetest.MixedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -270,6 +282,10 @@ func FuzzMixedSuitePut(f *testing.F) {
 		),
 		conform.Excuse(
 			boundedcachetest.MixedChecks.Put.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			boundedcachetest.MixedChecks.Put.KeepsWithinItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -335,6 +351,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			boundedcachetest.MixedChecks.Put.KeepsWithinItsBounds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			boundedcachetest.MixedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -397,6 +417,10 @@ func FuzzMixedSuiteLen(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			boundedcachetest.MixedChecks.Put.KeepsWithinItsBounds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			boundedcachetest.MixedChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -449,4 +473,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:70728c4cdcc7e5ca9479e66b7b49d23c305d91c2f08f7f66b8bc702305ffa03c
+// dokimi:provenance sha256:403ed79a0e39ebe3bd47c687f084dbd81222af255fc28afa23f5415c1076da0f

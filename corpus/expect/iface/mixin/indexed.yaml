@@ -33,6 +33,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      ranked.at/respects-its-bounds:
+        claim: respects-its-bounds
+        partners:
+          by: ranked.len
+        law: positions-are-below-the-size
+        reason: out-of-bounds
       ranked.at/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -68,6 +74,3 @@ declarations:
       - classification: shape:writer
         callable: ranked.add
         stance: silent
-      - classification: mixin:indexed
-        callable: ranked.at
-        stance: gap

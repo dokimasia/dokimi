@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/writesfollowreads"
@@ -52,6 +53,10 @@ import (
 //
 // Mixed.Get/writes-follow-reads#generated: a Store after Get has a version
 // above the version that Get returned.
+//
+// Mixed.Get/writes-follow-their-reads: each write of Store after a call of
+// Get has a higher version than that call returned, over any sequence of
+// calls.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -176,6 +181,13 @@ func (c mixedGet) WritesFollowReads() conform.ID[writesfollowreads.Mixed] {
 // Store after Get has a version above the version that Get returned.
 func (c mixedGet) WritesFollowReadsGenerated() conform.ID[writesfollowreads.Mixed] {
 	return c.Check("writes-follow-reads#generated")
+}
+
+// WritesFollowTheirReads returns the identity of the check that each write
+// of Store after a call of Get has a higher version than that call
+// returned, over any sequence of calls.
+func (c mixedGet) WritesFollowTheirReads() conform.ID[writesfollowreads.Mixed] {
+	return c.Check("writes-follow-their-reads")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -418,6 +430,32 @@ func MixedSuite() conform.Suite[writesfollowreads.Mixed] {
 					}, func(v writesfollowreads.Value) int64 { return v.Rev })
 				},
 				Defect: mixedStoreStampsThePast,
+			},
+			{
+				ID:          MixedChecks.Get.WritesFollowTheirReads(),
+				Statement:   "each write of Store after a call of Get has a higher version than that call returned, over any sequence of calls",
+				Claim:       spec.WritesFollowTheirReads,
+				Probe:       spec.WritesRiseAboveReads,
+				Reason:      spec.UnorderedWrite,
+				Law:         spec.WriteFollowsTheReadBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[writesfollowreads.Mixed]{MixedChecks.Get.WritesFollowReads()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.WritesRiseAboveReads(
+						h,
+						c,
+						mixedActions,
+						"Store",
+						"Get",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(writesfollowreads.Value)
+							values, err := mixedGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+						func(v writesfollowreads.Value) int64 { return v.Rev },
+					)
+				},
+				Defect: mixedStoreStampsThePastAfterThree,
 			},
 		},
 		Calls: []conform.Call[writesfollowreads.Mixed]{
@@ -694,4 +732,88 @@ func mixedStoreStampsThePast(h *MixedHandle) writesfollowreads.Mixed {
 	return &mixedStoreStampsThePastDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e9b1c5b226053d5628b810d503ceecaa5b3b26090a99162c6b0b274c5077d41f
+// mixedStoreStampsThePastAfterThreeDefect is the planted defect of a Mixed
+// whose Store returns the version 0 from its fourth call on.
+type mixedStoreStampsThePastAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Store is the override of the planted defect.
+func (d *mixedStoreStampsThePastAfterThreeDefect) Store(
+	p0 context.Context,
+	p1 writesfollowreads.Value,
+) (r0 writesfollowreads.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Store(p0, p1)
+	d.calls++
+	if d.calls > 3 {
+		r0.Rev = 0
+	}
+	return r0, r1
+}
+
+// mixedStoreStampsThePastAfterThree returns the planted defect of a Mixed
+// whose Store returns the version 0 from its fourth call on over a fresh
+// subject.
+func mixedStoreStampsThePastAfterThree(h *MixedHandle) writesfollowreads.Mixed {
+	return &mixedStoreStampsThePastAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() writesfollowreads.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[writesfollowreads.Value](), "store.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "store.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(writesfollowreads.Value)
+				call := c.History().Invoke(client, "Store", args, key0.Key)
+				values, err := mixedStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedStoreCall(ctx context.Context, subject writesfollowreads.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(writesfollowreads.Value)
+	r0, err := subject.Store(ctx, a0)
+	return []any{r0}, err
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject writesfollowreads.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:dcd2beafe78054b2a2d19fd24847f381682dc0b3cacc84a66fe0ff89a6724987

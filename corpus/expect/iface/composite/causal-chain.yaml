@@ -9,6 +9,7 @@ subjects:
     excused:
       - log.append/chain
       - log.append/chain-causal
+      - log.append/replays-in-order-over-sequences
       - log.replay/keeps-every-body
       - log.replay/keeps-the-body
 controls: []
@@ -43,6 +44,12 @@ declarations:
         reason: unordered-history
       log.append/chain-causal#generated:
         claim: chain-causal
+        partners:
+          replay: log.replay
+        law: history-replays-in-its-stamped-order
+        reason: unordered-history
+      log.append/replays-in-order-over-sequences:
+        claim: replays-in-order-over-sequences
         partners:
           replay: log.replay
         law: history-replays-in-its-stamped-order

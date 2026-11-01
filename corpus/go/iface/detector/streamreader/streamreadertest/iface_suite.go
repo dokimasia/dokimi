@@ -30,6 +30,12 @@ import (
 //
 // StreamReader.List/smoke: List returns without a panic for derived
 // inputs.
+//
+// StreamReader.List/streams-what-was-stored: List yields each value that
+// Add stored.
+//
+// StreamReader.List/streams-what-was-stored#generated: List yields each
+// value that Add stored.
 
 // The derived checks of StreamReader that witness their laws at the
 // shallow end:
@@ -37,6 +43,10 @@ import (
 // StreamReader.Add/smoke
 //
 // StreamReader.List/smoke
+//
+// StreamReader.List/streams-what-was-stored
+//
+// StreamReader.List/streams-what-was-stored#generated
 
 // The refused claims of StreamReader:
 //
@@ -47,9 +57,6 @@ import (
 //
 // The shape:writer of StreamReader.Add has the stance silent. A write is
 // an input of the other checks, and its result is an error alone.
-//
-// The shape:stream-reader of StreamReader.List has the stance gap. No
-// claim states what a stream returns after its end.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -111,6 +118,18 @@ type streamReaderList struct {
 // panic for derived inputs.
 func (c streamReaderList) Smoke() conform.ID[streamreader.StreamReader] {
 	return c.Check("smoke")
+}
+
+// StreamsWhatWasStored returns the identity of the check that List yields
+// each value that Add stored.
+func (c streamReaderList) StreamsWhatWasStored() conform.ID[streamreader.StreamReader] {
+	return c.Check("streams-what-was-stored")
+}
+
+// StreamsWhatWasStoredGenerated returns the identity of the check that
+// List yields each value that Add stored.
+func (c streamReaderList) StreamsWhatWasStoredGenerated() conform.ID[streamreader.StreamReader] {
+	return c.Check("streams-what-was-stored#generated")
 }
 
 // StreamReaderSuite returns the checks of StreamReader, and the calls and
@@ -201,6 +220,78 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				},
 				Defect: streamReaderListPanics,
 			},
+			{
+				ID:          StreamReaderChecks.List.StreamsWhatWasStored(),
+				Statement:   "List yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StreamReaderHandle) {
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]streamreader.Value, error) {
+						r0 := h.Subject().List(ctx)
+						var drained []streamreader.Value
+						for e, err := range r0 {
+							if err != nil {
+								return drained, err
+							}
+							drained = append(drained, e)
+						}
+						return drained, nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := streamreader.Value{Key: "Key-a"}
+							if calls > 1 {
+								w = streamreader.Value{Key: "Key-b"}
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: streamReaderListDrainsNothing,
+			},
+			{
+				ID:          StreamReaderChecks.List.StreamsWhatWasStoredGenerated(),
+				Statement:   "List yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *StreamReaderHandle, c *prop.Case) {
+					drawnV := c.Draw(
+						prop.List(prop.Of[streamreader.Value](), prop.Unique(), prop.MinSize(2), prop.MaxSize(2)),
+						"v",
+					)
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]streamreader.Value, error) {
+						r0 := h.Subject().List(ctx)
+						var drained []streamreader.Value
+						for e, err := range r0 {
+							if err != nil {
+								return drained, err
+							}
+							drained = append(drained, e)
+						}
+						return drained, nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := drawnV[0]
+							if calls > 1 {
+								w = drawnV[1]
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: streamReaderListDrainsNothing,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
@@ -217,12 +308,6 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				Callable:       "StreamReader.Add",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "shape:stream-reader",
-				Callable:       "StreamReader.List",
-				Stance:         spec.Gap,
-				Note:           "No claim states what a stream returns after its end.",
 			},
 		},
 		Calls: []conform.Call[streamreader.StreamReader]{
@@ -405,4 +490,22 @@ func streamReaderListPanics(h *StreamReaderHandle) streamreader.StreamReader {
 	return &streamReaderListPanicsDefect{streamReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ab2eeb9e6783965ab147d1710faa117a002766dba38da1eb9e4988949facebe1
+// streamReaderListDrainsNothingDefect is the planted defect of a
+// StreamReader whose List loses what Add stored.
+type streamReaderListDrainsNothingDefect struct {
+	streamReaderOverEmbedded
+}
+
+// List is the override of the planted defect.
+func (*streamReaderListDrainsNothingDefect) List(p0 context.Context) (r0 iter.Seq2[streamreader.Value, error]) {
+	r0 = func(func(streamreader.Value, error) bool) {}
+	return r0
+}
+
+// streamReaderListDrainsNothing returns the planted defect of a
+// StreamReader whose List loses what Add stored over a fresh subject.
+func streamReaderListDrainsNothing(h *StreamReaderHandle) streamreader.StreamReader {
+	return &streamReaderListDrainsNothingDefect{streamReaderOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:9deaac37bf1ddf1fa0be30e2455327a729421f05525db3aa44d99fdfdde2ae0c

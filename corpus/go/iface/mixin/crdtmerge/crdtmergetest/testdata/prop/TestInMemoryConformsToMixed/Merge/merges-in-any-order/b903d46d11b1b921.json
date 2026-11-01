@@ -1,0 +1,28 @@
+{
+  "store": 1,
+  "definition": "13.6.0",
+  "property": "two replicas that Add made diverge read the same state through Items after Merge merges them in either order",
+  "identity": {
+    "assertion": "equal",
+    "file": "sequence.go",
+    "line": 465
+  },
+  "choices": "prop1:AAAAAQABAAADAQAAAQAAAwAAAA",
+  "counterexample": [
+    {
+      "label": "add.item",
+      "value": {
+        "type": "string",
+        "value": "0"
+      }
+    },
+    {
+      "label": "add.item",
+      "value": {
+        "type": "string",
+        "value": ""
+      }
+    }
+  ],
+  "found": "2026-11-01"
+}

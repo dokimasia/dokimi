@@ -30,6 +30,10 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      mixed.items/keeps-its-order:
+        claim: keeps-its-order
+        law: two-drains-agree-on-order
+        reason: reordered-drain
       mixed.items/smoke:
         claim: smoke
         law: no-panic-on-any-input

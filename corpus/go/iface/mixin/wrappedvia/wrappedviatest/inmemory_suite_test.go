@@ -27,40 +27,40 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
 // Mixed on InMemory.
 func BenchmarkInMemoryConformsToMixed(b *testing.B) {
-	b.Run("Open", func(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
 		wrappedviatest.BenchMixedSuite(
 			b,
-			wrappedviatest.MixedChecks.Open.Callable,
+			wrappedviatest.MixedChecks.Get.Callable,
 			func(*wrappedviatest.MixedHandle) *wrappedviatest.InMemory { return wrappedviatest.NewInMemory() },
 		)
 	})
-	b.Run("Cause", func(b *testing.B) {
+	b.Run("TracedGet", func(b *testing.B) {
 		wrappedviatest.BenchMixedSuite(
 			b,
-			wrappedviatest.MixedChecks.Cause.Callable,
+			wrappedviatest.MixedChecks.TracedGet.Callable,
 			func(*wrappedviatest.MixedHandle) *wrappedviatest.InMemory { return wrappedviatest.NewInMemory() },
 		)
 	})
 }
 
-// FuzzInMemoryConformsToMixedOpen fuzzes the property checks of Mixed.Open
+// FuzzInMemoryConformsToMixedGet fuzzes the property checks of Mixed.Get
 // on InMemory.
-func FuzzInMemoryConformsToMixedOpen(f *testing.F) {
+func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	wrappedviatest.FuzzMixedSuite(
 		f,
-		wrappedviatest.MixedChecks.Open.Callable,
+		wrappedviatest.MixedChecks.Get.Callable,
 		func(*wrappedviatest.MixedHandle) *wrappedviatest.InMemory { return wrappedviatest.NewInMemory() },
 	)
 }
 
-// FuzzInMemoryConformsToMixedCause fuzzes the property checks of
-// Mixed.Cause on InMemory.
-func FuzzInMemoryConformsToMixedCause(f *testing.F) {
+// FuzzInMemoryConformsToMixedTracedGet fuzzes the property checks of
+// Mixed.TracedGet on InMemory.
+func FuzzInMemoryConformsToMixedTracedGet(f *testing.F) {
 	wrappedviatest.FuzzMixedSuite(
 		f,
-		wrappedviatest.MixedChecks.Cause.Callable,
+		wrappedviatest.MixedChecks.TracedGet.Callable,
 		func(*wrappedviatest.MixedHandle) *wrappedviatest.InMemory { return wrappedviatest.NewInMemory() },
 	)
 }
 
-// dokimi:provenance sha256:2b19334b59d30e82d336ed3c4fca4f7c24abd4dd0e7a1bb7c1264c5eff2defc7
+// dokimi:provenance sha256:819dd78d4de7897bd597d7215c1c94f915b93508070c266bca26e4846d415a5f

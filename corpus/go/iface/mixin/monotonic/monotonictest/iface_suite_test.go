@@ -65,6 +65,10 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				monotonictest.MixedChecks.Version.NeverGoesBack(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				monotonictest.MixedChecks.Advance.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -107,6 +111,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				monotonictest.MixedChecks.Version.Monotonic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				monotonictest.MixedChecks.Version.NeverGoesBack(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -154,6 +162,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			monotonictest.MixedChecks.Version.NeverGoesBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			monotonictest.MixedChecks.Advance.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -185,6 +197,10 @@ func FuzzMixedSuiteVersion(f *testing.F) {
 		),
 		conform.Excuse(
 			monotonictest.MixedChecks.Version.Monotonic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			monotonictest.MixedChecks.Version.NeverGoesBack(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -222,6 +238,10 @@ func FuzzMixedSuiteAdvance(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			monotonictest.MixedChecks.Version.NeverGoesBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			monotonictest.MixedChecks.Advance.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -243,4 +263,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ad286f4f949c04c183839598aac75073d117a69c9c612e6399ee2eab57430f7a
+// dokimi:provenance sha256:7eb14ec2650dda1287f655dca356c76d5f2987dbc2d54e3159e763d9ba508d94

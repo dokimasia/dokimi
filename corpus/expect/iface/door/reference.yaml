@@ -1,0 +1,203 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/reference
+level: 4
+subjects:
+  - type: iface/door/reference/referencetest.PairStore
+  - type: iface/door/reference/referencetest.SliceLog
+  - type: iface/door/reference/referencetest.RingQueue
+controls: []
+declarations:
+  fifo:
+    checks:
+      fifo.len/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      fifo.len/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      fifo.len/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      fifo.pop/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      fifo.pop/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      fifo.pop/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      fifo.push/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      fifo.push/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      fifo.push/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      fifo.push/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      fifo/agrees-with-the-reference:
+        claim: agrees-with-the-reference
+        law: every-sequence-agrees-with-the-reference
+        reason: diverges-from-the-reference
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: fifo.push
+        stance: silent
+  journal:
+    checks:
+      journal.append/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      journal.append/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      journal.append/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      journal.append/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      journal.append/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      journal.append/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      journal.at/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      journal.at/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      journal.at/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      journal.at/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      journal.at/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      journal.at/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      journal.len/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      journal.len/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      journal.len/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      journal/agrees-with-the-reference:
+        claim: agrees-with-the-reference
+        law: every-sequence-agrees-with-the-reference
+        reason: diverges-from-the-reference
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []
+  store:
+    checks:
+      store.delete/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.delete/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.delete/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.delete/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store/agrees-with-the-reference:
+        claim: agrees-with-the-reference
+        law: every-sequence-agrees-with-the-reference
+        reason: diverges-from-the-reference
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:deleter
+        callable: store.delete
+        stance: silent

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/appender"
@@ -37,6 +38,9 @@ import (
 //
 // Contract.Run/appender#generated: Run returns a position above the
 // position of the append before it.
+//
+// Contract.Run/appends-keep-ascending: Run returns a position above the
+// one before it, over any sequence of calls.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -117,6 +121,12 @@ func (c contractRun) Appender() conform.ID[appender.Contract] {
 // position above the position of the append before it.
 func (c contractRun) AppenderGenerated() conform.ID[appender.Contract] {
 	return c.Check("appender#generated")
+}
+
+// AppendsKeepAscending returns the identity of the check that Run returns
+// a position above the one before it, over any sequence of calls.
+func (c contractRun) AppendsKeepAscending() conform.ID[appender.Contract] {
+	return c.Check("appends-keep-ascending")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -257,6 +267,20 @@ func ContractSuite() conform.Suite[appender.Contract] {
 					})
 				},
 				Defect: contractRunDescends,
+			},
+			{
+				ID:          ContractChecks.Run.AppendsKeepAscending(),
+				Statement:   "Run returns a position above the one before it, over any sequence of calls",
+				Claim:       spec.AppendsKeepAscending,
+				Probe:       spec.PositionsRise,
+				Reason:      spec.NotAscending,
+				Law:         spec.AppendReturnsAboveTheLast,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[appender.Contract]{ContractChecks.Run.Appender()},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.PositionsRise[appender.Contract, int64](h, c, contractActions, "Run")
+				},
+				Defect: contractRunDescendsAfterThree,
 			},
 		},
 		Calls: []conform.Call[appender.Contract]{
@@ -450,4 +474,64 @@ func contractRunDescends(h *ContractHandle) appender.Contract {
 	return &contractRunDescendsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:73f3523c5fed719d2b25ad0acea11d8b19b0b1d70e56da21359beccd1d1b7703
+// contractRunDescendsAfterThreeDefect is the planted defect of a Contract
+// whose Run returns the position 0 from its fourth call on.
+type contractRunDescendsAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Run is the override of the planted defect.
+func (d *contractRunDescendsAfterThreeDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Run(p0, p1)
+}
+
+// contractRunDescendsAfterThree returns the planted defect of a Contract
+// whose Run returns the position 0 from its fourth call on over a fresh
+// subject.
+func contractRunDescendsAfterThree(h *ContractHandle) appender.Contract {
+	return &contractRunDescendsAfterThreeDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractActions returns the actions of the generated sequences of
+// Contract over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func contractActions(c *prop.Case, subject func() appender.Contract) []stateful.Action[struct{}] {
+	keysValue := c.Draw(
+		prop.List(prop.Of[appender.Value](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.value",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Run",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.SampledFrom(keysValue...), "run.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Run", args, args[0])
+				values, err := contractRunCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// contractRunCall calls Run on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractRunCall(ctx context.Context, subject appender.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(appender.Value)
+	r0, err := subject.Run(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:02118d426593f138030980b6a235286b5a2ea7058d97e7a75a56d83ac80f3462

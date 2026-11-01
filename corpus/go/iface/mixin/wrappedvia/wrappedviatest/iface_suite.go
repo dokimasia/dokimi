@@ -17,36 +17,50 @@ import (
 
 // The derived checks of Mixed:
 //
-// Mixed.Open/smoke: Open returns without a panic for derived inputs.
+// Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
-// Mixed.Open/smoke#generated: Open returns without a panic for derived
+// Mixed.Get/smoke#generated: Get returns without a panic for derived
 // inputs.
 //
-// Mixed.Open/cancel: Open returns an error for a cancelled context.
+// Mixed.Get/cancel: Get returns an error for a cancelled context.
 //
-// Mixed.Open/cancel#generated: Open returns an error for a cancelled
+// Mixed.Get/cancel#generated: Get returns an error for a cancelled
 // context.
 //
-// Mixed.Cause/smoke: Cause returns without a panic for derived inputs.
+// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
 //
-// Mixed.Cause/cancel: Cause returns an error for a cancelled context.
+// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
+// error.
+//
+// Mixed.TracedGet/smoke: TracedGet returns without a panic for derived
+// inputs.
+//
+// Mixed.TracedGet/smoke#generated: TracedGet returns without a panic for
+// derived inputs.
+//
+// Mixed.TracedGet/cancel: TracedGet returns an error for a cancelled
+// context.
+//
+// Mixed.TracedGet/cancel#generated: TracedGet returns an error for a
+// cancelled context.
+//
+// Mixed.TracedGet/zero-on-error: TracedGet returns the zero value beside
+// an error.
+//
+// Mixed.TracedGet/zero-on-error#generated: TracedGet returns the zero
+// value beside an error.
+//
+// Mixed.TracedGet/agrees-with-its-sibling: TracedGet returns what Get
+// returns for one input.
+//
+// Mixed.TracedGet/agrees-with-its-sibling#generated: TracedGet returns
+// what Get returns for one input.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
-// Mixed.Open/smoke
+// Mixed.Get/smoke
 //
-// Mixed.Cause/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Open has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The mixin:wrapped-via of Mixed.Open has the stance gap. No claim states
-// that the error of the callable wraps the declared error.
-//
-// The shape:lifecycle of Mixed.Cause has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
+// Mixed.TracedGet/smoke
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -61,58 +75,106 @@ type (
 // MixedChecks contains the name of each callable of Mixed, with the
 // identities of its checks.
 var MixedChecks = struct {
-	Open  mixedOpen
-	Cause mixedCause
+	Get       mixedGet
+	TracedGet mixedTracedGet
 }{
-	Open:  mixedOpen{"Mixed.Open"},
-	Cause: mixedCause{"Mixed.Cause"},
+	Get:       mixedGet{"Mixed.Get"},
+	TracedGet: mixedTracedGet{"Mixed.TracedGet"},
 }
 
-// mixedOpen is the name of Mixed.Open, with the identities of its checks.
-type mixedOpen struct {
+// mixedGet is the name of Mixed.Get, with the identities of its checks.
+type mixedGet struct {
 	conform.Callable[wrappedvia.Mixed]
 }
 
-// Smoke returns the identity of the check that Open returns without a
-// panic for derived inputs.
-func (c mixedOpen) Smoke() conform.ID[wrappedvia.Mixed] {
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c mixedGet) Smoke() conform.ID[wrappedvia.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Open returns
+// SmokeGenerated returns the identity of the check that Get returns
 // without a panic for derived inputs.
-func (c mixedOpen) SmokeGenerated() conform.ID[wrappedvia.Mixed] {
+func (c mixedGet) SmokeGenerated() conform.ID[wrappedvia.Mixed] {
 	return c.Check("smoke#generated")
 }
 
-// Cancel returns the identity of the check that Open returns an error for
-// a cancelled context.
-func (c mixedOpen) Cancel() conform.ID[wrappedvia.Mixed] {
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c mixedGet) Cancel() conform.ID[wrappedvia.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Open returns an
+// CancelGenerated returns the identity of the check that Get returns an
 // error for a cancelled context.
-func (c mixedOpen) CancelGenerated() conform.ID[wrappedvia.Mixed] {
+func (c mixedGet) CancelGenerated() conform.ID[wrappedvia.Mixed] {
 	return c.Check("cancel#generated")
 }
 
-// mixedCause is the name of Mixed.Cause, with the identities of its
-// checks.
-type mixedCause struct {
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c mixedGet) ZeroOnError() conform.ID[wrappedvia.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c mixedGet) ZeroOnErrorGenerated() conform.ID[wrappedvia.Mixed] {
+	return c.Check("zero-on-error#generated")
+}
+
+// mixedTracedGet is the name of Mixed.TracedGet, with the identities of
+// its checks.
+type mixedTracedGet struct {
 	conform.Callable[wrappedvia.Mixed]
 }
 
-// Smoke returns the identity of the check that Cause returns without a
+// Smoke returns the identity of the check that TracedGet returns without a
 // panic for derived inputs.
-func (c mixedCause) Smoke() conform.ID[wrappedvia.Mixed] {
+func (c mixedTracedGet) Smoke() conform.ID[wrappedvia.Mixed] {
 	return c.Check("smoke")
 }
 
-// Cancel returns the identity of the check that Cause returns an error for
-// a cancelled context.
-func (c mixedCause) Cancel() conform.ID[wrappedvia.Mixed] {
+// SmokeGenerated returns the identity of the check that TracedGet returns
+// without a panic for derived inputs.
+func (c mixedTracedGet) SmokeGenerated() conform.ID[wrappedvia.Mixed] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that TracedGet returns an error
+// for a cancelled context.
+func (c mixedTracedGet) Cancel() conform.ID[wrappedvia.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that TracedGet returns
+// an error for a cancelled context.
+func (c mixedTracedGet) CancelGenerated() conform.ID[wrappedvia.Mixed] {
+	return c.Check("cancel#generated")
+}
+
+// ZeroOnError returns the identity of the check that TracedGet returns the
+// zero value beside an error.
+func (c mixedTracedGet) ZeroOnError() conform.ID[wrappedvia.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that TracedGet
+// returns the zero value beside an error.
+func (c mixedTracedGet) ZeroOnErrorGenerated() conform.ID[wrappedvia.Mixed] {
+	return c.Check("zero-on-error#generated")
+}
+
+// AgreesWithItsSibling returns the identity of the check that TracedGet
+// returns what Get returns for one input.
+func (c mixedTracedGet) AgreesWithItsSibling() conform.ID[wrappedvia.Mixed] {
+	return c.Check("agrees-with-its-sibling")
+}
+
+// AgreesWithItsSiblingGenerated returns the identity of the check that
+// TracedGet returns what Get returns for one input.
+func (c mixedTracedGet) AgreesWithItsSiblingGenerated() conform.ID[wrappedvia.Mixed] {
+	return c.Check("agrees-with-its-sibling#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -124,8 +186,8 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[wrappedvia.Mixed]{
 			{
-				ID:          MixedChecks.Open.Smoke(),
-				Statement:   "Open returns without a panic for derived inputs",
+				ID:          MixedChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
 				Probe:       spec.Survives,
 				Reason:      spec.Panicked,
@@ -134,30 +196,32 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Open(ctx, string("name-a"))
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
 					})
 				},
-				Defect: mixedOpenPanics,
+				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Open.SmokeGenerated(),
-				Statement:   "Open returns without a panic for derived inputs",
+				ID:          MixedChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
 				Probe:       spec.Survives,
 				Reason:      spec.Panicked,
 				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnName := c.Draw(prop.Of[string](), "name")
+					drawnKey := c.Draw(prop.Of[string](), "key")
 					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Open(ctx, drawnName)
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
 					})
 				},
-				Defect: mixedOpenPanics,
+				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Open.Cancel(),
-				Statement:   "Open returns an error for a cancelled context",
+				ID:          MixedChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
 				Probe:       spec.UnderCancelled,
 				Reason:      spec.IgnoredCancel,
@@ -165,30 +229,63 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Open(ctx, string("name-a"))
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
 					})
 				},
-				Defect: mixedOpenIgnoresCancel,
+				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Open.CancelGenerated(),
-				Statement:   "Open returns an error for a cancelled context",
+				ID:          MixedChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
 				Probe:       spec.UnderCancelled,
 				Reason:      spec.IgnoredCancel,
 				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnName := c.Draw(prop.Of[string](), "name")
+					drawnKey := c.Draw(prop.Of[string](), "key")
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Open(ctx, drawnName)
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
 					})
 				},
-				Defect: mixedOpenIgnoresCancel,
+				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Cause.Smoke(),
-				Statement:   "Cause returns without a panic for derived inputs",
+				ID:          MixedChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (wrappedvia.Value, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, wrappedvia.Value{})
+				},
+				Defect: mixedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (wrappedvia.Value, error) {
+						return h.Subject().Get(ctx, drawnKey)
+					}, wrappedvia.Value{})
+				},
+				Defect: mixedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.TracedGet.Smoke(),
+				Statement:   "TracedGet returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
 				Probe:       spec.Survives,
 				Reason:      spec.Panicked,
@@ -197,14 +294,32 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Cause(ctx)
+						_, err := h.Subject().TracedGet(ctx, string("key-a"))
+						return err
 					})
 				},
-				Defect: mixedCausePanics,
+				Defect: mixedTracedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Cause.Cancel(),
-				Statement:   "Cause returns an error for a cancelled context",
+				ID:          MixedChecks.TracedGet.SmokeGenerated(),
+				Statement:   "TracedGet returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().TracedGet(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedTracedGetPanics,
+			},
+			{
+				ID:          MixedChecks.TracedGet.Cancel(),
+				Statement:   "TracedGet returns an error for a cancelled context",
 				Claim:       spec.Cancel,
 				Probe:       spec.UnderCancelled,
 				Reason:      spec.IgnoredCancel,
@@ -212,42 +327,106 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Cause(ctx)
+						_, err := h.Subject().TracedGet(ctx, string("key-a"))
+						return err
 					})
 				},
-				Defect: mixedCauseIgnoresCancel,
-			},
-		},
-		Unclaimed: []conform.Unclaimed{
-			{
-				Classification: "shape:writer",
-				Callable:       "Mixed.Open",
-				Stance:         spec.Silent,
-				Note:           "A write is an input of the other checks, and its result is an error alone.",
+				Defect: mixedTracedGetIgnoresCancel,
 			},
 			{
-				Classification: "mixin:wrapped-via",
-				Callable:       "Mixed.Open",
-				Stance:         spec.Gap,
-				Note:           "No claim states that the error of the callable wraps the declared error.",
+				ID:          MixedChecks.TracedGet.CancelGenerated(),
+				Statement:   "TracedGet returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().TracedGet(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedTracedGetIgnoresCancel,
 			},
 			{
-				Classification: "shape:lifecycle",
-				Callable:       "Mixed.Cause",
-				Stance:         spec.Silent,
-				Note:           "A lifecycle call returns nothing that a check could compare.",
+				ID:          MixedChecks.TracedGet.ZeroOnError(),
+				Statement:   "TracedGet returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (wrappedvia.Value, error) {
+						return h.Subject().TracedGet(ctx, string("key-a"))
+					}, wrappedvia.Value{})
+				},
+				Defect: mixedTracedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.TracedGet.ZeroOnErrorGenerated(),
+				Statement:   "TracedGet returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (wrappedvia.Value, error) {
+						return h.Subject().TracedGet(ctx, drawnKey)
+					}, wrappedvia.Value{})
+				},
+				Defect: mixedTracedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.TracedGet.AgreesWithItsSibling(),
+				Statement:   "TracedGet returns what Get returns for one input",
+				Claim:       spec.AgreesWithItsSibling,
+				Probe:       spec.AgreesWithTheSibling,
+				Reason:      spec.DivergedFromTheSibling,
+				Law:         spec.WrapperReturnsWhatItsSiblingReturns,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.AgreesWithTheSibling(h, func(ctx context.Context) (wrappedvia.Value, error) {
+						return h.Subject().TracedGet(ctx, string("key-a"))
+					}, func(ctx context.Context) (wrappedvia.Value, error) {
+						return h.New().Get(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedTracedGetStopsDelegating,
+			},
+			{
+				ID:          MixedChecks.TracedGet.AgreesWithItsSiblingGenerated(),
+				Statement:   "TracedGet returns what Get returns for one input",
+				Claim:       spec.AgreesWithItsSibling,
+				Probe:       spec.AgreesWithTheSibling,
+				Reason:      spec.DivergedFromTheSibling,
+				Law:         spec.WrapperReturnsWhatItsSiblingReturns,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.AgreesWithTheSibling(h, func(ctx context.Context) (wrappedvia.Value, error) {
+						return h.Subject().TracedGet(ctx, drawnKey)
+					}, func(ctx context.Context) (wrappedvia.Value, error) {
+						return h.New().Get(ctx, drawnKey)
+					})
+				},
+				Defect: mixedTracedGetStopsDelegating,
 			},
 		},
 		Calls: []conform.Call[wrappedvia.Mixed]{
 			{
-				Calls:    mixedOpenCalls,
+				Calls:    mixedGetCalls,
 				Over:     newMixedOver,
-				Callable: MixedChecks.Open.Callable,
+				Callable: MixedChecks.Get.Callable,
 			},
 			{
-				Calls:    mixedCauseCalls,
+				Calls:    mixedTracedGetCalls,
 				Over:     newMixedOver,
-				Callable: MixedChecks.Cause.Callable,
+				Callable: MixedChecks.TracedGet.Callable,
 			},
 		},
 	}
@@ -306,20 +485,23 @@ func mixedSubjects[T wrappedvia.Mixed](newSubject func(h *MixedHandle) T) func(h
 	return func(h *MixedHandle) wrappedvia.Mixed { return newSubject(h) }
 }
 
-// mixedOpenCalls generates the calls of Mixed.Open with the inputs that
-// each case draws.
-var mixedOpenCalls = prop.Composite(func(c *prop.Case) func(context.Context, wrappedvia.Mixed) error {
-	name := c.Draw(prop.Of[string](), "name")
+// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
+// case draws.
+var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, wrappedvia.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
 	return func(ctx context.Context, subject wrappedvia.Mixed) error {
-		return subject.Open(ctx, name)
+		_, err := subject.Get(ctx, key)
+		return err
 	}
 })
 
-// mixedCauseCalls generates the calls of Mixed.Cause with the inputs that
-// each case draws.
-var mixedCauseCalls = prop.Composite(func(*prop.Case) func(context.Context, wrappedvia.Mixed) error {
+// mixedTracedGetCalls generates the calls of Mixed.TracedGet with the
+// inputs that each case draws.
+var mixedTracedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, wrappedvia.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
 	return func(ctx context.Context, subject wrappedvia.Mixed) error {
-		return subject.Cause(ctx)
+		_, err := subject.TracedGet(ctx, key)
+		return err
 	}
 })
 
@@ -335,16 +517,16 @@ type mixedOver struct {
 	spend func()
 }
 
-// Open calls spend and returns its zero results.
-func (o mixedOver) Open(context.Context, string) (r0 error) {
+// Get calls spend and returns its zero results.
+func (o mixedOver) Get(context.Context, string) (r0 wrappedvia.Value, r1 error) {
 	o.spend()
-	return r0
+	return r0, r1
 }
 
-// Cause calls spend and returns its zero results.
-func (o mixedOver) Cause(context.Context) (r0 error) {
+// TracedGet calls spend and returns its zero results.
+func (o mixedOver) TracedGet(context.Context, string) (r0 wrappedvia.Value, r1 error) {
 	o.spend()
-	return r0
+	return r0, r1
 }
 
 // newMixedOver returns the planted defect of a ceiling of Mixed, whose
@@ -353,78 +535,141 @@ func newMixedOver(_ *MixedHandle, spend func()) wrappedvia.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// mixedOpenPanicsDefect is the planted defect of a Mixed whose Open
-// panics.
-type mixedOpenPanicsDefect struct {
+// mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
+type mixedGetPanicsDefect struct {
 	mixedOverEmbedded
 }
 
-// Open is the override of the planted defect.
-func (*mixedOpenPanicsDefect) Open(p0 context.Context, p1 string) (r0 error) {
-	panic("the planted defect of a Mixed whose Open panics")
+// Get is the override of the planted defect.
+func (*mixedGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 wrappedvia.Value, r1 error) {
+	panic("the planted defect of a Mixed whose Get panics")
 }
 
-// mixedOpenPanics returns the planted defect of a Mixed whose Open panics
+// mixedGetPanics returns the planted defect of a Mixed whose Get panics
 // over a fresh subject.
-func mixedOpenPanics(h *MixedHandle) wrappedvia.Mixed {
-	return &mixedOpenPanicsDefect{mixedOverEmbedded: h.Fresh()}
+func mixedGetPanics(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedOpenIgnoresCancelDefect is the planted defect of a Mixed whose Open
+// mixedGetIgnoresCancelDefect is the planted defect of a Mixed whose Get
 // ignores the context.
-type mixedOpenIgnoresCancelDefect struct {
+type mixedGetIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
-// Open is the override of the planted defect.
-func (d *mixedOpenIgnoresCancelDefect) Open(p0 context.Context, p1 string) (r0 error) {
+// Get is the override of the planted defect.
+func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 wrappedvia.Value, r1 error) {
 	if p0.Err() != nil {
-		return r0
+		return r0, r1
 	}
-	return d.mixedOverEmbedded.Open(p0, p1)
+	return d.mixedOverEmbedded.Get(p0, p1)
 }
 
-// mixedOpenIgnoresCancel returns the planted defect of a Mixed whose Open
+// mixedGetIgnoresCancel returns the planted defect of a Mixed whose Get
 // ignores the context over a fresh subject.
-func mixedOpenIgnoresCancel(h *MixedHandle) wrappedvia.Mixed {
-	return &mixedOpenIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+func mixedGetIgnoresCancel(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCausePanicsDefect is the planted defect of a Mixed whose Cause
-// panics.
-type mixedCausePanicsDefect struct {
+// mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
+// returns a value beside an error.
+type mixedGetValueBesideDefect struct {
 	mixedOverEmbedded
 }
 
-// Cause is the override of the planted defect.
-func (*mixedCausePanicsDefect) Cause(p0 context.Context) (r0 error) {
-	panic("the planted defect of a Mixed whose Cause panics")
-}
-
-// mixedCausePanics returns the planted defect of a Mixed whose Cause
-// panics over a fresh subject.
-func mixedCausePanics(h *MixedHandle) wrappedvia.Mixed {
-	return &mixedCausePanicsDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedCauseIgnoresCancelDefect is the planted defect of a Mixed whose
-// Cause ignores the context.
-type mixedCauseIgnoresCancelDefect struct {
-	mixedOverEmbedded
-}
-
-// Cause is the override of the planted defect.
-func (d *mixedCauseIgnoresCancelDefect) Cause(p0 context.Context) (r0 error) {
-	if p0.Err() != nil {
-		return r0
+// Get is the override of the planted defect.
+func (d *mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 wrappedvia.Value, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	if r1 != nil {
+		r0 = wrappedvia.Value{Key: "Key-b"}
 	}
-	return d.mixedOverEmbedded.Cause(p0)
+	return r0, r1
 }
 
-// mixedCauseIgnoresCancel returns the planted defect of a Mixed whose
-// Cause ignores the context over a fresh subject.
-func mixedCauseIgnoresCancel(h *MixedHandle) wrappedvia.Mixed {
-	return &mixedCauseIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+// mixedGetValueBeside returns the planted defect of a Mixed whose Get
+// returns a value beside an error over a fresh subject.
+func mixedGetValueBeside(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:eaeb3324629732595e2302300bdf3d70a39f049b147d11ec42e7e647d445d108
+// mixedTracedGetPanicsDefect is the planted defect of a Mixed whose
+// TracedGet panics.
+type mixedTracedGetPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// TracedGet is the override of the planted defect.
+func (*mixedTracedGetPanicsDefect) TracedGet(p0 context.Context, p1 string) (r0 wrappedvia.Value, r1 error) {
+	panic("the planted defect of a Mixed whose TracedGet panics")
+}
+
+// mixedTracedGetPanics returns the planted defect of a Mixed whose
+// TracedGet panics over a fresh subject.
+func mixedTracedGetPanics(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedTracedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedTracedGetIgnoresCancelDefect is the planted defect of a Mixed whose
+// TracedGet ignores the context.
+type mixedTracedGetIgnoresCancelDefect struct {
+	mixedOverEmbedded
+}
+
+// TracedGet is the override of the planted defect.
+func (d *mixedTracedGetIgnoresCancelDefect) TracedGet(p0 context.Context, p1 string) (r0 wrappedvia.Value, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.TracedGet(p0, p1)
+}
+
+// mixedTracedGetIgnoresCancel returns the planted defect of a Mixed whose
+// TracedGet ignores the context over a fresh subject.
+func mixedTracedGetIgnoresCancel(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedTracedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedTracedGetValueBesideDefect is the planted defect of a Mixed whose
+// TracedGet returns a value beside an error.
+type mixedTracedGetValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// TracedGet is the override of the planted defect.
+func (d *mixedTracedGetValueBesideDefect) TracedGet(p0 context.Context, p1 string) (r0 wrappedvia.Value, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.TracedGet(p0, p1)
+	if r1 != nil {
+		r0 = wrappedvia.Value{Key: "Key-b"}
+	}
+	return r0, r1
+}
+
+// mixedTracedGetValueBeside returns the planted defect of a Mixed whose
+// TracedGet returns a value beside an error over a fresh subject.
+func mixedTracedGetValueBeside(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedTracedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedTracedGetStopsDelegatingDefect is the planted defect of a Mixed
+// whose TracedGet stops calling Get.
+type mixedTracedGetStopsDelegatingDefect struct {
+	mixedOverEmbedded
+}
+
+// TracedGet is the override of the planted defect.
+func (*mixedTracedGetStopsDelegatingDefect) TracedGet(p0 context.Context, p1 string) (r0 wrappedvia.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0 = wrappedvia.Value{Key: "Key-b"}
+	return r0, r1
+}
+
+// mixedTracedGetStopsDelegating returns the planted defect of a Mixed
+// whose TracedGet stops calling Get over a fresh subject.
+func mixedTracedGetStopsDelegating(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedTracedGetStopsDelegatingDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:d5634ba2644a2506e9dbd78a82801fbec2f9c0ef90f2e134dc52858d4a3f9b7c

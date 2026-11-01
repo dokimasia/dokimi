@@ -56,9 +56,6 @@ declarations:
       - classification: shape:writer
         callable: leased-writer.acquire
         stance: silent
-      - classification: contract:lease/release
-        callable: leased-writer.release
-        stance: gap
       - classification: shape:writer
         callable: leased-writer.release
         stance: silent

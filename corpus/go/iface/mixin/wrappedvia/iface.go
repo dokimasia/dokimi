@@ -1,25 +1,26 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
-// Package wrappedvia is the mixin-axis fixture for the wrappedvia mixin, which
-// declares that the annotated callable delegates to the named sibling,
-// wrapping it with cross-cutting concerns — logging, metrics, retries.
+// Package wrappedvia is the mixin-axis fixture for the wrapped-via mixin. The
+// mixin declares that the annotated callable delegates to the sibling that its
+// param fn names, and adds a cross-cutting concern around the call, such as
+// logging, metrics or retries.
 //
-// Delegation is a fact about the implementation's insides: both methods sit
-// on one subject, and nothing observable at the interface floor says whether
-// one ran through the other. The stamp documents the relationship and the
-// resolver validates the named sibling; what a delegating call preserves is
-// the model tier's question, asked with instrumentation the floor does not
-// have.
+// The check of the mixin calls the callable on the subject and the sibling on
+// a new subject with one input, and compares their results. A wrapper that
+// stops delegating returns what its sibling does not.
 //
-// There is no negated form here. eidos declares the mixin directive
-// DenyNegation, because a mixin is opt-in and deleting the directive is
-// the suppression (docs/adr/0016).
+// The fixture has no negated form. eidos refuses the negation of a mixin
+// directive, because a mixin is opt-in and deleting the directive is the
+// suppression.
 package wrappedvia
 
 import (
 	"context"
 )
+
+// Value is the payload the fixture reads.
+type Value struct{ Key, Body string }
 
 // Mixed is the fixture interface.
 //
@@ -27,11 +28,12 @@ import (
 //dokimi:suite
 //dokimi:out path=wrappedviatest/
 type Mixed interface {
-	// Open delegates to Cause, wrapping it. The fn parameter resolves to
-	// a sibling, so the delegate has to be reachable from this interface.
-	//dokimi:mixin wrapped-via fn=Cause
-	Open(ctx context.Context, name string) error
+	// Get returns the value of the key.
+	Get(ctx context.Context, key string) (Value, error)
 
-	// Cause is the delegate fn names.
-	Cause(ctx context.Context) error
+	// TracedGet returns what Get returns, and annotates the error of Get. The
+	// param fn names a sibling, so the delegate is a method of this
+	// interface.
+	//dokimi:mixin wrapped-via fn=Get
+	TracedGet(ctx context.Context, key string) (Value, error)
 }

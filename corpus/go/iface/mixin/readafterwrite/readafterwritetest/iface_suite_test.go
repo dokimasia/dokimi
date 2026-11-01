@@ -81,6 +81,10 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				readafterwritetest.MixedChecks.Write.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -147,6 +151,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				readafterwritetest.MixedChecks.Read.ReadAfterWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -218,6 +226,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			readafterwritetest.MixedChecks.Write.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -273,6 +285,10 @@ func FuzzMixedSuiteRead(f *testing.F) {
 		),
 		conform.Excuse(
 			readafterwritetest.MixedChecks.Read.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -334,6 +350,10 @@ func FuzzMixedSuiteWrite(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			readafterwritetest.MixedChecks.Write.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -363,4 +383,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:fe4214ca6e8307bb2fa94f084a42e9bcdfcd43a0f271150c8dddd3abb6710100
+// dokimi:provenance sha256:eb40fa903c6e934206f4364186a7d4871e2862486194cffe18e6f18633bfd9e1

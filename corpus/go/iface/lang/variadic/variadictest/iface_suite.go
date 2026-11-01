@@ -45,10 +45,11 @@ import (
 //
 // Finder.FindWithLimit/smoke
 
-// The unclaimed classifications of Finder:
+// The refused claims of Finder:
 //
-// The shape:batch-reader of Finder.Find has the stance gap. No claim
-// states what a batch read returns for a key that it does not find.
+// Finder.Find/reads-each-key: no callable of the declaration is the
+// partner write of Find. The remedy is to name the partner of Find with
+// the param of the classification.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -275,12 +276,13 @@ func FinderSuite() conform.Suite[variadic.Finder] {
 				Defect: finderFindWithLimitIgnoresCancel,
 			},
 		},
-		Unclaimed: []conform.Unclaimed{
+		Refusals: []conform.Refusal{
 			{
-				Classification: "shape:batch-reader",
-				Callable:       "Finder.Find",
-				Stance:         spec.Gap,
-				Note:           "No claim states what a batch read returns for a key that it does not find.",
+				Claim:    spec.ReadsEachKey,
+				Callable: "Finder.Find",
+				Gate:     spec.PartnerFound,
+				Why:      "no callable of the declaration is the partner write of Find",
+				Remedy:   "name the partner of Find with the param of the classification",
 			},
 		},
 		Calls: []conform.Call[variadic.Finder]{
@@ -488,4 +490,4 @@ func finderFindWithLimitIgnoresCancel(h *FinderHandle) variadic.Finder {
 	return &finderFindWithLimitIgnoresCancelDefect{finderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:93b1f275af86428dbce7ed99c25793d2e7aab6cd6e272165d73310b0222645e3
+// dokimi:provenance sha256:872fbed97f4534c8552373b33358f336169a8c49086b2e0791aaa34bdf8c8f90

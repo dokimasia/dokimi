@@ -53,6 +53,14 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				streamreflectsmutationstest.MixedChecks.Add.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -107,6 +115,14 @@ func TestMixedSuite(t *testing.T) {
 			}),
 			conform.Excuse(
 				streamreflectsmutationstest.MixedChecks.Stream.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStoredGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -173,6 +189,14 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			streamreflectsmutationstest.MixedChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -216,6 +240,14 @@ func FuzzMixedSuiteStream(f *testing.F) {
 		mixedIdle,
 		conform.Excuse(
 			streamreflectsmutationstest.MixedChecks.Stream.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStoredGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -265,6 +297,14 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			streamreflectsmutationstest.MixedChecks.Add.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -308,6 +348,14 @@ func FuzzMixedSuiteRemove(f *testing.F) {
 		mixedIdle,
 		conform.Excuse(
 			streamreflectsmutationstest.MixedChecks.Stream.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			streamreflectsmutationstest.MixedChecks.Stream.StreamsWhatWasStoredGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -367,4 +415,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b357bd0c3ea4b0a88a4678f3b99a632bb3e9511a81f6defae39f8b43fb4f34e0
+// dokimi:provenance sha256:991a2a1b96eedcf81b6ad60a79a1c4e1afa65eafbbf92c146d0af866f77318cf

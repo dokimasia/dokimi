@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/persister"
@@ -35,6 +36,9 @@ import (
 // Contract.Put/persister: Get returns what Put stored.
 //
 // Contract.Put/persister#generated: Get returns what Put stored.
+//
+// Contract.Put/persists-each-last-write: Get returns what Put wrote last,
+// over any sequence of calls.
 //
 // Contract.Get/smoke: Get returns without a panic for derived inputs.
 //
@@ -134,6 +138,12 @@ func (c contractPut) Persister() conform.ID[persister.Contract] {
 // what Put stored.
 func (c contractPut) PersisterGenerated() conform.ID[persister.Contract] {
 	return c.Check("persister#generated")
+}
+
+// PersistsEachLastWrite returns the identity of the check that Get returns
+// what Put wrote last, over any sequence of calls.
+func (c contractPut) PersistsEachLastWrite() conform.ID[persister.Contract] {
+	return c.Check("persists-each-last-write")
 }
 
 // contractGet is the name of Contract.Get, with the identities of its
@@ -322,6 +332,34 @@ func ContractSuite() conform.Suite[persister.Contract] {
 					})
 				},
 				Defect: contractPutStoresNothing,
+			},
+			{
+				ID:          ContractChecks.Put.PersistsEachLastWrite(),
+				Statement:   "Get returns what Put wrote last, over any sequence of calls",
+				Claim:       spec.PersistsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[persister.Contract]{ContractChecks.Put.Persister()},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						contractActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(persister.Value)
+							values, err := contractGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) persister.Value {
+							v, _ := args[0].(persister.Value)
+							return v
+						},
+					)
+				},
+				Defect: contractPutDropsAWriteAfterThree,
 			},
 			{
 				ID:          ContractChecks.Get.Smoke(),
@@ -646,6 +684,36 @@ func contractPutStoresNothing(h *ContractHandle) persister.Contract {
 	return &contractPutStoresNothingDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractPutDropsAWriteAfterThreeDefect is the planted defect of a
+// Contract whose Put does nothing from its fourth call on.
+type contractPutDropsAWriteAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Put is the override of the planted defect.
+func (d *contractPutDropsAWriteAfterThreeDefect) Put(
+	p0 context.Context,
+	p1 persister.Value,
+) (r0 persister.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0, r1
+	}
+	return d.contractOverEmbedded.Put(p0, p1)
+}
+
+// contractPutDropsAWriteAfterThree returns the planted defect of a
+// Contract whose Put does nothing from its fourth call on over a fresh
+// subject.
+func contractPutDropsAWriteAfterThree(h *ContractHandle) persister.Contract {
+	return &contractPutDropsAWriteAfterThreeDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractGetPanicsDefect is the planted defect of a Contract whose Get
 // panics.
 type contractGetPanicsDefect struct {
@@ -704,4 +772,57 @@ func contractGetValueBeside(h *ContractHandle) persister.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:89999ddb9d6f9eceb5f647904481bf7a2eb55455a3de98db9f8532b5d5241f39
+// contractActions returns the actions of the generated sequences of
+// Contract over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func contractActions(c *prop.Case, subject func() persister.Contract) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[persister.Value](), "put.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "put.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(persister.Value)
+				call := c.History().Invoke(client, "Put", args, key0.Key)
+				values, err := contractPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := contractGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// contractPutCall calls Put on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractPutCall(ctx context.Context, subject persister.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(persister.Value)
+	r0, err := subject.Put(ctx, a0)
+	return []any{r0}, err
+}
+
+// contractGetCall calls Get on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractGetCall(ctx context.Context, subject persister.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:b6ab840bc366893db31ab16983b232e0c70b392569dc64f721a2ab95240c6758

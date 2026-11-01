@@ -93,6 +93,10 @@ func TestContractSuite(t *testing.T) {
 				pooltest.ContractChecks.Stats.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				pooltest.ContractChecks.Stats.CountsEachLoan(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -156,6 +160,10 @@ func TestContractSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				pooltest.ContractChecks.Stats.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				pooltest.ContractChecks.Stats.CountsEachLoan(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -223,6 +231,10 @@ func TestContractSuiteBudgets(t *testing.T) {
 			pooltest.ContractChecks.Stats.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			pooltest.ContractChecks.Stats.CountsEachLoan(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -275,6 +287,10 @@ func FuzzContractSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			pooltest.ContractChecks.Stats.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			pooltest.ContractChecks.Stats.CountsEachLoan(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -331,6 +347,10 @@ func FuzzContractSuitePut(f *testing.F) {
 			pooltest.ContractChecks.Stats.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			pooltest.ContractChecks.Stats.CountsEachLoan(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -385,6 +405,10 @@ func FuzzContractSuiteStats(f *testing.F) {
 			pooltest.ContractChecks.Stats.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			pooltest.ContractChecks.Stats.CountsEachLoan(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -402,4 +426,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:775f95daeec305244259c35952499d191ab3beb481c4999deca451784b15431b
+// dokimi:provenance sha256:8e7f77ee3953e40a64b381a1d6affd8095e18ac4f9de7243c5ea0a60ba16a988

@@ -1,11 +1,11 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
-// Package batchreader is the detector-axis fixture for the batchreader shape:
-// many keys in one call. The variadic key list is the marker, and the
-// returned slice need not match the request length — absent keys are simply absent.
+// Package batchreader is the detector-axis fixture for the batch-reader shape,
+// which reads many keys in one call. The variadic list of keys marks the
+// shape. The writer Put stores the values that the batch read returns.
 //
-// No directive appears here: the classification comes from the signature
+// No directive appears here. The classification comes from the signature
 // alone, so a detector that misfires shows up as wrong generated output
 // rather than as a directive that was misread.
 package batchreader
@@ -24,4 +24,5 @@ type Value struct{ Key, Body string }
 //dokimi:out path=batchreadertest/
 type BatchReader interface {
 	GetAll(ctx context.Context, keys ...string) ([]Value, error)
+	Put(ctx context.Context, v Value) error
 }

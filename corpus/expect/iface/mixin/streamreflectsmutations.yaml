@@ -45,6 +45,18 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      mixed.stream/streams-what-was-stored:
+        claim: streams-what-was-stored
+        partners:
+          write: mixed.add
+        law: drain-keeps-what-went-in
+        reason: shrunk-drain
+      mixed.stream/streams-what-was-stored#generated:
+        claim: streams-what-was-stored
+        partners:
+          write: mixed.add
+        law: drain-keeps-what-went-in
+        reason: shrunk-drain
     authored: []
     ceilings: []
     refusals:
@@ -59,6 +71,3 @@ declarations:
       - classification: mixin:stream-reflects-mutations
         callable: mixed.stream
         stance: needs
-      - classification: shape:stream-reader
-        callable: mixed.stream
-        stance: gap

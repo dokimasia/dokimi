@@ -81,6 +81,10 @@ func TestLogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				causalchaintest.LogChecks.Replay.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -151,6 +155,10 @@ func TestLogSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				causalchaintest.LogChecks.Append.ChainGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -241,6 +249,10 @@ func TestLogSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -300,6 +312,10 @@ func FuzzLogSuiteAppend(f *testing.F) {
 		),
 		conform.Excuse(
 			causalchaintest.LogChecks.Append.ChainGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -365,6 +381,10 @@ func FuzzLogSuiteReplay(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ReplaysInOrderOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -397,4 +417,4 @@ func BenchmarkLogSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:da46eee767733b27928c6c031d82af4998bcfd521bc238fa9afba55100ab0408
+// dokimi:provenance sha256:f40d98bc19102125738e37a6c4703c680b4b1b9d4d0a3b12e5918c2508e42388

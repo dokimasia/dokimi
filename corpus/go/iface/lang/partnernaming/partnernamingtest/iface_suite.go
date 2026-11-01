@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming"
@@ -105,6 +106,9 @@ import (
 //
 // Store.Version/zero-on-error#generated: Version returns the zero value
 // beside an error.
+//
+// Store.Version/reads-never-go-back: Version never returns a version below
+// one that it returned before, over any sequence of calls.
 //
 // Store.Put/smoke: Put returns without a panic for derived inputs.
 //
@@ -470,6 +474,13 @@ func (c storeVersion) ZeroOnError() conform.ID[partnernaming.Store] {
 // returns the zero value beside an error.
 func (c storeVersion) ZeroOnErrorGenerated() conform.ID[partnernaming.Store] {
 	return c.Check("zero-on-error#generated")
+}
+
+// ReadsNeverGoBack returns the identity of the check that Version never
+// returns a version below one that it returned before, over any sequence
+// of calls.
+func (c storeVersion) ReadsNeverGoBack() conform.ID[partnernaming.Store] {
+	return c.Check("reads-never-go-back")
 }
 
 // storePut is the name of Store.Put, with the identities of its checks.
@@ -1123,6 +1134,25 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 					}, partnernaming.Rec{})
 				},
 				Defect: storeVersionValueBeside,
+			},
+			{
+				ID:          StoreChecks.Version.ReadsNeverGoBack(),
+				Statement:   "Version never returns a version below one that it returned before, over any sequence of calls",
+				Claim:       spec.ReadsNeverGoBack,
+				Probe:       spec.ReadVersionsNeverFall,
+				Reason:      spec.Regressed,
+				Law:         spec.ReadsNeverGoBackwards,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					probe.ReadVersionsNeverFall(
+						h,
+						c,
+						storeActions,
+						"Version",
+						func(v partnernaming.Rec) int64 { return v.Rev },
+					)
+				},
+				Defect: storeVersionReadsThePastAfterThree,
 			},
 			{
 				ID:          StoreChecks.Put.Smoke(),
@@ -1921,6 +1951,43 @@ func storeVersionValueBeside(h *StoreHandle) partnernaming.Store {
 	return &storeVersionValueBesideDefect{storeOverEmbedded: h.Fresh()}
 }
 
+// storeVersionReadsThePastAfterThreeDefect is the planted defect of a
+// Store whose Version returns its first value again from its fourth call
+// on.
+type storeVersionReadsThePastAfterThreeDefect struct {
+	storeOverEmbedded
+	calls int
+	first *partnernaming.Rec
+}
+
+// Version is the override of the planted defect.
+func (d *storeVersionReadsThePastAfterThreeDefect) Version(
+	p0 context.Context,
+	p1 string,
+) (r0 partnernaming.Rec, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.storeOverEmbedded.Version(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// storeVersionReadsThePastAfterThree returns the planted defect of a Store
+// whose Version returns its first value again from its fourth call on over
+// a fresh subject.
+func storeVersionReadsThePastAfterThree(h *StoreHandle) partnernaming.Store {
+	return &storeVersionReadsThePastAfterThreeDefect{storeOverEmbedded: h.Fresh()}
+}
+
 // storePutPanicsDefect is the planted defect of a Store whose Put panics.
 type storePutPanicsDefect struct {
 	storeOverEmbedded
@@ -1994,4 +2061,202 @@ func storeReplaceIgnoresCancel(h *StoreHandle) partnernaming.Store {
 	return &storeReplaceIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:57bee937cfd756c3109c4fea0a5615503158a28085e7a9b6699d1868314261ae
+// storeActions returns the actions of the generated sequences of Store
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func storeActions(c *prop.Case, subject func() partnernaming.Store) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	keysInt := c.Draw(prop.List(prop.Of[int](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.int")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Touch",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "touch.key")
+				weight := c.Draw(prop.Of[int](), "touch.weight")
+				return []any{key, weight}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Touch", args, args[0])
+				values, err := storeTouchCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Seen",
+			Input: func(c *prop.Case, _ struct{}) any {
+				k := c.Draw(prop.SampledFrom(keysString...), "seen.k")
+				return []any{k}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Seen", args, args[0])
+				values, err := storeSeenCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Move",
+			Input: func(c *prop.Case, _ struct{}) any {
+				from := c.Draw(prop.SampledFrom(keysString...), "move.from")
+				to := c.Draw(prop.Of[string](), "move.to")
+				return []any{from, to}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Move", args, args[0])
+				values, err := storeMoveCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "At",
+			Input: func(c *prop.Case, _ struct{}) any {
+				where := c.Draw(prop.SampledFrom(keysString...), "at.where")
+				return []any{where}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "At", args, args[0])
+				values, err := storeAtCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Emit",
+			Input: func(c *prop.Case, _ struct{}) any {
+				id := c.Draw(prop.Of[string](), "emit.id")
+				return []any{id}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Emit", args)
+				values, err := storeEmitCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Count",
+			Input: func(c *prop.Case, _ struct{}) any {
+				bucket := c.Draw(prop.SampledFrom(keysInt...), "count.bucket")
+				return []any{bucket}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Count", args, args[0])
+				values, err := storeCountCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Version",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "version.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Version", args, args[0])
+				values, err := storeVersionCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				r := c.Draw(prop.Of[partnernaming.Rec](), "put.r")
+				return []any{r}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args)
+				values, err := storePutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Replace",
+			Input: func(c *prop.Case, _ struct{}) any {
+				r := c.Draw(prop.Of[partnernaming.Rec](), "replace.r")
+				return []any{r}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Replace", args)
+				values, err := storeReplaceCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// storeTouchCall calls Touch on subject with the arguments args, and
+// returns the values of the call beside its error.
+func storeTouchCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(int)
+	return nil, subject.Touch(ctx, a0, a1)
+}
+
+// storeSeenCall calls Seen on subject with the arguments args, and returns
+// the values of the call beside its error.
+func storeSeenCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Seen(ctx, a0)
+	return []any{r0}, err
+}
+
+// storeMoveCall calls Move on subject with the arguments args, and returns
+// the values of the call beside its error.
+func storeMoveCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	return nil, subject.Move(ctx, a0, a1)
+}
+
+// storeAtCall calls At on subject with the arguments args, and returns the
+// values of the call beside its error.
+func storeAtCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.At(ctx, a0)
+	return []any{r0}, err
+}
+
+// storeEmitCall calls Emit on subject with the arguments args, and returns
+// the values of the call beside its error.
+func storeEmitCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Emit(ctx, a0)
+}
+
+// storeCountCall calls Count on subject with the arguments args, and
+// returns the values of the call beside its error.
+func storeCountCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(int)
+	r0, err := subject.Count(ctx, a0)
+	return []any{r0}, err
+}
+
+// storeVersionCall calls Version on subject with the arguments args, and
+// returns the values of the call beside its error.
+func storeVersionCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Version(ctx, a0)
+	return []any{r0}, err
+}
+
+// storePutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func storePutCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(partnernaming.Rec)
+	return nil, subject.Put(ctx, a0)
+}
+
+// storeReplaceCall calls Replace on subject with the arguments args, and
+// returns the values of the call beside its error.
+func storeReplaceCall(ctx context.Context, subject partnernaming.Store, args []any) ([]any, error) {
+	a0, _ := args[0].(partnernaming.Rec)
+	return nil, subject.Replace(ctx, a0)
+}
+
+// dokimi:provenance sha256:2975b26556d5543f0fa510f5cc948384f00f0a4921f6a9fec5be5386d6a16feb

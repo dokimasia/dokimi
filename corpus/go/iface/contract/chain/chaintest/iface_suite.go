@@ -45,6 +45,12 @@ import (
 // inputs.
 //
 // Contract.Verify/cancel: Verify returns an error for a cancelled context.
+//
+// Contract.Verify/verifies-what-it-appended: Verify reports no error for a
+// chain that Append produced.
+//
+// Contract.Verify/verifies-what-it-appended#generated: Verify reports no
+// error for a chain that Append produced.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -62,10 +68,6 @@ import (
 //
 // The shape:lifecycle of Contract.Verify has the stance silent. A
 // lifecycle call returns nothing that a check could compare.
-//
-// The contract:chain/verify of Contract.Verify has the stance gap. No
-// claim states that the verify of a chain refuses a chain that an append
-// did not produce.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -171,6 +173,18 @@ func (c contractVerify) Smoke() conform.ID[chain.Contract] {
 // for a cancelled context.
 func (c contractVerify) Cancel() conform.ID[chain.Contract] {
 	return c.Check("cancel")
+}
+
+// VerifiesWhatItAppended returns the identity of the check that Verify
+// reports no error for a chain that Append produced.
+func (c contractVerify) VerifiesWhatItAppended() conform.ID[chain.Contract] {
+	return c.Check("verifies-what-it-appended")
+}
+
+// VerifiesWhatItAppendedGenerated returns the identity of the check that
+// Verify reports no error for a chain that Append produced.
+func (c contractVerify) VerifiesWhatItAppendedGenerated() conform.ID[chain.Contract] {
+	return c.Check("verifies-what-it-appended#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -358,6 +372,60 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				},
 				Defect: contractVerifyIgnoresCancel,
 			},
+			{
+				ID:          ContractChecks.Verify.VerifiesWhatItAppended(),
+				Statement:   "Verify reports no error for a chain that Append produced",
+				Claim:       spec.VerifiesWhatItAppended,
+				Probe:       spec.VerifiesAfterAppends,
+				Reason:      spec.FalseTamper,
+				Law:         spec.AppendedChainVerifies,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.VerifiesAfterAppends(h, func(ctx context.Context) error {
+						return h.Subject().Verify(ctx)
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := chain.Entry{Key: "Key-a"}
+							if calls > 1 {
+								w = chain.Entry{Key: "Key-b"}
+							}
+							return h.Subject().Append(ctx, w)
+						}
+					}())
+				},
+				Defect: contractVerifyReportsTamper,
+			},
+			{
+				ID:          ContractChecks.Verify.VerifiesWhatItAppendedGenerated(),
+				Statement:   "Verify reports no error for a chain that Append produced",
+				Claim:       spec.VerifiesWhatItAppended,
+				Probe:       spec.VerifiesAfterAppends,
+				Reason:      spec.FalseTamper,
+				Law:         spec.AppendedChainVerifies,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnE := c.Draw(
+						prop.List(prop.Of[chain.Entry](), prop.Unique(), prop.MinSize(2), prop.MaxSize(2)),
+						"e",
+					)
+					probe.VerifiesAfterAppends(h, func(ctx context.Context) error {
+						return h.Subject().Verify(ctx)
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := drawnE[0]
+							if calls > 1 {
+								w = drawnE[1]
+							}
+							return h.Subject().Append(ctx, w)
+						}
+					}())
+				},
+				Defect: contractVerifyReportsTamper,
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -371,12 +439,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				Callable:       "Contract.Verify",
 				Stance:         spec.Silent,
 				Note:           "A lifecycle call returns nothing that a check could compare.",
-			},
-			{
-				Classification: "contract:chain/verify",
-				Callable:       "Contract.Verify",
-				Stance:         spec.Gap,
-				Note:           "No claim states that the verify of a chain refuses a chain that an append did not produce.",
 			},
 		},
 		Calls: []conform.Call[chain.Contract]{
@@ -671,4 +733,27 @@ func contractVerifyIgnoresCancel(h *ContractHandle) chain.Contract {
 	return &contractVerifyIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9cc6eb9554bedbf2437b2cd8bb88af052d2d1aeab8ff5e4506d97a7e6c1f9c88
+// contractVerifyReportsTamperDefect is the planted defect of a Contract
+// whose Verify reports a change of a chain that Append produced.
+type contractVerifyReportsTamperDefect struct {
+	contractOverEmbedded
+}
+
+// Verify is the override of the planted defect.
+func (*contractVerifyReportsTamperDefect) Verify(p0 context.Context) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	r0 = conform.ErrGenerated
+	return r0
+}
+
+// contractVerifyReportsTamper returns the planted defect of a Contract
+// whose Verify reports a change of a chain that Append produced over a
+// fresh subject.
+func contractVerifyReportsTamper(h *ContractHandle) chain.Contract {
+	return &contractVerifyReportsTamperDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:92901ad6efafbdf5b883e17e8fc5b460578e34478dbc3b72b7256248701c3da8

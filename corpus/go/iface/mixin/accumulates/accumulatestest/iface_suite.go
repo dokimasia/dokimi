@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/accumulates"
@@ -26,6 +27,14 @@ import (
 //
 // Mixed.Add/cancel#generated: Add returns an error for a cancelled
 // context.
+//
+// Mixed.Add/accumulates: a second Add changes what Total returns again.
+//
+// Mixed.Add/accumulates#generated: a second Add changes what Total returns
+// again.
+//
+// Mixed.Add/compounds-over-sequences: each call of Add changes what Total
+// reads for its arguments, over any sequence of calls.
 //
 // Mixed.Total/smoke: Total returns without a panic for derived inputs.
 //
@@ -46,14 +55,11 @@ import (
 //
 // Mixed.Add/smoke
 //
-// Mixed.Total/smoke
-
-// The refused claims of Mixed:
+// Mixed.Add/accumulates
 //
-// Mixed.Add/accumulates: a parameter of the read of Add selects neither a
-// value that observe takes nor a field of the written value. The remedy is
-// to align the name of the parameter of the read with a parameter or a
-// field of the write.
+// Mixed.Add/accumulates#generated
+//
+// Mixed.Total/smoke
 
 // The unclaimed classifications of Mixed:
 //
@@ -107,6 +113,25 @@ func (c mixedAdd) Cancel() conform.ID[accumulates.Mixed] {
 // error for a cancelled context.
 func (c mixedAdd) CancelGenerated() conform.ID[accumulates.Mixed] {
 	return c.Check("cancel#generated")
+}
+
+// Accumulates returns the identity of the check that a second Add changes
+// what Total returns again.
+func (c mixedAdd) Accumulates() conform.ID[accumulates.Mixed] {
+	return c.Check("accumulates")
+}
+
+// AccumulatesGenerated returns the identity of the check that a second Add
+// changes what Total returns again.
+func (c mixedAdd) AccumulatesGenerated() conform.ID[accumulates.Mixed] {
+	return c.Check("accumulates#generated")
+}
+
+// CompoundsOverSequences returns the identity of the check that each call
+// of Add changes what Total reads for its arguments, over any sequence of
+// calls.
+func (c mixedAdd) CompoundsOverSequences() conform.ID[accumulates.Mixed] {
+	return c.Check("compounds-over-sequences")
 }
 
 // mixedTotal is the name of Mixed.Total, with the identities of its
@@ -225,6 +250,67 @@ func MixedSuite() conform.Suite[accumulates.Mixed] {
 				Defect: mixedAddIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Add.Accumulates(),
+				Statement:   "a second Add changes what Total returns again",
+				Claim:       spec.Accumulates,
+				Probe:       spec.EachCallCompounds,
+				Reason:      spec.Uncompounded,
+				Law:         spec.RepeatedCallsCompound,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.EachCallCompounds(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("key-a"), int(42))
+					}, func(ctx context.Context) (int, error) {
+						return h.Subject().Total(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedAddSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Add.AccumulatesGenerated(),
+				Statement:   "a second Add changes what Total returns again",
+				Claim:       spec.Accumulates,
+				Probe:       spec.EachCallCompounds,
+				Reason:      spec.Uncompounded,
+				Law:         spec.RepeatedCallsCompound,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnAmount := c.Draw(prop.Of[int](), "amount")
+					probe.EachCallCompounds(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnKey, drawnAmount)
+					}, func(ctx context.Context) (int, error) {
+						return h.Subject().Total(ctx, drawnKey)
+					})
+				},
+				Defect: mixedAddSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Add.CompoundsOverSequences(),
+				Statement:   "each call of Add changes what Total reads for its arguments, over any sequence of calls",
+				Claim:       spec.CompoundsOverSequences,
+				Probe:       spec.EachCallMovesTheObservation,
+				Reason:      spec.Uncompounded,
+				Law:         spec.RepeatedCallsCompound,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[accumulates.Mixed]{MixedChecks.Add.Accumulates()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.EachCallMovesTheObservation(
+						h,
+						c,
+						mixedActions,
+						"Add",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := mixedTotalCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+					)
+				},
+				Defect: mixedAddDropsARepeatAfterThree,
+			},
+			{
 				ID:          MixedChecks.Total.Smoke(),
 				Statement:   "Total returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -321,15 +407,6 @@ func MixedSuite() conform.Suite[accumulates.Mixed] {
 					}, int(0))
 				},
 				Defect: mixedTotalValueBeside,
-			},
-		},
-		Refusals: []conform.Refusal{
-			{
-				Claim:    spec.Accumulates,
-				Callable: "Mixed.Add",
-				Gate:     spec.PartnerArguments,
-				Why:      "a parameter of the read of Add selects neither a value that observe takes nor a field of the written value",
-				Remedy:   "align the name of the parameter of the read with a parameter or a field of the write",
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -498,6 +575,53 @@ func mixedAddIgnoresCancel(h *MixedHandle) accumulates.Mixed {
 	return &mixedAddIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedAddSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// repeated Add has one effect.
+type mixedAddSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 string, p2 int) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	return r0
+}
+
+// mixedAddSucceedsAlways returns the planted defect of a Mixed whose
+// repeated Add has one effect over a fresh subject.
+func mixedAddSucceedsAlways(h *MixedHandle) accumulates.Mixed {
+	return &mixedAddSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAddDropsARepeatAfterThreeDefect is the planted defect of a Mixed
+// whose Add does nothing from its fourth call on.
+type mixedAddDropsARepeatAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Add is the override of the planted defect.
+func (d *mixedAddDropsARepeatAfterThreeDefect) Add(p0 context.Context, p1 string, p2 int) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.mixedOverEmbedded.Add(p0, p1, p2)
+}
+
+// mixedAddDropsARepeatAfterThree returns the planted defect of a Mixed
+// whose Add does nothing from its fourth call on over a fresh subject.
+func mixedAddDropsARepeatAfterThree(h *MixedHandle) accumulates.Mixed {
+	return &mixedAddDropsARepeatAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedTotalPanicsDefect is the planted defect of a Mixed whose Total
 // panics.
 type mixedTotalPanicsDefect struct {
@@ -556,4 +680,56 @@ func mixedTotalValueBeside(h *MixedHandle) accumulates.Mixed {
 	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:079af6297a9aed564f7f5a75301d4cba10608f654045334af968df23168ff495
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() accumulates.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "add.key")
+				amount := c.Draw(prop.Of[int](), "add.amount")
+				return []any{key, amount}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args, args[0])
+				values, err := mixedAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Total",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "total.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Total", args, args[0])
+				values, err := mixedTotalCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedAddCall(ctx context.Context, subject accumulates.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(int)
+	return nil, subject.Add(ctx, a0, a1)
+}
+
+// mixedTotalCall calls Total on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedTotalCall(ctx context.Context, subject accumulates.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Total(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:e2659cbf55f86864c6db650e1cbe678f1039a19ffeedafda6b3736cd08bdb9df

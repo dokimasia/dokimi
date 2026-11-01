@@ -53,6 +53,12 @@ declarations:
           read: contract.get
         law: read-returns-the-write-before-it
         reason: unobserved-write
+      contract.put/persists-each-last-write:
+        claim: persists-each-last-write
+        partners:
+          read: contract.get
+        law: read-returns-the-write-before-it
+        reason: unobserved-write
       contract.put/smoke:
         claim: smoke
         law: no-panic-on-any-input

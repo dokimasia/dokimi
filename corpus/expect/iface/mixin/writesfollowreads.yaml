@@ -37,6 +37,12 @@ declarations:
           write: mixed.store
         law: write-follows-the-read-before-it
         reason: unordered-write
+      mixed.get/writes-follow-their-reads:
+        claim: writes-follow-their-reads
+        partners:
+          write: mixed.store
+        law: write-follows-the-read-before-it
+        reason: unordered-write
       mixed.get/zero-on-error:
         claim: zero-on-error
         law: no-value-beside-an-error

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/overmatch"
@@ -38,6 +39,10 @@ import (
 //
 // Mixed.Items/over-match#generated: Items gains at least the elements that
 // Add wrote between two of its calls.
+//
+// Mixed.Items/drains-keep-what-went-in: Items yields the elements of the
+// call before it and each element that Add wrote since, over any sequence
+// of calls.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -137,6 +142,13 @@ func (c mixedItems) OverMatch() conform.ID[overmatch.Mixed] {
 // least the elements that Add wrote between two of its calls.
 func (c mixedItems) OverMatchGenerated() conform.ID[overmatch.Mixed] {
 	return c.Check("over-match#generated")
+}
+
+// DrainsKeepWhatWentIn returns the identity of the check that Items yields
+// the elements of the call before it and each element that Add wrote
+// since, over any sequence of calls.
+func (c mixedItems) DrainsKeepWhatWentIn() conform.ID[overmatch.Mixed] {
+	return c.Check("drains-keep-what-went-in")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -313,6 +325,23 @@ func MixedSuite() conform.Suite[overmatch.Mixed] {
 					}())
 				},
 				Defect: mixedItemsDrainsNothing,
+			},
+			{
+				ID:          MixedChecks.Items.DrainsKeepWhatWentIn(),
+				Statement:   "Items yields the elements of the call before it and each element that Add wrote since, over any sequence of calls",
+				Claim:       spec.DrainsKeepWhatWentIn,
+				Probe:       spec.DrainsContainTheWrites,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[overmatch.Mixed]{MixedChecks.Items.OverMatch()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.DrainsContainTheWrites(h, c, mixedActions, "Items", "Add", func(args []any) overmatch.Value {
+						v, _ := args[0].(overmatch.Value)
+						return v
+					})
+				},
+				Defect: mixedItemsDropsAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -554,4 +583,76 @@ func mixedItemsDrainsNothing(h *MixedHandle) overmatch.Mixed {
 	return &mixedItemsDrainsNothingDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:00ec081e2ba9761226f0523345682cbcceb331198cef3b69eda19655465ba3b4
+// mixedItemsDropsAfterThreeDefect is the planted defect of a Mixed whose
+// Items drops its last element from its fourth call on.
+type mixedItemsDropsAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Items is the override of the planted defect.
+func (d *mixedItemsDropsAfterThreeDefect) Items(p0 context.Context) (r0 []overmatch.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Items(p0)
+	d.calls++
+	if d.calls > 3 && len(r0) > 0 {
+		r0 = r0[:len(r0)-1]
+	}
+	return r0, r1
+}
+
+// mixedItemsDropsAfterThree returns the planted defect of a Mixed whose
+// Items drops its last element from its fourth call on over a fresh
+// subject.
+func mixedItemsDropsAfterThree(h *MixedHandle) overmatch.Mixed {
+	return &mixedItemsDropsAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() overmatch.Mixed) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[overmatch.Value](), "add.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := mixedAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Items",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Items", args)
+				values, err := mixedItemsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedAddCall(ctx context.Context, subject overmatch.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(overmatch.Value)
+	return nil, subject.Add(ctx, a0)
+}
+
+// mixedItemsCall calls Items on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedItemsCall(ctx context.Context, subject overmatch.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Items(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:36157e0cd9c141597694e9fd80f8c5ad72375900258cb78d3b4ee97f0a518e85

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/boundedcache"
@@ -26,6 +27,9 @@ import (
 //
 // Mixed.Put/cancel#generated: Put returns an error for a cancelled
 // context.
+//
+// Mixed.Put/keeps-within-its-bounds: Put keeps the use that Len reads
+// within its bounds, over any sequence of calls.
 //
 // Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
@@ -67,9 +71,6 @@ import (
 //
 // The shape:composite-writer of Mixed.Put has the stance silent. A write
 // is an input of the other checks, and its result is an error alone.
-//
-// The mixin:bounded of Mixed.Len has the stance needs. The claims of the
-// mixin need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -120,6 +121,12 @@ func (c mixedPut) Cancel() conform.ID[boundedcache.Mixed] {
 // error for a cancelled context.
 func (c mixedPut) CancelGenerated() conform.ID[boundedcache.Mixed] {
 	return c.Check("cancel#generated")
+}
+
+// KeepsWithinItsBounds returns the identity of the check that Put keeps
+// the use that Len reads within its bounds, over any sequence of calls.
+func (c mixedPut) KeepsWithinItsBounds() conform.ID[boundedcache.Mixed] {
+	return c.Check("keeps-within-its-bounds")
 }
 
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
@@ -260,6 +267,23 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 					})
 				},
 				Defect: mixedPutIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Put.KeepsWithinItsBounds(),
+				Statement:   "Put keeps the use that Len reads within its bounds, over any sequence of calls",
+				Claim:       spec.KeepsWithinItsBounds,
+				Probe:       spec.UseIsWithinTheBounds,
+				Reason:      spec.ExceededBound,
+				Law:         spec.UseIsWithinItsBounds,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.UseIsWithinTheBounds(h, c, mixedActions, func(ctx context.Context) (int, error) {
+						values, err := mixedLenCall(ctx, h.Subject(), []any{})
+						v, _ := values[0].(int)
+						return int(v), err
+					}, 0, 2)
+				},
+				Defect: mixedLenGrowsPastTheLimitAfterThree,
 			},
 			{
 				ID:          MixedChecks.Get.Smoke(),
@@ -424,12 +448,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Callable:       "Mixed.Put",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "mixin:bounded",
-				Callable:       "Mixed.Len",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[boundedcache.Mixed]{
@@ -635,6 +653,34 @@ func mixedPutIgnoresCancel(h *MixedHandle) boundedcache.Mixed {
 	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedLenGrowsPastTheLimitAfterThreeDefect is the planted defect of a
+// Mixed whose Len reports a use above the limit from its fourth call on.
+type mixedLenGrowsPastTheLimitAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Len is the override of the planted defect.
+func (d *mixedLenGrowsPastTheLimitAfterThreeDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Len(p0)
+	d.calls++
+	if d.calls > 3 {
+		r0 = 2 + 1
+	}
+	return r0, r1
+}
+
+// mixedLenGrowsPastTheLimitAfterThree returns the planted defect of a
+// Mixed whose Len reports a use above the limit from its fourth call on
+// over a fresh subject.
+func mixedLenGrowsPastTheLimitAfterThree(h *MixedHandle) boundedcache.Mixed {
+	return &mixedLenGrowsPastTheLimitAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
 type mixedGetPanicsDefect struct {
 	mixedOverEmbedded
@@ -755,4 +801,75 @@ func mixedLenValueBeside(h *MixedHandle) boundedcache.Mixed {
 	return &mixedLenValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f42b74981b6232f4a34cc2c5fe2406cbfba44b375dc467728c9cbbc05f9a834a
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() boundedcache.Mixed) []stateful.Action[struct{}] {
+	keysKey := c.Draw(
+		prop.List(prop.Of[boundedcache.Key](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.key",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysKey...), "put.key")
+				value := c.Draw(prop.Of[boundedcache.Value](), "put.value")
+				return []any{key, value}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args, args[0])
+				values, err := mixedPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysKey...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Len",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Len", args)
+				values, err := mixedLenCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedPutCall(ctx context.Context, subject boundedcache.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(boundedcache.Key)
+	a1, _ := args[1].(boundedcache.Value)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject boundedcache.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(boundedcache.Key)
+	r0, ok := subject.Get(ctx, a0)
+	return []any{r0, ok}, nil
+}
+
+// mixedLenCall calls Len on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedLenCall(ctx context.Context, subject boundedcache.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Len(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:b6520507ed1506a2387fdaba2b3905217cbc15fe4d8650810a5438a95df540a0

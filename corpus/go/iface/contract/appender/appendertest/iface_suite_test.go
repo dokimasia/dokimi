@@ -81,6 +81,10 @@ func TestContractSuite(t *testing.T) {
 				appendertest.ContractChecks.Run.AppenderGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				appendertest.ContractChecks.Run.AppendsKeepAscending(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -134,6 +138,10 @@ func TestContractSuite(t *testing.T) {
 				appendertest.ContractChecks.Run.AppenderGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				appendertest.ContractChecks.Run.AppendsKeepAscending(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -185,6 +193,10 @@ func TestContractSuiteBudgets(t *testing.T) {
 			appendertest.ContractChecks.Run.AppenderGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			appendertest.ContractChecks.Run.AppendsKeepAscending(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -227,6 +239,10 @@ func FuzzContractSuiteRun(f *testing.F) {
 			appendertest.ContractChecks.Run.AppenderGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			appendertest.ContractChecks.Run.AppendsKeepAscending(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -238,4 +254,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3ea97b18faee813fcd84f760d27c294e1997773e4cac9c5ef6a5560678d36a52
+// dokimi:provenance sha256:1c92ea267452430b46334917ce2718b92d93924f2db661512f4a2b95eadbdc24

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/noduplicates"
@@ -37,6 +38,9 @@ import (
 //
 // Mixed.Items/no-duplicates#generated: no element appears twice in one
 // Items.
+//
+// Mixed.Items/yields-each-once: Items never yields an element twice, over
+// any sequence of calls.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -136,6 +140,12 @@ func (c mixedItems) NoDuplicates() conform.ID[noduplicates.Mixed] {
 // appears twice in one Items.
 func (c mixedItems) NoDuplicatesGenerated() conform.ID[noduplicates.Mixed] {
 	return c.Check("no-duplicates#generated")
+}
+
+// YieldsEachOnce returns the identity of the check that Items never yields
+// an element twice, over any sequence of calls.
+func (c mixedItems) YieldsEachOnce() conform.ID[noduplicates.Mixed] {
+	return c.Check("yields-each-once")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -312,6 +322,20 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 					}())
 				},
 				Defect: mixedItemsDrainsTwice,
+			},
+			{
+				ID:          MixedChecks.Items.YieldsEachOnce(),
+				Statement:   "Items never yields an element twice, over any sequence of calls",
+				Claim:       spec.YieldsEachOnce,
+				Probe:       spec.DrainsWithoutRepeats,
+				Reason:      spec.RepeatedElement,
+				Law:         spec.NoElementIsDrainedTwice,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[noduplicates.Mixed]{MixedChecks.Items.NoDuplicates()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.DrainsWithoutRepeats[noduplicates.Mixed, noduplicates.Value](h, c, mixedActions, "Items")
+				},
+				Defect: mixedItemsRepeatsAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -561,4 +585,76 @@ func mixedItemsDrainsTwice(h *MixedHandle) noduplicates.Mixed {
 	return &mixedItemsDrainsTwiceDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:76fc39564337e6135534446b643bf4dafec93395c9d40f4dffa9e9d21b609b42
+// mixedItemsRepeatsAfterThreeDefect is the planted defect of a Mixed whose
+// Items yields its first element twice from its fourth call on.
+type mixedItemsRepeatsAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Items is the override of the planted defect.
+func (d *mixedItemsRepeatsAfterThreeDefect) Items(p0 context.Context) (r0 []noduplicates.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Items(p0)
+	d.calls++
+	if d.calls > 3 && len(r0) > 0 {
+		r0 = append(r0[:1:1], r0...)
+	}
+	return r0, r1
+}
+
+// mixedItemsRepeatsAfterThree returns the planted defect of a Mixed whose
+// Items yields its first element twice from its fourth call on over a
+// fresh subject.
+func mixedItemsRepeatsAfterThree(h *MixedHandle) noduplicates.Mixed {
+	return &mixedItemsRepeatsAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() noduplicates.Mixed) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[noduplicates.Value](), "add.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := mixedAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Items",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Items", args)
+				values, err := mixedItemsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedAddCall(ctx context.Context, subject noduplicates.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(noduplicates.Value)
+	return nil, subject.Add(ctx, a0)
+}
+
+// mixedItemsCall calls Items on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedItemsCall(ctx context.Context, subject noduplicates.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Items(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:237a40fc402dce7f62e0981b8e85d1a980224ecdb8310955f17a61d975b5b9c7

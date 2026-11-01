@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	causalchain "go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain"
@@ -38,6 +39,10 @@ import (
 //
 // Log.Append/chain#generated: Append grows Replay by the entry that it
 // admits.
+//
+// Log.Append/replays-in-order-over-sequences: Replay returns the entries
+// that Append appended in the order of their stamps, over any sequence of
+// calls.
 //
 // Log.Replay/smoke: Replay returns without a panic for derived inputs.
 //
@@ -136,6 +141,13 @@ func (c logAppend) Chain() conform.ID[causalchain.Log] {
 // Replay by the entry that it admits.
 func (c logAppend) ChainGenerated() conform.ID[causalchain.Log] {
 	return c.Check("chain#generated")
+}
+
+// ReplaysInOrderOverSequences returns the identity of the check that
+// Replay returns the entries that Append appended in the order of their
+// stamps, over any sequence of calls.
+func (c logAppend) ReplaysInOrderOverSequences() conform.ID[causalchain.Log] {
+	return c.Check("replays-in-order-over-sequences")
 }
 
 // logReplay is the name of Log.Replay, with the identities of its checks.
@@ -344,6 +356,26 @@ func LogSuite() conform.Suite[causalchain.Log] {
 					})
 				},
 				Defect: logAppendSucceedsAlways,
+			},
+			{
+				ID:          LogChecks.Append.ReplaysInOrderOverSequences(),
+				Statement:   "Replay returns the entries that Append appended in the order of their stamps, over any sequence of calls",
+				Claim:       spec.ReplaysInOrderOverSequences,
+				Probe:       spec.ReplaysFollowTheStamps,
+				Reason:      spec.UnorderedHistory,
+				Law:         spec.HistoryReplaysInItsStampedOrder,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[causalchain.Log]{LogChecks.Append.ChainCausal()},
+				Property: func(h *LogHandle, c *prop.Case) {
+					probe.ReplaysFollowTheStamps(
+						h,
+						c,
+						logActions,
+						"Replay",
+						func(v causalchain.Entry) int64 { return v.Seq },
+					)
+				},
+				Defect: logReplayReversesAfterThree,
 			},
 			{
 				ID:          LogChecks.Replay.Smoke(),
@@ -643,6 +675,34 @@ func logAppendSucceedsAlways(h *LogHandle) causalchain.Log {
 	return &logAppendSucceedsAlwaysDefect{logOverEmbedded: h.Fresh()}
 }
 
+// logReplayReversesAfterThreeDefect is the planted defect of a Log whose
+// Replay reverses its entries from its fourth call on.
+type logReplayReversesAfterThreeDefect struct {
+	logOverEmbedded
+	calls int
+}
+
+// Replay is the override of the planted defect.
+func (d *logReplayReversesAfterThreeDefect) Replay(p0 context.Context) (r0 []causalchain.Entry, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.logOverEmbedded.Replay(p0)
+	d.calls++
+	if d.calls > 3 {
+		slices.Reverse(r0)
+	}
+	return r0, r1
+}
+
+// logReplayReversesAfterThree returns the planted defect of a Log whose
+// Replay reverses its entries from its fourth call on over a fresh
+// subject.
+func logReplayReversesAfterThree(h *LogHandle) causalchain.Log {
+	return &logReplayReversesAfterThreeDefect{logOverEmbedded: h.Fresh()}
+}
+
 // logReplayPanicsDefect is the planted defect of a Log whose Replay
 // panics.
 type logReplayPanicsDefect struct {
@@ -701,4 +761,48 @@ func logReplayValueBeside(h *LogHandle) causalchain.Log {
 	return &logReplayValueBesideDefect{logOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2e61a250bc549d42b35d3543e6191dacceb00ffe02527f91e4f1f42e31f79fd4
+// logActions returns the actions of the generated sequences of Log over
+// the subject that subject returns. The actions of a case take their keys
+// from the pools that it draws.
+func logActions(c *prop.Case, subject func() causalchain.Log) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Append",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[causalchain.Entry](), "append.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Append", args)
+				values, err := logAppendCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Replay",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Replay", args)
+				values, err := logReplayCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// logAppendCall calls Append on subject with the arguments args, and
+// returns the values of the call beside its error.
+func logAppendCall(ctx context.Context, subject causalchain.Log, args []any) ([]any, error) {
+	a0, _ := args[0].(causalchain.Entry)
+	return nil, subject.Append(ctx, a0)
+}
+
+// logReplayCall calls Replay on subject with the arguments args, and
+// returns the values of the call beside its error.
+func logReplayCall(ctx context.Context, subject causalchain.Log, args []any) ([]any, error) {
+	r0, err := subject.Replay(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:09dff57ac435ac56d39ad51ec54735685d48fa7c737b58f0837e556b00132c38

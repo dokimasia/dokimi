@@ -61,9 +61,6 @@ import (
 //
 // The shape:writer of LeasedWriter.Release has the stance silent. A write
 // is an input of the other checks, and its result is an error alone.
-//
-// The contract:lease/release of LeasedWriter.Release has the stance gap.
-// No claim states that a released lease is granted again.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -336,12 +333,6 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
-			{
-				Classification: "contract:lease/release",
-				Callable:       "LeasedWriter.Release",
-				Stance:         spec.Gap,
-				Note:           "No claim states that a released lease is granted again.",
-			},
 		},
 		Calls: []conform.Call[leasedidempotentwriter.LeasedWriter]{
 			{
@@ -579,4 +570,4 @@ func leasedWriterReleaseIgnoresCancel(h *LeasedWriterHandle) leasedidempotentwri
 	return &leasedWriterReleaseIgnoresCancelDefect{leasedWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:858abd25599de4c326d87f5dbb47c91778ef6eebbcef2bdede6b5a52d1ef1917
+// dokimi:provenance sha256:335267c70d2198db04b366673465c605bc9cbe4812214c2a0525c61a2864bdf7

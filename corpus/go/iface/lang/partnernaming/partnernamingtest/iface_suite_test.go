@@ -193,6 +193,10 @@ func TestStoreSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				partnernamingtest.StoreChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -387,6 +391,10 @@ func TestStoreSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				partnernamingtest.StoreChecks.Version.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -593,6 +601,10 @@ func TestStoreSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partnernamingtest.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -776,6 +788,10 @@ func FuzzStoreSuiteTouch(f *testing.F) {
 		),
 		conform.Excuse(
 			partnernamingtest.StoreChecks.Version.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -965,6 +981,10 @@ func FuzzStoreSuiteSeen(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partnernamingtest.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1148,6 +1168,10 @@ func FuzzStoreSuiteMove(f *testing.F) {
 		),
 		conform.Excuse(
 			partnernamingtest.StoreChecks.Version.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1337,6 +1361,10 @@ func FuzzStoreSuiteAt(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partnernamingtest.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1520,6 +1548,10 @@ func FuzzStoreSuiteEmit(f *testing.F) {
 		),
 		conform.Excuse(
 			partnernamingtest.StoreChecks.Version.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1709,6 +1741,10 @@ func FuzzStoreSuiteCount(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partnernamingtest.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1892,6 +1928,10 @@ func FuzzStoreSuiteVersion(f *testing.F) {
 		),
 		conform.Excuse(
 			partnernamingtest.StoreChecks.Version.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -2081,6 +2121,10 @@ func FuzzStoreSuitePut(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partnernamingtest.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -2267,6 +2311,10 @@ func FuzzStoreSuiteReplace(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partnernamingtest.StoreChecks.Version.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partnernamingtest.StoreChecks.Put.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -2333,4 +2381,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ada529262737627837653bf9119a38983c155027ccff8d4fa9d168009f9bc9ef
+// dokimi:provenance sha256:a6105b490331560c0eaefb75e86288dd86b6946a9f4a9c6f2602c8ba608af83f

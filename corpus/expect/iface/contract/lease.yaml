@@ -26,6 +26,18 @@ declarations:
         claim: lease
         law: granted-lease-is-not-granted-twice
         reason: unguarded-write
+      contract.acquire/release-frees-the-lease:
+        claim: release-frees-the-lease
+        partners:
+          release: contract.release
+        law: released-lease-is-granted-again
+        reason: kept-after-release
+      contract.acquire/release-frees-the-lease#generated:
+        claim: release-frees-the-lease
+        partners:
+          release: contract.release
+        law: released-lease-is-granted-again
+        reason: kept-after-release
       contract.acquire/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -57,9 +69,6 @@ declarations:
       - classification: shape:writer
         callable: contract.acquire
         stance: silent
-      - classification: contract:lease/release
-        callable: contract.release
-        stance: gap
       - classification: shape:writer
         callable: contract.release
         stance: silent

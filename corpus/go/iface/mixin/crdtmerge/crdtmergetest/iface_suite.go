@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge"
@@ -17,6 +18,9 @@ import (
 )
 
 // The derived checks of Mixed:
+//
+// Mixed.Merge/merges-in-any-order: two replicas that Add made diverge read
+// the same state through Items after Merge merges them in either order.
 //
 // Mixed.Add/smoke: Add returns without a panic for derived inputs.
 //
@@ -51,9 +55,6 @@ import (
 // The shape:writer of Mixed.Merge has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
 //
-// The mixin:crdt-merge of Mixed.Merge has the stance needs. The claims of
-// the mixin need generated sequences.
-//
 // The shape:writer of Mixed.Add has the stance silent. A write is an input
 // of the other checks, and its result is an error alone.
 
@@ -83,6 +84,13 @@ var MixedChecks = struct {
 // checks.
 type mixedMerge struct {
 	conform.Callable[crdtmerge.Mixed]
+}
+
+// MergesInAnyOrder returns the identity of the check that two replicas
+// that Add made diverge read the same state through Items after Merge
+// merges them in either order.
+func (c mixedMerge) MergesInAnyOrder() conform.ID[crdtmerge.Mixed] {
+	return c.Check("merges-in-any-order")
 }
 
 // mixedAdd is the name of Mixed.Add, with the identities of its checks.
@@ -146,6 +154,19 @@ func MixedSuite() conform.Suite[crdtmerge.Mixed] {
 		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge",
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[crdtmerge.Mixed]{
+			{
+				ID:          MixedChecks.Merge.MergesInAnyOrder(),
+				Statement:   "two replicas that Add made diverge read the same state through Items after Merge merges them in either order",
+				Claim:       spec.MergesInAnyOrder,
+				Probe:       spec.MergesCommute,
+				Reason:      spec.OrderDependentMerge,
+				Law:         spec.MergeOrderDoesNotMatter,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.MergesCommute(h, c, mixedActions, mixedReference, "Merge", "Add", "Items")
+				},
+				Defect: mixedMergeIgnoresTheOtherReplica,
+			},
 			{
 				ID:          MixedChecks.Add.Smoke(),
 				Statement:   "Add returns without a panic for derived inputs",
@@ -273,12 +294,6 @@ func MixedSuite() conform.Suite[crdtmerge.Mixed] {
 				Callable:       "Mixed.Merge",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "mixin:crdt-merge",
-				Callable:       "Mixed.Merge",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need generated sequences.",
 			},
 			{
 				Classification: "shape:writer",
@@ -459,6 +474,27 @@ func newMixedOver(_ *MixedHandle, spend func()) crdtmerge.Mixed {
 	return mixedOver{spend: spend}
 }
 
+// mixedMergeIgnoresTheOtherReplicaDefect is the planted defect of a Mixed
+// whose Merge ignores the other replica.
+type mixedMergeIgnoresTheOtherReplicaDefect struct {
+	mixedOverEmbedded
+}
+
+// Merge is the override of the planted defect.
+func (*mixedMergeIgnoresTheOtherReplicaDefect) Merge(p0 context.Context, p1 crdtmerge.Replica) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	return r0
+}
+
+// mixedMergeIgnoresTheOtherReplica returns the planted defect of a Mixed
+// whose Merge ignores the other replica over a fresh subject.
+func mixedMergeIgnoresTheOtherReplica(h *MixedHandle) crdtmerge.Mixed {
+	return &mixedMergeIgnoresTheOtherReplicaDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedAddPanicsDefect is the planted defect of a Mixed whose Add panics.
 type mixedAddPanicsDefect struct {
 	mixedOverEmbedded
@@ -553,4 +589,106 @@ func mixedItemsValueBeside(h *MixedHandle) crdtmerge.Mixed {
 	return &mixedItemsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4557d23e102b912b5135a97a3133a91ac34c1727ccfe1b148b18dcba97d39636
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() crdtmerge.Mixed) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Merge",
+			Input: func(c *prop.Case, _ struct{}) any {
+				peerItemsResults0 := c.Draw(prop.List(prop.Of[[]string]()), "peer-items-0")
+				peerItemsResults1 := c.Draw(
+					prop.List(
+						prop.SampledFrom[error](nil, conform.ErrGenerated),
+						prop.MinSize(len(peerItemsResults0)),
+						prop.MaxSize(len(peerItemsResults0)),
+					),
+					"peer-items-1",
+				)
+				var peerItemsAt atomic.Int64
+				peer := &mixedReplicaInput{
+					onItems: func(context.Context) (r0 []string, r1 error) {
+						i := int(peerItemsAt.Add(1) - 1)
+						if i >= len(peerItemsResults0) {
+							r1 = conform.ErrGenerated
+							return r0, r1
+						}
+						return peerItemsResults0[i],
+							peerItemsResults1[i]
+					},
+				}
+				return []any{peer}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Merge", args)
+				values, err := mixedMergeCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				item := c.Draw(prop.Of[string](), "add.item")
+				return []any{item}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := mixedAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Items",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Items", args)
+				values, err := mixedItemsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedMergeCall calls Merge on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedMergeCall(ctx context.Context, subject crdtmerge.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(crdtmerge.Replica)
+	return nil, subject.Merge(ctx, a0)
+}
+
+// mixedAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedAddCall(ctx context.Context, subject crdtmerge.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Add(ctx, a0)
+}
+
+// mixedItemsCall calls Items on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedItemsCall(ctx context.Context, subject crdtmerge.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Items(ctx)
+	return []any{r0}, err
+}
+
+// mixedReference returns the function that applies an operation of a
+// history to the reference r by the name of its callable.
+func mixedReference(r crdtmerge.Mixed) func(context.Context, string, []any) conform.Output {
+	return func(ctx context.Context, operation string, args []any) conform.Output {
+		var values []any
+		var err error
+		switch operation {
+		case "Merge":
+			values, err = mixedMergeCall(ctx, r, args)
+		case "Add":
+			values, err = mixedAddCall(ctx, r, args)
+		case "Items":
+			values, err = mixedItemsCall(ctx, r, args)
+		}
+		return conform.OutputOf(err, values...)
+	}
+}
+
+// dokimi:provenance sha256:2080ee664f156cfa78d399c267e2654e2ab32a4e83077365f6cbe4a6fe12474c

@@ -37,10 +37,18 @@ func contextErr(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// Add implements [accumulates.Mixed].
+// ErrAmount is the error of Add for an amount that is not positive, which
+// would leave the total as it is.
+var ErrAmount = errors.New("accumulatestest: the amount is not positive")
+
+// Add implements [accumulates.Mixed]. It refuses an amount that is not
+// positive with [ErrAmount].
 func (s *InMemory) Add(ctx context.Context, key string, amount int) error {
 	if err := contextErr(ctx); err != nil {
 		return err
+	}
+	if amount <= 0 {
+		return ErrAmount
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

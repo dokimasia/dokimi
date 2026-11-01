@@ -74,6 +74,14 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				leasetest.ContractChecks.Acquire.ReleaseFreesTheLease(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leasetest.ContractChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				leasetest.ContractChecks.Release.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -132,6 +140,14 @@ func TestContractSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				leasetest.ContractChecks.Acquire.LeaseGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leasetest.ContractChecks.Acquire.ReleaseFreesTheLease(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leasetest.ContractChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -195,6 +211,14 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			leasetest.ContractChecks.Acquire.ReleaseFreesTheLease(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leasetest.ContractChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			leasetest.ContractChecks.Release.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -242,6 +266,14 @@ func FuzzContractSuiteAcquire(f *testing.F) {
 		),
 		conform.Excuse(
 			leasetest.ContractChecks.Acquire.LeaseGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leasetest.ContractChecks.Acquire.ReleaseFreesTheLease(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leasetest.ContractChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -295,6 +327,14 @@ func FuzzContractSuiteRelease(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			leasetest.ContractChecks.Acquire.ReleaseFreesTheLease(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leasetest.ContractChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			leasetest.ContractChecks.Release.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -324,4 +364,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6a0123cf8c52cd948b5b28dde4571d9d7a1ab2dff75b6ca302abe549a8a0f1a1
+// dokimi:provenance sha256:3d2e57de732fdb6929f5ee0fc2cac9a050e8be4791c1d6658ae74f338dbc8f5c

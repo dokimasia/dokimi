@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation"
@@ -38,6 +39,10 @@ import (
 //
 // Mixed.Items/permutation#generated: Items gains exactly the elements that
 // Add wrote between two of its calls.
+//
+// Mixed.Items/drains-gain-exactly-what-went-in: Items yields the elements
+// of the call before it and the elements that Add wrote since, each as
+// often as it was written, over any sequence of calls.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -137,6 +142,14 @@ func (c mixedItems) Permutation() conform.ID[permutation.Mixed] {
 // exactly the elements that Add wrote between two of its calls.
 func (c mixedItems) PermutationGenerated() conform.ID[permutation.Mixed] {
 	return c.Check("permutation#generated")
+}
+
+// DrainsGainExactlyWhatWentIn returns the identity of the check that Items
+// yields the elements of the call before it and the elements that Add
+// wrote since, each as often as it was written, over any sequence of
+// calls.
+func (c mixedItems) DrainsGainExactlyWhatWentIn() conform.ID[permutation.Mixed] {
+	return c.Check("drains-gain-exactly-what-went-in")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -313,6 +326,23 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 					}())
 				},
 				Defect: mixedItemsDrainsNothing,
+			},
+			{
+				ID:          MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
+				Statement:   "Items yields the elements of the call before it and the elements that Add wrote since, each as often as it was written, over any sequence of calls",
+				Claim:       spec.DrainsGainExactlyWhatWentIn,
+				Probe:       spec.DrainsGainTheWrites,
+				Reason:      spec.MiscountedDrain,
+				Law:         spec.DrainGainsExactlyWhatWentIn,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[permutation.Mixed]{MixedChecks.Items.Permutation()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.DrainsGainTheWrites(h, c, mixedActions, "Items", "Add", func(args []any) permutation.Value {
+						v, _ := args[0].(permutation.Value)
+						return v
+					})
+				},
+				Defect: mixedItemsDropsAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -558,4 +588,76 @@ func mixedItemsDrainsNothing(h *MixedHandle) permutation.Mixed {
 	return &mixedItemsDrainsNothingDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ce418bc6b55f60a73be50ce5a8f08e585c6315a5eb24354b4b1ced04820abf3f
+// mixedItemsDropsAfterThreeDefect is the planted defect of a Mixed whose
+// Items drops its last element from its fourth call on.
+type mixedItemsDropsAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Items is the override of the planted defect.
+func (d *mixedItemsDropsAfterThreeDefect) Items(p0 context.Context) (r0 []permutation.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Items(p0)
+	d.calls++
+	if d.calls > 3 && len(r0) > 0 {
+		r0 = r0[:len(r0)-1]
+	}
+	return r0, r1
+}
+
+// mixedItemsDropsAfterThree returns the planted defect of a Mixed whose
+// Items drops its last element from its fourth call on over a fresh
+// subject.
+func mixedItemsDropsAfterThree(h *MixedHandle) permutation.Mixed {
+	return &mixedItemsDropsAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() permutation.Mixed) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[permutation.Value](), "add.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := mixedAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Items",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Items", args)
+				values, err := mixedItemsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedAddCall(ctx context.Context, subject permutation.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(permutation.Value)
+	return nil, subject.Add(ctx, a0)
+}
+
+// mixedItemsCall calls Items on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedItemsCall(ctx context.Context, subject permutation.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Items(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:229de73b02fa83bf8a0aa0a9bb03e98dfd0f6aaddc4845424d68ce953d7a3a90

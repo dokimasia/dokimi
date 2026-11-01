@@ -65,6 +65,30 @@ func TestBatchReaderSuite(t *testing.T) {
 				batchreadertest.BatchReaderChecks.GetAll.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.GetAll.ReadsEachKey(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.GetAll.ReadsEachKeyGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.Put.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.Put.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -102,6 +126,30 @@ func TestBatchReaderSuite(t *testing.T) {
 				batchreadertest.BatchReaderChecks.GetAll.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.GetAll.ReadsEachKey(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.GetAll.ReadsEachKeyGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.Put.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.Put.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -121,6 +169,7 @@ func TestBatchReaderSuiteBudgets(t *testing.T) {
 		t,
 		batchReaderIdle,
 		conform.Ceilings(batchreadertest.BatchReaderChecks.GetAll.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(batchreadertest.BatchReaderChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
 			batchreadertest.BatchReaderChecks.GetAll.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -135,6 +184,30 @@ func TestBatchReaderSuiteBudgets(t *testing.T) {
 		),
 		conform.Excuse(
 			batchreadertest.BatchReaderChecks.GetAll.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.ReadsEachKeyGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -164,6 +237,80 @@ func FuzzBatchReaderSuiteGetAll(f *testing.F) {
 			batchreadertest.BatchReaderChecks.GetAll.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.ReadsEachKeyGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBatchReaderSuitePut registers the fuzz target of BatchReader.Put on
+// batchReaderIdle, with every check of the suite excused.
+func FuzzBatchReaderSuitePut(f *testing.F) {
+	batchreadertest.FuzzBatchReaderSuite(
+		f,
+		batchreadertest.BatchReaderChecks.Put.Callable,
+		batchReaderIdle,
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.ReadsEachKeyGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.Put.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -173,6 +320,9 @@ func BenchmarkBatchReaderSuite(b *testing.B) {
 	b.Run("GetAll", func(b *testing.B) {
 		batchreadertest.BenchBatchReaderSuite(b, batchreadertest.BatchReaderChecks.GetAll.Callable, batchReaderIdle)
 	})
+	b.Run("Put", func(b *testing.B) {
+		batchreadertest.BenchBatchReaderSuite(b, batchreadertest.BatchReaderChecks.Put.Callable, batchReaderIdle)
+	})
 }
 
-// dokimi:provenance sha256:1e78959c6e2c744ac2f4f8fd4d50bd0d507d4c3ec33fbe4d41773848f862828e
+// dokimi:provenance sha256:b10104862a0dce7c0715d9bdf9ec2dfc4929ca848eee1cb1d074c1aad79e2861

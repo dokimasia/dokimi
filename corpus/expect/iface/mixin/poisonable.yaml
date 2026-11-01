@@ -17,6 +17,10 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      mixed.probe/fresh-reports-no-poison:
+        claim: fresh-reports-no-poison
+        law: fresh-receiver-is-healthy
+        reason: false-poison
       mixed.probe/poisonable:
         claim: poisonable
         partners:
@@ -34,6 +38,3 @@ declarations:
       - classification: shape:lifecycle
         callable: mixed.fail
         stance: silent
-      - classification: shape:poison-accessor
-        callable: mixed.probe
-        stance: gap

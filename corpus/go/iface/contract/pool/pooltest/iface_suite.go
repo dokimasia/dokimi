@@ -41,6 +41,9 @@ import (
 //
 // Contract.Stats/zero-on-error: Stats returns the zero value beside an
 // error.
+//
+// Contract.Stats/counts-each-loan: Stats reports another count after Get
+// lends an object.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -55,9 +58,6 @@ import (
 //
 // The shape:writer of Contract.Put has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
-//
-// The contract:pool/stats of Contract.Stats has the stance gap. No claim
-// states that the stats of a pool count each loan and each return.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -163,6 +163,12 @@ func (c contractStats) Cancel() conform.ID[pool.Contract] {
 // zero value beside an error.
 func (c contractStats) ZeroOnError() conform.ID[pool.Contract] {
 	return c.Check("zero-on-error")
+}
+
+// CountsEachLoan returns the identity of the check that Stats reports
+// another count after Get lends an object.
+func (c contractStats) CountsEachLoan() conform.ID[pool.Contract] {
+	return c.Check("counts-each-loan")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -349,6 +355,24 @@ func ContractSuite() conform.Suite[pool.Contract] {
 				},
 				Defect: contractStatsValueBeside,
 			},
+			{
+				ID:          ContractChecks.Stats.CountsEachLoan(),
+				Statement:   "Stats reports another count after Get lends an object",
+				Claim:       spec.CountsEachLoan,
+				Probe:       spec.MovesWithALoan,
+				Reason:      spec.UncountedLoan,
+				Law:         spec.StatsMoveWithALoan,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.MovesWithALoan(h, func(ctx context.Context) (pool.Stats, error) {
+						return h.Subject().Stats(ctx)
+					}, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx)
+						return err
+					})
+				},
+				Defect: contractStatsFrozenStats,
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -356,12 +380,6 @@ func ContractSuite() conform.Suite[pool.Contract] {
 				Callable:       "Contract.Put",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "contract:pool/stats",
-				Callable:       "Contract.Stats",
-				Stance:         spec.Gap,
-				Note:           "No claim states that the stats of a pool count each loan and each return.",
 			},
 		},
 		Calls: []conform.Call[pool.Contract]{
@@ -679,4 +697,26 @@ func contractStatsValueBeside(h *ContractHandle) pool.Contract {
 	return &contractStatsValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0b2649c5d05558d6010c02d7d11fd7c20c0e8dccdc0fe06f0f660f90119be6ea
+// contractStatsFrozenStatsDefect is the planted defect of a Contract whose
+// Stats reports the same stats after Get lends an object.
+type contractStatsFrozenStatsDefect struct {
+	contractOverEmbedded
+}
+
+// Stats is the override of the planted defect.
+func (*contractStatsFrozenStatsDefect) Stats(p0 context.Context) (r0 pool.Stats, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	return r0, r1
+}
+
+// contractStatsFrozenStats returns the planted defect of a Contract whose
+// Stats reports the same stats after Get lends an object over a fresh
+// subject.
+func contractStatsFrozenStats(h *ContractHandle) pool.Contract {
+	return &contractStatsFrozenStatsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:314f81b61be2a21f6c4c2177fce47c71fb9f40ae753a662c059d51d07a628cbb

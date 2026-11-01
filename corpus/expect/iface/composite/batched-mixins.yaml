@@ -85,6 +85,12 @@ declarations:
           write: batched.put
         law: read-returns-the-write-before-it
         reason: unobserved-write
+      batched.read/reads-each-last-write:
+        claim: reads-each-last-write
+        partners:
+          write: batched.put
+        law: read-returns-the-write-before-it
+        reason: unobserved-write
       batched.read/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -104,11 +110,9 @@ declarations:
     authored:
       - batched.list/lists-at-most-the-limit
     ceilings: []
-    refusals: {}
+    refusals:
+      batched.list/keeps-within-its-bounds: partner-found
     unclaimed:
-      - classification: mixin:bounded
-        callable: batched.list
-        stance: needs
       - classification: mixin:concurrent
         callable: batched.put
         stance: needs

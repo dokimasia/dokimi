@@ -4,7 +4,7 @@ title: Generated sequences and the judges of their histories
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Draft
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-31
 discussion: none
 supersedes: none
 superseded-by: none
@@ -20,13 +20,13 @@ produces-adr: tbd
 
 ## Summary
 
-A law about a history is a statement about a sequence of calls: a counter never decreases, every call of an accumulating writer has an effect, a move conserves a quantity. The suite generator writes, for each declaration, the actions of a machine of assert-go. Each action calls one callable of the declaration with inputs from the generators of the suite and records the call in the history of the case, the `history.History` of assert-go. A judge is a probe that checks that history after each step. Five judges read the history of the subject alone, and the mixins of the shape catalog license their claims. A sixth judge compares the subject with a reference implementation, and a declaration gets it when it states the machinery `reference`. The property engine generates, runs and shrinks the sequences. Falsification runs each check on its planted defect with a seed from the key of the check and without shrinking, so a proof gives the same result on every run.
+A law about a history is a statement about a sequence of calls: a counter never decreases, every call of an accumulating writer has an effect, a move conserves a quantity. The suite generator writes, for each declaration, the actions of a machine of assert-go. Each action calls one callable of the declaration with inputs from the generators of the suite and records the call in the history of the case, the `history.History` of assert-go. A judge is a probe that checks that history after each step. Eleven judges read the history of the subject alone, and the mixins and the contracts of the shape catalog license their claims. Another judge compares the subject with a reference implementation, and a declaration gets it when it states the machinery `reference`. The property engine generates, runs and shrinks the sequences. Falsification runs each check on its planted defect with a seed from the key of the check and without shrinking, so a proof gives the same result on every run.
 
 ## Motivation
 
 A check of a single caller tests one call, or a fixed short sequence, against a law. A defect that appears only after a particular order of calls passes every check of a single caller. A counter that decreases after its third increment passes a check that increments twice.
 
-The shape catalog states laws of this kind as mixins: `monotonic`, `monotonic-reads`, `accumulates`, `conservative`, `no-duplicates`, `stable-order` and `atomic`. Their text in the catalog describes a check that calls the subject repeatedly and compares each result with the earlier ones (`eidos-plugin-shape/spec/mixins/monotonic.yaml`, `accumulates.yaml`). Such a law does not need a second implementation. It needs a history of calls and a judge over that history.
+The shape catalog states laws of this kind as mixins, such as `monotonic`, `read-your-writes`, `accumulates`, `conservative`, `no-duplicates`, `crdt-merge` and `atomic`, and as contracts, such as `outbox`, `publisher`, `watcher` and `workflow`. Their text in the catalog describes a check that calls the subject repeatedly and compares each result with the earlier ones (`eidos-plugin-shape/spec/mixins/monotonic.yaml`, `accumulates.yaml`). Such a law does not need a second implementation. It needs a history of calls and a judge over that history.
 
 A law that the catalog does not state, such as that a store returns what a map would return, needs an expected value. An expected value that the check takes from the subject cannot fail, because a defect moves the expectation with the measurement. A reference written as a separate implementation gives expected values that the defect of the subject does not move.
 
@@ -52,8 +52,30 @@ The model tools of other languages take the same shape. quickcheck-state-machine
 | `conserved` | `conserves-the-quantity` | The mixin `conservative` with its param `field` | The sum of the field over the subject is the same after each call | `not-conserved` | `leaks-one-unit` | — |
 | `after-fault` | `no-trace-of-a-failed-call` | The mixin `atomic`, with the machinery `faults` | A sequence with a failed call leaves the subject in the state of the same sequence without it | `partial-write` | `keeps-half-a-call` | `no-partial-write` |
 | `agrees` | `agrees-with-the-reference` | Every declaration that states the machinery `reference` | Each call of the sequence returns on the subject what it returns on the reference | `diverges-from-the-reference` | `diverges-after-three` | — |
+| `ordered` | `writes-apply-in-order` | The mixin `monotonic-writes` with its param `version` | The versions of the values that one client wrote, read back after each write, ascend in the order of the writes | `unobserved-write` | `reorders-writes-after-three` | `monotonic-writes` |
+| `invariant` | `drains-keep-what-went-in` | The mixin `over-match` | Each drain after any sequence of writes contains every element written since the drain before it | `shrunk-drain` | `drops-after-three` | `over-match` |
+| `invariant` | `drains-gain-exactly-what-went-in` | The mixin `permutation` | Each drain after any sequence of writes yields exactly the elements written since the drain before it, in any order | `miscounted-drain` | `drops-after-three` | `permutation` |
+| `last-write` | `reads-each-last-write` | The mixin `read-after-write` with its param `write` | Each read right after a write of any sequence returns the value of that write | `unobserved-write` | `reads-a-stale-value-after-three` | `read-after-write` |
+| `ordered` | `reads-follow-own-writes` | The mixin `read-your-writes` with its param `version` | The version of each read is not below the version of the last write of its client, over any sequence | `unobserved-write` | `reads-a-stale-version-after-three` | `read-your-writes` |
+| `ordered` | `writes-follow-their-reads` | The mixin `writes-follow-reads` with its param `version` | The version of each write after a read is above the version that the read returned, over any sequence | `unordered-write` | `stamps-the-past-after-three` | `writes-follow-reads` |
+| `ordered` | `appends-keep-ascending` | The contract `appender`, role `fn` | Each append of any sequence returns a position above the position of the append before it | `not-ascending` | `descends-after-three` | `appender` |
+| `agrees` | `cache-agrees-over-sequences` | The contract `cache`, role `cache` | Each read through the cache after any sequence of writes returns the value that the backing returns | `cache-disagrees` | `serves-a-stale-value-after-three` | `cache` |
+| `last-write` | `persists-each-last-write` | The contract `persister`, role `writer` | Each read of the reader after any sequence of writes returns the value of the last write | `unobserved-write` | `drops-a-write-after-three` | `persister` |
+| `ordered` | `replays-in-order-over-sequences` | The contract `chain`, role `append`, with the mixin `causal` | The replay after any sequence of appends returns the entries in the order of their stamps | `unordered-history` | `reverses-after-three` | `chain-causal` |
+| `bounded` | `keeps-within-its-bounds` | The mixin `bounded` with its params `min`, `limit` and `observe` | The use of the resource that `observe` reads is between `min` and `limit` after each call of any sequence | `exceeded-bound` | `grows-past-the-limit-after-three` | — |
+| `converges` | `merges-in-any-order` | The mixin `crdt-merge` with its params `write` and `read` | Two replicas that any sequences of writes made diverge read the same state after a merge in either order | `order-dependent-merge` | `ignores-the-other-replica-after-three` | — |
+| `reflects` | `iteration-sees-mutations` | The mixin `stream-reflects-mutations` with its params `mutate` and `delete` | The rest of an iteration yields each value that a mutation wrote and no entry that a delete removed while it ran | `stale-iteration` | `iterates-a-copy-after-three` | — |
+| `delivered` | `delivers-each-append` | The contract `outbox`, role `append`, with its role `subscribe` | Each message of any sequence of appends is delivered at least once | `lost-message` | `drops-the-fourth-append` | — |
+| `delivered` | `delivers-by-its-mode` | The contract `publisher`, role `publish`, with its param `mode` and its role `subscribe` | Each published event of any sequence is delivered at least once, at most once or exactly once, as `mode` states | `wrong-delivery-count` | `breaks-the-mode-after-three` | — |
+| `delivered` | `redelivers-on-demand` | The contract `publisher`, role `redeliver`, with its roles `publish` and `subscribe` | Each redelivered event of any sequence is delivered once more | `not-redelivered` | `skips-a-redelivery-after-three` | — |
+| `delivered` | `watch-sees-each-trigger` | The contract `watcher`, role `watch`, with its params `next` and `stop` and its role `trigger` | A watch returns each update that a trigger of any sequence caused after the watch started, in order, and no update after its stop | `missed-update` | `misses-the-fourth-update` | — |
+| `follows-the-graph` | `follows-its-graph` | The contract `workflow`, role `fn`, with its params `observe` and `transitions` | Each state that `observe` reads after a call of any sequence is the state before the call or its successor in the graph of `transitions` | `forbidden-transition` | `admits-any-transition-after-three` | — |
 
-RFC-0003 binds `monotonic`, `monotonic-reads`, `stable-order`, `no-duplicates` and `accumulates` as claims of a single caller, and RFC-0019 binds `no-partial-write`. Each claim of this table is the deeper claim of the same law, so it entails the shallower claim and reports the same reason code. The proof of each depth pair checks that the deeper claim fails on the defect of the shallower one, and that the shallower claim passes on the defect of the deeper one, which needs at least four calls.
+RFC-0003 binds each claim of the column Entails as a claim of a single caller, and RFC-0019 binds `no-partial-write`. A claim with an entry in that column is the deeper claim of the same law, so it entails the shallower claim and reports the same reason code. The proof of each depth pair checks that the deeper claim fails on the defect of the shallower one, and that the shallower claim passes on the defect of the deeper one, which needs at least four calls. A claim without an entry has no claim of a single caller, because its law is a statement about a sequence of calls.
+
+`breaks-the-mode-after-three` drops an event under `at-least-once` and `exactly-once`, and delivers an event twice under `at-most-once`. The roles `subscribe` of `outbox` and `publisher` and the role `trigger` of `watcher` are partners of these claims, so the derivation counts them as bound.
+
+The mixin `bounded` has no param for the reader of the resource, and its check needs one. The shape catalog of eidos gains the param `observe`, the callable that reads the use of the resource. Until a declaration states it, the derivation refuses the claim for the missing param.
 
 Each claim lists `generated-sequences` first among its machineries. `agrees-with-the-reference` has the scope `declaration`, and its identity is `Store/agrees-with-the-reference`. The other claims bind to the callable that the mixin classifies, and their partners come from the modes of RFC-0002, such as `named` for the param `observe`.
 
@@ -89,7 +111,7 @@ func Ordered[S, V any](operation string, project func(history.Event) V, less fun
 func AgreesWithReference[S any](h *conform.Handle[S], c *prop.Case, actions Actions[S], reference func(r S) history.Subject)
 ```
 
-`Invariant`, `Folds`, `Conserved` and `AfterFault` have the form of `Ordered`. Every assertion is inside a probe, and the generated code only calls the subject and records the calls.
+`Invariant`, `Folds`, `Conserved`, `AfterFault`, `LastWrite`, `Delivered`, `FollowsTheGraph`, `Reflects` and `Bounded` have the form of `Ordered`. `Converges` runs the actions on two subjects of the factory, as two replicas, and merges them in both orders at the end of the sequence. Every assertion is inside a probe, and the generated code only calls the subject and records the calls.
 
 ### The generated actions and checks
 
@@ -141,7 +163,7 @@ and one check per claim:
 },
 ```
 
-A declaration with `//dokimi:suite machineries=reference` also gets:
+A declaration with `//dokimi:suite machineries=[reference]` also gets:
 
 ```go
 {
@@ -174,7 +196,7 @@ On a subject the property engine shrinks a failing sequence by removing actions 
 
 ### Without a reference
 
-A declaration without `machineries=reference` lists `agrees-with-the-reference` as unclaimed with the stance `needs`. A declaration that states the machinery gets the check, and an application without the door `Reference` fails the check with the name of the option, as every door of conform does.
+A declaration without `machineries=[reference]` lists `agrees-with-the-reference` as unclaimed with the stance `needs`. A declaration that states the machinery gets the check, and an application without the door `Reference` fails the check with the name of the option, as every door of conform does.
 
 ## Alternatives considered
 

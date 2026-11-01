@@ -4,7 +4,7 @@ title: The suite record in the artifact of a run
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Accepted
 created: 2026-10-28
-updated: 2026-10-29
+updated: 2026-10-31
 discussion: none
 supersedes: none
 superseded-by: none
@@ -43,6 +43,7 @@ The generated suite states its refusals and its unclaimed classifications, so th
 type Refusal struct {
 	Claim    spec.ClaimID
 	Callable string
+	Gate     spec.GateID
 	Why      string
 	Remedy   string
 }
@@ -76,7 +77,7 @@ type Suite[S any] struct {
 }
 ```
 
-The callable of a refusal and of an unclaimed classification is the name of the declaration and the name of the callable, such as `Store.Scan`. conform writes the language `go` itself. The subject of a record is the name of the factory that the consumer passed to the application, such as `storetest.NewInMemory`.
+The callable of a refusal and of an unclaimed classification is the name of the declaration and the name of the callable, such as `Store.Scan`. The gate of a refusal is the gate of the spec that fails for the callable, and every refusal has one. The derivation refuses a claim by one of four kinds of gate: a gate of the claim, `input-samples` for an input without a sample, `classification-params` for a param that the classification does not set, or a gate of a partner. The suite generator of a language refuses a derived check by a gate on the code that it writes: `interface-handle` for a handle that a planted handle cannot replace, and `importable-samples` for a sample that the file of the suite cannot import. conform writes the language `go` itself. The subject of a record is the type of the value that the factory of the application builds: the import path of its package, a dot and its name, such as `example.com/shop/storetest.InMemory`. For a pointer, the subject is the type that the pointer points at, and for an instance of a generic type it is the generic type without its type arguments. A generated suite passes an adapter of the factory of the consumer to conform, so the name of the factory would be the name of the adapter. An application that does not run a check does not build a value, so its record does not have a subject.
 
 ### Writing the record in Go
 

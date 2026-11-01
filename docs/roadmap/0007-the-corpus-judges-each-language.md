@@ -1,7 +1,7 @@
 ---
 milestone: 0007
 title: The corpus judges each language by its records
-status: Planned
+status: Done
 depends-on: 0001, 0004, 0005
 released-in: unscheduled
 deadline: none
@@ -23,12 +23,12 @@ A maintainer runs `dokimi conform --lang go` and learns, for each fixture, wheth
 
 ## Done when
 
-- [ ] RFC-0017 is accepted.
-- [ ] Each fixture of conformance levels 1 to 4 has a file of expected outcomes under `corpus/expect`.
-- [ ] `dokimi conform --lang go` passes on the corpus with an overlay of Go.
-- [ ] A planted difference in the Go binding, such as a probe that reports another reason code, fails the gate with the fixture and the two codes.
-- [ ] An overlay entry that matches no difference fails the gate, and so does an entry whose outcome now meets the expectation.
-- [ ] The gate of dokimi runs `dokimi conform` for every language that has a binding.
+- [x] RFC-0017 is accepted.
+- [x] Each fixture of conformance levels 1 to 4 has a file of expected outcomes under `corpus/expect`.
+- [x] `dokimi conform --lang go` passes on the corpus with an overlay of Go.
+- [x] A planted difference in the Go binding, such as a probe that reports another reason code, fails the gate with the fixture and the two codes.
+- [x] An overlay entry that matches no difference fails the gate, and so does an entry whose outcome now meets the expectation.
+- [x] The gate of dokimi runs `dokimi conform` for every language that has a binding.
 
 ## Why now
 
@@ -54,3 +54,5 @@ The expected outcomes of the corpus, the overlay of Go, the levels, and the comm
 | Date | What changed | Why |
 |---|---|---|
 | 2026-10-28 | Created at position 7 | The first roadmap of dokimi |
+| 2026-10-31 | In progress | RFC-0017 is accepted. A run of the Go corpus takes 1.5 s to generate and 26 s to test with a warm build cache, so the whole corpus runs on each pull request |
+| 2026-10-31 | Done | `dokimi conform --lang go` judges the 168 fixtures of the Go corpus, and each conforms. The spec of the command runs it in the Go tests of the gate |

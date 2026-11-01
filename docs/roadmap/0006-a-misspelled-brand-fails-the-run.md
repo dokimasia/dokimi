@@ -1,7 +1,7 @@
 ---
 milestone: 0006
 title: A misspelled brand fails the run
-status: Planned
+status: Done
 depends-on: none
 released-in: unscheduled
 deadline: none
@@ -25,7 +25,7 @@ A developer who writes `//dokimy:suite` gets a finding that names the brand `dok
 
 - [x] eidos reports a carrier whose brand is within two edits of a registered brand, with the registered brand in the message: the warning EID-0083.
 - [x] dokimi requires the release of eidos with that finding: the commit 482b0bb7 of eidos, which reports the warning and fails `dokimi run --strict`.
-- [ ] A fixture of dokimi with `//dokimy:suite` fails `dokimi run` with the finding, and the fixture passes once the brand is fixed.
+- [x] A fixture of dokimi with `//dokimy:suite` fails `dokimi run --strict` with the finding, and the fixture passes once the brand is fixed.
 
 ## Why now
 
@@ -50,6 +50,7 @@ The request to eidos and the fixture of dokimi. An unknown name under the correc
 | Date | What changed | Why |
 |---|---|---|
 | 2026-10-28 | Created at position 6 | The first roadmap of dokimi |
+| 2026-10-31 | Done, and the last line of Done when names `--strict` | A fixture of the binary with `//dokimy:suite` fails `dokimi run --strict` with EID-0083 and passes with `//dokimi:suite`. EID-0083 is a warning, so a run without `--strict` reports it and exits 0 |
 
 ## References
 

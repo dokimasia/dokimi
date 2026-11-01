@@ -26,7 +26,7 @@ A Go team whose subject writes to storage through `medium.FS` gets checks that e
 - [ ] RFC-0023 is accepted.
 - [ ] The module `go.dokimi.dev/medium` is released with `FS`, `OS` and `Memory`.
 - [x] eidos has the mixin `durable` with its param `corrupt`, and dokimi requires the commit of eidos that adds it.
-- [ ] A durable log of the corpus under `//dokimi:suite machineries=medium` passes `synced-writes-survive` and `no-torn-record` through the option `Durable`, and each claim fails on its planted defect with its reason code.
+- [ ] A durable log of the corpus under `//dokimi:suite machineries=[medium]` passes `synced-writes-survive` and `no-torn-record` through the option `Durable`, and each claim fails on its planted defect with its reason code.
 - [ ] An application with `Durable` runs the checks of the doors `Restart` and `Crash` without `Restartable` or `Crashable`.
 - [ ] The probe enumerates every crash point of every sequence of up to three calls, and the suite record states the count.
 - [ ] The fixture `door/durable` of the corpus uses `medium.Memory` in place of its own medium.

@@ -4,7 +4,7 @@ title: Concurrent callers and the consistency of their histories
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Draft
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-31
 discussion: none
 supersedes: none
 superseded-by: none
@@ -20,7 +20,7 @@ produces-adr: tbd
 
 ## Summary
 
-A declaration with the mixin `concurrent` that states the machinery `reference` gets the claim `linearizable`: every history of concurrent calls on the subject has an order of its calls in which the reference, called one at a time, returns the same results. A declaration with the mixin `serializable` or `snapshot-isolation` gets the claim of that isolation level over the histories of its transactions. Each generated check runs the actions of RFC-0020 on several clients through the scheduler of assert-go, records the history of calls and returns, and checks it with the checker of assert-go for its level. The planted defect of `linearizable` is a subject whose read and write race: correct when called one at a time, and wrong when a read overlaps a write.
+A declaration with the mixin `concurrent` that states the machinery `reference` gets the claim `linearizable`: every history of concurrent calls on the subject has an order of its calls in which the reference, called one at a time, returns the same results. A declaration with the mixin `serializable` or `snapshot-isolation` gets the claim of that isolation level over the histories of its transactions. Five more claims check concurrent readers, a single flight of one computation, causal order, a snapshot under concurrent writes and an exclusive lease. Each generated check runs the actions of RFC-0020 on several clients through the scheduler of assert-go, records the history of calls and returns, and checks it with the checker of assert-go for its level. The planted defect of `linearizable` is a subject whose read and write race: correct when called one at a time, and wrong when a read overlaps a write.
 
 ## Motivation
 
@@ -39,8 +39,20 @@ Porcupine checks linearizability for Go programs in the same way, and partitions
 | `linearizable` | The mixin `concurrent` | `concurrent-callers`, `reference-implementation` | `linearizable-history` | `not-linearizable` | `racy-read-write` |
 | `serializable` | The mixin `serializable` | `concurrent-callers` | `serializable-history` | `not-serializable` | `reads-uncommitted` |
 | `snapshot-isolation` | The mixin `snapshot-isolation` | `concurrent-callers` | `snapshot-history` | `lost-update` | `writes-without-a-snapshot` |
+| `reads-agree-under-concurrency` | The mixin `concurrent-readers` | `concurrent-callers` | `concurrent-reads-agree` | `inconsistent-concurrent-read` | `racy-read` |
+| `computes-once` | The contract `single-flight`, role `fn` | `concurrent-callers`, `call-that-fails-on-demand` | `shares-one-computation` | `repeated-computation` | `computes-per-call` |
+| `causal-history` | The mixin `causal` with its param `version` | `concurrent-callers` | `causal-history` | `unobserved-write` | `racy-causal-read` |
+| `pins-the-snapshot-under-writes` | The mixin `point-in-time` with its param `write` | `concurrent-callers` | `pinned-under-concurrent-writes` | `unpinned-read` | `racy-pin` |
+| `one-holder-at-a-time` | The contract `lease`, role `acquire`, with its param `taken` | `concurrent-callers` | `exclusive-under-concurrency` | `unguarded-write` | `check-then-grant` |
 
-Each claim has the scope `declaration`. A declaration with the mixin `concurrent` and without `machineries=reference` lists `linearizable` as unclaimed with the stance `needs`. The isolation levels do not need a reference, because their checkers judge the reads and writes of the history alone.
+`linearizable`, `serializable` and `snapshot-isolation` have the scope `declaration`. A declaration with the mixin `concurrent` and without `machineries=[reference]` lists `linearizable` as unclaimed with the stance `needs`. The isolation levels do not need a reference, because their checkers judge the reads and writes of the history alone.
+
+The other five claims bind to the callable that their mixin or contract classifies:
+
+- `reads-agree-under-concurrency` calls the callable from three clients at once, each with another sample, without a write, and compares each result with the result of a read of one client. `racy-read` keeps the result of a read in a field of its own, yields to the scheduler and returns the field, so a read that overlaps another returns the result of the other.
+- `computes-once` calls `Hold` of the injector of RFC-0019 and makes three clients call the callable with one key. It fails when the dependencies record more than one computation. The check runs inside a `testing/synctest` bubble through the field `Around` of the check, so the probe waits until every client blocks before it counts the calls of the dependencies and calls `Release`. A call after the computation finished starts another computation by design, so the dependencies wait until every client has called. `computes-per-call` calls a fresh subject for each call, so each call computes.
+- `causal-history`, `pins-the-snapshot-under-writes` and `one-holder-at-a-time` are the deeper claims of the laws of `causal`, `point-in-time` and `lease`, whose depth is `concurrent-callers`. Each entails the claim of a single caller and reports its reason code. Each defect is correct when called one at a time and races through a yield of the scheduler between a check and its effect, as `racy-read-write` does.
+- `causal-history` judges the history of RFC-0020 with the judge `ordered` over the stamps that `version` reads. A write that a client issued after another write of the same client, or after a read that observed the other write, has a higher stamp, and each read observes the stamps of the writes before it in that order.
 
 ### The generated check
 

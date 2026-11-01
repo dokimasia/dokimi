@@ -2,7 +2,7 @@
 milestone: 0011
 title: Concurrent callers are checked for linearizability
 status: Planned
-depends-on: 0010
+depends-on: 0009, 0010
 released-in: unscheduled
 deadline: none
 deadline-source: none
@@ -24,19 +24,22 @@ A Go team whose declaration has the mixin `concurrent` and a reference gets a ch
 ## Done when
 
 - [ ] RFC-0021 is accepted.
-- [ ] The suite generator writes the check `linearizable` for a declaration with the mixin `concurrent` and `machineries=reference`.
+- [ ] The suite generator writes the check `linearizable` for a declaration with the mixin `concurrent` and `machineries=[reference]`.
 - [ ] The suite generator writes the checks `serializable` and `snapshot-isolation` for a declaration with the mixin of the same name.
+- [ ] The suite generator writes `reads-agree-under-concurrency`, `computes-once`, `causal-history`, `pins-the-snapshot-under-writes` and `one-holder-at-a-time` for each callable that their mixin or contract classifies.
+- [ ] `computes-once` runs inside a `testing/synctest` bubble and keeps the computation waiting through the injector of milestone 0009.
+- [ ] `causal-history`, `pins-the-snapshot-under-writes` and `one-holder-at-a-time` entail the claims of a single caller of their laws, and each pair passes the proof of its depth.
 - [ ] Each planted defect fails its check with its reason code at the seed of falsification under the strategy `PCT`, and the checks of milestone 0010 pass on it.
 - [ ] A check whose every case the budget cannot decide is vacuous in the census.
 - [ ] The concurrent fixtures of the corpus run `linearizable` with three clients and a partition by key.
 
 ## Why now
 
-The checks run the actions of milestone 0010 on several clients, so that milestone has to exist first. Nothing waits on it.
+The checks run the actions of milestone 0010 on several clients, so that milestone has to exist first. `computes-once` keeps a computation waiting through the injector of milestone 0009. Nothing waits on it.
 
 ## Scope
 
-The probes `linearizable-history`, `serializable-history` and `snapshot-history` over the checkers of assert-go, the claims and their defect forms, the partition by key, and the concurrent and transactional fixtures of the corpus.
+The probes `linearizable-history`, `serializable-history` and `snapshot-history` over the checkers of assert-go, the probes of the other five claims of RFC-0021, the claims and their defect forms, the partition by key, and the concurrent and transactional fixtures of the corpus.
 
 ## Not in this milestone
 
@@ -48,3 +51,4 @@ The probes `linearizable-history`, `serializable-history` and `snapshot-history`
 |---|---|---|
 | 2026-10-28 | Created at position 11 | The first roadmap of dokimi |
 | 2026-10-28 | Moved to position 12 | Milestone 0015 took position 11, because the first milestone of sharder waits on it |
+| 2026-10-31 | The scope gains the claims of `concurrent-readers`, `single-flight`, `causal`, `point-in-time` and `lease`, and the milestone depends on 0009 | RFC-0021 binds every classification whose stance or law names concurrent callers. `computes-once` keeps its computation waiting through the injector of RFC-0019 |

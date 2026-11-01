@@ -28,6 +28,15 @@ func identities(s derive.Suite) []string {
 	return ids
 }
 
+// gatesOf returns the gate of each refusal of s, in the order of the refusals.
+func gatesOf(s derive.Suite) []spec.GateID {
+	out := make([]spec.GateID, 0, len(s.Refusals))
+	for _, r := range s.Refusals {
+		out = append(out, r.Gate)
+	}
+	return out
+}
+
 // checkOf returns the check of s with the identity id.
 func checkOf(t *testing.T, s derive.Suite, id string) derive.Check {
 	t.Helper()
@@ -404,18 +413,18 @@ func TestDerive(t *testing.T) {
 
 		t.Run("lists the stance of each role of a contract once", func(t *testing.T) {
 			t.Parallel()
-			stats := getter()
-			stats.Class.Contracts = []shape.Membership{
-				{Contract: "pool", Role: "stats", ID: "a"},
-				{Contract: "pool", Role: "stats", ID: "b"},
+			watch := getter()
+			watch.Class.Contracts = []shape.Membership{
+				{Contract: "watcher", Role: "watch", ID: "a"},
+				{Contract: "watcher", Role: "watch", ID: "b"},
 			}
 
-			got, err := derive.Derive([]derive.Facts{stats}, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{watch}, spec.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Unclaimed, []derive.Unclaimed{{
-				Classification: "contract:pool/stats", Callable: "Get", Key: "store.get", Stance: spec.Gap,
-				Note: "No claim states that the stats of a pool count each loan and each return.",
+				Classification: "contract:watcher/watch", Callable: "Get", Key: "store.get", Stance: spec.Needs,
+				Note: "The claims of the contract need generated sequences.",
 			}}, "the role has its stance once")
 		})
 
@@ -704,6 +713,232 @@ func TestDerive(t *testing.T) {
 				{Deeper: "Store.Read/deeper#generated", Shallower: "Store.Read/shallower#generated"},
 			}, "each binding of the deeper claim entails the binding of the shallower claim of its kind")
 		})
+
+		t.Run("binds a claim of a declaration once, on its first callable that passes the gates", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("whole", spec.Licence{Declaration: true}, spec.ReturnsAValue)
+			decl := []derive.Facts{writer(), reader(), pure()}
+
+			got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Store/whole"}, "the declaration binds the claim once")
+			assert.Equal(t, got.Checks[0].Key, "store/whole", "the key names the declaration")
+			assert.Equal(t, got.Checks[0].Facts.Callable, "Read",
+				"the check binds on the first callable that returns a value")
+		})
+
+		t.Run("refuses a claim of a declaration on its first callable where none passes the gates", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("whole", spec.Licence{Declaration: true}, spec.ReturnsAValue)
+			decl := []derive.Facts{writer(), withMixins(reader(), "waits")}
+
+			got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, got.Refusals, []derive.Refusal{{
+				Claim: "whole", Callable: "Put", Key: "store/whole", Gate: spec.ReturnsAValue,
+				Why:    "no callable of Store returns a value on its own",
+				Remedy: "give Store a callable that returns a value without the mixin waits or runs-until-cancelled",
+			}}, "the declaration refuses the claim once with the reason of the gate")
+		})
+
+		t.Run("names the check of the declaration of a function by the function", func(t *testing.T) {
+			t.Parallel()
+			slug := pure()
+			slug.Declaration, slug.Callable = "", "Slug"
+			c := claimOn("whole", spec.Licence{Declaration: true}, spec.ReturnsAValue)
+
+			got, err := derive.Derive([]derive.Facts{slug}, []spec.Claim{c}, nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Slug/whole"}, "the function is its own declaration")
+		})
+
+		t.Run("binds a claim whose input has the default of a param that the classification lacks", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("bounded", spec.Licence{Callable: true})
+			c.Inputs = []spec.Binding{{Input: "min", Kind: spec.FromParam, Param: "min", Default: "0"}}
+
+			got, err := derive.Derive([]derive.Facts{reader()}, []spec.Claim{c}, nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Store.Read/bounded"}, "the default stands in for the param")
+		})
+
+		t.Run("binds a claim of generated sequences without a generated binding", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("sequences", spec.Licence{Callable: true})
+			c.Machineries = []spec.MachineryID{spec.GeneratedSequences}
+			supplied := append(slices.Clone(runtime), spec.GeneratedSequences)
+
+			got, err := derive.Derive([]derive.Facts{reader()}, []spec.Claim{c}, nil, supplied, drawsAll)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Store.Read/sequences"},
+				"the actions of a sequence generate the inputs of the check")
+			assert.False(t, got.Checks[0].Generated, "the check draws no samples")
+		})
+
+		t.Run("binds a claim of generated sequences on a callable whose input has no sample", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("sequences", spec.Licence{Callable: true})
+			c.Machineries = []spec.MachineryID{spec.GeneratedSequences}
+			supplied := append(slices.Clone(runtime), spec.GeneratedSequences)
+			hash := pure()
+			hash.Inputs = append([]derive.Value(nil), hash.Inputs...)
+			hash.Inputs[0].Samples[0] = rules.Refused(rules.RefusedNoLiteral)
+
+			got, err := derive.Derive([]derive.Facts{hash}, []spec.Claim{c}, nil, supplied, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Store.Hash/sequences"},
+				"the actions of a sequence draw the inputs that a sample would give")
+		})
+
+		{
+			// Set(ctx, id string, it Item) error takes an Item, and its partner
+			// Mark(ctx, id string) error takes no Item, so the arguments of the
+			// two do not bind.
+			set := withMixins(withParam(keyedPutter(), "merging", "write", idOf("Mark")), "merging")
+			sequences := append(slices.Clone(runtime), spec.GeneratedSequences)
+			claimOf := func(probe spec.ProbeID, input string, m spec.MachineryID) spec.Claim {
+				c := claimOn("sequences", spec.Licence{Mixin: "merging"})
+				c.Machineries, c.Probe = []spec.MachineryID{m}, probe
+				c.Partners = []spec.Partner{{Name: "write", Mode: spec.ModeNamed, Param: "write"}}
+				c.Inputs = []spec.Binding{{Input: input, Kind: spec.FromPartner, Partner: "write"}}
+				return c
+			}
+			tests := []struct {
+				name      string
+				give      spec.Claim
+				giveFacts derive.Facts
+				want      []string
+				wantGates []spec.GateID
+			}{
+				{
+					name:      "binds a partner that the probe of generated sequences takes by its name",
+					give:      claimOf(spec.MergesCommute, "write", spec.GeneratedSequences),
+					giveFacts: set,
+					want:      []string{"Store.Set/sequences"},
+					wantGates: []spec.GateID{},
+				},
+				{
+					name:      "binds a partner that the probe of generated sequences calls with its own samples",
+					give:      claimOf(spec.UseIsWithinTheBounds, "observe", spec.GeneratedSequences),
+					giveFacts: set,
+					want:      []string{"Store.Set/sequences"},
+					wantGates: []spec.GateID{},
+				},
+				{
+					name:      "refuses a partner that the probe of generated sequences applies to the arguments of a call",
+					give:      claimOf(spec.EachCallMovesTheObservation, "observe", spec.GeneratedSequences),
+					giveFacts: set,
+					want:      []string{},
+					wantGates: []spec.GateID{spec.PartnerArguments},
+				},
+				{
+					name:      "refuses a partner whose arguments the probe of a single caller binds",
+					give:      claimOf(spec.UseIsWithinTheBounds, "observe", spec.NothingBeyondACaller),
+					giveFacts: set,
+					want:      []string{},
+					wantGates: []spec.GateID{spec.PartnerArguments},
+				},
+				{
+					name:      "refuses a partner of generated sequences that the classification does not name",
+					give:      claimOf(spec.MergesCommute, "write", spec.GeneratedSequences),
+					giveFacts: withMixins(keyedPutter(), "merging"),
+					want:      []string{},
+					wantGates: []spec.GateID{spec.PartnerFound},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got, err := derive.Derive([]derive.Facts{tt.giveFacts, marker()}, []spec.Claim{tt.give}, nil,
+						sequences, nil)
+
+					assert.NoError(t, err, "the declaration derives")
+					assert.Equal(t, identities(got), tt.want, "the claim binds where its probe binds no argument")
+					assert.Equal(t, gatesOf(got), tt.wantGates, "the claim refuses with the gate of its partner")
+				})
+			}
+		}
+
+		t.Run("keeps a partner of generated sequences whose arguments do not bind", func(t *testing.T) {
+			t.Parallel()
+			set := keyedPutter()
+			set.Class.Params = map[string]shape.Params{"merging": {"write": idOf("Mark"), "read": idOf("Get")}}
+			c := claimOn("sequences", spec.Licence{Callable: true})
+			c.Machineries, c.Probe = []spec.MachineryID{spec.GeneratedSequences}, spec.EachCallMovesTheObservation
+			c.Partners = []spec.Partner{
+				{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				{Name: "read", Mode: spec.ModeNamed, Param: "read"},
+			}
+			c.Inputs = []spec.Binding{
+				{Input: "call", Kind: spec.FromPartner, Partner: "write"},
+				{Input: "observe", Kind: spec.FromPartner, Partner: "read"},
+			}
+			supplied := append(slices.Clone(runtime), spec.GeneratedSequences)
+
+			got, err := derive.Derive([]derive.Facts{set, marker(), getter()}, []spec.Claim{c}, nil, supplied, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			check := checkOf(t, got, "Store.Set/sequences")
+			assert.Equal(t, check.Pairs["write"].Partner.Callable, "Mark", "the probe calls Mark by its name")
+			assert.Nil(t, check.Pairs["write"].Read, "Mark and Set bind no argument")
+			assert.Equal(t, check.Pairs["read"].Read.Callable, "Get", "the probe applies Get to the arguments of Set")
+		})
+
+		{
+			// Save(ctx, it Item) (Item, error) returns the Item that Get
+			// returns. Put(ctx, it Item) error returns no value, and
+			// Note(ctx, it Item) (string, error) returns a text.
+			valued := func(name string, result derive.Value) derive.Facts {
+				f := putter()
+				f.Callable, f.ID = name, idOf(name)
+				f.Signature = signature(name, true, f.Inputs,
+					[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+				f.Results = []derive.Value{result}
+				return f
+			}
+			c := claimOn("writes", spec.Licence{Mixin: "versioned"}, spec.WriteReturnsTheValue)
+			c.Partners = []spec.Partner{{Name: "write", Mode: spec.ModeNamed, Param: "write"}}
+			tests := []struct {
+				name      string
+				giveWrite derive.Facts
+				want      []spec.GateID
+			}{
+				{
+					name:      "binds a claim whose write returns the value of the callable",
+					giveWrite: valued("Save", item("")),
+					want:      []spec.GateID{},
+				},
+				{
+					name:      "refuses a claim whose write returns no value",
+					giveWrite: putter(),
+					want:      []spec.GateID{spec.WriteReturnsTheValue},
+				},
+				{
+					name:      "refuses a claim whose write returns a value of another type",
+					giveWrite: valued("Note", text("")),
+					want:      []spec.GateID{spec.WriteReturnsTheValue},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					get := withMixins(withParam(getter(), "versioned", "write", tt.giveWrite.ID), "versioned")
+
+					got, err := derive.Derive([]derive.Facts{get, tt.giveWrite}, []spec.Claim{c}, nil, runtime, nil)
+
+					assert.NoError(t, err, "the declaration derives")
+					assert.Equal(t, gatesOf(got), tt.want, "the claim refuses a write that returns no value of Get")
+					assert.Length(t, got.Checks, 1-len(tt.want), "the claim binds where its write returns the value")
+				})
+			}
+		}
 
 		t.Run("names the check of a function by the function alone", func(t *testing.T) {
 			t.Parallel()

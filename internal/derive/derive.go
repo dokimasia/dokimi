@@ -211,7 +211,9 @@ type licensing struct {
 // generated, as Store.Get/zero-on-error#generated, or the suffix -generated
 // after the id of an instance, as Store.Get/cache#a-generated. A nil draws
 // does not add a generated binding. A claim of the machinery generated-inputs
-// binds once, as a check that the property engine generates.
+// binds once, as a check that the property engine generates. A claim of the
+// machinery generated-sequences binds once too, because the actions of its
+// sequences generate the inputs of its calls.
 //
 // # Errors
 //
@@ -256,7 +258,7 @@ func (d *derivation) callable(f *Facts, decl []Facts, table []spec.Claim) {
 		if c.Generator != "suite" {
 			continue
 		}
-		licensings := licensed(c, f)
+		licensings := licensed(c, f, decl)
 		if c.Unless != nil && slices.Contains(f.Class.Mixins, c.Unless.Mixin) {
 			cover(covered, licensings)
 			continue
@@ -278,7 +280,8 @@ func (d *derivation) callable(f *Facts, decl []Facts, table []spec.Claim) {
 				out.Refusals = append(out.Refusals, *refusal)
 			default:
 				out.Checks = append(out.Checks, check)
-				if !check.Generated && d.draws != nil && d.draws(&check) {
+				sequences := slices.Contains(c.Machineries, spec.GeneratedSequences)
+				if !check.Generated && !sequences && d.draws != nil && d.draws(&check) {
 					out.Checks = append(out.Checks, generatedOf(&check))
 				}
 			}
@@ -316,10 +319,15 @@ func cover(covered map[string]bool, licensings []licensing) {
 
 // bind binds the claim c through the licensing l on the callable of f. It
 // returns the check, or the refusal of the claim, or silent for a claim of
-// every callable whose gate fails.
+// every callable whose gate fails. The identity of a claim of a declaration
+// names the declaration, as Store/agrees-with-the-reference.
 func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, bool) {
 	everyCallable := l.licence.Callable
+	names := namesOf(f)
 	identity := f.qualified() + "/" + string(c.ID)
+	if l.licence.Declaration {
+		identity = names["declaration"] + "/" + string(c.ID)
+	}
 	if l.instance != "" {
 		identity += "#" + l.instance
 	}
@@ -330,19 +338,17 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		r := refusal(c.ID, f, spec.Key(identity), gate, names)
 		return Check{}, &r, false
 	}
-	names := namesOf(f)
-	for _, g := range c.Gates {
-		if passes, defined := Passes(g, f); defined && !passes {
-			return refuse(gateOf(g), names)
-		}
+	if g, failed := failing(c.Gates, f); failed {
+		return refuse(gateOf(g), names)
 	}
 	for i := range f.Inputs {
-		if in := &f.Inputs[i]; !in.sampled() && !in.made() {
+		in := &f.Inputs[i]
+		if !in.sampled() && !in.made() && !slices.Contains(c.Machineries, spec.GeneratedSequences) {
 			return refuse(gateOf(spec.InputSamples), mapWith(names, "param", in.Name))
 		}
 	}
 	for _, b := range c.Inputs {
-		if b.Kind == spec.FromParam && !hasClassParam(f, b.Param) {
+		if b.Kind == spec.FromParam && b.Default == "" && !hasClassParam(f, b.Param) {
 			return refuse(gateOf(spec.ClassificationParams), mapWith(names, "param", b.Param))
 		}
 	}
@@ -350,8 +356,11 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 	for pi := range c.Partners {
 		p := &c.Partners[pi]
 		pair, gate := Partner(p, f, decl)
-		if gate != nil {
+		if gate != nil && (pair == nil || !unbound(c, p.Name)) {
 			return refuse(gate, mapWith(names, "partner", p.Name))
+		}
+		if slices.Contains(c.Gates, spec.WriteReturnsTheValue) && !returnsTheValue(pair.Partner, f) {
+			return refuse(gateOf(spec.WriteReturnsTheValue), mapWith(names, "partner", p.Name))
 		}
 		pairs[p.Name] = pair
 		names[p.Name] = pair.Partner.Callable
@@ -364,6 +373,25 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		Shallow:   !slices.Contains(c.Machineries, law.Depth),
 		Generated: slices.Contains(c.Machineries, spec.GeneratedInputs),
 	}, nil, false
+}
+
+// unbound reports whether the claim c of generated sequences takes the partner
+// name only as inputs of the kinds operation and call. Its probe calls such a
+// partner by its name or with its own samples, so the arguments of the
+// partner need no binding.
+func unbound(c *spec.Claim, name string) bool {
+	if !slices.Contains(c.Machineries, spec.GeneratedSequences) {
+		return false
+	}
+	probe, _ := spec.ProbeOf(c.Probe)
+	return !slices.ContainsFunc(c.Inputs, func(b spec.Binding) bool {
+		if b.Partner != name {
+			return false
+		}
+		at := slices.IndexFunc(probe.Inputs, func(in spec.Input) bool { return in.Name == b.Input })
+		kind := probe.Inputs[at].Kind
+		return kind != spec.KindOperation && kind != spec.KindCall
+	})
 }
 
 // GeneratedOf returns the identity of the generated binding of the check of
@@ -419,8 +447,10 @@ func namesOf(f *Facts) map[string]string {
 
 // licensed returns each way in which the callable of f has a licence of c.
 // A callable with two instances of the contract of a licence has it once for
-// each instance.
-func licensed(c *spec.Claim, f *Facts) []licensing {
+// each instance. One callable of the declaration decl has the licence of a
+// claim of the declaration: the first callable that passes the gates of c, or
+// the first callable where none does.
+func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 	var out []licensing
 	for li := range c.Licences {
 		l := &c.Licences[li]
@@ -435,6 +465,10 @@ func licensed(c *spec.Claim, f *Facts) []licensing {
 			out = append(out, licensing{licence: l})
 		case l.Context:
 			if hasParamRole(f) {
+				out = append(out, licensing{licence: l})
+			}
+		case l.Declaration:
+			if f == anchorOf(c, decl) {
 				out = append(out, licensing{licence: l})
 			}
 		case l.Contract != "":
@@ -456,6 +490,29 @@ func licensed(c *spec.Claim, f *Facts) []licensing {
 		}
 	}
 	return out
+}
+
+// anchorOf returns the callable of decl on which a claim c of the declaration
+// binds: the first callable that passes the gates of c, or the first callable
+// where none does.
+func anchorOf(c *spec.Claim, decl []Facts) *Facts {
+	for i := range decl {
+		if _, failed := failing(c.Gates, &decl[i]); !failed {
+			return &decl[i]
+		}
+	}
+	return &decl[0]
+}
+
+// failing returns the first gate of gates with a condition that the facts f
+// fail, and false where f pass the condition of each gate.
+func failing(gates []spec.GateID, f *Facts) (spec.GateID, bool) {
+	for _, g := range gates {
+		if passes, defined := Passes(g, f); defined && !passes {
+			return g, true
+		}
+	}
+	return "", false
 }
 
 // has reports whether the callable of f has the classification cls.

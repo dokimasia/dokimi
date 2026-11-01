@@ -79,6 +79,11 @@ type Pair struct {
 // when no callable matches, one-partner when two do, partner-arguments when
 // a parameter of the read selects nothing of the write, and rewritable when
 // a second write could not change what the read returns.
+//
+// Every mode but establishing resolves the partner before it binds the
+// arguments. For those modes, Partner returns the pair of the partner without
+// a read and a write beside the gate partner-arguments. A claim whose probe
+// calls the partner by its name takes that pair.
 func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 	switch p.Mode {
 	case spec.ModeNamed, spec.ModeInterposed:
@@ -86,7 +91,14 @@ func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 		if gate != nil {
 			return nil, gate
 		}
-		return paired(p.Mode, partner, f, partner)
+		pair, gate := paired(p.Mode, partner, f, partner)
+		if gate != nil && p.Mode == spec.ModeNamed && len(f.Results) == 0 && len(partner.Results) > 0 {
+			// A callable without a value whose parameters select nothing of
+			// its named partner writes what the partner reads, as Add writes
+			// the total that Total observes.
+			return paired(p.Mode, partner, partner, f)
+		}
+		return pair, gate
 	case spec.ModeReader, spec.ModeRewriter:
 		partner, gate := named(p.Param, f, decl)
 		if p.Param == "" {
@@ -261,16 +273,27 @@ func hasClassification(c *Facts, p *spec.Partner) bool {
 // parameter of the same name and type in both calls shares one sample, and
 // any other parameter takes the field of the written value with its name
 // and type.
+//
+// A batch read returns the list of the values that the write writes one at a
+// time, and selects them by the keys of its variadic input. The keys select
+// the field of the written value of their name, or are the written values
+// themselves. The second write changes that field or the whole value, so the
+// two writes store two keys.
 func paired(mode spec.PartnerMode, partner, read, write *Facts) (*Pair, *spec.Gate) {
 	pair := &Pair{Partner: partner, Read: read, Write: write, Written: -1}
+	batch := batched(read)
 	if len(read.Results) > 0 {
+		value := read.Results[0].Shape
+		if batch {
+			value = value.Elems[0]
+		}
 		// An input that the read takes by its name is a selector, such as the
 		// key of Write(key, value), so it is not the value. A read input of
 		// that name and another type binds nothing, so its claim refuses
 		// whichever input the write writes.
 		pair.Written = slices.IndexFunc(write.Inputs, func(v Value) bool {
 			shared := slices.ContainsFunc(read.Inputs, func(r Value) bool { return r.Name == v.Name })
-			return !shared && reflect.DeepEqual(v.Shape, read.Results[0].Shape)
+			return !shared && reflect.DeepEqual(v.Shape, value)
 		})
 	}
 	inputs := read.Inputs
@@ -279,12 +302,19 @@ func paired(mode spec.PartnerMode, partner, read, write *Facts) (*Pair, *spec.Ga
 			pair.Arguments = append(pair.Arguments, Argument{Name: param.Name, Kind: ArgContext})
 			continue
 		}
-		arg, ok := argumentOf(&inputs[0], write, pair.Written)
+		arg, ok := argumentOf(&inputs[0], param.Variadic, write, pair.Written)
 		if !ok {
-			return nil, gateOf(spec.PartnerArguments)
+			return unpaired(partner), gateOf(spec.PartnerArguments)
 		}
 		pair.Arguments = append(pair.Arguments, arg)
 		inputs = inputs[1:]
+	}
+	if batch {
+		keys := &pair.Arguments[len(pair.Arguments)-1]
+		if keys.Kind != ArgField && (pair.Written < 0 || keys.Param != write.Inputs[pair.Written].Name) {
+			return unpaired(partner), gateOf(spec.PartnerArguments)
+		}
+		pair.Changed = keys.Field
 	}
 	if mode != spec.ModeInterposed && mode != spec.ModeRewriter {
 		return pair, nil
@@ -296,16 +326,26 @@ func paired(mode spec.PartnerMode, partner, read, write *Facts) (*Pair, *spec.Ga
 	return pair, nil
 }
 
+// unpaired returns the pair of partner without a read and a write, whose
+// arguments do not bind.
+func unpaired(partner *Facts) *Pair { return &Pair{Partner: partner, Written: -1} }
+
 // argumentOf binds the input value of the read. The inputs of a callable
 // are its parameters in the role input, in the order of its parameters. A
 // value of a function type, and any value of a read whose write takes no
-// input, takes its own sample, because nothing of the write selects it.
-func argumentOf(value *Value, write *Facts, written int) (Argument, bool) {
+// input, takes its own sample, because nothing of the write selects it. A
+// variadic input takes several values of the name without its last letter s,
+// as keys takes several keys.
+func argumentOf(value *Value, variadic bool, write *Facts, written int) (Argument, bool) {
 	if value.Shape.Form == symbol.FormFunc || len(write.Inputs) == 0 {
 		return Argument{Name: value.Name, Kind: ArgOwn}, true
 	}
+	name := value.Name
+	if variadic {
+		name = strings.TrimSuffix(name, "s")
+	}
 	shared := slices.IndexFunc(write.Inputs, func(v Value) bool {
-		return v.Name == value.Name && reflect.DeepEqual(v.Shape, value.Shape)
+		return v.Name == name && reflect.DeepEqual(v.Shape, value.Shape)
 	})
 	if shared >= 0 {
 		return Argument{Name: value.Name, Kind: ArgShared, Param: write.Inputs[shared].Name}, true
@@ -315,12 +355,19 @@ func argumentOf(value *Value, write *Facts, written int) (Argument, bool) {
 	}
 	fields := write.Inputs[written].Fields
 	field := slices.IndexFunc(fields, func(fd Field) bool {
-		return strings.EqualFold(fd.Name, value.Name) && reflect.DeepEqual(fd.Shape, value.Shape)
+		return strings.EqualFold(fd.Name, name) && reflect.DeepEqual(fd.Shape, value.Shape)
 	})
 	if field < 0 {
 		return Argument{}, false
 	}
 	return Argument{Name: value.Name, Kind: ArgField, Field: fields[field].Name}, true
+}
+
+// batched reports whether the callable of f reads in a batch: it takes a
+// variadic input and returns a list as its first value.
+func batched(f *Facts) bool {
+	return len(f.Results) > 0 && f.Results[0].Shape.Form == symbol.FormList &&
+		slices.ContainsFunc(f.Signature.Params, func(p rules.ParamView) bool { return p.Variadic })
 }
 
 // changed returns the first field of the written value that no argument of

@@ -233,6 +233,27 @@ func TestGate(t *testing.T) {
 				}(),
 				want: false,
 			},
+			{
+				name: "passes returns-a-value for a callable that returns a value", giveGate: spec.ReturnsAValue,
+				give: reader(), want: true,
+			},
+			{
+				name: "passes returns-a-value for a callable with another mixin", giveGate: spec.ReturnsAValue,
+				give: withMixins(reader(), "idempotent"), want: true,
+			},
+			{
+				name: "fails returns-a-value for a callable without a value", giveGate: spec.ReturnsAValue,
+				give: writer(), want: false,
+			},
+			{
+				name: "fails returns-a-value for a callable that waits", giveGate: spec.ReturnsAValue,
+				give: withMixins(reader(), "waits"), want: false,
+			},
+			{
+				name:     "fails returns-a-value for a callable that runs until its context ends",
+				giveGate: spec.ReturnsAValue,
+				give:     withMixins(reader(), "runs-until-cancelled"), want: false,
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

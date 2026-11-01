@@ -121,6 +121,101 @@ func TestPartner(t *testing.T) {
 			}, "the read takes the context and the field of the written value")
 		})
 
+		t.Run("binds a named reader of what the callable writes as the read of the pair", func(t *testing.T) {
+			t.Parallel()
+			put := withParam(putter(), "accumulates", "observe", idOf("Get"))
+			decl := []derive.Facts{put, getter()}
+
+			got, gate := derive.Partner(
+				&spec.Partner{Name: "observe", Mode: spec.ModeNamed, Param: "observe"},
+				&decl[0],
+				decl,
+			)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Read.Callable, "Get", "the named partner reads")
+			assert.Equal(t, got.Write.Callable, "Put", "the callable without a value writes")
+		})
+
+		t.Run("binds a named write with a value of a callable with a value as the write", func(t *testing.T) {
+			t.Parallel()
+			save := putter()
+			save.Callable, save.ID = "Save", idOf("Save")
+			save.Signature = signature("Save", true, save.Inputs,
+				[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+			save.Results = []derive.Value{item("")}
+			get := withParam(getter(), "read-after-write", "write", idOf("Save"))
+			decl := []derive.Facts{get, save}
+
+			got, gate := derive.Partner(
+				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&decl[0],
+				decl,
+			)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Read.Callable, "Get", "the callable reads")
+		})
+
+		t.Run("keeps the named read of a callable without a value whose parameters it binds", func(t *testing.T) {
+			t.Parallel()
+			body := derive.Value{Name: "body", Shape: rules.TypeShape{Form: symbol.FormFunc}}
+			run := derive.Facts{
+				Declaration: "Store", Callable: "Run", ID: idOf("Run"),
+				Signature: signature("Run", true, []derive.Value{body}, []rules.ReturnRole{rules.ReturnError},
+					rules.ErrorsLastReturn),
+				Inputs: []derive.Value{body},
+			}
+			decl := []derive.Facts{withParam(run, "tx", "read", idOf("Get")), getter()}
+
+			got, gate := derive.Partner(
+				&spec.Partner{Name: "read", Mode: spec.ModeNamed, Param: "read"},
+				&decl[0],
+				decl,
+			)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Read.Callable, "Run", "the callable keeps the read of the pair")
+		})
+
+		t.Run(
+			"refuses a callable with a value whose parameters select nothing of its named partner",
+			func(t *testing.T) {
+				t.Parallel()
+				get := getter()
+				get.Inputs = []derive.Value{text("id"), text("name")}
+				get.Signature = signature("Get", true, get.Inputs,
+					[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+				peek := getter()
+				peek.Callable, peek.ID = "Peek", idOf("Peek")
+				decl := []derive.Facts{withParam(get, "read-after-write", "write", idOf("Peek")), peek}
+
+				_, gate := derive.Partner(
+					&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+					&decl[0],
+					decl,
+				)
+
+				assert.Equal(t, gate.ID, spec.PartnerArguments,
+					"the callable keeps the read of the pair, and Peek takes no name")
+			},
+		)
+
+		t.Run("keeps an interposed partner of a callable without a value as the write", func(t *testing.T) {
+			t.Parallel()
+			put := withParam(putter(), "if-match", "write", idOf("Get"))
+			decl := []derive.Facts{put, getter()}
+
+			_, gate := derive.Partner(
+				&spec.Partner{Name: "write", Mode: spec.ModeInterposed, Param: "write"},
+				&decl[0],
+				decl,
+			)
+
+			assert.Equal(t, gate.ID, spec.PartnerArguments,
+				"the callable reads, and the value of Put selects nothing of Get")
+		})
+
 		t.Run("leaves a function parameter of the read to the probe", func(t *testing.T) {
 			t.Parallel()
 			body := derive.Value{Name: "body", Shape: rules.TypeShape{Form: symbol.FormFunc}}
@@ -629,6 +724,113 @@ func TestPartner(t *testing.T) {
 			)
 		})
 
+		t.Run("binds the keys of a batch read to the field of the written value of their name", func(t *testing.T) {
+			t.Parallel()
+			decl := []derive.Facts{batchGetter("ids"), withShape(putter(), "writer")}
+
+			got, gate := derive.Partner(&spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				&decl[0], decl)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Written, 0, "the write writes the element of the list of the batch read")
+			assert.Equal(t, got.Arguments, []derive.Argument{
+				{Name: "ctx", Kind: derive.ArgContext},
+				{Name: "ids", Kind: derive.ArgField, Field: "ID"},
+			}, "the keys take the field ID of the written value")
+			assert.Equal(t, got.Changed, "ID", "the second write changes the field that the keys select")
+		})
+
+		t.Run("binds the keys of a batch read to the written value of their name", func(t *testing.T) {
+			t.Parallel()
+			has := batchGetter("ids")
+			has.Results = []derive.Value{{Shape: rules.TypeShape{
+				Form: symbol.FormList, Spelling: "[]string", Elems: []rules.TypeShape{text("").Shape},
+			}}}
+			decl := []derive.Facts{has, withShape(marker(), "writer")}
+
+			got, gate := derive.Partner(&spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				&decl[0], decl)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Written, 0, "the write writes the element of the list of the batch read")
+			assert.Equal(t, got.Arguments, []derive.Argument{
+				{Name: "ctx", Kind: derive.ArgContext},
+				{Name: "ids", Kind: derive.ArgShared, Param: "id"},
+			}, "the keys share the sample of the written value id")
+			assert.Equal(t, got.Changed, "", "the second write changes the whole written value")
+		})
+
+		t.Run("pairs a read of one value with variadic keys as a read of one value", func(t *testing.T) {
+			t.Parallel()
+			find := getter()
+			find.Inputs = []derive.Value{text("ids")}
+			find.Signature = signature("Find", true, find.Inputs,
+				[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+			find.Signature.Params[1].Variadic = true
+			decl := []derive.Facts{find, withShape(putter(), "writer")}
+
+			got, gate := derive.Partner(&spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				&decl[0], decl)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Written, 0, "the write writes the value that the read returns")
+			assert.Equal(t, got.Changed, "", "a write that is not repeated needs no field to change")
+		})
+
+		t.Run("pairs a list read without keys with the write of its elements", func(t *testing.T) {
+			t.Parallel()
+			list := batchGetter("ids")
+			list.Inputs = nil
+			list.Signature = signature("List", true, nil,
+				[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+			decl := []derive.Facts{list, withShape(putter(), "writer")}
+
+			got, gate := derive.Partner(&spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				&decl[0], decl)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Written, -1, "the write takes no list of the read")
+			assert.Equal(t, got.Changed, "", "a write that is not repeated needs no field to change")
+		})
+
+		{
+			unbound := []struct {
+				name     string
+				giveDecl []derive.Facts
+				want     string
+			}{
+				{
+					name: "returns the partner without a read beside partner-arguments for a parameter that selects nothing",
+					giveDecl: []derive.Facts{
+						withParam(reader(), "read-after-write", "write", idOf("Put")), putter(),
+					},
+					want: "Put",
+				},
+				{
+					name: "returns the partner without a read beside partner-arguments for the keys of a batch read",
+					giveDecl: []derive.Facts{
+						withParam(batchGetter("ids"), "read-after-write", "write", idOf("Set")), keyedPutter(),
+					},
+					want: "Set",
+				},
+			}
+			for _, tt := range unbound {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got, gate := derive.Partner(
+						&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+						&tt.giveDecl[0],
+						tt.giveDecl,
+					)
+
+					assert.Equal(t, gate.ID, spec.PartnerArguments, "the arguments of the two callables do not bind")
+					assert.Equal(t, got.Partner.Callable, tt.want, "the pair has the partner")
+					assert.Nil(t, got.Read, "the pair has no read")
+				})
+			}
+		}
+
 		tests := []struct {
 			name     string
 			give     spec.Partner
@@ -668,6 +870,14 @@ func TestPartner(t *testing.T) {
 				give: spec.Partner{Name: "read", Mode: spec.ModeReader, Param: "read"},
 				giveDecl: []derive.Facts{
 					withParam(putter(), "injection-safe", "read", idOf("Mark")), marker(),
+				},
+				want: spec.PartnerArguments,
+			},
+			{
+				name: "refuses with partner-arguments for a named partner without a value of a callable without one",
+				give: spec.Partner{Name: "observe", Mode: spec.ModeNamed, Param: "observe"},
+				giveDecl: []derive.Facts{
+					withParam(keyedPutter(), "accumulates", "observe", idOf("Mark")), marker(),
 				},
 				want: spec.PartnerArguments,
 			},
@@ -800,6 +1010,32 @@ func TestPartner(t *testing.T) {
 				want:     spec.PartnerFound,
 			},
 			{
+				name:     "refuses with partner-arguments for the keys of a batch read that name no field",
+				give:     spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				giveDecl: []derive.Facts{batchGetter("tags"), withShape(putter(), "writer")},
+				want:     spec.PartnerArguments,
+			},
+			{
+				name:     "refuses with partner-arguments for the keys of a batch read that share another input",
+				give:     spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				giveDecl: []derive.Facts{batchGetter("ids"), withShape(keyedPutter(), "writer")},
+				want:     spec.PartnerArguments,
+			},
+			{
+				name: "refuses with partner-arguments for the keys of a named batch read that share another input",
+				give: spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				giveDecl: []derive.Facts{
+					withParam(batchGetter("ids"), "read-after-write", "write", idOf("Set")), keyedPutter(),
+				},
+				want: spec.PartnerArguments,
+			},
+			{
+				name:     "refuses with partner-arguments for a batch read whose write writes no element",
+				give:     spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				giveDecl: []derive.Facts{batchGetter("ids"), withShape(marker(), "writer")},
+				want:     spec.PartnerArguments,
+			},
+			{
 				name: "refuses with rewritable for a written value whose every field the read selects by",
 				give: spec.Partner{Name: "write", Mode: spec.ModeInterposed, Param: "write"},
 				giveDecl: []derive.Facts{
@@ -819,6 +1055,21 @@ func TestPartner(t *testing.T) {
 			})
 		}
 	})
+}
+
+// batchGetter returns the facts of Store.GetMany(ctx, keys ...string)
+// ([]Item, error), whose variadic input has the name keys.
+func batchGetter(keys string) derive.Facts {
+	inputs := []derive.Value{text(keys)}
+	sig := signature(
+		"GetMany", true, inputs, []rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn,
+	)
+	sig.Params[1].Variadic = true
+	items := rules.TypeShape{Form: symbol.FormList, Spelling: "[]Item", Elems: []rules.TypeShape{item("").Shape}}
+	return derive.Facts{
+		Declaration: "Store", Callable: "GetMany", ID: idOf("GetMany"),
+		Signature: sig, Inputs: inputs, Results: []derive.Value{{Shape: items}},
+	}
 }
 
 // hasher returns the facts of Store.Hash(key string) string with its

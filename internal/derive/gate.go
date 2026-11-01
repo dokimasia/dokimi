@@ -58,24 +58,32 @@ var conditions = map[spec.GateID]func(f *Facts) bool{
 		}
 		return true
 	},
+	spec.ReturnsAValue: func(f *Facts) bool {
+		return len(f.Results) > 0 && !slices.ContainsFunc(f.Class.Mixins, func(m shape.Mixin) bool {
+			return m == shape.Waits || m == shape.RunsUntilCancelled
+		})
+	},
 }
 
 // lossy is the fidelity of a codec whose round trip drops a part of a value.
 const lossy = "lossy"
 
 // OtherGates are the gates of the spec that another part of dokimi judges.
-// The binding of a claim judges the samples of the inputs of the callable and
-// the params that the claim reads. The partner resolution judges the partner
-// of a claim. The derivation of an enumeration and of the errors of a package
-// judges their facts. The suite generator of a language judges the code that
-// it writes for a derived check.
+// The binding of a claim judges the samples of the inputs of the callable, the
+// params that the claim reads and the values that its partners return. The
+// partner resolution judges the partner of a claim. The derivation of an
+// enumeration and of the errors of a package judges their facts. The suite
+// generator of a language judges the code that it writes for a derived check,
+// and the types of the partners and of the variables that the params of a
+// classification name.
 var OtherGates = []spec.GateID{
 	spec.InputSamples, spec.ClassificationParams, spec.InterfaceHandle, spec.ImportableSamples,
-	spec.PartnerFound, spec.OnePartner, spec.PartnerArguments, spec.Rewritable,
+	spec.PartnerFound, spec.OnePartner, spec.PartnerArguments, spec.Rewritable, spec.WriteReturnsTheValue,
 	spec.Members, spec.TwoMembers, spec.ListFunction, spec.ValidFunction, spec.OutsideValue, spec.ParseFunction,
 	spec.TextEncoding,
 	spec.ErrorValues, spec.TwoErrorValues, spec.ErrorTypes, spec.TwoErrorTypes,
 	spec.SelfComparingType, spec.ErrorCause,
+	spec.CountableUse, spec.TakesAReplica, spec.GraphOfStates,
 }
 
 // Passes reports whether the facts f of a callable pass the gate id, and
@@ -97,6 +105,13 @@ func hasParam(f *Facts, role rules.ParamRole) bool {
 // hasReturn reports whether a return of the callable of f has the role.
 func hasReturn(f *Facts, role rules.ReturnRole) bool {
 	return slices.ContainsFunc(f.Signature.Returns, func(r rules.ReturnView) bool { return r.Role == role })
+}
+
+// returnsTheValue reports whether the callable of partner returns first a
+// value of the type that the callable of f returns first. A claim with the
+// gate write-returns-the-value has the gate one-value, so f returns a value.
+func returnsTheValue(partner, f *Facts) bool {
+	return len(partner.Results) > 0 && reflect.DeepEqual(partner.Results[0].Shape, f.Results[0].Shape)
 }
 
 // firstResultIs reports whether the first value result of f has the form.

@@ -61,6 +61,7 @@ const (
 	familiesPackage    = "example.com/shop/families"
 	faultsPackage      = "example.com/shop/faults"
 	drawnPackage       = "example.com/shop/drawn"
+	classifiedPackage  = "example.com/shop/classified"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )

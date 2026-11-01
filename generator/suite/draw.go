@@ -181,8 +181,9 @@ func used(args []Arg) []*Draw {
 		for j := range c.Args {
 			visit(&c.Args[j])
 		}
-		for _, l := range slices.Concat(c.Lets, c.Later) {
-			visit(&l.Value)
+		lets := slices.Concat(c.Lets, c.Later)
+		for j := range lets {
+			visit(&lets[j].Value)
 		}
 	}
 	return out

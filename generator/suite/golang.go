@@ -33,19 +33,35 @@ var golangTemplates embed.FS
 // templates read, joinHelper joins words with commas, namesHelper joins the
 // names of the results of a planted defect, and identityHelper writes the
 // identity of a check of a suite. lockHelper returns the lines of the lock of
-// a plan.
+// a plan, and sequencesHelper the view of the generated sequences of a
+// declaration.
 const (
-	pascalHelper   = "suitePascal"
-	camelHelper    = "suiteCamel"
-	ceilingsHelper = "suiteCeilings"
-	durationHelper = "suiteDuration"
-	defectHelper   = "suiteDefect"
-	bodyHelper     = "suiteBody"
-	joinHelper     = "suiteJoin"
-	namesHelper    = "suiteNames"
-	identityHelper = "suiteIdentity"
-	lockHelper     = "suiteLock"
+	pascalHelper    = "suitePascal"
+	camelHelper     = "suiteCamel"
+	ceilingsHelper  = "suiteCeilings"
+	durationHelper  = "suiteDuration"
+	defectHelper    = "suiteDefect"
+	bodyHelper      = "suiteBody"
+	joinHelper      = "suiteJoin"
+	namesHelper     = "suiteNames"
+	identityHelper  = "suiteIdentity"
+	lockHelper      = "suiteLock"
+	sequencesHelper = "suiteSequences"
 )
+
+// sequencesView is the parts of the generated sequences of a declaration with
+// the names of the suite that their template writes: the subject type and the
+// name of the declaration.
+type sequencesView struct {
+	Sequences   *Sequences
+	Subject     string
+	Declaration string
+}
+
+// viewOfSequences returns the view of the parts q of the generated sequences.
+func viewOfSequences(q *Sequences, subject, declaration string) sequencesView {
+	return sequencesView{Sequences: q, Subject: subject, Declaration: declaration}
+}
 
 // identityIn returns the identity of the check segment of the callable of the
 // declaration named declaration, such as Store.Get/smoke, and the name of the
@@ -152,6 +168,7 @@ func (golangPart) Options() []sdk.TargetOption {
 			pascalHelper: naming.Pascal, camelHelper: naming.Camel, ceilingsHelper: Budget.segments,
 			durationHelper: golangDuration, defectHelper: viewOfDefect, bodyHelper: viewOfBody, joinHelper: joined,
 			namesHelper: namesOfOutcomes, identityHelper: identityIn, lockHelper: lockLines,
+			sequencesHelper: viewOfSequences,
 		}),
 	}
 }

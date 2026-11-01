@@ -34,7 +34,9 @@ const Version = "0.1.0"
 
 // SuiteDirective puts an interface, a struct or a function under suite. Its
 // param MachineriesParam lists the machineries that the consumer supplies to
-// the checks of the suite, such as faults.
+// the checks of the suite, such as faults, and its param NormalizeParam names
+// the function that maps the values of each call of a generated sequence to
+// the values that its history records.
 // SubjectDirective marks a struct of a consumer as a subject of the suite of a
 // declaration. Its positional param DeclarationParam contains the name of the
 // declaration, and its param NewParam contains the name of the factory of the
@@ -60,6 +62,7 @@ const (
 	CheckDirective   directive.Name     = "check"
 	ExcuseDirective  directive.Name     = "excuse"
 	MachineriesParam directive.ParamKey = "machineries"
+	NormalizeParam   directive.ParamKey = "normalize"
 	DeclarationParam directive.ParamKey = "declaration"
 	NewParam         directive.ParamKey = "new"
 	CasesParam       directive.ParamKey = "cases"
@@ -269,7 +272,9 @@ const (
 // Derivation contains the checks that the claims of the conformance spec
 // derive from them, with the refusals, the unclaimed classifications and the
 // edges. Derived are the derived checks in the order of the derivation, and
-// Defects their planted defects, one for each break of a callable. Package is
+// Defects their planted defects, one for each break of a callable. Sequences
+// are the parts of the generated sequences that the derived checks call, and
+// nil for a suite without a derived check of generated sequences. Package is
 // the import path of the package of the declaration, and Version the version
 // of the plugin, which the suite record names as the version of its
 // generator.
@@ -277,6 +282,7 @@ type Suite struct {
 	Subject     *emit.TypeRef
 	Methods     *emit.Interface
 	Func        *emit.Method
+	Sequences   *Sequences
 	Declaration string
 	Package     string
 	Version     string
@@ -549,11 +555,18 @@ var parts = []part{golangPart{}}
 // suiteSchema is the directive of a suite.
 var suiteSchema = directive.Schema{
 	Name: SuiteDirective,
-	Params: []directive.ParamSpec{{
-		Key: MachineriesParam, Type: directive.TypeList, ListOf: directive.TypeString,
-		Doc: "the machineries that the consumer supplies to the checks of the suite through the doors of its " +
-			"application, by their params: " + listed(consumedParams, "and"),
-	}},
+	Params: []directive.ParamSpec{
+		{
+			Key: MachineriesParam, Type: directive.TypeList, ListOf: directive.TypeString,
+			Doc: "the machineries that the consumer supplies to the checks of the suite through the doors of its " +
+				"application, by their params: " + listed(consumedParams, "and"),
+		},
+		{
+			Key: NormalizeParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+			Doc: "the function of the type func(string, []any) []any that maps the name of a callable and the " +
+				"values of its call in a generated sequence to the values that the history of the sequence records",
+		},
+	},
 	Doc: "generates the suite of the declaration: the names of its callables, the identities and the checks of " +
 		"its callables, the functions that apply the checks to a subject, and the test of its planted defects",
 }
@@ -1573,6 +1586,17 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	}
 	if n.NewOver != "" {
 		decls = append(decls, &emit.Function{Origin: *origin, Name: n.NewOver, Visibility: symbol.VisibilityPackage})
+	}
+	if q := s.Sequences; q != nil {
+		decls = append(decls, &emit.Function{Origin: *origin, Name: q.Actions, Visibility: symbol.VisibilityPackage})
+		if q.Reference != "" {
+			decls = append(decls,
+				&emit.Function{Origin: *origin, Name: q.Reference, Visibility: symbol.VisibilityPackage})
+		}
+		for i := range q.Steps {
+			decls = append(decls,
+				&emit.Function{Origin: *origin, Name: q.Steps[i].Call, Visibility: symbol.VisibilityPackage})
+		}
 	}
 	for _, d := range s.Defects {
 		decls = append(decls, &emit.Function{Origin: *origin, Name: d.Name, Visibility: symbol.VisibilityPackage})

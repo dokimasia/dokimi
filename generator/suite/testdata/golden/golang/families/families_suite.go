@@ -11,6 +11,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/spec"
@@ -54,6 +55,12 @@ import (
 // Store.Get/monotonic-reads#generated: Get never returns an older version
 // than one that it returned before.
 //
+// Store.Get/reads-never-go-back: Get never returns a version below one
+// that it returned before, over any sequence of calls.
+//
+// Store.Get/reads-each-last-write: Get returns what Put wrote right before
+// it, over any sequence of calls.
+//
 // Store.Load/smoke: Load returns without a panic for derived inputs.
 //
 // Store.Load/smoke#generated: Load returns without a panic for derived
@@ -83,6 +90,12 @@ import (
 //
 // Store.Find/cancel#generated: Find returns an error for a cancelled
 // context.
+//
+// Store.Find/reads-each-key: Find returns the value that Put stored under
+// each key.
+//
+// Store.Find/reads-each-key#generated: Find returns the value that Put
+// stored under each key.
 //
 // Store.Level/smoke: Level returns without a panic for derived inputs.
 //
@@ -177,9 +190,6 @@ import (
 //
 // The shape:writer of Store.Put has the stance silent. A write is an input
 // of the other checks, and its result is an error alone.
-//
-// The shape:batch-reader of Store.Find has the stance gap. No claim states
-// what a batch read returns for a key that it does not find.
 //
 // The shape:writer of Store.Raise has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
@@ -312,6 +322,19 @@ func (c storeGet) MonotonicReadsGenerated() conform.ID[Store] {
 	return c.Check("monotonic-reads#generated")
 }
 
+// ReadsNeverGoBack returns the identity of the check that Get never
+// returns a version below one that it returned before, over any sequence
+// of calls.
+func (c storeGet) ReadsNeverGoBack() conform.ID[Store] {
+	return c.Check("reads-never-go-back")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Get returns
+// what Put wrote right before it, over any sequence of calls.
+func (c storeGet) ReadsEachLastWrite() conform.ID[Store] {
+	return c.Check("reads-each-last-write")
+}
+
 // storeLoad is the name of Store.Load, with the identities of its checks.
 type storeLoad struct {
 	conform.Callable[Store]
@@ -398,6 +421,18 @@ func (c storeFind) Cancel() conform.ID[Store] {
 // error for a cancelled context.
 func (c storeFind) CancelGenerated() conform.ID[Store] {
 	return c.Check("cancel#generated")
+}
+
+// ReadsEachKey returns the identity of the check that Find returns the
+// value that Put stored under each key.
+func (c storeFind) ReadsEachKey() conform.ID[Store] {
+	return c.Check("reads-each-key")
+}
+
+// ReadsEachKeyGenerated returns the identity of the check that Find
+// returns the value that Put stored under each key.
+func (c storeFind) ReadsEachKeyGenerated() conform.ID[Store] {
+	return c.Check("reads-each-key#generated")
 }
 
 // storeLevel is the name of Store.Level, with the identities of its
@@ -780,6 +815,54 @@ func StoreSuite() conform.Suite[Store] {
 				Defect: storeGetVersionDescends,
 			},
 			{
+				ID:          StoreChecks.Get.ReadsNeverGoBack(),
+				Statement:   "Get never returns a version below one that it returned before, over any sequence of calls",
+				Claim:       spec.ReadsNeverGoBack,
+				Probe:       spec.ReadVersionsNeverFall,
+				Reason:      spec.Regressed,
+				Law:         spec.ReadsNeverGoBackwards,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Store]{StoreChecks.Get.MonotonicReads()},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					probe.ReadVersionsNeverFall(
+						h,
+						c,
+						storeActions,
+						"Get",
+						func(v Value) int64 { return v.Rev },
+					)
+				},
+				Defect: storeGetReadsThePastAfterThree,
+			},
+			{
+				ID:          StoreChecks.Get.ReadsEachLastWrite(),
+				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Store]{StoreChecks.Get.ReadAfterWrite()},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						storeActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(Value)
+							values, err := storeGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) Value {
+							v, _ := args[0].(Value)
+							return v
+						},
+					)
+				},
+				Defect: storeGetReadsAStaleValueAfterThree,
+			},
+			{
 				ID:          StoreChecks.Load.Smoke(),
 				Statement:   "Load returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -978,6 +1061,70 @@ func StoreSuite() conform.Suite[Store] {
 					})
 				},
 				Defect: storeFindIgnoresCancel,
+			},
+			{
+				ID:          StoreChecks.Find.ReadsEachKey(),
+				Statement:   "Find returns the value that Put stored under each key",
+				Claim:       spec.ReadsEachKey,
+				Probe:       spec.ReadsWhatWasStored,
+				Reason:      spec.LostAKey,
+				Law:         spec.BatchReadReturnsEachStoredValue,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.ReadsWhatWasStored(h, func(ctx context.Context) ([]Value, error) {
+						return h.Subject().Find(ctx, string("Key-a"), string("Key-b"))
+					}, func() func(ctx context.Context) (Value, error) {
+						calls := 0
+						return func(ctx context.Context) (Value, error) {
+							calls++
+							w := Value{Key: "Key-a"}
+							w.Key = string("Key-a")
+							if calls > 1 {
+								w.Key = string("Key-b")
+							}
+							err := h.Subject().Put(ctx, w)
+							return w, err
+						}
+					}())
+				},
+				Defect: storeFindDropsTheLastKey,
+			},
+			{
+				ID:          StoreChecks.Find.ReadsEachKeyGenerated(),
+				Statement:   "Find returns the value that Put stored under each key",
+				Claim:       spec.ReadsEachKey,
+				Probe:       spec.ReadsWhatWasStored,
+				Reason:      spec.LostAKey,
+				Law:         spec.BatchReadReturnsEachStoredValue,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					drawnVKey := c.Draw(
+						prop.List(
+							prop.Of[string](),
+							prop.Unique(),
+							prop.MinSize(2),
+							prop.MaxSize(2),
+						),
+						"v.key",
+					)
+					drawnV := c.Draw(prop.Of[Value](), "v")
+					probe.ReadsWhatWasStored(h, func(ctx context.Context) ([]Value, error) {
+						return h.Subject().Find(ctx, drawnVKey[0], drawnVKey[1])
+					}, func() func(ctx context.Context) (Value, error) {
+						calls := 0
+						return func(ctx context.Context) (Value, error) {
+							calls++
+							w := drawnV
+							w.Key = drawnVKey[0]
+							if calls > 1 {
+								w.Key = drawnVKey[1]
+							}
+							err := h.Subject().Put(ctx, w)
+							return w, err
+						}
+					}())
+				},
+				Defect: storeFindDropsTheLastKey,
 			},
 			{
 				ID:          StoreChecks.Level.Smoke(),
@@ -1312,12 +1459,6 @@ func StoreSuite() conform.Suite[Store] {
 				Callable:       "Store.Put",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "shape:batch-reader",
-				Callable:       "Store.Find",
-				Stance:         spec.Gap,
-				Note:           "No claim states what a batch read returns for a key that it does not find.",
 			},
 			{
 				Classification: "shape:writer",
@@ -1757,6 +1898,78 @@ func storeGetVersionDescends(h *StoreHandle) Store {
 	return &storeGetVersionDescendsDefect{storeOverEmbedded: h.Fresh()}
 }
 
+// storeGetReadsThePastAfterThreeDefect is the planted defect of a Store
+// whose Get returns its first value again from its fourth call on.
+type storeGetReadsThePastAfterThreeDefect struct {
+	storeOverEmbedded
+	calls int
+	first *Value
+}
+
+// Get is the override of the planted defect.
+func (d *storeGetReadsThePastAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.storeOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// storeGetReadsThePastAfterThree returns the planted defect of a Store
+// whose Get returns its first value again from its fourth call on over a
+// fresh subject.
+func storeGetReadsThePastAfterThree(h *StoreHandle) Store {
+	return &storeGetReadsThePastAfterThreeDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeGetReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Store whose Get returns its first value again from its fourth call on.
+type storeGetReadsAStaleValueAfterThreeDefect struct {
+	storeOverEmbedded
+	calls int
+	first *Value
+}
+
+// Get is the override of the planted defect.
+func (d *storeGetReadsAStaleValueAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.storeOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// storeGetReadsAStaleValueAfterThree returns the planted defect of a Store
+// whose Get returns its first value again from its fourth call on over a
+// fresh subject.
+func storeGetReadsAStaleValueAfterThree(h *StoreHandle) Store {
+	return &storeGetReadsAStaleValueAfterThreeDefect{storeOverEmbedded: h.Fresh()}
+}
+
 // storeLoadPanicsDefect is the planted defect of a Store whose Load
 // panics.
 type storeLoadPanicsDefect struct {
@@ -1876,6 +2089,34 @@ func (d *storeFindIgnoresCancelDefect) Find(
 // ignores the context over a fresh subject.
 func storeFindIgnoresCancel(h *StoreHandle) Store {
 	return &storeFindIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeFindDropsTheLastKeyDefect is the planted defect of a Store whose
+// Find drops the value of its last key.
+type storeFindDropsTheLastKeyDefect struct {
+	storeOverEmbedded
+}
+
+// Find is the override of the planted defect.
+func (d *storeFindDropsTheLastKeyDefect) Find(
+	p0 context.Context,
+	p1 ...string,
+) (r0 []Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.storeOverEmbedded.Find(p0, p1...)
+	if len(r0) > 0 {
+		r0 = r0[:len(r0)-1]
+	}
+	return r0, r1
+}
+
+// storeFindDropsTheLastKey returns the planted defect of a Store whose
+// Find drops the value of its last key over a fresh subject.
+func storeFindDropsTheLastKey(h *StoreHandle) Store {
+	return &storeFindDropsTheLastKeyDefect{storeOverEmbedded: h.Fresh()}
 }
 
 // storeLevelPanicsDefect is the planted defect of a Store whose Level
@@ -2058,6 +2299,207 @@ func storeGetWithMetaValuesBeside(h *StoreHandle) Store {
 	return &storeGetWithMetaValuesBesideDefect{storeOverEmbedded: h.Fresh()}
 }
 
+// storeActions returns the actions of the generated sequences of Store
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func storeActions(c *prop.Case, subject func() Store) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[Value](), "put.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "put.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(Value)
+				call := c.History().Invoke(client, "Put", args, key0.Key)
+				values, err := storePutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := storeGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Load",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "load.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Load", args, args[0])
+				values, err := storeLoadCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Split",
+			Input: func(c *prop.Case, _ struct{}) any {
+				in := c.Draw(prop.Of[string](), "split.in")
+				return []any{in}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Split", args)
+				values, err := storeSplitCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Find",
+			Input: func(c *prop.Case, _ struct{}) any {
+				keys := c.Draw(prop.SampledFrom(keysString...), "find.keys")
+				return []any{keys}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Find", args, args[0])
+				values, err := storeFindCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Level",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "level.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Level", args, args[0])
+				values, err := storeLevelCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Raise",
+			Input: func(c *prop.Case, _ struct{}) any {
+				l := c.Draw(prop.Of[Level](), "raise.l")
+				return []any{l}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Raise", args)
+				values, err := storeRaiseCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Inspect",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "inspect.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Inspect", args, args[0])
+				values, err := storeInspectCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "GetWithMeta",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get-with-meta.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "GetWithMeta", args, args[0])
+				values, err := storeGetWithMetaCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// storePutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func storePutCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].(Value)
+	return nil, subject.Put(ctx, a0)
+}
+
+// storeGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func storeGetCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// storeLoadCall calls Load on subject with the arguments args, and returns
+// the values of the call beside its error.
+func storeLoadCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, ok := subject.Load(ctx, a0)
+	return []any{r0, ok}, nil
+}
+
+// storeSplitCall calls Split on subject with the arguments args, and
+// returns the values of the call beside its error.
+func storeSplitCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, r1 := subject.Split(a0)
+	return []any{r0, r1}, nil
+}
+
+// storeFindCall calls Find on subject with the arguments args, and returns
+// the values of the call beside its error.
+func storeFindCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].([]string)
+	r0, err := subject.Find(ctx, a0...)
+	return []any{r0}, err
+}
+
+// storeLevelCall calls Level on subject with the arguments args, and
+// returns the values of the call beside its error.
+func storeLevelCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Level(ctx, a0)
+	return []any{r0}, err
+}
+
+// storeRaiseCall calls Raise on subject with the arguments args, and
+// returns the values of the call beside its error.
+func storeRaiseCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].(Level)
+	return nil, subject.Raise(ctx, a0)
+}
+
+// storeInspectCall calls Inspect on subject with the arguments args, and
+// returns the values of the call beside its error.
+func storeInspectCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, r1, r2 := subject.Inspect(a0)
+	return []any{r0, r1, r2}, nil
+}
+
+// storeGetWithMetaCall calls GetWithMeta on subject with the arguments
+// args, and returns the values of the call beside its error.
+func storeGetWithMetaCall(ctx context.Context, subject Store, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, r1, err := subject.GetWithMeta(ctx, a0)
+	return []any{r0, r1}, err
+}
+
 // The derived checks of Keyed:
 //
 // Keyed.Put/smoke: Put returns without a panic for derived inputs.
@@ -2089,6 +2531,9 @@ func storeGetWithMetaValuesBeside(h *StoreHandle) Store {
 //
 // Keyed.Get/read-after-write#generated: Get returns what Put stored before
 // it.
+//
+// Keyed.Get/reads-each-last-write: Get returns what Put wrote right before
+// it, over any sequence of calls.
 //
 // Keyed.Delete/smoke: Delete returns without a panic for derived inputs.
 //
@@ -2228,6 +2673,12 @@ func (c keyedGet) ReadAfterWrite() conform.ID[Keyed] {
 // returns what Put stored before it.
 func (c keyedGet) ReadAfterWriteGenerated() conform.ID[Keyed] {
 	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Get returns
+// what Put wrote right before it, over any sequence of calls.
+func (c keyedGet) ReadsEachLastWrite() conform.ID[Keyed] {
+	return c.Check("reads-each-last-write")
 }
 
 // keyedDelete is the name of Keyed.Delete, with the identities of its
@@ -2472,6 +2923,33 @@ func KeyedSuite() conform.Suite[Keyed] {
 					})
 				},
 				Defect: keyedGetReadsAnotherValue,
+			},
+			{
+				ID:          KeyedChecks.Get.ReadsEachLastWrite(),
+				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Keyed]{KeyedChecks.Get.ReadAfterWrite()},
+				Property: func(h *KeyedHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						keyedActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := keyedGetCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) Value {
+							v, _ := args[1].(Value)
+							return v
+						},
+					)
+				},
+				Defect: keyedGetReadsAStaleValueAfterThree,
 			},
 			{
 				ID:          KeyedChecks.Delete.Smoke(),
@@ -2824,6 +3302,42 @@ func keyedGetReadsAnotherValue(h *KeyedHandle) Keyed {
 	return &keyedGetReadsAnotherValueDefect{keyedOverEmbedded: h.Fresh()}
 }
 
+// keyedGetReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Keyed whose Get returns its first value again from its fourth call on.
+type keyedGetReadsAStaleValueAfterThreeDefect struct {
+	keyedOverEmbedded
+	calls int
+	first *Value
+}
+
+// Get is the override of the planted defect.
+func (d *keyedGetReadsAStaleValueAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.keyedOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// keyedGetReadsAStaleValueAfterThree returns the planted defect of a Keyed
+// whose Get returns its first value again from its fourth call on over a
+// fresh subject.
+func keyedGetReadsAStaleValueAfterThree(h *KeyedHandle) Keyed {
+	return &keyedGetReadsAStaleValueAfterThreeDefect{keyedOverEmbedded: h.Fresh()}
+}
+
 // keyedDeletePanicsDefect is the planted defect of a Keyed whose Delete
 // panics.
 type keyedDeletePanicsDefect struct {
@@ -2859,6 +3373,81 @@ func (d *keyedDeleteIgnoresCancelDefect) Delete(p0 context.Context, p1 string) (
 // Delete ignores the context over a fresh subject.
 func keyedDeleteIgnoresCancel(h *KeyedHandle) Keyed {
 	return &keyedDeleteIgnoresCancelDefect{keyedOverEmbedded: h.Fresh()}
+}
+
+// keyedActions returns the actions of the generated sequences of Keyed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func keyedActions(c *prop.Case, subject func() Keyed) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "put.key")
+				v := c.Draw(prop.Of[Value](), "put.v")
+				return []any{key, v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args, args[0])
+				values, err := keyedPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := keyedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Delete",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "delete.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Delete", args, args[0])
+				values, err := keyedDeleteCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// keyedPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func keyedPutCall(ctx context.Context, subject Keyed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Value)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// keyedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func keyedGetCall(ctx context.Context, subject Keyed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// keyedDeleteCall calls Delete on subject with the arguments args, and
+// returns the values of the call beside its error.
+func keyedDeleteCall(ctx context.Context, subject Keyed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Delete(ctx, a0)
 }
 
 // The derived checks of Stamped:
@@ -2904,6 +3493,13 @@ func keyedDeleteIgnoresCancel(h *KeyedHandle) Keyed {
 //
 // Stamped.Get/writes-follow-reads#generated: a Store after Get has a
 // version above the version that Get returned.
+//
+// Stamped.Get/writes-follow-their-reads: each write of Store after a call
+// of Get has a higher version than that call returned, over any sequence
+// of calls.
+//
+// Stamped.Get/reads-each-last-write: Get returns what Store wrote right
+// before it, over any sequence of calls.
 
 // The derived checks of Stamped that witness their laws at the shallow
 // end:
@@ -3046,6 +3642,19 @@ func (c stampedGet) WritesFollowReads() conform.ID[Stamped] {
 // Store after Get has a version above the version that Get returned.
 func (c stampedGet) WritesFollowReadsGenerated() conform.ID[Stamped] {
 	return c.Check("writes-follow-reads#generated")
+}
+
+// WritesFollowTheirReads returns the identity of the check that each write
+// of Store after a call of Get has a higher version than that call
+// returned, over any sequence of calls.
+func (c stampedGet) WritesFollowTheirReads() conform.ID[Stamped] {
+	return c.Check("writes-follow-their-reads")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Get returns
+// what Store wrote right before it, over any sequence of calls.
+func (c stampedGet) ReadsEachLastWrite() conform.ID[Stamped] {
+	return c.Check("reads-each-last-write")
 }
 
 // StampedSuite returns the checks of Stamped, and the calls and the
@@ -3327,6 +3936,60 @@ func StampedSuite() conform.Suite[Stamped] {
 					}, func(v Value) int64 { return v.Rev })
 				},
 				Defect: stampedStoreStampsThePast,
+			},
+			{
+				ID:          StampedChecks.Get.WritesFollowTheirReads(),
+				Statement:   "each write of Store after a call of Get has a higher version than that call returned, over any sequence of calls",
+				Claim:       spec.WritesFollowTheirReads,
+				Probe:       spec.WritesRiseAboveReads,
+				Reason:      spec.UnorderedWrite,
+				Law:         spec.WriteFollowsTheReadBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Stamped]{StampedChecks.Get.WritesFollowReads()},
+				Property: func(h *StampedHandle, c *prop.Case) {
+					probe.WritesRiseAboveReads(
+						h,
+						c,
+						stampedActions,
+						"Store",
+						"Get",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(Value)
+							values, err := stampedGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+						func(v Value) int64 { return v.Rev },
+					)
+				},
+				Defect: stampedStoreStampsThePastAfterThree,
+			},
+			{
+				ID:          StampedChecks.Get.ReadsEachLastWrite(),
+				Statement:   "Get returns what Store wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Stamped]{StampedChecks.Get.ReadAfterWrite()},
+				Property: func(h *StampedHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						stampedActions,
+						"Store",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(Value)
+							values, err := stampedGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) Value {
+							v, _ := args[0].(Value)
+							return v
+						},
+					)
+				},
+				Defect: stampedGetReadsAStaleValueAfterThree,
 			},
 		},
 		Calls: []conform.Call[Stamped]{
@@ -3624,6 +4287,129 @@ func stampedStoreStampsThePast(h *StampedHandle) Stamped {
 	return &stampedStoreStampsThePastDefect{stampedOverEmbedded: h.Fresh()}
 }
 
+// stampedStoreStampsThePastAfterThreeDefect is the planted defect of a
+// Stamped whose Store returns the version 0 from its fourth call on.
+type stampedStoreStampsThePastAfterThreeDefect struct {
+	stampedOverEmbedded
+	calls int
+}
+
+// Store is the override of the planted defect.
+func (d *stampedStoreStampsThePastAfterThreeDefect) Store(
+	p0 context.Context,
+	p1 Value,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.stampedOverEmbedded.Store(p0, p1)
+	d.calls++
+	if d.calls > 3 {
+		r0.Rev = 0
+	}
+	return r0, r1
+}
+
+// stampedStoreStampsThePastAfterThree returns the planted defect of a
+// Stamped whose Store returns the version 0 from its fourth call on over a
+// fresh subject.
+func stampedStoreStampsThePastAfterThree(h *StampedHandle) Stamped {
+	return &stampedStoreStampsThePastAfterThreeDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedGetReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Stamped whose Get returns its first value again from its fourth call on.
+type stampedGetReadsAStaleValueAfterThreeDefect struct {
+	stampedOverEmbedded
+	calls int
+	first *Value
+}
+
+// Get is the override of the planted defect.
+func (d *stampedGetReadsAStaleValueAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.stampedOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// stampedGetReadsAStaleValueAfterThree returns the planted defect of a
+// Stamped whose Get returns its first value again from its fourth call on
+// over a fresh subject.
+func stampedGetReadsAStaleValueAfterThree(h *StampedHandle) Stamped {
+	return &stampedGetReadsAStaleValueAfterThreeDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedActions returns the actions of the generated sequences of Stamped
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func stampedActions(c *prop.Case, subject func() Stamped) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[Value](), "store.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "store.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(Value)
+				call := c.History().Invoke(client, "Store", args, key0.Key)
+				values, err := stampedStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := stampedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// stampedStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func stampedStoreCall(ctx context.Context, subject Stamped, args []any) ([]any, error) {
+	a0, _ := args[0].(Value)
+	r0, err := subject.Store(ctx, a0)
+	return []any{r0}, err
+}
+
+// stampedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func stampedGetCall(ctx context.Context, subject Stamped, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
 // The derived checks of Decoded:
 //
 // Decoded.Put/smoke: Put returns without a panic for derived inputs.
@@ -3650,6 +4436,9 @@ func stampedStoreStampsThePast(h *StampedHandle) Stamped {
 //
 // Decoded.Get/read-after-write#generated: Get returns what Put stored
 // before it.
+//
+// Decoded.Get/reads-each-last-write: Get returns what Put wrote right
+// before it, over any sequence of calls.
 
 // The derived checks of Decoded that witness their laws at the shallow
 // end:
@@ -3757,6 +4546,12 @@ func (c decodedGet) ReadAfterWrite() conform.ID[Decoded] {
 // returns what Put stored before it.
 func (c decodedGet) ReadAfterWriteGenerated() conform.ID[Decoded] {
 	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Get returns
+// what Put wrote right before it, over any sequence of calls.
+func (c decodedGet) ReadsEachLastWrite() conform.ID[Decoded] {
+	return c.Check("reads-each-last-write")
 }
 
 // DecodedSuite returns the checks of Decoded, and the calls and the
@@ -3976,6 +4771,37 @@ func DecodedSuite() conform.Suite[Decoded] {
 					})
 				},
 				Defect: decodedGetReadsAnotherValue,
+			},
+			{
+				ID:          DecodedChecks.Get.ReadsEachLastWrite(),
+				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Decoded]{DecodedChecks.Get.ReadAfterWrite()},
+				Property: func(h *DecodedHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						decodedActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := decodedGetCall(
+								ctx,
+								h.Subject(),
+								[]any{args[0], func(Value) Value { return Value{} }},
+							)
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) Value {
+							v, _ := args[1].(Value)
+							return v
+						},
+					)
+				},
+				Defect: decodedGetReadsAStaleValueAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -4232,6 +5058,108 @@ func (d *decodedGetReadsAnotherValueDefect) Get(
 // whose Get returns a value that Put did not write over a fresh subject.
 func decodedGetReadsAnotherValue(h *DecodedHandle) Decoded {
 	return &decodedGetReadsAnotherValueDefect{decodedOverEmbedded: h.Fresh()}
+}
+
+// decodedGetReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Decoded whose Get returns its first value again from its fourth call on.
+type decodedGetReadsAStaleValueAfterThreeDefect struct {
+	decodedOverEmbedded
+	calls int
+	first *Value
+}
+
+// Get is the override of the planted defect.
+func (d *decodedGetReadsAStaleValueAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+	p2 func(Value) Value,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.decodedOverEmbedded.Get(p0, p1, p2)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// decodedGetReadsAStaleValueAfterThree returns the planted defect of a
+// Decoded whose Get returns its first value again from its fourth call on
+// over a fresh subject.
+func decodedGetReadsAStaleValueAfterThree(h *DecodedHandle) Decoded {
+	return &decodedGetReadsAStaleValueAfterThreeDefect{decodedOverEmbedded: h.Fresh()}
+}
+
+// decodedActions returns the actions of the generated sequences of Decoded
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func decodedActions(c *prop.Case, subject func() Decoded) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "put.key")
+				v := c.Draw(prop.Of[Value](), "put.v")
+				return []any{key, v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args, args[0])
+				values, err := decodedPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.Of[string](), "get.key")
+				decodeResults := c.Draw(prop.List(prop.Of[Value]()), "decode")
+				var decodeAt atomic.Int64
+				decode := func(Value) (r0 Value) {
+					i := int(decodeAt.Add(1) - 1)
+					if i >= len(decodeResults) {
+						return r0
+					}
+					return decodeResults[i]
+				}
+				return []any{key, decode}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args)
+				values, err := decodedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// decodedPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func decodedPutCall(ctx context.Context, subject Decoded, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Value)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// decodedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func decodedGetCall(ctx context.Context, subject Decoded, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(func(Value) Value)
+	r0, err := subject.Get(ctx, a0, a1)
+	return []any{r0}, err
 }
 
 // The derived checks of Expiring:
@@ -4864,6 +5792,9 @@ func expiringReadAnswersASample(h *ExpiringHandle) Expiring {
 //
 // Cached.Get/cache#generated: Get returns what Fetch returns.
 //
+// Cached.Get/cache-agrees-over-sequences: Get returns what Fetch returns
+// for its arguments, over any sequence of calls.
+//
 // Cached.Fetch/smoke: Fetch returns without a panic for derived inputs.
 //
 // Cached.Fetch/smoke#generated: Fetch returns without a panic for derived
@@ -4980,6 +5911,13 @@ func (c cachedGet) Cache() conform.ID[Cached] {
 // Fetch returns.
 func (c cachedGet) CacheGenerated() conform.ID[Cached] {
 	return c.Check("cache#generated")
+}
+
+// CacheAgreesOverSequences returns the identity of the check that Get
+// returns what Fetch returns for its arguments, over any sequence of
+// calls.
+func (c cachedGet) CacheAgreesOverSequences() conform.ID[Cached] {
+	return c.Check("cache-agrees-over-sequences")
 }
 
 // cachedFetch is the name of Cached.Fetch, with the identities of its
@@ -5201,6 +6139,29 @@ func CachedSuite() conform.Suite[Cached] {
 					})
 				},
 				Defect: cachedGetAnswersASample,
+			},
+			{
+				ID:          CachedChecks.Get.CacheAgreesOverSequences(),
+				Statement:   "Get returns what Fetch returns for its arguments, over any sequence of calls",
+				Claim:       spec.CacheAgreesOverSequences,
+				Probe:       spec.ReadsAgreeWithTheBacking,
+				Reason:      spec.CacheDisagrees,
+				Law:         spec.CacheAgreesWithItsBacking,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Cached]{CachedChecks.Get.Cache()},
+				Property: func(h *CachedHandle, c *prop.Case) {
+					probe.ReadsAgreeWithTheBacking(
+						h,
+						c,
+						cachedActions,
+						"Get",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := cachedFetchCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+					)
+				},
+				Defect: cachedGetServesAStaleValueAfterThree,
 			},
 			{
 				ID:          CachedChecks.Fetch.Smoke(),
@@ -5598,6 +6559,42 @@ func cachedGetAnswersASample(h *CachedHandle) Cached {
 	return &cachedGetAnswersASampleDefect{cachedOverEmbedded: h.Fresh()}
 }
 
+// cachedGetServesAStaleValueAfterThreeDefect is the planted defect of a
+// Cached whose Get returns its first value again from its fourth call on.
+type cachedGetServesAStaleValueAfterThreeDefect struct {
+	cachedOverEmbedded
+	calls int
+	first *Value
+}
+
+// Get is the override of the planted defect.
+func (d *cachedGetServesAStaleValueAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.cachedOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// cachedGetServesAStaleValueAfterThree returns the planted defect of a
+// Cached whose Get returns its first value again from its fourth call on
+// over a fresh subject.
+func cachedGetServesAStaleValueAfterThree(h *CachedHandle) Cached {
+	return &cachedGetServesAStaleValueAfterThreeDefect{cachedOverEmbedded: h.Fresh()}
+}
+
 // cachedFetchPanicsDefect is the planted defect of a Cached whose Fetch
 // panics.
 type cachedFetchPanicsDefect struct {
@@ -5693,6 +6690,82 @@ func cachedStoreIgnoresCancel(h *CachedHandle) Cached {
 	return &cachedStoreIgnoresCancelDefect{cachedOverEmbedded: h.Fresh()}
 }
 
+// cachedActions returns the actions of the generated sequences of Cached
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func cachedActions(c *prop.Case, subject func() Cached) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := cachedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Fetch",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "fetch.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Fetch", args, args[0])
+				values, err := cachedFetchCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[Value](), "store.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "store.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(Value)
+				call := c.History().Invoke(client, "Store", args, key0.Key)
+				values, err := cachedStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// cachedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func cachedGetCall(ctx context.Context, subject Cached, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// cachedFetchCall calls Fetch on subject with the arguments args, and
+// returns the values of the call beside its error.
+func cachedFetchCall(ctx context.Context, subject Cached, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Fetch(ctx, a0)
+	return []any{r0}, err
+}
+
+// cachedStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func cachedStoreCall(ctx context.Context, subject Cached, args []any) ([]any, error) {
+	a0, _ := args[0].(Value)
+	return nil, subject.Store(ctx, a0)
+}
+
 // The derived checks of Tagged:
 //
 // Tagged.Put/smoke: Put returns without a panic for derived inputs.
@@ -5724,6 +6797,9 @@ func cachedStoreIgnoresCancel(h *CachedHandle) Cached {
 //
 // Tagged.Get/read-after-write#generated: Get returns what Put stored
 // before it.
+//
+// Tagged.Get/reads-each-last-write: Get returns what Put wrote right
+// before it, over any sequence of calls.
 
 // The derived checks of Tagged that witness their laws at the shallow end:
 //
@@ -5840,6 +6916,12 @@ func (c taggedGet) ReadAfterWrite() conform.ID[Tagged] {
 // returns what Put stored before it.
 func (c taggedGet) ReadAfterWriteGenerated() conform.ID[Tagged] {
 	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Get returns
+// what Put wrote right before it, over any sequence of calls.
+func (c taggedGet) ReadsEachLastWrite() conform.ID[Tagged] {
+	return c.Check("reads-each-last-write")
 }
 
 // TaggedSuite returns the checks of Tagged, and the calls and the budgets
@@ -6054,6 +7136,33 @@ func TaggedSuite() conform.Suite[Tagged] {
 					})
 				},
 				Defect: taggedGetReadsAnotherValue,
+			},
+			{
+				ID:          TaggedChecks.Get.ReadsEachLastWrite(),
+				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Tagged]{TaggedChecks.Get.ReadAfterWrite()},
+				Property: func(h *TaggedHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						taggedActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := taggedGetCall(ctx, h.Subject(), []any{args[1]})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) Value {
+							v, _ := args[0].(Value)
+							return v
+						},
+					)
+				},
+				Defect: taggedGetReadsAStaleValueAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -6308,6 +7417,101 @@ func (d *taggedGetReadsAnotherValueDefect) Get(p0 context.Context, p1 string) (r
 // Get returns a value that Put did not write over a fresh subject.
 func taggedGetReadsAnotherValue(h *TaggedHandle) Tagged {
 	return &taggedGetReadsAnotherValueDefect{taggedOverEmbedded: h.Fresh()}
+}
+
+// taggedGetReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Tagged whose Get returns its first value again from its fourth call on.
+type taggedGetReadsAStaleValueAfterThreeDefect struct {
+	taggedOverEmbedded
+	calls int
+	first *Value
+}
+
+// Get is the override of the planted defect.
+func (d *taggedGetReadsAStaleValueAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.taggedOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// taggedGetReadsAStaleValueAfterThree returns the planted defect of a
+// Tagged whose Get returns its first value again from its fourth call on
+// over a fresh subject.
+func taggedGetReadsAStaleValueAfterThree(h *TaggedHandle) Tagged {
+	return &taggedGetReadsAStaleValueAfterThreeDefect{taggedOverEmbedded: h.Fresh()}
+}
+
+// taggedActions returns the actions of the generated sequences of Tagged
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func taggedActions(c *prop.Case, subject func() Tagged) []stateful.Action[struct{}] {
+	keysValue := c.Draw(
+		prop.List(prop.Of[Value](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.value",
+	)
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.SampledFrom(keysValue...), "put.v")
+				tag := c.Draw(prop.SampledFrom(keysString...), "put.tag")
+				return []any{v, tag}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args, args[0], args[1])
+				values, err := taggedPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				tag := c.Draw(prop.SampledFrom(keysString...), "get.tag")
+				return []any{tag}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := taggedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// taggedPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func taggedPutCall(ctx context.Context, subject Tagged, args []any) ([]any, error) {
+	a0, _ := args[0].(Value)
+	a1, _ := args[1].(string)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// taggedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func taggedGetCall(ctx context.Context, subject Tagged, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
 }
 
 // The derived checks of Snapshots:
@@ -6979,6 +8183,13 @@ func snapshotsGetDrifts(h *SnapshotsHandle) Snapshots {
 //
 // Bag.Items/stable-order#generated: two calls of Items return the elements
 // in the same order.
+//
+// Bag.Items/keeps-its-order: two calls of Items without another call
+// between them yield their elements in one order, over any sequence of
+// calls.
+//
+// Bag.Items/yields-each-once: Items never yields an element twice, over
+// any sequence of calls.
 
 // The derived checks of Bag that witness their laws at the shallow end:
 //
@@ -7093,6 +8304,19 @@ func (c bagItems) StableOrder() conform.ID[Bag] {
 // Items return the elements in the same order.
 func (c bagItems) StableOrderGenerated() conform.ID[Bag] {
 	return c.Check("stable-order#generated")
+}
+
+// KeepsItsOrder returns the identity of the check that two calls of Items
+// without another call between them yield their elements in one order,
+// over any sequence of calls.
+func (c bagItems) KeepsItsOrder() conform.ID[Bag] {
+	return c.Check("keeps-its-order")
+}
+
+// YieldsEachOnce returns the identity of the check that Items never yields
+// an element twice, over any sequence of calls.
+func (c bagItems) YieldsEachOnce() conform.ID[Bag] {
+	return c.Check("yields-each-once")
 }
 
 // BagSuite returns the checks of Bag, and the calls and the budgets of its
@@ -7335,6 +8559,34 @@ func BagSuite() conform.Suite[Bag] {
 					}())
 				},
 				Defect: bagItemsReordersDrain,
+			},
+			{
+				ID:          BagChecks.Items.KeepsItsOrder(),
+				Statement:   "two calls of Items without another call between them yield their elements in one order, over any sequence of calls",
+				Claim:       spec.KeepsItsOrder,
+				Probe:       spec.DrainsAgreeBetweenWrites,
+				Reason:      spec.ReorderedDrain,
+				Law:         spec.TwoDrainsAgreeOnOrder,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Bag]{BagChecks.Items.StableOrder()},
+				Property: func(h *BagHandle, c *prop.Case) {
+					probe.DrainsAgreeBetweenWrites(h, c, bagActions, "Items")
+				},
+				Defect: bagItemsReordersAfterThree,
+			},
+			{
+				ID:          BagChecks.Items.YieldsEachOnce(),
+				Statement:   "Items never yields an element twice, over any sequence of calls",
+				Claim:       spec.YieldsEachOnce,
+				Probe:       spec.DrainsWithoutRepeats,
+				Reason:      spec.RepeatedElement,
+				Law:         spec.NoElementIsDrainedTwice,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Bag]{BagChecks.Items.NoDuplicates()},
+				Property: func(h *BagHandle, c *prop.Case) {
+					probe.DrainsWithoutRepeats[Bag, Value](h, c, bagActions, "Items")
+				},
+				Defect: bagItemsRepeatsAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -7607,6 +8859,106 @@ func (d *bagItemsReordersDrainDefect) Items(p0 context.Context) (r0 []Value, r1 
 // reorders the elements between calls over a fresh subject.
 func bagItemsReordersDrain(h *BagHandle) Bag {
 	return &bagItemsReordersDrainDefect{bagOverEmbedded: h.Fresh()}
+}
+
+// bagItemsReordersAfterThreeDefect is the planted defect of a Bag whose
+// Items reverses its elements from its fourth call on.
+type bagItemsReordersAfterThreeDefect struct {
+	bagOverEmbedded
+	calls int
+}
+
+// Items is the override of the planted defect.
+func (d *bagItemsReordersAfterThreeDefect) Items(p0 context.Context) (r0 []Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.bagOverEmbedded.Items(p0)
+	d.calls++
+	if d.calls > 3 {
+		slices.Reverse(r0)
+	}
+	return r0, r1
+}
+
+// bagItemsReordersAfterThree returns the planted defect of a Bag whose
+// Items reverses its elements from its fourth call on over a fresh
+// subject.
+func bagItemsReordersAfterThree(h *BagHandle) Bag {
+	return &bagItemsReordersAfterThreeDefect{bagOverEmbedded: h.Fresh()}
+}
+
+// bagItemsRepeatsAfterThreeDefect is the planted defect of a Bag whose
+// Items yields its first element twice from its fourth call on.
+type bagItemsRepeatsAfterThreeDefect struct {
+	bagOverEmbedded
+	calls int
+}
+
+// Items is the override of the planted defect.
+func (d *bagItemsRepeatsAfterThreeDefect) Items(p0 context.Context) (r0 []Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.bagOverEmbedded.Items(p0)
+	d.calls++
+	if d.calls > 3 && len(r0) > 0 {
+		r0 = append(r0[:1:1], r0...)
+	}
+	return r0, r1
+}
+
+// bagItemsRepeatsAfterThree returns the planted defect of a Bag whose
+// Items yields its first element twice from its fourth call on over a
+// fresh subject.
+func bagItemsRepeatsAfterThree(h *BagHandle) Bag {
+	return &bagItemsRepeatsAfterThreeDefect{bagOverEmbedded: h.Fresh()}
+}
+
+// bagActions returns the actions of the generated sequences of Bag over
+// the subject that subject returns. The actions of a case take their keys
+// from the pools that it draws.
+func bagActions(c *prop.Case, subject func() Bag) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[Value](), "add.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := bagAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Items",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Items", args)
+				values, err := bagItemsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// bagAddCall calls Add on subject with the arguments args, and returns the
+// values of the call beside its error.
+func bagAddCall(ctx context.Context, subject Bag, args []any) ([]any, error) {
+	a0, _ := args[0].(Value)
+	return nil, subject.Add(ctx, a0)
+}
+
+// bagItemsCall calls Items on subject with the arguments args, and returns
+// the values of the call beside its error.
+func bagItemsCall(ctx context.Context, subject Bag, args []any) ([]any, error) {
+	r0, err := subject.Items(ctx)
+	return []any{r0}, err
 }
 
 // The derived checks of Updater:
@@ -10007,6 +11359,10 @@ func pagerFetchServesOnePage(h *PagerHandle) Pager {
 // Log.Append/chain#generated: Append grows Replay by the entry that it
 // admits.
 //
+// Log.Append/replays-in-order-over-sequences: Replay returns the entries
+// that Append appended in the order of their stamps, over any sequence of
+// calls.
+//
 // Log.Replay/smoke: Replay returns without a panic for derived inputs.
 //
 // Log.Replay/cancel: Replay returns an error for a cancelled context.
@@ -10104,6 +11460,13 @@ func (c logAppend) Chain() conform.ID[Log] {
 // Replay by the entry that it admits.
 func (c logAppend) ChainGenerated() conform.ID[Log] {
 	return c.Check("chain#generated")
+}
+
+// ReplaysInOrderOverSequences returns the identity of the check that
+// Replay returns the entries that Append appended in the order of their
+// stamps, over any sequence of calls.
+func (c logAppend) ReplaysInOrderOverSequences() conform.ID[Log] {
+	return c.Check("replays-in-order-over-sequences")
 }
 
 // logReplay is the name of Log.Replay, with the identities of its checks.
@@ -10305,6 +11668,26 @@ func LogSuite() conform.Suite[Log] {
 					})
 				},
 				Defect: logAppendSucceedsAlways,
+			},
+			{
+				ID:          LogChecks.Append.ReplaysInOrderOverSequences(),
+				Statement:   "Replay returns the entries that Append appended in the order of their stamps, over any sequence of calls",
+				Claim:       spec.ReplaysInOrderOverSequences,
+				Probe:       spec.ReplaysFollowTheStamps,
+				Reason:      spec.UnorderedHistory,
+				Law:         spec.HistoryReplaysInItsStampedOrder,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Log]{LogChecks.Append.ChainCausal()},
+				Property: func(h *LogHandle, c *prop.Case) {
+					probe.ReplaysFollowTheStamps(
+						h,
+						c,
+						logActions,
+						"Replay",
+						func(v Entry) int64 { return v.Seq },
+					)
+				},
+				Defect: logReplayReversesAfterThree,
 			},
 			{
 				ID:          LogChecks.Replay.Smoke(),
@@ -10572,6 +11955,34 @@ func logAppendSucceedsAlways(h *LogHandle) Log {
 	return &logAppendSucceedsAlwaysDefect{logOverEmbedded: h.Fresh()}
 }
 
+// logReplayReversesAfterThreeDefect is the planted defect of a Log whose
+// Replay reverses its entries from its fourth call on.
+type logReplayReversesAfterThreeDefect struct {
+	logOverEmbedded
+	calls int
+}
+
+// Replay is the override of the planted defect.
+func (d *logReplayReversesAfterThreeDefect) Replay(p0 context.Context) (r0 []Entry, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.logOverEmbedded.Replay(p0)
+	d.calls++
+	if d.calls > 3 {
+		slices.Reverse(r0)
+	}
+	return r0, r1
+}
+
+// logReplayReversesAfterThree returns the planted defect of a Log whose
+// Replay reverses its entries from its fourth call on over a fresh
+// subject.
+func logReplayReversesAfterThree(h *LogHandle) Log {
+	return &logReplayReversesAfterThreeDefect{logOverEmbedded: h.Fresh()}
+}
+
 // logReplayPanicsDefect is the planted defect of a Log whose Replay
 // panics.
 type logReplayPanicsDefect struct {
@@ -10628,6 +12039,50 @@ func (d *logReplayValueBesideDefect) Replay(p0 context.Context) (r0 []Entry, r1 
 // returns a value beside an error over a fresh subject.
 func logReplayValueBeside(h *LogHandle) Log {
 	return &logReplayValueBesideDefect{logOverEmbedded: h.Fresh()}
+}
+
+// logActions returns the actions of the generated sequences of Log over
+// the subject that subject returns. The actions of a case take their keys
+// from the pools that it draws.
+func logActions(c *prop.Case, subject func() Log) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Append",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Entry](), "append.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Append", args)
+				values, err := logAppendCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Replay",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Replay", args)
+				values, err := logReplayCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// logAppendCall calls Append on subject with the arguments args, and
+// returns the values of the call beside its error.
+func logAppendCall(ctx context.Context, subject Log, args []any) ([]any, error) {
+	a0, _ := args[0].(Entry)
+	return nil, subject.Append(ctx, a0)
+}
+
+// logReplayCall calls Replay on subject with the arguments args, and
+// returns the values of the call beside its error.
+func logReplayCall(ctx context.Context, subject Log, args []any) ([]any, error) {
+	r0, err := subject.Replay(ctx)
+	return []any{r0}, err
 }
 
 // The derived checks of Opener:
@@ -19300,6 +20755,9 @@ func scopedGetIgnoresCancel(h *ScopedHandle) Scoped {
 // Plain.Get/read-after-write#generated: Get returns what Set stored before
 // it.
 //
+// Plain.Get/reads-each-last-write: Get returns what Set wrote right before
+// it, over any sequence of calls.
+//
 // Plain.Watch/smoke: Watch returns without a panic for derived inputs.
 //
 // Plain.Watch/cancel: Watch returns an error for a cancelled context.
@@ -19325,14 +20783,14 @@ func scopedGetIgnoresCancel(h *ScopedHandle) Scoped {
 // Plain.Watch/zero-on-error: eidos derives no sample of a result of Watch.
 // The remedy is to author a sample of the result type with the directive
 // sample.
+//
+// Plain.All/streams-what-was-stored: All takes no context. The remedy is
+// to add a context parameter to All.
 
 // The unclaimed classifications of Plain:
 //
 // The shape:mutator of Plain.Set has the stance silent. A mutation is an
 // input of the other checks, and its result is an error alone.
-//
-// The shape:stream-reader of Plain.All has the stance gap. No claim states
-// what a stream returns after its end.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -19426,6 +20884,12 @@ func (c plainGet) ReadAfterWrite() conform.ID[Plain] {
 // returns what Set stored before it.
 func (c plainGet) ReadAfterWriteGenerated() conform.ID[Plain] {
 	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Get returns
+// what Set wrote right before it, over any sequence of calls.
+func (c plainGet) ReadsEachLastWrite() conform.ID[Plain] {
+	return c.Check("reads-each-last-write")
 }
 
 // plainWatch is the name of Plain.Watch, with the identities of its
@@ -19639,6 +21103,34 @@ func PlainSuite() conform.Suite[Plain] {
 				Defect: plainGetReadsAnotherValue,
 			},
 			{
+				ID:          PlainChecks.Get.ReadsEachLastWrite(),
+				Statement:   "Get returns what Set wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Plain]{PlainChecks.Get.ReadAfterWrite()},
+				Property: func(h *PlainHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						plainActions,
+						"Set",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(Value)
+							values, err := plainGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) Value {
+							v, _ := args[0].(Value)
+							return v
+						},
+					)
+				},
+				Defect: plainGetReadsAStaleValueAfterThree,
+			},
+			{
 				ID:          PlainChecks.Watch.Smoke(),
 				Statement:   "Watch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -19697,6 +21189,13 @@ func PlainSuite() conform.Suite[Plain] {
 				Why:      "eidos derives no sample of a result of Watch",
 				Remedy:   "author a sample of the result type with the directive sample",
 			},
+			{
+				Claim:    spec.StreamsWhatWasStored,
+				Callable: "Plain.All",
+				Gate:     spec.Cancellation,
+				Why:      "All takes no context",
+				Remedy:   "add a context parameter to All",
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -19704,12 +21203,6 @@ func PlainSuite() conform.Suite[Plain] {
 				Callable:       "Plain.Set",
 				Stance:         spec.Silent,
 				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "shape:stream-reader",
-				Callable:       "Plain.All",
-				Stance:         spec.Gap,
-				Note:           "No claim states what a stream returns after its end.",
 			},
 		},
 		Calls: []conform.Call[Plain]{
@@ -19975,6 +21468,42 @@ func plainGetReadsAnotherValue(h *PlainHandle) Plain {
 	return &plainGetReadsAnotherValueDefect{plainOverEmbedded: h.Fresh()}
 }
 
+// plainGetReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Plain whose Get returns its first value again from its fourth call on.
+type plainGetReadsAStaleValueAfterThreeDefect struct {
+	plainOverEmbedded
+	calls int
+	first *Value
+}
+
+// Get is the override of the planted defect.
+func (d *plainGetReadsAStaleValueAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.plainOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// plainGetReadsAStaleValueAfterThree returns the planted defect of a Plain
+// whose Get returns its first value again from its fourth call on over a
+// fresh subject.
+func plainGetReadsAStaleValueAfterThree(h *PlainHandle) Plain {
+	return &plainGetReadsAStaleValueAfterThreeDefect{plainOverEmbedded: h.Fresh()}
+}
+
 // plainWatchPanicsDefect is the planted defect of a Plain whose Watch
 // panics.
 type plainWatchPanicsDefect struct {
@@ -20026,6 +21555,94 @@ func (*plainAllPanicsDefect) All() (r0 iter.Seq[Value]) {
 // over a fresh subject.
 func plainAllPanics(h *PlainHandle) Plain {
 	return &plainAllPanicsDefect{plainOverEmbedded: h.Fresh()}
+}
+
+// plainActions returns the actions of the generated sequences of Plain
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func plainActions(c *prop.Case, subject func() Plain) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Set",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[Value](), "set.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "set.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(Value)
+				call := c.History().Invoke(client, "Set", args, key0.Key)
+				values, err := plainSetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := plainGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Watch",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Watch", args)
+				values, err := plainWatchCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "All",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "All", args)
+				values, err := plainAllCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// plainSetCall calls Set on subject with the arguments args, and returns
+// the values of the call beside its error.
+func plainSetCall(ctx context.Context, subject Plain, args []any) ([]any, error) {
+	a0, _ := args[0].(Value)
+	subject.Set(a0)
+	return nil, nil
+}
+
+// plainGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func plainGetCall(ctx context.Context, subject Plain, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// plainWatchCall calls Watch on subject with the arguments args, and
+// returns the values of the call beside its error.
+func plainWatchCall(ctx context.Context, subject Plain, args []any) ([]any, error) {
+	r0, err := subject.Watch(ctx)
+	return []any{r0}, err
+}
+
+// plainAllCall calls All on subject with the arguments args, and returns
+// the values of the call beside its error.
+func plainAllCall(ctx context.Context, subject Plain, args []any) ([]any, error) {
+	r0 := subject.All()
+	return []any{slices.Collect(r0)}, nil
 }
 
 // The derived checks of Sessions:

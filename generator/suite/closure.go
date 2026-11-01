@@ -20,23 +20,41 @@ import (
 // value of a round trip and the delay of a registration, the parameter of a
 // closure that takes a value, the two parameters of a closure that combines
 // two values, the handle of a call, the hook of a registrar, the body of a
-// scope, the error of a call and the context of a call.
+// scope, the position of an indexed call, the error of a call and the context
+// of a call.
 const (
-	writtenName = "w"
-	inName      = "in"
-	delayName   = "d"
-	takenName   = "v"
-	firstName   = "x"
-	secondName  = "y"
-	handleName  = "handle"
-	hookName    = "hook"
-	bodyName    = "body"
-	errName     = "err"
-	ctxName     = "ctx"
+	writtenName  = "w"
+	inName       = "in"
+	delayName    = "d"
+	takenName    = "v"
+	firstName    = "x"
+	secondName   = "y"
+	handleName   = "handle"
+	hookName     = "hook"
+	bodyName     = "body"
+	positionName = "position"
+	errName      = "err"
+	ctxName      = "ctx"
 )
 
-// nilWord is the word of Go for the nil value.
-const nilWord = "nil"
+// nilWord is the word of Go for the nil value, and newSubject the expression
+// of a new subject of the factory of the handle.
+const (
+	nilWord    = "nil"
+	newSubject = "h.New()"
+)
+
+// intSpelling is the spelling of the type of a position.
+const intSpelling = "int"
+
+// The drains of a stream into a list: each element of an iter.Seq, the first
+// value of each pair of an iter.Seq2 until the error of its second value, and
+// each pair of any other iter.Seq2.
+const (
+	drainElements   = "elements"
+	drainUntilError = "until-error"
+	drainPairs      = "pairs"
+)
 
 // input is one input of a probe that a closure takes. f is the callable that
 // the closure calls, and nil where it calls the method of a handle that
@@ -73,6 +91,9 @@ func (k *caller) closure(in *input) *Closure {
 	}
 	if f.Declaration != "" {
 		c.Method = f.Callable
+	}
+	if sl.fresh {
+		c.Receiver = &Expr{Word: newSubject}
 	}
 	c.Args = k.argsOf(d, f, pair)
 	// The forms that write take the write of the pair as f.
@@ -190,6 +211,36 @@ func (k *caller) closure(in *input) *Closure {
 	case formMatched, formMatch:
 		k.matched(c, in)
 		return c
+	case formBatch:
+		// The variadic input of a batch read is its last input, and it takes
+		// the key of each of the two writes: the two values of the field of
+		// the written value that it selects, or the two written values.
+		a := &pair.Arguments[len(pair.Arguments)-1]
+		var first, second Expr
+		if a.Kind == derive.ArgField {
+			first, second = k.fieldValues(d, pair.Write, pair.Written, a.Field)
+		} else {
+			first, second = k.argOf(d, pair.Write, pair.Written, 0), k.argOf(d, pair.Write, pair.Written, 1)
+		}
+		c.Args = append(c.Args[:len(c.Args)-1], first, second)
+		k.values(c, f)
+		return c
+	case formPosition:
+		c.Param = &ClosureParam{Name: positionName, Type: &emit.TypeRef{Spelling: intSpelling}}
+		for i := range f.Inputs {
+			// A shape has a scalar class only where it is a number.
+			shape := &f.Inputs[i].Shape
+			if shape.Class != rules.ScalarInt && shape.Class != rules.ScalarUint {
+				continue
+			}
+			position := Expr{Name: positionName}
+			if shape.Spelling != intSpelling {
+				position.Convert = k.typeOf(k.inputRef(f, i))
+			}
+			c.Args[inputAt(f, i)] = position
+		}
+		k.act(c, f)
+		return c
 	case formLookup:
 		c.Flag = true
 	default:
@@ -197,8 +248,45 @@ func (k *caller) closure(in *input) *Closure {
 	if with != nil {
 		c.Args[inputAt(f, 0)] = *with
 	}
+	if at := streamAt(f); at >= 0 {
+		k.drain(c, f, at)
+		return c
+	}
 	k.values(c, f)
 	return c
+}
+
+// streamAt returns the position of the stream among the results of the
+// callable of f, and -1 for a callable without one.
+func streamAt(f *derive.Facts) int {
+	return slices.IndexFunc(f.Signature.Returns, func(r rules.ReturnView) bool { return r.Role == rules.ReturnStream })
+}
+
+// elemsOf returns the types of the elements of the stream ref: the value of an
+// iter.Seq, or the two values of an iter.Seq2, through the aliases of the
+// stream.
+func (k *caller) elemsOf(ref *node.TypeRef) []*node.TypeRef {
+	return rules.Unaliased(k.instance(ref), k.b.View()).Args
+}
+
+// drain makes c drain the stream that the at-th result of the callable of f
+// returns into a list, and return the list beside the error of the call. A
+// drain that ends on an error of the stream returns that error.
+func (k *caller) drain(c *Closure, f *derive.Facts, at int) {
+	elems := k.elemsOf(f.Signature.Returns[at].Ref)
+	c.Drain, c.Error = drainElements, true
+	if len(elems) == 2 {
+		c.Drain, c.Pair = drainPairs, true
+		if k.b.TypeOf(elems[1]).Ref == rules.WellKnownError {
+			c.Drain, c.Pair, elems = drainUntilError, false, elems[:1]
+		}
+	}
+	for _, e := range elems {
+		c.Returns = append(c.Returns, k.typeOf(e))
+	}
+	k.assign(c, f, false)
+	c.Assign[at] = "r" + strconv.Itoa(at)
+	c.Results = append([]Expr{{Name: c.Assign[at]}}, errorOf(c)...)
 }
 
 // stampsName is the name of the stamps that a closure of formStamps returns.

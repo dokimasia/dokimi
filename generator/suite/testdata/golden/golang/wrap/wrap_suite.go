@@ -7,6 +7,7 @@ import (
 
 	"example.com/shop/lib/tool"
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/spec"
@@ -29,6 +30,9 @@ import (
 //
 // Reach.Current/read-after-write#generated: Current returns what Store
 // stored before it.
+//
+// Reach.Current/reads-each-last-write: Current returns what Store wrote
+// right before it, over any sequence of calls.
 
 // The derived checks of Reach that witness their laws at the shallow end:
 //
@@ -135,6 +139,12 @@ func (c reachCurrent) ZeroOnError() conform.ID[Reach] {
 // returns what Store stored before it.
 func (c reachCurrent) ReadAfterWriteGenerated() conform.ID[Reach] {
 	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Current
+// returns what Store wrote right before it, over any sequence of calls.
+func (c reachCurrent) ReadsEachLastWrite() conform.ID[Reach] {
+	return c.Check("reads-each-last-write")
 }
 
 // reachGear is the name of Reach.Gear, with the identities of its checks.
@@ -250,6 +260,33 @@ func ReachSuite() conform.Suite[Reach] {
 					})
 				},
 				Defect: reachCurrentReadsAnotherValue,
+			},
+			{
+				ID:          ReachChecks.Current.ReadsEachLastWrite(),
+				Statement:   "Current returns what Store wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Reach]{ReachChecks.Current.ReadAfterWrite()},
+				Property: func(h *ReachHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						reachActions,
+						"Store",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := reachCurrentCall(ctx, h.Subject(), []any{})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) tool.Pitch {
+							v, _ := args[0].(tool.Pitch)
+							return v
+						},
+					)
+				},
+				Defect: reachCurrentReadsAStaleValueAfterThree,
 			},
 		},
 		Refusals: []conform.Refusal{
@@ -569,6 +606,102 @@ func (d *reachCurrentReadsAnotherValueDefect) Current(
 // subject.
 func reachCurrentReadsAnotherValue(h *ReachHandle) Reach {
 	return &reachCurrentReadsAnotherValueDefect{reachOverEmbedded: h.Fresh()}
+}
+
+// reachCurrentReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Reach whose Current returns its first value again from its fourth call
+// on.
+type reachCurrentReadsAStaleValueAfterThreeDefect struct {
+	reachOverEmbedded
+	calls int
+	first *tool.Pitch
+}
+
+// Current is the override of the planted defect.
+func (d *reachCurrentReadsAStaleValueAfterThreeDefect) Current(
+	p0 context.Context,
+) (r0 tool.Pitch, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.reachOverEmbedded.Current(p0)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// reachCurrentReadsAStaleValueAfterThree returns the planted defect of a
+// Reach whose Current returns its first value again from its fourth call
+// on over a fresh subject.
+func reachCurrentReadsAStaleValueAfterThree(h *ReachHandle) Reach {
+	return &reachCurrentReadsAStaleValueAfterThreeDefect{reachOverEmbedded: h.Fresh()}
+}
+
+// reachActions returns the actions of the generated sequences of Reach
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func reachActions(c *prop.Case, subject func() Reach) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				p := c.Draw(prop.Of[tool.Pitch](), "store.p")
+				return []any{p}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Store", args)
+				values, err := reachStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Current",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Current", args)
+				values, err := reachCurrentCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Gear",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Gear", args)
+				values, err := reachGearCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// reachStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func reachStoreCall(ctx context.Context, subject Reach, args []any) ([]any, error) {
+	a0, _ := args[0].(tool.Pitch)
+	return nil, subject.Store(ctx, a0)
+}
+
+// reachCurrentCall calls Current on subject with the arguments args, and
+// returns the values of the call beside its error.
+func reachCurrentCall(ctx context.Context, subject Reach, args []any) ([]any, error) {
+	r0, err := subject.Current(ctx)
+	return []any{r0}, err
+}
+
+// reachGearCall calls Gear on subject with the arguments args, and returns
+// the values of the call beside its error.
+func reachGearCall(ctx context.Context, subject Reach, args []any) ([]any, error) {
+	r0, err := subject.Gear(ctx)
+	return []any{r0}, err
 }
 
 // The refused claims of Tuned:
@@ -1846,6 +1979,920 @@ func (*limitedPhasePanicsDefect) Phase(p0 tool.Phase) {
 // panics over a fresh subject.
 func limitedPhasePanics(h *LimitedHandle) Limited {
 	return &limitedPhasePanicsDefect{limitedOverEmbedded: h.Fresh()}
+}
+
+// The derived checks of Played:
+//
+// Played.Play/smoke: Play returns without a panic for derived inputs.
+//
+// Played.Play/cancel: Play returns an error for a cancelled context.
+//
+// Played.StateAt/smoke#generated: StateAt returns without a panic for
+// derived inputs.
+//
+// Played.StateAt/cancel#generated: StateAt returns an error for a
+// cancelled context.
+//
+// Played.StateAt/zero-on-error#generated: StateAt returns the zero value
+// beside an error.
+
+// The derived checks of Played that witness their laws at the shallow end:
+//
+// Played.Play/smoke
+
+// The refused claims of Played:
+//
+// Played.Play/follows-its-graph: a sample of the check refers to a
+// declaration that the file of the suite cannot import. The remedy is to
+// author a sample of each input of Play with the directive sample.
+//
+// Played.StateAt/smoke: a sample of the check refers to a declaration that
+// the file of the suite cannot import. The remedy is to author a sample of
+// each input of StateAt with the directive sample.
+//
+// Played.StateAt/cancel: a sample of the check refers to a declaration
+// that the file of the suite cannot import. The remedy is to author a
+// sample of each input of StateAt with the directive sample.
+//
+// Played.StateAt/zero-on-error: a sample of the check refers to a
+// declaration that the file of the suite cannot import. The remedy is to
+// author a sample of each input of StateAt with the directive sample.
+
+// The unclaimed classifications of Played:
+//
+// The shape:lifecycle of Played.Play has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Played writes.
+type (
+	PlayedHandle = conform.Handle[Played]
+	PlayedCheck  = conform.Check[Played]
+	PlayedOption = conform.Option[Played]
+)
+
+// PlayedChecks contains the name of each callable of Played, with the
+// identities of its checks.
+var PlayedChecks = struct {
+	Play    playedPlay
+	StateAt playedStateAt
+}{
+	Play:    playedPlay{"Played.Play"},
+	StateAt: playedStateAt{"Played.StateAt"},
+}
+
+// playedPlay is the name of Played.Play, with the identities of its
+// checks.
+type playedPlay struct {
+	conform.Callable[Played]
+}
+
+// Smoke returns the identity of the check that Play returns without a
+// panic for derived inputs.
+func (c playedPlay) Smoke() conform.ID[Played] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Play returns an error for
+// a cancelled context.
+func (c playedPlay) Cancel() conform.ID[Played] {
+	return c.Check("cancel")
+}
+
+// playedStateAt is the name of Played.StateAt, with the identities of its
+// checks.
+type playedStateAt struct {
+	conform.Callable[Played]
+}
+
+// SmokeGenerated returns the identity of the check that StateAt returns
+// without a panic for derived inputs.
+func (c playedStateAt) SmokeGenerated() conform.ID[Played] {
+	return c.Check("smoke#generated")
+}
+
+// CancelGenerated returns the identity of the check that StateAt returns
+// an error for a cancelled context.
+func (c playedStateAt) CancelGenerated() conform.ID[Played] {
+	return c.Check("cancel#generated")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that StateAt
+// returns the zero value beside an error.
+func (c playedStateAt) ZeroOnErrorGenerated() conform.ID[Played] {
+	return c.Check("zero-on-error#generated")
+}
+
+// PlayedSuite returns the checks of Played, and the calls and the budgets
+// of its callables.
+func PlayedSuite() conform.Suite[Played] {
+	return conform.Suite[Played]{
+		Declaration: "Played",
+		Package:     "example.com/shop/wrap",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Played]{
+			{
+				ID:          PlayedChecks.Play.Smoke(),
+				Statement:   "Play returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PlayedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Play(ctx)
+					})
+				},
+				Defect: playedPlayPanics,
+			},
+			{
+				ID:          PlayedChecks.Play.Cancel(),
+				Statement:   "Play returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *PlayedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Play(ctx)
+					})
+				},
+				Defect: playedPlayIgnoresCancel,
+			},
+			{
+				ID:          PlayedChecks.StateAt.SmokeGenerated(),
+				Statement:   "StateAt returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PlayedHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().StateAt(ctx, drawnP)
+						return err
+					})
+				},
+				Defect: playedStateAtPanics,
+			},
+			{
+				ID:          PlayedChecks.StateAt.CancelGenerated(),
+				Statement:   "StateAt returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PlayedHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().StateAt(ctx, drawnP)
+						return err
+					})
+				},
+				Defect: playedStateAtIgnoresCancel,
+			},
+			{
+				ID:          PlayedChecks.StateAt.ZeroOnErrorGenerated(),
+				Statement:   "StateAt returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PlayedHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().StateAt(ctx, drawnP)
+					}, string(""))
+				},
+				Defect: playedStateAtValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.FollowsItsGraph,
+				Callable: "Played.Play",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Play with the directive sample",
+			},
+			{
+				Claim:    spec.Smoke,
+				Callable: "Played.StateAt",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of StateAt with the directive sample",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Played.StateAt",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of StateAt with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Played.StateAt",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of StateAt with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Played.Play",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+		},
+		Calls: []conform.Call[Played]{
+			{
+				Calls:    playedPlayCalls,
+				Over:     newPlayedOver,
+				Callable: PlayedChecks.Play.Callable,
+			},
+			{
+				Calls:    playedStateAtCalls,
+				Over:     newPlayedOver,
+				Callable: PlayedChecks.StateAt.Callable,
+			},
+		},
+	}
+}
+
+// RunPlayedSuite applies the checks of Played, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunPlayedSuite[T Played](t *testing.T, newSubject func() T, opts ...PlayedOption) {
+	t.Helper()
+	RunPlayedSuiteFromHandle(t, func(*PlayedHandle) T { return newSubject() }, opts...)
+}
+
+// RunPlayedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunPlayedSuiteFromHandle[T Played](
+	t *testing.T,
+	newSubject func(h *PlayedHandle) T,
+	opts ...PlayedOption,
+) {
+	t.Helper()
+	conform.Run(t, PlayedSuite(), playedSubjects(newSubject), opts...)
+}
+
+// FuzzPlayedSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzPlayedSuite[T Played](
+	f *testing.F,
+	callable conform.Callable[Played],
+	newSubject func(h *PlayedHandle) T,
+	opts ...PlayedOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, PlayedSuite(), callable, playedSubjects(newSubject), opts...)
+}
+
+// RunPlayedBudgets applies the allocation ceilings of Played and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunPlayedBudgets[T Played](
+	t *testing.T,
+	newSubject func(h *PlayedHandle) T,
+	opts ...PlayedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, PlayedSuite(), playedSubjects(newSubject), opts...)
+}
+
+// BenchPlayedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchPlayedSuite[T Played](
+	b conform.B,
+	callable conform.Callable[Played],
+	newSubject func(h *PlayedHandle) T,
+	opts ...PlayedOption,
+) {
+	b.Helper()
+	conform.Bench(b, PlayedSuite(), callable, playedSubjects(newSubject), opts...)
+}
+
+// playedSubjects returns the factory of the subjects of Played that calls
+// newSubject with the handle of each check.
+func playedSubjects[T Played](newSubject func(h *PlayedHandle) T) func(h *PlayedHandle) Played {
+	return func(h *PlayedHandle) Played { return newSubject(h) }
+}
+
+// playedPlayCalls generates the calls of Played.Play with the inputs that
+// each case draws.
+var playedPlayCalls = prop.Composite(func(*prop.Case) func(context.Context, Played) error {
+	return func(ctx context.Context, subject Played) error {
+		return subject.Play(ctx)
+	}
+})
+
+// playedStateAtCalls generates the calls of Played.StateAt with the inputs
+// that each case draws.
+var playedStateAtCalls = prop.Composite(func(c *prop.Case) func(context.Context, Played) error {
+	p := c.Draw(prop.Of[tool.Pitch](), "p")
+	return func(ctx context.Context, subject Played) error {
+		_, err := subject.StateAt(ctx, p)
+		return err
+	}
+})
+
+// playedOverEmbedded is Played under the name of the field that playedOver
+// embeds.
+type playedOverEmbedded = Played
+
+// playedOver is a subject of Played whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type playedOver struct {
+	playedOverEmbedded
+	spend func()
+}
+
+// Play calls spend and returns its zero results.
+func (o playedOver) Play(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// StateAt calls spend and returns its zero results.
+func (o playedOver) StateAt(context.Context, tool.Pitch) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newPlayedOver returns the planted defect of a ceiling of Played, whose
+// callables call spend.
+func newPlayedOver(_ *PlayedHandle, spend func()) Played {
+	return playedOver{spend: spend}
+}
+
+// playedPlayPanicsDefect is the planted defect of a Played whose Play
+// panics.
+type playedPlayPanicsDefect struct {
+	playedOverEmbedded
+}
+
+// Play is the override of the planted defect.
+func (*playedPlayPanicsDefect) Play(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Played whose Play panics")
+}
+
+// playedPlayPanics returns the planted defect of a Played whose Play
+// panics over a fresh subject.
+func playedPlayPanics(h *PlayedHandle) Played {
+	return &playedPlayPanicsDefect{playedOverEmbedded: h.Fresh()}
+}
+
+// playedPlayIgnoresCancelDefect is the planted defect of a Played whose
+// Play ignores the context.
+type playedPlayIgnoresCancelDefect struct {
+	playedOverEmbedded
+}
+
+// Play is the override of the planted defect.
+func (d *playedPlayIgnoresCancelDefect) Play(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.playedOverEmbedded.Play(p0)
+}
+
+// playedPlayIgnoresCancel returns the planted defect of a Played whose
+// Play ignores the context over a fresh subject.
+func playedPlayIgnoresCancel(h *PlayedHandle) Played {
+	return &playedPlayIgnoresCancelDefect{playedOverEmbedded: h.Fresh()}
+}
+
+// playedStateAtPanicsDefect is the planted defect of a Played whose
+// StateAt panics.
+type playedStateAtPanicsDefect struct {
+	playedOverEmbedded
+}
+
+// StateAt is the override of the planted defect.
+func (*playedStateAtPanicsDefect) StateAt(p0 context.Context, p1 tool.Pitch) (r0 string, r1 error) {
+	panic("the planted defect of a Played whose StateAt panics")
+}
+
+// playedStateAtPanics returns the planted defect of a Played whose StateAt
+// panics over a fresh subject.
+func playedStateAtPanics(h *PlayedHandle) Played {
+	return &playedStateAtPanicsDefect{playedOverEmbedded: h.Fresh()}
+}
+
+// playedStateAtIgnoresCancelDefect is the planted defect of a Played whose
+// StateAt ignores the context.
+type playedStateAtIgnoresCancelDefect struct {
+	playedOverEmbedded
+}
+
+// StateAt is the override of the planted defect.
+func (d *playedStateAtIgnoresCancelDefect) StateAt(
+	p0 context.Context,
+	p1 tool.Pitch,
+) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.playedOverEmbedded.StateAt(p0, p1)
+}
+
+// playedStateAtIgnoresCancel returns the planted defect of a Played whose
+// StateAt ignores the context over a fresh subject.
+func playedStateAtIgnoresCancel(h *PlayedHandle) Played {
+	return &playedStateAtIgnoresCancelDefect{playedOverEmbedded: h.Fresh()}
+}
+
+// playedStateAtValueBesideDefect is the planted defect of a Played whose
+// StateAt returns a value beside an error.
+type playedStateAtValueBesideDefect struct {
+	playedOverEmbedded
+}
+
+// StateAt is the override of the planted defect.
+func (d *playedStateAtValueBesideDefect) StateAt(
+	p0 context.Context,
+	p1 tool.Pitch,
+) (r0 string, r1 error) {
+	r0, r1 = d.playedOverEmbedded.StateAt(p0, p1)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
+	return r0, r1
+}
+
+// playedStateAtValueBeside returns the planted defect of a Played whose
+// StateAt returns a value beside an error over a fresh subject.
+func playedStateAtValueBeside(h *PlayedHandle) Played {
+	return &playedStateAtValueBesideDefect{playedOverEmbedded: h.Fresh()}
+}
+
+// The derived checks of Gauged:
+//
+// Gauged.Fill/smoke: Fill returns without a panic for derived inputs.
+//
+// Gauged.Fill/cancel: Fill returns an error for a cancelled context.
+//
+// Gauged.LevelAt/smoke#generated: LevelAt returns without a panic for
+// derived inputs.
+//
+// Gauged.LevelAt/cancel#generated: LevelAt returns an error for a
+// cancelled context.
+//
+// Gauged.LevelAt/zero-on-error#generated: LevelAt returns the zero value
+// beside an error.
+
+// The derived checks of Gauged that witness their laws at the shallow end:
+//
+// Gauged.Fill/smoke
+
+// The refused claims of Gauged:
+//
+// Gauged.Fill/keeps-within-its-bounds: a sample of the check refers to a
+// declaration that the file of the suite cannot import. The remedy is to
+// author a sample of each input of Fill with the directive sample.
+//
+// Gauged.LevelAt/smoke: a sample of the check refers to a declaration that
+// the file of the suite cannot import. The remedy is to author a sample of
+// each input of LevelAt with the directive sample.
+//
+// Gauged.LevelAt/cancel: a sample of the check refers to a declaration
+// that the file of the suite cannot import. The remedy is to author a
+// sample of each input of LevelAt with the directive sample.
+//
+// Gauged.LevelAt/zero-on-error: a sample of the check refers to a
+// declaration that the file of the suite cannot import. The remedy is to
+// author a sample of each input of LevelAt with the directive sample.
+
+// The unclaimed classifications of Gauged:
+//
+// The shape:lifecycle of Gauged.Fill has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Gauged writes.
+type (
+	GaugedHandle = conform.Handle[Gauged]
+	GaugedCheck  = conform.Check[Gauged]
+	GaugedOption = conform.Option[Gauged]
+)
+
+// GaugedChecks contains the name of each callable of Gauged, with the
+// identities of its checks.
+var GaugedChecks = struct {
+	Fill    gaugedFill
+	LevelAt gaugedLevelAt
+}{
+	Fill:    gaugedFill{"Gauged.Fill"},
+	LevelAt: gaugedLevelAt{"Gauged.LevelAt"},
+}
+
+// gaugedFill is the name of Gauged.Fill, with the identities of its
+// checks.
+type gaugedFill struct {
+	conform.Callable[Gauged]
+}
+
+// Smoke returns the identity of the check that Fill returns without a
+// panic for derived inputs.
+func (c gaugedFill) Smoke() conform.ID[Gauged] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Fill returns an error for
+// a cancelled context.
+func (c gaugedFill) Cancel() conform.ID[Gauged] {
+	return c.Check("cancel")
+}
+
+// gaugedLevelAt is the name of Gauged.LevelAt, with the identities of its
+// checks.
+type gaugedLevelAt struct {
+	conform.Callable[Gauged]
+}
+
+// SmokeGenerated returns the identity of the check that LevelAt returns
+// without a panic for derived inputs.
+func (c gaugedLevelAt) SmokeGenerated() conform.ID[Gauged] {
+	return c.Check("smoke#generated")
+}
+
+// CancelGenerated returns the identity of the check that LevelAt returns
+// an error for a cancelled context.
+func (c gaugedLevelAt) CancelGenerated() conform.ID[Gauged] {
+	return c.Check("cancel#generated")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that LevelAt
+// returns the zero value beside an error.
+func (c gaugedLevelAt) ZeroOnErrorGenerated() conform.ID[Gauged] {
+	return c.Check("zero-on-error#generated")
+}
+
+// GaugedSuite returns the checks of Gauged, and the calls and the budgets
+// of its callables.
+func GaugedSuite() conform.Suite[Gauged] {
+	return conform.Suite[Gauged]{
+		Declaration: "Gauged",
+		Package:     "example.com/shop/wrap",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Gauged]{
+			{
+				ID:          GaugedChecks.Fill.Smoke(),
+				Statement:   "Fill returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *GaugedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Fill(ctx)
+					})
+				},
+				Defect: gaugedFillPanics,
+			},
+			{
+				ID:          GaugedChecks.Fill.Cancel(),
+				Statement:   "Fill returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *GaugedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Fill(ctx)
+					})
+				},
+				Defect: gaugedFillIgnoresCancel,
+			},
+			{
+				ID:          GaugedChecks.LevelAt.SmokeGenerated(),
+				Statement:   "LevelAt returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *GaugedHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().LevelAt(ctx, drawnP)
+						return err
+					})
+				},
+				Defect: gaugedLevelAtPanics,
+			},
+			{
+				ID:          GaugedChecks.LevelAt.CancelGenerated(),
+				Statement:   "LevelAt returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *GaugedHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().LevelAt(ctx, drawnP)
+						return err
+					})
+				},
+				Defect: gaugedLevelAtIgnoresCancel,
+			},
+			{
+				ID:          GaugedChecks.LevelAt.ZeroOnErrorGenerated(),
+				Statement:   "LevelAt returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *GaugedHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().LevelAt(ctx, drawnP)
+					}, int(0))
+				},
+				Defect: gaugedLevelAtValueBeside,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.KeepsWithinItsBounds,
+				Callable: "Gauged.Fill",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Fill with the directive sample",
+			},
+			{
+				Claim:    spec.Smoke,
+				Callable: "Gauged.LevelAt",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of LevelAt with the directive sample",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Gauged.LevelAt",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of LevelAt with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Gauged.LevelAt",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of LevelAt with the directive sample",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Gauged.Fill",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+		},
+		Calls: []conform.Call[Gauged]{
+			{
+				Calls:    gaugedFillCalls,
+				Over:     newGaugedOver,
+				Callable: GaugedChecks.Fill.Callable,
+			},
+			{
+				Calls:    gaugedLevelAtCalls,
+				Over:     newGaugedOver,
+				Callable: GaugedChecks.LevelAt.Callable,
+			},
+		},
+	}
+}
+
+// RunGaugedSuite applies the checks of Gauged, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunGaugedSuite[T Gauged](t *testing.T, newSubject func() T, opts ...GaugedOption) {
+	t.Helper()
+	RunGaugedSuiteFromHandle(t, func(*GaugedHandle) T { return newSubject() }, opts...)
+}
+
+// RunGaugedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunGaugedSuiteFromHandle[T Gauged](
+	t *testing.T,
+	newSubject func(h *GaugedHandle) T,
+	opts ...GaugedOption,
+) {
+	t.Helper()
+	conform.Run(t, GaugedSuite(), gaugedSubjects(newSubject), opts...)
+}
+
+// FuzzGaugedSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzGaugedSuite[T Gauged](
+	f *testing.F,
+	callable conform.Callable[Gauged],
+	newSubject func(h *GaugedHandle) T,
+	opts ...GaugedOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, GaugedSuite(), callable, gaugedSubjects(newSubject), opts...)
+}
+
+// RunGaugedBudgets applies the allocation ceilings of Gauged and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunGaugedBudgets[T Gauged](
+	t *testing.T,
+	newSubject func(h *GaugedHandle) T,
+	opts ...GaugedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, GaugedSuite(), gaugedSubjects(newSubject), opts...)
+}
+
+// BenchGaugedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchGaugedSuite[T Gauged](
+	b conform.B,
+	callable conform.Callable[Gauged],
+	newSubject func(h *GaugedHandle) T,
+	opts ...GaugedOption,
+) {
+	b.Helper()
+	conform.Bench(b, GaugedSuite(), callable, gaugedSubjects(newSubject), opts...)
+}
+
+// gaugedSubjects returns the factory of the subjects of Gauged that calls
+// newSubject with the handle of each check.
+func gaugedSubjects[T Gauged](newSubject func(h *GaugedHandle) T) func(h *GaugedHandle) Gauged {
+	return func(h *GaugedHandle) Gauged { return newSubject(h) }
+}
+
+// gaugedFillCalls generates the calls of Gauged.Fill with the inputs that
+// each case draws.
+var gaugedFillCalls = prop.Composite(func(*prop.Case) func(context.Context, Gauged) error {
+	return func(ctx context.Context, subject Gauged) error {
+		return subject.Fill(ctx)
+	}
+})
+
+// gaugedLevelAtCalls generates the calls of Gauged.LevelAt with the inputs
+// that each case draws.
+var gaugedLevelAtCalls = prop.Composite(func(c *prop.Case) func(context.Context, Gauged) error {
+	p := c.Draw(prop.Of[tool.Pitch](), "p")
+	return func(ctx context.Context, subject Gauged) error {
+		_, err := subject.LevelAt(ctx, p)
+		return err
+	}
+})
+
+// gaugedOverEmbedded is Gauged under the name of the field that gaugedOver
+// embeds.
+type gaugedOverEmbedded = Gauged
+
+// gaugedOver is a subject of Gauged whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type gaugedOver struct {
+	gaugedOverEmbedded
+	spend func()
+}
+
+// Fill calls spend and returns its zero results.
+func (o gaugedOver) Fill(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// LevelAt calls spend and returns its zero results.
+func (o gaugedOver) LevelAt(context.Context, tool.Pitch) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newGaugedOver returns the planted defect of a ceiling of Gauged, whose
+// callables call spend.
+func newGaugedOver(_ *GaugedHandle, spend func()) Gauged {
+	return gaugedOver{spend: spend}
+}
+
+// gaugedFillPanicsDefect is the planted defect of a Gauged whose Fill
+// panics.
+type gaugedFillPanicsDefect struct {
+	gaugedOverEmbedded
+}
+
+// Fill is the override of the planted defect.
+func (*gaugedFillPanicsDefect) Fill(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Gauged whose Fill panics")
+}
+
+// gaugedFillPanics returns the planted defect of a Gauged whose Fill
+// panics over a fresh subject.
+func gaugedFillPanics(h *GaugedHandle) Gauged {
+	return &gaugedFillPanicsDefect{gaugedOverEmbedded: h.Fresh()}
+}
+
+// gaugedFillIgnoresCancelDefect is the planted defect of a Gauged whose
+// Fill ignores the context.
+type gaugedFillIgnoresCancelDefect struct {
+	gaugedOverEmbedded
+}
+
+// Fill is the override of the planted defect.
+func (d *gaugedFillIgnoresCancelDefect) Fill(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.gaugedOverEmbedded.Fill(p0)
+}
+
+// gaugedFillIgnoresCancel returns the planted defect of a Gauged whose
+// Fill ignores the context over a fresh subject.
+func gaugedFillIgnoresCancel(h *GaugedHandle) Gauged {
+	return &gaugedFillIgnoresCancelDefect{gaugedOverEmbedded: h.Fresh()}
+}
+
+// gaugedLevelAtPanicsDefect is the planted defect of a Gauged whose
+// LevelAt panics.
+type gaugedLevelAtPanicsDefect struct {
+	gaugedOverEmbedded
+}
+
+// LevelAt is the override of the planted defect.
+func (*gaugedLevelAtPanicsDefect) LevelAt(p0 context.Context, p1 tool.Pitch) (r0 int, r1 error) {
+	panic("the planted defect of a Gauged whose LevelAt panics")
+}
+
+// gaugedLevelAtPanics returns the planted defect of a Gauged whose LevelAt
+// panics over a fresh subject.
+func gaugedLevelAtPanics(h *GaugedHandle) Gauged {
+	return &gaugedLevelAtPanicsDefect{gaugedOverEmbedded: h.Fresh()}
+}
+
+// gaugedLevelAtIgnoresCancelDefect is the planted defect of a Gauged whose
+// LevelAt ignores the context.
+type gaugedLevelAtIgnoresCancelDefect struct {
+	gaugedOverEmbedded
+}
+
+// LevelAt is the override of the planted defect.
+func (d *gaugedLevelAtIgnoresCancelDefect) LevelAt(
+	p0 context.Context,
+	p1 tool.Pitch,
+) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.gaugedOverEmbedded.LevelAt(p0, p1)
+}
+
+// gaugedLevelAtIgnoresCancel returns the planted defect of a Gauged whose
+// LevelAt ignores the context over a fresh subject.
+func gaugedLevelAtIgnoresCancel(h *GaugedHandle) Gauged {
+	return &gaugedLevelAtIgnoresCancelDefect{gaugedOverEmbedded: h.Fresh()}
+}
+
+// gaugedLevelAtValueBesideDefect is the planted defect of a Gauged whose
+// LevelAt returns a value beside an error.
+type gaugedLevelAtValueBesideDefect struct {
+	gaugedOverEmbedded
+}
+
+// LevelAt is the override of the planted defect.
+func (d *gaugedLevelAtValueBesideDefect) LevelAt(
+	p0 context.Context,
+	p1 tool.Pitch,
+) (r0 int, r1 error) {
+	r0, r1 = d.gaugedOverEmbedded.LevelAt(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
+	return r0, r1
+}
+
+// gaugedLevelAtValueBeside returns the planted defect of a Gauged whose
+// LevelAt returns a value beside an error over a fresh subject.
+func gaugedLevelAtValueBeside(h *GaugedHandle) Gauged {
+	return &gaugedLevelAtValueBesideDefect{gaugedOverEmbedded: h.Fresh()}
 }
 
 // The derived checks of Plain:

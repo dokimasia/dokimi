@@ -86,7 +86,11 @@ var _ = {{$conform}}.CompatV1
 
 {{docs (wrapdocs (printf `%s returns the identity of the check that %s.` .Method .Statement))}}
 {{- ""}}func (c {{$type}}) {{.Method}}() {{$conform}}.ID[{{$s}}] {
+{{- if .Whole}}
+	return {{printf "%q" .Whole}}
+{{- else}}
 	return c.Check({{printf "%q" .Segment}})
+{{- end}}
 }
 {{- end}}
 {{- end}}
@@ -127,7 +131,11 @@ var _ = {{$conform}}.CompatV1
 {{- with .Entails}}
 				Entails:     []{{$conform}}.ID[{{$s}}]{ {{- range $i, $e := .}}{{if $i}}, {{end}}{{$checks}}{{with $e.Field}}.{{.}}{{end}}.{{$e.Method}}(){{end -}} },
 {{- end}}
-{{- if .Generated}}
+{{- if .Sequence}}
+				Property: func(h *{{$handle}}, c *{{import "go.dokimi.dev/assert/prop"}}.Case) {
+					{{$probe}}.{{.Probe}}{{with .TypeArgs}}[{{$s}}{{range .}}, {{if eq (len .) 2}}{{$probe}}.Pair[{{spell (index . 0)}}, {{spell (index . 1)}}]{{else}}{{spell (index . 0)}}{{end}}{{end}}]{{end}}(h, c{{range .Args}}, {{template "suite.arg" .}}{{end}})
+				},
+{{- else if .Generated}}
 				Property: func(h *{{$handle}}, c *{{import "go.dokimi.dev/assert/prop"}}.Case) {
 {{- range .Draws}}{{template "suite.draw" .}}{{end}}
 					{{$probe}}.{{.Probe}}(h{{range .Args}}, {{template "suite.arg" .}}{{end}})
@@ -516,8 +524,160 @@ var _ = {{$conform}}.CompatV1
 {{- range $c.Defects}}
 {{- template "suite.defect" (suiteDefect . (suiteCamel $n.Embedded) $handle $s)}}
 {{- end}}
+{{- with $c.Sequences}}{{template "suite.sequences" (suiteSequences . $s $c.Declaration)}}{{end}}
 {{- end}}
 {{- end}}
+
+{{- /*
+suite.sequences writes the parts of the generated sequences of a declaration:
+the function of its actions, the function that calls each callable with the
+arguments of a list, and the function of its reference.
+*/}}
+{{- define "suite.sequences"}}
+{{- $q := .Sequences}}{{$s := .Subject}}
+{{- $prop := import "go.dokimi.dev/assert/prop"}}{{$conform := import "go.dokimi.dev/conform"}}
+{{- $context := import "context"}}
+
+{{docs (wrapdocs (printf `%s returns the actions of the generated sequences of %s over the subject that subject returns. The actions of a case take their keys from the pools that it draws.` (suiteCamel $q.Actions) .Declaration))}}
+{{- ""}}func {{suiteCamel $q.Actions}}(c *{{$prop}}.Case, subject func() {{$s}}) []{{import "go.dokimi.dev/assert/stateful"}}.Action[struct{}] {
+{{- range $q.Pools}}
+	{{.Name}} := c.Draw({{$prop}}.List({{$prop}}.Of[{{spell .Type}}](), {{$prop}}.Unique(), {{$prop}}.MinSize(1), {{$prop}}.MaxSize(3)), {{printf "%q" .Label}})
+{{- end}}
+	return []{{import "go.dokimi.dev/assert/stateful"}}.Action[struct{}]{
+{{- range $q.Steps}}{{if .Action}}{{$st := .}}
+		{
+			Name: {{printf "%q" .Name}},
+{{- $inputs := false}}{{range .Params}}{{if ge .Arg 0}}{{$inputs = true}}{{end}}{{end}}
+{{- if $inputs}}
+			Input: func(c *{{$prop}}.Case, _ struct{}) any {
+{{- range .Params}}{{if ge .Arg 0}}
+{{- if .Pool}}
+				{{.Name}} := c.Draw({{$prop}}.SampledFrom({{.Pool}}...), {{printf "%q" .Label}})
+{{- else if .Sample}}
+				{{.Name}} := {{if .Variadic}}[]{{spell .Type}}{ {{- value .Sample -}} }{{else}}{{value .Sample}}{{end}}
+{{- else if or .Funcs .Input}}{{template "suite.generated.param" .Param}}
+{{- else}}
+				{{.Name}} := c.Draw({{if or .Variadic .Receive}}{{$prop}}.List({{$prop}}.Of[{{spell .Type}}]()){{else}}{{$prop}}.Of[{{spell .Type}}](){{end}}, {{printf "%q" .Label}})
+{{- end}}
+{{- $p := .}}{{range .Fields}}
+				{{$p.Name}}.{{.Name}} = c.Draw({{$prop}}.SampledFrom({{.Pool}}...), {{printf "%q" .Label}})
+{{- end}}
+{{- end}}{{end}}
+				return []any{ {{- $first := true}}{{range .Params}}{{if ge .Arg 0}}{{if not $first}}, {{end}}{{$first = false}}{{if .Address}}&{{end}}{{.Name}}{{end}}{{end -}} }
+			},
+{{- end}}
+			Run: func(c *{{$prop}}.Case, client int, input any) {
+				args, _ := input.([]any)
+{{- range $i, $k := .Keys}}{{if .Field}}
+				key{{$i}}, _ := args[{{.Arg}}].({{spell .Type}})
+{{- end}}{{end}}
+				call := c.History().Invoke(client, {{printf "%q" .Name}}, args{{range $i, $k := .Keys}}, {{if .Field}}key{{$i}}.{{.Field}}{{else}}args[{{.Arg}}]{{end}}{{end}})
+				values, err := {{suiteCamel .Call}}(c.Context(), subject(), args)
+				{{$conform}}.Complete(c.Context(), call, err, values...)
+			},
+		},
+{{- end}}{{end}}
+	}
+}
+{{- $n := $q.Normalize}}
+{{- range $q.Steps}}{{$st := .}}
+
+{{docs (wrapdocs (printf `%s calls %s on subject with the arguments args, and returns the values of the call beside its error.` (suiteCamel .Call) .Name))}}
+{{- ""}}func {{suiteCamel .Call}}(ctx {{$context}}.Context, subject {{$s}}, args []any) ([]any, error) {
+{{- range .Params}}{{if ge .Arg 0}}
+	{{.Local}}, _ := args[{{.Arg}}].({{if or .Variadic .Receive}}[]{{else if .Address}}*{{end}}{{spell .Type}})
+{{- end}}{{end}}
+{{- if .Drain}}
+	{{suiteJoin .Assign}} := {{template "suite.sequence.call" .}}
+{{- if .Error}}
+	if err != nil {
+		return nil, err
+	}
+{{- end}}
+{{- if eq .Drain "elements"}}
+	return {{with $n}}{{spell .}}({{printf "%q" $st.Name}}, {{end}}[]any{ {{- import "slices"}}.Collect({{$st.Stream}})}{{with $n}}){{end}}, nil
+{{- else}}
+	var drained []{{if eq .Drain "pairs"}}{{import "go.dokimi.dev/conform/probe"}}.Pair[{{spell (index .Elems 0)}}, {{spell (index .Elems 1)}}]{{else}}{{spell (index .Elems 0)}}{{end}}
+{{- if eq .Drain "pairs"}}
+	for k, v := range {{.Stream}} {
+		drained = append(drained, {{import "go.dokimi.dev/conform/probe"}}.Pair[{{spell (index .Elems 0)}}, {{spell (index .Elems 1)}}]{First: k, Second: v})
+	}
+{{- else}}
+	for e, err := range {{.Stream}} {
+		if err != nil {
+			return {{with $n}}{{spell .}}({{printf "%q" $st.Name}}, {{end}}[]any{drained}{{with $n}}){{end}}, err
+		}
+		drained = append(drained, e)
+	}
+{{- end}}
+	return {{with $n}}{{spell .}}({{printf "%q" $st.Name}}, {{end}}[]any{drained}{{with $n}}){{end}}, nil
+{{- end}}
+{{- else if .Values}}
+	{{suiteJoin .Assign}} := {{template "suite.sequence.call" .}}
+	return {{with $n}}{{spell .}}({{printf "%q" $st.Name}}, {{end}}[]any{ {{- suiteJoin $st.Values -}} }{{with $n}}){{end}}, {{or .Error "nil"}}
+{{- else if .Error}}
+	return nil, {{template "suite.sequence.call" .}}
+{{- else}}
+	{{template "suite.sequence.call" .}}
+	return nil, nil
+{{- end}}
+}
+{{- end}}
+{{- with $q.Reference}}
+
+{{docs (wrapdocs (printf `%s returns the function that applies an operation of a history to the reference r by the name of its callable.` (suiteCamel .)))}}
+{{- ""}}func {{suiteCamel .}}(r {{$s}}) func({{$context}}.Context, string, []any) {{$conform}}.Output {
+	return func(ctx {{$context}}.Context, operation string, args []any) {{$conform}}.Output {
+		var values []any
+		var err error
+		switch operation {
+{{- range $q.Steps}}
+		case {{printf "%q" .Name}}:
+			values, err = {{suiteCamel .Call}}(ctx, r, args)
+{{- end}}
+		}
+		return {{$conform}}.OutputOf(err, values...)
+	}
+}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.sequence.call writes the call of a step on the subject with the values
+of the arguments: the context of the function for a context, and a new
+closed channel of the list for a channel that the callable receives from.
+*/}}
+{{- define "suite.sequence.call"}}subject{{with .Field}}.{{.}}{{end}}({{range $i, $p := .Params}}{{if not .Omitted}}{{if $i}}, {{end}}{{if .Context}}ctx{{else if .Receive}}func() <-chan {{spell .Type}} {
+		ch := make(chan {{spell .Type}}, len({{.Local}}))
+		for _, v := range {{.Local}} {
+			ch <- v
+		}
+		close(ch)
+		return ch
+	}(){{else}}{{.Local}}{{if .Variadic}}...{{end}}{{end}}{{end}}{{end}}){{end}}
+
+{{- /*
+suite.apply writes a function that a probe of generated sequences calls with
+the arguments of a call of another callable, and that returns the output of
+its own call.
+*/}}
+{{- define "suite.apply"}}func(ctx {{import "context"}}.Context, args []any) {{import "go.dokimi.dev/conform"}}.Output {
+{{- range .Lets}}
+	{{.Name}}, _ := args[{{.Index}}].({{spell .Type}})
+{{- end}}
+	values, err := {{suiteCamel .Call}}(ctx, h.Subject(), []any{ {{- template "suite.exprs" .Args -}} })
+	return {{import "go.dokimi.dev/conform"}}.OutputOf(err, values...)
+}{{end}}
+
+{{- /*
+suite.countable writes the call of an observer that returns the use of the
+subject.
+*/}}
+{{- define "suite.countable"}}func(ctx {{import "context"}}.Context) (int, error) {
+	values, err := {{suiteCamel .Call}}(ctx, h.Subject(), []any{ {{- template "suite.exprs" .Args -}} })
+	v, _ := values[0].({{spell .Type}})
+	return {{if eq .Count "len"}}len(v){{else}}int(v){{end}}, err
+}{{end}}
 
 {{- /*
 suite.defect writes the planted defect of the derived checks with one break
@@ -599,7 +759,7 @@ classification with its stance and its note.
 {{- if eq $d.Body "slow"}}
 	clock {{import "go.dokimi.dev/assert"}}.Clock
 {{- end}}
-{{- if eq $d.Body "keep-first"}}
+{{- if or (eq $d.Body "keep-first") (eq $d.Body "first-after")}}
 	first *{{spell (index $d.Method.Returns.Items 0).Type}}
 {{- end}}
 }
@@ -642,7 +802,7 @@ classification with its stance and its note.
 {{- if eq $d.Body "slow"}}
 	clock := h.Clock()
 {{- end}}
-{{- if eq $d.Body "keep-first"}}
+{{- if or (eq $d.Body "keep-first") (eq $d.Body "first-after")}}
 	var first *{{spell (index $d.Method.Returns.Items 0).Type}}
 {{- end}}
 	return func({{params $d.Method.Params}}){{results $d.Method.Returns}} {
@@ -855,6 +1015,85 @@ builds a fresh subject of the handle for each call.
 		{{.State}}first = &r0
 	}
 	return
+{{- else if eq $d.Body "drop-last"}}
+	{{$all}} = {{$call}}
+	if len(r0) > 0 {
+		r0 = r0[:len(r0)-1]
+	}
+	return
+{{- else if eq $d.Body "first-after"}}
+	{{.State}}calls++
+	{{$all}} = {{$call}}
+	if {{.State}}first == nil {
+		{{.State}}first = &r0
+	}
+	if {{.State}}calls > {{$d.After}} {
+		r0 = *{{.State}}first
+{{- range $d.Results}}{{if eq .Role "error"}}
+		{{.Name}} = nil
+{{- end}}{{end}}
+	}
+	return
+{{- else if eq $d.Body "reverse-after"}}
+	{{$all}} = {{$call}}
+	{{.State}}calls++
+	if {{.State}}calls > {{$d.After}} {
+		{{import "slices"}}.Reverse(r0)
+	}
+	return
+{{- else if eq $d.Body "version-after"}}
+	{{$all}} = {{$call}}
+	{{.State}}calls++
+	if {{.State}}calls > {{$d.After}} {
+		r0.{{$d.Version}} = 0
+	}
+	return
+{{- else if eq $d.Body "zero-after"}}
+	{{.State}}calls++
+	if {{.State}}calls > {{$d.After}} {
+		return
+	}
+	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "repeat-after"}}
+	{{$all}} = {{$call}}
+	{{.State}}calls++
+	if {{.State}}calls > {{$d.After}} && len(r0) > 0 {
+		r0 = append(r0[:1:1], r0...)
+	}
+	return
+{{- else if eq $d.Body "drop-after"}}
+	{{$all}} = {{$call}}
+	{{.State}}calls++
+	if {{.State}}calls > {{$d.After}} && len(r0) > 0 {
+		r0 = r0[:len(r0)-1]
+	}
+	return
+{{- else if eq $d.Body "diverge-after"}}
+	{{$all}} = {{$call}}
+	{{.State}}calls++
+	if {{.State}}calls > {{$d.After}} {
+{{- template "suite.defect.samples" $d}}
+	}
+	return
+{{- else if eq $d.Body "twice-after"}}
+	{{.State}}calls++
+	if {{.State}}calls > {{$d.After}} {
+		{{if $d.Results}}{{$all}} = {{end}}{{$call}}
+	}
+	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "grow-after"}}
+	{{$all}} = {{$call}}
+	{{.State}}calls++
+	if {{.State}}calls > {{$d.After}} {
+{{- if eq $d.Grow "int"}}
+		r0 = {{$d.Limit}} + 1
+{{- else if eq $d.Grow "text"}}
+		r0 = {{spell (index $d.Method.Returns.Items 0).Type}}({{import "strings"}}.Repeat("x", {{$d.Limit}}+1))
+{{- else}}
+		r0 = make({{spell (index $d.Method.Returns.Items 0).Type}}, {{$d.Limit}}+1)
+{{- end}}
+	}
+	return
 {{- end}}
 {{- end}}
 
@@ -885,6 +1124,13 @@ suite.arg writes one argument of the probe of a derived check.
 {{- if .Closure}}{{template "suite.closure" .Closure}}
 {{- else if .Expr}}{{template "suite.expr" .Expr}}
 {{- else if .Projection}}func(v {{spell .Projection.Type}}) {{spell .Projection.Result}} { return v.{{.Projection.Field}} }
+{{- else if .Ref}}{{suiteCamel .Ref}}
+{{- else if .Apply}}{{template "suite.apply" .Apply}}
+{{- else if .Written}}func(args []any) {{spell .Written.Type}} {
+	v, _ := args[{{.Written.Index}}].({{spell .Written.Type}})
+	return v
+}
+{{- else if .Countable}}{{template "suite.countable" .Countable}}
 {{- else}}{{suiteDuration .Duration (import "time")}}
 {{- end}}
 {{- end}}
@@ -897,6 +1143,8 @@ suite.expr writes one expression of a derived check.
 {{- else if .Drawn}}{{if .Drawn.Address}}&{{end}}{{.Drawn.Draw.Name}}{{if or .Drawn.Draw.Funcs .Drawn.Draw.Input}}(){{else if .Drawn.Draw.Pair}}[{{if .Drawn.Second}}1{{else}}0{{end}}]{{end}}
 {{- else if .Of}}({{template "suite.expr" .Of}}).{{.Select}}
 {{- else if .Hook}}func({{range $i, $p := slice .Hook.Elems 0 .Hook.Split}}{{if $i}}, {{end}}_ {{spell $p}}{{end}}) { {{- .Name}}() }
+{{- else if .Convert}}{{spell .Convert}}({{.Name}})
+{{- else if .Stream}}func(func({{range $i, $e := .Stream}}{{if $i}}, {{end}}{{spell $e}}{{end}}) bool) {}
 {{- else if .Pair}}{{import "go.dokimi.dev/conform/probe"}}.Pair[{{spell (index .Pair.Types 0)}}, {{spell (index .Pair.Types 1)}}]{First: {{template "suite.expr" (index .Pair.Values 0)}}, Second: {{template "suite.expr" (index .Pair.Values 1)}}}
 {{- else if .Name}}{{.Name}}
 {{- else}}{{.Word}}
@@ -906,7 +1154,9 @@ suite.expr writes one expression of a derived check.
 {{- /*
 suite.closure writes a closure that a derived check passes to its probe. A
 closure with assignments on its later calls counts its calls in a variable of
-the function that returns it.
+the function that returns it. A closure that drains a stream returns the error
+of the call first, and the drain of a stream with an error ends on the first
+error of the stream.
 */}}
 {{- define "suite.closure"}}
 {{- if .Later}}func() {{template "suite.closure.signature" .}} {
@@ -932,6 +1182,32 @@ the function that returns it.
 		stamps = append(stamps, e.{{.Stamps}})
 	}
 	return {{template "suite.exprs" .Results}}
+{{- else if .Drain}}
+	{{suiteJoin .Assign}} := {{template "suite.invoke" .}}
+{{- with (index .Results 1).Name}}
+	if {{.}} != nil {
+		return nil, {{.}}
+	}
+{{- end}}
+{{- $stream := (index .Results 0).Name}}
+{{- if eq .Drain "elements"}}
+	return {{import "slices"}}.Collect({{$stream}}), nil
+{{- else}}
+	var drained []{{template "suite.closure.value" .}}
+{{- if eq .Drain "pairs"}}
+	for k, v := range {{$stream}} {
+		drained = append(drained, {{template "suite.closure.value" .}}{First: k, Second: v})
+	}
+{{- else}}
+	for e, err := range {{$stream}} {
+		if err != nil {
+			return drained, err
+		}
+		drained = append(drained, e)
+	}
+{{- end}}
+	return drained, nil
+{{- end}}
 {{- else if .Assign}}
 	{{suiteJoin .Assign}} := {{template "suite.invoke" .}}
 	return {{template "suite.exprs" .Results}}
@@ -953,11 +1229,22 @@ parameter and its results.
 {{- end}}
 
 {{- /*
-suite.closure.returns writes the results of a closure.
+suite.closure.returns writes the results of a closure. A closure that returns
+the stamps of a replay or the drain of a stream returns a list of its value.
 */}}
 {{- define "suite.closure.returns"}}
 {{- if and (not .Returns) .Error}}error
-{{- else}}({{if .Pair}}{{import "go.dokimi.dev/conform/probe"}}.Pair[{{spell (index .Returns 0)}}, {{spell (index .Returns 1)}}]{{else}}{{range $i, $r := .Returns}}{{if $i}}, {{end}}{{if $.Stamps}}[]{{end}}{{spell $r}}{{end}}{{end}}{{if .Error}}, error{{end}}{{if .Flag}}, bool{{end}})
+{{- else}}({{if or .Stamps .Drain}}[]{{end}}{{template "suite.closure.value" .}}{{if .Error}}, error{{end}}{{if .Flag}}, bool{{end}})
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.closure.value writes the type of the value of a closure: the probe.Pair
+of its two types, or its one type.
+*/}}
+{{- define "suite.closure.value"}}
+{{- if .Pair}}{{import "go.dokimi.dev/conform/probe"}}.Pair[{{spell (index .Returns 0)}}, {{spell (index .Returns 1)}}]
+{{- else}}{{range $i, $r := .Returns}}{{if $i}}, {{end}}{{spell $r}}{{end}}
 {{- end}}
 {{- end}}
 

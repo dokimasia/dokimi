@@ -637,6 +637,34 @@ func TestSuite(t *testing.T) {
 					},
 				},
 				{
+					name:    "declares the actions, the reference and the calls of a suite of generated sequences",
+					givePkg: sequencedPackage, give: "Register",
+					wantDecl: []string{
+						"RegisterSet", "RegisterGet", "RegisterSetCalls", "RegisterGetCalls", "RegisterOver",
+						"RegisterOverEmbedded", "NewRegisterOver", "RegisterActions", "RegisterReference",
+						"RegisterSetCall", "RegisterGetCall", "RegisterSetPanics", "RegisterSetPanicsDefect",
+						"RegisterSetIgnoresCancel", "RegisterSetIgnoresCancelDefect", "RegisterGetPanics",
+						"RegisterGetPanicsDefect", "RegisterGetIgnoresCancel", "RegisterGetIgnoresCancelDefect",
+						"RegisterGetValueBeside", "RegisterGetValueBesideDefect", "RegisterGetDivergesAfterThree",
+						"RegisterGetDivergesAfterThreeDefect", "RegisterSuite", "RunRegisterSuite",
+						"RunRegisterSuiteFromHandle", "FuzzRegisterSuite", "RunRegisterBudgets", "BenchRegisterSuite",
+						"RegisterHandle", "RegisterCheck", "RegisterOption", "RegisterSubjects",
+					},
+				},
+				{
+					name:    "declares no reference of a suite of sequences that applies no operation by name",
+					givePkg: sequencedPackage, give: "Log",
+					wantDecl: []string{
+						"LogAppend", "LogAppendCalls", "LogOver", "LogOverEmbedded", "NewLogOver", "LogActions",
+						"LogAppendCall", "LogAppendPanics", "LogAppendPanicsDefect", "LogAppendIgnoresCancel",
+						"LogAppendIgnoresCancelDefect", "LogAppendValueBeside", "LogAppendValueBesideDefect",
+						"LogAppendDescends", "LogAppendDescendsDefect", "LogAppendDescendsAfterThree",
+						"LogAppendDescendsAfterThreeDefect", "LogSuite", "RunLogSuite", "RunLogSuiteFromHandle",
+						"FuzzLogSuite", "RunLogBudgets", "BenchLogSuite", "LogHandle", "LogCheck", "LogOption",
+						"LogSubjects",
+					},
+				},
+				{
 					name: "declares no planted defect of an interface without callables", givePkg: pathsPackage,
 					give: "Idle",
 					wantDecl: []string{

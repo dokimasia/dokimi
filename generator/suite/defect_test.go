@@ -30,6 +30,7 @@ func TestDefect(t *testing.T) {
 	families := generate(t, goTree, familiesPackage).suites
 	faults := generate(t, goTree, faultsPackage).suites
 	maps.Copy(families, generate(t, goTree, drawnPackage).suites)
+	maps.Copy(families, generate(t, goTree, classifiedPackage).suites)
 	family := func(name string) *suite.Suite {
 		s, found := families[name]
 		if !found {
@@ -73,6 +74,18 @@ func TestDefect(t *testing.T) {
 			{
 				name: "succeeds in place of the rollback of the subject", giveSuite: "Ledger",
 				give: "LedgerRollbackSettlesTwice", wantBody: "zero",
+			},
+			{
+				name: "drops the last value of the batch that the subject reads", giveSuite: "Shelf",
+				give: "ShelfGetManyDropsTheLastKey", wantBody: "drop-last", wantDelegates: true,
+			},
+			{
+				name: "returns the empty sample of a stream that drains nothing", giveSuite: "Shelf",
+				give: "ShelfAllDrainsNothing", wantBody: "sample",
+			},
+			{
+				name: "returns the zero value of a list that drains nothing", giveSuite: "Shelf",
+				give: "ShelfSnapshotDrainsNothing", wantBody: "zero",
 			},
 			{
 				name: "fails each call where the call of the subject succeeds", giveSuite: "Lifecycle",
@@ -257,7 +270,8 @@ func TestDefect(t *testing.T) {
 			all := defectNamed(t, family("Plain"), "PlainAllPanics")
 			assert.Length(t, all.Results, 1, "the stream is the one result of All")
 			expect.Equal(t, all.Results[0].Role, "value", "a stream is a value of the defect")
-			expect.Equal(t, *all.Results[0].Sample, suite.Expr{Word: "nil"}, "the sample of a stream is nil")
+			assert.Length(t, all.Results[0].Sample.Stream, 1, "the sample of a stream is an empty stream of one type")
+			expect.Equal(t, spelled(all.Results[0].Sample.Stream[0]), "Value", "the stream yields values")
 		})
 
 		t.Run("returns a sample that differs from the zero value", func(t *testing.T) {

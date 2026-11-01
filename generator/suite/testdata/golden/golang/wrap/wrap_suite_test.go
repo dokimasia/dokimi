@@ -67,6 +67,10 @@ func TestReachSuite(t *testing.T) {
 				wrap.ReachChecks.Current.ReadAfterWriteGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				wrap.ReachChecks.Current.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -110,6 +114,10 @@ func TestReachSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				wrap.ReachChecks.Current.ReadAfterWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.ReachChecks.Current.ReadsEachLastWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -157,6 +165,10 @@ func TestReachSuiteBudgets(t *testing.T) {
 			wrap.ReachChecks.Current.ReadAfterWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			wrap.ReachChecks.Current.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -189,6 +201,10 @@ func FuzzReachSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			wrap.ReachChecks.Current.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.ReachChecks.Current.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -225,6 +241,10 @@ func FuzzReachSuiteCurrent(f *testing.F) {
 			wrap.ReachChecks.Current.ReadAfterWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			wrap.ReachChecks.Current.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -257,6 +277,10 @@ func FuzzReachSuiteGear(f *testing.F) {
 		),
 		conform.Excuse(
 			wrap.ReachChecks.Current.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.ReachChecks.Current.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -1089,6 +1113,432 @@ func BenchmarkLimitedSuite(b *testing.B) {
 	})
 	b.Run("Sense", func(b *testing.B) {
 		wrap.BenchLimitedSuite(b, wrap.LimitedChecks.Sense.Callable, limitedIdle)
+	})
+}
+
+// playedSubjectEmbedded is wrap.Played under the name of the field that
+// playedSubject embeds.
+type playedSubjectEmbedded = wrap.Played
+
+// playedSubject is a value of Played that only TestPlayedSuite builds.
+type playedSubject struct{ playedSubjectEmbedded }
+
+// TestPlayedSuite checks the suite of Played and the two forms of its
+// application.
+func TestPlayedSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("PlayedSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, wrap.PlayedSuite())
+	})
+
+	t.Run("RunPlayedSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *playedSubject
+		wrap.RunPlayedSuite(
+			t,
+			func() *playedSubject {
+				built = &playedSubject{}
+				return built
+			},
+			conform.With(wrap.PlayedCheck{
+				ID:        "Played/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *wrap.PlayedHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, wrap.Played(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*wrap.PlayedHandle) wrap.Played { return &playedSubject{} },
+			}),
+			conform.Excuse(
+				wrap.PlayedChecks.Play.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.PlayedChecks.Play.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.PlayedChecks.StateAt.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.PlayedChecks.StateAt.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.PlayedChecks.StateAt.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunPlayedSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *playedSubject
+		wrap.RunPlayedSuiteFromHandle(
+			t,
+			func(*wrap.PlayedHandle) *playedSubject {
+				built = &playedSubject{}
+				return built
+			},
+			conform.With(wrap.PlayedCheck{
+				ID:        "Played/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *wrap.PlayedHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, wrap.Played(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*wrap.PlayedHandle) wrap.Played { return &playedSubject{} },
+			}),
+			conform.Excuse(
+				wrap.PlayedChecks.Play.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.PlayedChecks.Play.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.PlayedChecks.StateAt.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.PlayedChecks.StateAt.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.PlayedChecks.StateAt.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// playedIdle returns the planted defect of a ceiling of Played with a
+// spend of nothing, a subject that answers each call at once.
+func playedIdle(h *wrap.PlayedHandle) wrap.Played {
+	return wrap.PlayedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestPlayedSuiteBudgets applies the allocation ceilings of the suite of
+// Played to playedIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestPlayedSuiteBudgets(t *testing.T) {
+	wrap.RunPlayedBudgets(
+		t,
+		playedIdle,
+		conform.Ceilings(wrap.PlayedChecks.Play.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			wrap.PlayedChecks.StateAt.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.Play.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.Play.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzPlayedSuitePlay registers the fuzz target of Played.Play on
+// playedIdle, with every check of the suite excused.
+func FuzzPlayedSuitePlay(f *testing.F) {
+	wrap.FuzzPlayedSuite(
+		f,
+		wrap.PlayedChecks.Play.Callable,
+		playedIdle,
+		conform.Excuse(
+			wrap.PlayedChecks.Play.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.Play.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzPlayedSuiteStateAt registers the fuzz target of Played.StateAt on
+// playedIdle, with every check of the suite excused.
+func FuzzPlayedSuiteStateAt(f *testing.F) {
+	wrap.FuzzPlayedSuite(
+		f,
+		wrap.PlayedChecks.StateAt.Callable,
+		playedIdle,
+		conform.Excuse(
+			wrap.PlayedChecks.Play.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.Play.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.PlayedChecks.StateAt.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkPlayedSuite measures each callable of the suite of Played on
+// playedIdle.
+func BenchmarkPlayedSuite(b *testing.B) {
+	b.Run("Play", func(b *testing.B) {
+		wrap.BenchPlayedSuite(b, wrap.PlayedChecks.Play.Callable, playedIdle)
+	})
+	b.Run("StateAt", func(b *testing.B) {
+		wrap.BenchPlayedSuite(b, wrap.PlayedChecks.StateAt.Callable, playedIdle)
+	})
+}
+
+// gaugedSubjectEmbedded is wrap.Gauged under the name of the field that
+// gaugedSubject embeds.
+type gaugedSubjectEmbedded = wrap.Gauged
+
+// gaugedSubject is a value of Gauged that only TestGaugedSuite builds.
+type gaugedSubject struct{ gaugedSubjectEmbedded }
+
+// TestGaugedSuite checks the suite of Gauged and the two forms of its
+// application.
+func TestGaugedSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("GaugedSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, wrap.GaugedSuite())
+	})
+
+	t.Run("RunGaugedSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *gaugedSubject
+		wrap.RunGaugedSuite(
+			t,
+			func() *gaugedSubject {
+				built = &gaugedSubject{}
+				return built
+			},
+			conform.With(wrap.GaugedCheck{
+				ID:        "Gauged/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *wrap.GaugedHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, wrap.Gauged(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*wrap.GaugedHandle) wrap.Gauged { return &gaugedSubject{} },
+			}),
+			conform.Excuse(
+				wrap.GaugedChecks.Fill.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.GaugedChecks.Fill.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.GaugedChecks.LevelAt.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.GaugedChecks.LevelAt.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.GaugedChecks.LevelAt.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunGaugedSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *gaugedSubject
+		wrap.RunGaugedSuiteFromHandle(
+			t,
+			func(*wrap.GaugedHandle) *gaugedSubject {
+				built = &gaugedSubject{}
+				return built
+			},
+			conform.With(wrap.GaugedCheck{
+				ID:        "Gauged/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *wrap.GaugedHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, wrap.Gauged(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*wrap.GaugedHandle) wrap.Gauged { return &gaugedSubject{} },
+			}),
+			conform.Excuse(
+				wrap.GaugedChecks.Fill.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.GaugedChecks.Fill.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.GaugedChecks.LevelAt.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.GaugedChecks.LevelAt.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrap.GaugedChecks.LevelAt.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// gaugedIdle returns the planted defect of a ceiling of Gauged with a
+// spend of nothing, a subject that answers each call at once.
+func gaugedIdle(h *wrap.GaugedHandle) wrap.Gauged {
+	return wrap.GaugedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestGaugedSuiteBudgets applies the allocation ceilings of the suite of
+// Gauged to gaugedIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestGaugedSuiteBudgets(t *testing.T) {
+	wrap.RunGaugedBudgets(
+		t,
+		gaugedIdle,
+		conform.Ceilings(wrap.GaugedChecks.Fill.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			wrap.GaugedChecks.LevelAt.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.Fill.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.Fill.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzGaugedSuiteFill registers the fuzz target of Gauged.Fill on
+// gaugedIdle, with every check of the suite excused.
+func FuzzGaugedSuiteFill(f *testing.F) {
+	wrap.FuzzGaugedSuite(
+		f,
+		wrap.GaugedChecks.Fill.Callable,
+		gaugedIdle,
+		conform.Excuse(
+			wrap.GaugedChecks.Fill.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.Fill.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzGaugedSuiteLevelAt registers the fuzz target of Gauged.LevelAt on
+// gaugedIdle, with every check of the suite excused.
+func FuzzGaugedSuiteLevelAt(f *testing.F) {
+	wrap.FuzzGaugedSuite(
+		f,
+		wrap.GaugedChecks.LevelAt.Callable,
+		gaugedIdle,
+		conform.Excuse(
+			wrap.GaugedChecks.Fill.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.Fill.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrap.GaugedChecks.LevelAt.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkGaugedSuite measures each callable of the suite of Gauged on
+// gaugedIdle.
+func BenchmarkGaugedSuite(b *testing.B) {
+	b.Run("Fill", func(b *testing.B) {
+		wrap.BenchGaugedSuite(b, wrap.GaugedChecks.Fill.Callable, gaugedIdle)
+	})
+	b.Run("LevelAt", func(b *testing.B) {
+		wrap.BenchGaugedSuite(b, wrap.GaugedChecks.LevelAt.Callable, gaugedIdle)
 	})
 }
 

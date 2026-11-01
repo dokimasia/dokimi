@@ -91,6 +91,36 @@ type Limited interface {
 	Sense(s tool.Sensor) error
 }
 
+// Played plays a tool through the states of Steps, and reads its state at a
+// pitch, whose declared default is a constant of the internal package of the
+// tree lib.
+//
+//dokimi:suite
+type Played interface {
+	// Play plays the tool.
+	//
+	//dokimi:contract workflow role=fn transitions=Steps observe=StateAt
+	Play(ctx context.Context) error
+	// StateAt returns the state of the tool at the pitch p.
+	StateAt(ctx context.Context, p tool.Pitch) (string, error)
+}
+
+// Steps is the graph of the states of a tool that Played plays.
+var Steps = map[string][]string{"": {"played"}}
+
+// Gauged fills a tool and reads its level at a pitch, whose declared default
+// is a constant of the internal package of the tree lib.
+//
+//dokimi:suite
+type Gauged interface {
+	// Fill fills the tool.
+	//
+	//dokimi:mixin bounded limit=2 observe=LevelAt
+	Fill(ctx context.Context) error
+	// LevelAt returns the level of the tool at the pitch p.
+	LevelAt(ctx context.Context, p tool.Pitch) (int, error)
+}
+
 // Plain is a struct under the directive suite in the same file, whose
 // callables refer to no internal package.
 //

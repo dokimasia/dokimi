@@ -77,6 +77,11 @@ func TestCodes(t *testing.T) {
 			WantMeaning: "the param machineries of the directive suite names a machinery that the consumer does " +
 				"not supply",
 		},
+		{
+			Name: "BadNormalize", Give: suite.BadNormalize, WantCode: "DOKIMISUITE-0014",
+			WantMeaning: "the function of the param normalize of the directive suite does not map the values of " +
+				"a call",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

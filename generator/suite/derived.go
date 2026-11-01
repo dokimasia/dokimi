@@ -36,6 +36,13 @@ import (
 // Generated reports a check whose inputs the property engine generates. The
 // template writes it as a property check that makes the draws Draws for each
 // case before it calls its probe.
+//
+// Sequence reports a check that runs generated sequences. The template writes
+// it as a property check that passes the case to its probe, with the types
+// TypeArgs after the subject type as the type arguments of the probe. Each
+// type argument is one type, or the two types of a probe.Pair. Whole is the
+// identity of a check of the whole declaration, which the method of its
+// identity returns, and empty for a check of a callable.
 type Derived struct {
 	Field       string
 	Type        string
@@ -47,21 +54,31 @@ type Derived struct {
 	Reason      string
 	Law         string
 	Defect      string
+	Whole       string
 	Machineries []string
 	Entails     []Identity
 	Args        []Arg
 	Draws       []*Draw
+	TypeArgs    [][]*emit.TypeRef
 	Shallow     bool
 	Clock       bool
 	Generated   bool
+	Sequence    bool
 }
 
 // Arg is one argument of a probe: a closure that calls the subject, an
-// expression, a projection of a field, or a duration.
+// expression, a projection of a field, a duration, or a part of the generated
+// sequences. Ref is the name of a function of the suite, such as the actions
+// of the declaration, which the template writes as a name that is not
+// exported.
 type Arg struct {
 	Closure    *Closure
 	Expr       *Expr
 	Projection *Projection
+	Apply      *Apply
+	Written    *Written
+	Countable  *Countable
+	Ref        string
 	Duration   time.Duration
 }
 
@@ -75,18 +92,23 @@ type Projection struct {
 
 // Expr is one expression of a derived check: the name of a variable, a
 // value, the value of a draw, the field Select of another expression, a pair
-// of two expressions, or a word of Go such as nil or true. Where Hook is set,
-// the expression is a function of the function type Hook that calls the
-// function Name and ignores its arguments.
+// of two expressions, an empty stream, or a word of Go such as nil or true.
+// Where Hook is set, the expression is a function of the function type Hook
+// that calls the function Name and ignores its arguments. Where Convert is
+// set, the expression is the conversion of the variable Name to the type
+// Convert. Stream are the types of the elements of an empty stream: the value
+// of an iter.Seq, or the two values of an iter.Seq2.
 type Expr struct {
-	Value  *emit.Value
-	Drawn  *Drawn
-	Of     *Expr
-	Pair   *PairExpr
-	Hook   *emit.TypeRef
-	Name   string
-	Select string
-	Word   string
+	Value   *emit.Value
+	Drawn   *Drawn
+	Of      *Expr
+	Pair    *PairExpr
+	Hook    *emit.TypeRef
+	Convert *emit.TypeRef
+	Name    string
+	Select  string
+	Word    string
+	Stream  []*emit.TypeRef
 }
 
 // PairExpr is a probe.Pair of two expressions of the types Types.
@@ -107,12 +129,16 @@ type PairExpr struct {
 // set. Pair reports that its two types are the two values of a probe.Pair.
 // Later are the assignments that it makes on each call after its first.
 // Stamps is the field of each element of the result that it returns in place
-// of the elements.
+// of the elements. Drain is the drain of a stream that the callable returns,
+// which the closure returns as a list of the types Returns: drainElements,
+// drainUntilError or drainPairs. A closure that drains a stream returns the
+// stream Results[0] after the error Results[1] of the call.
 type Closure struct {
 	Param    *ClosureParam
 	Receiver *Expr
 	Method   string
 	Stamps   string
+	Drain    string
 	Returns  []*emit.TypeRef
 	Lets     []Let
 	Later    []Let
@@ -213,14 +239,42 @@ const (
 	// formInput is a value that a generated binding draws for an input of
 	// the callable, by the position of the input and the index of the value.
 	formInput
+	// formBatch returns the values of a batch read beside the error, with
+	// the key of each of the two writes of its pair.
+	formBatch
+	// formPosition takes a position for each integer input and returns the
+	// error.
+	formPosition
+	// formActions is the function of the actions of the declaration.
+	formActions
+	// formOperation is the name of the callable of the input, as the history
+	// records it.
+	formOperation
+	// formApply calls the callable of the input with the arguments of a call
+	// of another input.
+	formApply
+	// formReference is the function that applies an operation to a reference
+	// by the name of its callable.
+	formReference
+	// formWrittenArg returns the written value of a call of another input.
+	formWrittenArg
+	// formStamp returns the field that a param names of an element of the
+	// result of another input.
+	formStamp
+	// formCountable returns the use that the callable of the input returns.
+	formCountable
+	// formCount is the int of a param, or the default of its binding.
+	formCount
 )
 
 // slot is one input of a probe: its name in the entry of the spec, its form,
-// and the input whose results a zero or a projection reads.
+// and the input whose results a zero or a projection reads. A fresh slot
+// calls its callable on a new subject of the factory.
 type slot struct {
-	name string
-	of   string
-	form form
+	name  string
+	of    string
+	form  form
+	fresh bool
 }
 
 // The names of the inputs of the probes that more than one probe takes.
@@ -235,6 +289,7 @@ const (
 	inDrain    = "drain"
 	inAttempts = "attempts"
 	inClose    = "close"
+	inReplay   = "replay"
 )
 
 // The inputs that many probes share.
@@ -313,17 +368,15 @@ var probes = map[spec.ProbeID][]slot{
 		{name: "refused", form: formValue},
 		{name: inZero, of: "reader", form: formZero},
 	},
-	spec.RemovesOnDelete:   {act, put, {name: inRead, form: formAct}, sentinel},
-	spec.NoElementTwice:    {drain, writes},
-	spec.DrainsInOneOrder:  {drain, writes},
-	spec.GainsWhatWentIn:   {drain, writes},
-	spec.KeepsWhatWentIn:   {drain, writes},
-	spec.ReadsNeverRegress: {read, {name: inWrite, form: formAct}, {name: "version", of: inRead, form: formProjection}},
-	spec.WritesAdvance: {
-		read, {name: inWrite, form: formCall}, {name: "version", of: inRead, form: formProjection},
-	},
-	spec.ReplaysInStampOrder:      {{name: inCall, form: formActs}, {name: "replay", form: formStamps}},
-	spec.ReplayGrows:              {act, {name: "replay", form: formCall}},
+	spec.RemovesOnDelete:          {act, put, {name: inRead, form: formAct}, sentinel},
+	spec.NoElementTwice:           {drain, writes},
+	spec.DrainsInOneOrder:         {drain, writes},
+	spec.GainsWhatWentIn:          {drain, writes},
+	spec.KeepsWhatWentIn:          {drain, writes},
+	spec.ReadsNeverRegress:        {read, {name: inWrite, form: formAct}, version},
+	spec.WritesAdvance:            {read, {name: inWrite, form: formCall}, version},
+	spec.ReplaysInStampOrder:      {{name: inCall, form: formActs}, {name: inReplay, form: formStamps}},
+	spec.ReplayGrows:              {act, {name: inReplay, form: formCall}},
 	spec.ReturnsWithin:            {act, {name: "budget", form: formDuration}},
 	spec.CountsWithinWindow:       {act, {name: "count", form: formCall}, {name: "window", form: formDuration}},
 	spec.RunsOnSchedule:           {{name: inCall, form: formDelay}, {name: "count", form: formCall}},
@@ -343,7 +396,61 @@ var probes = map[spec.ProbeID][]slot{
 	spec.ReleasesWhatItAcquires:      {act, {name: "open", form: formName}, {name: inClose, form: formName}},
 	spec.EitherOrderAgrees:           {combined, firstInput, secondInput},
 	spec.EitherGroupingAgrees:        {combined, firstInput, secondInput, {name: "third", form: formInput}},
+	spec.ReadsWhatWasStored:          {{name: inCall, form: formBatch}, {name: inWrite, form: formRewritten}},
+	spec.ReportsNoError:              {act},
+	spec.BoundedByTheSize:            {{name: inCall, form: formPosition}, {name: "size", form: formCall}},
+	spec.AgreesWithTheSibling:        {call, {name: "sibling", form: formCall, fresh: true}},
+	spec.VerifiesAfterAppends:        {act, {name: "append", form: formActs}},
+	spec.GrantsAfterRelease:          {act, {name: "release", form: formAct}},
+	spec.MovesWithALoan:              {call, {name: "get", form: formAct}},
+	spec.ResultsNeverFall:            {actions, readOp},
+	spec.ReadVersionsNeverFall:       {actions, readOp, version},
+	spec.DrainsAgreeBetweenWrites:    {actions, drainOp},
+	spec.WrittenVersionsRise:         {actions, writeOp, {name: inRead, of: inWrite, form: formApply}, version},
+	spec.ReadsSeeTheLastWrite:        {actions, readOp, writeOp, readback, version},
+	spec.WritesRiseAboveReads:        {actions, writeOp, readOp, readback, version},
+	spec.PositionsRise:               {actions, {name: "append", form: formOperation}},
+	spec.ReplaysFollowTheStamps: {
+		actions, {name: inReplay, form: formOperation}, {name: "stamp", of: inReplay, form: formStamp},
+	},
+	spec.DrainsWithoutRepeats:   {actions, drainOp},
+	spec.DrainsContainTheWrites: {actions, drainOp, writeOp, written},
+	spec.DrainsGainTheWrites:    {actions, drainOp, writeOp, written},
+	spec.EachCallMovesTheObservation: {
+		actions, {name: inCall, form: formOperation}, {name: inObserve, of: inCall, form: formApply},
+	},
+	spec.ReadsReturnTheLastWrite:        {actions, writeOp, readback, written},
+	spec.ReadsAgreeWithTheBacking:       {actions, readOp, {name: "backing", of: inRead, form: formApply}},
+	spec.SequencesAgreeWithTheReference: {actions, {name: "reference", form: formReference}},
+	spec.UseIsWithinTheBounds: {
+		actions,
+		{name: inObserve, form: formCountable},
+		{name: "min", form: formCount},
+		{name: "limit", form: formCount},
+	},
+	spec.MergesCommute: {
+		actions, {name: "apply", form: formReference}, {name: "merge", form: formOperation}, writeOp, readOp,
+	},
+	spec.StatesMoveAlongTheGraph: {
+		actions,
+		{name: "fn", form: formOperation},
+		{name: inObserve, of: "fn", form: formApply},
+		{name: "transitions", form: formValue},
+	},
 }
+
+// The inputs that the probes of generated sequences share: the actions, the
+// operations of a read, a write and a drain, the version of a read, the read
+// after a write, and the written value of a write.
+var (
+	actions  = slot{name: "actions", form: formActions}
+	readOp   = slot{name: inRead, form: formOperation}
+	writeOp  = slot{name: inWrite, form: formOperation}
+	drainOp  = slot{name: inDrain, form: formOperation}
+	version  = slot{name: "version", of: inRead, form: formProjection}
+	readback = slot{name: "readback", of: inWrite, form: formApply}
+	written  = slot{name: "written", of: inWrite, form: formWrittenArg}
+)
 
 // The inputs that the probes of a callable that combines two values share.
 var (
@@ -396,13 +503,30 @@ func (k *caller) derived(s *Suite) {
 			shallow, shallowMethod, _ := identityOf(s, &s.Derivation.Checks[j])
 			d.Entails = append(d.Entails, Identity{Field: shallow.Field, Method: shallowMethod, ID: e.Shallower})
 		}
-		b := binder{k: k, check: c}
+		b := binder{k: k, check: c, s: s}
 		if c.Generated {
 			b.drawn = k.newDraws(s.Facts, s.Calls)
 		}
 		d.Args = b.args()
 		if c.Generated {
 			d.Draws = used(d.Args)
+		}
+		if sequenced(c) {
+			d.Sequence, d.TypeArgs = true, b.typeArgs()
+			if c.Claim.Scope == scopeDeclaration {
+				d.Whole = c.Identity
+			}
+		}
+		switch {
+		case c.Claim.Probe == spec.MergesCommute && !k.replicable(s, c.Facts):
+			b.refused = spec.TakesAReplica
+		case c.Claim.Probe == spec.StatesMoveAlongTheGraph && !k.graphed(b.param(transitionsParam)):
+			b.refused = spec.GraphOfStates
+		default:
+		}
+		if b.refused != "" {
+			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refuse(c, b.refused))
+			continue
 		}
 		defect, known := k.defect(s, c, &b)
 		if defect.Body == bodyLiveHandle && defect.Handle == nil {
@@ -432,9 +556,16 @@ func (k *caller) referableArgs(args []Arg) bool {
 	for i := range args {
 		if c := args[i].Closure; c != nil {
 			exprs = append(exprs, c.Args...)
-			for _, l := range slices.Concat(c.Lets, c.Later) {
-				exprs = append(exprs, l.Value)
+			lets := slices.Concat(c.Lets, c.Later)
+			for j := range lets {
+				exprs = append(exprs, lets[j].Value)
 			}
+		}
+		if a := args[i].Apply; a != nil {
+			exprs = append(exprs, a.Args...)
+		}
+		if c := args[i].Countable; c != nil {
+			exprs = append(exprs, c.Args...)
 		}
 	}
 	return !slices.ContainsFunc(exprs, func(e Expr) bool { return !k.referableExpr(&e) })
@@ -453,12 +584,56 @@ func (k *caller) referableDefect(d *Defect) bool {
 	})
 }
 
-// binder binds the inputs of a derived check to the arguments of its probe.
-// drawn are the draws of a generated binding, and nil for a sample binding.
+// binder binds the inputs of a derived check of the suite s to the arguments
+// of its probe. drawn are the draws of a generated binding, and nil for a
+// sample binding. refused is the gate that the suite generator judges on the
+// code of the check where the gate fails, and empty otherwise.
 type binder struct {
-	k     *caller
-	check *derive.Check
-	drawn *draws
+	k       *caller
+	s       *Suite
+	check   *derive.Check
+	drawn   *draws
+	refused spec.GateID
+}
+
+// scopeDeclaration is the scope of a claim on a whole declaration, and
+// transitionsParam the param of the contract workflow that names its graph.
+const (
+	scopeDeclaration = "declaration"
+	transitionsParam = "transitions"
+)
+
+// typeArgs returns the type arguments after the subject type of the probe of a
+// check of generated sequences that the arguments of the probe do not infer:
+// the type of the value of a read or an append, and the type of the elements
+// of a drain.
+func (b *binder) typeArgs() [][]*emit.TypeRef {
+	switch b.check.Claim.Probe {
+	case spec.ResultsNeverFall:
+		f, _ := b.facts(inRead)
+		return [][]*emit.TypeRef{{b.k.typeOf(b.k.resultRef(f, 0))}}
+	case spec.PositionsRise:
+		f, _ := b.facts("append")
+		return [][]*emit.TypeRef{{b.k.typeOf(b.k.resultRef(f, 0))}}
+	case spec.DrainsWithoutRepeats:
+		f, _ := b.facts(inDrain)
+		return [][]*emit.TypeRef{b.k.elementOf(f)}
+	default:
+		return nil
+	}
+}
+
+// pairOf returns the pair of the check whose read is target, and nil where no
+// pair reads with target. The write of that pair is the callable whose
+// arguments a probe applies target to, because each claim binds an input of
+// the kind apply to the partner that it pairs with the input of the call.
+func (b *binder) pairOf(target *derive.Facts) *derive.Pair {
+	for _, p := range b.check.Claim.Partners {
+		if pair := b.check.Pairs[p.Name]; same(pair.Read, target) {
+			return pair
+		}
+	}
+	return nil
 }
 
 // args returns the argument of the probe of the check for each input of the
@@ -542,6 +717,8 @@ func (b *binder) arg(sl *slot) Arg {
 		bound := b.binding(sl.name)
 		v := b.drawn.value(b.check.Facts, bound.Position, bound.Sample)
 		return Arg{Expr: &v}
+	case formActions, formOperation, formApply, formReference, formWrittenArg, formStamp, formCountable, formCount:
+		return b.sequenceArg(sl)
 	default:
 	}
 	in := &input{sl: sl, drawn: b.drawn}
@@ -567,6 +744,51 @@ func (b *binder) arg(sl *slot) Arg {
 	}
 	in.f, in.pair = b.facts(sl.name)
 	return Arg{Closure: b.k.closure(in)}
+}
+
+// sequenceArg returns the argument of a probe of generated sequences for the
+// input sl. It sets the gate countable-use as refused for an observer whose
+// value is no use.
+func (b *binder) sequenceArg(sl *slot) Arg {
+	q := b.s.Sequences
+	switch sl.form {
+	case formActions:
+		return Arg{Ref: q.Actions}
+	case formReference:
+		return Arg{Ref: q.Reference}
+	case formOperation:
+		f, _ := b.facts(sl.name)
+		return Arg{Expr: &Expr{Value: new(emit.Literal(emit.LiteralString, f.Callable))}}
+	case formApply:
+		target, _ := b.facts(sl.name)
+		source, _ := b.facts(sl.of)
+		return Arg{Apply: b.k.applyOf(b.s, q, target, source, b.pairOf(target))}
+	case formWrittenArg:
+		// A written value is an input of the partner of a pair. The first
+		// input stands in for a pair without one.
+		write, pair := b.facts(sl.of)
+		index := max(pair.Written, 0)
+		return Arg{Written: &Written{Type: b.k.typeOf(b.k.inputRef(write, index)), Index: index}}
+	case formStamp:
+		f, _ := b.facts(sl.of)
+		field := nameOf(b.param(b.binding(sl.name).Param))
+		ref := b.k.elementRefs(f)[0]
+		return Arg{Projection: &Projection{Type: b.k.typeOf(ref), Result: b.k.fieldRef(ref, field), Field: field}}
+	case formCountable:
+		f, _ := b.facts(sl.name)
+		c, ok := b.k.countableOf(b.s, q, f)
+		if !ok {
+			b.refused = spec.CountableUse
+		}
+		return Arg{Countable: c}
+	default:
+		bound := b.binding(sl.name)
+		count := intOf(b.param(bound.Param))
+		if count == "" {
+			count = bound.Default
+		}
+		return Arg{Expr: &Expr{Word: count}}
+	}
 }
 
 // stampParam is the param of the mixin causal that names the field of the

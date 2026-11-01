@@ -100,6 +100,14 @@ func TestStoreSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				families.StoreChecks.Get.ReadsNeverGoBack(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StoreChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				families.StoreChecks.Load.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -145,6 +153,14 @@ func TestStoreSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.StoreChecks.Find.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StoreChecks.Find.ReadsEachKey(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StoreChecks.Find.ReadsEachKeyGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -297,6 +313,14 @@ func TestStoreSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				families.StoreChecks.Get.ReadsNeverGoBack(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StoreChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				families.StoreChecks.Load.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -342,6 +366,14 @@ func TestStoreSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.StoreChecks.Find.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StoreChecks.Find.ReadsEachKey(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StoreChecks.Find.ReadsEachKeyGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -521,6 +553,14 @@ func TestStoreSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -566,6 +606,14 @@ func TestStoreSuiteBudgets(t *testing.T) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -707,6 +755,14 @@ func FuzzStoreSuitePut(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -752,6 +808,14 @@ func FuzzStoreSuitePut(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -893,6 +957,14 @@ func FuzzStoreSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -938,6 +1010,14 @@ func FuzzStoreSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1079,6 +1159,14 @@ func FuzzStoreSuiteLoad(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1124,6 +1212,14 @@ func FuzzStoreSuiteLoad(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1265,6 +1361,14 @@ func FuzzStoreSuiteSplit(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1310,6 +1414,14 @@ func FuzzStoreSuiteSplit(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1451,6 +1563,14 @@ func FuzzStoreSuiteFind(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1496,6 +1616,14 @@ func FuzzStoreSuiteFind(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1637,6 +1765,14 @@ func FuzzStoreSuiteLevel(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1682,6 +1818,14 @@ func FuzzStoreSuiteLevel(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -1823,6 +1967,14 @@ func FuzzStoreSuiteRaise(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -1868,6 +2020,14 @@ func FuzzStoreSuiteRaise(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -2009,6 +2169,14 @@ func FuzzStoreSuiteInspect(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -2054,6 +2222,14 @@ func FuzzStoreSuiteInspect(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -2195,6 +2371,14 @@ func FuzzStoreSuiteGetWithMeta(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StoreChecks.Get.ReadsNeverGoBack(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StoreChecks.Load.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -2240,6 +2424,14 @@ func FuzzStoreSuiteGetWithMeta(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StoreChecks.Find.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKey(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StoreChecks.Find.ReadsEachKeyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -2433,6 +2625,10 @@ func TestKeyedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				families.KeyedChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				families.KeyedChecks.Delete.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -2515,6 +2711,10 @@ func TestKeyedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.KeyedChecks.Get.ReadAfterWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.KeyedChecks.Get.ReadsEachLastWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -2606,6 +2806,10 @@ func TestKeyedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.KeyedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.KeyedChecks.Delete.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -2677,6 +2881,10 @@ func FuzzKeyedSuitePut(f *testing.F) {
 		),
 		conform.Excuse(
 			families.KeyedChecks.Get.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.KeyedChecks.Get.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -2754,6 +2962,10 @@ func FuzzKeyedSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.KeyedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.KeyedChecks.Delete.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -2825,6 +3037,10 @@ func FuzzKeyedSuiteDelete(f *testing.F) {
 		),
 		conform.Excuse(
 			families.KeyedChecks.Get.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.KeyedChecks.Get.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -2965,6 +3181,14 @@ func TestStampedSuite(t *testing.T) {
 				families.StampedChecks.Get.WritesFollowReadsGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				families.StampedChecks.Get.WritesFollowTheirReads(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StampedChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -3054,6 +3278,14 @@ func TestStampedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.StampedChecks.Get.WritesFollowReadsGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StampedChecks.Get.WritesFollowTheirReads(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StampedChecks.Get.ReadsEachLastWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3146,6 +3378,14 @@ func TestStampedSuiteBudgets(t *testing.T) {
 			families.StampedChecks.Get.WritesFollowReadsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.StampedChecks.Get.WritesFollowTheirReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -3220,6 +3460,14 @@ func FuzzStampedSuiteStore(f *testing.F) {
 			families.StampedChecks.Get.WritesFollowReadsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.StampedChecks.Get.WritesFollowTheirReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -3292,6 +3540,14 @@ func FuzzStampedSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StampedChecks.Get.WritesFollowReadsGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.WritesFollowTheirReads(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3389,6 +3645,10 @@ func TestDecodedSuite(t *testing.T) {
 				families.DecodedChecks.Get.ReadAfterWriteGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				families.DecodedChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -3454,6 +3714,10 @@ func TestDecodedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.DecodedChecks.Get.ReadAfterWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.DecodedChecks.Get.ReadsEachLastWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3522,6 +3786,10 @@ func TestDecodedSuiteBudgets(t *testing.T) {
 			families.DecodedChecks.Get.ReadAfterWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.DecodedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -3572,6 +3840,10 @@ func FuzzDecodedSuitePut(f *testing.F) {
 			families.DecodedChecks.Get.ReadAfterWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.DecodedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -3620,6 +3892,10 @@ func FuzzDecodedSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			families.DecodedChecks.Get.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.DecodedChecks.Get.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -4073,6 +4349,10 @@ func TestCachedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				families.CachedChecks.Get.CacheAgreesOverSequences(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				families.CachedChecks.Fetch.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -4163,6 +4443,10 @@ func TestCachedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.CachedChecks.Get.CacheGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.CachedChecks.Get.CacheAgreesOverSequences(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -4268,6 +4552,10 @@ func TestCachedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.CachedChecks.Get.CacheAgreesOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.CachedChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -4347,6 +4635,10 @@ func FuzzCachedSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			families.CachedChecks.Get.CacheGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.CachedChecks.Get.CacheAgreesOverSequences(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -4432,6 +4724,10 @@ func FuzzCachedSuiteFetch(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.CachedChecks.Get.CacheAgreesOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.CachedChecks.Fetch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -4511,6 +4807,10 @@ func FuzzCachedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			families.CachedChecks.Get.CacheGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.CachedChecks.Get.CacheAgreesOverSequences(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -4653,6 +4953,10 @@ func TestTaggedSuite(t *testing.T) {
 				families.TaggedChecks.Get.ReadAfterWriteGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				families.TaggedChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -4720,6 +5024,10 @@ func TestTaggedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.TaggedChecks.Get.ReadAfterWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.TaggedChecks.Get.ReadsEachLastWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -4796,6 +5104,10 @@ func TestTaggedSuiteBudgets(t *testing.T) {
 			families.TaggedChecks.Get.ReadAfterWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.TaggedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -4854,6 +5166,10 @@ func FuzzTaggedSuitePut(f *testing.F) {
 			families.TaggedChecks.Get.ReadAfterWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.TaggedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -4910,6 +5226,10 @@ func FuzzTaggedSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			families.TaggedChecks.Get.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.TaggedChecks.Get.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5374,6 +5694,14 @@ func TestBagSuite(t *testing.T) {
 				families.BagChecks.Items.StableOrderGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				families.BagChecks.Items.KeepsItsOrder(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.BagChecks.Items.YieldsEachOnce(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -5439,6 +5767,14 @@ func TestBagSuite(t *testing.T) {
 				families.BagChecks.Items.StableOrderGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				families.BagChecks.Items.KeepsItsOrder(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.BagChecks.Items.YieldsEachOnce(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -5502,6 +5838,14 @@ func TestBagSuiteBudgets(t *testing.T) {
 			families.BagChecks.Items.StableOrderGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.BagChecks.Items.KeepsItsOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.BagChecks.Items.YieldsEachOnce(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -5556,6 +5900,14 @@ func FuzzBagSuiteAdd(f *testing.F) {
 			families.BagChecks.Items.StableOrderGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.BagChecks.Items.KeepsItsOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.BagChecks.Items.YieldsEachOnce(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -5608,6 +5960,14 @@ func FuzzBagSuiteItems(f *testing.F) {
 		),
 		conform.Excuse(
 			families.BagChecks.Items.StableOrderGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.BagChecks.Items.KeepsItsOrder(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.BagChecks.Items.YieldsEachOnce(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -7043,6 +7403,10 @@ func TestLogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				families.LogChecks.Append.ReplaysInOrderOverSequences(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				families.LogChecks.Replay.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -7105,6 +7469,10 @@ func TestLogSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.LogChecks.Append.ChainGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.LogChecks.Append.ReplaysInOrderOverSequences(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -7177,6 +7545,10 @@ func TestLogSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.LogChecks.Append.ReplaysInOrderOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.LogChecks.Replay.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -7231,6 +7603,10 @@ func FuzzLogSuiteAppend(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.LogChecks.Append.ReplaysInOrderOverSequences(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.LogChecks.Replay.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -7282,6 +7658,10 @@ func FuzzLogSuiteReplay(f *testing.F) {
 		),
 		conform.Excuse(
 			families.LogChecks.Append.ChainGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.LogChecks.Append.ReplaysInOrderOverSequences(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -12430,6 +12810,10 @@ func TestPlainSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				families.PlainChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				families.PlainChecks.Watch.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -12500,6 +12884,10 @@ func TestPlainSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.PlainChecks.Get.ReadAfterWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.PlainChecks.Get.ReadsEachLastWrite(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -12580,6 +12968,10 @@ func TestPlainSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.PlainChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.PlainChecks.Watch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -12639,6 +13031,10 @@ func FuzzPlainSuiteSet(f *testing.F) {
 		),
 		conform.Excuse(
 			families.PlainChecks.Get.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.PlainChecks.Get.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -12704,6 +13100,10 @@ func FuzzPlainSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.PlainChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.PlainChecks.Watch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -12766,6 +13166,10 @@ func FuzzPlainSuiteWatch(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.PlainChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.PlainChecks.Watch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -12825,6 +13229,10 @@ func FuzzPlainSuiteAll(f *testing.F) {
 		),
 		conform.Excuse(
 			families.PlainChecks.Get.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.PlainChecks.Get.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(

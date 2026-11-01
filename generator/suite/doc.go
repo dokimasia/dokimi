@@ -31,6 +31,34 @@
 // The claims commutative and associative of a callable of two inputs of one
 // type bind as property checks alone.
 //
+// # Generated sequences
+//
+// A claim of the machinery generated-sequences states a law of a sequence of
+// calls, such as Store.Version/never-goes-back. Its check is a property check
+// that runs the actions of the declaration through the package stateful of the
+// assert library. The suite writes the function of the actions, such as
+// storeActions, with an action for each callable that returns on its own. It
+// also writes a function for each callable that calls the callable with the
+// arguments of a list, such as storeVersionCall. A key input of a callable
+// takes its key from a pool of its type, which each case draws once, so a
+// read takes a key that a write stored. Each action records its call in the
+// history of the case through conform.Complete.
+//
+// A declaration under the directive suite with machineries=[reference] gets
+// the check Store/agrees-with-the-reference of the whole declaration. The
+// suite writes the function storeReference, which applies an operation of the
+// history to the reference that the door Reference of the application builds.
+// The param normalize of the directive suite names a function that maps the
+// values of each call before the history records them:
+//
+//	//dokimi:suite machineries=[reference] normalize=Revisionless
+//	type Store interface { … }
+//
+// suite refuses a check of a bound whose observer returns no use by the gate
+// countable-use, a check of a merge whose callable takes no other subject by
+// the gate takes-a-replica, and a check of a workflow whose transitions are no
+// graph by the gate graph-of-states.
+//
 // # Checks of a consumer
 //
 // The directive check binds a function of the package of the generated suite
@@ -249,14 +277,18 @@
 // suite adds, and of a check with the segment of a ceiling. It reports
 // [UnknownExcusal] at an
 // excusal whose identity does not match a check of the suite, and [BadBudget]
-// at a budget that no check of a suite applies. It reports [Ungenerated] at a
-// declaration whose calls take a type without a generator, as a Warning.
+// at a budget that no check of a suite applies. It reports [UnknownMachinery]
+// at a value of the param machineries that names no machinery of a consumer,
+// and [BadNormalize] at a function of the param normalize of another type than
+// func(string, []any) []any. It reports [Ungenerated] at a declaration whose
+// calls take a type without a generator, as a Warning.
 //
 // # Dependency position
 //
-// The package imports the package internal/lang of the module, the root
-// package of the Go satellite in golang.go and source.go, the package naming of
-// eidos-lang, the package shape of the shape plugin of eidos, the root, diag,
-// directive, emit, meta, node, plugin, rules, store and symbol packages of the
-// SDK facade of eidos, and the Go stdlib.
+// The package imports the packages annotator/defaults, annotator/fault,
+// generator/builder, internal/derive, internal/lang and spec of the module,
+// the root package of the Go satellite in golang.go and source.go, the package
+// naming of eidos-lang, the package shape of the shape plugin of eidos, the
+// root, diag, directive, emit, meta, node, plugin, rules and symbol packages
+// of the SDK facade of eidos, and the Go stdlib.
 package suite

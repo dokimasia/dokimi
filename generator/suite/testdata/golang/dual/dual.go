@@ -18,8 +18,12 @@ type Writer interface {
 	//
 	//dokimi:budget allocs=0
 	Write(key, item string) error
-	// Flush writes the stored items through.
-	Flush() error
+	// Flush writes the stored items through, and waits for the disk where
+	// force is set.
+	Flush(
+		//dokimi:sample value=true
+		force bool,
+	) error
 }
 
 // Both reads and writes the items of the shop. It states a budget of
@@ -50,7 +54,7 @@ func (b *Both) Write(key, item string) error {
 }
 
 // Flush writes nothing through.
-func (*Both) Flush() error { return nil }
+func (*Both) Flush(bool) error { return nil }
 
 // Twice is the subject of Reader twice.
 //
@@ -82,7 +86,7 @@ func (*Unruly) Read(string) (string, error) { return "", nil }
 func (*Unruly) Write(string, string) error { return nil }
 
 // Flush writes nothing through.
-func (*Unruly) Flush() error { return nil }
+func (*Unruly) Flush(bool) error { return nil }
 
 // Mixed is the subject of Reader and Writer. It excuses a check that the
 // suite of Reader does not have, and then a check of Writer.
@@ -103,7 +107,7 @@ func (*Mixed) Read(string) (string, error) { return "", nil }
 func (*Mixed) Write(string, string) error { return nil }
 
 // Flush writes nothing through.
-func (*Mixed) Flush() error { return nil }
+func (*Mixed) Flush(bool) error { return nil }
 
 // Spent is the subject of Reader and Writer. It states a budget of
 // Reader.Read that no check can apply, and then a budget of Writer.Flush.
@@ -124,7 +128,7 @@ func (*Spent) Read(string) (string, error) { return "", nil }
 func (*Spent) Write(string, string) error { return nil }
 
 // Flush writes nothing through.
-func (*Spent) Flush() error { return nil }
+func (*Spent) Flush(bool) error { return nil }
 
 // Overspent is the subject of Reader and Writer, and states a budget of a
 // declaration that is neither.
@@ -144,7 +148,7 @@ func (*Overspent) Read(string) (string, error) { return "", nil }
 func (*Overspent) Write(string, string) error { return nil }
 
 // Flush writes nothing through.
-func (*Overspent) Flush() error { return nil }
+func (*Overspent) Flush(bool) error { return nil }
 
 // Unflushed is the subject of Writer, and excuses a check of Flush that the
 // suite of Writer does not have.
@@ -160,7 +164,7 @@ func NewUnflushed() *Unflushed { return &Unflushed{} }
 func (*Unflushed) Write(string, string) error { return nil }
 
 // Flush writes nothing through.
-func (*Unflushed) Flush() error { return nil }
+func (*Unflushed) Flush(bool) error { return nil }
 
 // Stray is the subject of Reader, and excuses a check of Writer, which is
 // not one of its declarations.

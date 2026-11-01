@@ -40,7 +40,9 @@ func (k *caller) derivation(s *Suite, syms []symbol.Symbol) {
 		declaration = ""
 	}
 	s.Facts, s.Derivation = k.derive(declaration, syms, s.Calls)
+	s.Sequences = k.sequencesOf(s)
 	k.derived(s)
+	s.Sequences = s.Sequences.used(s.Derived)
 }
 
 // derive returns the facts of the callables syms of the declaration named

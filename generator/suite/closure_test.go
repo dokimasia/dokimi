@@ -54,6 +54,141 @@ func TestClosure(t *testing.T) {
 				"the closure returns the value beside a nil error")
 		})
 
+		t.Run("passes the key of each of the two writes to a batch read", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			d := derivedNamed(t, &shelf, "GetMany", "reads-each-key")
+			read, write := d.Args[0].Closure, d.Args[1].Closure
+			assert.NotNil(t, read, "the batch read is a closure")
+			assert.NotNil(t, write, "the write is a closure")
+			assert.Length(t, read.Args, 3, "the batch read passes the context and two keys")
+			assert.Length(t, write.Lets, 2, "the write declares its value and sets its key")
+			assert.Length(t, write.Later, 1, "the second write changes its key")
+			expect.Equal(t, write.Lets[1].Select, "Key", "the first write sets the key")
+			expect.Equal(t, write.Later[0].Select, "Key", "the second write changes the key")
+			expect.Equal(t, read.Args[1:], []suite.Expr{write.Lets[1].Value, write.Later[0].Value},
+				"the batch read passes the key of each write")
+		})
+
+		t.Run("passes the value of each of the two writes to a batch read of the values", func(t *testing.T) {
+			t.Parallel()
+
+			tags := generate(t, goTree, classifiedPackage).suites["Tags"]
+			d := derivedNamed(t, &tags, "Has", "reads-each-key")
+			read, write := d.Args[0].Closure, d.Args[1].Closure
+			assert.NotNil(t, read, "the batch read is a closure")
+			assert.NotNil(t, write, "the write is a closure")
+			assert.Equal(t, names(write.Lets), []string{"w"}, "the write declares the value alone")
+			assert.Equal(t, names(write.Later), []string{"w"}, "the second write changes the value")
+			expect.Equal(t, read.Args[1:], []suite.Expr{write.Lets[0].Value, write.Later[0].Value},
+				"the batch read passes the value of each write")
+		})
+
+		t.Run("returns the error of a call that returns a stream beside it", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "Scan", "over-match").Args[0].Closure
+			assert.NotNil(t, c, "the drain is a closure")
+			expect.Equal(t, c.Assign, []string{"r0", "err"}, "the closure assigns the stream and the error")
+			expect.Equal(t, c.Results, []suite.Expr{{Name: "r0"}, {Name: "err"}},
+				"the closure drains the stream after the error of the call")
+		})
+
+		t.Run("drains a stream with an error into the list of its elements", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "All", "streams-what-was-stored").Args[0].Closure
+			assert.NotNil(t, c, "the drain is a closure")
+			expect.Equal(t, c.Drain, "until-error", "the closure drains the elements until the first error")
+			assert.Length(t, c.Returns, 1, "the closure returns a list of one type")
+			expect.Equal(t, spelled(c.Returns[0]), "Item", "the list contains the items")
+			expect.False(t, c.Pair, "an element is no pair")
+		})
+
+		t.Run("drains a stream of elements into a list", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "Items", "streams-what-was-stored").Args[0].Closure
+			assert.NotNil(t, c, "the drain is a closure")
+			expect.Equal(t, c.Drain, "elements", "the closure drains each element")
+			assert.Length(t, c.Returns, 1, "the closure returns a list of one type")
+			expect.Equal(t, spelled(c.Returns[0]), "Item", "the list contains the items")
+		})
+
+		t.Run("drains a stream of pairs into a list of pairs", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "Keyed", "streams-what-was-stored").Args[0].Closure
+			assert.NotNil(t, c, "the drain is a closure")
+			expect.Equal(t, c.Drain, "pairs", "the closure drains each pair")
+			assert.Length(t, c.Returns, 2, "the closure returns a list of pairs of two types")
+			expect.Equal(t, spelled(c.Returns[0]), "string", "the first of a pair is the key")
+			expect.Equal(t, spelled(c.Returns[1]), "Item", "the second of a pair is the item")
+			expect.True(t, c.Pair, "an element is a pair")
+		})
+
+		t.Run("takes the position of an indexed call", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "At", "respects-its-bounds").Args[0].Closure
+			assert.NotNil(t, c, "the call is a closure")
+			assert.NotNil(t, c.Param, "the closure takes the position")
+			expect.Equal(t, c.Param.Name, "position", "the parameter is the position")
+			expect.Equal(t, spelled(c.Param.Type), "int", "the position is an int")
+			expect.Equal(t, c.Args, []suite.Expr{{Word: "ctx"}, {Name: "position"}},
+				"the call passes the position to the integer input")
+		})
+
+		t.Run("passes the first sample to an input of an indexed call that is no integer", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "Slot", "respects-its-bounds").Args[0].Closure
+			assert.NotNil(t, c, "the call is a closure")
+			assert.Length(t, c.Args, 3, "the call passes the context, the name and the position")
+			expect.NotNil(t, c.Args[1].Value, "the name takes its sample")
+			expect.Equal(t, c.Args[2].Name, "position", "the call passes the position to the integer input")
+		})
+
+		t.Run("converts the position to an unsigned input", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "Slot", "respects-its-bounds").Args[0].Closure
+			assert.NotNil(t, c, "the call is a closure")
+			assert.Length(t, c.Args, 3, "the call passes the context, the name and the position")
+			assert.NotNil(t, c.Args[2].Convert, "the call converts the position")
+			expect.Equal(t, spelled(c.Args[2].Convert), "uint", "the position of a slot is a uint")
+		})
+
+		t.Run("converts the position to an integer input of another type", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "AtOffset", "respects-its-bounds").Args[0].Closure
+			assert.NotNil(t, c, "the call is a closure")
+			assert.Length(t, c.Args, 2, "the call passes the context and the offset")
+			assert.NotNil(t, c.Args[1].Convert, "the call converts the position")
+			expect.Equal(t, spelled(c.Args[1].Convert), "int64", "the offset is an int64")
+			expect.Equal(t, c.Args[1].Name, "position", "the call converts the position")
+		})
+
+		t.Run("calls the sibling of a wrapper on a new subject", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, classifiedPackage).suites["Shelf"]
+			c := derivedNamed(t, &shelf, "TracedGet", "agrees-with-its-sibling").Args[1].Closure
+			assert.NotNil(t, c, "the sibling is a closure")
+			expect.Equal(t, c.Receiver, &suite.Expr{Word: "h.New()"}, "the sibling runs on a new subject")
+			expect.Equal(t, c.Method, "Get", "the sibling is Get")
+		})
+
 		t.Run("returns the call of a callable that returns one value beside an error", func(t *testing.T) {
 			t.Parallel()
 

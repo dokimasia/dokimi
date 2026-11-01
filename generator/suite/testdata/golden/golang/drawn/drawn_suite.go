@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/spec"
@@ -5431,6 +5432,9 @@ func lookupsCodeValueBeside(h *LookupsHandle) Lookups {
 //
 // Labels.Get/read-after-write#generated: Get returns what Put stored
 // before it.
+//
+// Labels.Get/reads-each-last-write: Get returns what Put wrote right
+// before it, over any sequence of calls.
 
 // The derived checks of Labels that witness their laws at the shallow end:
 //
@@ -5535,6 +5539,12 @@ func (c labelsGet) ReadAfterWrite() conform.ID[Labels] {
 // returns what Put stored before it.
 func (c labelsGet) ReadAfterWriteGenerated() conform.ID[Labels] {
 	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Get returns
+// what Put wrote right before it, over any sequence of calls.
+func (c labelsGet) ReadsEachLastWrite() conform.ID[Labels] {
+	return c.Check("reads-each-last-write")
 }
 
 // LabelsSuite returns the checks of Labels, and the calls and the budgets
@@ -5749,6 +5759,37 @@ func LabelsSuite() conform.Suite[Labels] {
 					})
 				},
 				Defect: labelsGetReadsAnotherValue,
+			},
+			{
+				ID:          LabelsChecks.Get.ReadsEachLastWrite(),
+				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[Labels]{LabelsChecks.Get.ReadAfterWrite()},
+				Property: func(h *LabelsHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						labelsActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := labelsGetCall(
+								ctx,
+								h.Subject(),
+								[]any{func() string { return "" }},
+							)
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) Label {
+							v, _ := args[1].(Label)
+							return v
+						},
+					)
+				},
+				Defect: labelsGetReadsAStaleValueAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -5996,4 +6037,103 @@ func (d *labelsGetReadsAnotherValueDefect) Get(
 // Get returns a value that Put did not write over a fresh subject.
 func labelsGetReadsAnotherValue(h *LabelsHandle) Labels {
 	return &labelsGetReadsAnotherValueDefect{labelsOverEmbedded: h.Fresh()}
+}
+
+// labelsGetReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Labels whose Get returns its first value again from its fourth call on.
+type labelsGetReadsAStaleValueAfterThreeDefect struct {
+	labelsOverEmbedded
+	calls int
+	first *Label
+}
+
+// Get is the override of the planted defect.
+func (d *labelsGetReadsAStaleValueAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 func() string,
+) (r0 Label, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.labelsOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// labelsGetReadsAStaleValueAfterThree returns the planted defect of a
+// Labels whose Get returns its first value again from its fourth call on
+// over a fresh subject.
+func labelsGetReadsAStaleValueAfterThree(h *LabelsHandle) Labels {
+	return &labelsGetReadsAStaleValueAfterThreeDefect{labelsOverEmbedded: h.Fresh()}
+}
+
+// labelsActions returns the actions of the generated sequences of Labels
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func labelsActions(c *prop.Case, subject func() Labels) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				name := c.Draw(prop.SampledFrom(keysString...), "put.name")
+				v := c.Draw(prop.Of[Label](), "put.v")
+				return []any{name, v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args, args[0])
+				values, err := labelsPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				nameResults := c.Draw(prop.List(prop.Of[string]()), "name")
+				var nameAt atomic.Int64
+				name := func() (r0 string) {
+					i := int(nameAt.Add(1) - 1)
+					if i >= len(nameResults) {
+						return r0
+					}
+					return nameResults[i]
+				}
+				return []any{name}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args)
+				values, err := labelsGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// labelsPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func labelsPutCall(ctx context.Context, subject Labels, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Label)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// labelsGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func labelsGetCall(ctx context.Context, subject Labels, args []any) ([]any, error) {
+	a0, _ := args[0].(func() string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
 }

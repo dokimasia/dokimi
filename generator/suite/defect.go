@@ -48,6 +48,11 @@ import (
 // cancelled context as the callable does. A panic, a body that breaks
 // cancellation and a body that reads the error of the fresh subject have no
 // guard.
+//
+// After is the number of calls that a body of generated sequences makes as
+// the callable does before its break. Limit is the most use that the param
+// limit of the mixin bounded states, and Grow the count of the use that the
+// body of grows-past-the-limit-after-three returns above it: int or len.
 type Defect struct {
 	Method    *emit.Method
 	Handle    *Defect
@@ -59,11 +64,14 @@ type Defect struct {
 	Version   string
 	Context   string
 	Acquire   string
+	Limit     string
+	Grow      string
 	Args      []string
 	Results   []Outcome
 	Budget    time.Duration
 	Input     int
 	Second    int
+	After     int
 	Delegates bool
 	Counts    bool
 	Keeps     bool
@@ -121,6 +129,31 @@ const (
 	bodyOpenOnFailure  = "open-on-failure"
 	bodyZeroSecond     = "zero-second"
 	bodyKeepFirst      = "keep-first"
+	bodyDropLast       = "drop-last"
+	bodyFirstAfter     = "first-after"
+	bodyReverseAfter   = "reverse-after"
+	bodyVersionAfter   = "version-after"
+	bodyZeroAfter      = "zero-after"
+	bodyRepeatAfter    = "repeat-after"
+	bodyDropAfter      = "drop-after"
+	bodyDivergeAfter   = "diverge-after"
+	bodyGrowAfter      = "grow-after"
+	bodyTwiceAfter     = "twice-after"
+)
+
+// afterBodies are the bodies of the defect forms of generated sequences,
+// which call the callable as it is until the call that the min-steps of their
+// form counts.
+var afterBodies = []string{
+	bodyFirstAfter, bodyReverseAfter, bodyVersionAfter, bodyZeroAfter, bodyRepeatAfter, bodyDropAfter,
+	bodyDivergeAfter, bodyGrowAfter, bodyTwiceAfter,
+}
+
+// limitParam is the param of the mixin bounded that states the most use, and
+// growText the growth of a text past the limit.
+const (
+	limitParam = "limit"
+	growText   = "text"
 )
 
 // bodies contains the body of the override of each defect form that a suite
@@ -176,6 +209,32 @@ var bodies = map[spec.DefectFormID]string{
 	spec.OpensWithoutClosing:    bodyOpenOnFailure,
 	spec.IgnoresTheSecondInput:  bodyEcho,
 	spec.KeepsItsFirstResult:    bodyKeepFirst,
+	spec.DropsTheLastKey:        bodyDropLast,
+	spec.ReportsPoison:          bodyFail,
+	spec.AdmitsTheSize:          bodySample,
+	spec.StopsDelegating:        bodySample,
+	spec.ReportsTamper:          bodyFail,
+	spec.ReleaseKeepsTheLease:   bodyZero,
+	spec.FrozenStats:            bodyZero,
+
+	spec.GoesBackAfterThree:            bodyFirstAfter,
+	spec.ReadsThePastAfterThree:        bodyFirstAfter,
+	spec.ReadsAStaleVersionAfterThree:  bodyFirstAfter,
+	spec.ReadsAStaleValueAfterThree:    bodyFirstAfter,
+	spec.ServesAStaleValueAfterThree:   bodyFirstAfter,
+	spec.ReordersAfterThree:            bodyReverseAfter,
+	spec.ReversesAfterThree:            bodyReverseAfter,
+	spec.ReordersWritesAfterThree:      bodyZeroAfter,
+	spec.StampsThePastAfterThree:       bodyVersionAfter,
+	spec.DescendsAfterThree:            bodyZeroAfter,
+	spec.DropsARepeatAfterThree:        bodyZeroAfter,
+	spec.DropsAWriteAfterThree:         bodyZeroAfter,
+	spec.AdmitsAnyTransitionAfterThree: bodyTwiceAfter,
+	spec.RepeatsAfterThree:             bodyRepeatAfter,
+	spec.DropsAfterThree:               bodyDropAfter,
+	spec.DivergesAfterThree:            bodyDivergeAfter,
+	spec.GrowsPastTheLimitAfterThree:   bodyGrowAfter,
+	spec.IgnoresTheOtherReplica:        bodyZero,
 }
 
 // partnerOf returns the pair of the partner name of the check c: the partner
@@ -193,15 +252,15 @@ func partnerOf(c *derive.Check, name string) *derive.Pair {
 // counting the bodies that count the calls of the override, and keeping the
 // bodies that keep the handle that builds the defect.
 var (
-	delegating = []string{
+	delegating = slices.Concat([]string{
 		bodyPanicLater, bodyFailLater, bodyFailSuccess, bodyZeroLater, bodyBesideFalse, bodyBesideError,
 		bodySampleSuccess, bodyUncancelled, bodyVersionZero, bodyDrainTwice, bodyReorder, bodyReverse, bodySlow,
 		bodyFirstPage, bodyLiveHandle, bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyOpenOnFailure,
-		bodyZeroSecond, bodyKeepFirst,
-	}
-	counting = []string{
+		bodyZeroSecond, bodyKeepFirst, bodyDropLast,
+	}, afterBodies)
+	counting = slices.Concat([]string{
 		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyDrift, bodyDescend, bodyVersionDescend, bodyReorder,
-	}
+	}, afterBodies)
 	keeping = []string{bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyFreshEachCall}
 )
 
@@ -237,17 +296,34 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 		}
 	}
 	d := &Defect{Name: name, Doc: c.Clause, Body: bodies[form.ID]}
-	if form.ID == spec.IgnoresTheSecondInput && !reflect.DeepEqual(f.Results[0].Shape, f.Inputs[0].Shape) {
+	switch {
+	case form.ID == spec.IgnoresTheSecondInput && !reflect.DeepEqual(f.Results[0].Shape, f.Inputs[0].Shape):
 		// A callable whose result has another type cannot return its first
 		// input, so it calls with a zero second input.
 		d.Body = bodyZeroSecond
+	case form.ID == spec.DrainsNothing && streamAt(f) >= 0:
+		// A range over a nil stream panics, so a callable that returns a
+		// stream returns an empty one.
+		d.Body = bodySample
+	default:
 	}
 	switch d.Body {
 	case bodyEcho, bodyFirstPage, bodyKeepFirst:
 		d.Input = inputAt(f, 0)
 	case bodyZeroSecond:
 		d.Second = inputAt(f, 1)
+	case bodyGrowAfter:
+		d.Limit = intOf(b.param(limitParam))
+		if use, ok := k.countableOf(s, s.Sequences, f); ok {
+			d.Grow = use.Count
+			if f.Results[0].Shape.Form == symbol.FormText {
+				d.Grow = growText
+			}
+		}
 	default:
+	}
+	if slices.Contains(afterBodies, d.Body) {
+		d.After = form.MinSteps - 1
 	}
 	d.Delegates = slices.Contains(delegating, d.Body)
 	d.Counts = slices.Contains(counting, d.Body)
@@ -378,8 +454,12 @@ func (k *caller) outcomesOf(f *derive.Facts) []Outcome {
 		case rules.ReturnOkBool:
 			res.Role = roleFlag
 		case rules.ReturnStream:
+			// The sample of a stream is an empty stream of its elements.
 			res.Role = roleValue
-			res.Sample = &Expr{Word: nilWord}
+			res.Sample = &Expr{}
+			for _, e := range k.elemsOf(r.Ref) {
+				res.Sample.Stream = append(res.Sample.Stream, k.typeOf(e))
+			}
 		default:
 			res.Role = roleValue
 			ref := k.typeOf(k.instance(r.Ref))

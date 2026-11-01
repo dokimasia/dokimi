@@ -5390,6 +5390,10 @@ func TestLabelsSuite(t *testing.T) {
 				drawn.LabelsChecks.Get.ReadAfterWriteGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				drawn.LabelsChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -5449,6 +5453,10 @@ func TestLabelsSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				drawn.LabelsChecks.Get.ReadAfterWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				drawn.LabelsChecks.Get.ReadsEachLastWrite(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5511,6 +5519,10 @@ func TestLabelsSuiteBudgets(t *testing.T) {
 			drawn.LabelsChecks.Get.ReadAfterWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			drawn.LabelsChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -5561,6 +5573,10 @@ func FuzzLabelsSuitePut(f *testing.F) {
 			drawn.LabelsChecks.Get.ReadAfterWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			drawn.LabelsChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -5609,6 +5625,10 @@ func FuzzLabelsSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			drawn.LabelsChecks.Get.ReadAfterWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			drawn.LabelsChecks.Get.ReadsEachLastWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)

@@ -170,3 +170,13 @@ var UnknownMachinery = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  13,
 	Meaning: "the param machineries of the directive suite names a machinery that the consumer does not supply",
 })
+
+// BadNormalize reports a declaration whose function of the param normalize of
+// the directive suite does not have the type func(string, []any) []any. The
+// function of the call of each callable passes the name of the callable and
+// the values of the call to the function. The finding is an Error at the
+// directive, and the suite records the values of each call as they are.
+var BadNormalize = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  14,
+	Meaning: "the function of the param normalize of the directive suite does not map the values of a call",
+})

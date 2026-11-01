@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 
 	"go.yaml.in/yaml/v3"
 
@@ -275,7 +276,8 @@ func head(data []byte) string {
 //
 // # Errors
 //
-// Fixtures returns an error for a group that is not a directory.
+// Fixtures returns an error that wraps [syscall.ENOTDIR] and names the group
+// for a group that is not a directory.
 func Fixtures(fsys fs.FS, expected []Expectation) ([]string, error) {
 	groups := map[string]bool{}
 	for i := range expected {
@@ -283,9 +285,17 @@ func Fixtures(fsys fs.FS, expected []Expectation) ([]string, error) {
 	}
 	var out []string
 	for _, group := range slices.Sorted(maps.Keys(groups)) {
-		entries, err := fs.ReadDir(fsys, group)
+		info, err := fs.Stat(fsys, group)
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
+		}
+		// On Windows, fs.ReadDir reads a file as a directory without entries.
+		if err == nil && !info.IsDir() {
+			err = &fs.PathError{Op: "readdir", Path: group, Err: syscall.ENOTDIR}
+		}
+		var entries []fs.DirEntry
+		if err == nil {
+			entries, err = fs.ReadDir(fsys, group)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("corpus: %w", err)

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"go.dokimi.dev/assert"
@@ -246,7 +247,16 @@ diverge:
 			_, err := corpus.Fixtures(os.DirFS(dir), []corpus.Expectation{{Fixture: "enum/priority"}})
 
 			failed := assert.ErrorAs[*fs.PathError](t, err, "the group enum is a file")
-			assert.Equal(t, failed.Path, "enum", "the error names the group")
+			assert.Equal(t, *failed, fs.PathError{Op: "readdir", Path: "enum", Err: syscall.ENOTDIR},
+				"the error is the readdir error of the group on every system")
+		})
+
+		t.Run("returns the error of a group that is not a valid path", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := corpus.Fixtures(os.DirFS(t.TempDir()), []corpus.Expectation{{Fixture: "../priority"}})
+
+			assert.ErrorIs(t, err, fs.ErrInvalid, "the group .. is not a valid path of the corpus")
 		})
 	})
 

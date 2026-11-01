@@ -161,7 +161,19 @@ reasons:
     meaning: The compensation refused the step that the call applied.
     since: 1.0.0
   partial-write:
-    meaning: The reader found a part of a write that the call refused.
+    meaning: The reader found a part of a write that failed.
+    since: 1.0.0
+  swallowed-failure:
+    meaning: The call returned no error while a call of its dependency failed.
+    since: 1.0.0
+  never-opened:
+    meaning: The callable called its failing operation on every call.
+    since: 1.0.0
+  moved-instance:
+    meaning: Two calls with one key went to two instances.
+    since: 1.0.0
+  leaked-resource:
+    meaning: A call acquired more resources than it released.
     since: 1.0.0
   unreplaced-write:
     meaning: The read after a second write did not return the value of the second write.
@@ -195,4 +207,10 @@ reasons:
     since: 1.0.0
   lost-cause:
     meaning: The error type did not return the cause that the check gave it.
+    since: 1.0.0
+  order-dependent:
+    meaning: The two orders of two inputs returned two values.
+    since: 1.0.0
+  grouping-dependent:
+    meaning: The two groupings of three inputs returned two values.
     since: 1.0.0

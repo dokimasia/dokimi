@@ -13,11 +13,16 @@ type Gate struct {
 	ID GateID `json:"id"`
 
 	// Passes is the condition of the gate, in words. The derivation
-	// implements it once for every language.
+	// implements the condition of a gate on the facts of a declaration once
+	// for every language. The suite generator of a language implements the
+	// condition of a gate on the code that it writes, such as
+	// importable-samples.
 	Passes string `json:"passes"`
 
 	// Why is the reason of a refusal, and Remedy is what the author changes
-	// to remove it. Both name the callable as {callable}.
+	// to remove it. Both write the callable as {callable}, its declaration as
+	// {declaration}, the name of a partner as {partner} and the name of a
+	// parameter or of a param of a classification as {param}.
 	Why    string `json:"why"`
 	Remedy string `json:"remedy"`
 

@@ -59,8 +59,9 @@ type SuiteRecord struct {
 
 	Application Application `json:"application"`
 
-	// Subject is the name of the factory that the consumer passed to the
-	// application, for the application subject.
+	// Subject is the type of the value that the factory of the application
+	// builds, for the application subject: the import path of its package, a
+	// dot and its name, such as example.com/store/storetest.InMemory.
 	Subject string `json:"subject,omitempty"`
 
 	// Ended lists the faults that ended the application before its last
@@ -145,7 +146,7 @@ type CheckRecord struct {
 	// Identity is the identity of the check, such as Store.Read/zero-on-error.
 	Identity string `json:"identity"`
 
-	// Key is the identity in lower case, such as store.read/zero-on-error.
+	// Key is the key form of the identity, such as store.read/zero-on-error.
 	Key string `json:"key"`
 
 	// Claim, Law, Machineries and Shallow describe a derived check, and are
@@ -185,6 +186,9 @@ type RefusalRecord struct {
 
 	// Callable is the declaration and the callable, such as Store.Scan.
 	Callable string `json:"callable"`
+
+	// Gate is the gate of the spec that fails for the callable.
+	Gate GateID `json:"gate"`
 
 	Why    string `json:"why"`
 	Remedy string `json:"remedy"`

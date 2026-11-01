@@ -108,7 +108,7 @@ probes:
       - {name: read, kind: call}
       - {name: write, kind: call}
     reasons: [unpinned-read]
-    vacuous: The first read or the write fails.
+    vacuous: A write or the first read fails.
     since: 1.0.0
   no-element-twice:
     summary: One drain after two writes returns each element at most once.
@@ -156,7 +156,7 @@ probes:
       - {name: write, kind: call}
       - {name: version, kind: projection}
     reasons: [regressed]
-    vacuous: The write or the first read fails.
+    vacuous: A write or the first read fails.
     since: 1.0.0
   writes-advance:
     summary: A write after a read has a version above the version that the read returned.
@@ -252,7 +252,7 @@ probes:
       - {name: count, kind: call}
       - {name: clock, kind: clock}
     reasons: [off-schedule]
-    vacuous: The registration fails.
+    vacuous: The registration fails, or its delay is not positive.
     since: 1.0.0
   moves-with-the-clock:
     summary: A result changes once the clock moves in doubling steps far enough.
@@ -444,6 +444,62 @@ probes:
     reasons: [not-rolled-back]
     vacuous: The scope does not run its body, or the write inside it fails.
     since: 1.0.0
+  rolls-back-under-faults:
+    summary: A read after a scope whose commit failed fails with the declared sentinel.
+    inputs:
+      - {name: call, kind: scope}
+      - {name: write, kind: call}
+      - {name: read, kind: call}
+      - {name: sentinel, kind: error}
+    reasons: [not-rolled-back]
+    vacuous: The write inside the scope fails, the scope succeeds, or its commit calls no dependency.
+    since: 1.0.0
+  reports-a-failed-dependency:
+    summary: A call returns an error while every call of a dependency fails.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [swallowed-failure]
+    vacuous: The subject calls no dependency during the call.
+    since: 1.0.0
+  fails-without-effect:
+    summary: A read after a call that failed with its dependency returns the value of the read before the call.
+    inputs:
+      - {name: call, kind: call}
+      - {name: read, kind: call}
+    reasons: [partial-write]
+    vacuous: The call succeeds, or the subject calls no dependency during it.
+    since: 1.0.0
+  succeeds-after-a-failure:
+    summary: A call succeeds within the declared attempts after the next call of a dependency fails.
+    inputs:
+      - {name: call, kind: call}
+      - {name: attempts, kind: count}
+    reasons: [never-converged]
+    vacuous: The subject calls no dependency during the attempts.
+    since: 1.0.0
+  refuses-without-the-dependency:
+    summary: A call fails without a call of its operation after the operation failed repeatedly.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [never-opened]
+    vacuous: The subject calls no dependency during the first call.
+    since: 1.0.0
+  uses-one-instance:
+    summary: Two calls with one key go to one dependency.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [moved-instance]
+    vacuous: The subject calls no dependency during a call.
+    since: 1.0.0
+  releases-what-it-acquires:
+    summary: The calls of open and of close of the dependencies agree in number after each failure of a call.
+    inputs:
+      - {name: call, kind: call}
+      - {name: open, kind: value}
+      - {name: close, kind: value}
+    reasons: [leaked-resource]
+    vacuous: The subject calls no dependency during the call.
+    since: 1.0.0
   agrees-with-the-backing:
     summary: The cache returns the value that its backing returns, after an establishing write.
     inputs:
@@ -591,4 +647,23 @@ probes:
       - {name: types, kind: values}
     reasons: [shared-identity]
     vacuous: Never, because the probe compares every pair of error types.
+    since: 1.0.0
+  either-order-agrees:
+    summary: A call returns one value for two inputs in either order.
+    inputs:
+      - {name: call, kind: call}
+      - {name: first, kind: value}
+      - {name: second, kind: value}
+    reasons: [order-dependent]
+    vacuous: A call with the two inputs fails.
+    since: 1.0.0
+  either-grouping-agrees:
+    summary: A call returns one value for three inputs in either grouping.
+    inputs:
+      - {name: call, kind: call}
+      - {name: first, kind: value}
+      - {name: second, kind: value}
+      - {name: third, kind: value}
+    reasons: [grouping-dependent]
+    vacuous: A call with the three inputs fails.
     since: 1.0.0

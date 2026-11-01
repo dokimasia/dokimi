@@ -188,8 +188,43 @@ forms:
     since: 1.0.0
   keeps-failed-writes:
     changes: partner:read
-    does: The read finds what a failed scope wrote.
+    does: The read returns its zero results and no error until a call of a dependency fails.
     min-steps: 2
+    since: 1.0.0
+  commits-on-failure:
+    changes: partner:read
+    does: The read returns the second sample and no error once a call of a dependency failed.
+    min-steps: 2
+    since: 1.0.0
+  swallows-failure:
+    changes: callable
+    does: The callable returns its zero results and no error where a call of a dependency fails during the call.
+    min-steps: 1
+    since: 1.0.0
+  half-applied:
+    changes: partner:read
+    does: The read returns the second sample and no error once a call of a dependency failed.
+    min-steps: 2
+    since: 1.0.0
+  gives-up-early:
+    changes: callable
+    does: The callable fails on every call once a call of a dependency failed.
+    min-steps: 2
+    since: 1.0.0
+  never-opens:
+    changes: callable
+    does: Each call goes to a fresh subject, whose breaker is closed.
+    min-steps: 2
+    since: 1.0.0
+  balances-each-call:
+    changes: callable
+    does: Each call goes to a fresh subject over new dependencies.
+    min-steps: 2
+    since: 1.0.0
+  opens-without-closing:
+    changes: callable
+    does: A call that fails records one more acquisition of its own, which no release follows.
+    min-steps: 1
     since: 1.0.0
   put-refuses:
     changes: partner:put
@@ -270,4 +305,14 @@ forms:
     changes: error-types
     does: The error type matches a value of another error type of the package.
     min-steps: 1
+    since: 1.0.0
+  ignores-the-second-input:
+    changes: callable
+    does: The callable returns its first input, or for a result of another type its value with a zero second input.
+    min-steps: 2
+    since: 1.0.0
+  keeps-its-first-result:
+    changes: callable
+    does: The callable returns its first input where that input equals the value of its first call.
+    min-steps: 4
     since: 1.0.0

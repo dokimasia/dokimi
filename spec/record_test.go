@@ -5,6 +5,7 @@ package spec_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"go.dokimi.dev/assert"
@@ -20,7 +21,7 @@ const example = `{
   "runtime": {"name": "go.dokimi.dev/conform", "version": "v0.1.0"},
   "seed": "0x5f3a1c9e27d4b860",
   "application": "subject",
-  "subject": "InMemory",
+  "subject": "example.com/store/storetest.InMemory",
   "checks": [
     {
       "identity": "Store.Read/zero-on-error",
@@ -37,6 +38,7 @@ const example = `{
     {
       "claim": "zero-on-error",
       "callable": "Store.Scan",
+      "gate": "input-samples",
       "why": "eidos derives no sample of the parameter visit of Scan",
       "remedy": "author a sample of the parameter visit with the directive sample"
     }
@@ -114,6 +116,11 @@ func TestRecord(t *testing.T) {
 				name:       "refuses a counterexample by label",
 				giveRecord: fmt.Sprintf(failing, `{"n": {"type": "int", "value": 10}}`),
 				want:       "counterexample",
+			},
+			{
+				name:       "refuses a refusal without its gate",
+				giveRecord: strings.Replace(example, `"gate": "input-samples",`, "", 1),
+				want:       "gate",
 			},
 		}
 		for _, tt := range tests {

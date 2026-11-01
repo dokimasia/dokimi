@@ -26,7 +26,8 @@ func record(application spec.Application, checks ...spec.CheckRecord) string {
 		Application: application,
 		Checks:      checks,
 		Refusals: []spec.RefusalRecord{{
-			Claim: spec.ZeroOnError, Callable: "Store.Scan", Why: "Scan cannot fail", Remedy: "return an error",
+			Claim: spec.ZeroOnError, Callable: "Store.Scan", Gate: spec.Failure, Why: "Scan cannot fail",
+			Remedy: "return an error",
 		}},
 		Unclaimed: []spec.UnclaimedRecord{{
 			Classification: "mixin:concurrent", Callable: "Store.Put", Stance: spec.Needs,
@@ -290,8 +291,13 @@ func TestReport(t *testing.T) {
 		t.Run("writes each other result that occurs and each refusal on a line of its own", func(t *testing.T) {
 			t.Parallel()
 			isolated := record(spec.Falsification, check("Store.Read/zero-on-error", spec.NotIsolated))
-			isolated = strings.Replace(isolated, `"refusals":[`,
-				`"refusals":[{"claim":"cancel","callable":"Store.Scan","why":"Scan takes no context","remedy":"x"},`, 1)
+			isolated = strings.Replace(
+				isolated,
+				`"refusals":[`,
+				`"refusals":[{"claim":"cancel","callable":"Store.Scan","gate":"cancellation",`+
+					`"why":"Scan takes no context","remedy":"x"},`,
+				1,
+			)
 			isolated = strings.Replace(
 				isolated,
 				`"unclaimed":[{"classification":"mixin:concurrent","callable":"Store.Put",`+

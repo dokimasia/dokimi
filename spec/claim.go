@@ -186,6 +186,10 @@ const (
 	// FromPartner is a call of a partner of the claim.
 	FromPartner SourceKind = "partner"
 
+	// FromInput is a value of an input of the callable, which the check
+	// generates.
+	FromInput SourceKind = "input"
+
 	// FromSample is a sample of the type of a result.
 	FromSample SourceKind = "sample"
 
@@ -244,8 +248,14 @@ type Source struct {
 	// Partner is the name of the partner of a FromPartner source.
 	Partner string `json:"partner,omitempty"`
 
-	// Sample is the index of the sample of a FromSample source, 0 or 1.
+	// Sample is the index of the sample of a FromSample source, 0 or 1. For a
+	// FromInput source it is the index of the value of the input: 1 for a
+	// second value, which the check draws apart from the first.
 	Sample int `json:"sample,omitempty"`
+
+	// Position is the position of the input among the inputs of the callable
+	// of a FromInput source, from 0.
+	Position int `json:"position,omitempty"`
 }
 
 // Defect is the planted defect of a claim.

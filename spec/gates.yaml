@@ -19,6 +19,11 @@ gates:
     why: "{callable} waits for the call of another callable on a fresh subject"
     remedy: "remove the mixin waits where {callable} returns on a fresh subject"
     since: 1.0.0
+  returns-before-cancel:
+    passes: The callable has no mixin runs-until-cancelled, so a call returns before its context ends.
+    why: "{callable} runs until its context ends"
+    remedy: "check {callable} with a check of the consumer that ends its context"
+    since: 1.0.0
   cancellation:
     passes: A parameter has the role context.
     why: "{callable} takes no context"
@@ -63,6 +68,26 @@ gates:
     passes: eidos derives two distinct samples of each value result.
     why: "eidos derives no sample of a result of {callable}"
     remedy: "author a sample of the result type with the directive sample"
+    since: 1.0.0
+  input-samples:
+    passes: eidos derives a sample of each parameter that the check calls the callable with.
+    why: "eidos derives no sample of the parameter {param} of {callable}"
+    remedy: "author a sample of the parameter {param} with the directive sample"
+    since: 1.0.0
+  classification-params:
+    passes: The classification of the callable sets each param that the claim reads.
+    why: "the classification of {callable} sets no param {param}"
+    remedy: "set the param {param} in the directive of {callable}"
+    since: 1.0.0
+  interface-handle:
+    passes: The handle that the callable returns is an interface, so the check can plant a handle in its place.
+    why: "the handle that {callable} returns is not an interface, so no planted handle can replace it"
+    remedy: "return the handle of {callable} as an interface"
+    since: 1.0.0
+  importable-samples:
+    passes: The file of the suite can import each declaration that a sample of the check refers to.
+    why: "a sample of the check refers to a declaration that the file of the suite cannot import"
+    remedy: "author a sample of each input of {callable} with the directive sample"
     since: 1.0.0
   optional-input:
     passes: A parameter in the role input has the optional form.
@@ -153,4 +178,24 @@ gates:
     passes: An error type has a cause.
     why: "no error type of {declaration} has a cause"
     remedy: "none, because the claim applies only to an error type with a cause"
+    since: 1.0.0
+  two-inputs-of-one-type:
+    passes: The callable takes exactly two inputs, and both have one type.
+    why: "{callable} does not take two inputs of one type"
+    remedy: "remove the classification, or give {callable} two inputs of one type"
+    since: 1.0.0
+  result-of-the-input-type:
+    passes: The callable returns one value, and the value has the type of its inputs.
+    why: "{callable} does not return one value of the type of its inputs"
+    remedy: "remove the classification, or return one value of the type of the inputs of {callable}"
+    since: 1.0.0
+  context-or-input:
+    passes: The callable takes a context or an input, so a check can make a call of it fail.
+    why: "{callable} takes neither a context nor an input, so no call on a fresh subject fails"
+    remedy: "check the error of {callable} with a check of the consumer, or give {callable} a context"
+    since: 1.0.0
+  exact-fidelity:
+    passes: No classification of the callable states the fidelity lossy.
+    why: "the codec of {callable} states the fidelity lossy, and the claim states the exact round trip"
+    remedy: "check the lossy round trip of {callable} with a check of the consumer"
     since: 1.0.0

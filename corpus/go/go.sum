@@ -1,10 +1,10 @@
-go.dokimi.dev/assert v0.14.0 h1:v+U9r+HYnLKPMsdqfRR8WUr763NQGj1Lv3fdTQk/5hU=
-go.dokimi.dev/assert v0.14.0/go.mod h1:NeZvtoRhjUZSooEp8kN1mMakVUowb+EDKFR/YOUey2w=
-go.dokimi.dev/conform v0.8.1-0.20261031083845-494250bff682 h1:c3miU6igIcRMOghDz4UpQIw4sjo2dEbqPxHW8AGcuc4=
-go.dokimi.dev/conform v0.8.1-0.20261031083845-494250bff682/go.mod h1:0BdZwZGLp9IJ701vIi401+356P2wEOaJuyXqP4KydRQ=
+go.dokimi.dev/assert v0.14.1 h1:rHvyO47LufLTzSUK9sDMpXcncsWBnvoRxVIjL0g6POU=
+go.dokimi.dev/assert v0.14.1/go.mod h1:NeZvtoRhjUZSooEp8kN1mMakVUowb+EDKFR/YOUey2w=
+go.dokimi.dev/conform v0.8.1-0.20261101120654-1e87d264068e h1:1f+f0XFoRdVfDJkKOQJoLMLu7Y2ZyhWOYST8A73/x4Q=
+go.dokimi.dev/conform v0.8.1-0.20261101120654-1e87d264068e/go.mod h1:KnO8Hv0treuanp0j4yM6m0Pz29oQ+pko6ApvR49vHz4=
 go.dokimi.dev/fault v0.2.0 h1:WR14TzPt4lCVcU1KJddvBJRa6xdG5R5TVrg11UuYOXo=
 go.dokimi.dev/fault v0.2.0/go.mod h1:6xLUqVtkq4xbZz2zHQiaxh/9a5FYaZQfhM6YhWMmFqw=
-go.dokimi.dev/spec v0.0.0-20261031083817-9421c5610aa5 h1:bPDLZM3Hwz7LHR4afobu5FofpkjZtGoTKWyEKDbJAX4=
-go.dokimi.dev/spec v0.0.0-20261031083817-9421c5610aa5/go.mod h1:p08lSX0/zXduujM3vORcs+dtBi9UDftI/GfdHnfPNCI=
+go.dokimi.dev/spec v0.0.0-20261101120654-1e87d264068e h1:D32Q75otmUt+MycjJmvqRDEPPzQG9Uvr3cRgGqjSgQA=
+go.dokimi.dev/spec v0.0.0-20261101120654-1e87d264068e/go.mod h1:kgvoUgDr0hAqYq2dmRFz5j78vAaoUWwGAg1B16ehAEs=
 go.dokimi.dev/stub v0.2.0 h1:q5uVkeZCFck1Co6zCMvJFqoQ1oRRc5JS03uy4MOTJ6Y=
 go.dokimi.dev/stub v0.2.0/go.mod h1:8L9zcxMKSePehJBkoCZ4CNKOYxpLGkvnmc/c1XSNyf0=

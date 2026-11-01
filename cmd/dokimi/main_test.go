@@ -189,15 +189,25 @@ func TestDokimi(t *testing.T) {
 				"# Each line is one check, ceiling, refusal or unclaimed classification. Commit this file.\n"+
 				"example.com/shop/store\tindex.add\tshape:composite-writer\tsilent\t-\n"+
 				"example.com/shop/store\tindex.add/cancel\tcancel\tcheck\t-\n"+
+				"example.com/shop/store\tindex.add/cancel#generated\tcancel\tcheck\t-\n"+
 				"example.com/shop/store\tindex.add/smoke\tsmoke\tcheck\t-\n"+
+				"example.com/shop/store\tindex.add/smoke#generated\tsmoke\tcheck\t-\n"+
 				"example.com/shop/store\tindex.find/cancel\tcancel\tcheck\t-\n"+
+				"example.com/shop/store\tindex.find/cancel#generated\tcancel\tcheck\t-\n"+
 				"example.com/shop/store\tindex.find/read-after-write\tread-after-write\tcheck\twrite=index.add\n"+
+				"example.com/shop/store\tindex.find/read-after-write#generated\tread-after-write\tcheck\t"+
+				"write=index.add\n"+
 				"example.com/shop/store\tindex.find/smoke\tsmoke\tcheck\t-\n"+
+				"example.com/shop/store\tindex.find/smoke#generated\tsmoke\tcheck\t-\n"+
 				"example.com/shop/store\tindex.find/zero-on-error\tzero-on-error\tcheck\t-\n"+
+				"example.com/shop/store\tindex.find/zero-on-error#generated\tzero-on-error\tcheck\t-\n"+
 				"example.com/shop/store\tstore.get/cancel\tcancel\tcheck\t-\n"+
+				"example.com/shop/store\tstore.get/cancel#generated\tcancel\tcheck\t-\n"+
 				"example.com/shop/store\tstore.get/smoke\tsmoke\tcheck\t-\n"+
-				"example.com/shop/store\tstore.get/zero-on-error\tzero-on-error\tcheck\t-\n",
-				"the lock has a line for each check of both suites")
+				"example.com/shop/store\tstore.get/smoke#generated\tsmoke\tcheck\t-\n"+
+				"example.com/shop/store\tstore.get/zero-on-error\tzero-on-error\tcheck\t-\n"+
+				"example.com/shop/store\tstore.get/zero-on-error#generated\tzero-on-error\tcheck\t-\n",
+				"the lock has a line for each check of both suites, each beside its generated binding")
 		})
 
 		losses := []struct {
@@ -268,6 +278,47 @@ func TestDokimi(t *testing.T) {
 			out, status = dokimiRun(t, bin, dir, "run", "--check")
 
 			assert.Equal(t, status, 0, "the check passes with the regenerated lock: "+out)
+		})
+
+		brands := []struct {
+			name       string
+			giveArgs   []string
+			wantStatus int
+			wantOut    string
+		}{
+			{
+				name:     "fails --strict with EID-0083 for a directive under a misspelled brand",
+				giveArgs: []string{"run", "--strict"}, wantStatus: 1,
+				wantOut: "error EID-0083: the mark dokimy: is not the brand dokimi: of this run",
+			},
+			{
+				name:     "reports EID-0083 as a warning in a run without --strict",
+				giveArgs: []string{"run"}, wantStatus: 0,
+				wantOut: "warning EID-0083: the mark dokimy: is not the brand dokimi: of this run",
+			},
+		}
+		for _, tt := range brands {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				misspelled := strings.Replace(storeSource, "//dokimi:suite\ntype Store",
+					"//dokimy:suite\ntype Store", 1)
+				dir := files.Workspace(t, shop(misspelled))
+
+				out, status := dokimiRun(t, bin, dir, tt.giveArgs...)
+
+				assert.Equal(t, status, tt.wantStatus, "the exit status of the run: "+out)
+				expect.Contains(t, out, tt.wantOut, "the run names the brand of the directive")
+			})
+		}
+
+		t.Run("passes --strict once the directive has the brand dokimi", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, shop(storeSource))
+
+			out, status := dokimiRun(t, bin, dir, "run", "--strict")
+
+			assert.Equal(t, status, 0, "the run passes: "+out)
+			files.IsFile(t, filepath.Join(dir, "store", "store_suite.go"), "the run writes the suite of Store")
 		})
 
 		t.Run("writes the same bytes of the lock in every run of one source", func(t *testing.T) {

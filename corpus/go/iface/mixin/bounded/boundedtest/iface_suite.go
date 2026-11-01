@@ -19,7 +19,13 @@ import (
 //
 // Mixed.Add/smoke: Add returns without a panic for derived inputs.
 //
+// Mixed.Add/smoke#generated: Add returns without a panic for derived
+// inputs.
+//
 // Mixed.Add/cancel: Add returns an error for a cancelled context.
+//
+// Mixed.Add/cancel#generated: Add returns an error for a cancelled
+// context.
 //
 // Mixed.List/smoke: List returns without a panic for derived inputs.
 //
@@ -72,10 +78,22 @@ func (c mixedAdd) Smoke() conform.ID[bounded.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c mixedAdd) SmokeGenerated() conform.ID[bounded.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c mixedAdd) Cancel() conform.ID[bounded.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Add returns an
+// error for a cancelled context.
+func (c mixedAdd) CancelGenerated() conform.ID[bounded.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedList is the name of Mixed.List, with the identities of its checks.
@@ -126,6 +144,22 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				Defect: mixedAddPanics,
 			},
 			{
+				ID:          MixedChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnItem)
+					})
+				},
+				Defect: mixedAddPanics,
+			},
+			{
 				ID:          MixedChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -136,6 +170,22 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Add(ctx, string("item-a"))
+					})
+				},
+				Defect: mixedAddIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Add.CancelGenerated(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnItem)
 					})
 				},
 				Defect: mixedAddIgnoresCancel,
@@ -413,4 +463,4 @@ func mixedListValueBeside(h *MixedHandle) bounded.Mixed {
 	return &mixedListValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:50de88f4f5bb14aad93a453f2d5c315cfbf022d191897ec72ec1b21b25db06a0
+// dokimi:provenance sha256:6f525db54c279925951ed2c13b826b6ae59213fefb850e5dc3a2992685827bfc

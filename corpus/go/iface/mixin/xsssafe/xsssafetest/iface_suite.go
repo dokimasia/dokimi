@@ -19,10 +19,19 @@ import (
 //
 // Mixed.Render/smoke: Render returns without a panic for derived inputs.
 //
+// Mixed.Render/smoke#generated: Render returns without a panic for derived
+// inputs.
+//
 // Mixed.Render/cancel: Render returns an error for a cancelled context.
+//
+// Mixed.Render/cancel#generated: Render returns an error for a cancelled
+// context.
 //
 // Mixed.Render/zero-on-error: Render returns the zero value beside an
 // error.
+//
+// Mixed.Render/zero-on-error#generated: Render returns the zero value
+// beside an error.
 //
 // Mixed.Render/xss-safe: Render does not return the value that its
 // directive declares unsafe.
@@ -63,16 +72,34 @@ func (c mixedRender) Smoke() conform.ID[xsssafe.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Render returns
+// without a panic for derived inputs.
+func (c mixedRender) SmokeGenerated() conform.ID[xsssafe.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Render returns an error
 // for a cancelled context.
 func (c mixedRender) Cancel() conform.ID[xsssafe.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Render returns an
+// error for a cancelled context.
+func (c mixedRender) CancelGenerated() conform.ID[xsssafe.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Render returns the
 // zero value beside an error.
 func (c mixedRender) ZeroOnError() conform.ID[xsssafe.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Render
+// returns the zero value beside an error.
+func (c mixedRender) ZeroOnErrorGenerated() conform.ID[xsssafe.Mixed] {
+	return c.Check("zero-on-error#generated")
 }
 
 // XSSSafe returns the identity of the check that Render does not return
@@ -107,6 +134,23 @@ func MixedSuite() conform.Suite[xsssafe.Mixed] {
 				Defect: mixedRenderPanics,
 			},
 			{
+				ID:          MixedChecks.Render.SmokeGenerated(),
+				Statement:   "Render returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnIn := c.Draw(prop.Of[string](), "in")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Render(ctx, drawnIn)
+						return err
+					})
+				},
+				Defect: mixedRenderPanics,
+			},
+			{
 				ID:          MixedChecks.Render.Cancel(),
 				Statement:   "Render returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -123,6 +167,23 @@ func MixedSuite() conform.Suite[xsssafe.Mixed] {
 				Defect: mixedRenderIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Render.CancelGenerated(),
+				Statement:   "Render returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnIn := c.Draw(prop.Of[string](), "in")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Render(ctx, drawnIn)
+						return err
+					})
+				},
+				Defect: mixedRenderIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.Render.ZeroOnError(),
 				Statement:   "Render returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -133,6 +194,22 @@ func MixedSuite() conform.Suite[xsssafe.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
 						return h.Subject().Render(ctx, string("in-a"))
+					}, string(""))
+				},
+				Defect: mixedRenderValueBeside,
+			},
+			{
+				ID:          MixedChecks.Render.ZeroOnErrorGenerated(),
+				Statement:   "Render returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnIn := c.Draw(prop.Of[string](), "in")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Render(ctx, drawnIn)
 					}, string(""))
 				},
 				Defect: mixedRenderValueBeside,
@@ -331,4 +408,4 @@ func mixedRenderEchoes(h *MixedHandle) xsssafe.Mixed {
 	return &mixedRenderEchoesDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d59e7d076280da50989a25fe166a0157564e0f754fdefe7847ec43efc85ae1d8
+// dokimi:provenance sha256:b09fef5ebc33350f02b53fbb39df8f7a8925d5dea368cc76e500491a6fdd5db4

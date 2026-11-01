@@ -53,7 +53,15 @@ func TestLogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				causalchaintest.LogChecks.Append.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				causalchaintest.LogChecks.Append.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -61,7 +69,15 @@ func TestLogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				causalchaintest.LogChecks.Append.ChainCausalGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				causalchaintest.LogChecks.Append.Chain(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.ChainGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -110,7 +126,15 @@ func TestLogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				causalchaintest.LogChecks.Append.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				causalchaintest.LogChecks.Append.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -118,7 +142,15 @@ func TestLogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				causalchaintest.LogChecks.Append.ChainCausalGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				causalchaintest.LogChecks.Append.Chain(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.ChainGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -181,7 +213,15 @@ func TestLogSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -189,7 +229,15 @@ func TestLogSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausalGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -227,7 +275,15 @@ func FuzzLogSuiteAppend(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -235,7 +291,15 @@ func FuzzLogSuiteAppend(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausalGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -273,7 +337,15 @@ func FuzzLogSuiteReplay(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -281,7 +353,15 @@ func FuzzLogSuiteReplay(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausalGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -317,4 +397,4 @@ func BenchmarkLogSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:50441b6c3a0e7a072f1036baf6ca29403b26fed25cc549c5b7dcf570d6303ec0
+// dokimi:provenance sha256:da46eee767733b27928c6c031d82af4998bcfd521bc238fa9afba55100ab0408

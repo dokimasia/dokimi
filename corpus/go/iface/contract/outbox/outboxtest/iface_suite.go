@@ -20,7 +20,13 @@ import (
 // Contract.Append/smoke: Append returns without a panic for derived
 // inputs.
 //
+// Contract.Append/smoke#generated: Append returns without a panic for
+// derived inputs.
+//
 // Contract.Append/cancel: Append returns an error for a cancelled context.
+//
+// Contract.Append/cancel#generated: Append returns an error for a
+// cancelled context.
 //
 // Contract.Subscribe/smoke: Subscribe returns without a panic for derived
 // inputs.
@@ -84,10 +90,22 @@ func (c contractAppend) Smoke() conform.ID[outbox.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Append returns
+// without a panic for derived inputs.
+func (c contractAppend) SmokeGenerated() conform.ID[outbox.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c contractAppend) Cancel() conform.ID[outbox.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Append returns an
+// error for a cancelled context.
+func (c contractAppend) CancelGenerated() conform.ID[outbox.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // contractSubscribe is the name of Contract.Subscribe, with the identities
@@ -133,6 +151,22 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				Defect: contractAppendPanics,
 			},
 			{
+				ID:          ContractChecks.Append.SmokeGenerated(),
+				Statement:   "Append returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[outbox.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnV)
+					})
+				},
+				Defect: contractAppendPanics,
+			},
+			{
 				ID:          ContractChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -143,6 +177,22 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Append(ctx, outbox.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractAppendIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Append.CancelGenerated(),
+				Statement:   "Append returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[outbox.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnV)
 					})
 				},
 				Defect: contractAppendIgnoresCancel,
@@ -185,6 +235,7 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Contract.Subscribe",
+				Gate:     spec.ValueSamples,
 				Why:      "eidos derives no sample of a result of Subscribe",
 				Remedy:   "author a sample of the result type with the directive sample",
 			},
@@ -403,4 +454,4 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) outbox.Contract {
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0b92757fbd24f16d74e4cf4d57129d42c8abb91ade12d387183eb6625b6c58ce
+// dokimi:provenance sha256:195415de140b3ebfd212184927d647ed9026cd37fa9e43d0f4232e4f60eba8f0

@@ -53,7 +53,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				partitiontest.MixedChecks.Put.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				partitiontest.MixedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partitiontest.MixedChecks.Put.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -61,11 +69,23 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				partitiontest.MixedChecks.Put.PartitionGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				partitiontest.MixedChecks.Read.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				partitiontest.MixedChecks.Read.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				partitiontest.MixedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partitiontest.MixedChecks.Read.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -94,7 +114,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				partitiontest.MixedChecks.Put.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				partitiontest.MixedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partitiontest.MixedChecks.Put.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -102,11 +130,23 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				partitiontest.MixedChecks.Put.PartitionGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				partitiontest.MixedChecks.Read.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				partitiontest.MixedChecks.Read.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				partitiontest.MixedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partitiontest.MixedChecks.Read.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -134,7 +174,15 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partitiontest.MixedChecks.Put.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -142,11 +190,23 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Put.PartitionGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Read.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partitiontest.MixedChecks.Read.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -164,7 +224,15 @@ func FuzzMixedSuitePut(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partitiontest.MixedChecks.Put.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -172,11 +240,23 @@ func FuzzMixedSuitePut(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Put.PartitionGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Read.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partitiontest.MixedChecks.Read.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -194,7 +274,15 @@ func FuzzMixedSuiteRead(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Put.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partitiontest.MixedChecks.Put.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -202,11 +290,23 @@ func FuzzMixedSuiteRead(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Put.PartitionGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Read.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			partitiontest.MixedChecks.Read.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			partitiontest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partitiontest.MixedChecks.Read.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -223,4 +323,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b15f3e18212300c6097c16658c44430175e027e1ec2490136112f92cdca2296c
+// dokimi:provenance sha256:078d67b000b4c88ce14af9e4df125242e9d97b44ebe396ff7432a1dd5ee8ee76

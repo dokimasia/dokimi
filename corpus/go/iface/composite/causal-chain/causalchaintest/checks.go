@@ -42,8 +42,9 @@ func KeepsEveryBody(h *LogHandle, c *prop.Case) {
 	assert.Equal(h, got[0].Body, root.Body, h.Statement())
 }
 
-// losesBodies returns a Log that admits each entry without its body. Each
-// call returns the error of a cancelled context.
+// losesBodies returns a Log that admits each entry without its body, and
+// stamps the entry with its position as the log of the corpus does. Each call
+// returns the error of a cancelled context.
 func losesBodies(h *LogHandle) causalchain.Log {
 	var entries []causalchain.Entry
 	return NewLogStub(h,
@@ -52,6 +53,7 @@ func losesBodies(h *LogHandle) causalchain.Log {
 				return err
 			}
 			e.Body = ""
+			e.Seq = int64(len(entries))
 			entries = append(entries, e)
 			return nil
 		}),

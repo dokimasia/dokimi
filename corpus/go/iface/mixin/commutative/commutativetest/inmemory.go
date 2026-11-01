@@ -49,6 +49,9 @@ func (s *InMemory) Total(ctx context.Context) (int, error) {
 	return s.total, nil
 }
 
+// Sum implements [commutative.Mixed].
+func (*InMemory) Sum(a, b commutative.Delta) int { return a.Amount + b.Amount }
+
 // contextErr returns the error of a canceled or expired context, and an error
 // for a nil context.
 func contextErr(ctx context.Context) error {

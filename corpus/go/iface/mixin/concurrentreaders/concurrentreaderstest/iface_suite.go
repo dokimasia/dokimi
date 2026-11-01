@@ -19,13 +19,28 @@ import (
 //
 // Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Mixed.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Mixed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Mixed.Get/cancel#generated: Get returns an error for a cancelled
+// context.
 //
 // Mixed.Get/zero-on-error: Get returns the zero value beside an error.
 //
+// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
+// error.
+//
 // Mixed.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Mixed.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Mixed.Put/cancel: Put returns an error for a cancelled context.
+//
+// Mixed.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -72,16 +87,34 @@ func (c mixedGet) Smoke() conform.ID[concurrentreaders.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c mixedGet) SmokeGenerated() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[concurrentreaders.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c mixedGet) CancelGenerated() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c mixedGet) ZeroOnError() conform.ID[concurrentreaders.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c mixedGet) ZeroOnErrorGenerated() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("zero-on-error#generated")
 }
 
 // mixedPut is the name of Mixed.Put, with the identities of its checks.
@@ -95,10 +128,22 @@ func (c mixedPut) Smoke() conform.ID[concurrentreaders.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c mixedPut) SmokeGenerated() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c mixedPut) Cancel() conform.ID[concurrentreaders.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c mixedPut) CancelGenerated() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -127,6 +172,23 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
+				ID:          MixedChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -137,6 +199,23 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
 						return err
 					})
 				},
@@ -158,6 +237,22 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 				Defect: mixedGetValueBeside,
 			},
 			{
+				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, drawnKey)
+					}, string(""))
+				},
+				Defect: mixedGetValueBeside,
+			},
+			{
 				ID:          MixedChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -174,6 +269,23 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 				Defect: mixedPutPanics,
 			},
 			{
+				ID:          MixedChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
+					})
+				},
+				Defect: mixedPutPanics,
+			},
+			{
 				ID:          MixedChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -184,6 +296,23 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedPutIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
 					})
 				},
 				Defect: mixedPutIgnoresCancel,
@@ -433,4 +562,4 @@ func mixedPutIgnoresCancel(h *MixedHandle) concurrentreaders.Mixed {
 	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7b36cf7a6b01cce37ef7ff9a0d3f4b54ea62c1417e474a373a5f0c23711cbb0b
+// dokimi:provenance sha256:19070a3c8d8922a7c816f5354d13cfcd66201f8673129bf04c7256740fb29c67

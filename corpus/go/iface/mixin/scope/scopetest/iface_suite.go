@@ -19,14 +19,29 @@ import (
 //
 // Mixed.Set/smoke: Set returns without a panic for derived inputs.
 //
+// Mixed.Set/smoke#generated: Set returns without a panic for derived
+// inputs.
+//
 // Mixed.Set/cancel: Set returns an error for a cancelled context.
+//
+// Mixed.Set/cancel#generated: Set returns an error for a cancelled
+// context.
 //
 // Mixed.Set/partition: Get does not return in one partition what Set wrote
 // in another.
 //
+// Mixed.Set/partition#generated: Get does not return in one partition what
+// Set wrote in another.
+//
 // Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Mixed.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Mixed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Mixed.Get/cancel#generated: Get returns an error for a cancelled
+// context.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -73,16 +88,34 @@ func (c mixedSet) Smoke() conform.ID[scope.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Set returns
+// without a panic for derived inputs.
+func (c mixedSet) SmokeGenerated() conform.ID[scope.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Set returns an error for a
 // cancelled context.
 func (c mixedSet) Cancel() conform.ID[scope.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Set returns an
+// error for a cancelled context.
+func (c mixedSet) CancelGenerated() conform.ID[scope.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // Partition returns the identity of the check that Get does not return in
 // one partition what Set wrote in another.
 func (c mixedSet) Partition() conform.ID[scope.Mixed] {
 	return c.Check("partition")
+}
+
+// PartitionGenerated returns the identity of the check that Get does not
+// return in one partition what Set wrote in another.
+func (c mixedSet) PartitionGenerated() conform.ID[scope.Mixed] {
+	return c.Check("partition#generated")
 }
 
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
@@ -96,10 +129,22 @@ func (c mixedGet) Smoke() conform.ID[scope.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c mixedGet) SmokeGenerated() conform.ID[scope.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[scope.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c mixedGet) CancelGenerated() conform.ID[scope.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -127,6 +172,24 @@ func MixedSuite() conform.Suite[scope.Mixed] {
 				Defect: mixedSetPanics,
 			},
 			{
+				ID:          MixedChecks.Set.SmokeGenerated(),
+				Statement:   "Set returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnScope0 := c.Draw(prop.Of[string](), "scope")
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, drawnScope0, drawnKey, drawnValue)
+					})
+				},
+				Defect: mixedSetPanics,
+			},
+			{
 				ID:          MixedChecks.Set.Cancel(),
 				Statement:   "Set returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -137,6 +200,24 @@ func MixedSuite() conform.Suite[scope.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Set(ctx, string("scope-a"), string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedSetIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Set.CancelGenerated(),
+				Statement:   "Set returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnScope0 := c.Draw(prop.Of[string](), "scope")
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, drawnScope0, drawnKey, drawnValue)
 					})
 				},
 				Defect: mixedSetIgnoresCancel,
@@ -172,6 +253,48 @@ func MixedSuite() conform.Suite[scope.Mixed] {
 				Defect: mixedSetSucceedsAlways,
 			},
 			{
+				ID:          MixedChecks.Set.PartitionGenerated(),
+				Statement:   "Get does not return in one partition what Set wrote in another",
+				Claim:       spec.Partition,
+				Probe:       spec.KeepsPartitionsApart,
+				Reason:      spec.CrossedPartitions,
+				Law:         spec.OnePartitionDoesNotServeAnother,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnValue := c.Draw(
+						prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(2), prop.MaxSize(2)),
+						"value",
+					)
+					drawnScope0 := c.Draw(
+						prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(2), prop.MaxSize(2)),
+						"scope",
+					)
+					drawnKey := c.Draw(
+						prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(2), prop.MaxSize(2)),
+						"key",
+					)
+					probe.KeepsPartitionsApart(h, func() func(ctx context.Context) (string, error) {
+						calls := 0
+						return func(ctx context.Context) (string, error) {
+							calls++
+							w := drawnValue[0]
+							s0 := drawnScope0[0]
+							s1 := drawnKey[0]
+							if calls > 1 {
+								w = drawnValue[1]
+								s0 = drawnScope0[1]
+								s1 = drawnKey[1]
+							}
+							err := h.Subject().Set(ctx, s0, s1, w)
+							return w, err
+						}
+					}(), func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, drawnScope0[0], drawnKey[0])
+					})
+				},
+				Defect: mixedSetSucceedsAlways,
+			},
+			{
 				ID:          MixedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -189,6 +312,24 @@ func MixedSuite() conform.Suite[scope.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
+				ID:          MixedChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnScope0 := c.Draw(prop.Of[string](), "scope")
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnScope0, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -199,6 +340,24 @@ func MixedSuite() conform.Suite[scope.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Get(ctx, string("scope-a"), string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnScope0 := c.Draw(prop.Of[string](), "scope")
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnScope0, drawnKey)
 						return err
 					})
 				},
@@ -432,4 +591,4 @@ func mixedGetIgnoresCancel(h *MixedHandle) scope.Mixed {
 	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a8c9193f7618e662f965db8104685f0e8ab15744b8a3c72a0d09f24f956fb028
+// dokimi:provenance sha256:69efc2e647418cc14231032ab647887b6da018432839762021e81375eab51687

@@ -19,10 +19,19 @@ import (
 //
 // Contract.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Contract.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Contract.Put/cancel: Put returns an error for a cancelled context.
+//
+// Contract.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 //
 // Contract.Put/if-absent: a second Put for one key fails with the declared
 // conflict.
+//
+// Contract.Put/if-absent#generated: a second Put for one key fails with
+// the declared conflict.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -64,16 +73,34 @@ func (c contractPut) Smoke() conform.ID[ifabsent.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c contractPut) SmokeGenerated() conform.ID[ifabsent.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c contractPut) Cancel() conform.ID[ifabsent.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c contractPut) CancelGenerated() conform.ID[ifabsent.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // IfAbsent returns the identity of the check that a second Put for one key
 // fails with the declared conflict.
 func (c contractPut) IfAbsent() conform.ID[ifabsent.Contract] {
 	return c.Check("if-absent")
+}
+
+// IfAbsentGenerated returns the identity of the check that a second Put
+// for one key fails with the declared conflict.
+func (c contractPut) IfAbsentGenerated() conform.ID[ifabsent.Contract] {
+	return c.Check("if-absent#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -101,6 +128,22 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				Defect: contractPutPanics,
 			},
 			{
+				ID:          ContractChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[ifabsent.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
+					})
+				},
+				Defect: contractPutPanics,
+			},
+			{
 				ID:          ContractChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -116,6 +159,22 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				Defect: contractPutIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[ifabsent.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
+					})
+				},
+				Defect: contractPutIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Put.IfAbsent(),
 				Statement:   "a second Put for one key fails with the declared conflict",
 				Claim:       spec.IfAbsent,
@@ -126,6 +185,22 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, ifabsent.Value{Key: "Key-a"})
+					}, ifabsent.ErrExists)
+				},
+				Defect: contractPutSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Put.IfAbsentGenerated(),
+				Statement:   "a second Put for one key fails with the declared conflict",
+				Claim:       spec.IfAbsent,
+				Probe:       spec.RefusesTheSecondWrite,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.WriteIsRefusedWhereItsKeyExists,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[ifabsent.Value](), "v")
+					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
 					}, ifabsent.ErrExists)
 				},
 				Defect: contractPutSucceedsAlways,
@@ -303,4 +378,4 @@ func contractPutSucceedsAlways(h *ContractHandle) ifabsent.Contract {
 	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:eeaaa9c819fe688fcdc67bd00800ad64c2978fb66b0492ed784e96d8f6f8da83
+// dokimi:provenance sha256:55b66d9e94403b7a5bfd94c5c1948329b7d60002b115b1ad6703cf18766a6f7e

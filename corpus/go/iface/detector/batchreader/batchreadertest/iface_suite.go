@@ -20,8 +20,14 @@ import (
 // BatchReader.GetAll/smoke: GetAll returns without a panic for derived
 // inputs.
 //
+// BatchReader.GetAll/smoke#generated: GetAll returns without a panic for
+// derived inputs.
+//
 // BatchReader.GetAll/cancel: GetAll returns an error for a cancelled
 // context.
+//
+// BatchReader.GetAll/cancel#generated: GetAll returns an error for a
+// cancelled context.
 
 // The derived checks of BatchReader that witness their laws at the shallow
 // end:
@@ -63,10 +69,22 @@ func (c batchReaderGetAll) Smoke() conform.ID[batchreader.BatchReader] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that GetAll returns
+// without a panic for derived inputs.
+func (c batchReaderGetAll) SmokeGenerated() conform.ID[batchreader.BatchReader] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that GetAll returns an error
 // for a cancelled context.
 func (c batchReaderGetAll) Cancel() conform.ID[batchreader.BatchReader] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that GetAll returns an
+// error for a cancelled context.
+func (c batchReaderGetAll) CancelGenerated() conform.ID[batchreader.BatchReader] {
+	return c.Check("cancel#generated")
 }
 
 // BatchReaderSuite returns the checks of BatchReader, and the calls and
@@ -95,6 +113,23 @@ func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 				Defect: batchReaderGetAllPanics,
 			},
 			{
+				ID:          BatchReaderChecks.GetAll.SmokeGenerated(),
+				Statement:   "GetAll returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchReaderHandle, c *prop.Case) {
+					drawnKeys := c.Draw(prop.Of[string](), "keys")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().GetAll(ctx, drawnKeys)
+						return err
+					})
+				},
+				Defect: batchReaderGetAllPanics,
+			},
+			{
 				ID:          BatchReaderChecks.GetAll.Cancel(),
 				Statement:   "GetAll returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -105,6 +140,23 @@ func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 				Apply: func(h *BatchReaderHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().GetAll(ctx, string("keys-a"))
+						return err
+					})
+				},
+				Defect: batchReaderGetAllIgnoresCancel,
+			},
+			{
+				ID:          BatchReaderChecks.GetAll.CancelGenerated(),
+				Statement:   "GetAll returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchReaderHandle, c *prop.Case) {
+					drawnKeys := c.Draw(prop.Of[string](), "keys")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().GetAll(ctx, drawnKeys)
 						return err
 					})
 				},
@@ -266,4 +318,4 @@ func batchReaderGetAllIgnoresCancel(h *BatchReaderHandle) batchreader.BatchReade
 	return &batchReaderGetAllIgnoresCancelDefect{batchReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3c83e1994ed942e43835dc690340fe4655c40263e26f05d0c2895027f6f25b7a
+// dokimi:provenance sha256:fb4f4e143cdc514106c671cc13e2079a999ec55a46fdd7b4e47f18677708f8b3

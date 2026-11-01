@@ -19,27 +19,53 @@ import (
 //
 // Mixed.Apply/smoke: Apply returns without a panic for derived inputs.
 //
+// Mixed.Apply/smoke#generated: Apply returns without a panic for derived
+// inputs.
+//
 // Mixed.Apply/cancel: Apply returns an error for a cancelled context.
+//
+// Mixed.Apply/cancel#generated: Apply returns an error for a cancelled
+// context.
 //
 // Mixed.Total/smoke: Total returns without a panic for derived inputs.
 //
 // Mixed.Total/cancel: Total returns an error for a cancelled context.
 //
 // Mixed.Total/zero-on-error: Total returns the zero value beside an error.
+//
+// Mixed.Sum/smoke: Sum returns without a panic for derived inputs.
+//
+// Mixed.Sum/smoke#generated: Sum returns without a panic for derived
+// inputs.
+//
+// Mixed.Sum/deterministic: Sum returns the same value for the same inputs.
+//
+// Mixed.Sum/deterministic#generated: Sum returns the same value for the
+// same inputs.
+//
+// Mixed.Sum/commutative: Sum returns one value for two inputs in either
+// order.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
 // Mixed.Apply/smoke
 //
 // Mixed.Total/smoke
+//
+// Mixed.Sum/smoke
+//
+// Mixed.Sum/deterministic
+
+// The refused claims of Mixed:
+//
+// Mixed.Apply/commutative: Apply does not take two inputs of one type. The
+// remedy is to remove the classification, or give Apply two inputs of one
+// type.
 
 // The unclaimed classifications of Mixed:
 //
 // The shape:writer of Mixed.Apply has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
-//
-// The mixin:commutative of Mixed.Apply has the stance needs. The claims of
-// the mixin need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -56,9 +82,11 @@ type (
 var MixedChecks = struct {
 	Apply mixedApply
 	Total mixedTotal
+	Sum   mixedSum
 }{
 	Apply: mixedApply{"Mixed.Apply"},
 	Total: mixedTotal{"Mixed.Total"},
+	Sum:   mixedSum{"Mixed.Sum"},
 }
 
 // mixedApply is the name of Mixed.Apply, with the identities of its
@@ -73,10 +101,22 @@ func (c mixedApply) Smoke() conform.ID[commutative.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Apply returns
+// without a panic for derived inputs.
+func (c mixedApply) SmokeGenerated() conform.ID[commutative.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Apply returns an error for
 // a cancelled context.
 func (c mixedApply) Cancel() conform.ID[commutative.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Apply returns an
+// error for a cancelled context.
+func (c mixedApply) CancelGenerated() conform.ID[commutative.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedTotal is the name of Mixed.Total, with the identities of its
@@ -101,6 +141,41 @@ func (c mixedTotal) Cancel() conform.ID[commutative.Mixed] {
 // zero value beside an error.
 func (c mixedTotal) ZeroOnError() conform.ID[commutative.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// mixedSum is the name of Mixed.Sum, with the identities of its checks.
+type mixedSum struct {
+	conform.Callable[commutative.Mixed]
+}
+
+// Smoke returns the identity of the check that Sum returns without a panic
+// for derived inputs.
+func (c mixedSum) Smoke() conform.ID[commutative.Mixed] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Sum returns
+// without a panic for derived inputs.
+func (c mixedSum) SmokeGenerated() conform.ID[commutative.Mixed] {
+	return c.Check("smoke#generated")
+}
+
+// Deterministic returns the identity of the check that Sum returns the
+// same value for the same inputs.
+func (c mixedSum) Deterministic() conform.ID[commutative.Mixed] {
+	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Sum
+// returns the same value for the same inputs.
+func (c mixedSum) DeterministicGenerated() conform.ID[commutative.Mixed] {
+	return c.Check("deterministic#generated")
+}
+
+// Commutative returns the identity of the check that Sum returns one value
+// for two inputs in either order.
+func (c mixedSum) Commutative() conform.ID[commutative.Mixed] {
+	return c.Check("commutative")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -128,6 +203,22 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				Defect: mixedApplyPanics,
 			},
 			{
+				ID:          MixedChecks.Apply.SmokeGenerated(),
+				Statement:   "Apply returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnD := c.Draw(prop.Of[commutative.Delta](), "d")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, drawnD)
+					})
+				},
+				Defect: mixedApplyPanics,
+			},
+			{
 				ID:          MixedChecks.Apply.Cancel(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -138,6 +229,22 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Apply(ctx, commutative.Delta{Key: "Key-a"})
+					})
+				},
+				Defect: mixedApplyIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Apply.CancelGenerated(),
+				Statement:   "Apply returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnD := c.Draw(prop.Of[commutative.Delta](), "d")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, drawnD)
 					})
 				},
 				Defect: mixedApplyIgnoresCancel,
@@ -190,6 +297,105 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				},
 				Defect: mixedTotalValueBeside,
 			},
+			{
+				ID:          MixedChecks.Sum.Smoke(),
+				Statement:   "Sum returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Sum(commutative.Delta{Key: "Key-a"}, commutative.Delta{Key: "Key-a"})
+						return nil
+					})
+				},
+				Defect: mixedSumPanics,
+			},
+			{
+				ID:          MixedChecks.Sum.SmokeGenerated(),
+				Statement:   "Sum returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[commutative.Delta](), "a")
+					drawnB := c.Draw(prop.Of[commutative.Delta](), "b")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Sum(drawnA, drawnB)
+						return nil
+					})
+				},
+				Defect: mixedSumPanics,
+			},
+			{
+				ID:          MixedChecks.Sum.Deterministic(),
+				Statement:   "Sum returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Entails:     []conform.ID[commutative.Mixed]{MixedChecks.Sum.Smoke()},
+				Apply: func(h *MixedHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Sum(commutative.Delta{Key: "Key-a"}, commutative.Delta{Key: "Key-a"})
+						return r0, nil
+					})
+				},
+				Defect: mixedSumDrifts,
+			},
+			{
+				ID:          MixedChecks.Sum.DeterministicGenerated(),
+				Statement:   "Sum returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[commutative.Mixed]{MixedChecks.Sum.SmokeGenerated()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[commutative.Delta](), "a")
+					drawnB := c.Draw(prop.Of[commutative.Delta](), "b")
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Sum(drawnA, drawnB)
+						return r0, nil
+					})
+				},
+				Defect: mixedSumDrifts,
+			},
+			{
+				ID:          MixedChecks.Sum.Commutative(),
+				Statement:   "Sum returns one value for two inputs in either order",
+				Claim:       spec.Commutative,
+				Probe:       spec.EitherOrderAgrees,
+				Reason:      spec.OrderDependent,
+				Law:         spec.CombiningIgnoresTheOrder,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[commutative.Delta](), "a")
+					drawnB := c.Draw(prop.Of[commutative.Delta](), "b")
+					probe.EitherOrderAgrees(h, func(ctx context.Context, x, y commutative.Delta) (int, error) {
+						r0 := h.Subject().Sum(x, y)
+						return r0, nil
+					}, drawnA, drawnB)
+				},
+				Defect: mixedSumIgnoresTheSecondInput,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Commutative,
+				Callable: "Mixed.Apply",
+				Gate:     spec.TwoInputsOfOneType,
+				Why:      "Apply does not take two inputs of one type",
+				Remedy:   "remove the classification, or give Apply two inputs of one type",
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -197,12 +403,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				Callable:       "Mixed.Apply",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "mixin:commutative",
-				Callable:       "Mixed.Apply",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[commutative.Mixed]{
@@ -215,6 +415,11 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				Calls:    mixedTotalCalls,
 				Over:     newMixedOver,
 				Callable: MixedChecks.Total.Callable,
+			},
+			{
+				Calls:    mixedSumCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Sum.Callable,
 			},
 		},
 	}
@@ -295,6 +500,17 @@ var mixedTotalCalls = prop.Composite(func(*prop.Case) func(context.Context, comm
 	}
 })
 
+// mixedSumCalls generates the calls of Mixed.Sum with the inputs that each
+// case draws.
+var mixedSumCalls = prop.Composite(func(c *prop.Case) func(context.Context, commutative.Mixed) error {
+	a := c.Draw(prop.Of[commutative.Delta](), "a")
+	b := c.Draw(prop.Of[commutative.Delta](), "b")
+	return func(_ context.Context, subject commutative.Mixed) error {
+		_ = subject.Sum(a, b)
+		return nil
+	}
+})
+
 // mixedOverEmbedded is commutative.Mixed under the name of the field that
 // mixedOver embeds.
 type mixedOverEmbedded = commutative.Mixed
@@ -317,6 +533,12 @@ func (o mixedOver) Apply(context.Context, commutative.Delta) (r0 error) {
 func (o mixedOver) Total(context.Context) (r0 int, r1 error) {
 	o.spend()
 	return r0, r1
+}
+
+// Sum calls spend and returns its zero results.
+func (o mixedOver) Sum(commutative.Delta, commutative.Delta) (r0 int) {
+	o.spend()
+	return r0
 }
 
 // newMixedOver returns the planted defect of a ceiling of Mixed, whose
@@ -420,4 +642,59 @@ func mixedTotalValueBeside(h *MixedHandle) commutative.Mixed {
 	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8a8c9db6ac4676996ed1fcb896a3b1617c3e73aa9a0dfb70a48aa23ec79fb81d
+// mixedSumPanicsDefect is the planted defect of a Mixed whose Sum panics.
+type mixedSumPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Sum is the override of the planted defect.
+func (*mixedSumPanicsDefect) Sum(p0, p1 commutative.Delta) (r0 int) {
+	panic("the planted defect of a Mixed whose Sum panics")
+}
+
+// mixedSumPanics returns the planted defect of a Mixed whose Sum panics
+// over a fresh subject.
+func mixedSumPanics(h *MixedHandle) commutative.Mixed {
+	return &mixedSumPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedSumDriftsDefect is the planted defect of a Mixed whose Sum returns
+// another value on the repeat.
+type mixedSumDriftsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Sum is the override of the planted defect.
+func (d *mixedSumDriftsDefect) Sum(p0, p1 commutative.Delta) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// mixedSumDrifts returns the planted defect of a Mixed whose Sum returns
+// another value on the repeat over a fresh subject.
+func mixedSumDrifts(h *MixedHandle) commutative.Mixed {
+	return &mixedSumDriftsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedSumIgnoresTheSecondInputDefect is the planted defect of a Mixed
+// whose Sum ignores its second input.
+type mixedSumIgnoresTheSecondInputDefect struct {
+	mixedOverEmbedded
+}
+
+// Sum is the override of the planted defect.
+func (d *mixedSumIgnoresTheSecondInputDefect) Sum(p0, p1 commutative.Delta) (r0 int) {
+	return d.mixedOverEmbedded.Sum(p0, *new(commutative.Delta))
+}
+
+// mixedSumIgnoresTheSecondInput returns the planted defect of a Mixed
+// whose Sum ignores its second input over a fresh subject.
+func mixedSumIgnoresTheSecondInput(h *MixedHandle) commutative.Mixed {
+	return &mixedSumIgnoresTheSecondInputDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:1b8040c3aef02f832be6c37411c124a4d9c6357fc4efef1272600cea9dc2dd83

@@ -41,6 +41,13 @@ func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 			func(*associativetest.MixedHandle) *associativetest.InMemory { return associativetest.NewInMemory() },
 		)
 	})
+	b.Run("Merge", func(b *testing.B) {
+		associativetest.BenchMixedSuite(
+			b,
+			associativetest.MixedChecks.Merge.Callable,
+			func(*associativetest.MixedHandle) *associativetest.InMemory { return associativetest.NewInMemory() },
+		)
+	})
 }
 
 // FuzzInMemoryConformsToMixedApply fuzzes the property checks of
@@ -63,4 +70,14 @@ func FuzzInMemoryConformsToMixedTotal(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9c958d5369c8fba990aa15e75e28dbc6050c0c083ea347ab5672f529d67c9c51
+// FuzzInMemoryConformsToMixedMerge fuzzes the property checks of
+// Mixed.Merge on InMemory.
+func FuzzInMemoryConformsToMixedMerge(f *testing.F) {
+	associativetest.FuzzMixedSuite(
+		f,
+		associativetest.MixedChecks.Merge.Callable,
+		func(*associativetest.MixedHandle) *associativetest.InMemory { return associativetest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:0fae03e1e2f4d3289d8d7e9baa60bae140d2550d5b93de3ec1bb5f5398f7658e

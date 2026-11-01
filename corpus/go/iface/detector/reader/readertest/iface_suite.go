@@ -19,12 +19,24 @@ import (
 //
 // Reader.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Reader.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Reader.Get/cancel: Get returns an error for a cancelled context.
+//
+// Reader.Get/cancel#generated: Get returns an error for a cancelled
+// context.
 //
 // Reader.Get/zero-on-error: Get returns the zero value beside an error.
 //
+// Reader.Get/zero-on-error#generated: Get returns the zero value beside an
+// error.
+//
 // Reader.Get/miss: Get fails with the declared sentinel for an input that
 // nothing stored.
+//
+// Reader.Get/miss#generated: Get fails with the declared sentinel for an
+// input that nothing stored.
 
 // The derived checks of Reader that witness their laws at the shallow end:
 //
@@ -59,10 +71,22 @@ func (c readerGet) Smoke() conform.ID[reader.Reader] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c readerGet) SmokeGenerated() conform.ID[reader.Reader] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c readerGet) Cancel() conform.ID[reader.Reader] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c readerGet) CancelGenerated() conform.ID[reader.Reader] {
+	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Get returns the zero
@@ -71,10 +95,22 @@ func (c readerGet) ZeroOnError() conform.ID[reader.Reader] {
 	return c.Check("zero-on-error")
 }
 
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c readerGet) ZeroOnErrorGenerated() conform.ID[reader.Reader] {
+	return c.Check("zero-on-error#generated")
+}
+
 // Miss returns the identity of the check that Get fails with the declared
 // sentinel for an input that nothing stored.
 func (c readerGet) Miss() conform.ID[reader.Reader] {
 	return c.Check("miss")
+}
+
+// MissGenerated returns the identity of the check that Get fails with the
+// declared sentinel for an input that nothing stored.
+func (c readerGet) MissGenerated() conform.ID[reader.Reader] {
+	return c.Check("miss#generated")
 }
 
 // ReaderSuite returns the checks of Reader, and the calls and the budgets
@@ -103,6 +139,23 @@ func ReaderSuite() conform.Suite[reader.Reader] {
 				Defect: readerGetPanics,
 			},
 			{
+				ID:          ReaderChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReaderHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: readerGetPanics,
+			},
+			{
 				ID:          ReaderChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -113,6 +166,23 @@ func ReaderSuite() conform.Suite[reader.Reader] {
 				Apply: func(h *ReaderHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: readerGetIgnoresCancel,
+			},
+			{
+				ID:          ReaderChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReaderHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
 						return err
 					})
 				},
@@ -134,6 +204,22 @@ func ReaderSuite() conform.Suite[reader.Reader] {
 				Defect: readerGetValueBeside,
 			},
 			{
+				ID:          ReaderChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReaderHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (reader.Value, error) {
+						return h.Subject().Get(ctx, drawnKey)
+					}, reader.Value{})
+				},
+				Defect: readerGetValueBeside,
+			},
+			{
 				ID:          ReaderChecks.Get.Miss(),
 				Statement:   "Get fails with the declared sentinel for an input that nothing stored",
 				Claim:       spec.Miss,
@@ -144,6 +230,22 @@ func ReaderSuite() conform.Suite[reader.Reader] {
 				Apply: func(h *ReaderHandle) {
 					probe.ReportsSentinel(h, func(ctx context.Context) (reader.Value, error) {
 						return h.Subject().Get(ctx, string("key-a"))
+					}, reader.ErrNotFound)
+				},
+				Defect: readerGetReportsAnotherError,
+			},
+			{
+				ID:          ReaderChecks.Get.MissGenerated(),
+				Statement:   "Get fails with the declared sentinel for an input that nothing stored",
+				Claim:       spec.Miss,
+				Probe:       spec.ReportsSentinel,
+				Reason:      spec.WrongSentinel,
+				Law:         spec.MissReportsTheDeclaredSentinel,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReaderHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ReportsSentinel(h, func(ctx context.Context) (reader.Value, error) {
+						return h.Subject().Get(ctx, drawnKey)
 					}, reader.ErrNotFound)
 				},
 				Defect: readerGetReportsAnotherError,
@@ -326,4 +428,4 @@ func readerGetReportsAnotherError(h *ReaderHandle) reader.Reader {
 	return &readerGetReportsAnotherErrorDefect{readerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:27651f11665d6f117423dd29faf2ebab1b67db65123de911c8a9357fd2972012
+// dokimi:provenance sha256:46a34a7a08c2c168fccc6b7b6b3168dcc1fef413754c62636f47989615809e8e

@@ -19,12 +19,24 @@ import (
 //
 // Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Mixed.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Mixed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Mixed.Get/cancel#generated: Get returns an error for a cancelled
+// context.
 //
 // Mixed.Get/zero-on-error: Get returns the zero value beside an error.
 //
+// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
+// error.
+//
 // Mixed.Get/miss: Get fails with the declared sentinel for an input that
 // nothing stored.
+//
+// Mixed.Get/miss#generated: Get fails with the declared sentinel for an
+// input that nothing stored.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -64,10 +76,22 @@ func (c mixedGet) Smoke() conform.ID[errors.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c mixedGet) SmokeGenerated() conform.ID[errors.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[errors.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c mixedGet) CancelGenerated() conform.ID[errors.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Get returns the zero
@@ -76,10 +100,22 @@ func (c mixedGet) ZeroOnError() conform.ID[errors.Mixed] {
 	return c.Check("zero-on-error")
 }
 
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c mixedGet) ZeroOnErrorGenerated() conform.ID[errors.Mixed] {
+	return c.Check("zero-on-error#generated")
+}
+
 // Miss returns the identity of the check that Get fails with the declared
 // sentinel for an input that nothing stored.
 func (c mixedGet) Miss() conform.ID[errors.Mixed] {
 	return c.Check("miss")
+}
+
+// MissGenerated returns the identity of the check that Get fails with the
+// declared sentinel for an input that nothing stored.
+func (c mixedGet) MissGenerated() conform.ID[errors.Mixed] {
+	return c.Check("miss#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -108,6 +144,23 @@ func MixedSuite() conform.Suite[errors.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
+				ID:          MixedChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -118,6 +171,23 @@ func MixedSuite() conform.Suite[errors.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
 						return err
 					})
 				},
@@ -139,6 +209,22 @@ func MixedSuite() conform.Suite[errors.Mixed] {
 				Defect: mixedGetValueBeside,
 			},
 			{
+				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, drawnKey)
+					}, string(""))
+				},
+				Defect: mixedGetValueBeside,
+			},
+			{
 				ID:          MixedChecks.Get.Miss(),
 				Statement:   "Get fails with the declared sentinel for an input that nothing stored",
 				Claim:       spec.Miss,
@@ -149,6 +235,22 @@ func MixedSuite() conform.Suite[errors.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ReportsSentinel(h, func(ctx context.Context) (string, error) {
 						return h.Subject().Get(ctx, string("key-a"))
+					}, errors.ErrNotFound)
+				},
+				Defect: mixedGetReportsAnotherError,
+			},
+			{
+				ID:          MixedChecks.Get.MissGenerated(),
+				Statement:   "Get fails with the declared sentinel for an input that nothing stored",
+				Claim:       spec.Miss,
+				Probe:       spec.ReportsSentinel,
+				Reason:      spec.WrongSentinel,
+				Law:         spec.MissReportsTheDeclaredSentinel,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ReportsSentinel(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, drawnKey)
 					}, errors.ErrNotFound)
 				},
 				Defect: mixedGetReportsAnotherError,
@@ -338,4 +440,4 @@ func mixedGetReportsAnotherError(h *MixedHandle) errors.Mixed {
 	return &mixedGetReportsAnotherErrorDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c07e430b5bc94009b30d89b31f755759757814400a2d4ead80c2e06747d9314f
+// dokimi:provenance sha256:18cc6d62cd1236fba61d822a8b5fdd4c5d0411f3b26ae0e4bee57225bed88ec0

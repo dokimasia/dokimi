@@ -20,14 +20,26 @@ import (
 // Hasher.HashTagged/smoke: HashTagged returns without a panic for derived
 // inputs.
 //
+// Hasher.HashTagged/smoke#generated: HashTagged returns without a panic
+// for derived inputs.
+//
 // Hasher.HashTagged/deterministic: HashTagged returns the same value for
 // the same inputs.
+//
+// Hasher.HashTagged/deterministic#generated: HashTagged returns the same
+// value for the same inputs.
 //
 // Hasher.CombineTagged/smoke: CombineTagged returns without a panic for
 // derived inputs.
 //
+// Hasher.CombineTagged/smoke#generated: CombineTagged returns without a
+// panic for derived inputs.
+//
 // Hasher.CombineTagged/deterministic: CombineTagged returns the same value
 // for the same inputs.
+//
+// Hasher.CombineTagged/deterministic#generated: CombineTagged returns the
+// same value for the same inputs.
 
 // The derived checks of Hasher that witness their laws at the shallow end:
 //
@@ -71,10 +83,22 @@ func (c hasherHashTagged) Smoke() conform.ID[sampledparam.Hasher] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that HashTagged returns
+// without a panic for derived inputs.
+func (c hasherHashTagged) SmokeGenerated() conform.ID[sampledparam.Hasher] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that HashTagged returns
 // the same value for the same inputs.
 func (c hasherHashTagged) Deterministic() conform.ID[sampledparam.Hasher] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that HashTagged
+// returns the same value for the same inputs.
+func (c hasherHashTagged) DeterministicGenerated() conform.ID[sampledparam.Hasher] {
+	return c.Check("deterministic#generated")
 }
 
 // AllocationBudget returns the identity of the check
@@ -95,10 +119,22 @@ func (c hasherCombineTagged) Smoke() conform.ID[sampledparam.Hasher] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that CombineTagged
+// returns without a panic for derived inputs.
+func (c hasherCombineTagged) SmokeGenerated() conform.ID[sampledparam.Hasher] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that CombineTagged
 // returns the same value for the same inputs.
 func (c hasherCombineTagged) Deterministic() conform.ID[sampledparam.Hasher] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that
+// CombineTagged returns the same value for the same inputs.
+func (c hasherCombineTagged) DeterministicGenerated() conform.ID[sampledparam.Hasher] {
+	return c.Check("deterministic#generated")
 }
 
 // AllocationBudget returns the identity of the check
@@ -133,6 +169,23 @@ func HasherSuite() conform.Suite[sampledparam.Hasher] {
 				Defect: hasherHashTaggedPanics,
 			},
 			{
+				ID:          HasherChecks.HashTagged.SmokeGenerated(),
+				Statement:   "HashTagged returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *HasherHandle, c *prop.Case) {
+					drawnData := c.Draw(prop.Of[[]byte](), "data")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().HashTagged(sampledparam.Role(1), drawnData)
+						return nil
+					})
+				},
+				Defect: hasherHashTaggedPanics,
+			},
+			{
 				ID:          HasherChecks.HashTagged.Deterministic(),
 				Statement:   "HashTagged returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
@@ -145,6 +198,24 @@ func HasherSuite() conform.Suite[sampledparam.Hasher] {
 				Apply: func(h *HasherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
 						r0 := h.Subject().HashTagged(sampledparam.Role(1), []byte{1})
+						return r0, nil
+					})
+				},
+				Defect: hasherHashTaggedDrifts,
+			},
+			{
+				ID:          HasherChecks.HashTagged.DeterministicGenerated(),
+				Statement:   "HashTagged returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[sampledparam.Hasher]{HasherChecks.HashTagged.SmokeGenerated()},
+				Property: func(h *HasherHandle, c *prop.Case) {
+					drawnData := c.Draw(prop.Of[[]byte](), "data")
+					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
+						r0 := h.Subject().HashTagged(sampledparam.Role(1), drawnData)
 						return r0, nil
 					})
 				},
@@ -168,6 +239,24 @@ func HasherSuite() conform.Suite[sampledparam.Hasher] {
 				Defect: hasherCombineTaggedPanics,
 			},
 			{
+				ID:          HasherChecks.CombineTagged.SmokeGenerated(),
+				Statement:   "CombineTagged returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *HasherHandle, c *prop.Case) {
+					drawnLeft := c.Draw(prop.Of[[32]byte](), "left")
+					drawnRight := c.Draw(prop.Of[[32]byte](), "right")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().CombineTagged(sampledparam.Role(129), drawnLeft, drawnRight)
+						return nil
+					})
+				},
+				Defect: hasherCombineTaggedPanics,
+			},
+			{
 				ID:          HasherChecks.CombineTagged.Deterministic(),
 				Statement:   "CombineTagged returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
@@ -180,6 +269,25 @@ func HasherSuite() conform.Suite[sampledparam.Hasher] {
 				Apply: func(h *HasherHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
 						r0 := h.Subject().CombineTagged(sampledparam.Role(129), [32]byte{1}, [32]byte{1})
+						return r0, nil
+					})
+				},
+				Defect: hasherCombineTaggedDrifts,
+			},
+			{
+				ID:          HasherChecks.CombineTagged.DeterministicGenerated(),
+				Statement:   "CombineTagged returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[sampledparam.Hasher]{HasherChecks.CombineTagged.SmokeGenerated()},
+				Property: func(h *HasherHandle, c *prop.Case) {
+					drawnLeft := c.Draw(prop.Of[[32]byte](), "left")
+					drawnRight := c.Draw(prop.Of[[32]byte](), "right")
+					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
+						r0 := h.Subject().CombineTagged(sampledparam.Role(129), drawnLeft, drawnRight)
 						return r0, nil
 					})
 				},
@@ -397,4 +505,4 @@ func hasherCombineTaggedDrifts(h *HasherHandle) sampledparam.Hasher {
 	return &hasherCombineTaggedDriftsDefect{hasherOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c437f8c63dd1fec982d0249cfcfde1128dcae59908367d5eec7899d59c0d6463
+// dokimi:provenance sha256:89f462adedf8578374ec5b7cf499f691e3620dc79002dde9f037d816259097c2

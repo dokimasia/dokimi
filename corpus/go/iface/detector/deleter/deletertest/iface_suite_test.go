@@ -53,7 +53,15 @@ func TestDeleterSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				deletertest.DeleterChecks.Delete.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				deletertest.DeleterChecks.Delete.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deletertest.DeleterChecks.Delete.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -82,7 +90,15 @@ func TestDeleterSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				deletertest.DeleterChecks.Delete.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				deletertest.DeleterChecks.Delete.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deletertest.DeleterChecks.Delete.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -109,7 +125,15 @@ func TestDeleterSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			deletertest.DeleterChecks.Delete.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			deletertest.DeleterChecks.Delete.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deletertest.DeleterChecks.Delete.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -127,7 +151,15 @@ func FuzzDeleterSuiteDelete(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			deletertest.DeleterChecks.Delete.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			deletertest.DeleterChecks.Delete.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deletertest.DeleterChecks.Delete.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -141,4 +173,4 @@ func BenchmarkDeleterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:60de42cc77003afdc563ea681ce142772b259f39f0c766358be9c64ce58299f5
+// dokimi:provenance sha256:26872d8436897ee0eec6ea0546dd22626733cefb8ef14bdeb0ad7688cfdc2458

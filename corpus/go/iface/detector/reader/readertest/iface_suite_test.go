@@ -53,7 +53,15 @@ func TestReaderSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				readertest.ReaderChecks.Get.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				readertest.ReaderChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readertest.ReaderChecks.Get.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -61,7 +69,15 @@ func TestReaderSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				readertest.ReaderChecks.Get.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				readertest.ReaderChecks.Get.Miss(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readertest.ReaderChecks.Get.MissGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -90,7 +106,15 @@ func TestReaderSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				readertest.ReaderChecks.Get.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				readertest.ReaderChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readertest.ReaderChecks.Get.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -98,7 +122,15 @@ func TestReaderSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				readertest.ReaderChecks.Get.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				readertest.ReaderChecks.Get.Miss(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readertest.ReaderChecks.Get.MissGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -125,7 +157,15 @@ func TestReaderSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			readertest.ReaderChecks.Get.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			readertest.ReaderChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readertest.ReaderChecks.Get.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -133,7 +173,15 @@ func TestReaderSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			readertest.ReaderChecks.Get.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			readertest.ReaderChecks.Get.Miss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readertest.ReaderChecks.Get.MissGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -151,7 +199,15 @@ func FuzzReaderSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			readertest.ReaderChecks.Get.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			readertest.ReaderChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readertest.ReaderChecks.Get.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -159,7 +215,15 @@ func FuzzReaderSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			readertest.ReaderChecks.Get.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			readertest.ReaderChecks.Get.Miss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readertest.ReaderChecks.Get.MissGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -173,4 +237,4 @@ func BenchmarkReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:96d2b6048909eb33b72f7079ed67869f699e75a82b4c68468006bf71e55ee55d
+// dokimi:provenance sha256:1711cb24b52348b7e3c27c936bede6bc3406d3fb4d5467e462dc775f3cb74e28

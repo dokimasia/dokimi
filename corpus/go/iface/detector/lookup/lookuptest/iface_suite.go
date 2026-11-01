@@ -19,6 +19,9 @@ import (
 //
 // Lookup.Inspect/smoke: Inspect returns without a panic for derived
 // inputs.
+//
+// Lookup.Inspect/smoke#generated: Inspect returns without a panic for
+// derived inputs.
 
 // The derived checks of Lookup that witness their laws at the shallow end:
 //
@@ -59,6 +62,12 @@ func (c lookupInspect) Smoke() conform.ID[lookup.Lookup] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Inspect returns
+// without a panic for derived inputs.
+func (c lookupInspect) SmokeGenerated() conform.ID[lookup.Lookup] {
+	return c.Check("smoke#generated")
+}
+
 // LookupSuite returns the checks of Lookup, and the calls and the budgets
 // of its callables.
 func LookupSuite() conform.Suite[lookup.Lookup] {
@@ -84,11 +93,29 @@ func LookupSuite() conform.Suite[lookup.Lookup] {
 				},
 				Defect: lookupInspectPanics,
 			},
+			{
+				ID:          LookupChecks.Inspect.SmokeGenerated(),
+				Statement:   "Inspect returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LookupHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Inspect(drawnKey)
+						return nil
+					})
+				},
+				Defect: lookupInspectPanics,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.ZeroesOnMiss,
 				Callable: "Lookup.Inspect",
+				Gate:     spec.PresenceFlag,
 				Why:      "Inspect returns no presence flag",
 				Remedy:   "return a presence flag beside the value of Inspect",
 			},
@@ -207,4 +234,4 @@ func lookupInspectPanics(h *LookupHandle) lookup.Lookup {
 	return &lookupInspectPanicsDefect{lookupOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7e58e29baf2d278d489c85ce206cb111d0fb6c641ac1038a7a672a699f8c85fc
+// dokimi:provenance sha256:6c250bf327b63d8f513e10c1c290336fec481cc50f241c7b35143f8621aa8b30

@@ -19,13 +19,28 @@ import (
 //
 // Mixed.Add/smoke: Add returns without a panic for derived inputs.
 //
+// Mixed.Add/smoke#generated: Add returns without a panic for derived
+// inputs.
+//
 // Mixed.Add/cancel: Add returns an error for a cancelled context.
+//
+// Mixed.Add/cancel#generated: Add returns an error for a cancelled
+// context.
 //
 // Mixed.Total/smoke: Total returns without a panic for derived inputs.
 //
+// Mixed.Total/smoke#generated: Total returns without a panic for derived
+// inputs.
+//
 // Mixed.Total/cancel: Total returns an error for a cancelled context.
 //
+// Mixed.Total/cancel#generated: Total returns an error for a cancelled
+// context.
+//
 // Mixed.Total/zero-on-error: Total returns the zero value beside an error.
+//
+// Mixed.Total/zero-on-error#generated: Total returns the zero value beside
+// an error.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -76,10 +91,22 @@ func (c mixedAdd) Smoke() conform.ID[accumulates.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c mixedAdd) SmokeGenerated() conform.ID[accumulates.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c mixedAdd) Cancel() conform.ID[accumulates.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Add returns an
+// error for a cancelled context.
+func (c mixedAdd) CancelGenerated() conform.ID[accumulates.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedTotal is the name of Mixed.Total, with the identities of its
@@ -94,16 +121,34 @@ func (c mixedTotal) Smoke() conform.ID[accumulates.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Total returns
+// without a panic for derived inputs.
+func (c mixedTotal) SmokeGenerated() conform.ID[accumulates.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Total returns an error for
 // a cancelled context.
 func (c mixedTotal) Cancel() conform.ID[accumulates.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Total returns an
+// error for a cancelled context.
+func (c mixedTotal) CancelGenerated() conform.ID[accumulates.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Total returns the
 // zero value beside an error.
 func (c mixedTotal) ZeroOnError() conform.ID[accumulates.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Total
+// returns the zero value beside an error.
+func (c mixedTotal) ZeroOnErrorGenerated() conform.ID[accumulates.Mixed] {
+	return c.Check("zero-on-error#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -131,6 +176,23 @@ func MixedSuite() conform.Suite[accumulates.Mixed] {
 				Defect: mixedAddPanics,
 			},
 			{
+				ID:          MixedChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnAmount := c.Draw(prop.Of[int](), "amount")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnKey, drawnAmount)
+					})
+				},
+				Defect: mixedAddPanics,
+			},
+			{
 				ID:          MixedChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -141,6 +203,23 @@ func MixedSuite() conform.Suite[accumulates.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Add(ctx, string("key-a"), int(42))
+					})
+				},
+				Defect: mixedAddIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Add.CancelGenerated(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnAmount := c.Draw(prop.Of[int](), "amount")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnKey, drawnAmount)
 					})
 				},
 				Defect: mixedAddIgnoresCancel,
@@ -163,6 +242,23 @@ func MixedSuite() conform.Suite[accumulates.Mixed] {
 				Defect: mixedTotalPanics,
 			},
 			{
+				ID:          MixedChecks.Total.SmokeGenerated(),
+				Statement:   "Total returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Total(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedTotalPanics,
+			},
+			{
 				ID:          MixedChecks.Total.Cancel(),
 				Statement:   "Total returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -173,6 +269,23 @@ func MixedSuite() conform.Suite[accumulates.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Total(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedTotalIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Total.CancelGenerated(),
+				Statement:   "Total returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Total(ctx, drawnKey)
 						return err
 					})
 				},
@@ -193,11 +306,28 @@ func MixedSuite() conform.Suite[accumulates.Mixed] {
 				},
 				Defect: mixedTotalValueBeside,
 			},
+			{
+				ID:          MixedChecks.Total.ZeroOnErrorGenerated(),
+				Statement:   "Total returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Total(ctx, drawnKey)
+					}, int(0))
+				},
+				Defect: mixedTotalValueBeside,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Accumulates,
 				Callable: "Mixed.Add",
+				Gate:     spec.PartnerArguments,
 				Why:      "a parameter of the read of Add selects neither a value that observe takes nor a field of the written value",
 				Remedy:   "align the name of the parameter of the read with a parameter or a field of the write",
 			},
@@ -426,4 +556,4 @@ func mixedTotalValueBeside(h *MixedHandle) accumulates.Mixed {
 	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:42bf73af3bf1b9e2f70f9f30147ed7acc2fb442e3a3d41de9006ece9c318b2f4
+// dokimi:provenance sha256:079af6297a9aed564f7f5a75301d4cba10608f654045334af968df23168ff495

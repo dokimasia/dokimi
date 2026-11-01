@@ -19,10 +19,19 @@ import (
 //
 // Contract.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Contract.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Contract.Put/cancel: Put returns an error for a cancelled context.
+//
+// Contract.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 //
 // Contract.Put/cas: a second Put with the same version fails with the
 // declared mismatch.
+//
+// Contract.Put/cas#generated: a second Put with the same version fails
+// with the declared mismatch.
 //
 // Contract.Get/smoke: Get returns without a panic for derived inputs.
 //
@@ -74,16 +83,34 @@ func (c contractPut) Smoke() conform.ID[cas.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c contractPut) SmokeGenerated() conform.ID[cas.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c contractPut) Cancel() conform.ID[cas.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c contractPut) CancelGenerated() conform.ID[cas.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // Cas returns the identity of the check that a second Put with the same
 // version fails with the declared mismatch.
 func (c contractPut) Cas() conform.ID[cas.Contract] {
 	return c.Check("cas")
+}
+
+// CasGenerated returns the identity of the check that a second Put with
+// the same version fails with the declared mismatch.
+func (c contractPut) CasGenerated() conform.ID[cas.Contract] {
+	return c.Check("cas#generated")
 }
 
 // contractGet is the name of Contract.Get, with the identities of its
@@ -135,6 +162,22 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				Defect: contractPutPanics,
 			},
 			{
+				ID:          ContractChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[cas.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
+					})
+				},
+				Defect: contractPutPanics,
+			},
+			{
 				ID:          ContractChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -150,6 +193,22 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				Defect: contractPutIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[cas.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
+					})
+				},
+				Defect: contractPutIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Put.Cas(),
 				Statement:   "a second Put with the same version fails with the declared mismatch",
 				Claim:       spec.Cas,
@@ -160,6 +219,22 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, cas.Value{Body: "Body-a"})
+					}, cas.ErrMismatch)
+				},
+				Defect: contractPutSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Put.CasGenerated(),
+				Statement:   "a second Put with the same version fails with the declared mismatch",
+				Claim:       spec.Cas,
+				Probe:       spec.RefusesTheSecondWrite,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.WriteIsRefusedOnAStaleVersion,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[cas.Value](), "v")
+					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
 					}, cas.ErrMismatch)
 				},
 				Defect: contractPutSucceedsAlways,
@@ -458,4 +533,4 @@ func contractGetValueBeside(h *ContractHandle) cas.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:07205bd006900df496cade66b774f443695311a9c4d479b5f5f3920b586bf290
+// dokimi:provenance sha256:6dead7f8881510fea4c1f9d1e725b35c84432c68efcf66748844114107ac28e4

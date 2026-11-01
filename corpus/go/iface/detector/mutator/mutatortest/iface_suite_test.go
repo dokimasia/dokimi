@@ -52,6 +52,10 @@ func TestMutatorSuite(t *testing.T) {
 				mutatortest.MutatorChecks.Touch.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				mutatortest.MutatorChecks.Touch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -77,6 +81,10 @@ func TestMutatorSuite(t *testing.T) {
 				mutatortest.MutatorChecks.Touch.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				mutatortest.MutatorChecks.Touch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -100,6 +108,10 @@ func TestMutatorSuiteBudgets(t *testing.T) {
 			mutatortest.MutatorChecks.Touch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			mutatortest.MutatorChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -114,6 +126,10 @@ func FuzzMutatorSuiteTouch(f *testing.F) {
 			mutatortest.MutatorChecks.Touch.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			mutatortest.MutatorChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -125,4 +141,4 @@ func BenchmarkMutatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7ecb073004805f88c0bfde7f35348797a8da62e78a53e2b511618ded974bbfc3
+// dokimi:provenance sha256:12a21519ab44498a0b7e45542bba2b6270996d855bae2799864673dda095b612

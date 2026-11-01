@@ -19,11 +19,23 @@ import (
 //
 // Mixed.Store/smoke: Store returns without a panic for derived inputs.
 //
+// Mixed.Store/smoke#generated: Store returns without a panic for derived
+// inputs.
+//
 // Mixed.Store/cancel: Store returns an error for a cancelled context.
+//
+// Mixed.Store/cancel#generated: Store returns an error for a cancelled
+// context.
 //
 // Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Mixed.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Mixed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Mixed.Get/cancel#generated: Get returns an error for a cancelled
+// context.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -71,10 +83,22 @@ func (c mixedStore) Smoke() conform.ID[defaultonerror.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Store returns
+// without a panic for derived inputs.
+func (c mixedStore) SmokeGenerated() conform.ID[defaultonerror.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Store returns an error for
 // a cancelled context.
 func (c mixedStore) Cancel() conform.ID[defaultonerror.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Store returns an
+// error for a cancelled context.
+func (c mixedStore) CancelGenerated() conform.ID[defaultonerror.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
@@ -88,10 +112,22 @@ func (c mixedGet) Smoke() conform.ID[defaultonerror.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c mixedGet) SmokeGenerated() conform.ID[defaultonerror.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[defaultonerror.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c mixedGet) CancelGenerated() conform.ID[defaultonerror.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -119,6 +155,23 @@ func MixedSuite() conform.Suite[defaultonerror.Mixed] {
 				Defect: mixedStorePanics,
 			},
 			{
+				ID:          MixedChecks.Store.SmokeGenerated(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnBody := c.Draw(prop.Of[defaultonerror.Body](), "body")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnKey, drawnBody)
+					})
+				},
+				Defect: mixedStorePanics,
+			},
+			{
 				ID:          MixedChecks.Store.Cancel(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -129,6 +182,23 @@ func MixedSuite() conform.Suite[defaultonerror.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Store(ctx, string("key-a"), defaultonerror.Body("fallback-body"))
+					})
+				},
+				Defect: mixedStoreIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Store.CancelGenerated(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnBody := c.Draw(prop.Of[defaultonerror.Body](), "body")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnKey, drawnBody)
 					})
 				},
 				Defect: mixedStoreIgnoresCancel,
@@ -151,6 +221,23 @@ func MixedSuite() conform.Suite[defaultonerror.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
+				ID:          MixedChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -161,6 +248,23 @@ func MixedSuite() conform.Suite[defaultonerror.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
 						return err
 					})
 				},
@@ -391,4 +495,4 @@ func mixedGetIgnoresCancel(h *MixedHandle) defaultonerror.Mixed {
 	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:080b04cfacac97c853debf922e5306567c6e88e57a96a07c531f12f82d36a287
+// dokimi:provenance sha256:fabb5beb0354563b3832ed631f5b2a1806495daa4cfbd5c024ecf0e77408244f

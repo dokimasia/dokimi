@@ -19,13 +19,25 @@ import (
 //
 // Contract.Watch/smoke: Watch returns without a panic for derived inputs.
 //
+// Contract.Watch/smoke#generated: Watch returns without a panic for
+// derived inputs.
+//
 // Contract.Watch/cancel: Watch returns an error for a cancelled context.
+//
+// Contract.Watch/cancel#generated: Watch returns an error for a cancelled
+// context.
 //
 // Contract.Trigger/smoke: Trigger returns without a panic for derived
 // inputs.
 //
+// Contract.Trigger/smoke#generated: Trigger returns without a panic for
+// derived inputs.
+//
 // Contract.Trigger/cancel: Trigger returns an error for a cancelled
 // context.
+//
+// Contract.Trigger/cancel#generated: Trigger returns an error for a
+// cancelled context.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -83,10 +95,22 @@ func (c contractWatch) Smoke() conform.ID[watcher.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Watch returns
+// without a panic for derived inputs.
+func (c contractWatch) SmokeGenerated() conform.ID[watcher.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Watch returns an error for
 // a cancelled context.
 func (c contractWatch) Cancel() conform.ID[watcher.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Watch returns an
+// error for a cancelled context.
+func (c contractWatch) CancelGenerated() conform.ID[watcher.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // contractTrigger is the name of Contract.Trigger, with the identities of
@@ -101,10 +125,22 @@ func (c contractTrigger) Smoke() conform.ID[watcher.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Trigger returns
+// without a panic for derived inputs.
+func (c contractTrigger) SmokeGenerated() conform.ID[watcher.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Trigger returns an error
 // for a cancelled context.
 func (c contractTrigger) Cancel() conform.ID[watcher.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Trigger returns
+// an error for a cancelled context.
+func (c contractTrigger) CancelGenerated() conform.ID[watcher.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -133,6 +169,23 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 				Defect: contractWatchPanics,
 			},
 			{
+				ID:          ContractChecks.Watch.SmokeGenerated(),
+				Statement:   "Watch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Watch(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: contractWatchPanics,
+			},
+			{
 				ID:          ContractChecks.Watch.Cancel(),
 				Statement:   "Watch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -143,6 +196,23 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Watch(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractWatchIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Watch.CancelGenerated(),
+				Statement:   "Watch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Watch(ctx, drawnKey)
 						return err
 					})
 				},
@@ -165,6 +235,23 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 				Defect: contractTriggerPanics,
 			},
 			{
+				ID:          ContractChecks.Trigger.SmokeGenerated(),
+				Statement:   "Trigger returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnV := c.Draw(prop.Of[watcher.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Trigger(ctx, drawnKey, drawnV)
+					})
+				},
+				Defect: contractTriggerPanics,
+			},
+			{
 				ID:          ContractChecks.Trigger.Cancel(),
 				Statement:   "Trigger returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -179,11 +266,29 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 				},
 				Defect: contractTriggerIgnoresCancel,
 			},
+			{
+				ID:          ContractChecks.Trigger.CancelGenerated(),
+				Statement:   "Trigger returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnV := c.Draw(prop.Of[watcher.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Trigger(ctx, drawnKey, drawnV)
+					})
+				},
+				Defect: contractTriggerIgnoresCancel,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Contract.Watch",
+				Gate:     spec.ValueSamples,
 				Why:      "eidos derives no sample of a result of Watch",
 				Remedy:   "author a sample of the result type with the directive sample",
 			},
@@ -410,4 +515,4 @@ func contractTriggerIgnoresCancel(h *ContractHandle) watcher.Contract {
 	return &contractTriggerIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0a616fc376687381d07ae4e47532e267eb5690b7fd2d5a410a960bcbb9432b85
+// dokimi:provenance sha256:f1bcd21dba1c4b578675fd1c12e49b6d15ebf22e2d8a611559aea1656461ed41

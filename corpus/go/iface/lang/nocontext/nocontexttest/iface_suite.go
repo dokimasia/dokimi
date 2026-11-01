@@ -19,11 +19,20 @@ import (
 //
 // Calculator.Add/smoke: Add returns without a panic for derived inputs.
 //
+// Calculator.Add/smoke#generated: Add returns without a panic for derived
+// inputs.
+//
 // Calculator.Add/deterministic: Add returns the same value for the same
 // inputs.
 //
+// Calculator.Add/deterministic#generated: Add returns the same value for
+// the same inputs.
+//
 // Calculator.Divide/smoke: Divide returns without a panic for derived
 // inputs.
+//
+// Calculator.Divide/smoke#generated: Divide returns without a panic for
+// derived inputs.
 //
 // Calculator.Reset/smoke: Reset returns without a panic for derived
 // inputs.
@@ -76,10 +85,22 @@ func (c calculatorAdd) Smoke() conform.ID[nocontext.Calculator] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c calculatorAdd) SmokeGenerated() conform.ID[nocontext.Calculator] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that Add returns the
 // same value for the same inputs.
 func (c calculatorAdd) Deterministic() conform.ID[nocontext.Calculator] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Add
+// returns the same value for the same inputs.
+func (c calculatorAdd) DeterministicGenerated() conform.ID[nocontext.Calculator] {
+	return c.Check("deterministic#generated")
 }
 
 // calculatorDivide is the name of Calculator.Divide, with the identities
@@ -92,6 +113,12 @@ type calculatorDivide struct {
 // panic for derived inputs.
 func (c calculatorDivide) Smoke() conform.ID[nocontext.Calculator] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Divide returns
+// without a panic for derived inputs.
+func (c calculatorDivide) SmokeGenerated() conform.ID[nocontext.Calculator] {
+	return c.Check("smoke#generated")
 }
 
 // calculatorReset is the name of Calculator.Reset, with the identities of
@@ -138,6 +165,24 @@ func CalculatorSuite() conform.Suite[nocontext.Calculator] {
 				Defect: calculatorAddPanics,
 			},
 			{
+				ID:          CalculatorChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *CalculatorHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[int](), "a")
+					drawnB := c.Draw(prop.Of[int](), "b")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Add(drawnA, drawnB)
+						return nil
+					})
+				},
+				Defect: calculatorAddPanics,
+			},
+			{
 				ID:          CalculatorChecks.Add.Deterministic(),
 				Statement:   "Add returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
@@ -156,6 +201,25 @@ func CalculatorSuite() conform.Suite[nocontext.Calculator] {
 				Defect: calculatorAddDrifts,
 			},
 			{
+				ID:          CalculatorChecks.Add.DeterministicGenerated(),
+				Statement:   "Add returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[nocontext.Calculator]{CalculatorChecks.Add.SmokeGenerated()},
+				Property: func(h *CalculatorHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[int](), "a")
+					drawnB := c.Draw(prop.Of[int](), "b")
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Add(drawnA, drawnB)
+						return r0, nil
+					})
+				},
+				Defect: calculatorAddDrifts,
+			},
+			{
 				ID:          CalculatorChecks.Divide.Smoke(),
 				Statement:   "Divide returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -167,6 +231,24 @@ func CalculatorSuite() conform.Suite[nocontext.Calculator] {
 				Apply: func(h *CalculatorHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						_, err := h.Subject().Divide(int(42), int(42))
+						return err
+					})
+				},
+				Defect: calculatorDividePanics,
+			},
+			{
+				ID:          CalculatorChecks.Divide.SmokeGenerated(),
+				Statement:   "Divide returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *CalculatorHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[int](), "a")
+					drawnB := c.Draw(prop.Of[int](), "b")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Divide(drawnA, drawnB)
 						return err
 					})
 				},
@@ -450,4 +532,4 @@ func calculatorResetPanicsOnRepeat(h *CalculatorHandle) nocontext.Calculator {
 	return &calculatorResetPanicsOnRepeatDefect{calculatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:116c0ece543c6fb6399fcc8404d9f1328f78343e9c97a1bea129dee6dd92a77b
+// dokimi:provenance sha256:e8ce78932a350f5758e2b101775d1dc0835c411f3e2cee94ca77b12f7c666657

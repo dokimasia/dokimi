@@ -53,7 +53,15 @@ func TestDiarySuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				dynamictest.DiaryChecks.Print.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				dynamictest.DiaryChecks.Field.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Field.SmokeGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -90,7 +98,15 @@ func TestDiarySuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				dynamictest.DiaryChecks.Print.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				dynamictest.DiaryChecks.Field.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Field.SmokeGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -129,7 +145,15 @@ func TestDiarySuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			dynamictest.DiaryChecks.Print.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -155,7 +179,15 @@ func FuzzDiarySuitePrint(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			dynamictest.DiaryChecks.Print.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -181,7 +213,15 @@ func FuzzDiarySuiteField(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			dynamictest.DiaryChecks.Print.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -207,7 +247,15 @@ func FuzzDiarySuiteIn(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			dynamictest.DiaryChecks.Print.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -233,7 +281,15 @@ func FuzzDiarySuiteScale(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			dynamictest.DiaryChecks.Print.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -259,7 +315,15 @@ func FuzzDiarySuiteCount(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			dynamictest.DiaryChecks.Print.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.SmokeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -293,4 +357,4 @@ func BenchmarkDiarySuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c29e88f428831b0026d86e240373f99317d7c05bd0a574448774eafdcbc04b57
+// dokimi:provenance sha256:db66a51f51f1711950e80473d1ddbdeb9f4ab5cd2678e384f29d10c7f8240c92

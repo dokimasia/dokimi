@@ -20,8 +20,14 @@ import (
 // ReaderWithBool.Load/smoke: Load returns without a panic for derived
 // inputs.
 //
+// ReaderWithBool.Load/smoke#generated: Load returns without a panic for
+// derived inputs.
+//
 // ReaderWithBool.Load/zero-on-miss: Load returns the zero value beside a
 // false presence flag.
+//
+// ReaderWithBool.Load/zero-on-miss#generated: Load returns the zero value
+// beside a false presence flag.
 
 // The derived checks of ReaderWithBool that witness their laws at the
 // shallow end:
@@ -63,10 +69,22 @@ func (c readerWithBoolLoad) Smoke() conform.ID[readerwithbool.ReaderWithBool] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Load returns
+// without a panic for derived inputs.
+func (c readerWithBoolLoad) SmokeGenerated() conform.ID[readerwithbool.ReaderWithBool] {
+	return c.Check("smoke#generated")
+}
+
 // ZeroOnMiss returns the identity of the check that Load returns the zero
 // value beside a false presence flag.
 func (c readerWithBoolLoad) ZeroOnMiss() conform.ID[readerwithbool.ReaderWithBool] {
 	return c.Check("zero-on-miss")
+}
+
+// ZeroOnMissGenerated returns the identity of the check that Load returns
+// the zero value beside a false presence flag.
+func (c readerWithBoolLoad) ZeroOnMissGenerated() conform.ID[readerwithbool.ReaderWithBool] {
+	return c.Check("zero-on-miss#generated")
 }
 
 // ReaderWithBoolSuite returns the checks of ReaderWithBool, and the calls
@@ -95,6 +113,23 @@ func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 				Defect: readerWithBoolLoadPanics,
 			},
 			{
+				ID:          ReaderWithBoolChecks.Load.SmokeGenerated(),
+				Statement:   "Load returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReaderWithBoolHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Load(ctx, drawnKey)
+						return nil
+					})
+				},
+				Defect: readerWithBoolLoadPanics,
+			},
+			{
 				ID:          ReaderWithBoolChecks.Load.ZeroOnMiss(),
 				Statement:   "Load returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
@@ -109,11 +144,28 @@ func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 				},
 				Defect: readerWithBoolLoadValueBesideAFalseFlag,
 			},
+			{
+				ID:          ReaderWithBoolChecks.Load.ZeroOnMissGenerated(),
+				Statement:   "Load returns the zero value beside a false presence flag",
+				Claim:       spec.ZeroOnMiss,
+				Probe:       spec.ZeroBesideFalse,
+				Reason:      spec.ValueBesideFalse,
+				Law:         spec.NoValueBesideAFalseFlag,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReaderWithBoolHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideFalse(h, func(ctx context.Context) (readerwithbool.Value, bool) {
+						return h.Subject().Load(ctx, drawnKey)
+					}, readerwithbool.Value{})
+				},
+				Defect: readerWithBoolLoadValueBesideAFalseFlag,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Cancel,
 				Callable: "ReaderWithBool.Load",
+				Gate:     spec.Failure,
 				Why:      "Load cannot fail",
 				Remedy:   "give Load an error result",
 			},
@@ -274,4 +326,4 @@ func readerWithBoolLoadValueBesideAFalseFlag(h *ReaderWithBoolHandle) readerwith
 	return &readerWithBoolLoadValueBesideAFalseFlagDefect{readerWithBoolOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e26145f963cf4743377a7f33f2d34f46751912a492e46599209d242600566f48
+// dokimi:provenance sha256:80138219ce8b41e28c0857f1d4ea4c87b606420962edde03b6cd92739c32f9ea

@@ -64,6 +64,30 @@ func mixedStubTotalPins() (int, error) {
 	return want0, want1
 }
 
+// mixedStubMergeArgs returns the samples of the arguments of Merge.
+func mixedStubMergeArgs(tb assert.TB) (associative.Delta, associative.Delta) {
+	tb.Helper()
+	var a0 associative.Delta
+	var a1 associative.Delta
+	a0 = associative.Delta{Key: "Key-a"}
+	a1 = associative.Delta{Key: "Key-a"}
+	return a0, a1
+}
+
+// mixedStubMerge calls Merge of s with the samples of its arguments.
+func mixedStubMerge(tb assert.TB, s *associativetest.MixedStub) associative.Delta {
+	tb.Helper()
+	a0, a1 := mixedStubMergeArgs(tb)
+	return s.Merge(a0, a1)
+}
+
+// mixedStubMergePins returns the samples of the results of Merge.
+func mixedStubMergePins() associative.Delta {
+	var want0 associative.Delta
+	want0 = associative.Delta{Key: "Key-a"}
+	return want0
+}
+
 // mixedStubApplySubject returns the subject of [stub.Behaviour] for Apply.
 // The subject calls a new double that reports to tb.
 func mixedStubApplySubject(
@@ -121,6 +145,32 @@ func mixedStubTotalSubject(
 		Fails: func() error {
 			_, r1 := mixedStubTotal(tb, s)
 			return r1
+		},
+	}
+}
+
+// mixedStubMergeSubject returns the subject of [stub.Behaviour] for Merge.
+// The subject calls a new double that reports to tb.
+func mixedStubMergeSubject(
+	tb assert.TB,
+) stub.Subject[associativetest.MixedMergeCall, associativetest.MixedMergeReturn] {
+	tb.Helper()
+	s := associativetest.NewMixedStub(tb)
+	return stub.Subject[associativetest.MixedMergeCall, associativetest.MixedMergeReturn]{
+		Stub: s.OnMerge.MethodStub,
+		Call: func() {
+			_ = mixedStubMerge(tb, s)
+		},
+		Result: func() associativetest.MixedMergeReturn {
+			got0 := mixedStubMerge(tb, s)
+			return associativetest.MixedMergeReturn{Result: got0}
+		},
+		Override: func(mark func()) {
+			s.OnMerge.Func(func(_, _ associative.Delta) associative.Delta {
+				mark()
+				var z0 associative.Delta
+				return z0
+			})
 		},
 	}
 }
@@ -196,6 +246,31 @@ func TestMixedStub(t *testing.T) {
 		})
 	})
 
+	t.Run("Merge", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Merge", mixedStubMergeSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			_ = mixedStubMerge(t, s)
+			got := s.OnMerge.AssertCalledOnce(t, "Merge records the call")
+			a0, a1 := mixedStubMergeArgs(t)
+			expect.Equal(t, got.A, a0, "the call records A")
+			expect.Equal(t, got.B, a1, "the call records B")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			var seen []associativetest.MixedMergeCall
+			s.OnMerge.OnRecord(func(c associativetest.MixedMergeCall) { seen = append(seen, c) })
+			_ = mixedStubMerge(t, s)
+			_ = mixedStubMerge(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Merge")
+		})
+	})
+
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
@@ -237,6 +312,24 @@ func TestMixedStub(t *testing.T) {
 			got0, got1 := mixedStubTotal(t, s)
 			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Total")
 			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Total")
+		})
+
+		t.Run("clears the recorded calls of Merge", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			_ = mixedStubMerge(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnMerge.CallCount(), 0, "ResetCalls clears the calls of Merge")
+		})
+
+		t.Run("keeps the results of Returns of Merge", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			want0 := mixedStubMergePins()
+			s.OnMerge.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubMerge(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Merge")
 		})
 	})
 
@@ -311,6 +404,14 @@ func TestMixedStub(t *testing.T) {
 			s := associativetest.NewMixedStub(t, associativetest.MixedStubDelegateTo(inner))
 			_, r1 := mixedStubTotal(t, s)
 			assert.ErrorIs(t, r1, want, "Total fails with the error of the implementation")
+		})
+
+		t.Run("passes Merge to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := associativetest.NewMixedStub(t)
+			s := associativetest.NewMixedStub(t, associativetest.MixedStubDelegateTo(inner))
+			_ = mixedStubMerge(t, s)
+			inner.OnMerge.AssertCalledOnce(t, "Merge calls the implementation")
 		})
 	})
 
@@ -405,6 +506,25 @@ func TestMixedStub(t *testing.T) {
 			}))
 			_, _ = mixedStubTotal(t, s)
 			assert.True(t, called, "WithMixedTotal sets the function of Total")
+		})
+	})
+
+	t.Run("WithMixedMerge", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Merge", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := associativetest.NewMixedStub(
+				t,
+				associativetest.WithMixedMerge(func(_, _ associative.Delta) associative.Delta {
+					called = true
+					var z0 associative.Delta
+					return z0
+				}),
+			)
+			_ = mixedStubMerge(t, s)
+			assert.True(t, called, "WithMixedMerge sets the function of Merge")
 		})
 	})
 }
@@ -510,4 +630,54 @@ func TestMixedTotalStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:73163a86880b4fa078564a14726973cfd782d4f740674024c9fe841eec56fcaa
+// TestMixedMergeStub checks the methods of MixedMergeStub, which
+// configures Merge.
+func TestMixedMergeStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Merge", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			want0 := mixedStubMergePins()
+			s.OnMerge.Returns(want0)
+			got0 := mixedStubMerge(t, s)
+			assert.Equal(t, got0, want0, "Merge returns the Result that Returns sets")
+		})
+
+		t.Run("configures Merge for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := associativetest.NewMixedStub(r)
+			s.OnMerge.Strict()
+			var want0 associative.Delta
+			s.OnMerge.Returns(want0)
+			_ = mixedStubMerge(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Merge")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Merge to the function", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			var got0 associative.Delta
+			var got1 associative.Delta
+			s.OnMerge.Func(func(p0, p1 associative.Delta) associative.Delta {
+				got0, got1 = p0, p1
+				var z0 associative.Delta
+				return z0
+			})
+			_ = mixedStubMerge(t, s)
+			a0, a1 := mixedStubMergeArgs(t)
+			expect.Equal(t, got0, a0, "the function receives A")
+			expect.Equal(t, got1, a1, "the function receives B")
+		})
+	})
+}
+
+// dokimi:provenance sha256:4c189d2c74e88de559499b00766e96314094d43fc46656217302fa2f49198b64

@@ -18,6 +18,9 @@ import (
 // The derived checks of Mutator:
 //
 // Mutator.Touch/smoke: Touch returns without a panic for derived inputs.
+//
+// Mutator.Touch/smoke#generated: Touch returns without a panic for derived
+// inputs.
 
 // The derived checks of Mutator that witness their laws at the shallow
 // end:
@@ -64,6 +67,12 @@ func (c mutatorTouch) Smoke() conform.ID[mutator.Mutator] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Touch returns
+// without a panic for derived inputs.
+func (c mutatorTouch) SmokeGenerated() conform.ID[mutator.Mutator] {
+	return c.Check("smoke#generated")
+}
+
 // MutatorSuite returns the checks of Mutator, and the calls and the
 // budgets of its callables.
 func MutatorSuite() conform.Suite[mutator.Mutator] {
@@ -89,11 +98,29 @@ func MutatorSuite() conform.Suite[mutator.Mutator] {
 				},
 				Defect: mutatorTouchPanics,
 			},
+			{
+				ID:          MutatorChecks.Touch.SmokeGenerated(),
+				Statement:   "Touch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MutatorHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Touch(ctx, drawnKey)
+						return nil
+					})
+				},
+				Defect: mutatorTouchPanics,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Cancel,
 				Callable: "Mutator.Touch",
+				Gate:     spec.Failure,
 				Why:      "Touch cannot fail",
 				Remedy:   "give Touch an error result",
 			},
@@ -223,4 +250,4 @@ func mutatorTouchPanics(h *MutatorHandle) mutator.Mutator {
 	return &mutatorTouchPanicsDefect{mutatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:dd2e861072ca4ebc28ab26703b51ecbd4d7c7b5d9b7d4c7113283f1ccbd8eb44
+// dokimi:provenance sha256:12a9496e33ca19d21e514848c8f4d52e6b69e7254c66abaffde6e71426a7e7be

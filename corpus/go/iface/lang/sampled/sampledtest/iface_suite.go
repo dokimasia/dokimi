@@ -19,10 +19,19 @@ import (
 //
 // Labeller.Apply/smoke: Apply returns without a panic for derived inputs.
 //
+// Labeller.Apply/smoke#generated: Apply returns without a panic for
+// derived inputs.
+//
 // Labeller.Apply/cancel: Apply returns an error for a cancelled context.
+//
+// Labeller.Apply/cancel#generated: Apply returns an error for a cancelled
+// context.
 //
 // Labeller.Apply/idempotent: a second identical Apply succeeds after the
 // first.
+//
+// Labeller.Apply/idempotent#generated: a second identical Apply succeeds
+// after the first.
 
 // The derived checks of Labeller that witness their laws at the shallow
 // end:
@@ -64,16 +73,34 @@ func (c labellerApply) Smoke() conform.ID[sampled.Labeller] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Apply returns
+// without a panic for derived inputs.
+func (c labellerApply) SmokeGenerated() conform.ID[sampled.Labeller] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Apply returns an error for
 // a cancelled context.
 func (c labellerApply) Cancel() conform.ID[sampled.Labeller] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Apply returns an
+// error for a cancelled context.
+func (c labellerApply) CancelGenerated() conform.ID[sampled.Labeller] {
+	return c.Check("cancel#generated")
+}
+
 // Idempotent returns the identity of the check that a second identical
 // Apply succeeds after the first.
 func (c labellerApply) Idempotent() conform.ID[sampled.Labeller] {
 	return c.Check("idempotent")
+}
+
+// IdempotentGenerated returns the identity of the check that a second
+// identical Apply succeeds after the first.
+func (c labellerApply) IdempotentGenerated() conform.ID[sampled.Labeller] {
+	return c.Check("idempotent#generated")
 }
 
 // LabellerSuite returns the checks of Labeller, and the calls and the
@@ -101,6 +128,23 @@ func LabellerSuite() conform.Suite[sampled.Labeller] {
 				Defect: labellerApplyPanics,
 			},
 			{
+				ID:          LabellerChecks.Apply.SmokeGenerated(),
+				Statement:   "Apply returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LabellerHandle, c *prop.Case) {
+					drawnTag := c.Draw(prop.Of[sampled.Tag](), "tag")
+					drawnLevel := c.Draw(prop.Of[sampled.Level](), "level")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, drawnTag, drawnLevel)
+					})
+				},
+				Defect: labellerApplyPanics,
+			},
+			{
 				ID:          LabellerChecks.Apply.Cancel(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -116,6 +160,23 @@ func LabellerSuite() conform.Suite[sampled.Labeller] {
 				Defect: labellerApplyIgnoresCancel,
 			},
 			{
+				ID:          LabellerChecks.Apply.CancelGenerated(),
+				Statement:   "Apply returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LabellerHandle, c *prop.Case) {
+					drawnTag := c.Draw(prop.Of[sampled.Tag](), "tag")
+					drawnLevel := c.Draw(prop.Of[sampled.Level](), "level")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, drawnTag, drawnLevel)
+					})
+				},
+				Defect: labellerApplyIgnoresCancel,
+			},
+			{
 				ID:          LabellerChecks.Apply.Idempotent(),
 				Statement:   "a second identical Apply succeeds after the first",
 				Claim:       spec.Idempotent,
@@ -126,6 +187,23 @@ func LabellerSuite() conform.Suite[sampled.Labeller] {
 				Apply: func(h *LabellerHandle) {
 					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
 						return h.Subject().Apply(ctx, sampled.NewTestTag(), sampled.NewTestLevel())
+					})
+				},
+				Defect: labellerApplyRefusesRepeat,
+			},
+			{
+				ID:          LabellerChecks.Apply.IdempotentGenerated(),
+				Statement:   "a second identical Apply succeeds after the first",
+				Claim:       spec.Idempotent,
+				Probe:       spec.RepeatIsQuiet,
+				Reason:      spec.RefusedRepeat,
+				Law:         spec.RepeatIsAccepted,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LabellerHandle, c *prop.Case) {
+					drawnTag := c.Draw(prop.Of[sampled.Tag](), "tag")
+					drawnLevel := c.Draw(prop.Of[sampled.Level](), "level")
+					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, drawnTag, drawnLevel)
 					})
 				},
 				Defect: labellerApplyRefusesRepeat,
@@ -334,4 +412,4 @@ func labellerApplyRefusesRepeat(h *LabellerHandle) sampled.Labeller {
 	return &labellerApplyRefusesRepeatDefect{labellerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7dfec6c089623437ae0432de7b676e34a1d0f6e09f56754b8d58fa1903282c76
+// dokimi:provenance sha256:43aad9b29afbb8a9588871f59ca9b6aafddb596b009ddec9ecb890e0cb2566fc

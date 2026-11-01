@@ -51,3 +51,6 @@ func (c *Counter) Total(ctx context.Context) (int, error) {
 	}
 	return sum, nil
 }
+
+// Sum implements [commutative.Mixed].
+func (*Counter) Sum(a, b commutative.Delta) int { return a.Amount + b.Amount }

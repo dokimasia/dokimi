@@ -20,7 +20,13 @@ import (
 //
 // Contract.Run/smoke: Run returns without a panic for derived inputs.
 //
+// Contract.Run/smoke#generated: Run returns without a panic for derived
+// inputs.
+//
 // Contract.Run/cancel: Run returns an error for a cancelled context.
+//
+// Contract.Run/cancel#generated: Run returns an error for a cancelled
+// context.
 //
 // Contract.Flights/smoke: Flights returns without a panic for derived
 // inputs.
@@ -75,10 +81,22 @@ func (c contractRun) Smoke() conform.ID[singleflight.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Run returns
+// without a panic for derived inputs.
+func (c contractRun) SmokeGenerated() conform.ID[singleflight.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c contractRun) Cancel() conform.ID[singleflight.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Run returns an
+// error for a cancelled context.
+func (c contractRun) CancelGenerated() conform.ID[singleflight.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // contractFlights is the name of Contract.Flights, with the identities of
@@ -131,6 +149,34 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				Defect: contractRunPanics,
 			},
 			{
+				ID:          ContractChecks.Run.SmokeGenerated(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					computeResults := c.Draw(prop.List(prop.Of[string]()), "compute")
+					drawnCompute := func() func() string {
+						var computeAt atomic.Int64
+						return func() (r0 string) {
+							i := int(computeAt.Add(1) - 1)
+							if i >= len(computeResults) {
+								return r0
+							}
+							return computeResults[i]
+						}
+					}
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Run(ctx, drawnKey, drawnCompute())
+						return err
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
 				ID:          ContractChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -141,6 +187,34 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Run(ctx, string("key-a"), func() string { return "" })
+						return err
+					})
+				},
+				Defect: contractRunIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Run.CancelGenerated(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					computeResults := c.Draw(prop.List(prop.Of[string]()), "compute")
+					drawnCompute := func() func() string {
+						var computeAt atomic.Int64
+						return func() (r0 string) {
+							i := int(computeAt.Add(1) - 1)
+							if i >= len(computeResults) {
+								return r0
+							}
+							return computeResults[i]
+						}
+					}
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Run(ctx, drawnKey, drawnCompute())
 						return err
 					})
 				},
@@ -434,4 +508,4 @@ func contractFlightsValueBeside(h *ContractHandle) singleflight.Contract {
 	return &contractFlightsValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9b43d088cf48348bf6458724423263f77dbe8fe2fa7b7d0754faaea0dbe599fa
+// dokimi:provenance sha256:9348bdf64232b43e6f57cb58de0498bdc0a7fc532913562104be63d6fc8a22d2

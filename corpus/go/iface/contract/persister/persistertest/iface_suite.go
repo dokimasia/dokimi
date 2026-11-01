@@ -19,17 +19,37 @@ import (
 //
 // Contract.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Contract.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Contract.Put/cancel: Put returns an error for a cancelled context.
+//
+// Contract.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 //
 // Contract.Put/zero-on-error: Put returns the zero value beside an error.
 //
+// Contract.Put/zero-on-error#generated: Put returns the zero value beside
+// an error.
+//
 // Contract.Put/persister: Get returns what Put stored.
+//
+// Contract.Put/persister#generated: Get returns what Put stored.
 //
 // Contract.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Contract.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Contract.Get/cancel: Get returns an error for a cancelled context.
 //
+// Contract.Get/cancel#generated: Get returns an error for a cancelled
+// context.
+//
 // Contract.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Contract.Get/zero-on-error#generated: Get returns the zero value beside
+// an error.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -37,6 +57,8 @@ import (
 // Contract.Put/smoke
 //
 // Contract.Put/persister
+//
+// Contract.Put/persister#generated
 //
 // Contract.Get/smoke
 
@@ -72,10 +94,22 @@ func (c contractPut) Smoke() conform.ID[persister.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c contractPut) SmokeGenerated() conform.ID[persister.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c contractPut) Cancel() conform.ID[persister.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c contractPut) CancelGenerated() conform.ID[persister.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Put returns the zero
@@ -84,10 +118,22 @@ func (c contractPut) ZeroOnError() conform.ID[persister.Contract] {
 	return c.Check("zero-on-error")
 }
 
+// ZeroOnErrorGenerated returns the identity of the check that Put returns
+// the zero value beside an error.
+func (c contractPut) ZeroOnErrorGenerated() conform.ID[persister.Contract] {
+	return c.Check("zero-on-error#generated")
+}
+
 // Persister returns the identity of the check that Get returns what Put
 // stored.
 func (c contractPut) Persister() conform.ID[persister.Contract] {
 	return c.Check("persister")
+}
+
+// PersisterGenerated returns the identity of the check that Get returns
+// what Put stored.
+func (c contractPut) PersisterGenerated() conform.ID[persister.Contract] {
+	return c.Check("persister#generated")
 }
 
 // contractGet is the name of Contract.Get, with the identities of its
@@ -102,16 +148,34 @@ func (c contractGet) Smoke() conform.ID[persister.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c contractGet) SmokeGenerated() conform.ID[persister.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c contractGet) Cancel() conform.ID[persister.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c contractGet) CancelGenerated() conform.ID[persister.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c contractGet) ZeroOnError() conform.ID[persister.Contract] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c contractGet) ZeroOnErrorGenerated() conform.ID[persister.Contract] {
+	return c.Check("zero-on-error#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -140,6 +204,23 @@ func ContractSuite() conform.Suite[persister.Contract] {
 				Defect: contractPutPanics,
 			},
 			{
+				ID:          ContractChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[persister.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Put(ctx, drawnV)
+						return err
+					})
+				},
+				Defect: contractPutPanics,
+			},
+			{
 				ID:          ContractChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -156,6 +237,23 @@ func ContractSuite() conform.Suite[persister.Contract] {
 				Defect: contractPutIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[persister.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Put(ctx, drawnV)
+						return err
+					})
+				},
+				Defect: contractPutIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Put.ZeroOnError(),
 				Statement:   "Put returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -166,6 +264,22 @@ func ContractSuite() conform.Suite[persister.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (persister.Value, error) {
 						return h.Subject().Put(ctx, persister.Value{Key: "test-key", Body: "test-body"})
+					}, persister.Value{})
+				},
+				Defect: contractPutValueBeside,
+			},
+			{
+				ID:          ContractChecks.Put.ZeroOnErrorGenerated(),
+				Statement:   "Put returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[persister.Value](), "v")
+					probe.ZeroBesideError(h, func(ctx context.Context) (persister.Value, error) {
+						return h.Subject().Put(ctx, drawnV)
 					}, persister.Value{})
 				},
 				Defect: contractPutValueBeside,
@@ -190,6 +304,26 @@ func ContractSuite() conform.Suite[persister.Contract] {
 				Defect: contractPutStoresNothing,
 			},
 			{
+				ID:          ContractChecks.Put.PersisterGenerated(),
+				Statement:   "Get returns what Put stored",
+				Claim:       spec.Persister,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[persister.Value](), "v")
+					probe.WriteThenRead(h, func(ctx context.Context) (persister.Value, error) {
+						return h.Subject().Get(ctx, drawnV.Key)
+					}, func(ctx context.Context) (persister.Value, error) {
+						w := drawnV
+						return h.Subject().Put(ctx, w)
+					})
+				},
+				Defect: contractPutStoresNothing,
+			},
+			{
 				ID:          ContractChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -201,6 +335,23 @@ func ContractSuite() conform.Suite[persister.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractGetPanics,
+			},
+			{
+				ID:          ContractChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
 						return err
 					})
 				},
@@ -223,6 +374,23 @@ func ContractSuite() conform.Suite[persister.Contract] {
 				Defect: contractGetIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: contractGetIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -233,6 +401,22 @@ func ContractSuite() conform.Suite[persister.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (persister.Value, error) {
 						return h.Subject().Get(ctx, string("key-a"))
+					}, persister.Value{})
+				},
+				Defect: contractGetValueBeside,
+			},
+			{
+				ID:          ContractChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (persister.Value, error) {
+						return h.Subject().Get(ctx, drawnKey)
 					}, persister.Value{})
 				},
 				Defect: contractGetValueBeside,
@@ -520,4 +704,4 @@ func contractGetValueBeside(h *ContractHandle) persister.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b5c8b54ffc23828d756a949a04310fc18ba13f589da6b88112eed5927b408311
+// dokimi:provenance sha256:89999ddb9d6f9eceb5f647904481bf7a2eb55455a3de98db9f8532b5d5241f39

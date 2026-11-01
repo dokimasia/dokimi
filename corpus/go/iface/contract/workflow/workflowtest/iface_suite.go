@@ -19,14 +19,29 @@ import (
 //
 // Contract.Run/smoke: Run returns without a panic for derived inputs.
 //
+// Contract.Run/smoke#generated: Run returns without a panic for derived
+// inputs.
+//
 // Contract.Run/cancel: Run returns an error for a cancelled context.
+//
+// Contract.Run/cancel#generated: Run returns an error for a cancelled
+// context.
 //
 // Contract.State/smoke: State returns without a panic for derived inputs.
 //
+// Contract.State/smoke#generated: State returns without a panic for
+// derived inputs.
+//
 // Contract.State/cancel: State returns an error for a cancelled context.
+//
+// Contract.State/cancel#generated: State returns an error for a cancelled
+// context.
 //
 // Contract.State/zero-on-error: State returns the zero value beside an
 // error.
+//
+// Contract.State/zero-on-error#generated: State returns the zero value
+// beside an error.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -75,10 +90,22 @@ func (c contractRun) Smoke() conform.ID[workflow.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Run returns
+// without a panic for derived inputs.
+func (c contractRun) SmokeGenerated() conform.ID[workflow.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c contractRun) Cancel() conform.ID[workflow.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Run returns an
+// error for a cancelled context.
+func (c contractRun) CancelGenerated() conform.ID[workflow.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // contractState is the name of Contract.State, with the identities of its
@@ -93,16 +120,34 @@ func (c contractState) Smoke() conform.ID[workflow.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that State returns
+// without a panic for derived inputs.
+func (c contractState) SmokeGenerated() conform.ID[workflow.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that State returns an error for
 // a cancelled context.
 func (c contractState) Cancel() conform.ID[workflow.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that State returns an
+// error for a cancelled context.
+func (c contractState) CancelGenerated() conform.ID[workflow.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that State returns the
 // zero value beside an error.
 func (c contractState) ZeroOnError() conform.ID[workflow.Contract] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that State
+// returns the zero value beside an error.
+func (c contractState) ZeroOnErrorGenerated() conform.ID[workflow.Contract] {
+	return c.Check("zero-on-error#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -130,6 +175,22 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractRunPanics,
 			},
 			{
+				ID:          ContractChecks.Run.SmokeGenerated(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, drawnKey)
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
 				ID:          ContractChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -140,6 +201,22 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Run(ctx, string("key-a"))
+					})
+				},
+				Defect: contractRunIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Run.CancelGenerated(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, drawnKey)
 					})
 				},
 				Defect: contractRunIgnoresCancel,
@@ -162,6 +239,23 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractStatePanics,
 			},
 			{
+				ID:          ContractChecks.State.SmokeGenerated(),
+				Statement:   "State returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().State(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: contractStatePanics,
+			},
+			{
 				ID:          ContractChecks.State.Cancel(),
 				Statement:   "State returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -178,6 +272,23 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractStateIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.State.CancelGenerated(),
+				Statement:   "State returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().State(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: contractStateIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.State.ZeroOnError(),
 				Statement:   "State returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -188,6 +299,22 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
 						return h.Subject().State(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: contractStateValueBeside,
+			},
+			{
+				ID:          ContractChecks.State.ZeroOnErrorGenerated(),
+				Statement:   "State returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().State(ctx, drawnKey)
 					}, string(""))
 				},
 				Defect: contractStateValueBeside,
@@ -429,4 +556,4 @@ func contractStateValueBeside(h *ContractHandle) workflow.Contract {
 	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:837a457d94de6a1570af40160cc62d26b84fd4609a9d19c3f973c769181e4c04
+// dokimi:provenance sha256:27ab6e8e21b92f81cccb615eab758763c37bca2791f7534e74f5845aafa513d8

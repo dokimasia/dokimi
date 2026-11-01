@@ -42,6 +42,13 @@ func BenchmarkCounterConformsToMixed(b *testing.B) {
 			func(*commutativetest.MixedHandle) *perkey.Counter { return perkey.New() },
 		)
 	})
+	b.Run("Sum", func(b *testing.B) {
+		commutativetest.BenchMixedSuite(
+			b,
+			commutativetest.MixedChecks.Sum.Callable,
+			func(*commutativetest.MixedHandle) *perkey.Counter { return perkey.New() },
+		)
+	})
 }
 
 // FuzzCounterConformsToMixedApply fuzzes the property checks of
@@ -64,4 +71,14 @@ func FuzzCounterConformsToMixedTotal(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:79f4bd906be2c3173a8f1c780a9b452c3ad2497e0e4a8540a38eb7ae3b8f3a44
+// FuzzCounterConformsToMixedSum fuzzes the property checks of Mixed.Sum on
+// Counter.
+func FuzzCounterConformsToMixedSum(f *testing.F) {
+	commutativetest.FuzzMixedSuite(
+		f,
+		commutativetest.MixedChecks.Sum.Callable,
+		func(*commutativetest.MixedHandle) *perkey.Counter { return perkey.New() },
+	)
+}
+
+// dokimi:provenance sha256:d0ab28089b596ff11444cca6662b362628c636e5034138eece9e1f6b685ac46b

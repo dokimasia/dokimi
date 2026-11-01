@@ -53,7 +53,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				overmatchtest.MixedChecks.Add.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				overmatchtest.MixedChecks.Add.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				overmatchtest.MixedChecks.Add.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -70,6 +78,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				overmatchtest.MixedChecks.Items.OverMatch(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				overmatchtest.MixedChecks.Items.OverMatchGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -98,7 +110,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				overmatchtest.MixedChecks.Add.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				overmatchtest.MixedChecks.Add.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				overmatchtest.MixedChecks.Add.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -115,6 +135,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				overmatchtest.MixedChecks.Items.OverMatch(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				overmatchtest.MixedChecks.Items.OverMatchGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -142,7 +166,15 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			overmatchtest.MixedChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			overmatchtest.MixedChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Add.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -159,6 +191,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		),
 		conform.Excuse(
 			overmatchtest.MixedChecks.Items.OverMatch(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Items.OverMatchGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -176,7 +212,15 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			overmatchtest.MixedChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			overmatchtest.MixedChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Add.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -193,6 +237,10 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 		),
 		conform.Excuse(
 			overmatchtest.MixedChecks.Items.OverMatch(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Items.OverMatchGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -210,7 +258,15 @@ func FuzzMixedSuiteItems(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			overmatchtest.MixedChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			overmatchtest.MixedChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Add.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -229,6 +285,10 @@ func FuzzMixedSuiteItems(f *testing.F) {
 			overmatchtest.MixedChecks.Items.OverMatch(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			overmatchtest.MixedChecks.Items.OverMatchGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -243,4 +303,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:909946a6598e4d331fb6e75eb1543f043bd353b783768208f2b2cce93d678a95
+// dokimi:provenance sha256:139075f90f86408a4d2f766ebe55bb4e5c2e0102f64006a024abda2f64ba64dc

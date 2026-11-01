@@ -47,8 +47,9 @@ import (
 // The shape:lifecycle of Mixed.Acquire has the stance silent. A lifecycle
 // call returns nothing that a check could compare.
 //
-// The mixin:leak-free of Mixed.Acquire has the stance gap. No claim states
-// that the callable leaves no goroutine or task behind.
+// The mixin:leak-free of Mixed.Acquire has the stance needs. The claim
+// releases-on-every-path needs the param machineries=[faults] of the
+// directive suite.
 //
 // The shape:lifecycle of Mixed.Release has the stance silent. A lifecycle
 // call returns nothing that a check could compare.
@@ -264,8 +265,8 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 			{
 				Classification: "mixin:leak-free",
 				Callable:       "Mixed.Acquire",
-				Stance:         spec.Gap,
-				Note:           "No claim states that the callable leaves no goroutine or task behind.",
+				Stance:         spec.Needs,
+				Note:           "The claim releases-on-every-path needs the param machineries=[faults] of the directive suite.",
 			},
 			{
 				Classification: "shape:lifecycle",
@@ -540,4 +541,4 @@ func mixedOutstandingValueBeside(h *MixedHandle) leakfree.Mixed {
 	return &mixedOutstandingValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:63b1bd28d4ebe6e62e59755dcddb172c1067b91dd246079f261c37a94894d575
+// dokimi:provenance sha256:f91270eece7abcf259cb9e30093571c9b3bd3d3134c30bd937395ca682a99a95

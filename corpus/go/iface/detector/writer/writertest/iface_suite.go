@@ -19,7 +19,13 @@ import (
 //
 // Writer.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Writer.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Writer.Put/cancel: Put returns an error for a cancelled context.
+//
+// Writer.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 
 // The derived checks of Writer that witness their laws at the shallow end:
 //
@@ -59,10 +65,22 @@ func (c writerPut) Smoke() conform.ID[writer.Writer] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c writerPut) SmokeGenerated() conform.ID[writer.Writer] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c writerPut) Cancel() conform.ID[writer.Writer] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c writerPut) CancelGenerated() conform.ID[writer.Writer] {
+	return c.Check("cancel#generated")
 }
 
 // WriterSuite returns the checks of Writer, and the calls and the budgets
@@ -90,6 +108,22 @@ func WriterSuite() conform.Suite[writer.Writer] {
 				Defect: writerPutPanics,
 			},
 			{
+				ID:          WriterChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WriterHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[writer.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
+					})
+				},
+				Defect: writerPutPanics,
+			},
+			{
 				ID:          WriterChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -100,6 +134,22 @@ func WriterSuite() conform.Suite[writer.Writer] {
 				Apply: func(h *WriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, writer.Value{Key: "Key-a"})
+					})
+				},
+				Defect: writerPutIgnoresCancel,
+			},
+			{
+				ID:          WriterChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WriterHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[writer.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
 					})
 				},
 				Defect: writerPutIgnoresCancel,
@@ -246,4 +296,4 @@ func writerPutIgnoresCancel(h *WriterHandle) writer.Writer {
 	return &writerPutIgnoresCancelDefect{writerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c4af5b394f1aa72ee0f29cd9813454d4f847163e8cb20e760a023283e1d94554
+// dokimi:provenance sha256:7c01d8d90c5a61c41820170c9c35640ef183f8cc47a9892bb1d8cc0a5dd1b208

@@ -54,7 +54,15 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				codeclossytest.ContractChecks.Encode.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				codeclossytest.ContractChecks.Encode.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codeclossytest.ContractChecks.Encode.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -62,7 +70,7 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				codeclossytest.ContractChecks.Encode.Codec(),
+				codeclossytest.ContractChecks.Encode.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -70,11 +78,23 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				codeclossytest.ContractChecks.Decode.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				codeclossytest.ContractChecks.Decode.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				codeclossytest.ContractChecks.Decode.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				codeclossytest.ContractChecks.Decode.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codeclossytest.ContractChecks.Decode.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -103,7 +123,15 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				codeclossytest.ContractChecks.Encode.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				codeclossytest.ContractChecks.Encode.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codeclossytest.ContractChecks.Encode.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -111,7 +139,7 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				codeclossytest.ContractChecks.Encode.Codec(),
+				codeclossytest.ContractChecks.Encode.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -119,11 +147,23 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				codeclossytest.ContractChecks.Decode.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				codeclossytest.ContractChecks.Decode.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				codeclossytest.ContractChecks.Decode.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				codeclossytest.ContractChecks.Decode.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codeclossytest.ContractChecks.Decode.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -151,7 +191,15 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Encode.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Encode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codeclossytest.ContractChecks.Encode.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -159,7 +207,7 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			codeclossytest.ContractChecks.Encode.Codec(),
+			codeclossytest.ContractChecks.Encode.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -167,11 +215,23 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Decode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Decode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -189,7 +249,15 @@ func FuzzContractSuiteEncode(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Encode.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Encode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codeclossytest.ContractChecks.Encode.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -197,7 +265,7 @@ func FuzzContractSuiteEncode(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			codeclossytest.ContractChecks.Encode.Codec(),
+			codeclossytest.ContractChecks.Encode.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -205,11 +273,23 @@ func FuzzContractSuiteEncode(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Decode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Decode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -227,7 +307,15 @@ func FuzzContractSuiteDecode(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Encode.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Encode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codeclossytest.ContractChecks.Encode.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -235,7 +323,7 @@ func FuzzContractSuiteDecode(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			codeclossytest.ContractChecks.Encode.Codec(),
+			codeclossytest.ContractChecks.Encode.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -243,11 +331,23 @@ func FuzzContractSuiteDecode(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Decode.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			codeclossytest.ContractChecks.Decode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codeclossytest.ContractChecks.Decode.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -264,4 +364,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:a2143877c444de78b1e2c9b09b9da0b4576b99236fb640c9097ca22f18461bc9
+// dokimi:provenance sha256:4c8899d731a8dd8682f003615c24492b384e1716b8d13777e2098310c4427369

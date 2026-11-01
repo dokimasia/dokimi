@@ -247,12 +247,14 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 			{
 				Claim:    spec.Cancel,
 				Callable: "Contract.IsLeader",
+				Gate:     spec.Failure,
 				Why:      "IsLeader cannot fail",
 				Remedy:   "give IsLeader an error result",
 			},
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Contract.IsLeader",
+				Gate:     spec.Failure,
 				Why:      "IsLeader cannot fail",
 				Remedy:   "give IsLeader an error result",
 			},
@@ -524,4 +526,4 @@ func contractIsLeaderPanics(h *ContractHandle) leaderelection.Contract {
 	return &contractIsLeaderPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:71f92e2377a609030f09c810f750902acad19178306142d60a3b522df8908d6c
+// dokimi:provenance sha256:0d72bbe12888bc73ff4a3e053ee43cd8689226c1eb9c58f15306abeeeec93b8b

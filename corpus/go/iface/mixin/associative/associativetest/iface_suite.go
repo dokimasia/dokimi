@@ -6,6 +6,7 @@ package associativetest
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
@@ -19,27 +20,57 @@ import (
 //
 // Mixed.Apply/smoke: Apply returns without a panic for derived inputs.
 //
+// Mixed.Apply/smoke#generated: Apply returns without a panic for derived
+// inputs.
+//
 // Mixed.Apply/cancel: Apply returns an error for a cancelled context.
+//
+// Mixed.Apply/cancel#generated: Apply returns an error for a cancelled
+// context.
 //
 // Mixed.Total/smoke: Total returns without a panic for derived inputs.
 //
 // Mixed.Total/cancel: Total returns an error for a cancelled context.
 //
 // Mixed.Total/zero-on-error: Total returns the zero value beside an error.
+//
+// Mixed.Merge/smoke: Merge returns without a panic for derived inputs.
+//
+// Mixed.Merge/smoke#generated: Merge returns without a panic for derived
+// inputs.
+//
+// Mixed.Merge/deterministic: Merge returns the same value for the same
+// inputs.
+//
+// Mixed.Merge/deterministic#generated: Merge returns the same value for
+// the same inputs.
+//
+// Mixed.Merge/commutative: Merge returns one value for two inputs in
+// either order.
+//
+// Mixed.Merge/associative: Merge returns one value for three inputs in
+// either grouping.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
 // Mixed.Apply/smoke
 //
 // Mixed.Total/smoke
+//
+// Mixed.Merge/smoke
+//
+// Mixed.Merge/deterministic
+
+// The refused claims of Mixed:
+//
+// Mixed.Apply/associative: Apply does not take two inputs of one type. The
+// remedy is to remove the classification, or give Apply two inputs of one
+// type.
 
 // The unclaimed classifications of Mixed:
 //
 // The shape:writer of Mixed.Apply has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
-//
-// The mixin:associative of Mixed.Apply has the stance needs. The claims of
-// the mixin need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -56,9 +87,11 @@ type (
 var MixedChecks = struct {
 	Apply mixedApply
 	Total mixedTotal
+	Merge mixedMerge
 }{
 	Apply: mixedApply{"Mixed.Apply"},
 	Total: mixedTotal{"Mixed.Total"},
+	Merge: mixedMerge{"Mixed.Merge"},
 }
 
 // mixedApply is the name of Mixed.Apply, with the identities of its
@@ -73,10 +106,22 @@ func (c mixedApply) Smoke() conform.ID[associative.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Apply returns
+// without a panic for derived inputs.
+func (c mixedApply) SmokeGenerated() conform.ID[associative.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Apply returns an error for
 // a cancelled context.
 func (c mixedApply) Cancel() conform.ID[associative.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Apply returns an
+// error for a cancelled context.
+func (c mixedApply) CancelGenerated() conform.ID[associative.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedTotal is the name of Mixed.Total, with the identities of its
@@ -101,6 +146,48 @@ func (c mixedTotal) Cancel() conform.ID[associative.Mixed] {
 // zero value beside an error.
 func (c mixedTotal) ZeroOnError() conform.ID[associative.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// mixedMerge is the name of Mixed.Merge, with the identities of its
+// checks.
+type mixedMerge struct {
+	conform.Callable[associative.Mixed]
+}
+
+// Smoke returns the identity of the check that Merge returns without a
+// panic for derived inputs.
+func (c mixedMerge) Smoke() conform.ID[associative.Mixed] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Merge returns
+// without a panic for derived inputs.
+func (c mixedMerge) SmokeGenerated() conform.ID[associative.Mixed] {
+	return c.Check("smoke#generated")
+}
+
+// Deterministic returns the identity of the check that Merge returns the
+// same value for the same inputs.
+func (c mixedMerge) Deterministic() conform.ID[associative.Mixed] {
+	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Merge
+// returns the same value for the same inputs.
+func (c mixedMerge) DeterministicGenerated() conform.ID[associative.Mixed] {
+	return c.Check("deterministic#generated")
+}
+
+// Commutative returns the identity of the check that Merge returns one
+// value for two inputs in either order.
+func (c mixedMerge) Commutative() conform.ID[associative.Mixed] {
+	return c.Check("commutative")
+}
+
+// Associative returns the identity of the check that Merge returns one
+// value for three inputs in either grouping.
+func (c mixedMerge) Associative() conform.ID[associative.Mixed] {
+	return c.Check("associative")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -128,6 +215,22 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				Defect: mixedApplyPanics,
 			},
 			{
+				ID:          MixedChecks.Apply.SmokeGenerated(),
+				Statement:   "Apply returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnDs := c.Draw(prop.Of[[]associative.Delta](), "ds")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, drawnDs)
+					})
+				},
+				Defect: mixedApplyPanics,
+			},
+			{
 				ID:          MixedChecks.Apply.Cancel(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -138,6 +241,22 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Apply(ctx, []associative.Delta{{Key: "Key-a"}})
+					})
+				},
+				Defect: mixedApplyIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Apply.CancelGenerated(),
+				Statement:   "Apply returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnDs := c.Draw(prop.Of[[]associative.Delta](), "ds")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, drawnDs)
 					})
 				},
 				Defect: mixedApplyIgnoresCancel,
@@ -190,6 +309,137 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				},
 				Defect: mixedTotalValueBeside,
 			},
+			{
+				ID:          MixedChecks.Merge.Smoke(),
+				Statement:   "Merge returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Merge(associative.Delta{Key: "Key-a"}, associative.Delta{Key: "Key-a"})
+						return nil
+					})
+				},
+				Defect: mixedMergePanics,
+			},
+			{
+				ID:          MixedChecks.Merge.SmokeGenerated(),
+				Statement:   "Merge returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[associative.Delta](), "a")
+					drawnB := c.Draw(prop.Of[associative.Delta](), "b")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Merge(drawnA, drawnB)
+						return nil
+					})
+				},
+				Defect: mixedMergePanics,
+			},
+			{
+				ID:          MixedChecks.Merge.Deterministic(),
+				Statement:   "Merge returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Entails:     []conform.ID[associative.Mixed]{MixedChecks.Merge.Smoke()},
+				Apply: func(h *MixedHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (associative.Delta, error) {
+						r0 := h.Subject().Merge(associative.Delta{Key: "Key-a"}, associative.Delta{Key: "Key-a"})
+						return r0, nil
+					})
+				},
+				Defect: mixedMergeDrifts,
+			},
+			{
+				ID:          MixedChecks.Merge.DeterministicGenerated(),
+				Statement:   "Merge returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[associative.Mixed]{MixedChecks.Merge.SmokeGenerated()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[associative.Delta](), "a")
+					drawnB := c.Draw(prop.Of[associative.Delta](), "b")
+					probe.RepeatAgrees(h, func(ctx context.Context) (associative.Delta, error) {
+						r0 := h.Subject().Merge(drawnA, drawnB)
+						return r0, nil
+					})
+				},
+				Defect: mixedMergeDrifts,
+			},
+			{
+				ID:          MixedChecks.Merge.Commutative(),
+				Statement:   "Merge returns one value for two inputs in either order",
+				Claim:       spec.Commutative,
+				Probe:       spec.EitherOrderAgrees,
+				Reason:      spec.OrderDependent,
+				Law:         spec.CombiningIgnoresTheOrder,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[associative.Delta](), "a")
+					drawnB := c.Draw(prop.Of[associative.Delta](), "b")
+					probe.EitherOrderAgrees(
+						h,
+						func(ctx context.Context, x, y associative.Delta) (associative.Delta, error) {
+							r0 := h.Subject().Merge(x, y)
+							return r0, nil
+						},
+						drawnA,
+						drawnB,
+					)
+				},
+				Defect: mixedMergeIgnoresTheSecondInput,
+			},
+			{
+				ID:          MixedChecks.Merge.Associative(),
+				Statement:   "Merge returns one value for three inputs in either grouping",
+				Claim:       spec.Associative,
+				Probe:       spec.EitherGroupingAgrees,
+				Reason:      spec.GroupingDependent,
+				Law:         spec.CombiningIgnoresTheGrouping,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnA := c.Draw(prop.Of[associative.Delta](), "a")
+					drawnB := c.Draw(
+						prop.List(prop.Of[associative.Delta](), prop.Unique(), prop.MinSize(2), prop.MaxSize(2)),
+						"b",
+					)
+					probe.EitherGroupingAgrees(
+						h,
+						func(ctx context.Context, x, y associative.Delta) (associative.Delta, error) {
+							r0 := h.Subject().Merge(x, y)
+							return r0, nil
+						},
+						drawnA,
+						drawnB[0],
+						drawnB[1],
+					)
+				},
+				Defect: mixedMergeKeepsItsFirstResult,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Associative,
+				Callable: "Mixed.Apply",
+				Gate:     spec.TwoInputsOfOneType,
+				Why:      "Apply does not take two inputs of one type",
+				Remedy:   "remove the classification, or give Apply two inputs of one type",
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -197,12 +447,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				Callable:       "Mixed.Apply",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "mixin:associative",
-				Callable:       "Mixed.Apply",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[associative.Mixed]{
@@ -215,6 +459,11 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				Calls:    mixedTotalCalls,
 				Over:     newMixedOver,
 				Callable: MixedChecks.Total.Callable,
+			},
+			{
+				Calls:    mixedMergeCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Merge.Callable,
 			},
 		},
 	}
@@ -295,6 +544,17 @@ var mixedTotalCalls = prop.Composite(func(*prop.Case) func(context.Context, asso
 	}
 })
 
+// mixedMergeCalls generates the calls of Mixed.Merge with the inputs that
+// each case draws.
+var mixedMergeCalls = prop.Composite(func(c *prop.Case) func(context.Context, associative.Mixed) error {
+	a := c.Draw(prop.Of[associative.Delta](), "a")
+	b := c.Draw(prop.Of[associative.Delta](), "b")
+	return func(_ context.Context, subject associative.Mixed) error {
+		_ = subject.Merge(a, b)
+		return nil
+	}
+})
+
 // mixedOverEmbedded is associative.Mixed under the name of the field that
 // mixedOver embeds.
 type mixedOverEmbedded = associative.Mixed
@@ -317,6 +577,12 @@ func (o mixedOver) Apply(context.Context, []associative.Delta) (r0 error) {
 func (o mixedOver) Total(context.Context) (r0 int, r1 error) {
 	o.spend()
 	return r0, r1
+}
+
+// Merge calls spend and returns its zero results.
+func (o mixedOver) Merge(associative.Delta, associative.Delta) (r0 associative.Delta) {
+	o.spend()
+	return r0
 }
 
 // newMixedOver returns the planted defect of a ceiling of Mixed, whose
@@ -420,4 +686,87 @@ func mixedTotalValueBeside(h *MixedHandle) associative.Mixed {
 	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:febbe747571226c87d6b8fb5a00032c980aa140fe30743d6de235e0c6437b63d
+// mixedMergePanicsDefect is the planted defect of a Mixed whose Merge
+// panics.
+type mixedMergePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Merge is the override of the planted defect.
+func (*mixedMergePanicsDefect) Merge(p0, p1 associative.Delta) (r0 associative.Delta) {
+	panic("the planted defect of a Mixed whose Merge panics")
+}
+
+// mixedMergePanics returns the planted defect of a Mixed whose Merge
+// panics over a fresh subject.
+func mixedMergePanics(h *MixedHandle) associative.Mixed {
+	return &mixedMergePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedMergeDriftsDefect is the planted defect of a Mixed whose Merge
+// returns another value on the repeat.
+type mixedMergeDriftsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Merge is the override of the planted defect.
+func (d *mixedMergeDriftsDefect) Merge(p0, p1 associative.Delta) (r0 associative.Delta) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = associative.Delta{Key: "Key-b"}
+	}
+	return r0
+}
+
+// mixedMergeDrifts returns the planted defect of a Mixed whose Merge
+// returns another value on the repeat over a fresh subject.
+func mixedMergeDrifts(h *MixedHandle) associative.Mixed {
+	return &mixedMergeDriftsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedMergeIgnoresTheSecondInputDefect is the planted defect of a Mixed
+// whose Merge ignores its second input.
+type mixedMergeIgnoresTheSecondInputDefect struct {
+	mixedOverEmbedded
+}
+
+// Merge is the override of the planted defect.
+func (*mixedMergeIgnoresTheSecondInputDefect) Merge(p0, p1 associative.Delta) (r0 associative.Delta) {
+	r0 = p0
+	return r0
+}
+
+// mixedMergeIgnoresTheSecondInput returns the planted defect of a Mixed
+// whose Merge ignores its second input over a fresh subject.
+func mixedMergeIgnoresTheSecondInput(h *MixedHandle) associative.Mixed {
+	return &mixedMergeIgnoresTheSecondInputDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedMergeKeepsItsFirstResultDefect is the planted defect of a Mixed
+// whose Merge keeps the value of its first call.
+type mixedMergeKeepsItsFirstResultDefect struct {
+	mixedOverEmbedded
+	first *associative.Delta
+}
+
+// Merge is the override of the planted defect.
+func (d *mixedMergeKeepsItsFirstResultDefect) Merge(p0, p1 associative.Delta) (r0 associative.Delta) {
+	if d.first != nil && reflect.DeepEqual(p0, *d.first) {
+		r0 = p0
+		return r0
+	}
+	r0 = d.mixedOverEmbedded.Merge(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	return r0
+}
+
+// mixedMergeKeepsItsFirstResult returns the planted defect of a Mixed
+// whose Merge keeps the value of its first call over a fresh subject.
+func mixedMergeKeepsItsFirstResult(h *MixedHandle) associative.Mixed {
+	return &mixedMergeKeepsItsFirstResultDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:b6d0d7f8d69e097b2c9664a9474d3f3f2d539dda69a493e263dff440bc843898

@@ -20,8 +20,14 @@ import (
 // CompositeWriter.Set/smoke: Set returns without a panic for derived
 // inputs.
 //
+// CompositeWriter.Set/smoke#generated: Set returns without a panic for
+// derived inputs.
+//
 // CompositeWriter.Set/cancel: Set returns an error for a cancelled
 // context.
+//
+// CompositeWriter.Set/cancel#generated: Set returns an error for a
+// cancelled context.
 
 // The derived checks of CompositeWriter that witness their laws at the
 // shallow end:
@@ -64,10 +70,22 @@ func (c compositeWriterSet) Smoke() conform.ID[compositewriter.CompositeWriter] 
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Set returns
+// without a panic for derived inputs.
+func (c compositeWriterSet) SmokeGenerated() conform.ID[compositewriter.CompositeWriter] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Set returns an error for a
 // cancelled context.
 func (c compositeWriterSet) Cancel() conform.ID[compositewriter.CompositeWriter] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Set returns an
+// error for a cancelled context.
+func (c compositeWriterSet) CancelGenerated() conform.ID[compositewriter.CompositeWriter] {
+	return c.Check("cancel#generated")
 }
 
 // CompositeWriterSuite returns the checks of CompositeWriter, and the
@@ -95,6 +113,23 @@ func CompositeWriterSuite() conform.Suite[compositewriter.CompositeWriter] {
 				Defect: compositeWriterSetPanics,
 			},
 			{
+				ID:          CompositeWriterChecks.Set.SmokeGenerated(),
+				Statement:   "Set returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *CompositeWriterHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnV := c.Draw(prop.Of[compositewriter.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, drawnKey, drawnV)
+					})
+				},
+				Defect: compositeWriterSetPanics,
+			},
+			{
 				ID:          CompositeWriterChecks.Set.Cancel(),
 				Statement:   "Set returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -105,6 +140,23 @@ func CompositeWriterSuite() conform.Suite[compositewriter.CompositeWriter] {
 				Apply: func(h *CompositeWriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Set(ctx, string("key-a"), compositewriter.Value{Key: "Key-a"})
+					})
+				},
+				Defect: compositeWriterSetIgnoresCancel,
+			},
+			{
+				ID:          CompositeWriterChecks.Set.CancelGenerated(),
+				Statement:   "Set returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *CompositeWriterHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnV := c.Draw(prop.Of[compositewriter.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, drawnKey, drawnV)
 					})
 				},
 				Defect: compositeWriterSetIgnoresCancel,
@@ -273,4 +325,4 @@ func compositeWriterSetIgnoresCancel(h *CompositeWriterHandle) compositewriter.C
 	return &compositeWriterSetIgnoresCancelDefect{compositeWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6b9d30e237ba1755a7192664b8529fa5579c0f25302169d2234dbb158e195a63
+// dokimi:provenance sha256:754b7b4e1f458f12da6c6288889c4531c21132b2b46670963f1543a3d0d1b93d

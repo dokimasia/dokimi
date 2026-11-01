@@ -19,7 +19,13 @@ import (
 //
 // Deleter.Delete/smoke: Delete returns without a panic for derived inputs.
 //
+// Deleter.Delete/smoke#generated: Delete returns without a panic for
+// derived inputs.
+//
 // Deleter.Delete/cancel: Delete returns an error for a cancelled context.
+//
+// Deleter.Delete/cancel#generated: Delete returns an error for a cancelled
+// context.
 
 // The derived checks of Deleter that witness their laws at the shallow
 // end:
@@ -61,10 +67,22 @@ func (c deleterDelete) Smoke() conform.ID[deleter.Deleter] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Delete returns
+// without a panic for derived inputs.
+func (c deleterDelete) SmokeGenerated() conform.ID[deleter.Deleter] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Delete returns an error
 // for a cancelled context.
 func (c deleterDelete) Cancel() conform.ID[deleter.Deleter] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Delete returns an
+// error for a cancelled context.
+func (c deleterDelete) CancelGenerated() conform.ID[deleter.Deleter] {
+	return c.Check("cancel#generated")
 }
 
 // DeleterSuite returns the checks of Deleter, and the calls and the
@@ -92,6 +110,22 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 				Defect: deleterDeletePanics,
 			},
 			{
+				ID:          DeleterChecks.Delete.SmokeGenerated(),
+				Statement:   "Delete returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *DeleterHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Delete(ctx, drawnKey)
+					})
+				},
+				Defect: deleterDeletePanics,
+			},
+			{
 				ID:          DeleterChecks.Delete.Cancel(),
 				Statement:   "Delete returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -102,6 +136,22 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 				Apply: func(h *DeleterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Delete(ctx, string("key-a"))
+					})
+				},
+				Defect: deleterDeleteIgnoresCancel,
+			},
+			{
+				ID:          DeleterChecks.Delete.CancelGenerated(),
+				Statement:   "Delete returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *DeleterHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Delete(ctx, drawnKey)
 					})
 				},
 				Defect: deleterDeleteIgnoresCancel,
@@ -252,4 +302,4 @@ func deleterDeleteIgnoresCancel(h *DeleterHandle) deleter.Deleter {
 	return &deleterDeleteIgnoresCancelDefect{deleterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6cfe0446a63400c6a07a5255fcd7b739530e0c9553c6674287469b902065e266
+// dokimi:provenance sha256:1ef2b180c26e15d0db02f3900abfe2e8f8988a2d1e8cadc4fb25b41df581022e

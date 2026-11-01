@@ -19,9 +19,18 @@ import (
 //
 // Ranked.Rank/smoke: Rank returns without a panic for derived inputs.
 //
+// Ranked.Rank/smoke#generated: Rank returns without a panic for derived
+// inputs.
+//
 // Ranked.Rank/cancel: Rank returns an error for a cancelled context.
 //
+// Ranked.Rank/cancel#generated: Rank returns an error for a cancelled
+// context.
+//
 // Ranked.Rank/zero-on-error: Rank returns the zero value beside an error.
+//
+// Ranked.Rank/zero-on-error#generated: Rank returns the zero value beside
+// an error.
 //
 // Ranked.Reset/smoke: Reset returns without a panic for derived inputs.
 //
@@ -70,16 +79,34 @@ func (c rankedRank) Smoke() conform.ID[genericbound.Ranked[int, genericbound.Sco
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Rank returns
+// without a panic for derived inputs.
+func (c rankedRank) SmokeGenerated() conform.ID[genericbound.Ranked[int, genericbound.Score]] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Rank returns an error for
 // a cancelled context.
 func (c rankedRank) Cancel() conform.ID[genericbound.Ranked[int, genericbound.Score]] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Rank returns an
+// error for a cancelled context.
+func (c rankedRank) CancelGenerated() conform.ID[genericbound.Ranked[int, genericbound.Score]] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Rank returns the zero
 // value beside an error.
 func (c rankedRank) ZeroOnError() conform.ID[genericbound.Ranked[int, genericbound.Score]] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Rank returns
+// the zero value beside an error.
+func (c rankedRank) ZeroOnErrorGenerated() conform.ID[genericbound.Ranked[int, genericbound.Score]] {
+	return c.Check("zero-on-error#generated")
 }
 
 // rankedReset is the name of Ranked.Reset, with the identities of its
@@ -126,6 +153,23 @@ func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
 				Defect: rankedRankPanics,
 			},
 			{
+				ID:          RankedChecks.Rank.SmokeGenerated(),
+				Statement:   "Rank returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RankedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[int](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Rank(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: rankedRankPanics,
+			},
+			{
 				ID:          RankedChecks.Rank.Cancel(),
 				Statement:   "Rank returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -142,6 +186,23 @@ func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
 				Defect: rankedRankIgnoresCancel,
 			},
 			{
+				ID:          RankedChecks.Rank.CancelGenerated(),
+				Statement:   "Rank returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RankedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[int](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Rank(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: rankedRankIgnoresCancel,
+			},
+			{
 				ID:          RankedChecks.Rank.ZeroOnError(),
 				Statement:   "Rank returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -152,6 +213,22 @@ func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
 				Apply: func(h *RankedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (genericbound.Score, error) {
 						return h.Subject().Rank(ctx, int(42))
+					}, genericbound.Score{})
+				},
+				Defect: rankedRankValueBeside,
+			},
+			{
+				ID:          RankedChecks.Rank.ZeroOnErrorGenerated(),
+				Statement:   "Rank returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RankedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[int](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (genericbound.Score, error) {
+						return h.Subject().Rank(ctx, drawnKey)
 					}, genericbound.Score{})
 				},
 				Defect: rankedRankValueBeside,
@@ -425,4 +502,4 @@ func rankedResetIgnoresCancel(h *RankedHandle) genericbound.Ranked[int, genericb
 	return &rankedResetIgnoresCancelDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ef9bf32279ed624b647eeda9cf4553a363929e3cb81a6cf2154003f13f36de26
+// dokimi:provenance sha256:b6db6547fa4f1e3d90b80d6a9b3cbdbe76a95ae9c98fe0534b1b9aee2eb74a73

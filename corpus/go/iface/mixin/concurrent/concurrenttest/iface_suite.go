@@ -19,7 +19,13 @@ import (
 //
 // Mixed.Bump/smoke: Bump returns without a panic for derived inputs.
 //
+// Mixed.Bump/smoke#generated: Bump returns without a panic for derived
+// inputs.
+//
 // Mixed.Bump/cancel: Bump returns an error for a cancelled context.
+//
+// Mixed.Bump/cancel#generated: Bump returns an error for a cancelled
+// context.
 //
 // Mixed.Count/smoke: Count returns without a panic for derived inputs.
 //
@@ -72,10 +78,22 @@ func (c mixedBump) Smoke() conform.ID[concurrent.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Bump returns
+// without a panic for derived inputs.
+func (c mixedBump) SmokeGenerated() conform.ID[concurrent.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Bump returns an error for
 // a cancelled context.
 func (c mixedBump) Cancel() conform.ID[concurrent.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Bump returns an
+// error for a cancelled context.
+func (c mixedBump) CancelGenerated() conform.ID[concurrent.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedCount is the name of Mixed.Count, with the identities of its
@@ -127,6 +145,22 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Defect: mixedBumpPanics,
 			},
 			{
+				ID:          MixedChecks.Bump.SmokeGenerated(),
+				Statement:   "Bump returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Bump(ctx, drawnKey)
+					})
+				},
+				Defect: mixedBumpPanics,
+			},
+			{
 				ID:          MixedChecks.Bump.Cancel(),
 				Statement:   "Bump returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -137,6 +171,22 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Bump(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedBumpIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Bump.CancelGenerated(),
+				Statement:   "Bump returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Bump(ctx, drawnKey)
 					})
 				},
 				Defect: mixedBumpIgnoresCancel,
@@ -428,4 +478,4 @@ func mixedCountValueBeside(h *MixedHandle) concurrent.Mixed {
 	return &mixedCountValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2c9b136d7835df22aa78882b4a8bbfb2fe3b6a18a36ee0146ba11998a6ecab91
+// dokimi:provenance sha256:c0ae169f9758a17f191f49c5e1af1e7a6d7d13c8ce281d3e7e37fc154ccd19dc

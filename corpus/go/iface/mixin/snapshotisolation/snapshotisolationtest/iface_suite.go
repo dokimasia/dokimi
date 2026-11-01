@@ -19,7 +19,13 @@ import (
 //
 // Mixed.Record/smoke: Record returns without a panic for derived inputs.
 //
+// Mixed.Record/smoke#generated: Record returns without a panic for derived
+// inputs.
+//
 // Mixed.Record/cancel: Record returns an error for a cancelled context.
+//
+// Mixed.Record/cancel#generated: Record returns an error for a cancelled
+// context.
 //
 // Mixed.History/smoke: History returns without a panic for derived inputs.
 //
@@ -30,9 +36,18 @@ import (
 //
 // Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
+// Mixed.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
+//
 // Mixed.Get/cancel: Get returns an error for a cancelled context.
 //
+// Mixed.Get/cancel#generated: Get returns an error for a cancelled
+// context.
+//
 // Mixed.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
+// error.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -84,10 +99,22 @@ func (c mixedRecord) Smoke() conform.ID[snapshotisolation.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Record returns
+// without a panic for derived inputs.
+func (c mixedRecord) SmokeGenerated() conform.ID[snapshotisolation.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Record returns an error
 // for a cancelled context.
 func (c mixedRecord) Cancel() conform.ID[snapshotisolation.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Record returns an
+// error for a cancelled context.
+func (c mixedRecord) CancelGenerated() conform.ID[snapshotisolation.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedHistory is the name of Mixed.History, with the identities of its
@@ -125,16 +152,34 @@ func (c mixedGet) Smoke() conform.ID[snapshotisolation.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c mixedGet) SmokeGenerated() conform.ID[snapshotisolation.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[snapshotisolation.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c mixedGet) CancelGenerated() conform.ID[snapshotisolation.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c mixedGet) ZeroOnError() conform.ID[snapshotisolation.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c mixedGet) ZeroOnErrorGenerated() conform.ID[snapshotisolation.Mixed] {
+	return c.Check("zero-on-error#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -162,6 +207,22 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				Defect: mixedRecordPanics,
 			},
 			{
+				ID:          MixedChecks.Record.SmokeGenerated(),
+				Statement:   "Record returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[snapshotisolation.Entry](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnE)
+					})
+				},
+				Defect: mixedRecordPanics,
+			},
+			{
 				ID:          MixedChecks.Record.Cancel(),
 				Statement:   "Record returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -172,6 +233,22 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Record(ctx, snapshotisolation.Entry{Key: "Key-a"})
+					})
+				},
+				Defect: mixedRecordIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Record.CancelGenerated(),
+				Statement:   "Record returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[snapshotisolation.Entry](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnE)
 					})
 				},
 				Defect: mixedRecordIgnoresCancel,
@@ -242,6 +319,23 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
+				ID:          MixedChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -258,6 +352,23 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				Defect: mixedGetIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedGetIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -268,6 +379,22 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (snapshotisolation.Entry, error) {
 						return h.Subject().Get(ctx, string("key-a"))
+					}, snapshotisolation.Entry{})
+				},
+				Defect: mixedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (snapshotisolation.Entry, error) {
+						return h.Subject().Get(ctx, drawnKey)
 					}, snapshotisolation.Entry{})
 				},
 				Defect: mixedGetValueBeside,
@@ -582,4 +709,4 @@ func mixedGetValueBeside(h *MixedHandle) snapshotisolation.Mixed {
 	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c6ac2a24e1470db48d8f611b64bf9b970d4e5f2c53389d9ae0cbf859c429ce80
+// dokimi:provenance sha256:42bf9871d3f41650065bbc811d06eae6bb3f3ccf356f1c26a91e8abba228be3c

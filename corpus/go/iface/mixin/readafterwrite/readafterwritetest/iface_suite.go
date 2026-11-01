@@ -19,21 +19,41 @@ import (
 //
 // Mixed.Read/smoke: Read returns without a panic for derived inputs.
 //
+// Mixed.Read/smoke#generated: Read returns without a panic for derived
+// inputs.
+//
 // Mixed.Read/cancel: Read returns an error for a cancelled context.
+//
+// Mixed.Read/cancel#generated: Read returns an error for a cancelled
+// context.
 //
 // Mixed.Read/zero-on-error: Read returns the zero value beside an error.
 //
+// Mixed.Read/zero-on-error#generated: Read returns the zero value beside
+// an error.
+//
 // Mixed.Read/read-after-write: Read returns what Write stored before it.
+//
+// Mixed.Read/read-after-write#generated: Read returns what Write stored
+// before it.
 //
 // Mixed.Write/smoke: Write returns without a panic for derived inputs.
 //
+// Mixed.Write/smoke#generated: Write returns without a panic for derived
+// inputs.
+//
 // Mixed.Write/cancel: Write returns an error for a cancelled context.
+//
+// Mixed.Write/cancel#generated: Write returns an error for a cancelled
+// context.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
 // Mixed.Read/smoke
 //
 // Mixed.Read/read-after-write
+//
+// Mixed.Read/read-after-write#generated
 //
 // Mixed.Write/smoke
 
@@ -73,10 +93,22 @@ func (c mixedRead) Smoke() conform.ID[readafterwrite.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Read returns
+// without a panic for derived inputs.
+func (c mixedRead) SmokeGenerated() conform.ID[readafterwrite.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c mixedRead) Cancel() conform.ID[readafterwrite.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Read returns an
+// error for a cancelled context.
+func (c mixedRead) CancelGenerated() conform.ID[readafterwrite.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Read returns the zero
@@ -85,10 +117,22 @@ func (c mixedRead) ZeroOnError() conform.ID[readafterwrite.Mixed] {
 	return c.Check("zero-on-error")
 }
 
+// ZeroOnErrorGenerated returns the identity of the check that Read returns
+// the zero value beside an error.
+func (c mixedRead) ZeroOnErrorGenerated() conform.ID[readafterwrite.Mixed] {
+	return c.Check("zero-on-error#generated")
+}
+
 // ReadAfterWrite returns the identity of the check that Read returns what
 // Write stored before it.
 func (c mixedRead) ReadAfterWrite() conform.ID[readafterwrite.Mixed] {
 	return c.Check("read-after-write")
+}
+
+// ReadAfterWriteGenerated returns the identity of the check that Read
+// returns what Write stored before it.
+func (c mixedRead) ReadAfterWriteGenerated() conform.ID[readafterwrite.Mixed] {
+	return c.Check("read-after-write#generated")
 }
 
 // mixedWrite is the name of Mixed.Write, with the identities of its
@@ -103,10 +147,22 @@ func (c mixedWrite) Smoke() conform.ID[readafterwrite.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Write returns
+// without a panic for derived inputs.
+func (c mixedWrite) SmokeGenerated() conform.ID[readafterwrite.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Write returns an error for
 // a cancelled context.
 func (c mixedWrite) Cancel() conform.ID[readafterwrite.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Write returns an
+// error for a cancelled context.
+func (c mixedWrite) CancelGenerated() conform.ID[readafterwrite.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -135,6 +191,23 @@ func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 				Defect: mixedReadPanics,
 			},
 			{
+				ID:          MixedChecks.Read.SmokeGenerated(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedReadPanics,
+			},
+			{
 				ID:          MixedChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -151,6 +224,23 @@ func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 				Defect: mixedReadIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Read.CancelGenerated(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedReadIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.Read.ZeroOnError(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -161,6 +251,22 @@ func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
 						return h.Subject().Read(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: mixedReadValueBeside,
+			},
+			{
+				ID:          MixedChecks.Read.ZeroOnErrorGenerated(),
+				Statement:   "Read returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, drawnKey)
 					}, string(""))
 				},
 				Defect: mixedReadValueBeside,
@@ -186,6 +292,28 @@ func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 				Defect: mixedReadReadsAnotherValue,
 			},
 			{
+				ID:          MixedChecks.Read.ReadAfterWriteGenerated(),
+				Statement:   "Read returns what Write stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.WriteThenRead(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, drawnKey)
+					}, func(ctx context.Context) (string, error) {
+						w := drawnValue
+						err := h.Subject().Write(ctx, drawnKey, w)
+						return w, err
+					})
+				},
+				Defect: mixedReadReadsAnotherValue,
+			},
+			{
 				ID:          MixedChecks.Write.Smoke(),
 				Statement:   "Write returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -202,6 +330,23 @@ func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 				Defect: mixedWritePanics,
 			},
 			{
+				ID:          MixedChecks.Write.SmokeGenerated(),
+				Statement:   "Write returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Write(ctx, drawnKey, drawnValue)
+					})
+				},
+				Defect: mixedWritePanics,
+			},
+			{
 				ID:          MixedChecks.Write.Cancel(),
 				Statement:   "Write returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -212,6 +357,23 @@ func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Write(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedWriteIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Write.CancelGenerated(),
+				Statement:   "Write returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Write(ctx, drawnKey, drawnValue)
 					})
 				},
 				Defect: mixedWriteIgnoresCancel,
@@ -469,4 +631,4 @@ func mixedWriteIgnoresCancel(h *MixedHandle) readafterwrite.Mixed {
 	return &mixedWriteIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:80b0af7b985a0f6f5eeef4584677817d0b144486aba64e08bdd39b56a0cc540a
+// dokimi:provenance sha256:2374ada668ca4a6ef724097b031e26f9bd354692500dd8e4079285d23d82c98e

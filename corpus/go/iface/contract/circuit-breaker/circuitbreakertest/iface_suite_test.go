@@ -54,7 +54,15 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				circuitbreakertest.ContractChecks.Run.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				circuitbreakertest.ContractChecks.Run.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				circuitbreakertest.ContractChecks.Run.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -83,7 +91,15 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				circuitbreakertest.ContractChecks.Run.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				circuitbreakertest.ContractChecks.Run.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				circuitbreakertest.ContractChecks.Run.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -110,7 +126,15 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			circuitbreakertest.ContractChecks.Run.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			circuitbreakertest.ContractChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			circuitbreakertest.ContractChecks.Run.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -128,7 +152,15 @@ func FuzzContractSuiteRun(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			circuitbreakertest.ContractChecks.Run.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			circuitbreakertest.ContractChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			circuitbreakertest.ContractChecks.Run.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -142,4 +174,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:cdd502279fbf94f5bec348c4aebecb8f871ab00fe4f5e3265e6e2426d337fb97
+// dokimi:provenance sha256:23e2d7248b9de6e32490e5136b0927ab83009b6ed54d9ab05a8a09ee2ffb0fc6

@@ -19,13 +19,25 @@ import (
 //
 // Finder.Find/smoke: Find returns without a panic for derived inputs.
 //
+// Finder.Find/smoke#generated: Find returns without a panic for derived
+// inputs.
+//
 // Finder.Find/cancel: Find returns an error for a cancelled context.
+//
+// Finder.Find/cancel#generated: Find returns an error for a cancelled
+// context.
 //
 // Finder.FindWithLimit/smoke: FindWithLimit returns without a panic for
 // derived inputs.
 //
+// Finder.FindWithLimit/smoke#generated: FindWithLimit returns without a
+// panic for derived inputs.
+//
 // Finder.FindWithLimit/cancel: FindWithLimit returns an error for a
 // cancelled context.
+//
+// Finder.FindWithLimit/cancel#generated: FindWithLimit returns an error
+// for a cancelled context.
 
 // The derived checks of Finder that witness their laws at the shallow end:
 //
@@ -70,10 +82,22 @@ func (c finderFind) Smoke() conform.ID[variadic.Finder] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Find returns
+// without a panic for derived inputs.
+func (c finderFind) SmokeGenerated() conform.ID[variadic.Finder] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Find returns an error for
 // a cancelled context.
 func (c finderFind) Cancel() conform.ID[variadic.Finder] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Find returns an
+// error for a cancelled context.
+func (c finderFind) CancelGenerated() conform.ID[variadic.Finder] {
+	return c.Check("cancel#generated")
 }
 
 // finderFindWithLimit is the name of Finder.FindWithLimit, with the
@@ -88,10 +112,22 @@ func (c finderFindWithLimit) Smoke() conform.ID[variadic.Finder] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that FindWithLimit
+// returns without a panic for derived inputs.
+func (c finderFindWithLimit) SmokeGenerated() conform.ID[variadic.Finder] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that FindWithLimit returns an
 // error for a cancelled context.
 func (c finderFindWithLimit) Cancel() conform.ID[variadic.Finder] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that FindWithLimit
+// returns an error for a cancelled context.
+func (c finderFindWithLimit) CancelGenerated() conform.ID[variadic.Finder] {
+	return c.Check("cancel#generated")
 }
 
 // FinderSuite returns the checks of Finder, and the calls and the budgets
@@ -120,6 +156,23 @@ func FinderSuite() conform.Suite[variadic.Finder] {
 				Defect: finderFindPanics,
 			},
 			{
+				ID:          FinderChecks.Find.SmokeGenerated(),
+				Statement:   "Find returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *FinderHandle, c *prop.Case) {
+					drawnKeys := c.Draw(prop.Of[string](), "keys")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Find(ctx, drawnKeys)
+						return err
+					})
+				},
+				Defect: finderFindPanics,
+			},
+			{
 				ID:          FinderChecks.Find.Cancel(),
 				Statement:   "Find returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -130,6 +183,23 @@ func FinderSuite() conform.Suite[variadic.Finder] {
 				Apply: func(h *FinderHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Find(ctx, string("keys-a"))
+						return err
+					})
+				},
+				Defect: finderFindIgnoresCancel,
+			},
+			{
+				ID:          FinderChecks.Find.CancelGenerated(),
+				Statement:   "Find returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *FinderHandle, c *prop.Case) {
+					drawnKeys := c.Draw(prop.Of[string](), "keys")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Find(ctx, drawnKeys)
 						return err
 					})
 				},
@@ -153,6 +223,24 @@ func FinderSuite() conform.Suite[variadic.Finder] {
 				Defect: finderFindWithLimitPanics,
 			},
 			{
+				ID:          FinderChecks.FindWithLimit.SmokeGenerated(),
+				Statement:   "FindWithLimit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *FinderHandle, c *prop.Case) {
+					drawnLimit := c.Draw(prop.Of[int](), "limit")
+					drawnKeys := c.Draw(prop.Of[string](), "keys")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().FindWithLimit(ctx, drawnLimit, drawnKeys)
+						return err
+					})
+				},
+				Defect: finderFindWithLimitPanics,
+			},
+			{
 				ID:          FinderChecks.FindWithLimit.Cancel(),
 				Statement:   "FindWithLimit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -163,6 +251,24 @@ func FinderSuite() conform.Suite[variadic.Finder] {
 				Apply: func(h *FinderHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().FindWithLimit(ctx, int(42), string("keys-a"))
+						return err
+					})
+				},
+				Defect: finderFindWithLimitIgnoresCancel,
+			},
+			{
+				ID:          FinderChecks.FindWithLimit.CancelGenerated(),
+				Statement:   "FindWithLimit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *FinderHandle, c *prop.Case) {
+					drawnLimit := c.Draw(prop.Of[int](), "limit")
+					drawnKeys := c.Draw(prop.Of[string](), "keys")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().FindWithLimit(ctx, drawnLimit, drawnKeys)
 						return err
 					})
 				},
@@ -382,4 +488,4 @@ func finderFindWithLimitIgnoresCancel(h *FinderHandle) variadic.Finder {
 	return &finderFindWithLimitIgnoresCancelDefect{finderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b8a0d5591fe1ad11f0d54b53c0034e6df96dc608efbe66d63504313d8a244305
+// dokimi:provenance sha256:93b1f275af86428dbce7ed99c25793d2e7aab6cd6e272165d73310b0222645e3

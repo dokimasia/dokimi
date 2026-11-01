@@ -20,13 +20,25 @@ import (
 // Contract.Publish/smoke: Publish returns without a panic for derived
 // inputs.
 //
+// Contract.Publish/smoke#generated: Publish returns without a panic for
+// derived inputs.
+//
 // Contract.Publish/cancel: Publish returns an error for a cancelled
 // context.
+//
+// Contract.Publish/cancel#generated: Publish returns an error for a
+// cancelled context.
 //
 // Contract.Replay/smoke: Replay returns without a panic for derived
 // inputs.
 //
+// Contract.Replay/smoke#generated: Replay returns without a panic for
+// derived inputs.
+//
 // Contract.Replay/cancel: Replay returns an error for a cancelled context.
+//
+// Contract.Replay/cancel#generated: Replay returns an error for a
+// cancelled context.
 //
 // Contract.Subscribe/smoke: Subscribe returns without a panic for derived
 // inputs.
@@ -100,10 +112,22 @@ func (c contractPublish) Smoke() conform.ID[publisherexactlyonce.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Publish returns
+// without a panic for derived inputs.
+func (c contractPublish) SmokeGenerated() conform.ID[publisherexactlyonce.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Publish returns an error
 // for a cancelled context.
 func (c contractPublish) Cancel() conform.ID[publisherexactlyonce.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Publish returns
+// an error for a cancelled context.
+func (c contractPublish) CancelGenerated() conform.ID[publisherexactlyonce.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // contractReplay is the name of Contract.Replay, with the identities of
@@ -118,10 +142,22 @@ func (c contractReplay) Smoke() conform.ID[publisherexactlyonce.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Replay returns
+// without a panic for derived inputs.
+func (c contractReplay) SmokeGenerated() conform.ID[publisherexactlyonce.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Replay returns an error
 // for a cancelled context.
 func (c contractReplay) Cancel() conform.ID[publisherexactlyonce.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Replay returns an
+// error for a cancelled context.
+func (c contractReplay) CancelGenerated() conform.ID[publisherexactlyonce.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // contractSubscribe is the name of Contract.Subscribe, with the identities
@@ -167,6 +203,22 @@ func ContractSuite() conform.Suite[publisherexactlyonce.Contract] {
 				Defect: contractPublishPanics,
 			},
 			{
+				ID:          ContractChecks.Publish.SmokeGenerated(),
+				Statement:   "Publish returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[publisherexactlyonce.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, drawnV)
+					})
+				},
+				Defect: contractPublishPanics,
+			},
+			{
 				ID:          ContractChecks.Publish.Cancel(),
 				Statement:   "Publish returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -177,6 +229,22 @@ func ContractSuite() conform.Suite[publisherexactlyonce.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Publish(ctx, publisherexactlyonce.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPublishIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Publish.CancelGenerated(),
+				Statement:   "Publish returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[publisherexactlyonce.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, drawnV)
 					})
 				},
 				Defect: contractPublishIgnoresCancel,
@@ -198,6 +266,22 @@ func ContractSuite() conform.Suite[publisherexactlyonce.Contract] {
 				Defect: contractReplayPanics,
 			},
 			{
+				ID:          ContractChecks.Replay.SmokeGenerated(),
+				Statement:   "Replay returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[publisherexactlyonce.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Replay(ctx, drawnV)
+					})
+				},
+				Defect: contractReplayPanics,
+			},
+			{
 				ID:          ContractChecks.Replay.Cancel(),
 				Statement:   "Replay returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -208,6 +292,22 @@ func ContractSuite() conform.Suite[publisherexactlyonce.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Replay(ctx, publisherexactlyonce.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractReplayIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Replay.CancelGenerated(),
+				Statement:   "Replay returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[publisherexactlyonce.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Replay(ctx, drawnV)
 					})
 				},
 				Defect: contractReplayIgnoresCancel,
@@ -250,6 +350,7 @@ func ContractSuite() conform.Suite[publisherexactlyonce.Contract] {
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Contract.Subscribe",
+				Gate:     spec.ValueSamples,
 				Why:      "eidos derives no sample of a result of Subscribe",
 				Remedy:   "author a sample of the result type with the directive sample",
 			},
@@ -549,4 +650,4 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) publisherexactlyonce.Cont
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a0889f4550363b5fff7c91c5be633189f091f5c645a21d38e45e50a169ef29c4
+// dokimi:provenance sha256:2d2afdad70b434110b09ec0f2e451ad31b201caa528cf684758aa33e247f5f6d

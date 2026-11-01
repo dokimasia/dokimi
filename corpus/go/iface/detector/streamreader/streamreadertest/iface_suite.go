@@ -20,7 +20,13 @@ import (
 //
 // StreamReader.Add/smoke: Add returns without a panic for derived inputs.
 //
+// StreamReader.Add/smoke#generated: Add returns without a panic for
+// derived inputs.
+//
 // StreamReader.Add/cancel: Add returns an error for a cancelled context.
+//
+// StreamReader.Add/cancel#generated: Add returns an error for a cancelled
+// context.
 //
 // StreamReader.List/smoke: List returns without a panic for derived
 // inputs.
@@ -77,10 +83,22 @@ func (c streamReaderAdd) Smoke() conform.ID[streamreader.StreamReader] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c streamReaderAdd) SmokeGenerated() conform.ID[streamreader.StreamReader] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c streamReaderAdd) Cancel() conform.ID[streamreader.StreamReader] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Add returns an
+// error for a cancelled context.
+func (c streamReaderAdd) CancelGenerated() conform.ID[streamreader.StreamReader] {
+	return c.Check("cancel#generated")
 }
 
 // streamReaderList is the name of StreamReader.List, with the identities
@@ -120,6 +138,22 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				Defect: streamReaderAddPanics,
 			},
 			{
+				ID:          StreamReaderChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StreamReaderHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[streamreader.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnV)
+					})
+				},
+				Defect: streamReaderAddPanics,
+			},
+			{
 				ID:          StreamReaderChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -130,6 +164,22 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				Apply: func(h *StreamReaderHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Add(ctx, streamreader.Value{Key: "Key-a"})
+					})
+				},
+				Defect: streamReaderAddIgnoresCancel,
+			},
+			{
+				ID:          StreamReaderChecks.Add.CancelGenerated(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StreamReaderHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[streamreader.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnV)
 					})
 				},
 				Defect: streamReaderAddIgnoresCancel,
@@ -156,6 +206,7 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 			{
 				Claim:    spec.Cancel,
 				Callable: "StreamReader.List",
+				Gate:     spec.Failure,
 				Why:      "List cannot fail",
 				Remedy:   "give List an error result",
 			},
@@ -354,4 +405,4 @@ func streamReaderListPanics(h *StreamReaderHandle) streamreader.StreamReader {
 	return &streamReaderListPanicsDefect{streamReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:cdb5c96a115844b58e65215226447e950d65146ab4222bf38ef25a385089b273
+// dokimi:provenance sha256:ab2eeb9e6783965ab147d1710faa117a002766dba38da1eb9e4988949facebe1

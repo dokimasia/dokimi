@@ -53,7 +53,15 @@ func TestHasherSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				sampledparamtest.HasherChecks.HashTagged.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.HashTagged.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -61,7 +69,15 @@ func TestHasherSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				sampledparamtest.HasherChecks.CombineTagged.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.CombineTagged.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -90,7 +106,15 @@ func TestHasherSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				sampledparamtest.HasherChecks.HashTagged.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.HashTagged.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -98,7 +122,15 @@ func TestHasherSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				sampledparamtest.HasherChecks.CombineTagged.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.CombineTagged.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -148,7 +180,15 @@ func TestHasherSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -156,7 +196,15 @@ func TestHasherSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -174,7 +222,15 @@ func FuzzHasherSuiteHashTagged(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -182,7 +238,15 @@ func FuzzHasherSuiteHashTagged(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -201,7 +265,15 @@ func FuzzHasherSuiteCombineTagged(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -209,7 +281,15 @@ func FuzzHasherSuiteCombineTagged(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.DeterministicGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -226,4 +306,4 @@ func BenchmarkHasherSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ca57688196d1af56f49390173ad9676d6c702572a99480ef7b952d8dfd833efd
+// dokimi:provenance sha256:7e737efa58f867eddb8f342b004d9d53591773655b05ef04ecbca7ba096fa371

@@ -19,14 +19,28 @@ import (
 //
 // Mixed.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Mixed.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Mixed.Put/cancel: Put returns an error for a cancelled context.
 //
+// Mixed.Put/cancel#generated: Put returns an error for a cancelled
+// context.
+//
 // Mixed.Get/smoke: Get returns without a panic for derived inputs.
+//
+// Mixed.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
 //
 // Mixed.Get/zero-on-miss: Get returns the zero value beside a false
 // presence flag.
 //
+// Mixed.Get/zero-on-miss#generated: Get returns the zero value beside a
+// false presence flag.
+//
 // Mixed.Get/cacheable: Get returns the same value on a repeat.
+//
+// Mixed.Get/cacheable#generated: Get returns the same value on a repeat.
 //
 // Mixed.Len/smoke: Len returns without a panic for derived inputs.
 //
@@ -90,10 +104,22 @@ func (c mixedPut) Smoke() conform.ID[boundedcache.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c mixedPut) SmokeGenerated() conform.ID[boundedcache.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c mixedPut) Cancel() conform.ID[boundedcache.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c mixedPut) CancelGenerated() conform.ID[boundedcache.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
@@ -107,16 +133,34 @@ func (c mixedGet) Smoke() conform.ID[boundedcache.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c mixedGet) SmokeGenerated() conform.ID[boundedcache.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // ZeroOnMiss returns the identity of the check that Get returns the zero
 // value beside a false presence flag.
 func (c mixedGet) ZeroOnMiss() conform.ID[boundedcache.Mixed] {
 	return c.Check("zero-on-miss")
 }
 
+// ZeroOnMissGenerated returns the identity of the check that Get returns
+// the zero value beside a false presence flag.
+func (c mixedGet) ZeroOnMissGenerated() conform.ID[boundedcache.Mixed] {
+	return c.Check("zero-on-miss#generated")
+}
+
 // Cacheable returns the identity of the check that Get returns the same
 // value on a repeat.
 func (c mixedGet) Cacheable() conform.ID[boundedcache.Mixed] {
 	return c.Check("cacheable")
+}
+
+// CacheableGenerated returns the identity of the check that Get returns
+// the same value on a repeat.
+func (c mixedGet) CacheableGenerated() conform.ID[boundedcache.Mixed] {
+	return c.Check("cacheable#generated")
 }
 
 // mixedLen is the name of Mixed.Len, with the identities of its checks.
@@ -168,6 +212,23 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Defect: mixedPutPanics,
 			},
 			{
+				ID:          MixedChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
+					drawnValue := c.Draw(prop.Of[boundedcache.Value](), "value")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
+					})
+				},
+				Defect: mixedPutPanics,
+			},
+			{
 				ID:          MixedChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -179,6 +240,23 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().
 							Put(ctx, boundedcache.Key("test-key"), boundedcache.Value{Body: "test-value"})
+					})
+				},
+				Defect: mixedPutIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
+					drawnValue := c.Draw(prop.Of[boundedcache.Value](), "value")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
 					})
 				},
 				Defect: mixedPutIgnoresCancel,
@@ -201,6 +279,23 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
+				ID:          MixedChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Get(ctx, drawnKey)
+						return nil
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
 				ID:          MixedChecks.Get.ZeroOnMiss(),
 				Statement:   "Get returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
@@ -211,6 +306,22 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideFalse(h, func(ctx context.Context) (boundedcache.Value, bool) {
 						return h.Subject().Get(ctx, boundedcache.Key("test-key"))
+					}, boundedcache.Value{})
+				},
+				Defect: mixedGetValueBesideAFalseFlag,
+			},
+			{
+				ID:          MixedChecks.Get.ZeroOnMissGenerated(),
+				Statement:   "Get returns the zero value beside a false presence flag",
+				Claim:       spec.ZeroOnMiss,
+				Probe:       spec.ZeroBesideFalse,
+				Reason:      spec.ValueBesideFalse,
+				Law:         spec.NoValueBesideAFalseFlag,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
+					probe.ZeroBesideFalse(h, func(ctx context.Context) (boundedcache.Value, bool) {
+						return h.Subject().Get(ctx, drawnKey)
 					}, boundedcache.Value{})
 				},
 				Defect: mixedGetValueBesideAFalseFlag,
@@ -227,6 +338,23 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (boundedcache.Value, error) {
 						r0, _ := h.Subject().Get(ctx, boundedcache.Key("test-key"))
+						return r0, nil
+					})
+				},
+				Defect: mixedGetDrifts,
+			},
+			{
+				ID:          MixedChecks.Get.CacheableGenerated(),
+				Statement:   "Get returns the same value on a repeat",
+				Claim:       spec.Cacheable,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
+					probe.RepeatAgrees(h, func(ctx context.Context) (boundedcache.Value, error) {
+						r0, _ := h.Subject().Get(ctx, drawnKey)
 						return r0, nil
 					})
 				},
@@ -285,6 +413,7 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 			{
 				Claim:    spec.Cancel,
 				Callable: "Mixed.Get",
+				Gate:     spec.Failure,
 				Why:      "Get cannot fail",
 				Remedy:   "give Get an error result",
 			},
@@ -626,4 +755,4 @@ func mixedLenValueBeside(h *MixedHandle) boundedcache.Mixed {
 	return &mixedLenValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:66a393916f783abf3da8e783043de1bcbcd5dc8ec26411509e78f82de4f3602e
+// dokimi:provenance sha256:f42b74981b6232f4a34cc2c5fe2406cbfba44b375dc467728c9cbbc05f9a834a

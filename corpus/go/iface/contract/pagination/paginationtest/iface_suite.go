@@ -19,17 +19,32 @@ import (
 //
 // Contract.Fetch/smoke: Fetch returns without a panic for derived inputs.
 //
+// Contract.Fetch/smoke#generated: Fetch returns without a panic for
+// derived inputs.
+//
 // Contract.Fetch/cancel: Fetch returns an error for a cancelled context.
+//
+// Contract.Fetch/cancel#generated: Fetch returns an error for a cancelled
+// context.
 //
 // Contract.Fetch/zero-on-error: Fetch returns the zero value beside an
 // error.
+//
+// Contract.Fetch/zero-on-error#generated: Fetch returns the zero value
+// beside an error.
 //
 // Contract.Fetch/pagination: Fetch resumes from the cursor of its own
 // page.
 //
 // Contract.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Contract.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Contract.Put/cancel: Put returns an error for a cancelled context.
+//
+// Contract.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -75,16 +90,34 @@ func (c contractFetch) Smoke() conform.ID[pagination.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Fetch returns
+// without a panic for derived inputs.
+func (c contractFetch) SmokeGenerated() conform.ID[pagination.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Fetch returns an error for
 // a cancelled context.
 func (c contractFetch) Cancel() conform.ID[pagination.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Fetch returns an
+// error for a cancelled context.
+func (c contractFetch) CancelGenerated() conform.ID[pagination.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Fetch returns the
 // zero value beside an error.
 func (c contractFetch) ZeroOnError() conform.ID[pagination.Contract] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Fetch
+// returns the zero value beside an error.
+func (c contractFetch) ZeroOnErrorGenerated() conform.ID[pagination.Contract] {
+	return c.Check("zero-on-error#generated")
 }
 
 // Pagination returns the identity of the check that Fetch resumes from the
@@ -105,10 +138,22 @@ func (c contractPut) Smoke() conform.ID[pagination.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c contractPut) SmokeGenerated() conform.ID[pagination.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c contractPut) Cancel() conform.ID[pagination.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c contractPut) CancelGenerated() conform.ID[pagination.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -137,6 +182,23 @@ func ContractSuite() conform.Suite[pagination.Contract] {
 				Defect: contractFetchPanics,
 			},
 			{
+				ID:          ContractChecks.Fetch.SmokeGenerated(),
+				Statement:   "Fetch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnCur := c.Draw(prop.Of[pagination.Cursor](), "cur")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, drawnCur)
+						return err
+					})
+				},
+				Defect: contractFetchPanics,
+			},
+			{
 				ID:          ContractChecks.Fetch.Cancel(),
 				Statement:   "Fetch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -153,6 +215,23 @@ func ContractSuite() conform.Suite[pagination.Contract] {
 				Defect: contractFetchIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Fetch.CancelGenerated(),
+				Statement:   "Fetch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnCur := c.Draw(prop.Of[pagination.Cursor](), "cur")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, drawnCur)
+						return err
+					})
+				},
+				Defect: contractFetchIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Fetch.ZeroOnError(),
 				Statement:   "Fetch returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -163,6 +242,22 @@ func ContractSuite() conform.Suite[pagination.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (pagination.Page, error) {
 						return h.Subject().Fetch(ctx, pagination.Cursor("cur-a"))
+					}, pagination.Page{})
+				},
+				Defect: contractFetchValueBeside,
+			},
+			{
+				ID:          ContractChecks.Fetch.ZeroOnErrorGenerated(),
+				Statement:   "Fetch returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnCur := c.Draw(prop.Of[pagination.Cursor](), "cur")
+					probe.ZeroBesideError(h, func(ctx context.Context) (pagination.Page, error) {
+						return h.Subject().Fetch(ctx, drawnCur)
 					}, pagination.Page{})
 				},
 				Defect: contractFetchValueBeside,
@@ -203,6 +298,22 @@ func ContractSuite() conform.Suite[pagination.Contract] {
 				Defect: contractPutPanics,
 			},
 			{
+				ID:          ContractChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[pagination.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
+					})
+				},
+				Defect: contractPutPanics,
+			},
+			{
 				ID:          ContractChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -213,6 +324,22 @@ func ContractSuite() conform.Suite[pagination.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, pagination.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPutIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[pagination.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnV)
 					})
 				},
 				Defect: contractPutIgnoresCancel,
@@ -479,4 +606,4 @@ func contractPutIgnoresCancel(h *ContractHandle) pagination.Contract {
 	return &contractPutIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1fdc3fe208071fe151ed4609b583961ec1fd399bb1ef8d2c7607a04fd61e07d1
+// dokimi:provenance sha256:ea8215196502d64e535a0e5521f0f9a837ce8b3c6adf053fd5a8d0ccf7446af5

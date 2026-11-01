@@ -19,10 +19,19 @@ import (
 //
 // Mixed.Store/smoke: Store returns without a panic for derived inputs.
 //
+// Mixed.Store/smoke#generated: Store returns without a panic for derived
+// inputs.
+//
 // Mixed.Store/cancel: Store returns an error for a cancelled context.
+//
+// Mixed.Store/cancel#generated: Store returns an error for a cancelled
+// context.
 //
 // Mixed.Store/tamper-evident: Verify fails for a value of Store after
 // Corrupt.
+//
+// Mixed.Store/tamper-evident#generated: Verify fails for a value of Store
+// after Corrupt.
 //
 // Mixed.Corrupt/smoke: Corrupt returns without a panic for derived inputs.
 //
@@ -85,16 +94,34 @@ func (c mixedStore) Smoke() conform.ID[tamperevident.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Store returns
+// without a panic for derived inputs.
+func (c mixedStore) SmokeGenerated() conform.ID[tamperevident.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Store returns an error for
 // a cancelled context.
 func (c mixedStore) Cancel() conform.ID[tamperevident.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Store returns an
+// error for a cancelled context.
+func (c mixedStore) CancelGenerated() conform.ID[tamperevident.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // TamperEvident returns the identity of the check that Verify fails for a
 // value of Store after Corrupt.
 func (c mixedStore) TamperEvident() conform.ID[tamperevident.Mixed] {
 	return c.Check("tamper-evident")
+}
+
+// TamperEvidentGenerated returns the identity of the check that Verify
+// fails for a value of Store after Corrupt.
+func (c mixedStore) TamperEvidentGenerated() conform.ID[tamperevident.Mixed] {
+	return c.Check("tamper-evident#generated")
 }
 
 // mixedCorrupt is the name of Mixed.Corrupt, with the identities of its
@@ -158,6 +185,22 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				Defect: mixedStorePanics,
 			},
 			{
+				ID:          MixedChecks.Store.SmokeGenerated(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnBody := c.Draw(prop.Of[string](), "body")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnBody)
+					})
+				},
+				Defect: mixedStorePanics,
+			},
+			{
 				ID:          MixedChecks.Store.Cancel(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -173,6 +216,22 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				Defect: mixedStoreIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Store.CancelGenerated(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnBody := c.Draw(prop.Of[string](), "body")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnBody)
+					})
+				},
+				Defect: mixedStoreIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.Store.TamperEvident(),
 				Statement:   "Verify fails for a value of Store after Corrupt",
 				Claim:       spec.TamperEvident,
@@ -183,6 +242,26 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.DetectsTamper(h, func(ctx context.Context) error {
 						return h.Subject().Store(ctx, string("body-a"))
+					}, func(ctx context.Context) error {
+						return h.Subject().Verify(ctx)
+					}, func(ctx context.Context) error {
+						return h.Subject().Corrupt(ctx)
+					})
+				},
+				Defect: mixedVerifyVerifySilent,
+			},
+			{
+				ID:          MixedChecks.Store.TamperEvidentGenerated(),
+				Statement:   "Verify fails for a value of Store after Corrupt",
+				Claim:       spec.TamperEvident,
+				Probe:       spec.DetectsTamper,
+				Reason:      spec.SilentTamper,
+				Law:         spec.TamperIsDetected,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnBody := c.Draw(prop.Of[string](), "body")
+					probe.DetectsTamper(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnBody)
 					}, func(ctx context.Context) error {
 						return h.Subject().Verify(ctx)
 					}, func(ctx context.Context) error {
@@ -544,4 +623,4 @@ func mixedVerifyIgnoresCancel(h *MixedHandle) tamperevident.Mixed {
 	return &mixedVerifyIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3135268694c69ff0283df3cbe4120b3e09ee38390d505094275e917d62fb1cdf
+// dokimi:provenance sha256:122e722a5ff97a3ea39309ffbd0aa2ecb04cdb3d187ff391653d01d8a248df3d

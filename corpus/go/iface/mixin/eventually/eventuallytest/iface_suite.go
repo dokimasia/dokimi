@@ -20,10 +20,19 @@ import (
 //
 // Mixed.Publish/smoke: Publish returns without a panic for derived inputs.
 //
+// Mixed.Publish/smoke#generated: Publish returns without a panic for
+// derived inputs.
+//
 // Mixed.Publish/cancel: Publish returns an error for a cancelled context.
+//
+// Mixed.Publish/cancel#generated: Publish returns an error for a cancelled
+// context.
 //
 // Mixed.Publish/settles: the effect of Publish reaches Items once Settle
 // has run.
+//
+// Mixed.Publish/settles#generated: the effect of Publish reaches Items
+// once Settle has run.
 //
 // Mixed.Settle/smoke: Settle returns without a panic for derived inputs.
 //
@@ -96,16 +105,34 @@ func (c mixedPublish) Smoke() conform.ID[eventually.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Publish returns
+// without a panic for derived inputs.
+func (c mixedPublish) SmokeGenerated() conform.ID[eventually.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Publish returns an error
 // for a cancelled context.
 func (c mixedPublish) Cancel() conform.ID[eventually.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Publish returns
+// an error for a cancelled context.
+func (c mixedPublish) CancelGenerated() conform.ID[eventually.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // Settles returns the identity of the check that the effect of Publish
 // reaches Items once Settle has run.
 func (c mixedPublish) Settles() conform.ID[eventually.Mixed] {
 	return c.Check("settles")
+}
+
+// SettlesGenerated returns the identity of the check that the effect of
+// Publish reaches Items once Settle has run.
+func (c mixedPublish) SettlesGenerated() conform.ID[eventually.Mixed] {
+	return c.Check("settles#generated")
 }
 
 // mixedSettle is the name of Mixed.Settle, with the identities of its
@@ -180,6 +207,22 @@ func MixedSuite() conform.Suite[eventually.Mixed] {
 				Defect: mixedPublishPanics,
 			},
 			{
+				ID:          MixedChecks.Publish.SmokeGenerated(),
+				Statement:   "Publish returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, drawnItem)
+					})
+				},
+				Defect: mixedPublishPanics,
+			},
+			{
 				ID:          MixedChecks.Publish.Cancel(),
 				Statement:   "Publish returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -195,6 +238,22 @@ func MixedSuite() conform.Suite[eventually.Mixed] {
 				Defect: mixedPublishIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Publish.CancelGenerated(),
+				Statement:   "Publish returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, drawnItem)
+					})
+				},
+				Defect: mixedPublishIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.Publish.Settles(),
 				Statement:   "the effect of Publish reaches Items once Settle has run",
 				Claim:       spec.Settles,
@@ -205,6 +264,26 @@ func MixedSuite() conform.Suite[eventually.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.SettlesThenObserves(h, func(ctx context.Context) error {
 						return h.Subject().Publish(ctx, string("item-a"))
+					}, func(ctx context.Context) error {
+						return h.Subject().Settle(ctx)
+					}, func(ctx context.Context) ([]string, error) {
+						return h.Subject().Items(ctx)
+					})
+				},
+				Defect: mixedItemsObservationUnmoved,
+			},
+			{
+				ID:          MixedChecks.Publish.SettlesGenerated(),
+				Statement:   "the effect of Publish reaches Items once Settle has run",
+				Claim:       spec.Settles,
+				Probe:       spec.SettlesThenObserves,
+				Reason:      spec.UnsettledEffect,
+				Law:         spec.EffectArrivesOnceSettled,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.SettlesThenObserves(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, drawnItem)
 					}, func(ctx context.Context) error {
 						return h.Subject().Settle(ctx)
 					}, func(ctx context.Context) ([]string, error) {
@@ -297,6 +376,7 @@ func MixedSuite() conform.Suite[eventually.Mixed] {
 			{
 				Claim:    spec.Cancel,
 				Callable: "Mixed.Sync",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter peer of Sync",
 				Remedy:   "author a sample of the parameter peer with the directive sample",
 			},
@@ -713,4 +793,4 @@ func mixedItemsValueBeside(h *MixedHandle) eventually.Mixed {
 	return &mixedItemsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1f201651bf93be0d74f8a037b6ed82cbf5ff615d9aabe960e05d45e5d603a513
+// dokimi:provenance sha256:920791087775f454eac4665f4610a83dc8fac3913d0d3d7f04258a33a5ce6bdb

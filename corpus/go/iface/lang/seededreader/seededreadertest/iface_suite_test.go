@@ -53,11 +53,23 @@ func TestCatalogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				seededreadertest.CatalogChecks.Lookup.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				seededreadertest.CatalogChecks.Lookup.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				seededreadertest.CatalogChecks.Lookup.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				seededreadertest.CatalogChecks.Lookup.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				seededreadertest.CatalogChecks.Lookup.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -98,11 +110,23 @@ func TestCatalogSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				seededreadertest.CatalogChecks.Lookup.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				seededreadertest.CatalogChecks.Lookup.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				seededreadertest.CatalogChecks.Lookup.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				seededreadertest.CatalogChecks.Lookup.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				seededreadertest.CatalogChecks.Lookup.ZeroOnErrorGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -142,11 +166,23 @@ func TestCatalogSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			seededreadertest.CatalogChecks.Lookup.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			seededreadertest.CatalogChecks.Lookup.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -176,11 +212,23 @@ func FuzzCatalogSuiteLookup(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			seededreadertest.CatalogChecks.Lookup.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			seededreadertest.CatalogChecks.Lookup.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -210,11 +258,23 @@ func FuzzCatalogSuiteLen(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			seededreadertest.CatalogChecks.Lookup.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			seededreadertest.CatalogChecks.Lookup.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			seededreadertest.CatalogChecks.Lookup.ZeroOnErrorGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -243,4 +303,4 @@ func BenchmarkCatalogSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:9eb7579f7e18db9bb5abedc540d5502256a9ea97025bb17ad90a860b79b7cc7c
+// dokimi:provenance sha256:0f40f2b5d240f9ba88a73271b7f3a4e7750adf518ce20080975bf607b022264d

@@ -53,7 +53,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				wrappedviatest.MixedChecks.Open.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				wrappedviatest.MixedChecks.Open.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrappedviatest.MixedChecks.Open.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -90,7 +98,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				wrappedviatest.MixedChecks.Open.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				wrappedviatest.MixedChecks.Open.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				wrappedviatest.MixedChecks.Open.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -126,7 +142,15 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			wrappedviatest.MixedChecks.Open.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			wrappedviatest.MixedChecks.Open.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrappedviatest.MixedChecks.Open.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -152,7 +176,15 @@ func FuzzMixedSuiteOpen(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			wrappedviatest.MixedChecks.Open.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			wrappedviatest.MixedChecks.Open.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrappedviatest.MixedChecks.Open.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -178,7 +210,15 @@ func FuzzMixedSuiteCause(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			wrappedviatest.MixedChecks.Open.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			wrappedviatest.MixedChecks.Open.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			wrappedviatest.MixedChecks.Open.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -203,4 +243,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ce288311e10ce3be03966da8c01feb67b9d1f94594acb727b6295e5407f1a93f
+// dokimi:provenance sha256:d70e17f1e2531bf4812cbe6118e3fd7ac5a84ae32cc12039a637f5b85a8da7bd

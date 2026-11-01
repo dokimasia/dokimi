@@ -268,6 +268,7 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 			{
 				Claim:    spec.Tx,
 				Callable: "TxWithRetry.Begin",
+				Gate:     spec.OneValue,
 				Why:      "Begin does not return exactly one value",
 				Remedy:   "return one value from Begin",
 			},
@@ -571,4 +572,4 @@ func txWithRetryRollbackIgnoresCancel(h *TxWithRetryHandle) txwithretry.TxWithRe
 	return &txWithRetryRollbackIgnoresCancelDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2365768b04276c207e6d3bce1ec49b1ef8486c4ecc56c453ff27e6f9da8ebe2c
+// dokimi:provenance sha256:6fd8eaca81ddbffc0488313224e79e794c438b18be3d8f57f7c4ae36bf282ebb

@@ -94,12 +94,14 @@ func CounterSuite() conform.Suite[recursive.Counter] {
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Counter.Nodes",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter root of Nodes",
 				Remedy:   "author a sample of the parameter root with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Counter.Steps",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter start of Steps",
 				Remedy:   "author a sample of the parameter start with the directive sample",
 			},
@@ -327,4 +329,4 @@ func newCounterOver(_ *CounterHandle, spend func()) recursive.Counter {
 	return counterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c0f12a82c49f80523a44080bd00d184fb721f49dca0bab400362fe1bf82f2282
+// dokimi:provenance sha256:6cc18bf2a3a2d4ebb43a8a00680a11ba6683f98fe709924f3b68c44d15010133

@@ -53,7 +53,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				timeawaretest.MixedChecks.Touch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				timeawaretest.MixedChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.Touch.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -61,7 +69,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				timeawaretest.MixedChecks.AgeOf.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -69,11 +85,23 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				timeawaretest.MixedChecks.AgeOf.TimeAware(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.TimeAwareGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				timeawaretest.MixedChecks.AgeOf.Steady(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.SteadyGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -102,7 +130,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				timeawaretest.MixedChecks.Touch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				timeawaretest.MixedChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.Touch.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -110,7 +146,15 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				timeawaretest.MixedChecks.AgeOf.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -118,11 +162,23 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				timeawaretest.MixedChecks.AgeOf.TimeAware(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.TimeAwareGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				timeawaretest.MixedChecks.AgeOf.Steady(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.SteadyGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -150,7 +206,15 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -158,7 +222,15 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -166,11 +238,23 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.TimeAware(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.TimeAwareGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.Steady(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.SteadyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -188,7 +272,15 @@ func FuzzMixedSuiteTouch(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -196,7 +288,15 @@ func FuzzMixedSuiteTouch(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -204,11 +304,23 @@ func FuzzMixedSuiteTouch(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.TimeAware(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.TimeAwareGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.Steady(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.SteadyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -226,7 +338,15 @@ func FuzzMixedSuiteAgeOf(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -234,7 +354,15 @@ func FuzzMixedSuiteAgeOf(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -242,11 +370,23 @@ func FuzzMixedSuiteAgeOf(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.TimeAware(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.TimeAwareGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			timeawaretest.MixedChecks.AgeOf.Steady(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.SteadyGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -263,4 +403,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:abb7f1e32a5419ac063da4bd2b1f35cb115f10e25198160d5e98c361949fda1d
+// dokimi:provenance sha256:2c8ac6b33c3dff083ea0f57b29c2d1c02d6d2231ea0a2a48c92a369892e7b699

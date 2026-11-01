@@ -19,6 +19,9 @@ import (
 //
 // Queue.Write/cancel: Write returns an error for a cancelled context.
 //
+// Queue.Write/cancel#generated: Write returns an error for a cancelled
+// context.
+//
 // Queue.Read/cancel: Read returns an error for a cancelled context.
 //
 // Queue.Close/smoke: Close returns without a panic for derived inputs.
@@ -81,6 +84,12 @@ func (c queueWrite) Cancel() conform.ID[queue.Queue] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Write returns an
+// error for a cancelled context.
+func (c queueWrite) CancelGenerated() conform.ID[queue.Queue] {
+	return c.Check("cancel#generated")
+}
+
 // queueRead is the name of Queue.Read, with the identities of its checks.
 type queueRead struct {
 	conform.Callable[queue.Queue]
@@ -134,6 +143,22 @@ func QueueSuite() conform.Suite[queue.Queue] {
 				Defect: queueWriteIgnoresCancel,
 			},
 			{
+				ID:          QueueChecks.Write.CancelGenerated(),
+				Statement:   "Write returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *QueueHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Write(ctx, drawnItem)
+					})
+				},
+				Defect: queueWriteIgnoresCancel,
+			},
+			{
 				ID:          QueueChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -177,6 +202,7 @@ func QueueSuite() conform.Suite[queue.Queue] {
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Queue.Read",
+				Gate:     spec.ReturnsUnaided,
 				Why:      "Read waits for the call of another callable on a fresh subject",
 				Remedy:   "remove the mixin waits where Read returns on a fresh subject",
 			},
@@ -401,4 +427,4 @@ func queueClosePanics(h *QueueHandle) queue.Queue {
 	return &queueClosePanicsDefect{queueOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:58f98ff5cb9dbbc15e3723f3a5ac0ce5d45fc3220325b4aa3ba7b9b17c246c9c
+// dokimi:provenance sha256:5271861da1e6f05666e2172bd9aca9bd64dff7762639f718295b944a6f3a5e5a

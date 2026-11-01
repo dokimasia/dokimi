@@ -19,7 +19,13 @@ import (
 //
 // Mixed.Open/smoke: Open returns without a panic for derived inputs.
 //
+// Mixed.Open/smoke#generated: Open returns without a panic for derived
+// inputs.
+//
 // Mixed.Open/cancel: Open returns an error for a cancelled context.
+//
+// Mixed.Open/cancel#generated: Open returns an error for a cancelled
+// context.
 //
 // Mixed.Cause/smoke: Cause returns without a panic for derived inputs.
 //
@@ -73,10 +79,22 @@ func (c mixedOpen) Smoke() conform.ID[wrappedvia.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Open returns
+// without a panic for derived inputs.
+func (c mixedOpen) SmokeGenerated() conform.ID[wrappedvia.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Open returns an error for
 // a cancelled context.
 func (c mixedOpen) Cancel() conform.ID[wrappedvia.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Open returns an
+// error for a cancelled context.
+func (c mixedOpen) CancelGenerated() conform.ID[wrappedvia.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedCause is the name of Mixed.Cause, with the identities of its
@@ -122,6 +140,22 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Defect: mixedOpenPanics,
 			},
 			{
+				ID:          MixedChecks.Open.SmokeGenerated(),
+				Statement:   "Open returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnName := c.Draw(prop.Of[string](), "name")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Open(ctx, drawnName)
+					})
+				},
+				Defect: mixedOpenPanics,
+			},
+			{
 				ID:          MixedChecks.Open.Cancel(),
 				Statement:   "Open returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -132,6 +166,22 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Open(ctx, string("name-a"))
+					})
+				},
+				Defect: mixedOpenIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Open.CancelGenerated(),
+				Statement:   "Open returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnName := c.Draw(prop.Of[string](), "name")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Open(ctx, drawnName)
 					})
 				},
 				Defect: mixedOpenIgnoresCancel,
@@ -377,4 +427,4 @@ func mixedCauseIgnoresCancel(h *MixedHandle) wrappedvia.Mixed {
 	return &mixedCauseIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:08a5ce8eee0f4278b79aae2084b57dfe830da09c0170ee1d1d9ae0ef5c489577
+// dokimi:provenance sha256:eaeb3324629732595e2302300bdf3d70a39f049b147d11ec42e7e647d445d108

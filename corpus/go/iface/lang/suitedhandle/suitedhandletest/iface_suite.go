@@ -326,6 +326,9 @@ func fileClosePanics(h *FileHandle) suitedhandle.File {
 // The derived checks of FS:
 //
 // FS.Open/smoke: Open returns without a panic for derived inputs.
+//
+// FS.Open/smoke#generated: Open returns without a panic for derived
+// inputs.
 
 // The derived checks of FS that witness their laws at the shallow end:
 //
@@ -366,6 +369,12 @@ func (c fsOpen) Smoke() conform.ID[suitedhandle.FS] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Open returns
+// without a panic for derived inputs.
+func (c fsOpen) SmokeGenerated() conform.ID[suitedhandle.FS] {
+	return c.Check("smoke#generated")
+}
+
 // FSSuite returns the checks of FS, and the calls and the budgets of its
 // callables.
 func FSSuite() conform.Suite[suitedhandle.FS] {
@@ -391,11 +400,29 @@ func FSSuite() conform.Suite[suitedhandle.FS] {
 				},
 				Defect: fsOpenPanics,
 			},
+			{
+				ID:          FSChecks.Open.SmokeGenerated(),
+				Statement:   "Open returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *FSHandle, c *prop.Case) {
+					drawnName := c.Draw(prop.Of[string](), "name")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Open(drawnName)
+						return err
+					})
+				},
+				Defect: fsOpenPanics,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "FS.Open",
+				Gate:     spec.ValueSamples,
 				Why:      "eidos derives no sample of a result of Open",
 				Remedy:   "author a sample of the result type with the directive sample",
 			},
@@ -513,4 +540,4 @@ func fsOpenPanics(h *FSHandle) suitedhandle.FS {
 	return &fsOpenPanicsDefect{fsOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:126f65aa132097fbe794f8bb5e1d014b2e8c236829804a57bc40e5ce7c821310
+// dokimi:provenance sha256:65dad359d1048bfee1cc4b744091ce147ff643a6130d9100a0c1cf69c97e4c8c

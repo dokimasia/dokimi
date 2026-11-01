@@ -20,19 +20,40 @@ import (
 //
 // Mixed.Touch/smoke: Touch returns without a panic for derived inputs.
 //
+// Mixed.Touch/smoke#generated: Touch returns without a panic for derived
+// inputs.
+//
 // Mixed.Touch/cancel: Touch returns an error for a cancelled context.
+//
+// Mixed.Touch/cancel#generated: Touch returns an error for a cancelled
+// context.
 //
 // Mixed.AgeOf/smoke: AgeOf returns without a panic for derived inputs.
 //
+// Mixed.AgeOf/smoke#generated: AgeOf returns without a panic for derived
+// inputs.
+//
 // Mixed.AgeOf/cancel: AgeOf returns an error for a cancelled context.
 //
+// Mixed.AgeOf/cancel#generated: AgeOf returns an error for a cancelled
+// context.
+//
 // Mixed.AgeOf/zero-on-error: AgeOf returns the zero value beside an error.
+//
+// Mixed.AgeOf/zero-on-error#generated: AgeOf returns the zero value beside
+// an error.
 //
 // Mixed.AgeOf/time-aware: AgeOf returns another value once the clock has
 // moved far enough.
 //
+// Mixed.AgeOf/time-aware#generated: AgeOf returns another value once the
+// clock has moved far enough.
+//
 // Mixed.AgeOf/steady: AgeOf returns the same value twice while the clock
 // does not move.
+//
+// Mixed.AgeOf/steady#generated: AgeOf returns the same value twice while
+// the clock does not move.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -77,10 +98,22 @@ func (c mixedTouch) Smoke() conform.ID[timeaware.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Touch returns
+// without a panic for derived inputs.
+func (c mixedTouch) SmokeGenerated() conform.ID[timeaware.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Touch returns an error for
 // a cancelled context.
 func (c mixedTouch) Cancel() conform.ID[timeaware.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Touch returns an
+// error for a cancelled context.
+func (c mixedTouch) CancelGenerated() conform.ID[timeaware.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedAgeOf is the name of Mixed.AgeOf, with the identities of its
@@ -95,10 +128,22 @@ func (c mixedAgeOf) Smoke() conform.ID[timeaware.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that AgeOf returns
+// without a panic for derived inputs.
+func (c mixedAgeOf) SmokeGenerated() conform.ID[timeaware.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that AgeOf returns an error for
 // a cancelled context.
 func (c mixedAgeOf) Cancel() conform.ID[timeaware.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that AgeOf returns an
+// error for a cancelled context.
+func (c mixedAgeOf) CancelGenerated() conform.ID[timeaware.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that AgeOf returns the
@@ -107,16 +152,34 @@ func (c mixedAgeOf) ZeroOnError() conform.ID[timeaware.Mixed] {
 	return c.Check("zero-on-error")
 }
 
+// ZeroOnErrorGenerated returns the identity of the check that AgeOf
+// returns the zero value beside an error.
+func (c mixedAgeOf) ZeroOnErrorGenerated() conform.ID[timeaware.Mixed] {
+	return c.Check("zero-on-error#generated")
+}
+
 // TimeAware returns the identity of the check that AgeOf returns another
 // value once the clock has moved far enough.
 func (c mixedAgeOf) TimeAware() conform.ID[timeaware.Mixed] {
 	return c.Check("time-aware")
 }
 
+// TimeAwareGenerated returns the identity of the check that AgeOf returns
+// another value once the clock has moved far enough.
+func (c mixedAgeOf) TimeAwareGenerated() conform.ID[timeaware.Mixed] {
+	return c.Check("time-aware#generated")
+}
+
 // Steady returns the identity of the check that AgeOf returns the same
 // value twice while the clock does not move.
 func (c mixedAgeOf) Steady() conform.ID[timeaware.Mixed] {
 	return c.Check("steady")
+}
+
+// SteadyGenerated returns the identity of the check that AgeOf returns the
+// same value twice while the clock does not move.
+func (c mixedAgeOf) SteadyGenerated() conform.ID[timeaware.Mixed] {
+	return c.Check("steady#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -144,6 +207,22 @@ func MixedSuite() conform.Suite[timeaware.Mixed] {
 				Defect: mixedTouchPanics,
 			},
 			{
+				ID:          MixedChecks.Touch.SmokeGenerated(),
+				Statement:   "Touch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, drawnKey)
+					})
+				},
+				Defect: mixedTouchPanics,
+			},
+			{
 				ID:          MixedChecks.Touch.Cancel(),
 				Statement:   "Touch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -154,6 +233,22 @@ func MixedSuite() conform.Suite[timeaware.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Touch(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedTouchIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Touch.CancelGenerated(),
+				Statement:   "Touch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, drawnKey)
 					})
 				},
 				Defect: mixedTouchIgnoresCancel,
@@ -176,6 +271,23 @@ func MixedSuite() conform.Suite[timeaware.Mixed] {
 				Defect: mixedAgeOfPanics,
 			},
 			{
+				ID:          MixedChecks.AgeOf.SmokeGenerated(),
+				Statement:   "AgeOf returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().AgeOf(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedAgeOfPanics,
+			},
+			{
 				ID:          MixedChecks.AgeOf.Cancel(),
 				Statement:   "AgeOf returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -192,6 +304,23 @@ func MixedSuite() conform.Suite[timeaware.Mixed] {
 				Defect: mixedAgeOfIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.AgeOf.CancelGenerated(),
+				Statement:   "AgeOf returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().AgeOf(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedAgeOfIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.AgeOf.ZeroOnError(),
 				Statement:   "AgeOf returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -202,6 +331,22 @@ func MixedSuite() conform.Suite[timeaware.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
 						return h.Subject().AgeOf(ctx, string("key-a"))
+					}, int64(0))
+				},
+				Defect: mixedAgeOfValueBeside,
+			},
+			{
+				ID:          MixedChecks.AgeOf.ZeroOnErrorGenerated(),
+				Statement:   "AgeOf returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().AgeOf(ctx, drawnKey)
 					}, int64(0))
 				},
 				Defect: mixedAgeOfValueBeside,
@@ -225,6 +370,25 @@ func MixedSuite() conform.Suite[timeaware.Mixed] {
 				Around: synctest.Test,
 			},
 			{
+				ID:          MixedChecks.AgeOf.TimeAwareGenerated(),
+				Statement:   "AgeOf returns another value once the clock has moved far enough",
+				Claim:       spec.TimeAware,
+				Probe:       spec.MovesWithTheClock,
+				Reason:      spec.UnmovedByTheClock,
+				Law:         spec.ResultDependsOnTheClock,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances, spec.GeneratedInputs},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.MovesWithTheClock(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().AgeOf(ctx, drawnKey)
+					}, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, drawnKey)
+					})
+				},
+				Defect: mixedAgeOfAnswersASample,
+				Around: synctest.Test,
+			},
+			{
 				ID:          MixedChecks.AgeOf.Steady(),
 				Statement:   "AgeOf returns the same value twice while the clock does not move",
 				Claim:       spec.Steady,
@@ -237,6 +401,25 @@ func MixedSuite() conform.Suite[timeaware.Mixed] {
 						return h.Subject().AgeOf(ctx, string("key-a"))
 					}, func(ctx context.Context) error {
 						return h.Subject().Touch(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedAgeOfDrifts,
+				Around: synctest.Test,
+			},
+			{
+				ID:          MixedChecks.AgeOf.SteadyGenerated(),
+				Statement:   "AgeOf returns the same value twice while the clock does not move",
+				Claim:       spec.Steady,
+				Probe:       spec.SteadyWhileTheClockStops,
+				Reason:      spec.DriftedWithoutClock,
+				Law:         spec.ResultIsStableWhileTheClockStops,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances, spec.GeneratedInputs},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.SteadyWhileTheClockStops(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().AgeOf(ctx, drawnKey)
+					}, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, drawnKey)
 					})
 				},
 				Defect: mixedAgeOfDrifts,
@@ -512,4 +695,4 @@ func mixedAgeOfDrifts(h *MixedHandle) timeaware.Mixed {
 	return &mixedAgeOfDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f0ba7548c042c13c4bceec6c907a3b0814517aefadd9f0a7ff94e707a4ce0e04
+// dokimi:provenance sha256:421a5771196a05803c234cb4fe46bde366b0f2d4781c5c51ba74799fe8970916

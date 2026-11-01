@@ -54,7 +54,15 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				watchertest.ContractChecks.Watch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				watchertest.ContractChecks.Watch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				watchertest.ContractChecks.Watch.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -62,7 +70,15 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				watchertest.ContractChecks.Trigger.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				watchertest.ContractChecks.Trigger.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				watchertest.ContractChecks.Trigger.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -91,7 +107,15 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				watchertest.ContractChecks.Watch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				watchertest.ContractChecks.Watch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				watchertest.ContractChecks.Watch.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -99,7 +123,15 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				watchertest.ContractChecks.Trigger.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				watchertest.ContractChecks.Trigger.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				watchertest.ContractChecks.Trigger.CancelGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -127,7 +159,15 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			watchertest.ContractChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			watchertest.ContractChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			watchertest.ContractChecks.Watch.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -135,7 +175,15 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			watchertest.ContractChecks.Trigger.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			watchertest.ContractChecks.Trigger.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			watchertest.ContractChecks.Trigger.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -153,7 +201,15 @@ func FuzzContractSuiteWatch(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			watchertest.ContractChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			watchertest.ContractChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			watchertest.ContractChecks.Watch.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -161,7 +217,15 @@ func FuzzContractSuiteWatch(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			watchertest.ContractChecks.Trigger.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			watchertest.ContractChecks.Trigger.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			watchertest.ContractChecks.Trigger.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -179,7 +243,15 @@ func FuzzContractSuiteTrigger(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			watchertest.ContractChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			watchertest.ContractChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			watchertest.ContractChecks.Watch.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -187,7 +259,15 @@ func FuzzContractSuiteTrigger(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			watchertest.ContractChecks.Trigger.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			watchertest.ContractChecks.Trigger.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			watchertest.ContractChecks.Trigger.CancelGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -204,4 +284,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2eb1d2252c82c82fdcb5b877a54997f6d562d7cf659f3cc5c24f3aac8f2b6256
+// dokimi:provenance sha256:2fe4749e74025a58e57c468ad13edcbbd55b9c63002670e122d6778d3417fcd0

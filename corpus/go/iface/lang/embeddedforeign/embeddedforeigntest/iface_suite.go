@@ -19,9 +19,18 @@ import (
 //
 // Stream.Read/smoke: Read returns without a panic for derived inputs.
 //
+// Stream.Read/smoke#generated: Read returns without a panic for derived
+// inputs.
+//
 // Stream.Read/cancel: Read returns an error for a cancelled context.
 //
+// Stream.Read/cancel#generated: Read returns an error for a cancelled
+// context.
+//
 // Stream.Read/zero-on-error: Read returns the zero value beside an error.
+//
+// Stream.Read/zero-on-error#generated: Read returns the zero value beside
+// an error.
 //
 // Stream.Close/smoke: Close returns without a panic for derived inputs.
 
@@ -68,16 +77,34 @@ func (c streamRead) Smoke() conform.ID[embeddedforeign.Stream] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Read returns
+// without a panic for derived inputs.
+func (c streamRead) SmokeGenerated() conform.ID[embeddedforeign.Stream] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c streamRead) Cancel() conform.ID[embeddedforeign.Stream] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Read returns an
+// error for a cancelled context.
+func (c streamRead) CancelGenerated() conform.ID[embeddedforeign.Stream] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Read returns the zero
 // value beside an error.
 func (c streamRead) ZeroOnError() conform.ID[embeddedforeign.Stream] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Read returns
+// the zero value beside an error.
+func (c streamRead) ZeroOnErrorGenerated() conform.ID[embeddedforeign.Stream] {
+	return c.Check("zero-on-error#generated")
 }
 
 // streamClose is the name of Stream.Close, with the identities of its
@@ -118,6 +145,23 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				Defect: streamReadPanics,
 			},
 			{
+				ID:          StreamChecks.Read.SmokeGenerated(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StreamHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: streamReadPanics,
+			},
+			{
 				ID:          StreamChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -134,6 +178,23 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				Defect: streamReadIgnoresCancel,
 			},
 			{
+				ID:          StreamChecks.Read.CancelGenerated(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StreamHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: streamReadIgnoresCancel,
+			},
+			{
 				ID:          StreamChecks.Read.ZeroOnError(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -144,6 +205,22 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				Apply: func(h *StreamHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
 						return h.Subject().Read(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: streamReadValueBeside,
+			},
+			{
+				ID:          StreamChecks.Read.ZeroOnErrorGenerated(),
+				Statement:   "Read returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StreamHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, drawnKey)
 					}, string(""))
 				},
 				Defect: streamReadValueBeside,
@@ -374,4 +451,4 @@ func streamClosePanics(h *StreamHandle) embeddedforeign.Stream {
 	return &streamClosePanicsDefect{streamOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:cc9454b75b8202b13ee5dd9a7521f3e4d760ed25baadb6763414b8b86ea8a6f0
+// dokimi:provenance sha256:ae3f67faf24050bd825b28f18c8ab92dda0c07785bc69bc8d62bf0e14bcfbeaa

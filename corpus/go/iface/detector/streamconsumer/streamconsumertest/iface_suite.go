@@ -60,12 +60,14 @@ func StreamConsumerSuite() conform.Suite[streamconsumer.StreamConsumer] {
 			{
 				Claim:    spec.Cancel,
 				Callable: "StreamConsumer.Ingest",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter src of Ingest",
 				Remedy:   "author a sample of the parameter src with the directive sample",
 			},
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "StreamConsumer.Ingest",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter src of Ingest",
 				Remedy:   "author a sample of the parameter src with the directive sample",
 			},
@@ -226,4 +228,4 @@ func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer
 	return streamConsumerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:68851b009786d22440913d91a76ff74ab8c1c8440499a4b19c2de2303f45467a
+// dokimi:provenance sha256:fecb345048837d2b2ac5cf9c7c504419bfc0b9f8a8d7e72d9d29e5b2d7a21d1c

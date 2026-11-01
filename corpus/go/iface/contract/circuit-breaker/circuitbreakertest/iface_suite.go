@@ -19,7 +19,13 @@ import (
 //
 // Contract.Run/smoke: Run returns without a panic for derived inputs.
 //
+// Contract.Run/smoke#generated: Run returns without a panic for derived
+// inputs.
+//
 // Contract.Run/cancel: Run returns an error for a cancelled context.
+//
+// Contract.Run/cancel#generated: Run returns an error for a cancelled
+// context.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -32,7 +38,8 @@ import (
 // input of the other checks, and its result is an error alone.
 //
 // The contract:circuit-breaker/fn of Contract.Run has the stance needs.
-// The claims of the contract need a call that fails on demand.
+// The claim fails-fast needs the param machineries=[faults] of the
+// directive suite.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -64,10 +71,22 @@ func (c contractRun) Smoke() conform.ID[circuitbreaker.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Run returns
+// without a panic for derived inputs.
+func (c contractRun) SmokeGenerated() conform.ID[circuitbreaker.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c contractRun) Cancel() conform.ID[circuitbreaker.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Run returns an
+// error for a cancelled context.
+func (c contractRun) CancelGenerated() conform.ID[circuitbreaker.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -95,6 +114,22 @@ func ContractSuite() conform.Suite[circuitbreaker.Contract] {
 				Defect: contractRunPanics,
 			},
 			{
+				ID:          ContractChecks.Run.SmokeGenerated(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, drawnKey)
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
 				ID:          ContractChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -105,6 +140,22 @@ func ContractSuite() conform.Suite[circuitbreaker.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Run(ctx, string("key-a"))
+					})
+				},
+				Defect: contractRunIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Run.CancelGenerated(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, drawnKey)
 					})
 				},
 				Defect: contractRunIgnoresCancel,
@@ -121,7 +172,7 @@ func ContractSuite() conform.Suite[circuitbreaker.Contract] {
 				Classification: "contract:circuit-breaker/fn",
 				Callable:       "Contract.Run",
 				Stance:         spec.Needs,
-				Note:           "The claims of the contract need a call that fails on demand.",
+				Note:           "The claim fails-fast needs the param machineries=[faults] of the directive suite.",
 			},
 		},
 		Calls: []conform.Call[circuitbreaker.Contract]{
@@ -267,4 +318,4 @@ func contractRunIgnoresCancel(h *ContractHandle) circuitbreaker.Contract {
 	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6f28ce52a9ed7372408321c888a242552c6a1a335c9a33bb0844c010ea5b271c
+// dokimi:provenance sha256:fbe3538b81f452352eb3bfaf72528a4fa51b3874896f8962c43ceadf72a526aa

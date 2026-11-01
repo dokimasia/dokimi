@@ -20,8 +20,14 @@ import (
 // ReaderNoError.Lookup/smoke: Lookup returns without a panic for derived
 // inputs.
 //
+// ReaderNoError.Lookup/smoke#generated: Lookup returns without a panic for
+// derived inputs.
+//
 // ReaderNoError.Lookup/miss-is-zero: Lookup returns the zero value for an
 // input that nothing stored.
+//
+// ReaderNoError.Lookup/miss-is-zero#generated: Lookup returns the zero
+// value for an input that nothing stored.
 
 // The derived checks of ReaderNoError that witness their laws at the
 // shallow end:
@@ -63,10 +69,22 @@ func (c readerNoErrorLookup) Smoke() conform.ID[readernoerror.ReaderNoError] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Lookup returns
+// without a panic for derived inputs.
+func (c readerNoErrorLookup) SmokeGenerated() conform.ID[readernoerror.ReaderNoError] {
+	return c.Check("smoke#generated")
+}
+
 // MissIsZero returns the identity of the check that Lookup returns the
 // zero value for an input that nothing stored.
 func (c readerNoErrorLookup) MissIsZero() conform.ID[readernoerror.ReaderNoError] {
 	return c.Check("miss-is-zero")
+}
+
+// MissIsZeroGenerated returns the identity of the check that Lookup
+// returns the zero value for an input that nothing stored.
+func (c readerNoErrorLookup) MissIsZeroGenerated() conform.ID[readernoerror.ReaderNoError] {
+	return c.Check("miss-is-zero#generated")
 }
 
 // ReaderNoErrorSuite returns the checks of ReaderNoError, and the calls
@@ -95,6 +113,23 @@ func ReaderNoErrorSuite() conform.Suite[readernoerror.ReaderNoError] {
 				Defect: readerNoErrorLookupPanics,
 			},
 			{
+				ID:          ReaderNoErrorChecks.Lookup.SmokeGenerated(),
+				Statement:   "Lookup returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReaderNoErrorHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Lookup(ctx, drawnKey)
+						return nil
+					})
+				},
+				Defect: readerNoErrorLookupPanics,
+			},
+			{
 				ID:          ReaderNoErrorChecks.Lookup.MissIsZero(),
 				Statement:   "Lookup returns the zero value for an input that nothing stored",
 				Claim:       spec.MissIsZero,
@@ -110,11 +145,29 @@ func ReaderNoErrorSuite() conform.Suite[readernoerror.ReaderNoError] {
 				},
 				Defect: readerNoErrorLookupInventsAValue,
 			},
+			{
+				ID:          ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
+				Statement:   "Lookup returns the zero value for an input that nothing stored",
+				Claim:       spec.MissIsZero,
+				Probe:       spec.ZeroBesideAMiss,
+				Reason:      spec.NonZeroMiss,
+				Law:         spec.MissReturnsTheZero,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ReaderNoErrorHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideAMiss(h, func(ctx context.Context) (readernoerror.Value, error) {
+						r0 := h.Subject().Lookup(ctx, drawnKey)
+						return r0, nil
+					}, readernoerror.Value{})
+				},
+				Defect: readerNoErrorLookupInventsAValue,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Cancel,
 				Callable: "ReaderNoError.Lookup",
+				Gate:     spec.Failure,
 				Why:      "Lookup cannot fail",
 				Remedy:   "give Lookup an error result",
 			},
@@ -269,4 +322,4 @@ func readerNoErrorLookupInventsAValue(h *ReaderNoErrorHandle) readernoerror.Read
 	return &readerNoErrorLookupInventsAValueDefect{readerNoErrorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ee067bdbcbf1ab5db6cbe25f2d107b92585ff7c64f5141487721358aeb4c3a18
+// dokimi:provenance sha256:05c1156f642bc580606d1f92d1166def438bb2be30ca74d361a25692c5438869

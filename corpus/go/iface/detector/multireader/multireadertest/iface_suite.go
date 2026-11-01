@@ -20,11 +20,20 @@ import (
 // MultiReader.GetWithMeta/smoke: GetWithMeta returns without a panic for
 // derived inputs.
 //
+// MultiReader.GetWithMeta/smoke#generated: GetWithMeta returns without a
+// panic for derived inputs.
+//
 // MultiReader.GetWithMeta/cancel: GetWithMeta returns an error for a
 // cancelled context.
 //
+// MultiReader.GetWithMeta/cancel#generated: GetWithMeta returns an error
+// for a cancelled context.
+//
 // MultiReader.GetWithMeta/zeroes-on-error: GetWithMeta returns the zero
 // values beside an error.
+//
+// MultiReader.GetWithMeta/zeroes-on-error#generated: GetWithMeta returns
+// the zero values beside an error.
 
 // The derived checks of MultiReader that witness their laws at the shallow
 // end:
@@ -61,16 +70,34 @@ func (c multiReaderGetWithMeta) Smoke() conform.ID[multireader.MultiReader] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that GetWithMeta
+// returns without a panic for derived inputs.
+func (c multiReaderGetWithMeta) SmokeGenerated() conform.ID[multireader.MultiReader] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that GetWithMeta returns an
 // error for a cancelled context.
 func (c multiReaderGetWithMeta) Cancel() conform.ID[multireader.MultiReader] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that GetWithMeta
+// returns an error for a cancelled context.
+func (c multiReaderGetWithMeta) CancelGenerated() conform.ID[multireader.MultiReader] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroesOnError returns the identity of the check that GetWithMeta returns
 // the zero values beside an error.
 func (c multiReaderGetWithMeta) ZeroesOnError() conform.ID[multireader.MultiReader] {
 	return c.Check("zeroes-on-error")
+}
+
+// ZeroesOnErrorGenerated returns the identity of the check that
+// GetWithMeta returns the zero values beside an error.
+func (c multiReaderGetWithMeta) ZeroesOnErrorGenerated() conform.ID[multireader.MultiReader] {
+	return c.Check("zeroes-on-error#generated")
 }
 
 // MultiReaderSuite returns the checks of MultiReader, and the calls and
@@ -99,6 +126,23 @@ func MultiReaderSuite() conform.Suite[multireader.MultiReader] {
 				Defect: multiReaderGetWithMetaPanics,
 			},
 			{
+				ID:          MultiReaderChecks.GetWithMeta.SmokeGenerated(),
+				Statement:   "GetWithMeta returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MultiReaderHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().GetWithMeta(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: multiReaderGetWithMetaPanics,
+			},
+			{
 				ID:          MultiReaderChecks.GetWithMeta.Cancel(),
 				Statement:   "GetWithMeta returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -109,6 +153,23 @@ func MultiReaderSuite() conform.Suite[multireader.MultiReader] {
 				Apply: func(h *MultiReaderHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, _, err := h.Subject().GetWithMeta(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: multiReaderGetWithMetaIgnoresCancel,
+			},
+			{
+				ID:          MultiReaderChecks.GetWithMeta.CancelGenerated(),
+				Statement:   "GetWithMeta returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MultiReaderHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().GetWithMeta(ctx, drawnKey)
 						return err
 					})
 				},
@@ -127,6 +188,30 @@ func MultiReaderSuite() conform.Suite[multireader.MultiReader] {
 						h,
 						func(ctx context.Context) (probe.Pair[multireader.Value, multireader.Meta], error) {
 							r0, r1, err := h.Subject().GetWithMeta(ctx, string("key-a"))
+							return probe.Pair[multireader.Value, multireader.Meta]{First: r0, Second: r1}, err
+						},
+						probe.Pair[multireader.Value, multireader.Meta]{
+							First:  multireader.Value{},
+							Second: multireader.Meta{},
+						},
+					)
+				},
+				Defect: multiReaderGetWithMetaValuesBeside,
+			},
+			{
+				ID:          MultiReaderChecks.GetWithMeta.ZeroesOnErrorGenerated(),
+				Statement:   "GetWithMeta returns the zero values beside an error",
+				Claim:       spec.ZeroesOnError,
+				Probe:       spec.ZeroPairBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MultiReaderHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroPairBesideError(
+						h,
+						func(ctx context.Context) (probe.Pair[multireader.Value, multireader.Meta], error) {
+							r0, r1, err := h.Subject().GetWithMeta(ctx, drawnKey)
 							return probe.Pair[multireader.Value, multireader.Meta]{First: r0, Second: r1}, err
 						},
 						probe.Pair[multireader.Value, multireader.Meta]{
@@ -316,4 +401,4 @@ func multiReaderGetWithMetaValuesBeside(h *MultiReaderHandle) multireader.MultiR
 	return &multiReaderGetWithMetaValuesBesideDefect{multiReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9822fec83ebded5b7f1bd844de785779fc1b441bf523b4f9213a585fd44d4d67
+// dokimi:provenance sha256:e5c4068bf02cd802b85a7afc452c4c010cb2991f0df821340010a361f7aeb78e

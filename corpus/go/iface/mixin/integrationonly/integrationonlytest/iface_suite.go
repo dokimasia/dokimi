@@ -19,7 +19,13 @@ import (
 //
 // Mixed.Connect/smoke: Connect returns without a panic for derived inputs.
 //
+// Mixed.Connect/smoke#generated: Connect returns without a panic for
+// derived inputs.
+//
 // Mixed.Connect/cancel: Connect returns an error for a cancelled context.
+//
+// Mixed.Connect/cancel#generated: Connect returns an error for a cancelled
+// context.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -63,10 +69,22 @@ func (c mixedConnect) Smoke() conform.ID[integrationonly.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Connect returns
+// without a panic for derived inputs.
+func (c mixedConnect) SmokeGenerated() conform.ID[integrationonly.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Connect returns an error
 // for a cancelled context.
 func (c mixedConnect) Cancel() conform.ID[integrationonly.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Connect returns
+// an error for a cancelled context.
+func (c mixedConnect) CancelGenerated() conform.ID[integrationonly.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -94,6 +112,22 @@ func MixedSuite() conform.Suite[integrationonly.Mixed] {
 				Defect: mixedConnectPanics,
 			},
 			{
+				ID:          MixedChecks.Connect.SmokeGenerated(),
+				Statement:   "Connect returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnDsn := c.Draw(prop.Of[string](), "dsn")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Connect(ctx, drawnDsn)
+					})
+				},
+				Defect: mixedConnectPanics,
+			},
+			{
 				ID:          MixedChecks.Connect.Cancel(),
 				Statement:   "Connect returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -104,6 +138,22 @@ func MixedSuite() conform.Suite[integrationonly.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Connect(ctx, string("dsn-a"))
+					})
+				},
+				Defect: mixedConnectIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Connect.CancelGenerated(),
+				Statement:   "Connect returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnDsn := c.Draw(prop.Of[string](), "dsn")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Connect(ctx, drawnDsn)
 					})
 				},
 				Defect: mixedConnectIgnoresCancel,
@@ -262,4 +312,4 @@ func mixedConnectIgnoresCancel(h *MixedHandle) integrationonly.Mixed {
 	return &mixedConnectIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:791fb0ad260f2ee3c116e01251251416a376b0a6815a1214014a9820a617c656
+// dokimi:provenance sha256:56019efd4591f594a045a170ee2578a40d7638919dcb5e551f74447971824547

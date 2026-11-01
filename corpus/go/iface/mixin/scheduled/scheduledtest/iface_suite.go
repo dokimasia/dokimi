@@ -21,10 +21,17 @@ import (
 //
 // Mixed.At/smoke: At returns without a panic for derived inputs.
 //
+// Mixed.At/smoke#generated: At returns without a panic for derived inputs.
+//
 // Mixed.At/cancel: At returns an error for a cancelled context.
+//
+// Mixed.At/cancel#generated: At returns an error for a cancelled context.
 //
 // Mixed.At/scheduled: a task that At registers runs once the clock passes
 // its instant, and not before.
+//
+// Mixed.At/scheduled#generated: a task that At registers runs once the
+// clock passes its instant, and not before.
 //
 // Mixed.Fired/smoke: Fired returns without a panic for derived inputs.
 //
@@ -74,16 +81,34 @@ func (c mixedAt) Smoke() conform.ID[scheduled.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that At returns without
+// a panic for derived inputs.
+func (c mixedAt) SmokeGenerated() conform.ID[scheduled.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that At returns an error for a
 // cancelled context.
 func (c mixedAt) Cancel() conform.ID[scheduled.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that At returns an
+// error for a cancelled context.
+func (c mixedAt) CancelGenerated() conform.ID[scheduled.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // Scheduled returns the identity of the check that a task that At
 // registers runs once the clock passes its instant, and not before.
 func (c mixedAt) Scheduled() conform.ID[scheduled.Mixed] {
 	return c.Check("scheduled")
+}
+
+// ScheduledGenerated returns the identity of the check that a task that At
+// registers runs once the clock passes its instant, and not before.
+func (c mixedAt) ScheduledGenerated() conform.ID[scheduled.Mixed] {
+	return c.Check("scheduled#generated")
 }
 
 // mixedFired is the name of Mixed.Fired, with the identities of its
@@ -135,6 +160,22 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				Defect: mixedAtPanics,
 			},
 			{
+				ID:          MixedChecks.At.SmokeGenerated(),
+				Statement:   "At returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnAfter := c.Draw(prop.Of[time.Duration](), "after")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().At(ctx, drawnAfter)
+					})
+				},
+				Defect: mixedAtPanics,
+			},
+			{
 				ID:          MixedChecks.At.Cancel(),
 				Statement:   "At returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -150,6 +191,22 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				Defect: mixedAtIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.At.CancelGenerated(),
+				Statement:   "At returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnAfter := c.Draw(prop.Of[time.Duration](), "after")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().At(ctx, drawnAfter)
+					})
+				},
+				Defect: mixedAtIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.At.Scheduled(),
 				Statement:   "a task that At registers runs once the clock passes its instant, and not before",
 				Claim:       spec.Scheduled,
@@ -160,6 +217,27 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.RunsOnSchedule(h, func(ctx context.Context) (time.Duration, error) {
 						d := time.Duration(1)
+						err := h.Subject().At(ctx, d)
+						return d, err
+					}, func(ctx context.Context) (int, error) {
+						return h.Subject().Fired(ctx)
+					})
+				},
+				Defect: mixedFiredCountDrifts,
+				Around: synctest.Test,
+			},
+			{
+				ID:          MixedChecks.At.ScheduledGenerated(),
+				Statement:   "a task that At registers runs once the clock passes its instant, and not before",
+				Claim:       spec.Scheduled,
+				Probe:       spec.RunsOnSchedule,
+				Reason:      spec.OffSchedule,
+				Law:         spec.TaskRunsOnceItsInstantPasses,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances, spec.GeneratedInputs},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnAfter := c.Draw(prop.Of[time.Duration](), "after")
+					probe.RunsOnSchedule(h, func(ctx context.Context) (time.Duration, error) {
+						d := drawnAfter
 						err := h.Subject().At(ctx, d)
 						return d, err
 					}, func(ctx context.Context) (int, error) {
@@ -462,4 +540,4 @@ func mixedFiredValueBeside(h *MixedHandle) scheduled.Mixed {
 	return &mixedFiredValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:51614bee73d5df32667b7a2d985f4f3633a4845c115754efd90cc19af0952937
+// dokimi:provenance sha256:22017fbc24489ef1c9524a02674a5b0bbc4ae99358789915299335b8c33b6da1

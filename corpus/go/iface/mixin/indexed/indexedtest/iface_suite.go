@@ -19,7 +19,13 @@ import (
 //
 // Ranked.Add/smoke: Add returns without a panic for derived inputs.
 //
+// Ranked.Add/smoke#generated: Add returns without a panic for derived
+// inputs.
+//
 // Ranked.Add/cancel: Add returns an error for a cancelled context.
+//
+// Ranked.Add/cancel#generated: Add returns an error for a cancelled
+// context.
 //
 // Ranked.Len/smoke: Len returns without a panic for derived inputs.
 //
@@ -29,9 +35,17 @@ import (
 //
 // Ranked.At/smoke: At returns without a panic for derived inputs.
 //
+// Ranked.At/smoke#generated: At returns without a panic for derived
+// inputs.
+//
 // Ranked.At/cancel: At returns an error for a cancelled context.
 //
+// Ranked.At/cancel#generated: At returns an error for a cancelled context.
+//
 // Ranked.At/zero-on-error: At returns the zero value beside an error.
+//
+// Ranked.At/zero-on-error#generated: At returns the zero value beside an
+// error.
 
 // The derived checks of Ranked that witness their laws at the shallow end:
 //
@@ -82,10 +96,22 @@ func (c rankedAdd) Smoke() conform.ID[indexed.Ranked] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c rankedAdd) SmokeGenerated() conform.ID[indexed.Ranked] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c rankedAdd) Cancel() conform.ID[indexed.Ranked] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Add returns an
+// error for a cancelled context.
+func (c rankedAdd) CancelGenerated() conform.ID[indexed.Ranked] {
+	return c.Check("cancel#generated")
 }
 
 // rankedLen is the name of Ranked.Len, with the identities of its checks.
@@ -122,16 +148,34 @@ func (c rankedAt) Smoke() conform.ID[indexed.Ranked] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that At returns without
+// a panic for derived inputs.
+func (c rankedAt) SmokeGenerated() conform.ID[indexed.Ranked] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that At returns an error for a
 // cancelled context.
 func (c rankedAt) Cancel() conform.ID[indexed.Ranked] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that At returns an
+// error for a cancelled context.
+func (c rankedAt) CancelGenerated() conform.ID[indexed.Ranked] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that At returns the zero
 // value beside an error.
 func (c rankedAt) ZeroOnError() conform.ID[indexed.Ranked] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that At returns
+// the zero value beside an error.
+func (c rankedAt) ZeroOnErrorGenerated() conform.ID[indexed.Ranked] {
+	return c.Check("zero-on-error#generated")
 }
 
 // RankedSuite returns the checks of Ranked, and the calls and the budgets
@@ -159,6 +203,22 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 				Defect: rankedAddPanics,
 			},
 			{
+				ID:          RankedChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RankedHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[indexed.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnV)
+					})
+				},
+				Defect: rankedAddPanics,
+			},
+			{
 				ID:          RankedChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -169,6 +229,22 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 				Apply: func(h *RankedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Add(ctx, indexed.Value{Key: "Key-a"})
+					})
+				},
+				Defect: rankedAddIgnoresCancel,
+			},
+			{
+				ID:          RankedChecks.Add.CancelGenerated(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RankedHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[indexed.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnV)
 					})
 				},
 				Defect: rankedAddIgnoresCancel,
@@ -239,6 +315,23 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 				Defect: rankedAtPanics,
 			},
 			{
+				ID:          RankedChecks.At.SmokeGenerated(),
+				Statement:   "At returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RankedHandle, c *prop.Case) {
+					drawnI := c.Draw(prop.Of[int](), "i")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().At(ctx, drawnI)
+						return err
+					})
+				},
+				Defect: rankedAtPanics,
+			},
+			{
 				ID:          RankedChecks.At.Cancel(),
 				Statement:   "At returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -255,6 +348,23 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 				Defect: rankedAtIgnoresCancel,
 			},
 			{
+				ID:          RankedChecks.At.CancelGenerated(),
+				Statement:   "At returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RankedHandle, c *prop.Case) {
+					drawnI := c.Draw(prop.Of[int](), "i")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().At(ctx, drawnI)
+						return err
+					})
+				},
+				Defect: rankedAtIgnoresCancel,
+			},
+			{
 				ID:          RankedChecks.At.ZeroOnError(),
 				Statement:   "At returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -265,6 +375,22 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 				Apply: func(h *RankedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (indexed.Value, error) {
 						return h.Subject().At(ctx, int(42))
+					}, indexed.Value{})
+				},
+				Defect: rankedAtValueBeside,
+			},
+			{
+				ID:          RankedChecks.At.ZeroOnErrorGenerated(),
+				Statement:   "At returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *RankedHandle, c *prop.Case) {
+					drawnI := c.Draw(prop.Of[int](), "i")
+					probe.ZeroBesideError(h, func(ctx context.Context) (indexed.Value, error) {
+						return h.Subject().At(ctx, drawnI)
 					}, indexed.Value{})
 				},
 				Defect: rankedAtValueBeside,
@@ -577,4 +703,4 @@ func rankedAtValueBeside(h *RankedHandle) indexed.Ranked {
 	return &rankedAtValueBesideDefect{rankedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d79898f3b9062ba800f0c5ea5eda2d6ef7dd7d02d7f0dbd9c10f4626f93f9840
+// dokimi:provenance sha256:f4b52f4d6dd47f9d3dbb42208fcab036d68472e8d2d2d6c3c2384a800c935d70

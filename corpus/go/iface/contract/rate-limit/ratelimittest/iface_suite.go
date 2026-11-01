@@ -19,10 +19,19 @@ import (
 //
 // Contract.Run/smoke: Run returns without a panic for derived inputs.
 //
+// Contract.Run/smoke#generated: Run returns without a panic for derived
+// inputs.
+//
 // Contract.Run/cancel: Run returns an error for a cancelled context.
+//
+// Contract.Run/cancel#generated: Run returns an error for a cancelled
+// context.
 //
 // Contract.Run/rate-limit: Run admits its declared burst and refuses the
 // call after it.
+//
+// Contract.Run/rate-limit#generated: Run admits its declared burst and
+// refuses the call after it.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -64,16 +73,34 @@ func (c contractRun) Smoke() conform.ID[ratelimit.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Run returns
+// without a panic for derived inputs.
+func (c contractRun) SmokeGenerated() conform.ID[ratelimit.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c contractRun) Cancel() conform.ID[ratelimit.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Run returns an
+// error for a cancelled context.
+func (c contractRun) CancelGenerated() conform.ID[ratelimit.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // RateLimit returns the identity of the check that Run admits its declared
 // burst and refuses the call after it.
 func (c contractRun) RateLimit() conform.ID[ratelimit.Contract] {
 	return c.Check("rate-limit")
+}
+
+// RateLimitGenerated returns the identity of the check that Run admits its
+// declared burst and refuses the call after it.
+func (c contractRun) RateLimitGenerated() conform.ID[ratelimit.Contract] {
+	return c.Check("rate-limit#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -101,6 +128,22 @@ func ContractSuite() conform.Suite[ratelimit.Contract] {
 				Defect: contractRunPanics,
 			},
 			{
+				ID:          ContractChecks.Run.SmokeGenerated(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, drawnKey)
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
 				ID:          ContractChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -116,6 +159,22 @@ func ContractSuite() conform.Suite[ratelimit.Contract] {
 				Defect: contractRunIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Run.CancelGenerated(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, drawnKey)
+					})
+				},
+				Defect: contractRunIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Run.RateLimit(),
 				Statement:   "Run admits its declared burst and refuses the call after it",
 				Claim:       spec.RateLimit,
@@ -126,6 +185,22 @@ func ContractSuite() conform.Suite[ratelimit.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.RefusesPastTheBurst(h, func(ctx context.Context) error {
 						return h.Subject().Run(ctx, string("key-a"))
+					}, 10, ratelimit.ErrLimited)
+				},
+				Defect: contractRunSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Run.RateLimitGenerated(),
+				Statement:   "Run admits its declared burst and refuses the call after it",
+				Claim:       spec.RateLimit,
+				Probe:       spec.RefusesPastTheBurst,
+				Reason:      spec.PastTheBurst,
+				Law:         spec.BurstIsSpentThenRefused,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.RefusesPastTheBurst(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, drawnKey)
 					}, 10, ratelimit.ErrLimited)
 				},
 				Defect: contractRunSucceedsAlways,
@@ -303,4 +378,4 @@ func contractRunSucceedsAlways(h *ContractHandle) ratelimit.Contract {
 	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2a0b6c2f80db8bef88b1670154539e94d6e2c9e23b6b6e1670185229d052f0c5
+// dokimi:provenance sha256:98d2a2d5d93d6af12d50135cdf57b44830d507219444b1a351c8c4fe06a7d181

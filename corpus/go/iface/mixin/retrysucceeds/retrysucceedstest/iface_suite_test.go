@@ -53,11 +53,23 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				retrysucceedstest.MixedChecks.Call.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				retrysucceedstest.MixedChecks.Call.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				retrysucceedstest.MixedChecks.Call.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				retrysucceedstest.MixedChecks.Call.RetrySucceeds(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				retrysucceedstest.MixedChecks.Call.RetrySucceedsGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -98,11 +110,23 @@ func TestMixedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				retrysucceedstest.MixedChecks.Call.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				retrysucceedstest.MixedChecks.Call.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				retrysucceedstest.MixedChecks.Call.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				retrysucceedstest.MixedChecks.Call.RetrySucceeds(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				retrysucceedstest.MixedChecks.Call.RetrySucceedsGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -142,11 +166,23 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			retrysucceedstest.MixedChecks.Call.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			retrysucceedstest.MixedChecks.Call.RetrySucceeds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.RetrySucceedsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -176,11 +212,23 @@ func FuzzMixedSuiteCall(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			retrysucceedstest.MixedChecks.Call.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			retrysucceedstest.MixedChecks.Call.RetrySucceeds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.RetrySucceedsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -210,11 +258,23 @@ func FuzzMixedSuiteAttempts(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			retrysucceedstest.MixedChecks.Call.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			retrysucceedstest.MixedChecks.Call.RetrySucceeds(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			retrysucceedstest.MixedChecks.Call.RetrySucceedsGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -243,4 +303,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7b6b0e27b85542024176bc822bcf877b87a2f32c80ea6d763029341fbd21ca1c
+// dokimi:provenance sha256:c718f3862507d0886aab0e628b9c34fe21bf50fc26b84ef21a7421f0f194f767

@@ -28,6 +28,13 @@ type MixedTotalCall struct {
 	Err    error
 }
 
+// MixedMergeCall records one call of Mixed.Merge.
+type MixedMergeCall struct {
+	A      associative.Delta
+	B      associative.Delta
+	Result associative.Delta
+}
+
 // MixedApplyStub configures Apply and records its calls. A fault armed
 // through it takes precedence over the function and the fixed results.
 type MixedApplyStub struct {
@@ -85,6 +92,34 @@ func (s *MixedTotalStub) Func(fn func(context.Context) (int, error)) *MixedTotal
 	return s
 }
 
+// MixedMergeStub configures Merge and records its calls. Merge returns no
+// error, so a fault armed through it fails the test.
+type MixedMergeStub struct {
+	*stub.MethodStub[MixedMergeCall]
+
+	fn       func(associative.Delta, associative.Delta) associative.Delta
+	fallback *MixedMergeReturn
+}
+
+// MixedMergeReturn contains the fixed results of Merge.
+type MixedMergeReturn struct {
+	Result associative.Delta
+}
+
+// Returns sets the results of every call of Merge. A function takes
+// precedence over them.
+func (s *MixedMergeStub) Returns(result associative.Delta) *MixedMergeStub {
+	s.fallback = &MixedMergeReturn{Result: result}
+	return s
+}
+
+// Func sets the function that computes the results of Merge from its
+// arguments.
+func (s *MixedMergeStub) Func(fn func(associative.Delta, associative.Delta) associative.Delta) *MixedMergeStub {
+	s.fn = fn
+	return s
+}
+
 // The reference to stub.CompatV1 fails the build against another major
 // version of the runtime of doubles.
 var _ = stub.CompatV1
@@ -104,6 +139,7 @@ func MixedStubDelegateTo(impl associative.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnApply.Func(impl.Apply)
 		s.OnTotal.Func(impl.Total)
+		s.OnMerge.Func(impl.Merge)
 	}
 }
 
@@ -153,12 +189,18 @@ func WithMixedTotal(fn func(context.Context) (int, error)) MixedStubOption {
 	return func(s *MixedStub) { s.OnTotal.Func(fn) }
 }
 
+// WithMixedMerge returns the option that sets the function of Merge.
+func WithMixedMerge(fn func(associative.Delta, associative.Delta) associative.Delta) MixedStubOption {
+	return func(s *MixedStub) { s.OnMerge.Func(fn) }
+}
+
 // MixedStub is a recording test double of Mixed. Each field On<Method>
 // configures its method. An unconfigured method records the call and
 // returns the zero values of its results.
 type MixedStub struct {
 	OnApply *MixedApplyStub
 	OnTotal *MixedTotalStub
+	OnMerge *MixedMergeStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -175,10 +217,12 @@ func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
 		OnApply: &MixedApplyStub{MethodStub: stub.NewMethodStub[MixedApplyCall](tb, "Mixed.Apply")},
 		OnTotal: &MixedTotalStub{MethodStub: stub.NewMethodStub[MixedTotalCall](tb, "Mixed.Total")},
+		OnMerge: &MixedMergeStub{MethodStub: stub.NewMethodStub[MixedMergeCall](tb, "Mixed.Merge")},
 	}
 	s.group = stub.NewGroup(
 		s.OnApply.MethodStub,
 		s.OnTotal.MethodStub,
+		s.OnMerge.MethodStub,
 	)
 	for _, opt := range opts {
 		opt(s)
@@ -268,4 +312,31 @@ func (s *MixedStub) Total(ctx context.Context) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:095a64a7b664c72a8be039fbafbbbf75940a25b0967ca1aae5fcd4c346206d7c
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *MixedMergeStub) invoke(a, b associative.Delta) func() MixedMergeReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() MixedMergeReturn {
+		r0 := s.fn(a, b)
+		return MixedMergeReturn{Result: r0}
+	}
+}
+
+// Merge records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *MixedStub) Merge(a, b associative.Delta) associative.Delta {
+	call := MixedMergeCall{A: a, B: b}
+	r := stub.Answer(s.OnMerge.MethodStub, call, stub.Arms[MixedMergeCall, MixedMergeReturn]{
+		Invoke:   s.OnMerge.invoke(a, b),
+		Fallback: s.OnMerge.fallback,
+		Stamp: func(c MixedMergeCall, r MixedMergeReturn) MixedMergeCall {
+			c.Result = r.Result
+			return c
+		},
+	})
+	return r.Result
+}
+
+// dokimi:provenance sha256:be97fe73eae0d8beb0c42c6a6450da3a00fee199458f2e41553b5a0b0e61daf1

@@ -22,11 +22,23 @@ import (
 //
 // Mixed.Add/smoke: Add returns without a panic for derived inputs.
 //
+// Mixed.Add/smoke#generated: Add returns without a panic for derived
+// inputs.
+//
 // Mixed.Add/cancel: Add returns an error for a cancelled context.
+//
+// Mixed.Add/cancel#generated: Add returns an error for a cancelled
+// context.
 //
 // Mixed.Remove/smoke: Remove returns without a panic for derived inputs.
 //
+// Mixed.Remove/smoke#generated: Remove returns without a panic for derived
+// inputs.
+//
 // Mixed.Remove/cancel: Remove returns an error for a cancelled context.
+//
+// Mixed.Remove/cancel#generated: Remove returns an error for a cancelled
+// context.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -100,10 +112,22 @@ func (c mixedAdd) Smoke() conform.ID[streamreflectsmutations.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c mixedAdd) SmokeGenerated() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c mixedAdd) Cancel() conform.ID[streamreflectsmutations.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Add returns an
+// error for a cancelled context.
+func (c mixedAdd) CancelGenerated() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedRemove is the name of Mixed.Remove, with the identities of its
@@ -118,10 +142,22 @@ func (c mixedRemove) Smoke() conform.ID[streamreflectsmutations.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Remove returns
+// without a panic for derived inputs.
+func (c mixedRemove) SmokeGenerated() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Remove returns an error
 // for a cancelled context.
 func (c mixedRemove) Cancel() conform.ID[streamreflectsmutations.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Remove returns an
+// error for a cancelled context.
+func (c mixedRemove) CancelGenerated() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -166,6 +202,22 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 				Defect: mixedAddPanics,
 			},
 			{
+				ID:          MixedChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnItem)
+					})
+				},
+				Defect: mixedAddPanics,
+			},
+			{
 				ID:          MixedChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -176,6 +228,22 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Add(ctx, string("item-a"))
+					})
+				},
+				Defect: mixedAddIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Add.CancelGenerated(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnItem)
 					})
 				},
 				Defect: mixedAddIgnoresCancel,
@@ -197,6 +265,22 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 				Defect: mixedRemovePanics,
 			},
 			{
+				ID:          MixedChecks.Remove.SmokeGenerated(),
+				Statement:   "Remove returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Remove(ctx, drawnItem)
+					})
+				},
+				Defect: mixedRemovePanics,
+			},
+			{
 				ID:          MixedChecks.Remove.Cancel(),
 				Statement:   "Remove returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -211,11 +295,28 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 				},
 				Defect: mixedRemoveIgnoresCancel,
 			},
+			{
+				ID:          MixedChecks.Remove.CancelGenerated(),
+				Statement:   "Remove returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Remove(ctx, drawnItem)
+					})
+				},
+				Defect: mixedRemoveIgnoresCancel,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Cancel,
 				Callable: "Mixed.Stream",
+				Gate:     spec.Failure,
 				Why:      "Stream cannot fail",
 				Remedy:   "give Stream an error result",
 			},
@@ -482,4 +583,4 @@ func mixedRemoveIgnoresCancel(h *MixedHandle) streamreflectsmutations.Mixed {
 	return &mixedRemoveIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fb65bc3a9ea408ab15e0865b2e1dae7e1baeaec8bdb2072f53ff564cb884e3f5
+// dokimi:provenance sha256:c9e6d7c4730de10caf3d7580a81394c104f7e0efe729f186d958e2119fec5191

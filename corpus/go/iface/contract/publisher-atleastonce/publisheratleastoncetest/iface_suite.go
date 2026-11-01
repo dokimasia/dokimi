@@ -20,8 +20,14 @@ import (
 // Contract.Publish/smoke: Publish returns without a panic for derived
 // inputs.
 //
+// Contract.Publish/smoke#generated: Publish returns without a panic for
+// derived inputs.
+//
 // Contract.Publish/cancel: Publish returns an error for a cancelled
 // context.
+//
+// Contract.Publish/cancel#generated: Publish returns an error for a
+// cancelled context.
 //
 // Contract.Subscribe/smoke: Subscribe returns without a panic for derived
 // inputs.
@@ -85,10 +91,22 @@ func (c contractPublish) Smoke() conform.ID[publisheratleastonce.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Publish returns
+// without a panic for derived inputs.
+func (c contractPublish) SmokeGenerated() conform.ID[publisheratleastonce.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Publish returns an error
 // for a cancelled context.
 func (c contractPublish) Cancel() conform.ID[publisheratleastonce.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Publish returns
+// an error for a cancelled context.
+func (c contractPublish) CancelGenerated() conform.ID[publisheratleastonce.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // contractSubscribe is the name of Contract.Subscribe, with the identities
@@ -134,6 +152,22 @@ func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 				Defect: contractPublishPanics,
 			},
 			{
+				ID:          ContractChecks.Publish.SmokeGenerated(),
+				Statement:   "Publish returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[publisheratleastonce.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, drawnV)
+					})
+				},
+				Defect: contractPublishPanics,
+			},
+			{
 				ID:          ContractChecks.Publish.Cancel(),
 				Statement:   "Publish returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -144,6 +178,22 @@ func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Publish(ctx, publisheratleastonce.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPublishIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Publish.CancelGenerated(),
+				Statement:   "Publish returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[publisheratleastonce.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, drawnV)
 					})
 				},
 				Defect: contractPublishIgnoresCancel,
@@ -186,6 +236,7 @@ func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Contract.Subscribe",
+				Gate:     spec.ValueSamples,
 				Why:      "eidos derives no sample of a result of Subscribe",
 				Remedy:   "author a sample of the result type with the directive sample",
 			},
@@ -416,4 +467,4 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) publisheratleastonce.Cont
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b65773cd599600f930f190d84a82efc185ccdabf63f13007f3a0302558a76f91
+// dokimi:provenance sha256:64a1e12991a823da59b9af7d77fdc02ae9d3b63737e807dcb751e0561e4cffd6

@@ -20,11 +20,20 @@ import (
 // PaginatedReader.Fetch/smoke: Fetch returns without a panic for derived
 // inputs.
 //
+// PaginatedReader.Fetch/smoke#generated: Fetch returns without a panic for
+// derived inputs.
+//
 // PaginatedReader.Fetch/cancel: Fetch returns an error for a cancelled
 // context.
 //
+// PaginatedReader.Fetch/cancel#generated: Fetch returns an error for a
+// cancelled context.
+//
 // PaginatedReader.Fetch/zero-on-error: Fetch returns the zero value beside
 // an error.
+//
+// PaginatedReader.Fetch/zero-on-error#generated: Fetch returns the zero
+// value beside an error.
 //
 // PaginatedReader.Fetch/pagination: Fetch resumes from the cursor of its
 // own page.
@@ -32,8 +41,14 @@ import (
 // PaginatedReader.Add/smoke: Add returns without a panic for derived
 // inputs.
 //
+// PaginatedReader.Add/smoke#generated: Add returns without a panic for
+// derived inputs.
+//
 // PaginatedReader.Add/cancel: Add returns an error for a cancelled
 // context.
+//
+// PaginatedReader.Add/cancel#generated: Add returns an error for a
+// cancelled context.
 
 // The derived checks of PaginatedReader that witness their laws at the
 // shallow end:
@@ -79,16 +94,34 @@ func (c paginatedReaderFetch) Smoke() conform.ID[paginatedreader.PaginatedReader
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Fetch returns
+// without a panic for derived inputs.
+func (c paginatedReaderFetch) SmokeGenerated() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Fetch returns an error for
 // a cancelled context.
 func (c paginatedReaderFetch) Cancel() conform.ID[paginatedreader.PaginatedReader] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Fetch returns an
+// error for a cancelled context.
+func (c paginatedReaderFetch) CancelGenerated() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Fetch returns the
 // zero value beside an error.
 func (c paginatedReaderFetch) ZeroOnError() conform.ID[paginatedreader.PaginatedReader] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Fetch
+// returns the zero value beside an error.
+func (c paginatedReaderFetch) ZeroOnErrorGenerated() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("zero-on-error#generated")
 }
 
 // Pagination returns the identity of the check that Fetch resumes from the
@@ -109,10 +142,22 @@ func (c paginatedReaderAdd) Smoke() conform.ID[paginatedreader.PaginatedReader] 
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c paginatedReaderAdd) SmokeGenerated() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c paginatedReaderAdd) Cancel() conform.ID[paginatedreader.PaginatedReader] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Add returns an
+// error for a cancelled context.
+func (c paginatedReaderAdd) CancelGenerated() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("cancel#generated")
 }
 
 // PaginatedReaderSuite returns the checks of PaginatedReader, and the
@@ -141,6 +186,23 @@ func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 				Defect: paginatedReaderFetchPanics,
 			},
 			{
+				ID:          PaginatedReaderChecks.Fetch.SmokeGenerated(),
+				Statement:   "Fetch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PaginatedReaderHandle, c *prop.Case) {
+					drawnCursor := c.Draw(prop.Of[int](), "cursor")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, drawnCursor)
+						return err
+					})
+				},
+				Defect: paginatedReaderFetchPanics,
+			},
+			{
 				ID:          PaginatedReaderChecks.Fetch.Cancel(),
 				Statement:   "Fetch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -157,6 +219,23 @@ func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 				Defect: paginatedReaderFetchIgnoresCancel,
 			},
 			{
+				ID:          PaginatedReaderChecks.Fetch.CancelGenerated(),
+				Statement:   "Fetch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PaginatedReaderHandle, c *prop.Case) {
+					drawnCursor := c.Draw(prop.Of[int](), "cursor")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, drawnCursor)
+						return err
+					})
+				},
+				Defect: paginatedReaderFetchIgnoresCancel,
+			},
+			{
 				ID:          PaginatedReaderChecks.Fetch.ZeroOnError(),
 				Statement:   "Fetch returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -167,6 +246,22 @@ func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 				Apply: func(h *PaginatedReaderHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (paginatedreader.Page, error) {
 						return h.Subject().Fetch(ctx, int(42))
+					}, paginatedreader.Page{})
+				},
+				Defect: paginatedReaderFetchValueBeside,
+			},
+			{
+				ID:          PaginatedReaderChecks.Fetch.ZeroOnErrorGenerated(),
+				Statement:   "Fetch returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PaginatedReaderHandle, c *prop.Case) {
+					drawnCursor := c.Draw(prop.Of[int](), "cursor")
+					probe.ZeroBesideError(h, func(ctx context.Context) (paginatedreader.Page, error) {
+						return h.Subject().Fetch(ctx, drawnCursor)
 					}, paginatedreader.Page{})
 				},
 				Defect: paginatedReaderFetchValueBeside,
@@ -203,6 +298,22 @@ func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 				Defect: paginatedReaderAddPanics,
 			},
 			{
+				ID:          PaginatedReaderChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PaginatedReaderHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[paginatedreader.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnV)
+					})
+				},
+				Defect: paginatedReaderAddPanics,
+			},
+			{
 				ID:          PaginatedReaderChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -213,6 +324,22 @@ func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 				Apply: func(h *PaginatedReaderHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Add(ctx, paginatedreader.Value{Key: "Key-a"})
+					})
+				},
+				Defect: paginatedReaderAddIgnoresCancel,
+			},
+			{
+				ID:          PaginatedReaderChecks.Add.CancelGenerated(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PaginatedReaderHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[paginatedreader.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnV)
 					})
 				},
 				Defect: paginatedReaderAddIgnoresCancel,
@@ -487,4 +614,4 @@ func paginatedReaderAddIgnoresCancel(h *PaginatedReaderHandle) paginatedreader.P
 	return &paginatedReaderAddIgnoresCancelDefect{paginatedReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a600a05eaed98374c3ca371c0996addabc672c226e73d8b92879123f098418c6
+// dokimi:provenance sha256:cafb97f837d4b0d321f5e5321b10f6cdbae8396e14f3f91fc6c75c83056fc09b

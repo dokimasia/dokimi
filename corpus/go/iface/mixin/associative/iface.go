@@ -1,23 +1,19 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
-// Package associative is the mixin-axis fixture for the associative mixin, which
-// declares that combining in any grouping yields the same value.
+// Package associative is the mixin-axis fixture for the associative mixin,
+// which declares that a callable of two inputs of one type returns one value
+// for three inputs in either grouping.
 //
-// The interface carries a total beside the step: an algebraic claim about a
-// fold needs somewhere to read the fold's result, or the generated subtest
-// passes over a state nothing can see.
+// Merge combines two deltas into a delta, so its result has the type of its
+// inputs. Merge is commutative as well, so the planted defect of each of its
+// two claims keeps the law of the other. The defect of commutative returns
+// its first input, which keeps the grouping. The defect of associative keeps
+// the value of its first call, which keeps the order.
 //
-// The step takes a BATCH, and that is what makes the claim witnessable at
-// all. Grouping has to be something a caller can vary: with one delta per
-// call the only grouping is the call sequence itself, every implementation
-// satisfies the claim by having no second grouping to disagree with, and a
-// check would pass over a subject that folds a batch inconsistently. Two
-// calls carrying the same deltas split differently — [a,b] then [c] against
-// [a] then [b,c] — are two groupings, and the totals must agree.
-//
-// This is the axis on which it differs from commutative, which varies the
-// ORDER and needs no batch to do it.
+// Apply keeps the mixin on a callable of one input, a batch of deltas. The law
+// of the mixin needs two inputs of one type, so the gate
+// two-inputs-of-one-type refuses its claim.
 //
 // There is no negated form here. eidos declares the mixin directive
 // DenyNegation, because a mixin is opt-in and deleting the directive is
@@ -40,12 +36,17 @@ type Delta struct {
 //dokimi:suite
 //dokimi:out path=associativetest/
 type Mixed interface {
-	// Apply folds a batch of deltas in. Splitting the same deltas across
-	// calls differently does not change the total.
+	// Apply folds a batch of deltas in.
 	//dokimi:mixin associative
 	Apply(ctx context.Context, ds []Delta) error
 
-	// Total observes the fold, which is what makes the claim about Apply
-	// checkable at all.
+	// Total observes the fold.
 	Total(ctx context.Context) (int, error)
+
+	// Merge returns the delta with the smaller key of a and b and the sum of
+	// their amounts.
+	//
+	//dokimi:mixin associative
+	//dokimi:mixin commutative
+	Merge(a, b Delta) Delta
 }

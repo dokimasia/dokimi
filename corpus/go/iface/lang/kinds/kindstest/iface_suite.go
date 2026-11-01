@@ -344,60 +344,70 @@ func EverySuite() conform.Suite[kinds.Every] {
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Params",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter ch of Params",
 				Remedy:   "author a sample of the parameter ch with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Results",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter r of Results",
 				Remedy:   "author a sample of the parameter r with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Place",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter clock of Place",
 				Remedy:   "author a sample of the parameter clock with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Route",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter in of Route",
 				Remedy:   "author a sample of the parameter in with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Drain",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter f of Drain",
 				Remedy:   "author a sample of the parameter f with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Watch",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter s of Watch",
 				Remedy:   "author a sample of the parameter s with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Measure",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter s of Measure",
 				Remedy:   "author a sample of the parameter s with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Index",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter names of Index",
 				Remedy:   "author a sample of the parameter names with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Count",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter shapes of Count",
 				Remedy:   "author a sample of the parameter shapes with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Every.Use",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter r of Use",
 				Remedy:   "author a sample of the parameter r with the directive sample",
 			},
@@ -1596,4 +1606,4 @@ func everyElementsDrifts(h *EveryHandle) kinds.Every {
 	return &everyElementsDriftsDefect{everyOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:278d111e511b66fd04779895ed16311cb67172249d44814096b688839a0fd209
+// dokimi:provenance sha256:ec69bd835c8fcd8d81f2284bccb74bf330abf6adbbeeb3314e5a24a7dfc8b22d

@@ -21,17 +21,35 @@ import (
 //
 // Mixed.Record/smoke: Record returns without a panic for derived inputs.
 //
+// Mixed.Record/smoke#generated: Record returns without a panic for derived
+// inputs.
+//
 // Mixed.Record/cancel: Record returns an error for a cancelled context.
+//
+// Mixed.Record/cancel#generated: Record returns an error for a cancelled
+// context.
 //
 // Mixed.Record/windowed: CountIn includes a Record inside the declared
 // window and not after it.
 //
+// Mixed.Record/windowed#generated: CountIn includes a Record inside the
+// declared window and not after it.
+//
 // Mixed.CountIn/smoke: CountIn returns without a panic for derived inputs.
+//
+// Mixed.CountIn/smoke#generated: CountIn returns without a panic for
+// derived inputs.
 //
 // Mixed.CountIn/cancel: CountIn returns an error for a cancelled context.
 //
+// Mixed.CountIn/cancel#generated: CountIn returns an error for a cancelled
+// context.
+//
 // Mixed.CountIn/zero-on-error: CountIn returns the zero value beside an
 // error.
+//
+// Mixed.CountIn/zero-on-error#generated: CountIn returns the zero value
+// beside an error.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -76,16 +94,34 @@ func (c mixedRecord) Smoke() conform.ID[windowed.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Record returns
+// without a panic for derived inputs.
+func (c mixedRecord) SmokeGenerated() conform.ID[windowed.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Record returns an error
 // for a cancelled context.
 func (c mixedRecord) Cancel() conform.ID[windowed.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Record returns an
+// error for a cancelled context.
+func (c mixedRecord) CancelGenerated() conform.ID[windowed.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // Windowed returns the identity of the check that CountIn includes a
 // Record inside the declared window and not after it.
 func (c mixedRecord) Windowed() conform.ID[windowed.Mixed] {
 	return c.Check("windowed")
+}
+
+// WindowedGenerated returns the identity of the check that CountIn
+// includes a Record inside the declared window and not after it.
+func (c mixedRecord) WindowedGenerated() conform.ID[windowed.Mixed] {
+	return c.Check("windowed#generated")
 }
 
 // mixedCountIn is the name of Mixed.CountIn, with the identities of its
@@ -100,16 +136,34 @@ func (c mixedCountIn) Smoke() conform.ID[windowed.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that CountIn returns
+// without a panic for derived inputs.
+func (c mixedCountIn) SmokeGenerated() conform.ID[windowed.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that CountIn returns an error
 // for a cancelled context.
 func (c mixedCountIn) Cancel() conform.ID[windowed.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that CountIn returns
+// an error for a cancelled context.
+func (c mixedCountIn) CancelGenerated() conform.ID[windowed.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that CountIn returns the
 // zero value beside an error.
 func (c mixedCountIn) ZeroOnError() conform.ID[windowed.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that CountIn
+// returns the zero value beside an error.
+func (c mixedCountIn) ZeroOnErrorGenerated() conform.ID[windowed.Mixed] {
+	return c.Check("zero-on-error#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -137,6 +191,22 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 				Defect: mixedRecordPanics,
 			},
 			{
+				ID:          MixedChecks.Record.SmokeGenerated(),
+				Statement:   "Record returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnKey)
+					})
+				},
+				Defect: mixedRecordPanics,
+			},
+			{
 				ID:          MixedChecks.Record.Cancel(),
 				Statement:   "Record returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -147,6 +217,22 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Record(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedRecordIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Record.CancelGenerated(),
+				Statement:   "Record returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnKey)
 					})
 				},
 				Defect: mixedRecordIgnoresCancel,
@@ -170,6 +256,25 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 				Around: synctest.Test,
 			},
 			{
+				ID:          MixedChecks.Record.WindowedGenerated(),
+				Statement:   "CountIn includes a Record inside the declared window and not after it",
+				Claim:       spec.Windowed,
+				Probe:       spec.CountsWithinWindow,
+				Reason:      spec.MisreadWindow,
+				Law:         spec.CountCoversABoundedWindow,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances, spec.GeneratedInputs},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.CountsWithinWindow(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnKey)
+					}, func(ctx context.Context) (int, error) {
+						return h.Subject().CountIn(ctx, drawnKey)
+					}, time.Minute)
+				},
+				Defect: mixedCountInCountDrifts,
+				Around: synctest.Test,
+			},
+			{
 				ID:          MixedChecks.CountIn.Smoke(),
 				Statement:   "CountIn returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -181,6 +286,23 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
 						_, err := h.Subject().CountIn(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedCountInPanics,
+			},
+			{
+				ID:          MixedChecks.CountIn.SmokeGenerated(),
+				Statement:   "CountIn returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().CountIn(ctx, drawnKey)
 						return err
 					})
 				},
@@ -203,6 +325,23 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 				Defect: mixedCountInIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.CountIn.CancelGenerated(),
+				Statement:   "CountIn returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().CountIn(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedCountInIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.CountIn.ZeroOnError(),
 				Statement:   "CountIn returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -213,6 +352,22 @@ func MixedSuite() conform.Suite[windowed.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
 						return h.Subject().CountIn(ctx, string("key-a"))
+					}, int(0))
+				},
+				Defect: mixedCountInValueBeside,
+			},
+			{
+				ID:          MixedChecks.CountIn.ZeroOnErrorGenerated(),
+				Statement:   "CountIn returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().CountIn(ctx, drawnKey)
 					}, int(0))
 				},
 				Defect: mixedCountInValueBeside,
@@ -465,4 +620,4 @@ func mixedCountInValueBeside(h *MixedHandle) windowed.Mixed {
 	return &mixedCountInValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7223fc0efa653d91d12c18323eb396c42a15d600460f283073da517b7d71663b
+// dokimi:provenance sha256:4400a2b95209ed79cf02acef01868221495a54696b8c8f5984fa4d84c0cd414b

@@ -19,10 +19,19 @@ import (
 //
 // Mixed.Process/smoke: Process returns without a panic for derived inputs.
 //
+// Mixed.Process/smoke#generated: Process returns without a panic for
+// derived inputs.
+//
 // Mixed.Process/cancel: Process returns an error for a cancelled context.
+//
+// Mixed.Process/cancel#generated: Process returns an error for a cancelled
+// context.
 //
 // Mixed.Process/zero-on-error: Process returns the zero value beside an
 // error.
+//
+// Mixed.Process/zero-on-error#generated: Process returns the zero value
+// beside an error.
 //
 // Mixed.NewInput/smoke: NewInput returns without a panic for derived
 // inputs.
@@ -76,16 +85,34 @@ func (c mixedProcess) Smoke() conform.ID[sample.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Process returns
+// without a panic for derived inputs.
+func (c mixedProcess) SmokeGenerated() conform.ID[sample.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Process returns an error
 // for a cancelled context.
 func (c mixedProcess) Cancel() conform.ID[sample.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Process returns
+// an error for a cancelled context.
+func (c mixedProcess) CancelGenerated() conform.ID[sample.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Process returns the
 // zero value beside an error.
 func (c mixedProcess) ZeroOnError() conform.ID[sample.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Process
+// returns the zero value beside an error.
+func (c mixedProcess) ZeroOnErrorGenerated() conform.ID[sample.Mixed] {
+	return c.Check("zero-on-error#generated")
 }
 
 // mixedNewInput is the name of Mixed.NewInput, with the identities of its
@@ -138,6 +165,23 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				Defect: mixedProcessPanics,
 			},
 			{
+				ID:          MixedChecks.Process.SmokeGenerated(),
+				Statement:   "Process returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnInput := c.Draw(prop.Of[string](), "input")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Process(ctx, drawnInput)
+						return err
+					})
+				},
+				Defect: mixedProcessPanics,
+			},
+			{
 				ID:          MixedChecks.Process.Cancel(),
 				Statement:   "Process returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -154,6 +198,23 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				Defect: mixedProcessIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Process.CancelGenerated(),
+				Statement:   "Process returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnInput := c.Draw(prop.Of[string](), "input")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Process(ctx, drawnInput)
+						return err
+					})
+				},
+				Defect: mixedProcessIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.Process.ZeroOnError(),
 				Statement:   "Process returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -164,6 +225,22 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
 						return h.Subject().Process(ctx, string("input-a"))
+					}, string(""))
+				},
+				Defect: mixedProcessValueBeside,
+			},
+			{
+				ID:          MixedChecks.Process.ZeroOnErrorGenerated(),
+				Statement:   "Process returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnInput := c.Draw(prop.Of[string](), "input")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Process(ctx, drawnInput)
 					}, string(""))
 				},
 				Defect: mixedProcessValueBeside,
@@ -458,4 +535,4 @@ func mixedNewInputValueBeside(h *MixedHandle) sample.Mixed {
 	return &mixedNewInputValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:53b1e227f7c099e296ac9c7fceca2ca94974505e952ed5e486f24dd2a732e4ed
+// dokimi:provenance sha256:85fef967ae46fa5535c751649c098d48faf960eb71534b1d8d5a17694de7619f

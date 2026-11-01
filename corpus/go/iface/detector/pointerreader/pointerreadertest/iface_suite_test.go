@@ -56,7 +56,15 @@ func TestPointerReaderSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				pointerreadertest.PointerReaderChecks.Find.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				pointerreadertest.PointerReaderChecks.Find.NilOnMiss(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				pointerreadertest.PointerReaderChecks.Find.NilOnMissGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -87,7 +95,15 @@ func TestPointerReaderSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				pointerreadertest.PointerReaderChecks.Find.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				pointerreadertest.PointerReaderChecks.Find.NilOnMiss(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				pointerreadertest.PointerReaderChecks.Find.NilOnMissGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -115,7 +131,15 @@ func TestPointerReaderSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			pointerreadertest.PointerReaderChecks.Find.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			pointerreadertest.PointerReaderChecks.Find.NilOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			pointerreadertest.PointerReaderChecks.Find.NilOnMissGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -134,7 +158,15 @@ func FuzzPointerReaderSuiteFind(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			pointerreadertest.PointerReaderChecks.Find.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			pointerreadertest.PointerReaderChecks.Find.NilOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			pointerreadertest.PointerReaderChecks.Find.NilOnMissGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -152,4 +184,4 @@ func BenchmarkPointerReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b843ca7a027d38d3ed350fee479947f3ebd7adee751ee36e58189ca9d921ad88
+// dokimi:provenance sha256:ee28bfb78801a260cc1d7c3d14c3516434096e90cde58357b160a84eab54ed84

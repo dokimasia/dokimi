@@ -19,11 +19,23 @@ import (
 //
 // Wide.Quad/smoke: Quad returns without a panic for derived inputs.
 //
+// Wide.Quad/smoke#generated: Quad returns without a panic for derived
+// inputs.
+//
 // Wide.Quad/cancel: Quad returns an error for a cancelled context.
+//
+// Wide.Quad/cancel#generated: Quad returns an error for a cancelled
+// context.
 //
 // Wide.Triple/smoke: Triple returns without a panic for derived inputs.
 //
+// Wide.Triple/smoke#generated: Triple returns without a panic for derived
+// inputs.
+//
 // Wide.NoError/smoke: NoError returns without a panic for derived inputs.
+//
+// Wide.NoError/smoke#generated: NoError returns without a panic for
+// derived inputs.
 
 // The derived checks of Wide that witness their laws at the shallow end:
 //
@@ -80,10 +92,22 @@ func (c wideQuad) Smoke() conform.ID[multireturn.Wide] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Quad returns
+// without a panic for derived inputs.
+func (c wideQuad) SmokeGenerated() conform.ID[multireturn.Wide] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Quad returns an error for
 // a cancelled context.
 func (c wideQuad) Cancel() conform.ID[multireturn.Wide] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Quad returns an
+// error for a cancelled context.
+func (c wideQuad) CancelGenerated() conform.ID[multireturn.Wide] {
+	return c.Check("cancel#generated")
 }
 
 // wideTriple is the name of Wide.Triple, with the identities of its
@@ -98,6 +122,12 @@ func (c wideTriple) Smoke() conform.ID[multireturn.Wide] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Triple returns
+// without a panic for derived inputs.
+func (c wideTriple) SmokeGenerated() conform.ID[multireturn.Wide] {
+	return c.Check("smoke#generated")
+}
+
 // wideNoError is the name of Wide.NoError, with the identities of its
 // checks.
 type wideNoError struct {
@@ -108,6 +138,12 @@ type wideNoError struct {
 // panic for derived inputs.
 func (c wideNoError) Smoke() conform.ID[multireturn.Wide] {
 	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that NoError returns
+// without a panic for derived inputs.
+func (c wideNoError) SmokeGenerated() conform.ID[multireturn.Wide] {
+	return c.Check("smoke#generated")
 }
 
 // WideSuite returns the checks of Wide, and the calls and the budgets of
@@ -136,6 +172,23 @@ func WideSuite() conform.Suite[multireturn.Wide] {
 				Defect: wideQuadPanics,
 			},
 			{
+				ID:          WideChecks.Quad.SmokeGenerated(),
+				Statement:   "Quad returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WideHandle, c *prop.Case) {
+					drawnID := c.Draw(prop.Of[string](), "id")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, _, _, err := h.Subject().Quad(ctx, drawnID)
+						return err
+					})
+				},
+				Defect: wideQuadPanics,
+			},
+			{
 				ID:          WideChecks.Quad.Cancel(),
 				Statement:   "Quad returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -146,6 +199,23 @@ func WideSuite() conform.Suite[multireturn.Wide] {
 				Apply: func(h *WideHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, _, _, err := h.Subject().Quad(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: wideQuadIgnoresCancel,
+			},
+			{
+				ID:          WideChecks.Quad.CancelGenerated(),
+				Statement:   "Quad returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WideHandle, c *prop.Case) {
+					drawnID := c.Draw(prop.Of[string](), "id")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, _, _, err := h.Subject().Quad(ctx, drawnID)
 						return err
 					})
 				},
@@ -169,6 +239,23 @@ func WideSuite() conform.Suite[multireturn.Wide] {
 				Defect: wideTriplePanics,
 			},
 			{
+				ID:          WideChecks.Triple.SmokeGenerated(),
+				Statement:   "Triple returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WideHandle, c *prop.Case) {
+					drawnID := c.Draw(prop.Of[string](), "id")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Triple(ctx, drawnID)
+						return nil
+					})
+				},
+				Defect: wideTriplePanics,
+			},
+			{
 				ID:          WideChecks.NoError.Smoke(),
 				Statement:   "NoError returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -185,29 +272,50 @@ func WideSuite() conform.Suite[multireturn.Wide] {
 				},
 				Defect: wideNoErrorPanics,
 			},
+			{
+				ID:          WideChecks.NoError.SmokeGenerated(),
+				Statement:   "NoError returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WideHandle, c *prop.Case) {
+					drawnID := c.Draw(prop.Of[string](), "id")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().NoError(ctx, drawnID)
+						return nil
+					})
+				},
+				Defect: wideNoErrorPanics,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.ZeroesOnError,
 				Callable: "Wide.Quad",
+				Gate:     spec.TwoValues,
 				Why:      "Quad does not return exactly two values",
 				Remedy:   "return two values from Quad",
 			},
 			{
 				Claim:    spec.Cancel,
 				Callable: "Wide.Triple",
+				Gate:     spec.Failure,
 				Why:      "Triple cannot fail",
 				Remedy:   "give Triple an error result",
 			},
 			{
 				Claim:    spec.ZeroesOnMiss,
 				Callable: "Wide.Triple",
+				Gate:     spec.PresenceFlag,
 				Why:      "Triple returns no presence flag",
 				Remedy:   "return a presence flag beside the value of Triple",
 			},
 			{
 				Claim:    spec.Cancel,
 				Callable: "Wide.NoError",
+				Gate:     spec.Failure,
 				Why:      "NoError cannot fail",
 				Remedy:   "give NoError an error result",
 			},
@@ -421,4 +529,4 @@ func wideNoErrorPanics(h *WideHandle) multireturn.Wide {
 	return &wideNoErrorPanicsDefect{wideOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d56f04a2c541c6ede5ba18592ae47527d4f3d8b5890c87b0b741d32b5d2bb329
+// dokimi:provenance sha256:4e59d32de1161a133757886aac3193adb3979fe8fa859f2fce03020e25644a9b

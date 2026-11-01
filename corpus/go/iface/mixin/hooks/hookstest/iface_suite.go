@@ -19,7 +19,13 @@ import (
 //
 // Mixed.Fire/smoke: Fire returns without a panic for derived inputs.
 //
+// Mixed.Fire/smoke#generated: Fire returns without a panic for derived
+// inputs.
+//
 // Mixed.Fire/cancel: Fire returns an error for a cancelled context.
+//
+// Mixed.Fire/cancel#generated: Fire returns an error for a cancelled
+// context.
 //
 // Mixed.OnEvent/smoke: OnEvent returns without a panic for derived inputs.
 
@@ -75,10 +81,22 @@ func (c mixedFire) Smoke() conform.ID[hooks.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Fire returns
+// without a panic for derived inputs.
+func (c mixedFire) SmokeGenerated() conform.ID[hooks.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Fire returns an error for
 // a cancelled context.
 func (c mixedFire) Cancel() conform.ID[hooks.Mixed] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Fire returns an
+// error for a cancelled context.
+func (c mixedFire) CancelGenerated() conform.ID[hooks.Mixed] {
+	return c.Check("cancel#generated")
 }
 
 // mixedOnEvent is the name of Mixed.OnEvent, with the identities of its
@@ -118,6 +136,22 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 				Defect: mixedFirePanics,
 			},
 			{
+				ID:          MixedChecks.Fire.SmokeGenerated(),
+				Statement:   "Fire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnEvent := c.Draw(prop.Of[string](), "event")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Fire(ctx, drawnEvent)
+					})
+				},
+				Defect: mixedFirePanics,
+			},
+			{
 				ID:          MixedChecks.Fire.Cancel(),
 				Statement:   "Fire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -128,6 +162,22 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Fire(ctx, string("event-a"))
+					})
+				},
+				Defect: mixedFireIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Fire.CancelGenerated(),
+				Statement:   "Fire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnEvent := c.Draw(prop.Of[string](), "event")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Fire(ctx, drawnEvent)
 					})
 				},
 				Defect: mixedFireIgnoresCancel,
@@ -154,6 +204,7 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 			{
 				Claim:    spec.Hooks,
 				Callable: "Mixed.Fire",
+				Gate:     spec.PartnerArguments,
 				Why:      "a parameter of the read of Fire selects neither a value that register takes nor a field of the written value",
 				Remedy:   "align the name of the parameter of the read with a parameter or a field of the write",
 			},
@@ -342,4 +393,4 @@ func mixedOnEventPanics(h *MixedHandle) hooks.Mixed {
 	return &mixedOnEventPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fdea03271ce7278628ca0e71860948327ebfda26458e27c10fec7a93e2f5294d
+// dokimi:provenance sha256:2db5ddc6d4b58b27895dfa0593d8aa22a0f3fed3fd83c2beea48cad45eafe320

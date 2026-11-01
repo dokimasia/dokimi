@@ -28,6 +28,13 @@ type MixedTotalCall struct {
 	Err    error
 }
 
+// MixedSumCall records one call of Mixed.Sum.
+type MixedSumCall struct {
+	A      commutative.Delta
+	B      commutative.Delta
+	Result int
+}
+
 // MixedApplyStub configures Apply and records its calls. A fault armed
 // through it takes precedence over the function and the fixed results.
 type MixedApplyStub struct {
@@ -85,6 +92,34 @@ func (s *MixedTotalStub) Func(fn func(context.Context) (int, error)) *MixedTotal
 	return s
 }
 
+// MixedSumStub configures Sum and records its calls. Sum returns no error,
+// so a fault armed through it fails the test.
+type MixedSumStub struct {
+	*stub.MethodStub[MixedSumCall]
+
+	fn       func(commutative.Delta, commutative.Delta) int
+	fallback *MixedSumReturn
+}
+
+// MixedSumReturn contains the fixed results of Sum.
+type MixedSumReturn struct {
+	Result int
+}
+
+// Returns sets the results of every call of Sum. A function takes
+// precedence over them.
+func (s *MixedSumStub) Returns(result int) *MixedSumStub {
+	s.fallback = &MixedSumReturn{Result: result}
+	return s
+}
+
+// Func sets the function that computes the results of Sum from its
+// arguments.
+func (s *MixedSumStub) Func(fn func(commutative.Delta, commutative.Delta) int) *MixedSumStub {
+	s.fn = fn
+	return s
+}
+
 // The reference to stub.CompatV1 fails the build against another major
 // version of the runtime of doubles.
 var _ = stub.CompatV1
@@ -104,6 +139,7 @@ func MixedStubDelegateTo(impl commutative.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnApply.Func(impl.Apply)
 		s.OnTotal.Func(impl.Total)
+		s.OnSum.Func(impl.Sum)
 	}
 }
 
@@ -153,12 +189,18 @@ func WithMixedTotal(fn func(context.Context) (int, error)) MixedStubOption {
 	return func(s *MixedStub) { s.OnTotal.Func(fn) }
 }
 
+// WithMixedSum returns the option that sets the function of Sum.
+func WithMixedSum(fn func(commutative.Delta, commutative.Delta) int) MixedStubOption {
+	return func(s *MixedStub) { s.OnSum.Func(fn) }
+}
+
 // MixedStub is a recording test double of Mixed. Each field On<Method>
 // configures its method. An unconfigured method records the call and
 // returns the zero values of its results.
 type MixedStub struct {
 	OnApply *MixedApplyStub
 	OnTotal *MixedTotalStub
+	OnSum   *MixedSumStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -175,10 +217,12 @@ func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
 		OnApply: &MixedApplyStub{MethodStub: stub.NewMethodStub[MixedApplyCall](tb, "Mixed.Apply")},
 		OnTotal: &MixedTotalStub{MethodStub: stub.NewMethodStub[MixedTotalCall](tb, "Mixed.Total")},
+		OnSum:   &MixedSumStub{MethodStub: stub.NewMethodStub[MixedSumCall](tb, "Mixed.Sum")},
 	}
 	s.group = stub.NewGroup(
 		s.OnApply.MethodStub,
 		s.OnTotal.MethodStub,
+		s.OnSum.MethodStub,
 	)
 	for _, opt := range opts {
 		opt(s)
@@ -268,4 +312,31 @@ func (s *MixedStub) Total(ctx context.Context) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:b111bee4afdfe0c7c32029dc2dc8499dc194ea009e2994186e038b9da9496d30
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *MixedSumStub) invoke(a, b commutative.Delta) func() MixedSumReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() MixedSumReturn {
+		r0 := s.fn(a, b)
+		return MixedSumReturn{Result: r0}
+	}
+}
+
+// Sum records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *MixedStub) Sum(a, b commutative.Delta) int {
+	call := MixedSumCall{A: a, B: b}
+	r := stub.Answer(s.OnSum.MethodStub, call, stub.Arms[MixedSumCall, MixedSumReturn]{
+		Invoke:   s.OnSum.invoke(a, b),
+		Fallback: s.OnSum.fallback,
+		Stamp: func(c MixedSumCall, r MixedSumReturn) MixedSumCall {
+			c.Result = r.Result
+			return c
+		},
+	})
+	return r.Result
+}
+
+// dokimi:provenance sha256:b00c0851f888193f13fb25c9f3497c00c630bc8b641046967578612bc5c2f26b

@@ -19,7 +19,13 @@ import (
 //
 // Store.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Store.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Store.Put/cancel: Put returns an error for a cancelled context.
+//
+// Store.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 
 // The derived checks of Store that witness their laws at the shallow end:
 //
@@ -59,10 +65,22 @@ func (c storePut) Smoke() conform.ID[opaque.Store] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c storePut) SmokeGenerated() conform.ID[opaque.Store] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c storePut) Cancel() conform.ID[opaque.Store] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c storePut) CancelGenerated() conform.ID[opaque.Store] {
+	return c.Check("cancel#generated")
 }
 
 // AllocationBudget returns the identity of the check
@@ -96,6 +114,22 @@ func StoreSuite() conform.Suite[opaque.Store] {
 				Defect: storePutPanics,
 			},
 			{
+				ID:          StoreChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					drawnReq := c.Draw(prop.Of[opaque.PutRequest](), "req")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, &drawnReq)
+					})
+				},
+				Defect: storePutPanics,
+			},
+			{
 				ID:          StoreChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -106,6 +140,22 @@ func StoreSuite() conform.Suite[opaque.Store] {
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, &opaque.PutRequest{Key: "Key-a"})
+					})
+				},
+				Defect: storePutIgnoresCancel,
+			},
+			{
+				ID:          StoreChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StoreHandle, c *prop.Case) {
+					drawnReq := c.Draw(prop.Of[opaque.PutRequest](), "req")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, &drawnReq)
 					})
 				},
 				Defect: storePutIgnoresCancel,
@@ -263,4 +313,4 @@ func storePutIgnoresCancel(h *StoreHandle) opaque.Store {
 	return &storePutIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6c1072149b217c39a9e97426aec2cbf298522865d0f5ffc3dd04d6f4dd593287
+// dokimi:provenance sha256:53435ee4283715db1edbffa745ddbeff8a347ddbbc0c9d92a354e34ba89a5342

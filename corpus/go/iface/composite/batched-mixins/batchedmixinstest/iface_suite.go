@@ -19,19 +19,42 @@ import (
 //
 // Batched.Put/smoke: Put returns without a panic for derived inputs.
 //
+// Batched.Put/smoke#generated: Put returns without a panic for derived
+// inputs.
+//
 // Batched.Put/cancel: Put returns an error for a cancelled context.
+//
+// Batched.Put/cancel#generated: Put returns an error for a cancelled
+// context.
 //
 // Batched.Put/idempotent: a second identical Put succeeds after the first.
 //
+// Batched.Put/idempotent#generated: a second identical Put succeeds after
+// the first.
+//
 // Batched.Put/side-effect: Put changes what List returns.
+//
+// Batched.Put/side-effect#generated: Put changes what List returns.
 //
 // Batched.Read/smoke: Read returns without a panic for derived inputs.
 //
+// Batched.Read/smoke#generated: Read returns without a panic for derived
+// inputs.
+//
 // Batched.Read/cancel: Read returns an error for a cancelled context.
+//
+// Batched.Read/cancel#generated: Read returns an error for a cancelled
+// context.
 //
 // Batched.Read/zero-on-error: Read returns the zero value beside an error.
 //
+// Batched.Read/zero-on-error#generated: Read returns the zero value beside
+// an error.
+//
 // Batched.Read/read-after-write: Read returns what Put stored before it.
+//
+// Batched.Read/read-after-write#generated: Read returns what Put stored
+// before it.
 //
 // Batched.List/smoke: List returns without a panic for derived inputs.
 //
@@ -51,6 +74,8 @@ import (
 // Batched.Read/smoke
 //
 // Batched.Read/read-after-write
+//
+// Batched.Read/read-after-write#generated
 //
 // Batched.List/smoke
 //
@@ -103,10 +128,22 @@ func (c batchedPut) Smoke() conform.ID[batchedmixins.Batched] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c batchedPut) SmokeGenerated() conform.ID[batchedmixins.Batched] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c batchedPut) Cancel() conform.ID[batchedmixins.Batched] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c batchedPut) CancelGenerated() conform.ID[batchedmixins.Batched] {
+	return c.Check("cancel#generated")
 }
 
 // Idempotent returns the identity of the check that a second identical Put
@@ -115,10 +152,22 @@ func (c batchedPut) Idempotent() conform.ID[batchedmixins.Batched] {
 	return c.Check("idempotent")
 }
 
+// IdempotentGenerated returns the identity of the check that a second
+// identical Put succeeds after the first.
+func (c batchedPut) IdempotentGenerated() conform.ID[batchedmixins.Batched] {
+	return c.Check("idempotent#generated")
+}
+
 // SideEffect returns the identity of the check that Put changes what List
 // returns.
 func (c batchedPut) SideEffect() conform.ID[batchedmixins.Batched] {
 	return c.Check("side-effect")
+}
+
+// SideEffectGenerated returns the identity of the check that Put changes
+// what List returns.
+func (c batchedPut) SideEffectGenerated() conform.ID[batchedmixins.Batched] {
+	return c.Check("side-effect#generated")
 }
 
 // batchedRead is the name of Batched.Read, with the identities of its
@@ -133,10 +182,22 @@ func (c batchedRead) Smoke() conform.ID[batchedmixins.Batched] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Read returns
+// without a panic for derived inputs.
+func (c batchedRead) SmokeGenerated() conform.ID[batchedmixins.Batched] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c batchedRead) Cancel() conform.ID[batchedmixins.Batched] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Read returns an
+// error for a cancelled context.
+func (c batchedRead) CancelGenerated() conform.ID[batchedmixins.Batched] {
+	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Read returns the zero
@@ -145,10 +206,22 @@ func (c batchedRead) ZeroOnError() conform.ID[batchedmixins.Batched] {
 	return c.Check("zero-on-error")
 }
 
+// ZeroOnErrorGenerated returns the identity of the check that Read returns
+// the zero value beside an error.
+func (c batchedRead) ZeroOnErrorGenerated() conform.ID[batchedmixins.Batched] {
+	return c.Check("zero-on-error#generated")
+}
+
 // ReadAfterWrite returns the identity of the check that Read returns what
 // Put stored before it.
 func (c batchedRead) ReadAfterWrite() conform.ID[batchedmixins.Batched] {
 	return c.Check("read-after-write")
+}
+
+// ReadAfterWriteGenerated returns the identity of the check that Read
+// returns what Put stored before it.
+func (c batchedRead) ReadAfterWriteGenerated() conform.ID[batchedmixins.Batched] {
+	return c.Check("read-after-write#generated")
 }
 
 // batchedList is the name of Batched.List, with the identities of its
@@ -218,6 +291,23 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedPutPanics,
 			},
 			{
+				ID:          BatchedChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
+					})
+				},
+				Defect: batchedPutPanics,
+			},
+			{
 				ID:          BatchedChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -228,6 +318,23 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Apply: func(h *BatchedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: batchedPutIgnoresCancel,
+			},
+			{
+				ID:          BatchedChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
 					})
 				},
 				Defect: batchedPutIgnoresCancel,
@@ -248,6 +355,23 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedPutRefusesRepeat,
 			},
 			{
+				ID:          BatchedChecks.Put.IdempotentGenerated(),
+				Statement:   "a second identical Put succeeds after the first",
+				Claim:       spec.Idempotent,
+				Probe:       spec.RepeatIsQuiet,
+				Reason:      spec.RefusedRepeat,
+				Law:         spec.RepeatIsAccepted,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
+					})
+				},
+				Defect: batchedPutRefusesRepeat,
+			},
+			{
 				ID:          BatchedChecks.Put.SideEffect(),
 				Statement:   "Put changes what List returns",
 				Claim:       spec.SideEffect,
@@ -258,6 +382,25 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Apply: func(h *BatchedHandle) {
 					probe.MovesObservation(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					}, func(ctx context.Context) ([]string, error) {
+						return h.Subject().List(ctx)
+					})
+				},
+				Defect: batchedListObservationUnmoved,
+			},
+			{
+				ID:          BatchedChecks.Put.SideEffectGenerated(),
+				Statement:   "Put changes what List returns",
+				Claim:       spec.SideEffect,
+				Probe:       spec.MovesObservation,
+				Reason:      spec.UnmovedObservation,
+				Law:         spec.CallMovesTheNamedObservation,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.MovesObservation(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
 					}, func(ctx context.Context) ([]string, error) {
 						return h.Subject().List(ctx)
 					})
@@ -282,6 +425,23 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedReadPanics,
 			},
 			{
+				ID:          BatchedChecks.Read.SmokeGenerated(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: batchedReadPanics,
+			},
+			{
 				ID:          BatchedChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -292,6 +452,23 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Apply: func(h *BatchedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: batchedReadIgnoresCancel,
+			},
+			{
+				ID:          BatchedChecks.Read.CancelGenerated(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, drawnKey)
 						return err
 					})
 				},
@@ -313,6 +490,22 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedReadValueBeside,
 			},
 			{
+				ID:          BatchedChecks.Read.ZeroOnErrorGenerated(),
+				Statement:   "Read returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, drawnKey)
+					}, string(""))
+				},
+				Defect: batchedReadValueBeside,
+			},
+			{
 				ID:          BatchedChecks.Read.ReadAfterWrite(),
 				Statement:   "Read returns what Put stored before it",
 				Claim:       spec.ReadAfterWrite,
@@ -327,6 +520,28 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 					}, func(ctx context.Context) (string, error) {
 						w := string("value-a")
 						err := h.Subject().Put(ctx, string("key-a"), w)
+						return w, err
+					})
+				},
+				Defect: batchedReadReadsAnotherValue,
+			},
+			{
+				ID:          BatchedChecks.Read.ReadAfterWriteGenerated(),
+				Statement:   "Read returns what Put stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *BatchedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.WriteThenRead(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, drawnKey)
+					}, func(ctx context.Context) (string, error) {
+						w := drawnValue
+						err := h.Subject().Put(ctx, drawnKey, w)
 						return w, err
 					})
 				},
@@ -852,4 +1067,4 @@ func batchedListDrifts(h *BatchedHandle) batchedmixins.Batched {
 	return &batchedListDriftsDefect{batchedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:838831898558549dbea44b322652605d65b38f0e489082248355db5e16ab4172
+// dokimi:provenance sha256:4ad64842f7a306cdace50109818520ba1eb04f6f8d97c42b3d5004873744bdc5

@@ -20,9 +20,18 @@ import (
 // Contract.Append/smoke: Append returns without a panic for derived
 // inputs.
 //
+// Contract.Append/smoke#generated: Append returns without a panic for
+// derived inputs.
+//
 // Contract.Append/cancel: Append returns an error for a cancelled context.
 //
+// Contract.Append/cancel#generated: Append returns an error for a
+// cancelled context.
+//
 // Contract.Append/chain: Append grows Replay by the entry that it admits.
+//
+// Contract.Append/chain#generated: Append grows Replay by the entry that
+// it admits.
 //
 // Contract.Replay/smoke: Replay returns without a panic for derived
 // inputs.
@@ -92,16 +101,34 @@ func (c contractAppend) Smoke() conform.ID[chain.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Append returns
+// without a panic for derived inputs.
+func (c contractAppend) SmokeGenerated() conform.ID[chain.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c contractAppend) Cancel() conform.ID[chain.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Append returns an
+// error for a cancelled context.
+func (c contractAppend) CancelGenerated() conform.ID[chain.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // Chain returns the identity of the check that Append grows Replay by the
 // entry that it admits.
 func (c contractAppend) Chain() conform.ID[chain.Contract] {
 	return c.Check("chain")
+}
+
+// ChainGenerated returns the identity of the check that Append grows
+// Replay by the entry that it admits.
+func (c contractAppend) ChainGenerated() conform.ID[chain.Contract] {
+	return c.Check("chain#generated")
 }
 
 // contractReplay is the name of Contract.Replay, with the identities of
@@ -171,6 +198,22 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				Defect: contractAppendPanics,
 			},
 			{
+				ID:          ContractChecks.Append.SmokeGenerated(),
+				Statement:   "Append returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[chain.Entry](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnE)
+					})
+				},
+				Defect: contractAppendPanics,
+			},
+			{
 				ID:          ContractChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -186,6 +229,22 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				Defect: contractAppendIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Append.CancelGenerated(),
+				Statement:   "Append returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[chain.Entry](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnE)
+					})
+				},
+				Defect: contractAppendIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Append.Chain(),
 				Statement:   "Append grows Replay by the entry that it admits",
 				Claim:       spec.Chain,
@@ -196,6 +255,24 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.ReplayGrows(h, func(ctx context.Context) error {
 						return h.Subject().Append(ctx, chain.Entry{Key: "Key-a"})
+					}, func(ctx context.Context) ([]chain.Entry, error) {
+						return h.Subject().Replay(ctx)
+					})
+				},
+				Defect: contractAppendSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Append.ChainGenerated(),
+				Statement:   "Append grows Replay by the entry that it admits",
+				Claim:       spec.Chain,
+				Probe:       spec.ReplayGrows,
+				Reason:      spec.ReplayNotGrown,
+				Law:         spec.AdmittedEntryGrowsTheReplay,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[chain.Entry](), "e")
+					probe.ReplayGrows(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnE)
 					}, func(ctx context.Context) ([]chain.Entry, error) {
 						return h.Subject().Replay(ctx)
 					})
@@ -594,4 +671,4 @@ func contractVerifyIgnoresCancel(h *ContractHandle) chain.Contract {
 	return &contractVerifyIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e4700994f92647c6f1bd82ca72b486735eaeef2dde4be61aab1e288846a5a322
+// dokimi:provenance sha256:9cc6eb9554bedbf2437b2cd8bb88af052d2d1aeab8ff5e4506d97a7e6c1f9c88

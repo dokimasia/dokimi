@@ -19,22 +19,46 @@ import (
 //
 // Contract.Store/smoke: Store returns without a panic for derived inputs.
 //
+// Contract.Store/smoke#generated: Store returns without a panic for
+// derived inputs.
+//
 // Contract.Store/cancel: Store returns an error for a cancelled context.
+//
+// Contract.Store/cancel#generated: Store returns an error for a cancelled
+// context.
 //
 // Contract.Lookup/smoke: Lookup returns without a panic for derived
 // inputs.
 //
+// Contract.Lookup/smoke#generated: Lookup returns without a panic for
+// derived inputs.
+//
 // Contract.Lookup/cancel: Lookup returns an error for a cancelled context.
+//
+// Contract.Lookup/cancel#generated: Lookup returns an error for a
+// cancelled context.
 //
 // Contract.Lookup/zero-on-error: Lookup returns the zero value beside an
 // error.
 //
+// Contract.Lookup/zero-on-error#generated: Lookup returns the zero value
+// beside an error.
+//
 // Contract.Fetch/smoke: Fetch returns without a panic for derived inputs.
+//
+// Contract.Fetch/smoke#generated: Fetch returns without a panic for
+// derived inputs.
 //
 // Contract.Fetch/cancel: Fetch returns an error for a cancelled context.
 //
+// Contract.Fetch/cancel#generated: Fetch returns an error for a cancelled
+// context.
+//
 // Contract.Fetch/zero-on-error: Fetch returns the zero value beside an
 // error.
+//
+// Contract.Fetch/zero-on-error#generated: Fetch returns the zero value
+// beside an error.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -90,10 +114,22 @@ func (c contractStore) Smoke() conform.ID[cache.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Store returns
+// without a panic for derived inputs.
+func (c contractStore) SmokeGenerated() conform.ID[cache.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Store returns an error for
 // a cancelled context.
 func (c contractStore) Cancel() conform.ID[cache.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Store returns an
+// error for a cancelled context.
+func (c contractStore) CancelGenerated() conform.ID[cache.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // contractLookup is the name of Contract.Lookup, with the identities of
@@ -108,16 +144,34 @@ func (c contractLookup) Smoke() conform.ID[cache.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Lookup returns
+// without a panic for derived inputs.
+func (c contractLookup) SmokeGenerated() conform.ID[cache.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Lookup returns an error
 // for a cancelled context.
 func (c contractLookup) Cancel() conform.ID[cache.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Lookup returns an
+// error for a cancelled context.
+func (c contractLookup) CancelGenerated() conform.ID[cache.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Lookup returns the
 // zero value beside an error.
 func (c contractLookup) ZeroOnError() conform.ID[cache.Contract] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Lookup
+// returns the zero value beside an error.
+func (c contractLookup) ZeroOnErrorGenerated() conform.ID[cache.Contract] {
+	return c.Check("zero-on-error#generated")
 }
 
 // contractFetch is the name of Contract.Fetch, with the identities of its
@@ -132,16 +186,34 @@ func (c contractFetch) Smoke() conform.ID[cache.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Fetch returns
+// without a panic for derived inputs.
+func (c contractFetch) SmokeGenerated() conform.ID[cache.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Fetch returns an error for
 // a cancelled context.
 func (c contractFetch) Cancel() conform.ID[cache.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Fetch returns an
+// error for a cancelled context.
+func (c contractFetch) CancelGenerated() conform.ID[cache.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Fetch returns the
 // zero value beside an error.
 func (c contractFetch) ZeroOnError() conform.ID[cache.Contract] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Fetch
+// returns the zero value beside an error.
+func (c contractFetch) ZeroOnErrorGenerated() conform.ID[cache.Contract] {
+	return c.Check("zero-on-error#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -169,6 +241,23 @@ func ContractSuite() conform.Suite[cache.Contract] {
 				Defect: contractStorePanics,
 			},
 			{
+				ID:          ContractChecks.Store.SmokeGenerated(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnV := c.Draw(prop.Of[cache.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnKey, drawnV)
+					})
+				},
+				Defect: contractStorePanics,
+			},
+			{
 				ID:          ContractChecks.Store.Cancel(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -179,6 +268,23 @@ func ContractSuite() conform.Suite[cache.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Store(ctx, string("key-a"), cache.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractStoreIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Store.CancelGenerated(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnV := c.Draw(prop.Of[cache.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, drawnKey, drawnV)
 					})
 				},
 				Defect: contractStoreIgnoresCancel,
@@ -201,6 +307,23 @@ func ContractSuite() conform.Suite[cache.Contract] {
 				Defect: contractLookupPanics,
 			},
 			{
+				ID:          ContractChecks.Lookup.SmokeGenerated(),
+				Statement:   "Lookup returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Lookup(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: contractLookupPanics,
+			},
+			{
 				ID:          ContractChecks.Lookup.Cancel(),
 				Statement:   "Lookup returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -217,6 +340,23 @@ func ContractSuite() conform.Suite[cache.Contract] {
 				Defect: contractLookupIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Lookup.CancelGenerated(),
+				Statement:   "Lookup returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Lookup(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: contractLookupIgnoresCancel,
+			},
+			{
 				ID:          ContractChecks.Lookup.ZeroOnError(),
 				Statement:   "Lookup returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -227,6 +367,22 @@ func ContractSuite() conform.Suite[cache.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (cache.Value, error) {
 						return h.Subject().Lookup(ctx, string("key-a"))
+					}, cache.Value{})
+				},
+				Defect: contractLookupValueBeside,
+			},
+			{
+				ID:          ContractChecks.Lookup.ZeroOnErrorGenerated(),
+				Statement:   "Lookup returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (cache.Value, error) {
+						return h.Subject().Lookup(ctx, drawnKey)
 					}, cache.Value{})
 				},
 				Defect: contractLookupValueBeside,
@@ -249,6 +405,23 @@ func ContractSuite() conform.Suite[cache.Contract] {
 				Defect: contractFetchPanics,
 			},
 			{
+				ID:          ContractChecks.Fetch.SmokeGenerated(),
+				Statement:   "Fetch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: contractFetchPanics,
+			},
+			{
 				ID:          ContractChecks.Fetch.Cancel(),
 				Statement:   "Fetch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -259,6 +432,23 @@ func ContractSuite() conform.Suite[cache.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						_, err := h.Subject().Fetch(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractFetchIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Fetch.CancelGenerated(),
+				Statement:   "Fetch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, drawnKey)
 						return err
 					})
 				},
@@ -279,11 +469,28 @@ func ContractSuite() conform.Suite[cache.Contract] {
 				},
 				Defect: contractFetchValueBeside,
 			},
+			{
+				ID:          ContractChecks.Fetch.ZeroOnErrorGenerated(),
+				Statement:   "Fetch returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (cache.Value, error) {
+						return h.Subject().Fetch(ctx, drawnKey)
+					}, cache.Value{})
+				},
+				Defect: contractFetchValueBeside,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Cache,
 				Callable: "Contract.Lookup",
+				Gate:     spec.PartnerFound,
 				Why:      "no callable of the declaration is the partner put of Lookup",
 				Remedy:   "name the partner of Lookup with the param of the classification",
 			},
@@ -592,4 +799,4 @@ func contractFetchValueBeside(h *ContractHandle) cache.Contract {
 	return &contractFetchValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d007e7b2af8b91d343547181a6258304bf96e57a3464b0e671e2f65f3acca107
+// dokimi:provenance sha256:2097e67cc2ccec7ed17574a4ec016251ffa3997f52db3b90ff59d53e59d9426b

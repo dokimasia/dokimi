@@ -53,6 +53,11 @@ func (s *InMemory) Total(ctx context.Context) (int, error) {
 	return s.total, nil
 }
 
+// Merge implements [associative.Mixed].
+func (*InMemory) Merge(a, b associative.Delta) associative.Delta {
+	return associative.Delta{Key: min(a.Key, b.Key), Amount: a.Amount + b.Amount}
+}
+
 // contextErr returns the error of a canceled or expired context, and an error
 // for a nil context.
 func contextErr(ctx context.Context) error {

@@ -221,6 +221,10 @@ func TestFSSuite(t *testing.T) {
 				suitedhandletest.FSChecks.Open.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				suitedhandletest.FSChecks.Open.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -246,6 +250,10 @@ func TestFSSuite(t *testing.T) {
 				suitedhandletest.FSChecks.Open.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				suitedhandletest.FSChecks.Open.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -268,6 +276,10 @@ func TestFSSuiteBudgets(t *testing.T) {
 			suitedhandletest.FSChecks.Open.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			suitedhandletest.FSChecks.Open.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -282,6 +294,10 @@ func FuzzFSSuiteOpen(f *testing.F) {
 			suitedhandletest.FSChecks.Open.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			suitedhandletest.FSChecks.Open.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -292,4 +308,4 @@ func BenchmarkFSSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e89d3141e36ad56b356906546a829c2bcf44351d10983c882776f43b1fa6051b
+// dokimi:provenance sha256:ac0715ea46ed499c3c5ec668578399fb93ea411a54fe0f0bdbd730d00455e920

@@ -20,8 +20,14 @@ import (
 //
 // Filter.Filter/smoke: Filter returns without a panic for derived inputs.
 //
+// Filter.Filter/smoke#generated: Filter returns without a panic for
+// derived inputs.
+//
 // Filter.Filter/deterministic: Filter returns the same value for the same
 // inputs.
+//
+// Filter.Filter/deterministic#generated: Filter returns the same value for
+// the same inputs.
 
 // The derived checks of Filter that witness their laws at the shallow end:
 //
@@ -67,10 +73,22 @@ func (c filterFilter) Smoke() conform.ID[selfnamed.Filter] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Filter returns
+// without a panic for derived inputs.
+func (c filterFilter) SmokeGenerated() conform.ID[selfnamed.Filter] {
+	return c.Check("smoke#generated")
+}
+
 // Deterministic returns the identity of the check that Filter returns the
 // same value for the same inputs.
 func (c filterFilter) Deterministic() conform.ID[selfnamed.Filter] {
 	return c.Check("deterministic")
+}
+
+// DeterministicGenerated returns the identity of the check that Filter
+// returns the same value for the same inputs.
+func (c filterFilter) DeterministicGenerated() conform.ID[selfnamed.Filter] {
+	return c.Check("deterministic#generated")
 }
 
 // filterDrain is the name of Filter.Drain, with the identities of its
@@ -105,6 +123,23 @@ func FilterSuite() conform.Suite[selfnamed.Filter] {
 				Defect: filterFilterPanics,
 			},
 			{
+				ID:          FilterChecks.Filter.SmokeGenerated(),
+				Statement:   "Filter returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *FilterHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Filter(drawnItem)
+						return nil
+					})
+				},
+				Defect: filterFilterPanics,
+			},
+			{
 				ID:          FilterChecks.Filter.Deterministic(),
 				Statement:   "Filter returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
@@ -122,11 +157,30 @@ func FilterSuite() conform.Suite[selfnamed.Filter] {
 				},
 				Defect: filterFilterDrifts,
 			},
+			{
+				ID:          FilterChecks.Filter.DeterministicGenerated(),
+				Statement:   "Filter returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Entails:     []conform.ID[selfnamed.Filter]{FilterChecks.Filter.SmokeGenerated()},
+				Property: func(h *FilterHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.RepeatAgrees(h, func(ctx context.Context) (bool, error) {
+						r0 := h.Subject().Filter(drawnItem)
+						return r0, nil
+					})
+				},
+				Defect: filterFilterDrifts,
+			},
 		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Deterministic,
 				Callable: "Filter.Drain",
+				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter src of Drain",
 				Remedy:   "author a sample of the parameter src with the directive sample",
 			},
@@ -323,4 +377,4 @@ func filterFilterDrifts(h *FilterHandle) selfnamed.Filter {
 	return &filterFilterDriftsDefect{filterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c2051dc87ca0889f954a87d2ac91ab4cbb880a3d4902567d2bdc6e79686d6adb
+// dokimi:provenance sha256:54b9aeeb033d31d18958f7e80df7f7678ddf46d2b89acdf22d0b3fc6fd0d3275

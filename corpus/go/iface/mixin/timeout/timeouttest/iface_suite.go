@@ -22,10 +22,19 @@ import (
 //
 // Mixed.Slow/smoke: Slow returns without a panic for derived inputs.
 //
+// Mixed.Slow/smoke#generated: Slow returns without a panic for derived
+// inputs.
+//
 // Mixed.Slow/cancel: Slow returns an error for a cancelled context.
+//
+// Mixed.Slow/cancel#generated: Slow returns an error for a cancelled
+// context.
 //
 // Mixed.Slow/within: Slow returns before the clock passes the declared
 // budget.
+//
+// Mixed.Slow/within#generated: Slow returns before the clock passes the
+// declared budget.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -65,16 +74,34 @@ func (c mixedSlow) Smoke() conform.ID[timeout.Mixed] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Slow returns
+// without a panic for derived inputs.
+func (c mixedSlow) SmokeGenerated() conform.ID[timeout.Mixed] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Slow returns an error for
 // a cancelled context.
 func (c mixedSlow) Cancel() conform.ID[timeout.Mixed] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Slow returns an
+// error for a cancelled context.
+func (c mixedSlow) CancelGenerated() conform.ID[timeout.Mixed] {
+	return c.Check("cancel#generated")
+}
+
 // Within returns the identity of the check that Slow returns before the
 // clock passes the declared budget.
 func (c mixedSlow) Within() conform.ID[timeout.Mixed] {
 	return c.Check("within")
+}
+
+// WithinGenerated returns the identity of the check that Slow returns
+// before the clock passes the declared budget.
+func (c mixedSlow) WithinGenerated() conform.ID[timeout.Mixed] {
+	return c.Check("within#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -102,6 +129,22 @@ func MixedSuite() conform.Suite[timeout.Mixed] {
 				Defect: mixedSlowPanics,
 			},
 			{
+				ID:          MixedChecks.Slow.SmokeGenerated(),
+				Statement:   "Slow returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Slow(ctx, drawnKey)
+					})
+				},
+				Defect: mixedSlowPanics,
+			},
+			{
 				ID:          MixedChecks.Slow.Cancel(),
 				Statement:   "Slow returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -117,6 +160,22 @@ func MixedSuite() conform.Suite[timeout.Mixed] {
 				Defect: mixedSlowIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Slow.CancelGenerated(),
+				Statement:   "Slow returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Slow(ctx, drawnKey)
+					})
+				},
+				Defect: mixedSlowIgnoresCancel,
+			},
+			{
 				ID:          MixedChecks.Slow.Within(),
 				Statement:   "Slow returns before the clock passes the declared budget",
 				Claim:       spec.Within,
@@ -127,6 +186,23 @@ func MixedSuite() conform.Suite[timeout.Mixed] {
 				Apply: func(h *MixedHandle) {
 					probe.ReturnsWithin(h, func(ctx context.Context) error {
 						return h.Subject().Slow(ctx, string("key-a"))
+					}, 5*time.Second)
+				},
+				Defect: mixedSlowSlow,
+				Around: synctest.Test,
+			},
+			{
+				ID:          MixedChecks.Slow.WithinGenerated(),
+				Statement:   "Slow returns before the clock passes the declared budget",
+				Claim:       spec.Within,
+				Probe:       spec.ReturnsWithin,
+				Reason:      spec.OverranBudget,
+				Law:         spec.CallReturnsWithinItsBudget,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances, spec.GeneratedInputs},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ReturnsWithin(h, func(ctx context.Context) error {
+						return h.Subject().Slow(ctx, drawnKey)
 					}, 5*time.Second)
 				},
 				Defect: mixedSlowSlow,
@@ -297,4 +373,4 @@ func mixedSlowSlow(h *MixedHandle) timeout.Mixed {
 	return &mixedSlowSlowDefect{mixedOverEmbedded: h.Fresh(), clock: h.Clock()}
 }
 
-// dokimi:provenance sha256:be94d8302a609b3b6e7fbaec9bb4c42aca2e5a7c45af738eeb5ea2908c2a63d6
+// dokimi:provenance sha256:dee2ed43f656f141dc0d186941f91af2e35616fb3ccad0ae8d929f23b8110c08

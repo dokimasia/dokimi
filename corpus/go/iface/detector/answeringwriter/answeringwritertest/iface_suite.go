@@ -20,11 +20,20 @@ import (
 // AnsweringWriter.Put/smoke: Put returns without a panic for derived
 // inputs.
 //
+// AnsweringWriter.Put/smoke#generated: Put returns without a panic for
+// derived inputs.
+//
 // AnsweringWriter.Put/cancel: Put returns an error for a cancelled
 // context.
 //
+// AnsweringWriter.Put/cancel#generated: Put returns an error for a
+// cancelled context.
+//
 // AnsweringWriter.Put/zero-on-error: Put returns the zero value beside an
 // error.
+//
+// AnsweringWriter.Put/zero-on-error#generated: Put returns the zero value
+// beside an error.
 
 // The derived checks of AnsweringWriter that witness their laws at the
 // shallow end:
@@ -61,16 +70,34 @@ func (c answeringWriterPut) Smoke() conform.ID[answeringwriter.AnsweringWriter] 
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Put returns
+// without a panic for derived inputs.
+func (c answeringWriterPut) SmokeGenerated() conform.ID[answeringwriter.AnsweringWriter] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c answeringWriterPut) Cancel() conform.ID[answeringwriter.AnsweringWriter] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Put returns an
+// error for a cancelled context.
+func (c answeringWriterPut) CancelGenerated() conform.ID[answeringwriter.AnsweringWriter] {
+	return c.Check("cancel#generated")
+}
+
 // ZeroOnError returns the identity of the check that Put returns the zero
 // value beside an error.
 func (c answeringWriterPut) ZeroOnError() conform.ID[answeringwriter.AnsweringWriter] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Put returns
+// the zero value beside an error.
+func (c answeringWriterPut) ZeroOnErrorGenerated() conform.ID[answeringwriter.AnsweringWriter] {
+	return c.Check("zero-on-error#generated")
 }
 
 // AnsweringWriterSuite returns the checks of AnsweringWriter, and the
@@ -99,6 +126,23 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				Defect: answeringWriterPutPanics,
 			},
 			{
+				ID:          AnsweringWriterChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AnsweringWriterHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[answeringwriter.Value](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Put(ctx, drawnV)
+						return err
+					})
+				},
+				Defect: answeringWriterPutPanics,
+			},
+			{
 				ID:          AnsweringWriterChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -115,6 +159,23 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				Defect: answeringWriterPutIgnoresCancel,
 			},
 			{
+				ID:          AnsweringWriterChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AnsweringWriterHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[answeringwriter.Value](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Put(ctx, drawnV)
+						return err
+					})
+				},
+				Defect: answeringWriterPutIgnoresCancel,
+			},
+			{
 				ID:          AnsweringWriterChecks.Put.ZeroOnError(),
 				Statement:   "Put returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -125,6 +186,22 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				Apply: func(h *AnsweringWriterHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (answeringwriter.Value, error) {
 						return h.Subject().Put(ctx, answeringwriter.Value{Key: "Key-a"})
+					}, answeringwriter.Value{})
+				},
+				Defect: answeringWriterPutValueBeside,
+			},
+			{
+				ID:          AnsweringWriterChecks.Put.ZeroOnErrorGenerated(),
+				Statement:   "Put returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AnsweringWriterHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[answeringwriter.Value](), "v")
+					probe.ZeroBesideError(h, func(ctx context.Context) (answeringwriter.Value, error) {
+						return h.Subject().Put(ctx, drawnV)
 					}, answeringwriter.Value{})
 				},
 				Defect: answeringWriterPutValueBeside,
@@ -312,4 +389,4 @@ func answeringWriterPutValueBeside(h *AnsweringWriterHandle) answeringwriter.Ans
 	return &answeringWriterPutValueBesideDefect{answeringWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2af1638ee3bf57cb0e414c246f424b3d0267e8f9711664f92c2e626fa65051c6
+// dokimi:provenance sha256:34970672b9d11da9aa6e0b2cbf2844883643c52a7b8b53acc37a3ac98d4cff37

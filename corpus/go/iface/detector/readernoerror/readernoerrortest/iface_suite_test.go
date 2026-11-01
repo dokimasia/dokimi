@@ -56,7 +56,15 @@ func TestReaderNoErrorSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				readernoerrortest.ReaderNoErrorChecks.Lookup.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -87,7 +95,15 @@ func TestReaderNoErrorSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				readernoerrortest.ReaderNoErrorChecks.Lookup.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -115,7 +131,15 @@ func TestReaderNoErrorSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			readernoerrortest.ReaderNoErrorChecks.Lookup.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -134,7 +158,15 @@ func FuzzReaderNoErrorSuiteLookup(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			readernoerrortest.ReaderNoErrorChecks.Lookup.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -152,4 +184,4 @@ func BenchmarkReaderNoErrorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:8c6d485a156de02c9811ac75f8f39584d3913e7391abf2f8a1982dd4aa18f1fb
+// dokimi:provenance sha256:12a3fdedf676021724c8dd71a113b77d1a74a02461aa49ff112c8d7355dbe000

@@ -52,6 +52,10 @@ func TestLookupSuite(t *testing.T) {
 				lookuptest.LookupChecks.Inspect.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				lookuptest.LookupChecks.Inspect.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -77,6 +81,10 @@ func TestLookupSuite(t *testing.T) {
 				lookuptest.LookupChecks.Inspect.Smoke(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				lookuptest.LookupChecks.Inspect.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -100,6 +108,10 @@ func TestLookupSuiteBudgets(t *testing.T) {
 			lookuptest.LookupChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			lookuptest.LookupChecks.Inspect.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -114,6 +126,10 @@ func FuzzLookupSuiteInspect(f *testing.F) {
 			lookuptest.LookupChecks.Inspect.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			lookuptest.LookupChecks.Inspect.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -125,4 +141,4 @@ func BenchmarkLookupSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:438e2399442fce98d5faf033f5969f12f02f4c4d2cc38187f7b0aa263c5d1215
+// dokimi:provenance sha256:e3e57a58775bac14860fdc2a01774e4b3aed0848de11c4b269102dde96a9329c

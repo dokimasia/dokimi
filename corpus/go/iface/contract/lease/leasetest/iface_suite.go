@@ -20,17 +20,32 @@ import (
 // Contract.Acquire/smoke: Acquire returns without a panic for derived
 // inputs.
 //
+// Contract.Acquire/smoke#generated: Acquire returns without a panic for
+// derived inputs.
+//
 // Contract.Acquire/cancel: Acquire returns an error for a cancelled
 // context.
+//
+// Contract.Acquire/cancel#generated: Acquire returns an error for a
+// cancelled context.
 //
 // Contract.Acquire/lease: a second Acquire for one key fails with the
 // declared sentinel.
 //
+// Contract.Acquire/lease#generated: a second Acquire for one key fails
+// with the declared sentinel.
+//
 // Contract.Release/smoke: Release returns without a panic for derived
 // inputs.
 //
+// Contract.Release/smoke#generated: Release returns without a panic for
+// derived inputs.
+//
 // Contract.Release/cancel: Release returns an error for a cancelled
 // context.
+//
+// Contract.Release/cancel#generated: Release returns an error for a
+// cancelled context.
 
 // The derived checks of Contract that witness their laws at the shallow
 // end:
@@ -38,6 +53,8 @@ import (
 // Contract.Acquire/smoke
 //
 // Contract.Acquire/lease
+//
+// Contract.Acquire/lease#generated
 //
 // Contract.Release/smoke
 
@@ -84,16 +101,34 @@ func (c contractAcquire) Smoke() conform.ID[lease.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Acquire returns
+// without a panic for derived inputs.
+func (c contractAcquire) SmokeGenerated() conform.ID[lease.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Acquire returns an error
 // for a cancelled context.
 func (c contractAcquire) Cancel() conform.ID[lease.Contract] {
 	return c.Check("cancel")
 }
 
+// CancelGenerated returns the identity of the check that Acquire returns
+// an error for a cancelled context.
+func (c contractAcquire) CancelGenerated() conform.ID[lease.Contract] {
+	return c.Check("cancel#generated")
+}
+
 // Lease returns the identity of the check that a second Acquire for one
 // key fails with the declared sentinel.
 func (c contractAcquire) Lease() conform.ID[lease.Contract] {
 	return c.Check("lease")
+}
+
+// LeaseGenerated returns the identity of the check that a second Acquire
+// for one key fails with the declared sentinel.
+func (c contractAcquire) LeaseGenerated() conform.ID[lease.Contract] {
+	return c.Check("lease#generated")
 }
 
 // contractRelease is the name of Contract.Release, with the identities of
@@ -108,10 +143,22 @@ func (c contractRelease) Smoke() conform.ID[lease.Contract] {
 	return c.Check("smoke")
 }
 
+// SmokeGenerated returns the identity of the check that Release returns
+// without a panic for derived inputs.
+func (c contractRelease) SmokeGenerated() conform.ID[lease.Contract] {
+	return c.Check("smoke#generated")
+}
+
 // Cancel returns the identity of the check that Release returns an error
 // for a cancelled context.
 func (c contractRelease) Cancel() conform.ID[lease.Contract] {
 	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Release returns
+// an error for a cancelled context.
+func (c contractRelease) CancelGenerated() conform.ID[lease.Contract] {
+	return c.Check("cancel#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -139,6 +186,22 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractAcquirePanics,
 			},
 			{
+				ID:          ContractChecks.Acquire.SmokeGenerated(),
+				Statement:   "Acquire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, drawnKey)
+					})
+				},
+				Defect: contractAcquirePanics,
+			},
+			{
 				ID:          ContractChecks.Acquire.Cancel(),
 				Statement:   "Acquire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -149,6 +212,22 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Acquire(ctx, string("key-a"))
+					})
+				},
+				Defect: contractAcquireIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Acquire.CancelGenerated(),
+				Statement:   "Acquire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, drawnKey)
 					})
 				},
 				Defect: contractAcquireIgnoresCancel,
@@ -170,6 +249,23 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractAcquireSucceedsAlways,
 			},
 			{
+				ID:          ContractChecks.Acquire.LeaseGenerated(),
+				Statement:   "a second Acquire for one key fails with the declared sentinel",
+				Claim:       spec.Lease,
+				Probe:       spec.RefusesTheSecondWrite,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, drawnKey)
+					}, lease.ErrHeld)
+				},
+				Defect: contractAcquireSucceedsAlways,
+			},
+			{
 				ID:          ContractChecks.Release.Smoke(),
 				Statement:   "Release returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -186,6 +282,22 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractReleasePanics,
 			},
 			{
+				ID:          ContractChecks.Release.SmokeGenerated(),
+				Statement:   "Release returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Release(ctx, drawnKey)
+					})
+				},
+				Defect: contractReleasePanics,
+			},
+			{
 				ID:          ContractChecks.Release.Cancel(),
 				Statement:   "Release returns an error for a cancelled context",
 				Claim:       spec.Cancel,
@@ -196,6 +308,22 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
 						return h.Subject().Release(ctx, string("key-a"))
+					})
+				},
+				Defect: contractReleaseIgnoresCancel,
+			},
+			{
+				ID:          ContractChecks.Release.CancelGenerated(),
+				Statement:   "Release returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Release(ctx, drawnKey)
 					})
 				},
 				Defect: contractReleaseIgnoresCancel,
@@ -436,4 +564,4 @@ func contractReleaseIgnoresCancel(h *ContractHandle) lease.Contract {
 	return &contractReleaseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:056548c47e4d82c37130ea3991e57c653ceadee132e5ea790dc820bad14cc6bc
+// dokimi:provenance sha256:c7121e1cebe6cf3d2ea40179cbc734c23363ab487205b43bef0ead4e16a4a024

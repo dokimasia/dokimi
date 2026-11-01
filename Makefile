@@ -99,7 +99,7 @@ DOKIMI_MUTATE_GO := $(ERGON) tool run go.dokimi-mutate-go --
 # The options of the section go.
 GO_PATHS ?= ./...
 GO_TEST_ARGS ?= -count=1
-GO_RACE_ARGS ?= -count=1 -p=1
+GO_RACE_ARGS ?= -count=1 -p=4
 GO_FUZZ_MATCH ?= .
 GO_FUZZ_TIME ?= 30s
 GO_FUZZ_ARGS ?= -fuzzminimizetime=5s

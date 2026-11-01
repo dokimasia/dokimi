@@ -265,7 +265,7 @@ go:
   # race-go runs go test -race with args. -p=1 tests one package at a time, because the race
   # detector multiplies the memory of a test.
   race:
-    args: [-count=1, -p=1]
+    args: [-count=1, -p=4]
   # fuzz-go fuzzes each fuzz target whose name matches the regular expression match, for time each,
   # with args. -fuzzminimizetime bounds the minimization of a new input, which go test runs for 60s
   # by default.

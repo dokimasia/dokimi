@@ -1,0 +1,127 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/saga
+level: 3
+subjects:
+  - type: iface/contract/saga/sagatest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.compensate/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.compensate/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.compensate/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.compensate/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.ship/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.ship/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.ship/saga:
+        claim: saga
+        partners:
+          compensate: contract.undo-ship
+        law: compensation-accepts-its-step
+        reason: uncompensated-step
+      contract.ship/saga#generated:
+        claim: saga
+        partners:
+          compensate: contract.undo-ship
+        law: compensation-accepts-its-step
+        reason: uncompensated-step
+      contract.ship/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.ship/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.state/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.state/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.state/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.step/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.step/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.step/saga:
+        claim: saga
+        partners:
+          compensate: contract.compensate
+        law: compensation-accepts-its-step
+        reason: uncompensated-step
+      contract.step/saga#generated:
+        claim: saga
+        partners:
+          compensate: contract.compensate
+        law: compensation-accepts-its-step
+        reason: uncompensated-step
+      contract.step/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.step/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.undo-ship/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.undo-ship/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.undo-ship/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.undo-ship/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: contract.compensate
+        stance: silent
+      - classification: shape:writer
+        callable: contract.ship
+        stance: silent
+      - classification: shape:writer
+        callable: contract.step
+        stance: silent
+      - classification: shape:writer
+        callable: contract.undo-ship
+        stance: silent

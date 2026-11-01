@@ -1,0 +1,51 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/multireturn
+level: 1
+subjects:
+  - type: iface/lang/multireturn/multireturntest.InMemory
+controls: []
+declarations:
+  wide:
+    checks:
+      wide.no-error/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      wide.no-error/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      wide.quad/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      wide.quad/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      wide.quad/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      wide.quad/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      wide.triple/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      wide.triple/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      wide.no-error/cancel: failure
+      wide.quad/zeroes-on-error: two-values
+      wide.triple/cancel: failure
+      wide.triple/zeroes-on-miss: presence-flag
+    unclaimed: []

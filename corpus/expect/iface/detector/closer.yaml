@@ -1,0 +1,22 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/closer
+level: 2
+subjects:
+  - type: iface/detector/closer/closertest.InMemory
+controls: []
+declarations:
+  closer:
+    checks:
+      closer.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:closer
+        callable: closer.close
+        stance: silent

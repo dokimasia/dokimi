@@ -1,0 +1,50 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/balancer
+level: 4
+subjects:
+  - type: iface/door/balancer/balancertest.Ring
+controls: []
+declarations:
+  balancer:
+    checks:
+      balancer.send/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      balancer.send/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      balancer.send/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      balancer.send/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      balancer.send/keeps-its-instance:
+        claim: keeps-its-instance
+        law: one-key-one-instance
+        reason: moved-instance
+      balancer.send/keeps-its-instance#generated:
+        claim: keeps-its-instance
+        law: one-key-one-instance
+        reason: moved-instance
+      balancer.send/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      balancer.send/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: balancer.send
+        stance: silent

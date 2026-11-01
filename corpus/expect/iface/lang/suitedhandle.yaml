@@ -1,0 +1,46 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/suitedhandle
+level: 1
+subjects:
+  - type: iface/lang/suitedhandle/suitedhandletest.InMemoryFS
+  - type: iface/lang/suitedhandle/suitedhandletest.InMemoryFile
+controls: []
+declarations:
+  file:
+    checks:
+      file.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      file.name/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      file.name/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:closer
+        callable: file.close
+        stance: silent
+  fs:
+    checks:
+      fs.open/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      fs.open/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      fs.open/zero-on-error: value-samples
+    unclaimed: []

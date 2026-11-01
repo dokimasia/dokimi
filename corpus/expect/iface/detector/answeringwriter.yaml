@@ -1,0 +1,39 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/answeringwriter
+level: 2
+subjects:
+  - type: iface/detector/answeringwriter/answeringwritertest.InMemory
+controls: []
+declarations:
+  answering-writer:
+    checks:
+      answering-writer.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      answering-writer.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      answering-writer.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      answering-writer.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      answering-writer.put/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      answering-writer.put/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

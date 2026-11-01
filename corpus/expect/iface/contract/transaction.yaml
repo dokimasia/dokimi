@@ -1,0 +1,91 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/transaction
+level: 3
+subjects:
+  - type: iface/contract/transaction/transactiontest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.run/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.run/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.run/transaction:
+        claim: transaction
+        partners:
+          read: contract.get
+          write: contract.put
+        law: failed-scope-leaves-nothing
+        reason: not-rolled-back
+      contract.run/transaction#generated:
+        claim: transaction
+        partners:
+          read: contract.get
+          write: contract.put
+        law: failed-scope-leaves-nothing
+        reason: not-rolled-back
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: contract.put
+        stance: silent
+      - classification: shape:writer
+        callable: contract.run
+        stance: silent

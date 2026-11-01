@@ -1,0 +1,55 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/composite/tx-with-retry
+level: 4
+subjects:
+  - type: iface/composite/tx-with-retry/txwithretrytest.InMemory
+controls: []
+declarations:
+  tx-with-retry:
+    checks:
+      tx-with-retry.begin/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      tx-with-retry.begin/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      tx-with-retry.commit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      tx-with-retry.commit/retry-succeeds-tx:
+        claim: retry-succeeds-tx
+        partners:
+          begin: tx-with-retry.begin
+        law: call-converges-once-its-scope-is-open
+        reason: never-converged
+      tx-with-retry.commit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      tx-with-retry.rollback/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      tx-with-retry.rollback/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      tx-with-retry.begin/tx: one-value
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: tx-with-retry.begin
+        stance: silent
+      - classification: shape:lifecycle
+        callable: tx-with-retry.commit
+        stance: silent
+      - classification: shape:lifecycle
+        callable: tx-with-retry.rollback
+        stance: silent

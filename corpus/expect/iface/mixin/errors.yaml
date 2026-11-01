@@ -1,0 +1,50 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/errors
+level: 2
+subjects:
+  - type: iface/mixin/errors/errorstest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.get/miss:
+        claim: miss
+        law: miss-reports-the-declared-sentinel
+        reason: wrong-sentinel
+      mixed.get/miss#generated:
+        claim: miss
+        law: miss-reports-the-declared-sentinel
+        reason: wrong-sentinel
+      mixed.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: mixin:errors
+        callable: mixed.get
+        stance: silent

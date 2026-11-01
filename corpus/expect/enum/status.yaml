@@ -1,0 +1,8 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: enum/status
+level: 3
+subjects: []
+controls: []
+declarations: {}

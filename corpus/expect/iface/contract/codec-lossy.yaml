@@ -1,0 +1,64 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/codec-lossy
+level: 3
+subjects:
+  - type: iface/contract/codec-lossy/codeclossytest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.decode/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.decode/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.decode/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.decode/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.decode/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.decode/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.encode/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.encode/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.encode/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.encode/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.encode/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.encode/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals:
+      contract.encode/codec: exact-fidelity
+    unclaimed: []

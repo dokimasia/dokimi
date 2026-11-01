@@ -1,0 +1,53 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/crdtmerge
+level: 2
+subjects:
+  - type: iface/mixin/crdtmerge/crdtmergetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.add/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.add/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.add/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.add/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.items/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.items/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.items/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.merge/cancel: input-samples
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.add
+        stance: silent
+      - classification: mixin:crdt-merge
+        callable: mixed.merge
+        stance: needs
+      - classification: shape:writer
+        callable: mixed.merge
+        stance: silent

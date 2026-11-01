@@ -1,0 +1,50 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/variadic
+level: 1
+subjects:
+  - type: iface/lang/variadic/variadictest.InMemory
+controls: []
+declarations:
+  finder:
+    checks:
+      finder.find-with-limit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      finder.find-with-limit/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      finder.find-with-limit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      finder.find-with-limit/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      finder.find/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      finder.find/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      finder.find/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      finder.find/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:batch-reader
+        callable: finder.find
+        stance: gap

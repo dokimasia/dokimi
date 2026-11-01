@@ -1,0 +1,42 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/sampled
+level: 1
+subjects:
+  - type: iface/lang/sampled/sampledtest.InMemory
+controls: []
+declarations:
+  labeller:
+    checks:
+      labeller.apply/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      labeller.apply/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      labeller.apply/idempotent:
+        claim: idempotent
+        law: repeat-is-accepted
+        reason: refused-repeat
+      labeller.apply/idempotent#generated:
+        claim: idempotent
+        law: repeat-is-accepted
+        reason: refused-repeat
+      labeller.apply/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      labeller.apply/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: labeller.apply
+        stance: silent

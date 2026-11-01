@@ -1,0 +1,34 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/batchreader
+level: 2
+subjects:
+  - type: iface/detector/batchreader/batchreadertest.InMemory
+controls: []
+declarations:
+  batch-reader:
+    checks:
+      batch-reader.get-all/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batch-reader.get-all/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batch-reader.get-all/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      batch-reader.get-all/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:batch-reader
+        callable: batch-reader.get-all
+        stance: gap

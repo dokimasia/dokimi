@@ -1,0 +1,47 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/reader
+level: 2
+subjects:
+  - type: iface/detector/reader/readertest.InMemory
+controls: []
+declarations:
+  reader:
+    checks:
+      reader.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      reader.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      reader.get/miss:
+        claim: miss
+        law: miss-reports-the-declared-sentinel
+        reason: wrong-sentinel
+      reader.get/miss#generated:
+        claim: miss
+        law: miss-reports-the-declared-sentinel
+        reason: wrong-sentinel
+      reader.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      reader.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      reader.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      reader.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

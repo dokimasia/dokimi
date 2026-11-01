@@ -1,0 +1,44 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/kinds
+level: 1
+subjects:
+  - type: iface/lang/kinds/kindstest.InMemory
+controls: []
+declarations:
+  every:
+    checks:
+      every.elements/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      every.elements/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      every.fields/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      every.fields/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored:
+      - every.drain/drains-the-feed
+      - every.index/counts-the-names
+      - every.measure/measures-the-shape
+    ceilings: []
+    refusals:
+      every.count/deterministic: input-samples
+      every.drain/deterministic: input-samples
+      every.index/deterministic: input-samples
+      every.measure/deterministic: input-samples
+      every.params/deterministic: input-samples
+      every.place/deterministic: input-samples
+      every.results/deterministic: input-samples
+      every.route/deterministic: input-samples
+      every.use/deterministic: input-samples
+      every.watch/deterministic: input-samples
+    unclaimed: []

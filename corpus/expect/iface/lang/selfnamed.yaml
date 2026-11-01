@@ -1,0 +1,32 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/selfnamed
+level: 1
+subjects:
+  - type: iface/lang/selfnamed/selfnamedtest.InMemory
+controls: []
+declarations:
+  filter:
+    checks:
+      filter.filter/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      filter.filter/deterministic#generated:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      filter.filter/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      filter.filter/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      filter.drain/deterministic: input-samples
+    unclaimed: []

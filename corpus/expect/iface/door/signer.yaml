@@ -1,0 +1,59 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/signer
+level: 4
+subjects:
+  - type: iface/door/signer/signertest.Memory
+controls: []
+declarations:
+  signer:
+    checks:
+      signer.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      signer.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      signer.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      signer.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      signer.sign/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      signer.sign/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      signer.sign/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      signer.sign/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      signer.sign/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      signer.sign/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored:
+      - signer.sign/serves-the-signed-body
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: signer.put
+        stance: silent

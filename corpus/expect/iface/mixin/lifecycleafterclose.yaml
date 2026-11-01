@@ -1,0 +1,43 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/lifecycleafterclose
+level: 2
+subjects:
+  - type: iface/mixin/lifecycleafterclose/lifecycleafterclosetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.close/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.work/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.work/lifecycle-after-close:
+        claim: lifecycle-after-close
+        partners:
+          close: mixed.close
+        law: work-after-close-is-refused
+        reason: alive-after-close
+      mixed.work/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: mixed.close
+        stance: silent
+      - classification: shape:lifecycle
+        callable: mixed.work
+        stance: silent

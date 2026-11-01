@@ -1,0 +1,74 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/boundedcache
+level: 2
+subjects:
+  - type: iface/mixin/boundedcache/boundedcachetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.get/cacheable:
+        claim: cacheable
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.get/cacheable#generated:
+        claim: cacheable
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.get/zero-on-miss:
+        claim: zero-on-miss
+        law: no-value-beside-a-false-flag
+        reason: value-beside-false
+      mixed.get/zero-on-miss#generated:
+        claim: zero-on-miss
+        law: no-value-beside-a-false-flag
+        reason: value-beside-false
+      mixed.len/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.len/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.len/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.get/cancel: failure
+    unclaimed:
+      - classification: mixin:bounded
+        callable: mixed.len
+        stance: needs
+      - classification: shape:composite-writer
+        callable: mixed.put
+        stance: silent

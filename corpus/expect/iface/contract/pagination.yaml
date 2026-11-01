@@ -1,0 +1,62 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/pagination
+level: 3
+subjects:
+  - type: iface/contract/pagination/paginationtest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.fetch/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.fetch/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.fetch/pagination:
+        claim: pagination
+        law: walk-resumes-where-it-left-off
+        reason: repeated-page
+      contract.fetch/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.fetch/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.fetch/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.fetch/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: contract.put
+        stance: silent

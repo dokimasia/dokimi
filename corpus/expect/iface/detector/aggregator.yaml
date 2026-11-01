@@ -1,0 +1,27 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/aggregator
+level: 2
+subjects:
+  - type: iface/detector/aggregator/aggregatortest.InMemory
+controls: []
+declarations:
+  aggregator:
+    checks:
+      aggregator.count/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      aggregator.count/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      aggregator.count/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

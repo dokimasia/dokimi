@@ -1,0 +1,75 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/persister
+level: 3
+subjects:
+  - type: iface/contract/persister/persistertest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/persister:
+        claim: persister
+        partners:
+          read: contract.get
+        law: read-returns-the-write-before-it
+        reason: unobserved-write
+      contract.put/persister#generated:
+        claim: persister
+        partners:
+          read: contract.get
+        law: read-returns-the-write-before-it
+        reason: unobserved-write
+      contract.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.put/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.put/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

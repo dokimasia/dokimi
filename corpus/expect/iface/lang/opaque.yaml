@@ -1,0 +1,35 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/opaque
+level: 1
+subjects:
+  - type: iface/lang/opaque/opaquetest.InMemory
+controls: []
+declarations:
+  store:
+    checks:
+      store.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings:
+      - store.put/allocation-budget
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: store.put
+        stance: silent

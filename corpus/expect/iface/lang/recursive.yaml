@@ -1,0 +1,19 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/recursive
+level: 1
+subjects:
+  - type: iface/lang/recursive/recursivetest.InMemory
+controls: []
+declarations:
+  counter:
+    checks: {}
+    authored:
+      - counter.nodes/counts-the-root
+      - counter.steps/takes-the-first-step
+    ceilings: []
+    refusals:
+      counter.nodes/deterministic: input-samples
+      counter.steps/deterministic: input-samples
+    unclaimed: []

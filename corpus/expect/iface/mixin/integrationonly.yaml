@@ -1,0 +1,37 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/integrationonly
+level: 2
+subjects:
+  - type: iface/mixin/integrationonly/integrationonlytest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.connect/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.connect/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.connect/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.connect/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: mixin:integration-only
+        callable: mixed.connect
+        stance: silent
+      - classification: shape:writer
+        callable: mixed.connect
+        stance: silent

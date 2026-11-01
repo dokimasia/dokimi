@@ -1,0 +1,73 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/indexed
+level: 2
+subjects:
+  - type: iface/mixin/indexed/indexedtest.InMemory
+controls: []
+declarations:
+  ranked:
+    checks:
+      ranked.add/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ranked.add/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ranked.add/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ranked.add/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ranked.at/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ranked.at/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ranked.at/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ranked.at/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ranked.at/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      ranked.at/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      ranked.len/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ranked.len/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ranked.len/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: ranked.add
+        stance: silent
+      - classification: mixin:indexed
+        callable: ranked.at
+        stance: gap

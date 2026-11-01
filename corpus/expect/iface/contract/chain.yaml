@@ -1,0 +1,72 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/chain
+level: 3
+subjects:
+  - type: iface/contract/chain/chaintest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.append/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.append/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.append/chain:
+        claim: chain
+        partners:
+          replay: contract.replay
+        law: admitted-entry-grows-the-replay
+        reason: replay-not-grown
+      contract.append/chain#generated:
+        claim: chain
+        partners:
+          replay: contract.replay
+        law: admitted-entry-grows-the-replay
+        reason: replay-not-grown
+      contract.append/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.append/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.replay/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.replay/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.replay/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.verify/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.verify/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: contract.append
+        stance: silent
+      - classification: contract:chain/verify
+        callable: contract.verify
+        stance: gap
+      - classification: shape:lifecycle
+        callable: contract.verify
+        stance: silent

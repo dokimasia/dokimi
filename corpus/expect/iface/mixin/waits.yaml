@@ -1,0 +1,41 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/waits
+level: 2
+subjects:
+  - type: iface/mixin/waits/waitstest.InMemory
+controls: []
+declarations:
+  lock:
+    checks:
+      lock.acquire/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      lock.held/predicate:
+        claim: predicate
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      lock.held/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      lock.release/repeat-survives:
+        claim: repeat-survives
+        law: repeated-call-survives
+        reason: panicked-repeat
+      lock.release/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: mixin:waits
+        callable: lock.acquire
+        stance: silent
+      - classification: shape:lifecycle
+        callable: lock.acquire
+        stance: silent

@@ -1,0 +1,64 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/composite/leased-idempotent-writer
+level: 4
+subjects:
+  - type: iface/composite/leased-idempotent-writer/leasedidempotentwritertest.InMemory
+controls: []
+declarations:
+  leased-writer:
+    checks:
+      leased-writer.acquire/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      leased-writer.acquire/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      leased-writer.acquire/idempotent:
+        claim: idempotent
+        law: repeat-is-accepted
+        reason: refused-repeat
+      leased-writer.acquire/idempotent#generated:
+        claim: idempotent
+        law: repeat-is-accepted
+        reason: refused-repeat
+      leased-writer.acquire/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      leased-writer.acquire/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      leased-writer.release/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      leased-writer.release/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      leased-writer.release/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      leased-writer.release/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: leased-writer.acquire
+        stance: silent
+      - classification: contract:lease/release
+        callable: leased-writer.release
+        stance: gap
+      - classification: shape:writer
+        callable: leased-writer.release
+        stance: silent

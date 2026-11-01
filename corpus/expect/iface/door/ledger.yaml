@@ -1,0 +1,129 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/ledger
+level: 4
+subjects:
+  - type: iface/door/ledger/ledgertest.Book
+controls: []
+declarations:
+  ledger:
+    checks:
+      ledger.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ledger.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ledger.get/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      ledger.get/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      ledger.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ledger.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ledger.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      ledger.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      ledger.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ledger.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ledger.put/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      ledger.put/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      ledger.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ledger.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ledger.run/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ledger.run/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ledger.run/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      ledger.run/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      ledger.run/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ledger.run/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ledger.run/transaction:
+        claim: transaction
+        partners:
+          read: ledger.get
+          write: ledger.put
+        law: failed-scope-leaves-nothing
+        reason: not-rolled-back
+      ledger.run/transaction#generated:
+        claim: transaction
+        partners:
+          read: ledger.get
+          write: ledger.put
+        law: failed-scope-leaves-nothing
+        reason: not-rolled-back
+      ledger.run/transaction-under-faults:
+        claim: transaction-under-faults
+        partners:
+          read: ledger.get
+          write: ledger.put
+        law: failed-commit-leaves-nothing
+        reason: not-rolled-back
+      ledger.run/transaction-under-faults#generated:
+        claim: transaction-under-faults
+        partners:
+          read: ledger.get
+          write: ledger.put
+        law: failed-commit-leaves-nothing
+        reason: not-rolled-back
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: ledger.put
+        stance: silent
+      - classification: shape:writer
+        callable: ledger.run
+        stance: silent

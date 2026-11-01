@@ -1,0 +1,32 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/readernoerror
+level: 2
+subjects:
+  - type: iface/detector/readernoerror/readernoerrortest.InMemory
+controls: []
+declarations:
+  reader-no-error:
+    checks:
+      reader-no-error.lookup/miss-is-zero:
+        claim: miss-is-zero
+        law: miss-returns-the-zero
+        reason: non-zero-miss
+      reader-no-error.lookup/miss-is-zero#generated:
+        claim: miss-is-zero
+        law: miss-returns-the-zero
+        reason: non-zero-miss
+      reader-no-error.lookup/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      reader-no-error.lookup/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      reader-no-error.lookup/cancel: failure
+    unclaimed: []

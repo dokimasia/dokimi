@@ -1,0 +1,102 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/readthrough
+level: 4
+subjects:
+  - type: iface/door/readthrough/readthroughtest.Cached
+controls: []
+declarations:
+  cache:
+    checks:
+      cache.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      cache.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      cache.get/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      cache.get/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      cache.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      cache.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      cache.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      cache.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      cache.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      cache.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      cache.put/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      cache.put/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      cache.put/no-partial-write:
+        claim: no-partial-write
+        partners:
+          read: cache.get
+        law: failed-call-leaves-no-effect
+        reason: partial-write
+      cache.put/no-partial-write#generated:
+        claim: no-partial-write
+        partners:
+          read: cache.get
+        law: failed-call-leaves-no-effect
+        reason: partial-write
+      cache.put/retry-succeeds:
+        claim: retry-succeeds
+        law: call-converges-within-the-declared-attempts
+        reason: never-converged
+      cache.put/retry-succeeds#generated:
+        claim: retry-succeeds
+        law: call-converges-within-the-declared-attempts
+        reason: never-converged
+      cache.put/retry-succeeds-under-faults:
+        claim: retry-succeeds-under-faults
+        law: call-converges-within-the-declared-attempts
+        reason: never-converged
+      cache.put/retry-succeeds-under-faults#generated:
+        claim: retry-succeeds-under-faults
+        law: call-converges-within-the-declared-attempts
+        reason: never-converged
+      cache.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      cache.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: cache.put
+        stance: silent

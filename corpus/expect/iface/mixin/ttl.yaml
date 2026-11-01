@@ -1,0 +1,74 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/ttl
+level: 2
+subjects:
+  - type: iface/mixin/ttl/ttltest.InMemory
+controls:
+  - iface/mixin/ttl/deadline.Store
+declarations:
+  mixed:
+    checks:
+      mixed.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.read/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.read/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.read/expires:
+        claim: expires
+        partners:
+          write: mixed.put
+        law: entry-lapses-on-the-clock
+        reason: not-expired
+      mixed.read/expires#generated:
+        claim: expires
+        partners:
+          write: mixed.put
+        law: entry-lapses-on-the-clock
+        reason: not-expired
+      mixed.read/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.read/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.read/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.read/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings:
+      - mixed.read/allocation-budget
+      - mixed.read/latency-budget
+      - mixed.read/mean-latency-budget
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.put
+        stance: silent

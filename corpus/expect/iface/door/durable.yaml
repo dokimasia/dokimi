@@ -1,0 +1,60 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/durable
+level: 4
+subjects:
+  - type: iface/door/durable/durabletest.Journal
+controls: []
+declarations:
+  store:
+    checks:
+      store.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored:
+      - store.get/keeps-each-put-across-a-restart
+      - store.put/leaves-the-whole-value
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: store.put
+        stance: silent

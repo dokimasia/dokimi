@@ -1,0 +1,79 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/composite/causal-chain
+level: 4
+subjects:
+  - type: iface/composite/causal-chain/archive.Log
+  - type: iface/composite/causal-chain/replica.Log
+    excused:
+      - log.append/chain
+      - log.append/chain-causal
+      - log.replay/keeps-every-body
+      - log.replay/keeps-the-body
+controls: []
+declarations:
+  log:
+    checks:
+      log.append/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      log.append/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      log.append/chain:
+        claim: chain
+        partners:
+          replay: log.replay
+        law: admitted-entry-grows-the-replay
+        reason: replay-not-grown
+      log.append/chain#generated:
+        claim: chain
+        partners:
+          replay: log.replay
+        law: admitted-entry-grows-the-replay
+        reason: replay-not-grown
+      log.append/chain-causal:
+        claim: chain-causal
+        partners:
+          replay: log.replay
+        law: history-replays-in-its-stamped-order
+        reason: unordered-history
+      log.append/chain-causal#generated:
+        claim: chain-causal
+        partners:
+          replay: log.replay
+        law: history-replays-in-its-stamped-order
+        reason: unordered-history
+      log.append/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      log.append/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      log.replay/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      log.replay/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      log.replay/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored:
+      - log.replay/keeps-every-body
+      - log.replay/keeps-the-body
+    ceilings: []
+    refusals:
+      log.append/causal: one-value
+    unclaimed:
+      - classification: shape:writer
+        callable: log.append
+        stance: silent

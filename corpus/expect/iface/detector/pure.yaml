@@ -1,0 +1,23 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/pure
+level: 2
+subjects:
+  - type: iface/detector/pure/puretest.InMemory
+controls: []
+declarations:
+  pure:
+    checks:
+      pure.describe/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      pure.describe/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

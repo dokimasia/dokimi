@@ -1,0 +1,32 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/readerwithbool
+level: 2
+subjects:
+  - type: iface/detector/readerwithbool/readerwithbooltest.InMemory
+controls: []
+declarations:
+  reader-with-bool:
+    checks:
+      reader-with-bool.load/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      reader-with-bool.load/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      reader-with-bool.load/zero-on-miss:
+        claim: zero-on-miss
+        law: no-value-beside-a-false-flag
+        reason: value-beside-false
+      reader-with-bool.load/zero-on-miss#generated:
+        claim: zero-on-miss
+        law: no-value-beside-a-false-flag
+        reason: value-beside-false
+    authored: []
+    ceilings: []
+    refusals:
+      reader-with-bool.load/cancel: failure
+    unclaimed: []

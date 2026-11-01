@@ -1,0 +1,31 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/lifecycle
+level: 2
+subjects:
+  - type: iface/detector/lifecycle/lifecycletest.InMemory
+controls:
+  - iface/detector/lifecycle/atomicstate.Lifecycle
+declarations:
+  lifecycle:
+    checks:
+      lifecycle.close/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      lifecycle.close/idempotent:
+        claim: idempotent
+        law: repeat-is-accepted
+        reason: refused-repeat
+      lifecycle.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: lifecycle.close
+        stance: silent

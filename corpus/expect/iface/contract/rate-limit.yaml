@@ -1,0 +1,42 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/rate-limit
+level: 3
+subjects:
+  - type: iface/contract/rate-limit/ratelimittest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.run/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/rate-limit:
+        claim: rate-limit
+        law: burst-is-spent-then-refused
+        reason: past-the-burst
+      contract.run/rate-limit#generated:
+        claim: rate-limit
+        law: burst-is-spent-then-refused
+        reason: past-the-burst
+      contract.run/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.run/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: contract.run
+        stance: silent

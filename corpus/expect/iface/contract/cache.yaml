@@ -1,0 +1,84 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/cache
+level: 3
+subjects:
+  - type: iface/contract/cache/cachetest.InMemory
+controls:
+  - iface/contract/cache/oneentry.Cache
+declarations:
+  contract:
+    checks:
+      contract.fetch/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.fetch/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.fetch/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.fetch/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.fetch/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.fetch/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.lookup/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.lookup/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.lookup/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.lookup/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.lookup/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.lookup/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.store/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.store/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.store/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.store/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      contract.lookup/cache: partner-found
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: contract.store
+        stance: silent

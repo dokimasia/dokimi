@@ -1,0 +1,42 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/nilsafe
+level: 2
+subjects:
+  - type: iface/mixin/nilsafe/nilsafetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.store/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.store/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.store/nil-safe:
+        claim: nil-safe
+        law: nil-argument-is-accepted
+        reason: panicked
+      mixed.store/nil-safe#generated:
+        claim: nil-safe
+        law: nil-argument-is-accepted
+        reason: panicked
+      mixed.store/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.store/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.store
+        stance: silent

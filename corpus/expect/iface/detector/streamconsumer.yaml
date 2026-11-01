@@ -1,0 +1,17 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/streamconsumer
+level: 2
+subjects:
+  - type: iface/detector/streamconsumer/streamconsumertest.InMemory
+controls: []
+declarations:
+  stream-consumer:
+    checks: {}
+    authored: []
+    ceilings: []
+    refusals:
+      stream-consumer.ingest/cancel: input-samples
+      stream-consumer.ingest/zero-on-error: input-samples
+    unclaimed: []

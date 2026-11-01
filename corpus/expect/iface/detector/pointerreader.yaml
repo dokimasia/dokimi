@@ -1,0 +1,32 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/pointerreader
+level: 2
+subjects:
+  - type: iface/detector/pointerreader/pointerreadertest.InMemory
+controls: []
+declarations:
+  pointer-reader:
+    checks:
+      pointer-reader.find/nil-on-miss:
+        claim: nil-on-miss
+        law: miss-returns-the-zero
+        reason: non-nil-miss
+      pointer-reader.find/nil-on-miss#generated:
+        claim: nil-on-miss
+        law: miss-returns-the-zero
+        reason: non-nil-miss
+      pointer-reader.find/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      pointer-reader.find/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      pointer-reader.find/cancel: failure
+    unclaimed: []

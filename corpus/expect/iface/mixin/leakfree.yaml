@@ -1,0 +1,52 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/leakfree
+level: 2
+subjects:
+  - type: iface/mixin/leakfree/leakfreetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.acquire/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.acquire/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.outstanding/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.outstanding/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.outstanding/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.release/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.release/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: mixin:leak-free
+        callable: mixed.acquire
+        stance: needs
+      - classification: shape:lifecycle
+        callable: mixed.acquire
+        stance: silent
+      - classification: shape:lifecycle
+        callable: mixed.release
+        stance: silent

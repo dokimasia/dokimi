@@ -1,0 +1,37 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/circuit-breaker
+level: 3
+subjects:
+  - type: iface/contract/circuit-breaker/circuitbreakertest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.run/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.run/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: contract:circuit-breaker/fn
+        callable: contract.run
+        stance: needs
+      - classification: shape:writer
+        callable: contract.run
+        stance: silent

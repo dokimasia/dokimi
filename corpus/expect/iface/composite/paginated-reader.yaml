@@ -1,0 +1,62 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/composite/paginated-reader
+level: 4
+subjects:
+  - type: iface/composite/paginated-reader/paginatedreadertest.InMemory
+controls: []
+declarations:
+  paginated-reader:
+    checks:
+      paginated-reader.add/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      paginated-reader.add/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      paginated-reader.add/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      paginated-reader.add/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      paginated-reader.fetch/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      paginated-reader.fetch/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      paginated-reader.fetch/pagination:
+        claim: pagination
+        law: walk-resumes-where-it-left-off
+        reason: repeated-page
+      paginated-reader.fetch/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      paginated-reader.fetch/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      paginated-reader.fetch/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      paginated-reader.fetch/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: paginated-reader.add
+        stance: silent

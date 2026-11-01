@@ -1,0 +1,42 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/monotonic
+level: 2
+subjects:
+  - type: iface/mixin/monotonic/monotonictest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.advance/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.advance/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.version/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.version/monotonic:
+        claim: monotonic
+        law: results-never-decrease
+        reason: regressed
+      mixed.version/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.version/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: mixed.advance
+        stance: silent

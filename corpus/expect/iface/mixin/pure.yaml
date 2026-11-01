@@ -1,0 +1,39 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/pure
+level: 2
+subjects:
+  - type: iface/mixin/pure/puretest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.derive/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.derive/deterministic#generated:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.derive/pure:
+        claim: pure
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.derive/pure#generated:
+        claim: pure
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.derive/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.derive/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

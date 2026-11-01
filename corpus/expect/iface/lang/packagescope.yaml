@@ -1,0 +1,32 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/packagescope
+level: 1
+subjects:
+  - type: iface/lang/packagescope/packagescopetest.InMemory
+controls: []
+declarations:
+  slugger:
+    checks:
+      slugger.slug/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      slugger.slug/deterministic#generated:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      slugger.slug/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      slugger.slug/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored:
+      - slugger.slug/follows-the-specification
+    ceilings: []
+    refusals: {}
+    unclaimed: []

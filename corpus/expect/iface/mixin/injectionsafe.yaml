@@ -1,0 +1,70 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/injectionsafe
+level: 2
+subjects:
+  - type: iface/mixin/injectionsafe/injectionsafetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.load/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.load/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.load/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.load/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.load/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.load/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.store/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.store/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.store/injection-safe:
+        claim: injection-safe
+        partners:
+          read: mixed.load
+        law: unsafe-value-is-kept-as-data
+        reason: unobserved-write
+      mixed.store/injection-safe#generated:
+        claim: injection-safe
+        partners:
+          read: mixed.load
+        law: unsafe-value-is-kept-as-data
+        reason: unobserved-write
+      mixed.store/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.store/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: mixed.store
+        stance: silent

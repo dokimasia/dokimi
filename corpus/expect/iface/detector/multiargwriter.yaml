@@ -1,0 +1,58 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/multiargwriter
+level: 2
+subjects:
+  - type: iface/detector/multiargwriter/multiargwritertest.InMemory
+controls: []
+declarations:
+  multi-arg-writer:
+    checks:
+      multi-arg-writer.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      multi-arg-writer.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      multi-arg-writer.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      multi-arg-writer.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      multi-arg-writer.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      multi-arg-writer.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      multi-arg-writer.set/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      multi-arg-writer.set/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      multi-arg-writer.set/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      multi-arg-writer.set/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:multi-arg-writer
+        callable: multi-arg-writer.set
+        stance: silent

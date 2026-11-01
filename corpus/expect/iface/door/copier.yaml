@@ -1,0 +1,104 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/copier
+level: 4
+subjects:
+  - type: iface/door/copier/copiertest.Files
+controls: []
+declarations:
+  copier:
+    checks:
+      copier.close/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      copier.close/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      copier.close/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      copier.close/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      copier.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      copier.close/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      copier.copy/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      copier.copy/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      copier.copy/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      copier.copy/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      copier.copy/releases-on-every-path:
+        claim: releases-on-every-path
+        law: failure-path-releases
+        reason: leaked-resource
+      copier.copy/releases-on-every-path#generated:
+        claim: releases-on-every-path
+        law: failure-path-releases
+        reason: leaked-resource
+      copier.copy/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      copier.copy/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      copier.open/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      copier.open/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      copier.open/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      copier.open/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      copier.open/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      copier.open/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: copier.close
+        stance: silent
+      - classification: shape:composite-writer
+        callable: copier.copy
+        stance: silent
+      - classification: shape:writer
+        callable: copier.open
+        stance: silent

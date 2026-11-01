@@ -1,0 +1,39 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/poisonable
+level: 2
+subjects:
+  - type: iface/mixin/poisonable/poisonabletest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.fail/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.fail/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.probe/poisonable:
+        claim: poisonable
+        partners:
+          induce: mixed.fail
+        law: induced-failure-latches
+        reason: healthy-after-induce
+      mixed.probe/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: mixed.fail
+        stance: silent
+      - classification: shape:poison-accessor
+        callable: mixed.probe
+        stance: gap

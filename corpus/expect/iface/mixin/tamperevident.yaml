@@ -1,0 +1,70 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/tamperevident
+level: 2
+subjects:
+  - type: iface/mixin/tamperevident/tamperevidenttest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.corrupt/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.corrupt/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.store/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.store/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.store/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.store/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.store/tamper-evident:
+        claim: tamper-evident
+        partners:
+          tamper: mixed.corrupt
+          verify: mixed.verify
+        law: tamper-is-detected
+        reason: silent-tamper
+      mixed.store/tamper-evident#generated:
+        claim: tamper-evident
+        partners:
+          tamper: mixed.corrupt
+          verify: mixed.verify
+        law: tamper-is-detected
+        reason: silent-tamper
+      mixed.verify/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.verify/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: mixed.corrupt
+        stance: silent
+      - classification: shape:writer
+        callable: mixed.store
+        stance: silent
+      - classification: shape:lifecycle
+        callable: mixed.verify
+        stance: silent

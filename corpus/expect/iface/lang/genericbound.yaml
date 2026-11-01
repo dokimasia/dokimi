@@ -1,0 +1,50 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/genericbound
+level: 1
+subjects:
+  - type: iface/lang/genericbound/genericboundtest.InMemory
+controls: []
+declarations:
+  ranked:
+    checks:
+      ranked.rank/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ranked.rank/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ranked.rank/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ranked.rank/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      ranked.rank/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      ranked.rank/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      ranked.reset/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      ranked.reset/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: ranked.reset
+        stance: silent

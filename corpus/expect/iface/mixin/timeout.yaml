@@ -1,0 +1,42 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/timeout
+level: 2
+subjects:
+  - type: iface/mixin/timeout/timeouttest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.slow/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.slow/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.slow/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.slow/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.slow/within:
+        claim: within
+        law: call-returns-within-its-budget
+        reason: overran-budget
+      mixed.slow/within#generated:
+        claim: within
+        law: call-returns-within-its-budget
+        reason: overran-budget
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.slow
+        stance: silent

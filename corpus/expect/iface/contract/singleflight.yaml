@@ -1,0 +1,46 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/singleflight
+level: 3
+subjects:
+  - type: iface/contract/singleflight/singleflighttest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.flights/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.flights/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.flights/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.run/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.run/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: contract:single-flight/fn
+        callable: contract.run
+        stance: needs

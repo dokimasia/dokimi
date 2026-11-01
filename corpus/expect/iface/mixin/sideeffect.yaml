@@ -1,0 +1,70 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/sideeffect
+level: 2
+subjects:
+  - type: iface/mixin/sideeffect/sideeffecttest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.observed/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.observed/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.observed/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.observed/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.observed/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.observed/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.touch/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.touch/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.touch/side-effect:
+        claim: side-effect
+        partners:
+          observe: mixed.observed
+        law: call-moves-the-named-observation
+        reason: unmoved-observation
+      mixed.touch/side-effect#generated:
+        claim: side-effect
+        partners:
+          observe: mixed.observed
+        law: call-moves-the-named-observation
+        reason: unmoved-observation
+      mixed.touch/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.touch/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.touch
+        stance: silent

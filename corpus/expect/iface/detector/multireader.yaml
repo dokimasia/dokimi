@@ -1,0 +1,39 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/multireader
+level: 2
+subjects:
+  - type: iface/detector/multireader/multireadertest.InMemory
+controls: []
+declarations:
+  multi-reader:
+    checks:
+      multi-reader.get-with-meta/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      multi-reader.get-with-meta/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      multi-reader.get-with-meta/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      multi-reader.get-with-meta/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      multi-reader.get-with-meta/zeroes-on-error:
+        claim: zeroes-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      multi-reader.get-with-meta/zeroes-on-error#generated:
+        claim: zeroes-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

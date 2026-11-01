@@ -1,0 +1,60 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/total
+level: 2
+subjects:
+  - type: iface/mixin/total/totaltest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.classify/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.classify/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.classify/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.classify/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.classify/total:
+        claim: total
+        law: call-accepts-its-declared-domain
+        reason: refused-the-edge
+      mixed.classify/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.classify/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.normalize/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.normalize/deterministic#generated:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.normalize/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.normalize/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.normalize/total: failure
+    unclaimed: []

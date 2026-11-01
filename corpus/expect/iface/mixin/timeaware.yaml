@@ -1,0 +1,82 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/timeaware
+level: 2
+subjects:
+  - type: iface/mixin/timeaware/timeawaretest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.age-of/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.age-of/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.age-of/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.age-of/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.age-of/steady:
+        claim: steady
+        partners:
+          put: mixed.touch
+        law: result-is-stable-while-the-clock-stops
+        reason: drifted-without-clock
+      mixed.age-of/steady#generated:
+        claim: steady
+        partners:
+          put: mixed.touch
+        law: result-is-stable-while-the-clock-stops
+        reason: drifted-without-clock
+      mixed.age-of/time-aware:
+        claim: time-aware
+        partners:
+          put: mixed.touch
+        law: result-depends-on-the-clock
+        reason: unmoved-by-the-clock
+      mixed.age-of/time-aware#generated:
+        claim: time-aware
+        partners:
+          put: mixed.touch
+        law: result-depends-on-the-clock
+        reason: unmoved-by-the-clock
+      mixed.age-of/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.age-of/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.touch/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.touch/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.touch/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.touch/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.touch
+        stance: silent

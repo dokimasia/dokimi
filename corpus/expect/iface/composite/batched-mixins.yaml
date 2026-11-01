@@ -1,0 +1,117 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/composite/batched-mixins
+level: 4
+subjects:
+  - type: iface/composite/batched-mixins/batchedmixinstest.InMemory
+controls: []
+declarations:
+  batched:
+    checks:
+      batched.list/cacheable:
+        claim: cacheable
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      batched.list/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batched.list/pure:
+        claim: pure
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      batched.list/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      batched.list/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      batched.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batched.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batched.put/idempotent:
+        claim: idempotent
+        law: repeat-is-accepted
+        reason: refused-repeat
+      batched.put/idempotent#generated:
+        claim: idempotent
+        law: repeat-is-accepted
+        reason: refused-repeat
+      batched.put/side-effect:
+        claim: side-effect
+        partners:
+          observe: batched.list
+        law: call-moves-the-named-observation
+        reason: unmoved-observation
+      batched.put/side-effect#generated:
+        claim: side-effect
+        partners:
+          observe: batched.list
+        law: call-moves-the-named-observation
+        reason: unmoved-observation
+      batched.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      batched.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      batched.read/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batched.read/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      batched.read/read-after-write:
+        claim: read-after-write
+        partners:
+          write: batched.put
+        law: read-returns-the-write-before-it
+        reason: unobserved-write
+      batched.read/read-after-write#generated:
+        claim: read-after-write
+        partners:
+          write: batched.put
+        law: read-returns-the-write-before-it
+        reason: unobserved-write
+      batched.read/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      batched.read/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      batched.read/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      batched.read/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored:
+      - batched.list/lists-at-most-the-limit
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: mixin:bounded
+        callable: batched.list
+        stance: needs
+      - classification: mixin:concurrent
+        callable: batched.put
+        stance: needs
+      - classification: shape:composite-writer
+        callable: batched.put
+        stance: silent

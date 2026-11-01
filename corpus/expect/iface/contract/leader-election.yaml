@@ -1,0 +1,50 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/leader-election
+level: 3
+subjects:
+  - type: iface/contract/leader-election/leaderelectiontest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.campaign/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.campaign/leader-election:
+        claim: leader-election
+        partners:
+          leading: contract.is-leader
+          resign: contract.resign
+        law: resigned-leadership-is-released
+        reason: still-leading
+      contract.campaign/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.is-leader/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.resign/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.resign/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      contract.is-leader/cancel: failure
+      contract.is-leader/zero-on-error: failure
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: contract.campaign
+        stance: silent
+      - classification: shape:lifecycle
+        callable: contract.resign
+        stance: silent

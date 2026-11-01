@@ -1,0 +1,47 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/nested
+level: 1
+subjects:
+  - type: iface/lang/nested/nestedtest.InMemory
+controls: []
+declarations:
+  dispatcher:
+    checks:
+      dispatcher.dispatch-all/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      dispatcher.dispatch-all/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      dispatcher.dispatch/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      dispatcher.dispatch/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      dispatcher.weight/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      dispatcher.weight/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings:
+      - dispatcher.dispatch-all/allocation-budget
+      - dispatcher.dispatch/allocation-budget
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: dispatcher.dispatch
+        stance: silent
+      - classification: shape:writer
+        callable: dispatcher.dispatch-all
+        stance: silent

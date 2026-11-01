@@ -1,0 +1,42 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/hooks
+level: 2
+subjects:
+  - type: iface/mixin/hooks/hookstest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.fire/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.fire/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.fire/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.fire/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.on-event/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.fire/hooks: partner-arguments
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.fire
+        stance: silent
+      - classification: shape:mutator
+        callable: mixed.on-event
+        stance: silent

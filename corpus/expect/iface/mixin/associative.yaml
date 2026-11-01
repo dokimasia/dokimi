@@ -1,0 +1,71 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/associative
+level: 2
+subjects:
+  - type: iface/mixin/associative/associativetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.apply/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.apply/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.apply/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.apply/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.merge/associative:
+        claim: associative
+        law: combining-ignores-the-grouping
+        reason: grouping-dependent
+      mixed.merge/commutative:
+        claim: commutative
+        law: combining-ignores-the-order
+        reason: order-dependent
+      mixed.merge/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.merge/deterministic#generated:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.merge/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.merge/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.total/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.total/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.total/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.apply/associative: two-inputs-of-one-type
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.apply
+        stance: silent

@@ -1,0 +1,54 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/retrysucceeds
+level: 2
+subjects:
+  - type: iface/mixin/retrysucceeds/retrysucceedstest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.attempts/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.attempts/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.attempts/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.call/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.call/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.call/retry-succeeds:
+        claim: retry-succeeds
+        law: call-converges-within-the-declared-attempts
+        reason: never-converged
+      mixed.call/retry-succeeds#generated:
+        claim: retry-succeeds
+        law: call-converges-within-the-declared-attempts
+        reason: never-converged
+      mixed.call/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.call/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.call
+        stance: silent

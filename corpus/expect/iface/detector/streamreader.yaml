@@ -1,0 +1,42 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/streamreader
+level: 2
+subjects:
+  - type: iface/detector/streamreader/streamreadertest.InMemory
+controls: []
+declarations:
+  stream-reader:
+    checks:
+      stream-reader.add/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stream-reader.add/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stream-reader.add/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stream-reader.add/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stream-reader.list/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      stream-reader.list/cancel: failure
+    unclaimed:
+      - classification: shape:writer
+        callable: stream-reader.add
+        stance: silent
+      - classification: shape:stream-reader
+        callable: stream-reader.list
+        stance: gap

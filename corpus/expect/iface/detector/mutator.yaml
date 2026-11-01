@@ -1,0 +1,27 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/mutator
+level: 2
+subjects:
+  - type: iface/detector/mutator/mutatortest.InMemory
+controls: []
+declarations:
+  mutator:
+    checks:
+      mutator.touch/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mutator.touch/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      mutator.touch/cancel: failure
+    unclaimed:
+      - classification: shape:mutator
+        callable: mutator.touch
+        stance: silent

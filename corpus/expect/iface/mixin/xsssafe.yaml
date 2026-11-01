@@ -1,0 +1,44 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/xsssafe
+level: 2
+subjects:
+  - type: iface/mixin/xsssafe/xsssafetest.InMemory
+controls:
+  - iface/mixin/xsssafe/htmlescape.Renderer
+declarations:
+  mixed:
+    checks:
+      mixed.render/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.render/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.render/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.render/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.render/xss-safe:
+        claim: xss-safe
+        law: unsafe-value-does-not-survive
+        reason: unescaped-output
+      mixed.render/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.render/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

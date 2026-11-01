@@ -1,0 +1,46 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/queue
+level: 4
+subjects:
+  - type: iface/door/queue/queuetest.InMemory
+controls:
+  - iface/door/queue/ring.Buffer
+declarations:
+  queue:
+    checks:
+      queue.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      queue.read/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      queue.write/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      queue.write/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+    authored:
+      - queue.close/close-ends-a-waiting-write
+    ceilings: []
+    refusals:
+      queue.read/zero-on-error: returns-unaided
+    unclaimed:
+      - classification: shape:closer
+        callable: queue.close
+        stance: silent
+      - classification: mixin:waits
+        callable: queue.read
+        stance: silent
+      - classification: mixin:waits
+        callable: queue.write
+        stance: silent
+      - classification: shape:writer
+        callable: queue.write
+        stance: silent

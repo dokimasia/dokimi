@@ -1,0 +1,57 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/crosspackage
+level: 1
+subjects:
+  - type: iface/lang/crosspackage/crosspackagetest.InMemory
+controls: []
+declarations:
+  fitter:
+    checks:
+      fitter.fit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      fitter.fit/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      fitter.fit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      fitter.fit/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      fitter.limit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      fitter.limit/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      fitter.limit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      fitter.limit/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      fitter.sense/cancel: input-samples
+    unclaimed:
+      - classification: shape:writer
+        callable: fitter.fit
+        stance: silent
+      - classification: shape:writer
+        callable: fitter.limit
+        stance: silent
+      - classification: shape:writer
+        callable: fitter.sense
+        stance: silent

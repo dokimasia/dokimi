@@ -1,0 +1,47 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/orderafter
+level: 2
+subjects:
+  - type: iface/mixin/orderafter/orderaftertest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.commit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.commit/order-after:
+        claim: order-after
+        law: call-refuses-before-its-predecessor
+        reason: accepted-early
+      mixed.commit/ready-after:
+        claim: ready-after
+        partners:
+          ready: mixed.prepare
+        law: call-works-after-its-predecessor
+        reason: never-ready
+      mixed.commit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.prepare/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.prepare/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: mixed.commit
+        stance: silent
+      - classification: shape:lifecycle
+        callable: mixed.prepare
+        stance: silent

@@ -1,0 +1,116 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/tx
+level: 3
+subjects:
+  - type: iface/contract/tx/txtest.InMemory
+controls:
+  - iface/contract/tx/writelog.Store
+declarations:
+  contract:
+    checks:
+      contract.begin/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.begin/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.begin/tx:
+        claim: tx
+        partners:
+          commit: contract.commit
+          rollback: contract.rollback
+        law: settled-transaction-is-not-settled-again
+        reason: alive-after-close
+      contract.begin/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.commit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.commit/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.commit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.commit/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.rollback/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.rollback/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.rollback/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.rollback/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: contract.commit
+        stance: silent
+      - classification: shape:multi-arg-writer
+        callable: contract.put
+        stance: silent
+      - classification: shape:writer
+        callable: contract.rollback
+        stance: silent

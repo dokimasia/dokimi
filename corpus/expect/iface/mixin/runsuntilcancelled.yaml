@@ -1,0 +1,31 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/runsuntilcancelled
+level: 2
+subjects:
+  - type: iface/mixin/runsuntilcancelled/runsuntilcancelledtest.InMemory
+controls: []
+declarations:
+  worker:
+    checks:
+      worker.running/predicate:
+        claim: predicate
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      worker.running/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored:
+      - worker.run/stops-when-its-context-ends
+    ceilings: []
+    refusals:
+      worker.run/cancel: returns-before-cancel
+    unclaimed:
+      - classification: mixin:runs-until-cancelled
+        callable: worker.run
+        stance: silent
+      - classification: shape:lifecycle
+        callable: worker.run
+        stance: silent

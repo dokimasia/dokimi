@@ -1,0 +1,70 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/if-match
+level: 3
+subjects:
+  - type: iface/contract/if-match/ifmatchtest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.match/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.match/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.match/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.match/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.match/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.match/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/if-match:
+        claim: if-match
+        partners:
+          match: contract.match
+        law: write-is-refused-where-the-predicate-rejects-it
+        reason: unmatched-write
+      contract.put/if-match#generated:
+        claim: if-match
+        partners:
+          match: contract.match
+        law: write-is-refused-where-the-predicate-rejects-it
+        reason: unmatched-write
+      contract.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: contract.put
+        stance: silent

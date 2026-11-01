@@ -1,0 +1,75 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/eventually
+level: 2
+subjects:
+  - type: iface/mixin/eventually/eventuallytest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.items/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.items/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.items/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.publish/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.publish/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.publish/settles:
+        claim: settles
+        partners:
+          observe: mixed.items
+          settle: mixed.settle
+        law: effect-arrives-once-settled
+        reason: unsettled-effect
+      mixed.publish/settles#generated:
+        claim: settles
+        partners:
+          observe: mixed.items
+          settle: mixed.settle
+        law: effect-arrives-once-settled
+        reason: unsettled-effect
+      mixed.publish/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.publish/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.settle/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.settle/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.sync/cancel: input-samples
+    unclaimed:
+      - classification: shape:writer
+        callable: mixed.publish
+        stance: silent
+      - classification: shape:lifecycle
+        callable: mixed.settle
+        stance: silent
+      - classification: shape:writer
+        callable: mixed.sync
+        stance: silent

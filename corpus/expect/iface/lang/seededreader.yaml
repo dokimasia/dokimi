@@ -1,0 +1,51 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/seededreader
+level: 1
+subjects:
+  - type: iface/lang/seededreader/seededreadertest.InMemory
+controls: []
+declarations:
+  catalog:
+    checks:
+      catalog.len/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      catalog.len/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      catalog.len/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      catalog.lookup/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      catalog.lookup/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      catalog.lookup/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      catalog.lookup/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      catalog.lookup/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      catalog.lookup/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

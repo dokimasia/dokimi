@@ -1,0 +1,57 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/resolved
+level: 1
+subjects: []
+controls: []
+declarations:
+  applier:
+    checks:
+      applier.apply/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      applier.apply/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      applier.apply/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      applier.apply/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      applier.limit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      applier.limit/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      applier.limit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      applier.limit/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      applier.limit/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      applier.limit/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: applier.apply
+        stance: silent

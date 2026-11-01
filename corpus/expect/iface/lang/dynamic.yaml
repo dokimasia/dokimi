@@ -1,0 +1,45 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/dynamic
+level: 1
+subjects:
+  - type: iface/lang/dynamic/dynamictest.InMemory
+controls: []
+declarations:
+  diary:
+    checks:
+      diary.count/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      diary.count/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      diary.field/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      diary.field/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      diary.print/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      diary.print/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:mutator
+        callable: diary.in
+        stance: silent
+      - classification: shape:mutator
+        callable: diary.scale
+        stance: silent

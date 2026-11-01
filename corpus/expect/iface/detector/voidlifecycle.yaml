@@ -1,0 +1,23 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/voidlifecycle
+level: 2
+subjects:
+  - type: iface/detector/voidlifecycle/voidlifecycletest.InMemory
+controls: []
+declarations:
+  void-lifecycle:
+    checks:
+      void-lifecycle.stop/repeat-survives:
+        claim: repeat-survives
+        law: repeated-call-survives
+        reason: panicked-repeat
+      void-lifecycle.stop/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

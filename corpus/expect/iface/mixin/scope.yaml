@@ -1,0 +1,65 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/scope
+level: 2
+subjects:
+  - type: iface/mixin/scope/scopetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.set/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.set/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.set/partition:
+        claim: partition
+        partners:
+          read: mixed.get
+        law: one-partition-does-not-serve-another
+        reason: crossed-partitions
+      mixed.set/partition#generated:
+        claim: partition
+        partners:
+          read: mixed.get
+        law: one-partition-does-not-serve-another
+        reason: crossed-partitions
+      mixed.set/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.set/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: mixin:scope
+        callable: mixed.set
+        stance: silent
+      - classification: shape:multi-arg-writer
+        callable: mixed.set
+        stance: silent

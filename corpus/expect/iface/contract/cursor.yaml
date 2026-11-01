@@ -1,0 +1,44 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/cursor
+level: 3
+subjects:
+  - type: iface/contract/cursor/cursortest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.close/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.next/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.next/cursor:
+        claim: cursor
+        partners:
+          close: contract.close
+        law: work-after-close-is-refused
+        reason: alive-after-close
+      contract.next/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.next/zeroes-on-error:
+        claim: zeroes-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: contract.close
+        stance: silent

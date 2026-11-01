@@ -1,0 +1,49 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/sampledparam
+level: 1
+subjects:
+  - type: iface/lang/sampledparam/sampledparamtest.SHA256
+controls: []
+declarations:
+  hasher:
+    checks:
+      hasher.combine-tagged/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      hasher.combine-tagged/deterministic#generated:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      hasher.combine-tagged/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      hasher.combine-tagged/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      hasher.hash-tagged/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      hasher.hash-tagged/deterministic#generated:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      hasher.hash-tagged/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      hasher.hash-tagged/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings:
+      - hasher.combine-tagged/allocation-budget
+      - hasher.hash-tagged/allocation-budget
+    refusals: {}
+    unclaimed: []

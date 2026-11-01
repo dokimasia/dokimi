@@ -1,0 +1,67 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/pool
+level: 3
+subjects:
+  - type: iface/contract/pool/pooltest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.get/pool:
+        claim: pool
+        partners:
+          put: contract.put
+        law: borrowed-value-is-taken-back
+        reason: unreturned-loan
+      contract.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.stats/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.stats/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.stats/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: contract.put
+        stance: silent
+      - classification: contract:pool/stats
+        callable: contract.stats
+        stance: gap

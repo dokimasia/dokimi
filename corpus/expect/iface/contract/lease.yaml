@@ -1,0 +1,65 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/lease
+level: 3
+subjects:
+  - type: iface/contract/lease/leasetest.InMemory
+controls:
+  - iface/contract/lease/sortedkeys.Table
+declarations:
+  contract:
+    checks:
+      contract.acquire/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.acquire/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.acquire/lease:
+        claim: lease
+        law: granted-lease-is-not-granted-twice
+        reason: unguarded-write
+      contract.acquire/lease#generated:
+        claim: lease
+        law: granted-lease-is-not-granted-twice
+        reason: unguarded-write
+      contract.acquire/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.acquire/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.release/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.release/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.release/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.release/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:writer
+        callable: contract.acquire
+        stance: silent
+      - classification: contract:lease/release
+        callable: contract.release
+        stance: gap
+      - classification: shape:writer
+        callable: contract.release
+        stance: silent

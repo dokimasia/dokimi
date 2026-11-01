@@ -1,0 +1,210 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/partnernaming
+level: 1
+subjects:
+  - type: iface/lang/partnernaming/partnernamingtest.InMemory
+controls: []
+declarations:
+  store:
+    checks:
+      store.at/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.at/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.at/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.at/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.at/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.at/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.count/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.count/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.count/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.count/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.count/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.count/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.emit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.emit/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.emit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.emit/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.move/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.move/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.move/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.move/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.replace/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.replace/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.replace/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.replace/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.seen/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.seen/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.seen/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.seen/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.seen/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.seen/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.touch/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.touch/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.touch/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.touch/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.version/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.version/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.version/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.version/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.version/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.version/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals:
+      store.emit/side-effect: partner-arguments
+      store.move/side-effect: partner-arguments
+      store.touch/side-effect: partner-arguments
+      store.version/monotonic-reads: one-partner
+    unclaimed:
+      - classification: shape:writer
+        callable: store.emit
+        stance: silent
+      - classification: shape:composite-writer
+        callable: store.move
+        stance: silent
+      - classification: shape:writer
+        callable: store.put
+        stance: silent
+      - classification: shape:writer
+        callable: store.replace
+        stance: silent
+      - classification: shape:composite-writer
+        callable: store.touch
+        stance: silent

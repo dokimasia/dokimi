@@ -1,0 +1,87 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/namedreturns
+level: 1
+subjects:
+  - type: iface/lang/namedreturns/namedreturnstest.InMemory
+controls: []
+declarations:
+  service:
+    checks:
+      service.named/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      service.named/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      service.named/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      service.named/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      service.named/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      service.named/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      service.partially-named/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      service.partially-named/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      service.partially-named/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      service.partially-named/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      service.partially-named/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      service.partially-named/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      service.unnamed/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      service.unnamed/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      service.unnamed/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      service.unnamed/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      service.unnamed/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      service.unnamed/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

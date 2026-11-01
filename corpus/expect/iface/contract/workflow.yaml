@@ -1,0 +1,61 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/contract/workflow
+level: 3
+subjects:
+  - type: iface/contract/workflow/workflowtest.InMemory
+controls: []
+declarations:
+  contract:
+    checks:
+      contract.run/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.run/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.run/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.state/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.state/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      contract.state/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.state/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      contract.state/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      contract.state/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: contract:workflow/fn
+        callable: contract.run
+        stance: needs
+      - classification: shape:writer
+        callable: contract.run
+        stance: silent

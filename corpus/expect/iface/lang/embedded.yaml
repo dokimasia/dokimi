@@ -1,0 +1,61 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/embedded
+level: 1
+subjects:
+  - type: iface/lang/embedded/embeddedtest.InMemory
+controls: []
+declarations:
+  composed:
+    checks:
+      composed.close/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      composed.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      composed.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      composed.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      composed.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      composed.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      composed.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      composed.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      composed.ping/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      composed.ping/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: composed.close
+        stance: silent
+      - classification: shape:lifecycle
+        callable: composed.ping
+        stance: silent

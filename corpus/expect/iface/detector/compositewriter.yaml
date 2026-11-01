@@ -1,0 +1,34 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/detector/compositewriter
+level: 2
+subjects:
+  - type: iface/detector/compositewriter/compositewritertest.InMemory
+controls: []
+declarations:
+  composite-writer:
+    checks:
+      composite-writer.set/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      composite-writer.set/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      composite-writer.set/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      composite-writer.set/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: composite-writer.set
+        stance: silent

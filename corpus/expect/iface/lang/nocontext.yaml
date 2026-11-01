@@ -1,0 +1,47 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/nocontext
+level: 1
+subjects:
+  - type: iface/lang/nocontext/nocontexttest.InMemory
+controls: []
+declarations:
+  calculator:
+    checks:
+      calculator.add/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      calculator.add/deterministic#generated:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      calculator.add/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      calculator.add/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      calculator.divide/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      calculator.divide/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      calculator.reset/repeat-survives:
+        claim: repeat-survives
+        law: repeated-call-survives
+        reason: panicked-repeat
+      calculator.reset/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed: []

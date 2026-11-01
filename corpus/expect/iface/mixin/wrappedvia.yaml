@@ -1,0 +1,48 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/wrappedvia
+level: 2
+subjects:
+  - type: iface/mixin/wrappedvia/wrappedviatest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.cause/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.cause/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.open/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.open/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.open/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.open/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: mixed.cause
+        stance: silent
+      - classification: mixin:wrapped-via
+        callable: mixed.open
+        stance: gap
+      - classification: shape:writer
+        callable: mixed.open
+        stance: silent

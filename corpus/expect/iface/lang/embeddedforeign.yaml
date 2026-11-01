@@ -1,0 +1,46 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/embeddedforeign
+level: 1
+subjects:
+  - type: iface/lang/embeddedforeign/embeddedforeigntest.InMemory
+controls: []
+declarations:
+  stream:
+    checks:
+      stream.close/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stream.read/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stream.read/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stream.read/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stream.read/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stream.read/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      stream.read/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:closer
+        callable: stream.close
+        stance: silent

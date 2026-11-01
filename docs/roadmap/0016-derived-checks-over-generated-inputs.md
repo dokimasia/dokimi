@@ -1,7 +1,7 @@
 ---
 milestone: 0016
 title: A derived check runs over generated inputs
-status: In progress
+status: Done
 depends-on: 0003, 0005
 released-in: unscheduled
 deadline: none
@@ -29,7 +29,7 @@ A Go team whose declaration gets a derived check of a single caller also gets th
 - [x] Each generated binding fails on the planted defect of its claim with its reason code at the seed of its key.
 - [x] A failing run on a subject writes the counterexample of its smallest case into the suite record, and a rerun with its seed repeats it.
 - [x] Each claim whose law has the depth `generated-inputs`, such as `deterministic` and `pure`, has a generated binding that is not shallow wherever its calls take sample inputs.
-- [ ] `dokimi conform --lang go` passes with the generated bindings in the expected outcomes of the corpus.
+- [x] `dokimi conform --lang go` passes with the generated bindings in the expected outcomes of the corpus.
 
 ## Why now
 
@@ -52,3 +52,4 @@ The generated bindings of the derived checks, the claims `commutative` and `asso
 | 2026-10-31 | In progress | Milestone 0009 waits for the release of conform. ADR-0019 states how a generated binding draws its inputs |
 | 2026-10-31 | The scope gains the gate `exact-fidelity` of the claim `codec`, two probes that write before their first read, and a probe of a schedule that skips a delay that is not positive | The generated bindings of the corpus failed on a lossy codec, on a drawn key without a value, and on a delay of 0 |
 | 2026-10-31 | Six of the seven boxes are ticked | `dokimi conform --lang go` passes with 173 conformant fixtures against the conform and the spec of dokimi-go before their release. The last box waits for that release and the corpus that requires it |
+| 2026-11-01 | Done | The corpus requires the conform and the spec of dokimi-go at 1e87d26, and `dokimi conform --lang go` passes with 176 conformant fixtures through the workspace of the repository |

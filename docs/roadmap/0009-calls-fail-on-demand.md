@@ -1,7 +1,7 @@
 ---
 milestone: 0009
 title: A check can make a call fail on demand
-status: In progress
+status: Done
 depends-on: 0003
 released-in: unscheduled
 deadline: none
@@ -30,7 +30,7 @@ A Go team whose subject depends on another declaration gets checks that the subj
 - [x] The directive `check` takes the param `faults`, and the generator writes it into the field `Doors.Faults` of the check.
 - [x] Fixtures of the corpus under `iface/door` have a cache over a store, a transaction over a store, a circuit breaker over an operation, a balancer with the mixin `sticky` over two instances, and a callable with the mixin `leak-free`. Their subjects pass `failure-is-reported`, `no-partial-write`, `retry-succeeds-under-faults`, `transaction-under-faults`, `fails-fast`, `keeps-its-instance` and `releases-on-every-path`, and each claim fails on its planted defect with its reason code.
 - [x] `retry-succeeds-under-faults` and `retry-succeeds` pass the proof of their depth pair.
-- [ ] `dokimi conform --lang go` passes with the expected outcomes of the new fixtures.
+- [x] `dokimi conform --lang go` passes with the expected outcomes of the new fixtures.
 
 ## Why now
 
@@ -52,3 +52,4 @@ The injector, the door and its option in conform, the seven probes of the packag
 | 2026-10-28 | Created at position 9 | The first roadmap of dokimi |
 | 2026-10-31 | In progress at position 8. The scope gains the claims of `circuit-breaker`, `sticky` and `leak-free`, and `transaction-under-faults` | RFC-0019 is accepted. It binds every classification whose stance names its machinery, and the two mixins whose laws need a dependency that fails |
 | 2026-10-31 | Seven of the eight boxes are ticked | `dokimi conform --lang go` passes with 173 conformant fixtures against the conform and the spec of dokimi-go before their release. The last box waits for that release and the corpus that requires it |
+| 2026-11-01 | Done | The corpus requires the conform and the spec of dokimi-go at 1e87d26, and `dokimi conform --lang go` passes with 176 conformant fixtures through the workspace of the repository |

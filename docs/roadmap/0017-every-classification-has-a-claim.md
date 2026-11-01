@@ -1,7 +1,7 @@
 ---
 milestone: 0017
 title: Every classification of the shape catalog has a claim
-status: Planned
+status: In progress
 depends-on: 0003
 released-in: unscheduled
 deadline: none
@@ -23,10 +23,10 @@ A Go team whose declaration has a batch reader, a stream reader, an indexed call
 
 ## Done when
 
-- [ ] RFC-0028 is accepted.
-- [ ] The spec has the claims of RFC-0028 with their laws, probes, reasons and defect forms, and its unclaimed table has no entry with the stance `gap`.
-- [ ] The package `probe` has the seven probes of RFC-0028, and the suite generator binds the partner of `agrees-with-its-sibling` to a new subject.
-- [ ] A fixture of the corpus for each of the eight classifications runs its check, and each check fails on its planted defect with its reason code.
+- [x] RFC-0028 is accepted.
+- [x] The spec has the claims of RFC-0028 with their laws, probes, reasons and defect forms, and its unclaimed table has no entry with the stance `gap`.
+- [x] The package `probe` has the seven probes of RFC-0028, and the suite generator binds the partner of `agrees-with-its-sibling` to a new subject.
+- [x] A fixture of the corpus for each of the eight classifications runs its check, and each check fails on its planted defect with its reason code.
 - [ ] `dokimi conform --lang go` passes with the expected outcomes of the new fixtures.
 
 ## Why now
@@ -47,3 +47,4 @@ The claims, laws, reasons, defect forms and probes of RFC-0028, the binding of a
 | Date | What changed | Why |
 |---|---|---|
 | 2026-10-31 | Created at position 10 | Ten classifications of the catalog had the stance `gap`, and eight of them state a law that one caller checks |
+| 2026-11-01 | In progress. The scope gains four forms of binding of the suite generator, the pairing of a batch read with its writer, and a writer in the fixture `batchreader` and a delegation in the fixture `wrappedvia` | RFC-0028 is accepted. Milestones 0009 and 0016 are done |

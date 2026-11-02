@@ -93,11 +93,21 @@ func (v *Value) sampled() bool {
 
 // made reports whether eidos derives both samples of the input v as a
 // function literal. Each literal is a new value wherever a call writes it,
-// so its two samples differ also where they have one spelling. The two
-// makes of a channel differ in the same way, but nothing sends to them or
-// closes them, so a callable that receives from one never returns.
+// so its two samples differ also where they have one spelling. The two makes
+// of a channel differ in the same way, but nothing sends to them or closes
+// them, so a callable that receives from one never returns.
 func (v *Value) made() bool {
-	return v.Shape.Form == symbol.FormFunc && v.Samples[0].OK() && v.Samples[1].OK()
+	return literal(&v.Samples[0].Value) && literal(&v.Samples[1].Value)
+}
+
+// literal reports whether v is a function literal, also under the
+// conversions to a defined function type. The value of a refused sample is
+// the zero value, which is no literal.
+func literal(v *emit.Value) bool {
+	for v.Kind == emit.ValueConversion && v.Inner != nil {
+		v = v.Inner
+	}
+	return v.Kind == emit.ValueFunc
 }
 
 // Suite is the derivation of one declaration.
@@ -325,7 +335,7 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 	everyCallable := l.licence.Callable
 	names := namesOf(f)
 	identity := f.qualified() + "/" + string(c.ID)
-	if l.licence.Declaration {
+	if l.licence.Declaration || c.Scope == spec.ScopeDeclaration {
 		identity = names["declaration"] + "/" + string(c.ID)
 	}
 	if l.instance != "" {
@@ -419,11 +429,16 @@ func generatedOf(c *Check) Check {
 	return g
 }
 
-// Refuse returns the refusal of the check c by the gate id. The suite
-// generator of a language refuses a derived check by a gate on the code that
-// it writes, such as importable-samples.
+// Refuse returns the refusal of the check c by the gate id, with the names of
+// the callable of c and of each of its partners in the reason and the remedy.
+// The suite generator of a language refuses a derived check by a gate on the
+// code that it writes, such as importable-samples.
 func Refuse(c *Check, id spec.GateID) Refusal {
-	return refusal(c.Claim.ID, c.Facts, c.Key, gateOf(id), namesOf(c.Facts))
+	names := namesOf(c.Facts)
+	for name, pair := range c.Pairs {
+		names[name] = pair.Partner.Callable
+	}
+	return refusal(c.Claim.ID, c.Facts, c.Key, gateOf(id), names)
 }
 
 // refusal returns the refusal of the claim on the callable of f by gate. The
@@ -449,7 +464,9 @@ func namesOf(f *Facts) map[string]string {
 // A callable with two instances of the contract of a licence has it once for
 // each instance. One callable of the declaration decl has the licence of a
 // claim of the declaration: the first callable that passes the gates of c, or
-// the first callable where none does.
+// the first callable where none does. For a claim of the scope declaration
+// whose licence is a classification, that callable is among the callables
+// with the classification.
 func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 	var out []licensing
 	for li := range c.Licences {
@@ -468,8 +485,13 @@ func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 				out = append(out, licensing{licence: l})
 			}
 		case l.Declaration:
-			if f == anchorOf(c, decl) {
+			if f == anchorOf(c, decl, func(*Facts) bool { return true }) {
 				out = append(out, licensing{licence: l})
+			}
+		case c.Scope == spec.ScopeDeclaration:
+			cls := l.Classification
+			if f == anchorOf(c, decl, func(g *Facts) bool { return has(g, cls) }) {
+				out = append(out, licensing{licence: l, classification: labelOf(cls)})
 			}
 		case l.Contract != "":
 			var memberships []shape.Membership
@@ -493,15 +515,24 @@ func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 }
 
 // anchorOf returns the callable of decl on which a claim c of the declaration
-// binds: the first callable that passes the gates of c, or the first callable
-// where none does.
-func anchorOf(c *spec.Claim, decl []Facts) *Facts {
+// binds: the first callable that candidate accepts and that passes the gates
+// of c, or the first callable that candidate accepts where none passes. It
+// returns nil where candidate accepts no callable.
+func anchorOf(c *spec.Claim, decl []Facts, candidate func(f *Facts) bool) *Facts {
+	var first *Facts
 	for i := range decl {
-		if _, failed := failing(c.Gates, &decl[i]); !failed {
-			return &decl[i]
+		f := &decl[i]
+		if !candidate(f) {
+			continue
+		}
+		if _, failed := failing(c.Gates, f); !failed {
+			return f
+		}
+		if first == nil {
+			first = f
 		}
 	}
-	return &decl[0]
+	return first
 }
 
 // failing returns the first gate of gates with a condition that the facts f

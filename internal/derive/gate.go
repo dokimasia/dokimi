@@ -83,7 +83,8 @@ var OtherGates = []spec.GateID{
 	spec.TextEncoding,
 	spec.ErrorValues, spec.TwoErrorValues, spec.ErrorTypes, spec.TwoErrorTypes,
 	spec.SelfComparingType, spec.ErrorCause,
-	spec.CountableUse, spec.TakesAReplica, spec.GraphOfStates,
+	spec.CountableUse, spec.NumericTotal, spec.TakesAReplica, spec.GraphOfStates, spec.DeliversOnAChannel,
+	spec.AtLeastOnceMode, spec.StreamMutations, spec.SubscriptionMethods,
 }
 
 // Passes reports whether the facts f of a callable pass the gate id, and

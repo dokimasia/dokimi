@@ -9,6 +9,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/eidos/plugin/shape"
+	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
@@ -282,28 +283,49 @@ func TestDerive(t *testing.T) {
 		})
 
 		{
+			fn := &emit.TypeRef{Spelling: "func() string", Form: symbol.FormFunc}
+			ch := &emit.TypeRef{Spelling: "chan string", Form: symbol.FormStream}
+			defined := &emit.TypeRef{Spelling: "Defined", Form: symbol.FormNamed}
+			literal := emit.Func(fn, emit.Literal(emit.LiteralString, ""))
 			tests := []struct {
 				name        string
-				give        symbol.TypeForm
+				give        emit.Value
 				giveRefused int
 				want        []string
 			}{
 				{
 					name: "binds the claims of an input of two function literals of one spelling",
-					give: symbol.FormFunc, giveRefused: -1,
+					give: literal, giveRefused: -1,
+					want: []string{"Store.Hash/smoke", "Store.Hash/deterministic"},
+				},
+				{
+					name: "binds the claims of an input of two function literals of a defined function type",
+					give: emit.Conversion(defined, literal), giveRefused: -1,
 					want: []string{"Store.Hash/smoke", "Store.Hash/deterministic"},
 				},
 				{
 					name: "refuses the claims of an input of a function without a first sample",
-					give: symbol.FormFunc, giveRefused: 0, want: []string{},
+					give: literal, giveRefused: 0, want: []string{},
 				},
 				{
 					name: "refuses the claims of an input of a function without a second sample",
-					give: symbol.FormFunc, giveRefused: 1, want: []string{},
+					give: literal, giveRefused: 1, want: []string{},
+				},
+				{
+					name: "refuses the claims of an input of the address of a function literal",
+					give: emit.Address(literal), giveRefused: -1, want: []string{},
+				},
+				{
+					name: "refuses the claims of an input of a conversion without an inner value",
+					give: emit.Value{Kind: emit.ValueConversion, Type: defined}, giveRefused: -1, want: []string{},
 				},
 				{
 					name: "refuses the claims of an input of two makes of a channel of one spelling",
-					give: symbol.FormStream, giveRefused: -1, want: []string{},
+					give: emit.Make(ch), giveRefused: -1, want: []string{},
+				},
+				{
+					name: "refuses the claims of an input of two makes of a defined channel type",
+					give: emit.Conversion(defined, emit.Make(ch)), giveRefused: -1, want: []string{},
 				},
 			}
 			for _, tt := range tests {
@@ -311,7 +333,7 @@ func TestDerive(t *testing.T) {
 					t.Parallel()
 					hash := withShape(pure(), "computation")
 					hash.Inputs = append([]derive.Value(nil), hash.Inputs...)
-					hash.Inputs[0].Shape = rules.TypeShape{Form: tt.give}
+					hash.Inputs[0].Samples[0] = rules.Of(tt.give)
 					hash.Inputs[0].Samples[1] = hash.Inputs[0].Samples[0]
 					if tt.giveRefused >= 0 {
 						hash.Inputs[0].Samples[tt.giveRefused] = rules.Refused(rules.RefusedNoLiteral)
@@ -413,18 +435,18 @@ func TestDerive(t *testing.T) {
 
 		t.Run("lists the stance of each role of a contract once", func(t *testing.T) {
 			t.Parallel()
-			watch := getter()
-			watch.Class.Contracts = []shape.Membership{
-				{Contract: "watcher", Role: "watch", ID: "a"},
-				{Contract: "watcher", Role: "watch", ID: "b"},
+			flight := getter()
+			flight.Class.Contracts = []shape.Membership{
+				{Contract: "single-flight", Role: "fn", ID: "a"},
+				{Contract: "single-flight", Role: "fn", ID: "b"},
 			}
 
-			got, err := derive.Derive([]derive.Facts{watch}, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{flight}, spec.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Unclaimed, []derive.Unclaimed{{
-				Classification: "contract:watcher/watch", Callable: "Get", Key: "store.get", Stance: spec.Needs,
-				Note: "The claims of the contract need generated sequences.",
+				Classification: "contract:single-flight/fn", Callable: "Get", Key: "store.get", Stance: spec.Needs,
+				Note: "The claim computes-once needs concurrent-callers.",
 			}}, "the role has its stance once")
 		})
 
@@ -743,6 +765,52 @@ func TestDerive(t *testing.T) {
 			}}, "the declaration refuses the claim once with the reason of the gate")
 		})
 
+		t.Run("binds a claim of a declaration that a mixin licenses once, on its first callable with the mixin "+
+			"that passes the gates", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("whole", spec.Licence{Mixin: "concurrent"}, spec.ReturnsAValue)
+			c.Scope = spec.ScopeDeclaration
+			decl := []derive.Facts{withMixins(writer(), "concurrent"), withMixins(reader(), "concurrent"), pure()}
+
+			got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Store/whole"}, "the declaration binds the claim once")
+			assert.Equal(t, got.Checks[0].Facts.Callable, "Read",
+				"the check binds on the first callable with the mixin that returns a value")
+			assert.Empty(t, got.Refusals, "the other callable with the mixin refuses nothing")
+			assert.Empty(t, got.Unclaimed, "the claim covers the mixin of the declaration")
+		})
+
+		t.Run("refuses a claim of a declaration that a mixin licenses on its first callable with the mixin",
+			func(t *testing.T) {
+				t.Parallel()
+				c := claimOn("whole", spec.Licence{Mixin: "concurrent"}, spec.ReturnsAValue)
+				c.Scope = spec.ScopeDeclaration
+				decl := []derive.Facts{reader(), withMixins(writer(), "concurrent")}
+
+				got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+
+				assert.NoError(t, err, "the declaration derives")
+				assert.Empty(t, got.Checks, "no callable with the mixin returns a value")
+				assert.Equal(t, gatesOf(got), []spec.GateID{spec.ReturnsAValue},
+					"the declaration refuses the claim once with the gate")
+				assert.Equal(t, got.Refusals[0].Callable, "Put", "the refusal is on the callable with the mixin")
+				assert.Equal(t, got.Refusals[0].Key, "store/whole", "the key of the refusal names the declaration")
+			})
+
+		t.Run("licenses no claim of a declaration without a callable that has its mixin", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("whole", spec.Licence{Mixin: "concurrent"})
+			c.Scope = spec.ScopeDeclaration
+
+			got, err := derive.Derive([]derive.Facts{reader(), writer()}, []spec.Claim{c}, nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Empty(t, got.Checks, "no callable has the mixin")
+			assert.Empty(t, got.Refusals, "no callable refuses the claim")
+		})
+
 		t.Run("names the check of the declaration of a function by the function", func(t *testing.T) {
 			t.Parallel()
 			slug := pure()
@@ -983,6 +1051,24 @@ func TestDerive(t *testing.T) {
 				Why:    "the handle that Read returns is not an interface, so no planted handle can replace it",
 				Remedy: "return the handle of Read as an interface",
 			}, "the refusal has the reason and the remedy of the gate with the name of the callable")
+		})
+
+		t.Run("names each partner of the check in the reason of the gate", func(t *testing.T) {
+			t.Parallel()
+			watch := withRole(getter(), "watcher", "watch")
+			watch.Class.Params = map[string]shape.Params{
+				"watcher": {directiveKey("next"): idOf("Next"), directiveKey("stop"): idOf("Stop")},
+			}
+			decl := []derive.Facts{watch, withRole(keyedPutter(), "watcher", "trigger")}
+			sequences := append(slices.Clone(runtime), spec.GeneratedSequences)
+			derived, err := derive.Derive(decl, spec.Claims(), nil, sequences, nil)
+			assert.NoError(t, err, "the declaration derives")
+			check := checkOf(t, derived, "Store.Get/watch-sees-each-trigger")
+
+			got := derive.Refuse(&check, spec.SubscriptionMethods)
+
+			assert.Equal(t, got.Why, "the methods that next and stop name on the subscription of Get, or the value "+
+				"that Set passes, do not fit a read of updates", "the reason names the partner trigger")
 		})
 	})
 

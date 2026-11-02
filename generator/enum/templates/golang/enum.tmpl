@@ -191,6 +191,12 @@ uses it for a value and for a map key. It returns an error%s for a value that
 	return nil
 }
 {{- end}}
+{{- if $m.Generate.Strict}}
+
+{{docs (wrapdocs (printf `%s marks %s as a kanon.Strict type. %s accepts only the texts that %s
+writes. A canonical decode of kanon therefore does not encode a decoded %s again.` $n.Strict $m.Subject $n.Decode $n.Encode $m.Subject))}}
+{{- ""}}func ({{$t}}) {{$n.Strict}}() {}
+{{- end}}
 {{- end}}
 {{- end}}
 

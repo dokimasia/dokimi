@@ -98,4 +98,9 @@ func (v *Status) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:7753872159fbc7327f2c732bb50f3e4e1941e84c373c05c34593c4a25da0dbc5
+// StrictKanon marks Status as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Status again.
+func (Status) StrictKanon() {}
+
+// dokimi:provenance sha256:0e7637f5a35a7cf5acba37507294ba4a4a95c815c8ffca5d30551de61064c334

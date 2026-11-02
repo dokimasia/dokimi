@@ -78,3 +78,8 @@ func (v *Season) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Season as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Season again.
+func (Season) StrictKanon() {}

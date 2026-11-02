@@ -93,3 +93,8 @@ func (v *Status) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Status as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Status again.
+func (Status) StrictKanon() {}

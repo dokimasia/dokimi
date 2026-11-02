@@ -133,6 +133,9 @@ func KnotValues() []string { return []string{"Reef", "Hitch"} }
 // MarshalText returns a text, so it is no encode of Knot.
 func (k Knot) MarshalText() (string, error) { return "knot", nil }
 
+// StrictKanon returns a truth value, so it is no marker of kanon.Strict.
+func (k Knot) StrictKanon() bool { return true }
+
 // Loop has declarations of other forms under the names of the members of its
 // surface.
 //

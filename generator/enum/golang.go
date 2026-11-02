@@ -60,6 +60,11 @@ const (
 	golangDecode = "UnmarshalText"
 )
 
+// golangStrict is the name of the method of kanon.Strict. kanon fixes it, and
+// a canonical decode of kanon does not encode a decoded value of a type with
+// that method again.
+const golangStrict = "StrictKanon"
+
 // golangFieldHelper is the helper that the template of the checks calls with
 // the record of the checks and the name of a field.
 const golangFieldHelper = "fieldType"
@@ -92,6 +97,7 @@ var golangForms = map[member]form{
 		kind: kindMethod, inputs: []shape{shapeBytes}, fails: true,
 		text: "a method of the enumeration of bytes that returns an error",
 	},
+	memberStrict: {kind: kindMethod, text: "a method of the enumeration without a parameter and without a result"},
 }
 
 // The verbs of fmt that print a value outside the variants after its
@@ -156,7 +162,8 @@ func (golangPart) names(b *rules.Bound, subject string, n baseNames) Names {
 	unknown, _ := b.SentinelName(n.err)
 	out := Names{
 		Render: golangRender, Parse: naming.Pascal(n.parse), Values: naming.Pascal(n.values),
-		Valid: naming.Pascal(n.valid), Encode: golangEncode, Decode: golangDecode, Sentinel: unknown,
+		Valid: naming.Pascal(n.valid), Encode: golangEncode, Decode: golangDecode, Strict: golangStrict,
+		Sentinel: unknown,
 	}
 	if !token.IsExported(subject) {
 		out.Parse, out.Values, out.Sentinel = naming.Camel(out.Parse), naming.Camel(out.Values),

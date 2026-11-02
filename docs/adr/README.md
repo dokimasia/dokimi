@@ -28,3 +28,4 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0017](0017-the-corpus-isolates-the-planted-defects-of-derived-checks.md) | The corpus isolates the planted defects of derived checks | Accepted |
 | [0018](0018-the-tests-of-enumerations-and-errors-are-fixed-templates.md) | The tests of enumerations and errors are fixed templates | Accepted |
 | [0019](0019-a-generated-binding-draws-the-inputs-of-its-calls-in-its-check.md) | A generated binding draws the inputs of its calls in its check | Accepted |
+| [0020](0020-the-text-surface-of-a-go-enumeration-declares-kanon-strict.md) | The text surface of a Go enumeration declares kanon.Strict | Accepted |

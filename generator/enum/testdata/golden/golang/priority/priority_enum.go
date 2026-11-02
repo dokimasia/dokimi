@@ -97,3 +97,8 @@ func (v *Priority) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Priority as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Priority again.
+func (Priority) StrictKanon() {}

@@ -236,6 +236,7 @@ func TestEnum(t *testing.T) {
 				tree: goTree, pkg: statusPackage, give: statusName,
 				want: enum.Members{
 					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+					Strict: true,
 				},
 				calls: enum.Members{
 					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
@@ -252,7 +253,9 @@ func TestEnum(t *testing.T) {
 			{
 				name:   "wraps the error that the package declares in the parse function",
 				target: golang.Target, tree: goTree, pkg: declaredPackage, give: "Level",
-				want: enum.Members{Render: true, Parse: true, Values: true, Valid: true, Encode: true, Decode: true},
+				want: enum.Members{
+					Render: true, Parse: true, Values: true, Valid: true, Encode: true, Decode: true, Strict: true,
+				},
 				calls: enum.Members{
 					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
 				},
@@ -260,7 +263,19 @@ func TestEnum(t *testing.T) {
 			{
 				name:   "leaves out the list of the variants that the package declares",
 				target: golang.Target, tree: goTree, pkg: declaredPackage, give: "Color",
-				want: enum.Members{Render: true, Parse: true, Error: true, Valid: true, Encode: true, Decode: true},
+				want: enum.Members{
+					Render: true, Parse: true, Error: true, Valid: true, Encode: true, Decode: true, Strict: true,
+				},
+				calls: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict that the enumeration declares",
+				target: golang.Target, tree: goTree, pkg: declaredPackage, give: "Seal",
+				want: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
 				calls: enum.Members{
 					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
 				},
@@ -276,6 +291,7 @@ func TestEnum(t *testing.T) {
 				target: golang.Target, tree: goTree, pkg: declaredPackage, give: "Coil",
 				want: enum.Members{
 					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+					Strict: true,
 				},
 				calls: enum.Members{
 					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
@@ -468,7 +484,7 @@ func TestEnum(t *testing.T) {
 				give: func(o *enum.Options) { o.ParseFunction = "Decode{{.Enum}}" },
 				want: enum.Names{
 					Render: "String", Parse: "DecodeStatus", Values: "StatusValues", Valid: "IsValid",
-					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+					Encode: "MarshalText", Decode: "UnmarshalText", Strict: "StrictKanon", Sentinel: "ErrUnknownStatus",
 				},
 			},
 			{
@@ -476,7 +492,7 @@ func TestEnum(t *testing.T) {
 				give: func(o *enum.Options) { o.ValuesFunction = "Every{{.Enum}}" },
 				want: enum.Names{
 					Render: "String", Parse: "ParseStatus", Values: "EveryStatus", Valid: "IsValid",
-					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+					Encode: "MarshalText", Decode: "UnmarshalText", Strict: "StrictKanon", Sentinel: "ErrUnknownStatus",
 				},
 			},
 			{
@@ -484,7 +500,8 @@ func TestEnum(t *testing.T) {
 				give: func(o *enum.Options) { o.ParseError = "Unrecognised{{.Enum}}" },
 				want: enum.Names{
 					Render: "String", Parse: "ParseStatus", Values: "StatusValues", Valid: "IsValid",
-					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnrecognisedStatus",
+					Encode: "MarshalText", Decode: "UnmarshalText", Strict: "StrictKanon",
+					Sentinel: "ErrUnrecognisedStatus",
 				},
 			},
 			{
@@ -492,7 +509,7 @@ func TestEnum(t *testing.T) {
 				give: func(o *enum.Options) { o.ValidMethod = "Valid" },
 				want: enum.Names{
 					Render: "String", Parse: "ParseStatus", Values: "StatusValues", Valid: "Valid",
-					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+					Encode: "MarshalText", Decode: "UnmarshalText", Strict: "StrictKanon", Sentinel: "ErrUnknownStatus",
 				},
 			},
 			{
@@ -500,7 +517,7 @@ func TestEnum(t *testing.T) {
 				give: func(o *enum.Options) { o.ParseFunction = "parse {{.Enum}} text"; o.ValidMethod = "is_known" },
 				want: enum.Names{
 					Render: "String", Parse: "ParseStatusText", Values: "StatusValues", Valid: "IsKnown",
-					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+					Encode: "MarshalText", Decode: "UnmarshalText", Strict: "StrictKanon", Sentinel: "ErrUnknownStatus",
 				},
 			},
 			{
@@ -508,7 +525,7 @@ func TestEnum(t *testing.T) {
 				give: func(o *enum.Options) { *o = enum.Options{} },
 				want: enum.Names{
 					Render: "String", Parse: "ParseStatus", Values: "StatusValues", Valid: "IsValid",
-					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+					Encode: "MarshalText", Decode: "UnmarshalText", Strict: "StrictKanon", Sentinel: "ErrUnknownStatus",
 				},
 			},
 		}
@@ -573,6 +590,7 @@ func TestEnum(t *testing.T) {
 					giveMethod: enum.DefaultValidMethod,
 					want: enum.Members{
 						Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+						Strict: true,
 					},
 					wantValid: "IsValid",
 				},
@@ -717,6 +735,13 @@ func TestEnum(t *testing.T) {
 				pkg: badPackage, give: "Knot", atKind: symbol.KindMethod, atOwner: "Knot", at: "MarshalText",
 				wantMsg: "MarshalText has the name of the encode of Knot and another form, so Knot has no surface. " +
 					"The encode is a method of the enumeration without a parameter that returns bytes and an error",
+			},
+			{
+				name: "reports Conflict at a marker of kanon.Strict with a result", target: golang.Target,
+				tree: goTree, pkg: badPackage, give: "Knot", atKind: symbol.KindMethod, atOwner: "Knot",
+				at: "StrictKanon",
+				wantMsg: "StrictKanon has the name of the strict marker of Knot and another form, so Knot has no " +
+					"surface. The strict marker is a method of the enumeration without a parameter and without a result",
 			},
 			{
 				name: "reports Conflict at a parse function without an error", target: golang.Target, tree: goTree,

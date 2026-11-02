@@ -80,3 +80,17 @@ func (l Label) ParseCoil() (Coil, error) {
 	}
 	return Snug, nil
 }
+
+// Seal is the seal of a jar, which declares the marker of kanon.Strict.
+//
+//dokimi:enum
+type Seal int
+
+// The seals of a jar.
+const (
+	Tight Seal = iota + 1
+	Loose
+)
+
+// StrictKanon marks Seal as a kanon.Strict type.
+func (Seal) StrictKanon() {}

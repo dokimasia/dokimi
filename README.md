@@ -165,7 +165,7 @@ Commit the generated files with the directives, and add `.dokimi/` to `.gitignor
 | `subject` | The struct of an implementation | `Test<Impl>ConformsTo<X>`, the benchmarks, the fuzz targets, and the allocation test where a budget caps allocations |
 | `stub` | An interface or a struct | `<X>Stub`, which records each call, returns the configured results and injects faults and latency, and its spec |
 | `builder` | A struct | `New<X>Builder` with a setter of each field, `Mutate`, `Clone` and `Build`, and its spec |
-| `enum` | A defined type with constants | `Parse<X>`, `String`, `IsValid`, `<X>Values`, `MarshalText` and `UnmarshalText`, and their spec |
+| `enum` | A defined type with constants | `Parse<X>`, `String`, `IsValid`, `<X>Values`, `MarshalText`, `UnmarshalText` and `StrictKanon`, and their spec |
 | `sentinel` | The package clause | The spec of each error value and each error type |
 
 dokimi writes `<file>_<generator>.go` and `<file>_<generator>_test.go` beside the source, or into
@@ -342,8 +342,8 @@ suite that dokimi wrote for another major version does not compile.
   of an interface or a struct with fault strategies, such as a share of failing calls or a window
   of time, and a latency. The spec of the double checks the double itself.
 - **stringer.** stringer generates the method `String` of a type with constants. The enumeration of
-  dokimi also has `Parse<X>`, `IsValid`, `<X>Values`, `MarshalText` and `UnmarshalText`, and their
-  spec.
+  dokimi also has `Parse<X>`, `IsValid`, `<X>Values`, `MarshalText`, `UnmarshalText` and
+  `StrictKanon`, and their spec.
 - **Property-based testing libraries.** rapid runs the properties that you write and shrinks each
   failure. The property checks of a suite run on the property engine of assert-go. The suite also
   applies each check to each implementation and proves that each check fails on its planted defect.

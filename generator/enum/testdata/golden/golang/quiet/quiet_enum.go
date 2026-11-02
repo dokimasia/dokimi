@@ -152,6 +152,11 @@ func (v *Switch) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Switch as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Switch again.
+func (Switch) StrictKanon() {}
+
 // PhaseValues returns the declared variants in the order of their
 // declaration. Each call returns a new slice.
 func PhaseValues() []Phase {
@@ -317,6 +322,11 @@ func (v *Level) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Level as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Level again.
+func (Level) StrictKanon() {}
+
 // String returns the text of v. A value outside the declared set renders
 // as its underlying value.
 func (v Flag) String() string {
@@ -384,3 +394,8 @@ func (v *Flag) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Flag as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Flag again.
+func (Flag) StrictKanon() {}

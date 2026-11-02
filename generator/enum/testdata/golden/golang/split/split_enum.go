@@ -93,3 +93,8 @@ func (v *Signal) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Signal as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Signal again.
+func (Signal) StrictKanon() {}

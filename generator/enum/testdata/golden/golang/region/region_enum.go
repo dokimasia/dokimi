@@ -76,6 +76,11 @@ func (v *Region) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Region as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Region again.
+func (Region) StrictKanon() {}
+
 // String returns the text of v. A value outside the declared set renders
 // as its underlying value.
 func (v Zone) String() string {
@@ -145,6 +150,11 @@ func (v *Zone) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Zone as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Zone again.
+func (Zone) StrictKanon() {}
 
 // String returns the text of v. A value outside the declared set renders
 // as its underlying value.
@@ -218,3 +228,8 @@ func (v *Lane) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Lane as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Lane again.
+func (Lane) StrictKanon() {}

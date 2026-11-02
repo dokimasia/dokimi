@@ -89,6 +89,11 @@ func (v *Level) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Level as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Level again.
+func (Level) StrictKanon() {}
+
 func _() {
 	// An "invalid array index" compiler error means that the value of a
 	// variant changed. Run dokimi again to write the table of the new values.
@@ -162,6 +167,11 @@ func (v *Color) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Color as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Color again.
+func (Color) StrictKanon() {}
 
 func _() {
 	// An "invalid array index" compiler error means that the value of a
@@ -303,6 +313,94 @@ func (v Coil) MarshalText() ([]byte, error) {
 // error of [ParseCoil] for a text that does not match a declared variant.
 func (v *Coil) UnmarshalText(text []byte) error {
 	parsed, err := ParseCoil(string(text))
+	if err != nil {
+		return err
+	}
+	*v = parsed
+	return nil
+}
+
+// StrictKanon marks Coil as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Coil again.
+func (Coil) StrictKanon() {}
+
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+	_ = x[Tight-1]
+	_ = x[Loose-2]
+}
+
+const _Seal_name = "TightLoose"
+
+var _Seal_index = [...]uint8{0, 5, 10}
+
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
+func (v Seal) String() string {
+	idx := int(v) - 1
+	if v < 1 || idx >= len(_Seal_index)-1 {
+		return "Seal(" + strconv.FormatInt(int64(v), 10) + ")"
+	}
+	return _Seal_name[_Seal_index[idx]:_Seal_index[idx+1]]
+}
+
+// ErrUnknownSeal is the error of a text that does not match a declared
+// variant. The error of [ParseSeal] wraps it with the text.
+var ErrUnknownSeal = errors.New("declared: unknown Seal value")
+
+// ParseSeal returns the variant of Seal whose text is s. It is the inverse
+// of [Seal.String] on the declared variants. It returns an error that
+// wraps [ErrUnknownSeal] for a text that does not match a declared
+// variant.
+func ParseSeal(s string) (Seal, error) {
+	switch s {
+	case "Tight":
+		return Tight, nil
+	case "Loose":
+		return Loose, nil
+	}
+	var zero Seal
+	return zero, fmt.Errorf("%w %q", ErrUnknownSeal, s)
+}
+
+// SealValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
+func SealValues() []Seal {
+	return []Seal{
+		Tight,
+		Loose,
+	}
+}
+
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
+func (v Seal) IsValid() bool {
+	switch v {
+	case Tight, Loose:
+		return true
+	default:
+		return false
+	}
+}
+
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownSeal] for a value that [Seal.IsValid] refuses,
+// whose text [ParseSeal] does not parse.
+func (v Seal) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownSeal, v.String())
+	}
+	return []byte(v.String()), nil
+}
+
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseSeal] for a text that does not match a declared variant.
+func (v *Seal) UnmarshalText(text []byte) error {
+	parsed, err := ParseSeal(string(text))
 	if err != nil {
 		return err
 	}

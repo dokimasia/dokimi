@@ -107,6 +107,9 @@ type baseNames struct {
 // Values returns the variants, and Valid reports whether a value is a
 // variant. Encode and Decode are the pair that writes a value as text and
 // reads it back, and they are empty in a language without such a pair.
+// Strict is the marker of kanon.Strict, which states that the decode accepts
+// only the texts that the encode writes. It is empty in a language without
+// the pair.
 type Names struct {
 	Render   string
 	Parse    string
@@ -114,6 +117,7 @@ type Names struct {
 	Valid    string
 	Encode   string
 	Decode   string
+	Strict   string
 	Sentinel string
 }
 
@@ -136,7 +140,8 @@ type Variant struct {
 }
 
 // Members are the members of the surface that a record declares or that a
-// check calls. Error is the error of the parse function.
+// check calls. Error is the error of the parse function. Strict is the marker
+// of kanon.Strict, which no check calls.
 type Members struct {
 	Render bool
 	Parse  bool
@@ -145,6 +150,7 @@ type Members struct {
 	Valid  bool
 	Encode bool
 	Decode bool
+	Strict bool
 }
 
 // member is one member of the surface of an enumeration.
@@ -159,10 +165,13 @@ const (
 	memberValid
 	memberEncode
 	memberDecode
+	memberStrict
 )
 
 // members are the members of a surface in their order.
-var members = []member{memberRender, memberParse, memberError, memberValues, memberValid, memberEncode, memberDecode}
+var members = []member{
+	memberRender, memberParse, memberError, memberValues, memberValid, memberEncode, memberDecode, memberStrict,
+}
 
 // labels name each member in the message of a [Conflict].
 var labels = [...]string{
@@ -173,6 +182,7 @@ var labels = [...]string{
 	memberValid:  "validity method",
 	memberEncode: "encode",
 	memberDecode: "decode",
+	memberStrict: "strict marker",
 }
 
 // kind is the kind of declaration that a member of a surface is: a function of
@@ -485,8 +495,10 @@ var schema = directive.Schema{
 // declare under its name. It writes a parse function only beside a render that
 // it writes, because a declared render can write other texts, and its parse
 // function wraps the error that the package declares. A decode needs a parse
-// function, and an encode needs a decode. The value off of [MethodsParam]
-// leaves out the whole surface and keeps the checks.
+// function, and an encode needs a decode. In Go the surface also writes
+// StrictKanon, the marker of kanon.Strict, where it writes the encode, the
+// decode, the parse function and the validity method. The value off of
+// [MethodsParam] leaves out the whole surface and keeps the checks.
 //
 // The text of a variant of an enumeration of text is its value, and the text
 // of any other variant is its name, as the rules of its language derive them.
@@ -548,7 +560,7 @@ func (g *generator) generate(m *sdk.EnumMatch, p part, e *sdk.Emitter) error {
 	has := func(x member) bool { _, declared := found[x]; return declared }
 	declared := Members{
 		Render: has(memberRender), Parse: has(memberParse), Error: has(memberError), Values: has(memberValues),
-		Valid: has(memberValid), Encode: has(memberEncode), Decode: has(memberDecode),
+		Valid: has(memberValid), Encode: has(memberEncode), Decode: has(memberDecode), Strict: has(memberStrict),
 	}
 	generated := surface(m, &names, &declared)
 	typ := &emit.TypeRef{Spelling: enum.Name, Target: enum.ID}
@@ -719,7 +731,7 @@ func declares(
 	}
 	names := map[member]string{
 		memberRender: n.Render, memberParse: n.Parse, memberError: n.Sentinel, memberValues: n.Values,
-		memberValid: n.Valid, memberEncode: n.Encode, memberDecode: n.Decode,
+		memberValid: n.Valid, memberEncode: n.Encode, memberDecode: n.Decode, memberStrict: n.Strict,
 	}
 	found := map[member]node.Declaration{}
 	fits := true
@@ -749,8 +761,10 @@ func declares(
 // member under methods=off. It writes a parse function only beside a render
 // that it writes, and the error of the parse function only beside a parse
 // function that it writes. A language without a pair that writes a value as
-// text has no encode and no decode. A decode needs a parse function, and an
-// encode needs a decode.
+// text has no encode, no decode and no strict marker. A decode needs a parse
+// function, and an encode needs a decode. The strict marker needs the encode,
+// the decode, the parse function and the validity method of the surface,
+// because a declared member can accept a text that the encode does not write.
 func surface(m *sdk.EnumMatch, n *Names, declared *Members) Members {
 	if _, off := m.Directive().Params[MethodsParam]; off {
 		return Members{}
@@ -763,5 +777,6 @@ func surface(m *sdk.EnumMatch, n *Names, declared *Members) Members {
 	}
 	out.Decode = !declared.Decode && (out.Parse || declared.Parse)
 	out.Encode = !declared.Encode && (out.Decode || declared.Decode)
+	out.Strict = !declared.Strict && out.Encode && out.Decode && out.Parse && out.Valid
 	return out
 }

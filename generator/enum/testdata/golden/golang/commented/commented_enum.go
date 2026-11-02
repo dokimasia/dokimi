@@ -93,6 +93,11 @@ func (v *Grade) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Grade as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Grade again.
+func (Grade) StrictKanon() {}
+
 func _() {
 	// An "invalid array index" compiler error means that the value of a
 	// variant changed. Run dokimi again to write the table of the new values.
@@ -175,3 +180,8 @@ func (v *Mood) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Mood as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Mood again.
+func (Mood) StrictKanon() {}

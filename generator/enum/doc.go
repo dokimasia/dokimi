@@ -19,6 +19,11 @@
 //	isStatus(s);                        // true
 //	statusValues();                     // every member, in order
 //
+// In Go the surface also writes MarshalText and UnmarshalText. Where it
+// writes both of them, the parse function and the validity method, it also
+// writes StrictKanon, the marker of kanon.Strict. UnmarshalText then accepts
+// only the texts that MarshalText writes.
+//
 // The text of a variant of an enumeration of text is its value, and the text
 // of any other variant is its name. Under the directive enum text=comment, the
 // trailing comment of a variant is its text:

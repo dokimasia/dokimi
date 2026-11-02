@@ -887,3 +887,224 @@ func TestCoil(t *testing.T) {
 		})
 	})
 }
+
+// TestSeal checks the functions and the methods of the enumeration Seal.
+func TestSeal(t *testing.T) {
+	t.Parallel()
+
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
+		t.Parallel()
+		seen := map[declared.Seal]bool{}
+		for _, v := range []declared.Seal{
+			declared.Tight,
+			declared.Loose,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
+			seen[v] = true
+		}
+	})
+
+	t.Run("SealValues", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run(
+			"returns the declared variants in the order of their declaration",
+			func(t *testing.T) {
+				t.Parallel()
+				want := []declared.Seal{
+					declared.Tight,
+					declared.Loose,
+				}
+				assert.Equal(
+					t,
+					declared.SealValues(),
+					want,
+					"SealValues returns the declared variants",
+				)
+			},
+		)
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := declared.SealValues(), declared.SealValues()
+			assert.NotEqual(
+				t,
+				&first[0],
+				&second[0],
+				"the two calls return two slices",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("String", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+			t.Parallel()
+			seen := map[string]bool{}
+			for _, v := range []declared.Seal{
+				declared.Tight,
+				declared.Loose,
+			} {
+				assert.False(t, seen[v.String()], "each variant has a text of its own")
+				seen[v.String()] = true
+			}
+		})
+
+		t.Run(
+			"renders a value outside the declared set with a text of its own",
+			func(t *testing.T) {
+				t.Parallel()
+				out := declared.Seal(3)
+				for _, v := range []declared.Seal{
+					declared.Tight,
+					declared.Loose,
+				} {
+					assert.NotEqual(
+						t,
+						out.String(),
+						v.String(),
+						"an undeclared value has a text of its own",
+					)
+				}
+			},
+		)
+	})
+
+	t.Run("IsValid", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give declared.Seal
+		}{
+			{name: "accepts Tight", give: declared.Tight},
+			{name: "accepts Loose", give: declared.Loose},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.True(t, tt.give.IsValid(), "IsValid accepts each declared variant")
+			})
+		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			assert.False(t, declared.Seal(3).IsValid(), "IsValid refuses an undeclared value")
+		})
+
+		t.Run("refuses the zero value", func(t *testing.T) {
+			t.Parallel()
+			var zero declared.Seal
+			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
+		})
+	})
+
+	t.Run("ParseSeal", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give declared.Seal
+		}{
+			{name: "returns Tight for its text", give: declared.Tight},
+			{name: "returns Loose for its text", give: declared.Loose},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := declared.ParseSeal(tt.give.String())
+				assert.NoError(t, err, "ParseSeal accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParseSeal returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := declared.ParseSeal("??????")
+			assert.ErrorIs(
+				t,
+				err,
+				declared.ErrUnknownSeal,
+				"ParseSeal refuses the text with ErrUnknownSeal",
+			)
+			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
+		})
+	})
+
+	t.Run("MarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give declared.Seal
+		}{
+			{name: "encodes Tight as its text", give: declared.Tight},
+			{name: "encodes Loose as its text", give: declared.Loose},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				assert.Equal(
+					t,
+					string(text),
+					tt.give.String(),
+					"the encoding of the variant is its text",
+				)
+			})
+		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := declared.Seal(3)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				declared.ErrUnknownSeal,
+				"MarshalText refuses the value with ErrUnknownSeal",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
+	})
+
+	t.Run("UnmarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give declared.Seal
+		}{
+			{name: "decodes Tight from its encoding", give: declared.Tight},
+			{name: "decodes Loose from its encoding", give: declared.Loose},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				var got declared.Seal
+				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
+				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			var got declared.Seal
+			assert.HasError(
+				t,
+				got.UnmarshalText([]byte("??????")),
+				"UnmarshalText refuses the text",
+			)
+		})
+	})
+}

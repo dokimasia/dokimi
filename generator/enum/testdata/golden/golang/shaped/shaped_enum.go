@@ -78,6 +78,11 @@ func (v *Ratio) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Ratio as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Ratio again.
+func (Ratio) StrictKanon() {}
+
 // String returns the text of v. A value outside the declared set renders
 // as its underlying value.
 func (v Tier) String() string {
@@ -150,3 +155,8 @@ func (v *Tier) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Tier as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Tier again.
+func (Tier) StrictKanon() {}

@@ -90,6 +90,11 @@ func (v *Status) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Status as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Status again.
+func (Status) StrictKanon() {}
+
 // String returns the text of v. A value outside the declared set renders
 // as its underlying value.
 func (v Level) String() string {
@@ -162,3 +167,8 @@ func (v *Level) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Level as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Level again.
+func (Level) StrictKanon() {}

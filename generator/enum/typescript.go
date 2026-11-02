@@ -86,7 +86,7 @@ func sourceModule(file string) string {
 
 // typescriptForms are the forms of the members of the surface of TypeScript,
 // which a declaration of the module under the name of a member has.
-// TypeScript has no encode and no decode.
+// TypeScript has no encode, no decode and no strict marker.
 var typescriptForms = map[member]form{
 	memberRender: {
 		kind: kindFunction, inputs: []shape{shapeVariant}, values: []shape{shapeText},
@@ -118,6 +118,7 @@ func (typescriptPart) templated(subject string) string { return subject }
 // type guard isStatus takes the name of the enum, as TypeScript names a type
 // guard, and reads no method template. TypeScript has no pair that writes a
 // value as text and reads it back, because JSON writes the value of a member.
+// It has no strict marker either.
 func (typescriptPart) names(_ *rules.Bound, subject string, n baseNames) Names {
 	return Names{
 		Render: typescriptCaser.Camel(subject) + typescriptRender, Parse: typescriptCaser.Camel(n.parse),
@@ -127,7 +128,8 @@ func (typescriptPart) names(_ *rules.Bound, subject string, n baseNames) Names {
 }
 
 // form returns the form of a member of the surface of TypeScript, and the
-// zero form for the encode and the decode, which TypeScript does not have.
+// zero form for the encode, the decode and the strict marker, which
+// TypeScript does not have.
 func (typescriptPart) form(x member) form { return typescriptForms[x] }
 
 // fallback returns nil, because the render of TypeScript prints a value

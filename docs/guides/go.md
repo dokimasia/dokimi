@@ -17,7 +17,7 @@ comment of its declaration, or of the package clause for a directive of the pack
 | Replace a dependency in a test | The interface or the struct | `stub` | `<X>Stub`, which records each call, returns the configured results and injects faults and latency, and its spec |
 | Prove that each implementation of an interface keeps its contract | The interface, the struct or the function | `suite` | The checks, `Run<X>Suite`, the fuzz targets, the budgets and the benchmarks, the test of the planted defects, and the double of `stub` |
 | Run a suite against one implementation | The struct of the implementation | `subject <X> new=<factory>` | `Test<Impl>ConformsTo<X>`, the benchmarks, and the allocation test where a budget caps allocations |
-| Parse and print the constants of a defined type | The defined type | `enum` | `Parse<X>`, `String`, `IsValid`, `<X>Values`, `MarshalText` and `UnmarshalText`, and their spec |
+| Parse and print the constants of a defined type | The defined type | `enum` | `Parse<X>`, `String`, `IsValid`, `<X>Values`, `MarshalText`, `UnmarshalText` and `StrictKanon`, and their spec |
 | Keep the error values of a package distinct | The package clause | `sentinel` | The spec of each error value and each error type |
 
 Leave a declaration without a directive when no test needs it. A generated helper is code that

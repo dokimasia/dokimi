@@ -114,6 +114,11 @@ func (v *Gap) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Gap as a kanon.Strict type. UnmarshalText accepts only
+// the texts that MarshalText writes. A canonical decode of kanon therefore
+// does not encode a decoded Gap again.
+func (Gap) StrictKanon() {}
+
 func _() {
 	// An "invalid array index" compiler error means that the value of a
 	// variant changed. Run dokimi again to write the table of the new values.
@@ -206,6 +211,11 @@ func (v *Unum) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Unum as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Unum again.
+func (Unum) StrictKanon() {}
 
 func _() {
 	// An "invalid array index" compiler error means that the value of a
@@ -342,6 +352,11 @@ func (v *Prime) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Prime as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Prime again.
+func (Prime) StrictKanon() {}
+
 func _() {
 	// An "invalid array index" compiler error means that the value of a
 	// variant changed. Run dokimi again to write the table of the new values.
@@ -428,6 +443,11 @@ func (v *Rank) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Rank as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Rank again.
+func (Rank) StrictKanon() {}
 
 func _() {
 	// An "invalid array index" compiler error means that the value of a
@@ -571,6 +591,11 @@ func (v *Odd) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// StrictKanon marks Odd as a kanon.Strict type. UnmarshalText accepts only
+// the texts that MarshalText writes. A canonical decode of kanon therefore
+// does not encode a decoded Odd again.
+func (Odd) StrictKanon() {}
+
 func _() {
 	// An "invalid array index" compiler error means that the value of a
 	// variant changed. Run dokimi again to write the table of the new values.
@@ -656,3 +681,8 @@ func (v *Num) UnmarshalText(text []byte) error {
 	*v = parsed
 	return nil
 }
+
+// StrictKanon marks Num as a kanon.Strict type. UnmarshalText accepts only
+// the texts that MarshalText writes. A canonical decode of kanon therefore
+// does not encode a decoded Num again.
+func (Num) StrictKanon() {}

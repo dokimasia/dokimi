@@ -73,7 +73,7 @@ func TestGolang(t *testing.T) {
 		got := generate(t, golang.Target, goTree, statusPackage).models[statusName].Names
 		assert.Equal(t, got, enum.Names{
 			Render: "String", Parse: "ParseStatus", Values: "StatusValues", Valid: "IsValid",
-			Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+			Encode: "MarshalText", Decode: "UnmarshalText", Strict: "StrictKanon", Sentinel: "ErrUnknownStatus",
 		}, "the surface of Status has the names of Go")
 	})
 
@@ -83,7 +83,7 @@ func TestGolang(t *testing.T) {
 		got := generate(t, golang.Target, goTree, machinePackage).models["state"].Names
 		assert.Equal(t, got, enum.Names{
 			Render: "String", Parse: "parseState", Values: "stateValues", Valid: "IsValid",
-			Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "errUnknownState",
+			Encode: "MarshalText", Decode: "UnmarshalText", Strict: "StrictKanon", Sentinel: "errUnknownState",
 		}, "the surface of state has unexported functions and the methods of Go")
 	})
 

@@ -29,14 +29,16 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0018](0018-the-typescript-binding-of-the-suite.md) | The TypeScript binding of the suite generator | Accepted |
 | [0019](0019-calls-that-fail-on-demand.md) | Calls that fail on demand | Accepted |
 | [0020](0020-sequences-against-a-reference.md) | Generated sequences and the judges of their histories | Accepted |
-| [0021](0021-concurrent-callers.md) | Concurrent callers and the consistency of their histories | Draft |
+| [0021](0021-concurrent-callers.md) | Concurrent callers and the consistency of their histories | Accepted |
 | [0022](0022-verified-fakes.md) | Verified fakes | Draft |
 | [0023](0023-a-breakable-medium.md) | A breakable medium | Draft |
 | [0024](0024-dead-and-subsumed-checks.md) | Dead and subsumed checks from mutation records | Draft |
-| [0025](0025-a-simulation-of-sans-io-machines.md) | A deterministic simulation of sans-IO machines | Draft |
+| [0025](0025-a-simulation-of-sans-io-machines.md) | A deterministic simulation of sans-IO machines | Accepted |
 | [0026](0026-workloads-on-a-real-cluster.md) | The workloads and checkers of a simulation on a real cluster | Draft |
 | [0027](0027-the-go-probes.md) | The Go probes | Accepted |
 | [0028](0028-claims-for-the-classifications-without-one.md) | Claims of a single caller for the classifications without one | Accepted |
 | [0029](0029-calls-that-run-until-their-context-ends.md) | Calls that run until their context ends | Accepted |
 | [0030](0030-the-doors-of-a-value.md) | The doors of a value | Accepted |
-| [0031](0031-judges-of-deliveries-iterations-totals-and-faults.md) | Judges of deliveries, iterations, totals and failed calls | Draft |
+| [0031](0031-judges-of-deliveries-iterations-totals-and-faults.md) | Judges of deliveries, iterations, totals and failed calls | Accepted |
+| [0032](0032-derived-claims-that-a-declaration-narrows.md) | Derived claims that a declaration narrows | Draft |
+| [0033](0033-the-isolation-levels-of-transactions.md) | The isolation levels of transactions | Draft |

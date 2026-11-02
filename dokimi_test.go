@@ -34,6 +34,7 @@ import (
 	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/generator/enum"
 	"go.dokimi.dev/dokimi/generator/sentinel"
+	"go.dokimi.dev/dokimi/generator/sim"
 	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/generator/suite"
 )
@@ -109,6 +110,19 @@ func TestDokimi(t *testing.T) {
 
 			suites := func(g plugin.Generator) bool { return g.Name() == suite.ID }
 			expect.False(t, slices.ContainsFunc(dokimi.Plans()[1].Generators, suites), "the plan writes no suite")
+		})
+
+		t.Run("returns a plan go that runs sim", func(t *testing.T) {
+			t.Parallel()
+
+			generator(t, dokimi.Plans()[0], sim.ID)
+		})
+
+		t.Run("returns a plan typescript that runs no sim", func(t *testing.T) {
+			t.Parallel()
+
+			sims := func(g plugin.Generator) bool { return g.Name() == sim.ID }
+			expect.False(t, slices.ContainsFunc(dokimi.Plans()[1].Generators, sims), "the plan writes no simulation")
 		})
 
 		sources := []struct {

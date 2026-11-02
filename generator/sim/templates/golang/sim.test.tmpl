@@ -1,0 +1,25 @@
+{{- $testing := import "testing"}}{{$sim := import "go.dokimi.dev/sim"}}
+{{- range .Records}}
+{{- $d := .Decl}}
+{{- $c := .Data}}
+{{- $simulation := spell (simField $d "simulation")}}
+
+{{docs (wrapdocs (printf `TestSimulation runs the simulation of %s over random runs and the crash points of each scenario.` $c.Machine))}}
+{{- ""}}func TestSimulation(t *{{$testing}}.T) {
+	t.Parallel()
+
+	{{$sim}}.Test(t, {{$simulation}}())
+}
+
+{{docs (wrapdocs (printf `TestSimulationFalsify proves each rule of a runtime and each invariant of the simulation of %s on its planted defect.` $c.Machine))}}
+{{- ""}}func TestSimulationFalsify(t *{{$testing}}.T) {
+	t.Parallel()
+
+	{{$sim}}.Falsify(t, {{$simulation}}())
+}
+
+{{docs (wrapdocs (printf `FuzzSimulation takes the choices of a run of the simulation of %s from the input of the fuzz target.` $c.Machine))}}
+{{- ""}}func FuzzSimulation(f *{{$testing}}.F) {
+	{{$sim}}.Fuzz(f, {{$simulation}}())
+}
+{{- end}}

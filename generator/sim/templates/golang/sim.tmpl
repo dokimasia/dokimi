@@ -1,0 +1,245 @@
+{{- $sim := import "go.dokimi.dev/sim"}}
+{{- range .Records}}
+{{- $c := .Data}}
+{{- $E := spell $c.Event}}
+{{- $F := spell $c.Effect}}
+{{- $S := "struct{}"}}{{with $c.State}}{{$S = spell .}}{{end}}
+{{- with $c.Spec}}{{if .From}}{{$S = printf "[]%s.Operation" (import "go.dokimi.dev/assert/history")}}{{end}}{{end}}
+{{- $W := printf "*%s.World[%s, %s]" $sim $E $F}}
+
+{{docs (wrapdocs (printf `%s is how a world reads the events and the effects of %s.` $c.Names.Anatomy $c.Machine))}}
+{{- ""}}var {{$c.Names.Anatomy}} = {{$sim}}.Anatomy[{{$E}}, {{$F}}]{
+	Started: func(reply uint64) {{$E}} {
+		return {{spell $c.Started.Type}}{ {{- $c.Started.Field}}: {{spell $c.Started.Token}}(reply)}
+	},
+	Stopped: func() {{$E}} { return {{spell $c.Stopped}}{} },
+{{- with $c.Cancelled}}
+	Cancelled: func(reply uint64) {{$E}} {
+		return {{spell .Type}}{ {{- .Field}}: {{spell .Token}}(reply)}
+	},
+{{- end}}
+{{- if $c.Calls}}
+	Call: func(ev {{$E}}) (uint64, bool) {
+		switch ev := ev.(type) {
+{{- range $c.Calls}}
+		case {{spell .Type}}:
+			return uint64(ev.{{.Field}}), true
+{{- end}}
+		default:
+			return 0, false
+		}
+	},
+{{- else}}
+	Call: func({{$E}}) (uint64, bool) { return 0, false },
+{{- end}}
+{{- if $c.Replies}}
+	Reply: func(f {{$F}}) (uint64, any, error, bool) {
+		switch f := f.(type) {
+{{- range $c.Replies}}
+		case {{spell .Type}}:
+			return uint64(f.{{.To}}), f.{{.Value}}, f.{{.Err}}, true
+{{- end}}
+		default:
+			return 0, nil, nil, false
+		}
+	},
+{{- else}}
+	Reply: func({{$F}}) (uint64, any, error, bool) { return 0, nil, nil, false },
+{{- end}}
+{{- with $c.Unknown}}
+	Unknown: func(err error) bool {
+		return {{range $i, $u := .}}{{if $i}} || {{end}}{{import "errors"}}.Is(err, {{spell $u}}){{end}}
+	},
+{{- end}}
+{{- if $c.Tokens}}
+	Token: func(f {{$F}}) (uint64, bool) {
+		switch f := f.(type) {
+{{- range $c.Tokens}}
+		case {{spell .Type}}:
+			return uint64(f.{{.Field}}), true
+{{- end}}
+		default:
+			return 0, false
+		}
+	},
+{{- else}}
+	Token: func({{$F}}) (uint64, bool) { return 0, false },
+{{- end}}
+{{- $called := false}}{{range $c.Performs}}{{if .Call}}{{$called = true}}{{end}}{{end}}
+{{- if $called}}
+	Dependency: func(f {{$F}}) (string, bool) {
+		switch f.(type) {
+{{- range $p := $c.Performs}}{{with $p.Call}}
+		case {{spell $p.Type}}:
+			return {{printf "%q" .Name}}, true
+{{- end}}{{end}}
+		default:
+			return "", false
+		}
+	},
+	Fail: func(f {{$F}}, err error) ({{$E}}, bool) {
+		switch f := f.(type) {
+{{- range $p := $c.Performs}}{{with $p.Call}}
+		case {{spell $p.Type}}:
+			return {{spell .Event}}{ {{- .Token}}: f.{{.EffectToken}}, {{.Err}}: err}, true
+{{- end}}{{end}}
+		default:
+			return nil, false
+		}
+	},
+	Errors: func(f {{$F}}) []error {
+		switch f.(type) {
+{{- range $p := $c.Performs}}{{with $p.Call}}{{if .Errors}}
+		case {{spell $p.Type}}:
+			return []error{ {{- range $i, $e := .Errors}}{{if $i}}, {{end}}{{spell $e}}{{end -}} }
+{{- end}}{{end}}{{end}}
+		default:
+			return nil
+		}
+	},
+{{- else}}
+	Dependency: func({{$F}}) (string, bool) { return "", false },
+	Fail:       func({{$F}}, error) ({{$E}}, bool) { return nil, false },
+	Errors:     func({{$F}}) []error { return nil },
+{{- end}}
+{{- if $c.Timeouts}}
+	Timeout: func(f {{$F}}) {{$time := import "time"}}{{$time}}.Duration {
+		switch f := f.(type) {
+{{- range $c.Performs}}{{if .Timeout}}
+		case {{spell .Type}}:
+			return f.{{.Timeout}}
+{{- end}}{{end}}
+		default:
+			return 0
+		}
+	},
+{{- else}}
+	Timeout: func({{$F}}) {{$time := import "time"}}{{$time}}.Duration { return 0 },
+{{- end}}
+	Perform: {{$c.Names.Perform}},
+}
+
+{{docs (wrapdocs (printf `%s performs the effect f of the process p of %s through the function or the call of its directive perform.` $c.Names.Perform $c.Machine))}}
+{{- ""}}func {{$c.Names.Perform}}(w {{$W}}, p *{{$sim}}.Process[{{$E}}, {{$F}}], f {{$F}}) {{$sim}}.Outcome[{{$E}}] {
+{{- if $c.Performs}}
+	switch f := f.(type) {
+{{- range $c.Performs}}
+	case {{spell .Type}}:
+{{- with .Call}}
+		ev := {{spell .Event}}{ {{- .Token}}: f.{{.EffectToken}}}
+		{{range $i, $v := .Values}}{{if $i}}, {{end}}ev.{{$v}}{{end}}{{if .Fails}}{{if .Values}}, {{end}}ev.{{.Err}}{{end}}{{if or .Values .Fails}} = {{end}}{{$sim}}.Dependency[{{spell .Dependency}}](w, p).{{.Method}}({{range $i, $a := .Args}}{{if $i}}, {{end}}{{if $a.Context}}w.Context(){{else}}f.{{$a.Field}}{{end}}{{end}})
+		return {{$sim}}.Outcome[{{$E}}]{Event: ev}
+{{- else}}
+		return {{.Func}}(w, p, f)
+{{- end}}
+{{- end}}
+	default:
+		return {{$sim}}.Outcome[{{$E}}]{}
+	}
+{{- else}}
+	return {{$sim}}.Outcome[{{$E}}]{}
+{{- end}}
+}
+
+{{docs (wrapdocs (printf `%s returns the simulation of the system of the machines of %s, with its checks.` $c.Names.Simulation $c.Machine))}}
+{{- ""}}func {{$c.Names.Simulation}}() {{$sim}}.Simulation[{{$E}}, {{$F}}, {{$S}}] {
+	return {{$sim}}.Simulation[{{$E}}, {{$F}}, {{$S}}]{
+		Anatomy: {{$c.Names.Anatomy}},
+		System:  {{$c.System}},
+{{- with $c.Spec}}
+{{- if .From}}
+		Spec: {{$history := import "go.dokimi.dev/assert/history"}}{{$history}}.SpecFrom({{.Func}}),
+{{- else}}
+		Spec: {{.Func}}(),
+{{- end}}
+{{- end}}
+{{- with $c.Fingerprint}}
+		Fingerprint: {{.}},
+{{- end}}
+{{- if $c.Tolerate}}
+		Tolerate: map[{{$sim}}.Fault]int{
+{{- range $c.Tolerate}}
+			{{$sim}}.{{.Fault}}: {{.N}},
+{{- end}}
+		},
+{{- end}}
+{{- if $c.Require}}
+		Require: map[{{$sim}}.Fault]float64{
+{{- range $c.Require}}
+			{{$sim}}.{{.Fault}}: {{.Share}},
+{{- end}}
+		},
+{{- end}}
+{{- if $c.Actions}}
+		Actions: []{{$sim}}.Action[{{$E}}, {{$F}}]{
+{{- range $c.Actions}}
+			{
+				Name: {{simQuote .Func}},
+{{- if .Call}}
+				Call: true,
+{{- end}}
+{{- if .Final}}
+				Drain: true,
+{{- end}}
+				Input: func(c *{{$prop := import "go.dokimi.dev/assert/prop"}}{{$prop}}.Case) any { return {{.Func}}(c) },
+{{- if .Call}}
+				Run: func(w {{$W}}, client int, in any) {
+					run, _ := in.(func({{$W}}, int))
+					run(w, client)
+				},
+{{- else}}
+				Run: func(w {{$W}}, _ int, in any) {
+					run, _ := in.(func({{$W}}))
+					run(w)
+				},
+{{- end}}
+			},
+{{- end}}
+		},
+{{- end}}
+		Rules: []{{$sim}}.Rule{
+{{- range $c.Rules}}
+			{
+				ID:        {{simQuote .ID}},
+				Statement: {{simQuote .Statement}},
+				Claim:     {{simQuote .Claim}},
+				Probe:     {{simQuote .Probe}},
+				Reason:    {{simQuote .Reason}},
+				Form:      {{simQuote .Form}},
+			},
+{{- end}}
+		},
+{{- if $c.Invariants}}
+		Invariants: []{{$sim}}.Invariant[{{$E}}, {{$F}}]{
+{{- range $c.Invariants}}
+			{Statement: {{simQuote .Statement}}, Check: {{.Func}}, Defect: {{.Defect}}},
+{{- end}}
+		},
+{{- end}}
+{{- if $c.Converges}}
+		Converges: []{{$sim}}.Convergence[{{$E}}, {{$F}}]{
+{{- range $c.Converges}}
+			{Statement: {{simQuote .Statement}}, Check: {{.Func}}{{with .Within}}, Within: {{.}}(){{end}}},
+{{- end}}
+		},
+{{- end}}
+{{- if $c.Scenarios}}
+		Scenarios: []{{$sim}}.Scenario[{{$E}}, {{$F}}]{
+{{- range $c.Scenarios}}
+			{Name: {{simQuote .Func}}, Run: {{.Func}}},
+{{- end}}
+		},
+{{- end}}
+{{- if eq $c.Strategy "uniform"}}
+		Strategy: {{$sim}}.Uniform(),
+{{- else if eq $c.Strategy "pct"}}
+		Strategy: {{$sim}}.PCT({{$c.Depth}}),
+{{- end}}
+{{- if eq $c.Isolation "serializable"}}
+		Isolation: {{$sim}}.Serializable,
+{{- else if eq $c.Isolation "snapshot-isolation"}}
+		Isolation: {{$sim}}.SnapshotIsolation,
+{{- end}}
+	}
+}
+{{- end}}

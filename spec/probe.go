@@ -66,6 +66,19 @@ const (
 	// KindReference is a function that applies an operation of the history
 	// to a subject by the name of its callable.
 	KindReference InputKind = "reference"
+
+	// KindPull is a function that starts a pull iteration of the stream of
+	// the subject, and returns the function that yields its next value and
+	// the function that ends it.
+	KindPull InputKind = "pull"
+
+	// KindChannel is a function that subscribes to the subject and returns
+	// the channel of the subscription.
+	KindChannel InputKind = "channel"
+
+	// KindHandleMethod is a method of the handle that a callable returns,
+	// such as the read of the next update of a subscription.
+	KindHandleMethod InputKind = "handle-method"
 )
 
 // Input is one input of a probe.

@@ -247,3 +247,45 @@ reasons:
   forbidden-transition:
     meaning: A call moved the state to a state that the graph does not list as a successor.
     since: 1.0.0
+  not-conserved:
+    meaning: A call of the callable changed the total that the reader of the quantity reads.
+    since: 1.1.0
+  stale-iteration:
+    meaning: The rest of an iteration missed a value that a mutation wrote, or yielded a value that a delete removed.
+    since: 1.1.0
+  lost-message:
+    meaning: An appended message did not arrive on the channel of a subscription.
+    since: 1.1.0
+  wrong-delivery-count:
+    meaning: A published event arrived another number of times than the delivery mode allows.
+    since: 1.1.0
+  not-redelivered:
+    meaning: A redelivered event did not arrive once more.
+    since: 1.1.0
+  missed-update:
+    meaning: A subscription missed an update, returned updates out of order, or returned an update after its stop.
+    since: 1.1.0
+  second-reply:
+    meaning: A machine returned a second reply to an inbound call.
+    since: 1.1.0
+  call-without-reply:
+    meaning: A machine took the stop event and did not reply to an inbound call that it had not replied to.
+    since: 1.1.0
+  effect-after-stop:
+    meaning: A machine returned an effect other than a reply on or after the stop event.
+    since: 1.1.0
+  effect-after-error:
+    meaning: A machine returned an effect after the step in which its error method returned an error.
+    since: 1.1.0
+  reused-token:
+    meaning: An effect that starts a call or a wait had the token of an earlier effect of its machine in the same epoch.
+    since: 1.1.0
+  not-linearizable:
+    meaning: The history of the concurrent calls had no order that keeps their real-time order and in which the reference returns the same results.
+    since: 1.1.0
+  inconsistent-concurrent-read:
+    meaning: A read that ran beside other reads returned another output than it returns with the same arguments when it runs alone.
+    since: 1.1.0
+  repeated-computation:
+    meaning: Calls with one key that ran at once computed their result more than once.
+    since: 1.1.0

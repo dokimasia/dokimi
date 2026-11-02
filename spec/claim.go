@@ -66,6 +66,11 @@ type Claim struct {
 
 func (c *Claim) key() ClaimID { return c.ID }
 
+// ScopeDeclaration is the scope of a claim on the whole declaration. A
+// classification of one of its callables licenses such a claim once for the
+// declaration.
+const ScopeDeclaration = "declaration"
+
 // Classification is a shape, a mixin, or a role of a contract of the shape
 // catalog. Exactly one of Shape, Mixin and Contract is set.
 type Classification struct {

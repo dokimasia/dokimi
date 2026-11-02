@@ -441,3 +441,83 @@ forms:
     does: The callable makes its transition twice from its fourth call on.
     min-steps: 4
     since: 1.0.0
+  leaks-one-unit:
+    changes: partner:observe
+    does: The reader of the total returns one unit more than on the call before it, on every call.
+    min-steps: 2
+    since: 1.1.0
+  half-applied-after-three:
+    changes: partner:read
+    does: The reader returns its second sample once a call of a dependency failed, from its fourth call on.
+    min-steps: 4
+    since: 1.1.0
+  iterates-a-copy:
+    changes: callable
+    does: The callable returns a stream over a copy of its source, on every call.
+    min-steps: 1
+    since: 1.1.0
+  drops-appends-after-three:
+    changes: callable
+    does: The callable returns no error and records nothing from its fourth call on.
+    min-steps: 4
+    since: 1.1.0
+  breaks-the-mode-after-three:
+    changes: callable
+    does: From its fourth call on, the callable publishes nothing under at-least-once and exactly-once, and publishes each event twice under at-most-once.
+    min-steps: 4
+    since: 1.1.0
+  skips-a-redelivery-after-three:
+    changes: callable
+    does: The callable returns no error and does nothing from its fourth call on.
+    min-steps: 4
+    since: 1.1.0
+  misses-updates-after-three:
+    changes: partner:trigger
+    does: The trigger returns no error and does nothing from its fourth call on.
+    min-steps: 4
+    since: 1.1.0
+  replies-twice:
+    changes: machine
+    does: The machine returns each reply of a step twice.
+    min-steps: 1
+    since: 1.1.0
+  forgets-a-call-on-stop:
+    changes: machine
+    does: The machine drops the replies that it returns on the stop event.
+    min-steps: 2
+    since: 1.1.0
+  writes-after-stop:
+    changes: machine
+    does: On the stop event, the machine returns once more the last effect with a token that it returned before.
+    min-steps: 2
+    since: 1.1.0
+  steps-after-error:
+    changes: machine
+    does: The error method of the machine returns an error from its first step on, and the machine keeps returning the effects of each step.
+    min-steps: 2
+    since: 1.1.0
+  reuses-a-token:
+    changes: machine
+    does: In each step that starts a call or a wait, the machine returns the first such effect of its run once more.
+    min-steps: 2
+    since: 1.1.0
+  racy-read-write:
+    changes: declaration
+    does: Every callable but the first callable of the declaration with a value result marks its call, yields, and then calls the subject. The first callable with a value result returns its second sample while another call is marked.
+    min-steps: 2
+    since: 1.1.0
+  racy-read:
+    changes: callable
+    does: The callable keeps the results of the subject in a field of the defect, yields, and returns the field, so a call that overlaps another returns the results of the other.
+    min-steps: 2
+    since: 1.1.0
+  computes-per-call:
+    changes: callable
+    does: The callable calls a fresh subject for each call, so each call computes its result.
+    min-steps: 2
+    since: 1.1.0
+  check-then-grant:
+    changes: callable
+    does: Each call of the callable marks itself and yields. A call that finds another call marked returns the zero value of each result and no error without the subject. Any other call calls the subject.
+    min-steps: 2
+    since: 1.1.0

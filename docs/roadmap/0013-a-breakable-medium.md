@@ -2,7 +2,7 @@
 milestone: 0013
 title: A durable subject survives a breakable medium
 status: Planned
-depends-on: 0003
+depends-on: 0003, 0015
 released-in: unscheduled
 deadline: none
 deadline-source: none
@@ -30,10 +30,11 @@ A Go team whose subject writes to storage through `medium.FS` gets checks that e
 - [ ] An application with `Durable` runs the checks of the doors `Restart` and `Crash` without `Restartable` or `Crashable`.
 - [ ] The probe enumerates every crash point of every sequence of up to three calls, and the suite record states the count.
 - [ ] The fixture `door/durable` of the corpus uses `medium.Memory` in place of its own medium.
+- [ ] The world of the simulation strikes the faults of the breakable medium at a dependency that persists through `medium.FS`.
 
 ## Why now
 
-The claims are derived checks, so milestone 0003 has to exist first. It is the costliest machinery for a consumer, because the subject must take a `medium.FS`. Nothing waits on it.
+The claims are derived checks, so milestone 0003 has to exist first. It is the costliest machinery for a consumer, because the subject must take a `medium.FS`. The world of the simulation has to exist before it takes the faults of the medium, so milestone 0015 comes first. Nothing waits on it.
 
 ## Scope
 
@@ -50,3 +51,4 @@ The module `medium`, the option `Durable` with the doors that it implements, the
 |---|---|---|
 | 2026-10-28 | Created at position 13 | The first roadmap of dokimi |
 | 2026-10-28 | Moved to position 14 | Milestone 0015 took position 11, because the first milestone of sharder waits on it |
+| 2026-11-02 | Scope: the faults of the medium in the simulation | RFC-0025 strikes the faults of the breakable medium in the simulation, and this milestone builds the medium after milestone 0015 builds the world |

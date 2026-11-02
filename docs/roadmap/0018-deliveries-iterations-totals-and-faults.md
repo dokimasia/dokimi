@@ -1,7 +1,7 @@
 ---
 milestone: 0018
 title: Deliveries, iterations, totals and failed calls are judged over generated sequences
-status: Planned
+status: Done
 depends-on: 0010
 released-in: unscheduled
 deadline: none
@@ -23,13 +23,13 @@ A Go team whose declaration has an outbox, a publisher, a watcher, a stream that
 
 ## Done when
 
-- [ ] RFC-0031 is accepted.
+- [x] RFC-0031 is accepted.
 - [x] The mixin `conservative` of the shape catalog has the param `observe`.
-- [ ] The package `probe` has the seven probes of RFC-0031, and the probes of deliveries run inside a bubble of `testing/synctest`.
-- [ ] The suite generator writes a check for each claim of RFC-0031 whose mixin or contract the declaration has.
-- [ ] `no-trace-of-a-failed-call` entails `no-partial-write`, and the pair passes the proof of its depth.
-- [ ] Each defect form fails its check at the seed of falsification with its reason code, and every check of a single caller passes on it.
-- [ ] A fixture of the corpus for each mixin and each contract of RFC-0031 runs its check.
+- [x] The package `probe` has the seven probes of RFC-0031, and the probes of deliveries run inside a bubble of `testing/synctest`.
+- [x] The suite generator writes a check for each claim of RFC-0031 whose mixin or contract the declaration has.
+- [x] `no-trace-of-a-failed-call` entails `no-partial-write`, and the pair passes the proof of its depth.
+- [x] Each defect form fails its check at the seed of falsification with its reason code, and every check of a single caller passes on it.
+- [x] A fixture of the corpus for each mixin and each contract of RFC-0031 runs its check.
 
 ## Why now
 
@@ -50,3 +50,6 @@ The seven claims, laws, reasons, probes and defect forms of RFC-0031, the input 
 |---|---|---|
 | 2026-11-01 | Created at position 12 | The review of RFC-0020 found that the judges `conserved`, `after-fault`, `delivered` and `reflects` have no mechanism, and RFC-0031 designs them |
 | 2026-11-01 | The mixin `conservative` has the param `observe` | eidos added it at be6064ca |
+| 2026-11-01 | In progress | RFC-0031 is accepted. Milestones 0010 and 0017 are done |
+| 2026-11-02 | `redelivers-on-demand` applies to a publisher at least once alone | Under the other modes a second delivery breaks the mode, so the check of the mode judges each redelivery |
+| 2026-11-02 | Done | The corpus is conformant at level 4 with the checks of the seven claims. The read-through cache runs the check of a failed call, because it is the fixture with the mixin `atomic` and the machinery `faults` |

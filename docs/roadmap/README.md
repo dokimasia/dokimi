@@ -27,6 +27,7 @@ flowchart LR
     M0016[0016 Checks over generated inputs]
     M0017[0017 Every classification has a claim]
     M0018[0018 Deliveries, iterations, totals and faults]
+    M0019[0019 Isolation levels of transactions]
     M0002 --> M0003
     M0003 --> M0004
     M0003 --> M0005
@@ -41,6 +42,7 @@ flowchart LR
     M0003 --> M0012
     M0004 --> M0012
     M0003 --> M0013
+    M0015 --> M0013
     M0005 --> M0014
     M0009 --> M0015
     M0010 --> M0015
@@ -49,12 +51,13 @@ flowchart LR
     M0003 --> M0017
     M0009 --> M0011
     M0010 --> M0018
+    M0011 --> M0019
 ```
 
 | Order | Milestone | Status | Depends on | Released in |
 |---|---|---|---|---|
 | 1 | [0001](0001-a-lost-check-fails-the-gate.md) A lost check fails the generation gate | Done | none | unscheduled |
-| 2 | [0002](0002-every-classification-has-a-law.md) Every classification has a law or a stance | In progress | none | unscheduled |
+| 2 | [0002](0002-every-classification-has-a-law.md) Every classification has a law or a stance | Done | none | 0.7.0 |
 | 3 | [0003](0003-go-declarations-get-derived-checks.md) A Go declaration gets derived checks | Done | 0002 | unscheduled |
 | 4 | [0004](0004-vacuous-and-over-strong-checks-fail.md) Vacuous and over-strong checks fail | Done | 0003 | unscheduled |
 | 5 | [0005](0005-a-run-writes-its-suite-record.md) A run writes its suite record | Done | 0003, 0004 | unscheduled |
@@ -62,15 +65,16 @@ flowchart LR
 | 7 | [0007](0007-the-corpus-judges-each-language.md) The corpus judges each language by its records | Done | 0001, 0004, 0005 | unscheduled |
 | 8 | [0009](0009-calls-fail-on-demand.md) A check can make a call fail on demand | Done | 0003 | unscheduled |
 | 9 | [0016](0016-derived-checks-over-generated-inputs.md) A derived check runs over generated inputs | Done | 0003, 0005 | unscheduled |
-| 10 | [0017](0017-every-classification-has-a-claim.md) Every classification of the shape catalog has a claim | In progress | 0003 | unscheduled |
+| 10 | [0017](0017-every-classification-has-a-claim.md) Every classification of the shape catalog has a claim | Done | 0003 | unscheduled |
 | 11 | [0010](0010-sequences-against-a-reference.md) Laws of a history are judged over generated sequences | Done | 0003 | unscheduled |
-| 12 | [0018](0018-deliveries-iterations-totals-and-faults.md) Deliveries, iterations, totals and failed calls are judged over generated sequences | Planned | 0010 | unscheduled |
-| 13 | [0015](0015-a-simulation-of-sans-io-machines.md) A system of sans-IO machines runs in a deterministic simulation | Planned | 0009, 0010 | unscheduled |
-| 14 | [0011](0011-concurrent-callers.md) Concurrent callers are checked for linearizability | Planned | 0009, 0010 | unscheduled |
-| 15 | [0012](0012-verified-fakes.md) A downstream team uses a verified fake | Planned | 0003, 0004 | unscheduled |
-| 16 | [0013](0013-a-breakable-medium.md) A durable subject survives a breakable medium | Planned | 0003 | unscheduled |
-| 17 | [0014](0014-dead-and-subsumed-checks.md) A report names dead and subsumed checks | Planned | 0005 | unscheduled |
-| 18 | [0008](0008-typescript-declarations-get-proven-suites.md) A TypeScript declaration gets a proven suite | Planned | 0007 | unscheduled |
+| 12 | [0018](0018-deliveries-iterations-totals-and-faults.md) Deliveries, iterations, totals and failed calls are judged over generated sequences | Done | 0010 | unscheduled |
+| 13 | [0015](0015-a-simulation-of-sans-io-machines.md) A system of sans-IO machines runs in a deterministic simulation | In progress | 0009, 0010 | unscheduled |
+| 14 | [0011](0011-concurrent-callers.md) Concurrent callers are checked for linearizability | In progress | 0009, 0010 | unscheduled |
+| 15 | [0019](0019-the-isolation-levels-of-transactions.md) Transactions are checked for their isolation level | Planned | 0011 | unscheduled |
+| 16 | [0012](0012-verified-fakes.md) A downstream team uses a verified fake | Planned | 0003, 0004 | unscheduled |
+| 17 | [0013](0013-a-breakable-medium.md) A durable subject survives a breakable medium | Planned | 0003, 0015 | unscheduled |
+| 18 | [0014](0014-dead-and-subsumed-checks.md) A report names dead and subsumed checks | Planned | 0005 | unscheduled |
+| 19 | [0008](0008-typescript-declarations-get-proven-suites.md) A TypeScript declaration gets a proven suite | Planned | 0007 | unscheduled |
 
 ## Capabilities without a milestone
 

@@ -80,4 +80,9 @@ func (v *Region) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:977f18a205b65db1c9d7a6811be2a94d25767f0300cf6a07ca2a7741a54caa76
+// StrictKanon marks Region as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Region again.
+func (Region) StrictKanon() {}
+
+// dokimi:provenance sha256:0b84deea416e2316eeb7b5c3312a387ab9d2fa2ebb39dcc927f66bde1b767774

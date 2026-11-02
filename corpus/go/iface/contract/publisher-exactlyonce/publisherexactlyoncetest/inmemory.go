@@ -24,8 +24,13 @@ var ErrFull = errors.New("publisherexactlyoncetest: a subscriber is too far behi
 // InMemory implements [publisherexactlyonce.Contract] in memory. The corpus
 // applies the suite of Contract to it as a subject.
 //
+// Replay offers again a message that Publish took and did not deliver. It
+// delivers nothing for a delivered message and for a message that Publish did
+// not take.
+//
 //dokimi:subject publisherexactlyonce.Contract new=NewInMemory
 type InMemory struct {
+	published   map[publisherexactlyonce.Value]bool
 	delivered   map[publisherexactlyonce.Value]bool
 	subscribers []chan publisherexactlyonce.Value
 	mu          sync.Mutex
@@ -36,7 +41,10 @@ var _ publisherexactlyonce.Contract = (*InMemory)(nil)
 
 // NewInMemory returns a new InMemory.
 func NewInMemory() *InMemory {
-	return &InMemory{delivered: map[publisherexactlyonce.Value]bool{}}
+	return &InMemory{
+		published: map[publisherexactlyonce.Value]bool{},
+		delivered: map[publisherexactlyonce.Value]bool{},
+	}
 }
 
 // Publish implements [publisherexactlyonce.Contract].
@@ -46,6 +54,7 @@ func (s *InMemory) Publish(ctx context.Context, v publisherexactlyonce.Value) er
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.published[v] = true
 	return s.deliver(v)
 }
 
@@ -56,7 +65,7 @@ func (s *InMemory) Replay(ctx context.Context, v publisherexactlyonce.Value) err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.delivered[v] {
+	if !s.published[v] || s.delivered[v] {
 		return nil
 	}
 	return s.deliver(v)
@@ -74,15 +83,17 @@ func (s *InMemory) Subscribe(ctx context.Context) (<-chan publisherexactlyonce.V
 	return ch, nil
 }
 
-// deliver sends v to each subscriber and records v as delivered. The caller
-// has the lock.
+// deliver sends v to each subscriber and records v as delivered. It sends v
+// to no subscriber where the buffer of one is full, so each subscriber gets v
+// or none does. The caller has the lock, and only deliver sends.
 func (s *InMemory) deliver(v publisherexactlyonce.Value) error {
 	for _, ch := range s.subscribers {
-		select {
-		case ch <- v:
-		default:
+		if len(ch) == cap(ch) {
 			return ErrFull
 		}
+	}
+	for _, ch := range s.subscribers {
+		ch <- v
 	}
 	s.delivered[v] = true
 	return nil

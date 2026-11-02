@@ -7,8 +7,10 @@ package outboxtest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/outbox"
@@ -27,6 +29,9 @@ import (
 //
 // Contract.Append/cancel#generated: Append returns an error for a
 // cancelled context.
+//
+// Contract.Append/delivers-each-append: each message that Append records
+// arrives on the channel of Subscribe.
 //
 // Contract.Subscribe/smoke: Subscribe returns without a panic for derived
 // inputs.
@@ -51,12 +56,6 @@ import (
 //
 // The shape:writer of Contract.Append has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
-//
-// The contract:outbox/append of Contract.Append has the stance needs. The
-// claims of the contract need generated sequences.
-//
-// The contract:outbox/subscribe of Contract.Subscribe has the stance
-// needs. The claims of the contract need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -106,6 +105,12 @@ func (c contractAppend) Cancel() conform.ID[outbox.Contract] {
 // error for a cancelled context.
 func (c contractAppend) CancelGenerated() conform.ID[outbox.Contract] {
 	return c.Check("cancel#generated")
+}
+
+// DeliversEachAppend returns the identity of the check that each message
+// that Append records arrives on the channel of Subscribe.
+func (c contractAppend) DeliversEachAppend() conform.ID[outbox.Contract] {
+	return c.Check("delivers-each-append")
 }
 
 // contractSubscribe is the name of Contract.Subscribe, with the identities
@@ -198,6 +203,33 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				Defect: contractAppendIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Append.DeliversEachAppend(),
+				Statement:   "each message that Append records arrives on the channel of Subscribe",
+				Claim:       spec.DeliversEachAppend,
+				Probe:       spec.AppendsArrive,
+				Reason:      spec.LostMessage,
+				Law:         spec.EachAppendIsDelivered,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.AppendsArrive(
+						h,
+						c,
+						contractActions,
+						"Append",
+						func(ctx context.Context) (<-chan outbox.Value, error) {
+							r0, err := h.Subject().Subscribe(ctx)
+							return r0, err
+						},
+						func(args []any) outbox.Value {
+							v, _ := args[0].(outbox.Value)
+							return v
+						},
+					)
+				},
+				Defect: contractAppendDropsAppendsAfterThree,
+				Around: synctest.Test,
+			},
+			{
 				ID:          ContractChecks.Subscribe.Smoke(),
 				Statement:   "Subscribe returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -246,18 +278,6 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				Callable:       "Contract.Append",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "contract:outbox/append",
-				Callable:       "Contract.Append",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
-			},
-			{
-				Classification: "contract:outbox/subscribe",
-				Callable:       "Contract.Subscribe",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[outbox.Contract]{
@@ -417,6 +437,33 @@ func contractAppendIgnoresCancel(h *ContractHandle) outbox.Contract {
 	return &contractAppendIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractAppendDropsAppendsAfterThreeDefect is the planted defect of a
+// Contract whose Append records nothing from its fourth call on.
+type contractAppendDropsAppendsAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Append is the override of the planted defect.
+func (d *contractAppendDropsAppendsAfterThreeDefect) Append(p0 context.Context, p1 outbox.Value) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.contractOverEmbedded.Append(p0, p1)
+}
+
+// contractAppendDropsAppendsAfterThree returns the planted defect of a
+// Contract whose Append records nothing from its fourth call on over a
+// fresh subject.
+func contractAppendDropsAppendsAfterThree(h *ContractHandle) outbox.Contract {
+	return &contractAppendDropsAppendsAfterThreeDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractSubscribePanicsDefect is the planted defect of a Contract whose
 // Subscribe panics.
 type contractSubscribePanicsDefect struct {
@@ -454,4 +501,48 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) outbox.Contract {
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:195415de140b3ebfd212184927d647ed9026cd37fa9e43d0f4232e4f60eba8f0
+// contractActions returns the actions of the generated sequences of
+// Contract over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func contractActions(c *prop.Case, subject func() outbox.Contract) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Append",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[outbox.Value](), "append.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Append", args)
+				values, err := contractAppendCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Subscribe",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Subscribe", args)
+				values, err := contractSubscribeCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// contractAppendCall calls Append on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractAppendCall(ctx context.Context, subject outbox.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(outbox.Value)
+	return nil, subject.Append(ctx, a0)
+}
+
+// contractSubscribeCall calls Subscribe on subject with the arguments
+// args, and returns the values of the call beside its error.
+func contractSubscribeCall(ctx context.Context, subject outbox.Contract, args []any) ([]any, error) {
+	r0, err := subject.Subscribe(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:984e37dd06aa39f348759f5df0ea86253680c50514fe881626623f676d99a622

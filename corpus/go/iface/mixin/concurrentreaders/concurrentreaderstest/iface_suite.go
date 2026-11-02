@@ -6,9 +6,11 @@ package concurrentreaderstest
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrentreaders"
@@ -32,6 +34,9 @@ import (
 // Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
 // error.
 //
+// Mixed.Get/reads-agree-under-concurrency: Get returns beside other reads
+// what it returns with the same arguments when it runs alone.
+//
 // Mixed.Put/smoke: Put returns without a panic for derived inputs.
 //
 // Mixed.Put/smoke#generated: Put returns without a panic for derived
@@ -49,9 +54,6 @@ import (
 // Mixed.Put/smoke
 
 // The unclaimed classifications of Mixed:
-//
-// The mixin:concurrent-readers of Mixed.Get has the stance needs. The
-// claims of the mixin need concurrent callers.
 //
 // The shape:composite-writer of Mixed.Put has the stance silent. A write
 // is an input of the other checks, and its result is an error alone.
@@ -115,6 +117,13 @@ func (c mixedGet) ZeroOnError() conform.ID[concurrentreaders.Mixed] {
 // the zero value beside an error.
 func (c mixedGet) ZeroOnErrorGenerated() conform.ID[concurrentreaders.Mixed] {
 	return c.Check("zero-on-error#generated")
+}
+
+// ReadsAgreeUnderConcurrency returns the identity of the check that Get
+// returns beside other reads what it returns with the same arguments when
+// it runs alone.
+func (c mixedGet) ReadsAgreeUnderConcurrency() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("reads-agree-under-concurrency")
 }
 
 // mixedPut is the name of Mixed.Put, with the identities of its checks.
@@ -253,6 +262,29 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 				Defect: mixedGetValueBeside,
 			},
 			{
+				ID:          MixedChecks.Get.ReadsAgreeUnderConcurrency(),
+				Statement:   "Get returns beside other reads what it returns with the same arguments when it runs alone",
+				Claim:       spec.ReadsAgreeUnderConcurrency,
+				Probe:       spec.ConcurrentReadsAgree,
+				Reason:      spec.InconsistentConcurrentRead,
+				Law:         spec.ReadsBesideReadsReturnWhatOneReadReturns,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.ConcurrentReadsAgree(
+						h,
+						c,
+						mixedActions,
+						"Get",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := mixedGetCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+						2,
+					)
+				},
+				Defect: mixedGetRacyRead,
+			},
+			{
 				ID:          MixedChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -319,12 +351,6 @@ func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
-			{
-				Classification: "mixin:concurrent-readers",
-				Callable:       "Mixed.Get",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need concurrent callers.",
-			},
 			{
 				Classification: "shape:composite-writer",
 				Callable:       "Mixed.Put",
@@ -526,6 +552,35 @@ func mixedGetValueBeside(h *MixedHandle) concurrentreaders.Mixed {
 	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedGetRacyReadDefect is the planted defect of a Mixed whose Get
+// returns the results of another read that overlaps it.
+type mixedGetRacyReadDefect struct {
+	mixedOverEmbedded
+	h    *MixedHandle
+	last atomic.Value
+}
+
+// Get is the override of the planted defect.
+func (d *mixedGetRacyReadDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	d.last.Store([]any{r0, r1})
+	d.h.Yield()
+	kept, _ := d.last.Load().([]any)
+	r0, _ = kept[0].(string)
+	r1, _ = kept[1].(error)
+	return r0, r1
+}
+
+// mixedGetRacyRead returns the planted defect of a Mixed whose Get returns
+// the results of another read that overlaps it over a fresh subject.
+func mixedGetRacyRead(h *MixedHandle) concurrentreaders.Mixed {
+	return &mixedGetRacyReadDefect{mixedOverEmbedded: h.Fresh(), h: h}
+}
+
 // mixedPutPanicsDefect is the planted defect of a Mixed whose Put panics.
 type mixedPutPanicsDefect struct {
 	mixedOverEmbedded
@@ -562,4 +617,56 @@ func mixedPutIgnoresCancel(h *MixedHandle) concurrentreaders.Mixed {
 	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:19070a3c8d8922a7c816f5354d13cfcd66201f8673129bf04c7256740fb29c67
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() concurrentreaders.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "put.key")
+				value := c.Draw(prop.Of[string](), "put.value")
+				return []any{key, value}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args, args[0])
+				values, err := mixedPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject concurrentreaders.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// mixedPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedPutCall(ctx context.Context, subject concurrentreaders.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// dokimi:provenance sha256:00daafffd372c47a5e9a04ad9af3ed1a3d27c82071597ec809eb6f6e65030d37

@@ -6,6 +6,7 @@ package leasetest
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
@@ -40,6 +41,12 @@ import (
 //
 // Contract.Acquire/release-frees-the-lease#generated: Acquire grants a
 // lease again after Release released it.
+//
+// Contract.Acquire/one-holder-at-a-time: calls of Acquire with one key at
+// once grant the lease once.
+//
+// Contract.Acquire/one-holder-at-a-time#generated: calls of Acquire with
+// one key at once grant the lease once.
 //
 // Contract.Release/smoke: Release returns without a panic for derived
 // inputs.
@@ -144,6 +151,18 @@ func (c contractAcquire) ReleaseFreesTheLease() conform.ID[lease.Contract] {
 // Acquire grants a lease again after Release released it.
 func (c contractAcquire) ReleaseFreesTheLeaseGenerated() conform.ID[lease.Contract] {
 	return c.Check("release-frees-the-lease#generated")
+}
+
+// OneHolderAtATime returns the identity of the check that calls of Acquire
+// with one key at once grant the lease once.
+func (c contractAcquire) OneHolderAtATime() conform.ID[lease.Contract] {
+	return c.Check("one-holder-at-a-time")
+}
+
+// OneHolderAtATimeGenerated returns the identity of the check that calls
+// of Acquire with one key at once grant the lease once.
+func (c contractAcquire) OneHolderAtATimeGenerated() conform.ID[lease.Contract] {
+	return c.Check("one-holder-at-a-time#generated")
 }
 
 // contractRelease is the name of Contract.Release, with the identities of
@@ -314,6 +333,39 @@ func ContractSuite() conform.Suite[lease.Contract] {
 					})
 				},
 				Defect: contractReleaseReleaseKeepsTheLease,
+			},
+			{
+				ID:          ContractChecks.Acquire.OneHolderAtATime(),
+				Statement:   "calls of Acquire with one key at once grant the lease once",
+				Claim:       spec.OneHolderAtATime,
+				Probe:       spec.ExclusiveUnderConcurrency,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers},
+				Entails:     []conform.ID[lease.Contract]{ContractChecks.Acquire.Lease()},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.ExclusiveUnderConcurrency(h, c, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					}, lease.ErrHeld, 2)
+				},
+				Defect: contractAcquireCheckThenGrant,
+			},
+			{
+				ID:          ContractChecks.Acquire.OneHolderAtATimeGenerated(),
+				Statement:   "calls of Acquire with one key at once grant the lease once",
+				Claim:       spec.OneHolderAtATime,
+				Probe:       spec.ExclusiveUnderConcurrency,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedInputs},
+				Entails:     []conform.ID[lease.Contract]{ContractChecks.Acquire.LeaseGenerated()},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ExclusiveUnderConcurrency(h, c, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, drawnKey)
+					}, lease.ErrHeld, 2)
+				},
+				Defect: contractAcquireCheckThenGrant,
 			},
 			{
 				ID:          ContractChecks.Release.Smoke(),
@@ -592,6 +644,35 @@ func contractReleaseReleaseKeepsTheLease(h *ContractHandle) lease.Contract {
 	return &contractReleaseReleaseKeepsTheLeaseDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractAcquireCheckThenGrantDefect is the planted defect of a Contract
+// whose Acquire grants a lease to two calls at once.
+type contractAcquireCheckThenGrantDefect struct {
+	contractOverEmbedded
+	h      *ContractHandle
+	marked atomic.Int32
+}
+
+// Acquire is the override of the planted defect.
+func (d *contractAcquireCheckThenGrantDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.marked.Add(1)
+	defer d.marked.Add(-1)
+	d.h.Yield()
+	if d.marked.Load() > 1 {
+		return r0
+	}
+	return d.contractOverEmbedded.Acquire(p0, p1)
+}
+
+// contractAcquireCheckThenGrant returns the planted defect of a Contract
+// whose Acquire grants a lease to two calls at once over a fresh subject.
+func contractAcquireCheckThenGrant(h *ContractHandle) lease.Contract {
+	return &contractAcquireCheckThenGrantDefect{contractOverEmbedded: h.Fresh(), h: h}
+}
+
 // contractReleasePanicsDefect is the planted defect of a Contract whose
 // Release panics.
 type contractReleasePanicsDefect struct {
@@ -629,4 +710,4 @@ func contractReleaseIgnoresCancel(h *ContractHandle) lease.Contract {
 	return &contractReleaseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0d860affd89ab7cb35190d1db435549518cf2114c5b2ac8bada9e3790f708a84
+// dokimi:provenance sha256:6304e1a72297b10317262521c9a4c001a2c1d7fff34da337d817b7ab2ca644d7

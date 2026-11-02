@@ -66,6 +66,10 @@ func TestContractSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				outboxtest.ContractChecks.Append.DeliversEachAppend(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				outboxtest.ContractChecks.Subscribe.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -108,6 +112,10 @@ func TestContractSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				outboxtest.ContractChecks.Append.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				outboxtest.ContractChecks.Append.DeliversEachAppend(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -155,6 +163,10 @@ func TestContractSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			outboxtest.ContractChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			outboxtest.ContractChecks.Subscribe.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -186,6 +198,10 @@ func FuzzContractSuiteAppend(f *testing.F) {
 		),
 		conform.Excuse(
 			outboxtest.ContractChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			outboxtest.ContractChecks.Append.DeliversEachAppend(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -224,6 +240,10 @@ func FuzzContractSuiteSubscribe(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			outboxtest.ContractChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			outboxtest.ContractChecks.Subscribe.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -245,4 +265,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:308cf7353cd89a59977fc948661a990f330564a3c701507b279795e27dd84241
+// dokimi:provenance sha256:c98a4e4c893752fcb22977932cd60ae10f797c4352f3f2208d3bceddc7e709ac

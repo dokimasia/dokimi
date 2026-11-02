@@ -69,6 +69,12 @@ declarations:
           read: cache.get
         law: failed-call-leaves-no-effect
         reason: partial-write
+      cache.put/no-trace-of-a-failed-call:
+        claim: no-trace-of-a-failed-call
+        partners:
+          read: cache.get
+        law: failed-call-leaves-no-effect
+        reason: partial-write
       cache.put/retry-succeeds:
         claim: retry-succeeds
         law: call-converges-within-the-declared-attempts

@@ -8,6 +8,7 @@ import (
 	"context"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
@@ -28,11 +29,26 @@ import (
 // Contract.Run/cancel#generated: Run returns an error for a cancelled
 // context.
 //
+// Contract.Run/failure-is-reported: Run returns an error when a call of
+// its dependency fails.
+//
+// Contract.Run/failure-is-reported#generated: Run returns an error when a
+// call of its dependency fails.
+//
+// Contract.Run/computes-once: calls of Run with one key at once share one
+// computation of their result.
+//
+// Contract.Run/computes-once#generated: calls of Run with one key at once
+// share one computation of their result.
+//
 // Contract.Flights/smoke: Flights returns without a panic for derived
 // inputs.
 //
 // Contract.Flights/cancel: Flights returns an error for a cancelled
 // context.
+//
+// Contract.Flights/failure-is-reported: Flights returns an error when a
+// call of its dependency fails.
 //
 // Contract.Flights/zero-on-error: Flights returns the zero value beside an
 // error.
@@ -43,11 +59,6 @@ import (
 // Contract.Run/smoke
 //
 // Contract.Flights/smoke
-
-// The unclaimed classifications of Contract:
-//
-// The contract:single-flight/fn of Contract.Run has the stance needs. The
-// claims of the contract need concurrent callers.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -99,6 +110,30 @@ func (c contractRun) CancelGenerated() conform.ID[singleflight.Contract] {
 	return c.Check("cancel#generated")
 }
 
+// FailureIsReported returns the identity of the check that Run returns an
+// error when a call of its dependency fails.
+func (c contractRun) FailureIsReported() conform.ID[singleflight.Contract] {
+	return c.Check("failure-is-reported")
+}
+
+// FailureIsReportedGenerated returns the identity of the check that Run
+// returns an error when a call of its dependency fails.
+func (c contractRun) FailureIsReportedGenerated() conform.ID[singleflight.Contract] {
+	return c.Check("failure-is-reported#generated")
+}
+
+// ComputesOnce returns the identity of the check that calls of Run with
+// one key at once share one computation of their result.
+func (c contractRun) ComputesOnce() conform.ID[singleflight.Contract] {
+	return c.Check("computes-once")
+}
+
+// ComputesOnceGenerated returns the identity of the check that calls of
+// Run with one key at once share one computation of their result.
+func (c contractRun) ComputesOnceGenerated() conform.ID[singleflight.Contract] {
+	return c.Check("computes-once#generated")
+}
+
 // contractFlights is the name of Contract.Flights, with the identities of
 // its checks.
 type contractFlights struct {
@@ -115,6 +150,12 @@ func (c contractFlights) Smoke() conform.ID[singleflight.Contract] {
 // for a cancelled context.
 func (c contractFlights) Cancel() conform.ID[singleflight.Contract] {
 	return c.Check("cancel")
+}
+
+// FailureIsReported returns the identity of the check that Flights returns
+// an error when a call of its dependency fails.
+func (c contractFlights) FailureIsReported() conform.ID[singleflight.Contract] {
+	return c.Check("failure-is-reported")
 }
 
 // ZeroOnError returns the identity of the check that Flights returns the
@@ -221,6 +262,97 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				Defect: contractRunIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Run.FailureIsReported(),
+				Statement:   "Run returns an error when a call of its dependency fails",
+				Claim:       spec.FailureIsReported,
+				Probe:       spec.ReportsAFailedDependency,
+				Reason:      spec.SwallowedFailure,
+				Law:         spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						_, err := h.Subject().Run(ctx, string("key-a"), func() string { return "" })
+						return err
+					})
+				},
+				Defect: contractRunSwallowsFailure,
+			},
+			{
+				ID:        ContractChecks.Run.FailureIsReportedGenerated(),
+				Statement: "Run returns an error when a call of its dependency fails",
+				Claim:     spec.FailureIsReported,
+				Probe:     spec.ReportsAFailedDependency,
+				Reason:    spec.SwallowedFailure,
+				Law:       spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.GeneratedInputs,
+					spec.NothingBeyondACaller,
+				},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					computeResults := c.Draw(prop.List(prop.Of[string]()), "compute")
+					drawnCompute := func() func() string {
+						var computeAt atomic.Int64
+						return func() (r0 string) {
+							i := int(computeAt.Add(1) - 1)
+							if i >= len(computeResults) {
+								return r0
+							}
+							return computeResults[i]
+						}
+					}
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						_, err := h.Subject().Run(ctx, drawnKey, drawnCompute())
+						return err
+					})
+				},
+				Defect: contractRunSwallowsFailure,
+			},
+			{
+				ID:          ContractChecks.Run.ComputesOnce(),
+				Statement:   "calls of Run with one key at once share one computation of their result",
+				Claim:       spec.ComputesOnce,
+				Probe:       spec.SharesOneComputation,
+				Reason:      spec.RepeatedComputation,
+				Law:         spec.CallsAtOnceShareOneComputation,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.CallThatFailsOnDemand},
+				Apply: func(h *ContractHandle) {
+					probe.SharesOneComputation(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Run(ctx, string("key-a"), func() (r0 string) {
+							_ = h.Injector().Dependency().Call("Run")
+							return r0
+						})
+					}, 2)
+				},
+				Defect: contractRunComputesPerCall,
+				Around: synctest.Test,
+			},
+			{
+				ID:        ContractChecks.Run.ComputesOnceGenerated(),
+				Statement: "calls of Run with one key at once share one computation of their result",
+				Claim:     spec.ComputesOnce,
+				Probe:     spec.SharesOneComputation,
+				Reason:    spec.RepeatedComputation,
+				Law:       spec.CallsAtOnceShareOneComputation,
+				Machineries: []spec.MachineryID{
+					spec.ConcurrentCallers,
+					spec.CallThatFailsOnDemand,
+					spec.GeneratedInputs,
+				},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.SharesOneComputation(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Run(ctx, drawnKey, func() (r0 string) {
+							_ = h.Injector().Dependency().Call("Run")
+							return r0
+						})
+					}, 2)
+				},
+				Defect: contractRunComputesPerCall,
+				Around: synctest.Test,
+			},
+			{
 				ID:          ContractChecks.Flights.Smoke(),
 				Statement:   "Flights returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -254,6 +386,22 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				Defect: contractFlightsIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Flights.FailureIsReported(),
+				Statement:   "Flights returns an error when a call of its dependency fails",
+				Claim:       spec.FailureIsReported,
+				Probe:       spec.ReportsAFailedDependency,
+				Reason:      spec.SwallowedFailure,
+				Law:         spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						_, err := h.Subject().Flights(ctx)
+						return err
+					})
+				},
+				Defect: contractFlightsSwallowsFailure,
+			},
+			{
 				ID:          ContractChecks.Flights.ZeroOnError(),
 				Statement:   "Flights returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
@@ -267,14 +415,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 					}, int(0))
 				},
 				Defect: contractFlightsValueBeside,
-			},
-		},
-		Unclaimed: []conform.Unclaimed{
-			{
-				Classification: "contract:single-flight/fn",
-				Callable:       "Contract.Run",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[singleflight.Contract]{
@@ -450,6 +590,57 @@ func contractRunIgnoresCancel(h *ContractHandle) singleflight.Contract {
 	return &contractRunIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractRunSwallowsFailureDefect is the planted defect of a Contract
+// whose Run returns no error when its dependency fails.
+type contractRunSwallowsFailureDefect struct {
+	contractOverEmbedded
+	h *ContractHandle
+}
+
+// Run is the override of the planted defect.
+func (d *contractRunSwallowsFailureDefect) Run(p0 context.Context, p1 string, p2 func() string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	before := d.h.Injector().Failures()
+	r0, r1 = d.contractOverEmbedded.Run(p0, p1, p2)
+	if r1 != nil && d.h.Injector().Failures() > before {
+		r0 = *new(string)
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// contractRunSwallowsFailure returns the planted defect of a Contract
+// whose Run returns no error when its dependency fails over a fresh
+// subject.
+func contractRunSwallowsFailure(h *ContractHandle) singleflight.Contract {
+	return &contractRunSwallowsFailureDefect{contractOverEmbedded: h.Fresh(), h: h}
+}
+
+// contractRunComputesPerCallDefect is the planted defect of a Contract
+// whose Run computes its result for each call.
+type contractRunComputesPerCallDefect struct {
+	contractOverEmbedded
+	h *ContractHandle
+}
+
+// Run is the override of the planted defect.
+func (d *contractRunComputesPerCallDefect) Run(p0 context.Context, p1 string, p2 func() string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	return d.h.Fresh().Run(p0, p1, p2)
+}
+
+// contractRunComputesPerCall returns the planted defect of a Contract
+// whose Run computes its result for each call over a fresh subject.
+func contractRunComputesPerCall(h *ContractHandle) singleflight.Contract {
+	return &contractRunComputesPerCallDefect{contractOverEmbedded: h.Fresh(), h: h}
+}
+
 // contractFlightsPanicsDefect is the planted defect of a Contract whose
 // Flights panics.
 type contractFlightsPanicsDefect struct {
@@ -487,6 +678,35 @@ func contractFlightsIgnoresCancel(h *ContractHandle) singleflight.Contract {
 	return &contractFlightsIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractFlightsSwallowsFailureDefect is the planted defect of a Contract
+// whose Flights returns no error when its dependency fails.
+type contractFlightsSwallowsFailureDefect struct {
+	contractOverEmbedded
+	h *ContractHandle
+}
+
+// Flights is the override of the planted defect.
+func (d *contractFlightsSwallowsFailureDefect) Flights(p0 context.Context) (r0 int, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	before := d.h.Injector().Failures()
+	r0, r1 = d.contractOverEmbedded.Flights(p0)
+	if r1 != nil && d.h.Injector().Failures() > before {
+		r0 = *new(int)
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// contractFlightsSwallowsFailure returns the planted defect of a Contract
+// whose Flights returns no error when its dependency fails over a fresh
+// subject.
+func contractFlightsSwallowsFailure(h *ContractHandle) singleflight.Contract {
+	return &contractFlightsSwallowsFailureDefect{contractOverEmbedded: h.Fresh(), h: h}
+}
+
 // contractFlightsValueBesideDefect is the planted defect of a Contract
 // whose Flights returns a value beside an error.
 type contractFlightsValueBesideDefect struct {
@@ -508,4 +728,4 @@ func contractFlightsValueBeside(h *ContractHandle) singleflight.Contract {
 	return &contractFlightsValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9348bdf64232b43e6f57cb58de0498bdc0a7fc532913562104be63d6fc8a22d2
+// dokimi:provenance sha256:f86bfd547202b861d8fc0ea47847ab90c4c1071deb13f778c6a1ae0ab02aefbd

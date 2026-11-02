@@ -19,7 +19,7 @@ type Value struct{ Key, Body string }
 // Contract is the fixture interface.
 //
 //dokimi:stub
-//dokimi:suite
+//dokimi:suite machineries=[faults]
 //dokimi:out path=singleflighttest/
 type Contract interface {
 	// Run is the singleflight contract's fn role, and hosts the directive

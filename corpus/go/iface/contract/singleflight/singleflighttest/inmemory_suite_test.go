@@ -17,16 +17,33 @@ import (
 func TestInMemoryConformsToContract(t *testing.T) {
 	t.Parallel()
 
-	singleflighttest.RunContractSuite(
-		t,
-		singleflighttest.NewInMemory,
+	opts := append([]singleflighttest.ContractOption{
 		conform.Isolate[singleflight.Contract](),
-	)
+		conform.Excuse(
+			singleflighttest.ContractChecks.Run.FailureIsReported(),
+			"an InMemory calls no dependency, because each call passes its computation",
+		),
+		conform.Excuse(
+			singleflighttest.ContractChecks.Flights.FailureIsReported(),
+			"Flights reads a count in memory and calls no dependency",
+		),
+	}, singleflighttest.InMemoryOptions()...)
+	singleflighttest.RunContractSuite(t, singleflighttest.NewInMemory, opts...)
 }
 
 // BenchmarkInMemoryConformsToContract measures each callable of the suite
 // of Contract on InMemory.
 func BenchmarkInMemoryConformsToContract(b *testing.B) {
+	opts := append([]singleflighttest.ContractOption{
+		conform.Excuse(
+			singleflighttest.ContractChecks.Run.FailureIsReported(),
+			"an InMemory calls no dependency, because each call passes its computation",
+		),
+		conform.Excuse(
+			singleflighttest.ContractChecks.Flights.FailureIsReported(),
+			"Flights reads a count in memory and calls no dependency",
+		),
+	}, singleflighttest.InMemoryOptions()...)
 	b.Run("Run", func(b *testing.B) {
 		singleflighttest.BenchContractSuite(
 			b,
@@ -34,7 +51,7 @@ func BenchmarkInMemoryConformsToContract(b *testing.B) {
 			func(*singleflighttest.ContractHandle) *singleflighttest.InMemory {
 				return singleflighttest.NewInMemory()
 			},
-		)
+			opts...)
 	})
 	b.Run("Flights", func(b *testing.B) {
 		singleflighttest.BenchContractSuite(
@@ -43,32 +60,52 @@ func BenchmarkInMemoryConformsToContract(b *testing.B) {
 			func(*singleflighttest.ContractHandle) *singleflighttest.InMemory {
 				return singleflighttest.NewInMemory()
 			},
-		)
+			opts...)
 	})
 }
 
 // FuzzInMemoryConformsToContractRun fuzzes the property checks of
 // Contract.Run on InMemory.
 func FuzzInMemoryConformsToContractRun(f *testing.F) {
+	opts := append([]singleflighttest.ContractOption{
+		conform.Excuse(
+			singleflighttest.ContractChecks.Run.FailureIsReported(),
+			"an InMemory calls no dependency, because each call passes its computation",
+		),
+		conform.Excuse(
+			singleflighttest.ContractChecks.Flights.FailureIsReported(),
+			"Flights reads a count in memory and calls no dependency",
+		),
+	}, singleflighttest.InMemoryOptions()...)
 	singleflighttest.FuzzContractSuite(
 		f,
 		singleflighttest.ContractChecks.Run.Callable,
 		func(*singleflighttest.ContractHandle) *singleflighttest.InMemory {
 			return singleflighttest.NewInMemory()
 		},
-	)
+		opts...)
 }
 
 // FuzzInMemoryConformsToContractFlights fuzzes the property checks of
 // Contract.Flights on InMemory.
 func FuzzInMemoryConformsToContractFlights(f *testing.F) {
+	opts := append([]singleflighttest.ContractOption{
+		conform.Excuse(
+			singleflighttest.ContractChecks.Run.FailureIsReported(),
+			"an InMemory calls no dependency, because each call passes its computation",
+		),
+		conform.Excuse(
+			singleflighttest.ContractChecks.Flights.FailureIsReported(),
+			"Flights reads a count in memory and calls no dependency",
+		),
+	}, singleflighttest.InMemoryOptions()...)
 	singleflighttest.FuzzContractSuite(
 		f,
 		singleflighttest.ContractChecks.Flights.Callable,
 		func(*singleflighttest.ContractHandle) *singleflighttest.InMemory {
 			return singleflighttest.NewInMemory()
 		},
-	)
+		opts...)
 }
 
-// dokimi:provenance sha256:c3940037ef79d8515a2afa4ef181cb26994adc51efb8a96e662411197ad22ea3
+// dokimi:provenance sha256:701cc0a5458772d18e904a45abb52e0246abaf7a15d7311b201249a06f7e2464

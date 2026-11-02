@@ -128,6 +128,10 @@ func TestCacheSuite(t *testing.T) {
 				readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -227,6 +231,10 @@ func TestCacheSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -329,6 +337,10 @@ func TestCacheSuiteBudgets(t *testing.T) {
 			readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -417,6 +429,10 @@ func FuzzCacheSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -509,6 +525,10 @@ func FuzzCacheSuitePut(f *testing.F) {
 			readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -523,4 +543,4 @@ func BenchmarkCacheSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:61173c9d02a9177ae2df9aa20966ba92d6b4c68bb97a41d38b2a0cddaf480fb9
+// dokimi:provenance sha256:95a6fb3cbb713ce3b8d2f2abda394b354df35d6a21eb8e1ab1129d5342ba450d

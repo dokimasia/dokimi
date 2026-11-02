@@ -17,6 +17,10 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      mixed.get/reads-agree-under-concurrency:
+        claim: reads-agree-under-concurrency
+        law: reads-beside-reads-return-what-one-read-returns
+        reason: inconsistent-concurrent-read
       mixed.get/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -53,9 +57,6 @@ declarations:
     ceilings: []
     refusals: {}
     unclaimed:
-      - classification: mixin:concurrent-readers
-        callable: mixed.get
-        stance: needs
       - classification: shape:composite-writer
         callable: mixed.put
         stance: silent

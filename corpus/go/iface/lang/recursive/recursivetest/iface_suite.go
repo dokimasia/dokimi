@@ -11,18 +11,29 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/recursive"
 	"go.dokimi.dev/spec"
 )
+
+// The derived checks of Counter:
+//
+// Counter.Steps/smoke: Steps returns without a panic for derived inputs.
+//
+// Counter.Steps/deterministic: Steps returns the same value for the same
+// inputs.
+
+// The derived checks of Counter that witness their laws at the shallow
+// end:
+//
+// Counter.Steps/smoke
+//
+// Counter.Steps/deterministic
 
 // The refused claims of Counter:
 //
 // Counter.Nodes/deterministic: eidos derives no sample of the parameter
 // root of Nodes. The remedy is to author a sample of the parameter root
-// with the directive sample.
-//
-// Counter.Steps/deterministic: eidos derives no sample of the parameter
-// start of Steps. The remedy is to author a sample of the parameter start
 // with the directive sample.
 
 // The suite refers to the compatibility witness of its runtime.
@@ -69,6 +80,18 @@ func (c counterSteps) TakesTheFirstStep() conform.ID[recursive.Counter] {
 	return c.Check("takes-the-first-step")
 }
 
+// Smoke returns the identity of the check that Steps returns without a
+// panic for derived inputs.
+func (c counterSteps) Smoke() conform.ID[recursive.Counter] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Steps returns the
+// same value for the same inputs.
+func (c counterSteps) Deterministic() conform.ID[recursive.Counter] {
+	return c.Check("deterministic")
+}
+
 // CounterSuite returns the checks of Counter, and the calls and the
 // budgets of its callables.
 func CounterSuite() conform.Suite[recursive.Counter] {
@@ -77,6 +100,42 @@ func CounterSuite() conform.Suite[recursive.Counter] {
 		Package:     "go.dokimi.dev/dokimi/corpus/go/iface/lang/recursive",
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[recursive.Counter]{
+			{
+				ID:          CounterChecks.Steps.Smoke(),
+				Statement:   "Steps returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CounterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Steps(recursive.Step(func(string) recursive.Step { return recursive.Step(nil) }))
+						return nil
+					})
+				},
+				Defect: counterStepsPanics,
+			},
+			{
+				ID:          CounterChecks.Steps.Deterministic(),
+				Statement:   "Steps returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Entails:     []conform.ID[recursive.Counter]{CounterChecks.Steps.Smoke()},
+				Apply: func(h *CounterHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().
+							Steps(recursive.Step(func(string) recursive.Step { return recursive.Step(nil) }))
+						return r0, nil
+					})
+				},
+				Defect: counterStepsDrifts,
+			},
 			{
 				ID:        CounterChecks.Nodes.CountsTheRoot(),
 				Statement: "Nodes counts the root of a tree that the case draws",
@@ -97,13 +156,6 @@ func CounterSuite() conform.Suite[recursive.Counter] {
 				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter root of Nodes",
 				Remedy:   "author a sample of the parameter root with the directive sample",
-			},
-			{
-				Claim:    spec.Deterministic,
-				Callable: "Counter.Steps",
-				Gate:     spec.InputSamples,
-				Why:      "eidos derives no sample of the parameter start of Steps",
-				Remedy:   "author a sample of the parameter start with the directive sample",
 			},
 		},
 		Calls: []conform.Call[recursive.Counter]{
@@ -329,4 +381,43 @@ func newCounterOver(_ *CounterHandle, spend func()) recursive.Counter {
 	return counterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6cc18bf2a3a2d4ebb43a8a00680a11ba6683f98fe709924f3b68c44d15010133
+// counterStepsPanicsDefect is the planted defect of a Counter whose Steps
+// panics.
+type counterStepsPanicsDefect struct {
+	counterOverEmbedded
+}
+
+// Steps is the override of the planted defect.
+func (*counterStepsPanicsDefect) Steps(p0 recursive.Step) (r0 int) {
+	panic("the planted defect of a Counter whose Steps panics")
+}
+
+// counterStepsPanics returns the planted defect of a Counter whose Steps
+// panics over a fresh subject.
+func counterStepsPanics(h *CounterHandle) recursive.Counter {
+	return &counterStepsPanicsDefect{counterOverEmbedded: h.Fresh()}
+}
+
+// counterStepsDriftsDefect is the planted defect of a Counter whose Steps
+// returns another value on the repeat.
+type counterStepsDriftsDefect struct {
+	counterOverEmbedded
+	calls int
+}
+
+// Steps is the override of the planted defect.
+func (d *counterStepsDriftsDefect) Steps(p0 recursive.Step) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// counterStepsDrifts returns the planted defect of a Counter whose Steps
+// returns another value on the repeat over a fresh subject.
+func counterStepsDrifts(h *CounterHandle) recursive.Counter {
+	return &counterStepsDriftsDefect{counterOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:a628ee92624231970a6c032dce22592cc7667d39bf1c67ed178f883fdf358e76

@@ -41,17 +41,17 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      contract.watch/watch-sees-each-trigger:
+        claim: watch-sees-each-trigger
+        partners:
+          trigger: contract.trigger
+        law: watch-returns-each-trigger
+        reason: missed-update
     authored: []
     ceilings: []
     refusals:
       contract.watch/zero-on-error: value-samples
     unclaimed:
-      - classification: contract:watcher/trigger
-        callable: contract.trigger
-        stance: needs
       - classification: shape:composite-writer
         callable: contract.trigger
         stance: silent
-      - classification: contract:watcher/watch
-        callable: contract.watch
-        stance: needs

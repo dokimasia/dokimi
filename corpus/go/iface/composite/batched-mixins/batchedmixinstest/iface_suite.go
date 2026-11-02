@@ -98,8 +98,9 @@ import (
 // The shape:composite-writer of Batched.Put has the stance silent. A write
 // is an input of the other checks, and its result is an error alone.
 //
-// The mixin:concurrent of Batched.Put has the stance needs. The claims of
-// the mixin need concurrent callers.
+// The mixin:concurrent of Batched.Put has the stance needs. The claim
+// linearizable needs the param machineries=[reference] of the directive
+// suite.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -694,7 +695,7 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Classification: "mixin:concurrent",
 				Callable:       "Batched.Put",
 				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need concurrent callers.",
+				Note:           "The claim linearizable needs the param machineries=[reference] of the directive suite.",
 			},
 		},
 		Calls: []conform.Call[batchedmixins.Batched]{
@@ -1212,4 +1213,4 @@ func batchedListCall(ctx context.Context, subject batchedmixins.Batched, args []
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:47101dfbe4df3db4afe5d74e0bb4a7cba5f72985f31929a62cedb5bc49203c09
+// dokimi:provenance sha256:e89fdd8769517de1c6a2e1f1257a88a51895afa14b1d99265f39d5eec073e02e

@@ -1,0 +1,20 @@
+{
+  "store": 1,
+  "definition": "14.1.0",
+  "property": "Steps returns the same value for the same inputs",
+  "identity": {
+    "assertion": "equal",
+    "file": "single.go",
+    "line": 114
+  },
+  "choices": "prop1:AAEAAQABAAAAAAAA",
+  "counterexample": [
+    {
+      "label": "step"
+    },
+    {
+      "label": "start"
+    }
+  ],
+  "found": "2026-11-02"
+}

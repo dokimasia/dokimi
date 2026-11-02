@@ -5,6 +5,10 @@ fixture: iface/contract/singleflight
 level: 3
 subjects:
   - type: iface/contract/singleflight/singleflighttest.InMemory
+    excused:
+      - contract.flights/failure-is-reported
+      - contract.run/failure-is-reported
+  - type: iface/contract/singleflight/singleflighttest.Ledgered
 controls: []
 declarations:
   contract:
@@ -13,6 +17,10 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      contract.flights/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
       contract.flights/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -29,6 +37,22 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      contract.run/computes-once:
+        claim: computes-once
+        law: calls-at-once-share-one-computation
+        reason: repeated-computation
+      contract.run/computes-once#generated:
+        claim: computes-once
+        law: calls-at-once-share-one-computation
+        reason: repeated-computation
+      contract.run/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      contract.run/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
       contract.run/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -40,7 +64,4 @@ declarations:
     authored: []
     ceilings: []
     refusals: {}
-    unclaimed:
-      - classification: contract:single-flight/fn
-        callable: contract.run
-        stance: needs
+    unclaimed: []

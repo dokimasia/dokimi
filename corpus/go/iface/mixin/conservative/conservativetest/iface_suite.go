@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/conservative"
@@ -27,6 +28,9 @@ import (
 // Mixed.Apply/cancel#generated: Apply returns an error for a cancelled
 // context.
 //
+// Mixed.Apply/conserves-the-quantity: each call of Apply keeps the total
+// that Total reads, over any sequence of calls.
+//
 // Mixed.Total/smoke: Total returns without a panic for derived inputs.
 //
 // Mixed.Total/cancel: Total returns an error for a cancelled context.
@@ -43,9 +47,6 @@ import (
 //
 // The shape:writer of Mixed.Apply has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
-//
-// The mixin:conservative of Mixed.Apply has the stance needs. The claims
-// of the mixin need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -95,6 +96,12 @@ func (c mixedApply) Cancel() conform.ID[conservative.Mixed] {
 // error for a cancelled context.
 func (c mixedApply) CancelGenerated() conform.ID[conservative.Mixed] {
 	return c.Check("cancel#generated")
+}
+
+// ConservesTheQuantity returns the identity of the check that each call of
+// Apply keeps the total that Total reads, over any sequence of calls.
+func (c mixedApply) ConservesTheQuantity() conform.ID[conservative.Mixed] {
+	return c.Check("conserves-the-quantity")
 }
 
 // mixedTotal is the name of Mixed.Total, with the identities of its
@@ -193,6 +200,21 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				Defect: mixedApplyIgnoresCancel,
 			},
 			{
+				ID:          MixedChecks.Apply.ConservesTheQuantity(),
+				Statement:   "each call of Apply keeps the total that Total reads, over any sequence of calls",
+				Claim:       spec.ConservesTheQuantity,
+				Probe:       spec.MovesKeepTheTotal,
+				Reason:      spec.NotConserved,
+				Law:         spec.MovesConserveTheTotal,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.MovesKeepTheTotal(h, c, mixedActions, "Apply", func(ctx context.Context) (int, error) {
+						return h.Subject().Total(ctx)
+					})
+				},
+				Defect: mixedTotalLeaksOneUnit,
+			},
+			{
 				ID:          MixedChecks.Total.Smoke(),
 				Statement:   "Total returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -247,12 +269,6 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				Callable:       "Mixed.Apply",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "mixin:conservative",
-				Callable:       "Mixed.Apply",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[conservative.Mixed]{
@@ -412,6 +428,31 @@ func mixedApplyIgnoresCancel(h *MixedHandle) conservative.Mixed {
 	return &mixedApplyIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedTotalLeaksOneUnitDefect is the planted defect of a Mixed whose
+// Total reads one unit more on each call.
+type mixedTotalLeaksOneUnitDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Total is the override of the planted defect.
+func (d *mixedTotalLeaksOneUnitDefect) Total(p0 context.Context) (r0 int, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Total(p0)
+	d.calls++
+	r0 += int(d.calls)
+	return r0, r1
+}
+
+// mixedTotalLeaksOneUnit returns the planted defect of a Mixed whose Total
+// reads one unit more on each call over a fresh subject.
+func mixedTotalLeaksOneUnit(h *MixedHandle) conservative.Mixed {
+	return &mixedTotalLeaksOneUnitDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedTotalPanicsDefect is the planted defect of a Mixed whose Total
 // panics.
 type mixedTotalPanicsDefect struct {
@@ -470,4 +511,48 @@ func mixedTotalValueBeside(h *MixedHandle) conservative.Mixed {
 	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4cf92fdf2da478d336c29161abac6d21d0326640c814829554608cc350efa272
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() conservative.Mixed) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Apply",
+			Input: func(c *prop.Case, _ struct{}) any {
+				d := c.Draw(prop.Of[conservative.Delta](), "apply.d")
+				return []any{d}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Apply", args)
+				values, err := mixedApplyCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Total",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Total", args)
+				values, err := mixedTotalCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedApplyCall calls Apply on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedApplyCall(ctx context.Context, subject conservative.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(conservative.Delta)
+	return nil, subject.Apply(ctx, a0)
+}
+
+// mixedTotalCall calls Total on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedTotalCall(ctx context.Context, subject conservative.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Total(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:82538c390b2b9b6780b97172f28f47e316a83c04dd176d7f0dfd74423f4f668d

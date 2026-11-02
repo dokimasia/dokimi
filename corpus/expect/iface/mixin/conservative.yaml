@@ -17,6 +17,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      mixed.apply/conserves-the-quantity:
+        claim: conserves-the-quantity
+        partners:
+          observe: mixed.total
+        law: moves-conserve-the-total
+        reason: not-conserved
       mixed.apply/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -41,9 +47,6 @@ declarations:
     ceilings: []
     refusals: {}
     unclaimed:
-      - classification: mixin:conservative
-        callable: mixed.apply
-        stance: needs
       - classification: shape:writer
         callable: mixed.apply
         stance: silent

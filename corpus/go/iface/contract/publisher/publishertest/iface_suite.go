@@ -44,6 +44,10 @@ import (
 
 // The refused claims of Contract:
 //
+// Contract.Publish/delivers-by-its-mode: the classification of Publish
+// sets no param mode. The remedy is to set the param mode in the directive
+// of Publish.
+//
 // Contract.Subscribe/zero-on-error: eidos derives no sample of a result of
 // Subscribe. The remedy is to author a sample of the result type with the
 // directive sample.
@@ -52,12 +56,6 @@ import (
 //
 // The shape:writer of Contract.Publish has the stance silent. A write is
 // an input of the other checks, and its result is an error alone.
-//
-// The contract:publisher/publish of Contract.Publish has the stance needs.
-// The claims of the contract need generated sequences.
-//
-// The contract:publisher/subscribe of Contract.Subscribe has the stance
-// needs. The claims of the contract need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -234,6 +232,13 @@ func ContractSuite() conform.Suite[publisher.Contract] {
 		},
 		Refusals: []conform.Refusal{
 			{
+				Claim:    spec.DeliversByItsMode,
+				Callable: "Contract.Publish",
+				Gate:     spec.ClassificationParams,
+				Why:      "the classification of Publish sets no param mode",
+				Remedy:   "set the param mode in the directive of Publish",
+			},
+			{
 				Claim:    spec.ZeroOnError,
 				Callable: "Contract.Subscribe",
 				Gate:     spec.ValueSamples,
@@ -247,18 +252,6 @@ func ContractSuite() conform.Suite[publisher.Contract] {
 				Callable:       "Contract.Publish",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "contract:publisher/publish",
-				Callable:       "Contract.Publish",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
-			},
-			{
-				Classification: "contract:publisher/subscribe",
-				Callable:       "Contract.Subscribe",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[publisher.Contract]{
@@ -461,4 +454,4 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) publisher.Contract {
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ee47597129636d473173ce577779e0469c6d1627ab687950107d716823150a56
+// dokimi:provenance sha256:cbf2da0ab40c3c1b92509f9626c6c6f34158a6c55e7b6f4ce96a1bc1ace31f57

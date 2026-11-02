@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/streamreflectsmutations"
@@ -25,6 +26,10 @@ import (
 //
 // Mixed.Stream/streams-what-was-stored#generated: Stream yields each value
 // that Add stored.
+//
+// Mixed.Stream/iteration-sees-mutations: an iteration of Stream yields
+// each value that Add writes and no value that Remove removes while it
+// runs.
 //
 // Mixed.Add/smoke: Add returns without a panic for derived inputs.
 //
@@ -64,9 +69,6 @@ import (
 // error result.
 
 // The unclaimed classifications of Mixed:
-//
-// The mixin:stream-reflects-mutations of Mixed.Stream has the stance
-// needs. The claims of the mixin need generated sequences.
 //
 // The shape:writer of Mixed.Add has the stance silent. A write is an input
 // of the other checks, and its result is an error alone.
@@ -118,6 +120,13 @@ func (c mixedStream) StreamsWhatWasStored() conform.ID[streamreflectsmutations.M
 // Stream yields each value that Add stored.
 func (c mixedStream) StreamsWhatWasStoredGenerated() conform.ID[streamreflectsmutations.Mixed] {
 	return c.Check("streams-what-was-stored#generated")
+}
+
+// IterationSeesMutations returns the identity of the check that an
+// iteration of Stream yields each value that Add writes and no value that
+// Remove removes while it runs.
+func (c mixedStream) IterationSeesMutations() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("iteration-sees-mutations")
 }
 
 // mixedAdd is the name of Mixed.Add, with the identities of its checks.
@@ -277,6 +286,41 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 				Defect: mixedStreamDrainsNothing,
 			},
 			{
+				ID:          MixedChecks.Stream.IterationSeesMutations(),
+				Statement:   "an iteration of Stream yields each value that Add writes and no value that Remove removes while it runs",
+				Claim:       spec.IterationSeesMutations,
+				Probe:       spec.IterationsSeeTheMutations,
+				Reason:      spec.StaleIteration,
+				Law:         spec.IterationReflectsItsSource,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.IterationsSeeTheMutations(
+						h,
+						c,
+						mixedActions,
+						func(ctx context.Context) (func() (string, bool), func(), error) {
+							r0 := h.Subject().Stream(ctx)
+							next, stop := iter.Pull2(r0)
+							return func() (string, bool) {
+								v, err, ok := next()
+								return v, ok && err == nil
+							}, stop, nil
+						},
+						"Add",
+						"Remove",
+						func(args []any) string {
+							v, _ := args[0].(string)
+							return v
+						},
+						func(args []any) string {
+							v, _ := args[0].(string)
+							return v
+						},
+					)
+				},
+				Defect: mixedStreamIteratesACopy,
+			},
+			{
 				ID:          MixedChecks.Add.Smoke(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -413,12 +457,6 @@ func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
-			{
-				Classification: "mixin:stream-reflects-mutations",
-				Callable:       "Mixed.Stream",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need generated sequences.",
-			},
 			{
 				Classification: "shape:writer",
 				Callable:       "Mixed.Add",
@@ -613,6 +651,36 @@ func mixedStreamDrainsNothing(h *MixedHandle) streamreflectsmutations.Mixed {
 	return &mixedStreamDrainsNothingDefect{mixedOverEmbedded: h.Fresh()}
 }
 
+// mixedStreamIteratesACopyDefect is the planted defect of a Mixed whose
+// Stream iterates a copy of its source.
+type mixedStreamIteratesACopyDefect struct {
+	mixedOverEmbedded
+}
+
+// Stream is the override of the planted defect.
+func (d *mixedStreamIteratesACopyDefect) Stream(p0 context.Context) (r0 iter.Seq2[string, error]) {
+	r0 = d.mixedOverEmbedded.Stream(p0)
+	var firsts []string
+	var seconds []error
+	for first, second := range r0 {
+		firsts, seconds = append(firsts, first), append(seconds, second)
+	}
+	r0 = func(yield func(string, error) bool) {
+		for i := range firsts {
+			if !yield(firsts[i], seconds[i]) {
+				return
+			}
+		}
+	}
+	return r0
+}
+
+// mixedStreamIteratesACopy returns the planted defect of a Mixed whose
+// Stream iterates a copy of its source over a fresh subject.
+func mixedStreamIteratesACopy(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedStreamIteratesACopyDefect{mixedOverEmbedded: h.Fresh()}
+}
+
 // mixedAddPanicsDefect is the planted defect of a Mixed whose Add panics.
 type mixedAddPanicsDefect struct {
 	mixedOverEmbedded
@@ -686,4 +754,76 @@ func mixedRemoveIgnoresCancel(h *MixedHandle) streamreflectsmutations.Mixed {
 	return &mixedRemoveIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:45b0e1e43319008d4679fc05f4b0eb0c307888de4c679dc796b66396d0a36579
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() streamreflectsmutations.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Stream",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Stream", args)
+				values, err := mixedStreamCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				item := c.Draw(prop.Of[string](), "add.item")
+				return []any{item}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := mixedAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Remove",
+			Input: func(c *prop.Case, _ struct{}) any {
+				item := c.Draw(prop.SampledFrom(keysString...), "remove.item")
+				return []any{item}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Remove", args, args[0])
+				values, err := mixedRemoveCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedStreamCall calls Stream on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedStreamCall(ctx context.Context, subject streamreflectsmutations.Mixed, args []any) ([]any, error) {
+	r0 := subject.Stream(ctx)
+	var drained []string
+	for e, err := range r0 {
+		if err != nil {
+			return []any{drained}, err
+		}
+		drained = append(drained, e)
+	}
+	return []any{drained}, nil
+}
+
+// mixedAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedAddCall(ctx context.Context, subject streamreflectsmutations.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Add(ctx, a0)
+}
+
+// mixedRemoveCall calls Remove on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedRemoveCall(ctx context.Context, subject streamreflectsmutations.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Remove(ctx, a0)
+}
+
+// dokimi:provenance sha256:0eb7f294214dba31d172e6ab4d6384cc885aa7dacf0901e38012a3913b287362

@@ -10,20 +10,27 @@ import (
 	"errors"
 	"sync"
 
+	"go.dokimi.dev/conform"
+
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/singleflight"
 )
 
-// call is the computation of one key. done closes once val has the result that
-// each caller of the key shares.
+// call is the computation of one key. done closes once val and err have the
+// result that each caller of the key shares.
 type call struct {
 	done chan struct{}
+	err  error
 	val  string
 }
 
 // InMemory implements [singleflight.Contract] in memory. The corpus applies
-// the suite of Contract to it as a subject.
+// the suite of Contract to it as a subject. Each call of Run passes its
+// computation, and InMemory calls no dependency of its own, so it has no
+// failure of a dependency to report.
 //
-//dokimi:subject singleflight.Contract new=NewInMemory
+//dokimi:subject singleflight.Contract new=NewInMemory options=InMemoryOptions
+//dokimi:excuse Contract.Run/failure-is-reported reason="an InMemory calls no dependency, because each call passes its computation"
+//dokimi:excuse Contract.Flights/failure-is-reported reason="Flights reads a count in memory and calls no dependency"
 type InMemory struct {
 	calls   map[string]*call
 	flights int
@@ -35,6 +42,17 @@ var _ singleflight.Contract = (*InMemory)(nil)
 
 // NewInMemory returns a new InMemory.
 func NewInMemory() *InMemory { return &InMemory{calls: map[string]*call{}} }
+
+// InMemoryOptions returns the door of an InMemory for the checks whose
+// dependencies fail on demand.
+func InMemoryOptions() []ContractOption {
+	return []ContractOption{conform.Faultable(faulty)}
+}
+
+// faulty returns a new InMemory. An InMemory has no dependency of its own,
+// because it computes the result of a key through the computation of the
+// call.
+func faulty(*ContractHandle, *conform.Injector) singleflight.Contract { return NewInMemory() }
 
 // Run implements [singleflight.Contract].
 func (s *InMemory) Run(ctx context.Context, key string, compute func() string) (string, error) {

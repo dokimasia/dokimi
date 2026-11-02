@@ -102,4 +102,9 @@ func (v *Priority) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:1844ab6081defb5d5c1f0867a96611277b0b52f209eb04bbc8165f20a737f3b5
+// StrictKanon marks Priority as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Priority again.
+func (Priority) StrictKanon() {}
+
+// dokimi:provenance sha256:110568530a8651904b0dd3b200d28c723213f207895d2fce75a658c915f51f61

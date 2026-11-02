@@ -7,8 +7,10 @@ package publisherredelivertest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	publisherredeliver "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-redeliver"
@@ -29,6 +31,9 @@ import (
 // Contract.Publish/cancel#generated: Publish returns an error for a
 // cancelled context.
 //
+// Contract.Publish/delivers-by-its-mode: each event that Publish publishes
+// arrives on the channel of Subscribe as its delivery mode states.
+//
 // Contract.Republish/smoke: Republish returns without a panic for derived
 // inputs.
 //
@@ -40,6 +45,9 @@ import (
 //
 // Contract.Republish/cancel#generated: Republish returns an error for a
 // cancelled context.
+//
+// Contract.Republish/redelivers-on-demand: each event that Republish
+// redelivers arrives on the channel of Subscribe once more.
 //
 // Contract.Subscribe/smoke: Subscribe returns without a panic for derived
 // inputs.
@@ -67,17 +75,8 @@ import (
 // The shape:writer of Contract.Publish has the stance silent. A write is
 // an input of the other checks, and its result is an error alone.
 //
-// The contract:publisher/publish of Contract.Publish has the stance needs.
-// The claims of the contract need generated sequences.
-//
 // The shape:writer of Contract.Republish has the stance silent. A write is
 // an input of the other checks, and its result is an error alone.
-//
-// The contract:publisher/redeliver of Contract.Republish has the stance
-// needs. The claims of the contract need generated sequences.
-//
-// The contract:publisher/subscribe of Contract.Subscribe has the stance
-// needs. The claims of the contract need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -131,6 +130,13 @@ func (c contractPublish) CancelGenerated() conform.ID[publisherredeliver.Contrac
 	return c.Check("cancel#generated")
 }
 
+// DeliversByItsMode returns the identity of the check that each event that
+// Publish publishes arrives on the channel of Subscribe as its delivery
+// mode states.
+func (c contractPublish) DeliversByItsMode() conform.ID[publisherredeliver.Contract] {
+	return c.Check("delivers-by-its-mode")
+}
+
 // contractRepublish is the name of Contract.Republish, with the identities
 // of its checks.
 type contractRepublish struct {
@@ -159,6 +165,12 @@ func (c contractRepublish) Cancel() conform.ID[publisherredeliver.Contract] {
 // an error for a cancelled context.
 func (c contractRepublish) CancelGenerated() conform.ID[publisherredeliver.Contract] {
 	return c.Check("cancel#generated")
+}
+
+// RedeliversOnDemand returns the identity of the check that each event
+// that Republish redelivers arrives on the channel of Subscribe once more.
+func (c contractRepublish) RedeliversOnDemand() conform.ID[publisherredeliver.Contract] {
+	return c.Check("redelivers-on-demand")
 }
 
 // contractSubscribe is the name of Contract.Subscribe, with the identities
@@ -251,6 +263,34 @@ func ContractSuite() conform.Suite[publisherredeliver.Contract] {
 				Defect: contractPublishIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Publish.DeliversByItsMode(),
+				Statement:   "each event that Publish publishes arrives on the channel of Subscribe as its delivery mode states",
+				Claim:       spec.DeliversByItsMode,
+				Probe:       spec.DeliveriesMatchTheMode,
+				Reason:      spec.WrongDeliveryCount,
+				Law:         spec.DeliveriesFollowTheMode,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.DeliveriesMatchTheMode(
+						h,
+						c,
+						contractActions,
+						"Publish",
+						func(ctx context.Context) (<-chan publisherredeliver.Value, error) {
+							r0, err := h.Subject().Subscribe(ctx)
+							return r0, err
+						},
+						func(args []any) publisherredeliver.Value {
+							v, _ := args[0].(publisherredeliver.Value)
+							return v
+						},
+						"at-least-once",
+					)
+				},
+				Defect: contractPublishBreaksTheModeAfterThree,
+				Around: synctest.Test,
+			},
+			{
 				ID:          ContractChecks.Republish.Smoke(),
 				Statement:   "Republish returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -314,6 +354,38 @@ func ContractSuite() conform.Suite[publisherredeliver.Contract] {
 				Defect: contractRepublishIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Republish.RedeliversOnDemand(),
+				Statement:   "each event that Republish redelivers arrives on the channel of Subscribe once more",
+				Claim:       spec.RedeliversOnDemand,
+				Probe:       spec.RedeliveriesArrive,
+				Reason:      spec.NotRedelivered,
+				Law:         spec.RedeliveryDeliversAgain,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.RedeliveriesArrive(
+						h,
+						c,
+						contractActions,
+						"Publish",
+						"Republish",
+						func(ctx context.Context) (<-chan publisherredeliver.Value, error) {
+							r0, err := h.Subject().Subscribe(ctx)
+							return r0, err
+						},
+						func(args []any) publisherredeliver.Value {
+							v, _ := args[0].(publisherredeliver.Value)
+							return v
+						},
+						func(args []any) publisherredeliver.Value {
+							v, _ := args[0].(publisherredeliver.Value)
+							return v
+						},
+					)
+				},
+				Defect: contractRepublishSkipsARedeliveryAfterThree,
+				Around: synctest.Test,
+			},
+			{
 				ID:          ContractChecks.Subscribe.Smoke(),
 				Statement:   "Subscribe returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -364,28 +436,10 @@ func ContractSuite() conform.Suite[publisherredeliver.Contract] {
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 			{
-				Classification: "contract:publisher/publish",
-				Callable:       "Contract.Publish",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
-			},
-			{
 				Classification: "shape:writer",
 				Callable:       "Contract.Republish",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "contract:publisher/redeliver",
-				Callable:       "Contract.Republish",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
-			},
-			{
-				Classification: "contract:publisher/subscribe",
-				Callable:       "Contract.Subscribe",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[publisherredeliver.Contract]{
@@ -573,6 +627,36 @@ func contractPublishIgnoresCancel(h *ContractHandle) publisherredeliver.Contract
 	return &contractPublishIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractPublishBreaksTheModeAfterThreeDefect is the planted defect of a
+// Contract whose Publish breaks its delivery mode from its fourth call on.
+type contractPublishBreaksTheModeAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Publish is the override of the planted defect.
+func (d *contractPublishBreaksTheModeAfterThreeDefect) Publish(
+	p0 context.Context,
+	p1 publisherredeliver.Value,
+) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.contractOverEmbedded.Publish(p0, p1)
+}
+
+// contractPublishBreaksTheModeAfterThree returns the planted defect of a
+// Contract whose Publish breaks its delivery mode from its fourth call on
+// over a fresh subject.
+func contractPublishBreaksTheModeAfterThree(h *ContractHandle) publisherredeliver.Contract {
+	return &contractPublishBreaksTheModeAfterThreeDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractRepublishPanicsDefect is the planted defect of a Contract whose
 // Republish panics.
 type contractRepublishPanicsDefect struct {
@@ -608,6 +692,36 @@ func (d *contractRepublishIgnoresCancelDefect) Republish(p0 context.Context, p1 
 // whose Republish ignores the context over a fresh subject.
 func contractRepublishIgnoresCancel(h *ContractHandle) publisherredeliver.Contract {
 	return &contractRepublishIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractRepublishSkipsARedeliveryAfterThreeDefect is the planted defect
+// of a Contract whose Republish does nothing from its fourth call on.
+type contractRepublishSkipsARedeliveryAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Republish is the override of the planted defect.
+func (d *contractRepublishSkipsARedeliveryAfterThreeDefect) Republish(
+	p0 context.Context,
+	p1 publisherredeliver.Value,
+) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.contractOverEmbedded.Republish(p0, p1)
+}
+
+// contractRepublishSkipsARedeliveryAfterThree returns the planted defect
+// of a Contract whose Republish does nothing from its fourth call on over
+// a fresh subject.
+func contractRepublishSkipsARedeliveryAfterThree(h *ContractHandle) publisherredeliver.Contract {
+	return &contractRepublishSkipsARedeliveryAfterThreeDefect{contractOverEmbedded: h.Fresh()}
 }
 
 // contractSubscribePanicsDefect is the planted defect of a Contract whose
@@ -649,4 +763,68 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) publisherredeliver.Contra
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d7fd2042ac7ec0e56334a1de973d7d219649458fa1f08b7f627ce1c5c5253e3c
+// contractActions returns the actions of the generated sequences of
+// Contract over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func contractActions(c *prop.Case, subject func() publisherredeliver.Contract) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Publish",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[publisherredeliver.Value](), "publish.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Publish", args)
+				values, err := contractPublishCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Republish",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[publisherredeliver.Value](), "republish.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Republish", args)
+				values, err := contractRepublishCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Subscribe",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Subscribe", args)
+				values, err := contractSubscribeCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// contractPublishCall calls Publish on subject with the arguments args,
+// and returns the values of the call beside its error.
+func contractPublishCall(ctx context.Context, subject publisherredeliver.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(publisherredeliver.Value)
+	return nil, subject.Publish(ctx, a0)
+}
+
+// contractRepublishCall calls Republish on subject with the arguments
+// args, and returns the values of the call beside its error.
+func contractRepublishCall(ctx context.Context, subject publisherredeliver.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(publisherredeliver.Value)
+	return nil, subject.Republish(ctx, a0)
+}
+
+// contractSubscribeCall calls Subscribe on subject with the arguments
+// args, and returns the values of the call beside its error.
+func contractSubscribeCall(ctx context.Context, subject publisherredeliver.Contract, args []any) ([]any, error) {
+	r0, err := subject.Subscribe(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:5f0feb4533621501fececafc7f09cacac3579520ed624e809ccc5512be208136

@@ -212,6 +212,7 @@ var Families = []Family{
 		Subjects: []string{
 			"iface/contract/cache/cachetest.InMemory",
 			"iface/contract/singleflight/singleflighttest.InMemory",
+			"iface/contract/singleflight/singleflighttest.Ledgered",
 			"iface/door/readthrough/readthroughtest.Cached",
 			"iface/mixin/boundedcache/boundedcachetest.InMemory",
 			"iface/mixin/cacheable/cacheabletest.InMemory",

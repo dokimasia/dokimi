@@ -15,13 +15,23 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/streamreflectsmutations"
 )
 
-// InMemory implements [streamreflectsmutations.Mixed] in memory. The corpus
-// applies the suite of Mixed to it as a subject.
+// InMemory implements [streamreflectsmutations.Mixed] in memory as a set of
+// items. The corpus applies the suite of Mixed to it as a subject.
+//
+// Remove marks the entry of an item as removed and keeps its place, so the
+// position of a running iteration keeps pointing at the next entry. Add adds
+// an entry for an item without a live entry.
 //
 //dokimi:subject streamreflectsmutations.Mixed new=NewInMemory
 type InMemory struct {
-	items []string
-	mu    sync.Mutex
+	entries []entry
+	mu      sync.Mutex
+}
+
+// entry is an item of InMemory, and whether Remove removed it.
+type entry struct {
+	item    string
+	removed bool
 }
 
 // The compiler checks that InMemory implements [streamreflectsmutations.Mixed].
@@ -37,7 +47,9 @@ func (s *InMemory) Add(ctx context.Context, item string) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.items = append(s.items, item)
+	if s.live(item) < 0 {
+		s.entries = append(s.entries, entry{item: item})
+	}
 	return nil
 }
 
@@ -48,8 +60,8 @@ func (s *InMemory) Remove(ctx context.Context, item string) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if i := slices.Index(s.items, item); i >= 0 {
-		s.items = slices.Delete(s.items, i, i+1)
+	if i := s.live(item); i >= 0 {
+		s.entries[i].removed = true
 	}
 	return nil
 }
@@ -63,18 +75,27 @@ func (s *InMemory) Stream(ctx context.Context) iter.Seq2[string, error] {
 		}
 		for i := 0; ; i++ {
 			s.mu.Lock()
-			if i >= len(s.items) {
+			if i >= len(s.entries) {
 				s.mu.Unlock()
 				return
 			}
-			item := s.items[i]
+			e := s.entries[i]
 			s.mu.Unlock()
 
-			if !yield(item, nil) {
+			if e.removed {
+				continue
+			}
+			if !yield(e.item, nil) {
 				return
 			}
 		}
 	}
+}
+
+// live returns the position of the live entry of item, and -1 for an item
+// without one. The caller holds the lock.
+func (s *InMemory) live(item string) int {
+	return slices.IndexFunc(s.entries, func(e entry) bool { return !e.removed && e.item == item })
 }
 
 // contextErr returns the error of a canceled or expired context, and an error

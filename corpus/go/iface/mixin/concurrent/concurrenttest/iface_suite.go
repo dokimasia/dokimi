@@ -6,9 +6,12 @@ package concurrenttest
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
+	"go.dokimi.dev/assert/history"
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrent"
@@ -17,35 +20,59 @@ import (
 
 // The derived checks of Mixed:
 //
-// Mixed.Bump/smoke: Bump returns without a panic for derived inputs.
+// Mixed.Put/smoke: Put returns without a panic for derived inputs.
 //
-// Mixed.Bump/smoke#generated: Bump returns without a panic for derived
+// Mixed.Put/smoke#generated: Put returns without a panic for derived
 // inputs.
 //
-// Mixed.Bump/cancel: Bump returns an error for a cancelled context.
+// Mixed.Put/cancel: Put returns an error for a cancelled context.
 //
-// Mixed.Bump/cancel#generated: Bump returns an error for a cancelled
+// Mixed.Put/cancel#generated: Put returns an error for a cancelled
 // context.
 //
-// Mixed.Count/smoke: Count returns without a panic for derived inputs.
+// Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
-// Mixed.Count/cancel: Count returns an error for a cancelled context.
+// Mixed.Get/smoke#generated: Get returns without a panic for derived
+// inputs.
 //
-// Mixed.Count/zero-on-error: Count returns the zero value beside an error.
+// Mixed.Get/cancel: Get returns an error for a cancelled context.
+//
+// Mixed.Get/cancel#generated: Get returns an error for a cancelled
+// context.
+//
+// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
+//
+// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
+// error.
+//
+// Mixed.Get/read-after-write: Get returns what Put stored before it.
+//
+// Mixed.Get/read-after-write#generated: Get returns what Put stored before
+// it.
+//
+// Mixed.Get/reads-each-last-write: Get returns what Put wrote right before
+// it, over any sequence of calls.
+//
+// Mixed.Get/agrees-with-the-reference: every sequence of calls returns on
+// Mixed what it returns on the reference.
+//
+// Mixed.Get/linearizable: every concurrent history of Mixed has an order
+// in which the reference returns the same results.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
-// Mixed.Bump/smoke
+// Mixed.Put/smoke
 //
-// Mixed.Count/smoke
+// Mixed.Get/smoke
+//
+// Mixed.Get/read-after-write
+//
+// Mixed.Get/read-after-write#generated
 
 // The unclaimed classifications of Mixed:
 //
-// The shape:writer of Mixed.Bump has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The mixin:concurrent of Mixed.Bump has the stance needs. The claims of
-// the mixin need concurrent callers.
+// The shape:composite-writer of Mixed.Put has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -60,64 +87,112 @@ type (
 // MixedChecks contains the name of each callable of Mixed, with the
 // identities of its checks.
 var MixedChecks = struct {
-	Bump  mixedBump
-	Count mixedCount
+	Put mixedPut
+	Get mixedGet
 }{
-	Bump:  mixedBump{"Mixed.Bump"},
-	Count: mixedCount{"Mixed.Count"},
+	Put: mixedPut{"Mixed.Put"},
+	Get: mixedGet{"Mixed.Get"},
 }
 
-// mixedBump is the name of Mixed.Bump, with the identities of its checks.
-type mixedBump struct {
+// mixedPut is the name of Mixed.Put, with the identities of its checks.
+type mixedPut struct {
 	conform.Callable[concurrent.Mixed]
 }
 
-// Smoke returns the identity of the check that Bump returns without a
-// panic for derived inputs.
-func (c mixedBump) Smoke() conform.ID[concurrent.Mixed] {
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c mixedPut) Smoke() conform.ID[concurrent.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Bump returns
+// SmokeGenerated returns the identity of the check that Put returns
 // without a panic for derived inputs.
-func (c mixedBump) SmokeGenerated() conform.ID[concurrent.Mixed] {
+func (c mixedPut) SmokeGenerated() conform.ID[concurrent.Mixed] {
 	return c.Check("smoke#generated")
 }
 
-// Cancel returns the identity of the check that Bump returns an error for
-// a cancelled context.
-func (c mixedBump) Cancel() conform.ID[concurrent.Mixed] {
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c mixedPut) Cancel() conform.ID[concurrent.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Bump returns an
+// CancelGenerated returns the identity of the check that Put returns an
 // error for a cancelled context.
-func (c mixedBump) CancelGenerated() conform.ID[concurrent.Mixed] {
+func (c mixedPut) CancelGenerated() conform.ID[concurrent.Mixed] {
 	return c.Check("cancel#generated")
 }
 
-// mixedCount is the name of Mixed.Count, with the identities of its
-// checks.
-type mixedCount struct {
+// mixedGet is the name of Mixed.Get, with the identities of its checks.
+type mixedGet struct {
 	conform.Callable[concurrent.Mixed]
 }
 
-// Smoke returns the identity of the check that Count returns without a
-// panic for derived inputs.
-func (c mixedCount) Smoke() conform.ID[concurrent.Mixed] {
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c mixedGet) Smoke() conform.ID[concurrent.Mixed] {
 	return c.Check("smoke")
 }
 
-// Cancel returns the identity of the check that Count returns an error for
-// a cancelled context.
-func (c mixedCount) Cancel() conform.ID[concurrent.Mixed] {
+// SmokeGenerated returns the identity of the check that Get returns
+// without a panic for derived inputs.
+func (c mixedGet) SmokeGenerated() conform.ID[concurrent.Mixed] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c mixedGet) Cancel() conform.ID[concurrent.Mixed] {
 	return c.Check("cancel")
 }
 
-// ZeroOnError returns the identity of the check that Count returns the
-// zero value beside an error.
-func (c mixedCount) ZeroOnError() conform.ID[concurrent.Mixed] {
+// CancelGenerated returns the identity of the check that Get returns an
+// error for a cancelled context.
+func (c mixedGet) CancelGenerated() conform.ID[concurrent.Mixed] {
+	return c.Check("cancel#generated")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c mixedGet) ZeroOnError() conform.ID[concurrent.Mixed] {
 	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Get returns
+// the zero value beside an error.
+func (c mixedGet) ZeroOnErrorGenerated() conform.ID[concurrent.Mixed] {
+	return c.Check("zero-on-error#generated")
+}
+
+// ReadAfterWrite returns the identity of the check that Get returns what
+// Put stored before it.
+func (c mixedGet) ReadAfterWrite() conform.ID[concurrent.Mixed] {
+	return c.Check("read-after-write")
+}
+
+// ReadAfterWriteGenerated returns the identity of the check that Get
+// returns what Put stored before it.
+func (c mixedGet) ReadAfterWriteGenerated() conform.ID[concurrent.Mixed] {
+	return c.Check("read-after-write#generated")
+}
+
+// ReadsEachLastWrite returns the identity of the check that Get returns
+// what Put wrote right before it, over any sequence of calls.
+func (c mixedGet) ReadsEachLastWrite() conform.ID[concurrent.Mixed] {
+	return c.Check("reads-each-last-write")
+}
+
+// AgreesWithTheReference returns the identity of the check that every
+// sequence of calls returns on Mixed what it returns on the reference.
+func (c mixedGet) AgreesWithTheReference() conform.ID[concurrent.Mixed] {
+	return "Mixed/agrees-with-the-reference"
+}
+
+// Linearizable returns the identity of the check that every concurrent
+// history of Mixed has an order in which the reference returns the same
+// results.
+func (c mixedGet) Linearizable() conform.ID[concurrent.Mixed] {
+	return "Mixed/linearizable"
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -129,8 +204,8 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[concurrent.Mixed]{
 			{
-				ID:          MixedChecks.Bump.Smoke(),
-				Statement:   "Bump returns without a panic for derived inputs",
+				ID:          MixedChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
 				Probe:       spec.Survives,
 				Reason:      spec.Panicked,
@@ -139,14 +214,14 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Bump(ctx, string("key-a"))
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
 					})
 				},
-				Defect: mixedBumpPanics,
+				Defect: mixedPutPanics,
 			},
 			{
-				ID:          MixedChecks.Bump.SmokeGenerated(),
-				Statement:   "Bump returns without a panic for derived inputs",
+				ID:          MixedChecks.Put.SmokeGenerated(),
+				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
 				Probe:       spec.Survives,
 				Reason:      spec.Panicked,
@@ -154,15 +229,16 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
 					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Bump(ctx, drawnKey)
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
 					})
 				},
-				Defect: mixedBumpPanics,
+				Defect: mixedPutPanics,
 			},
 			{
-				ID:          MixedChecks.Bump.Cancel(),
-				Statement:   "Bump returns an error for a cancelled context",
+				ID:          MixedChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
 				Probe:       spec.UnderCancelled,
 				Reason:      spec.IgnoredCancel,
@@ -170,14 +246,14 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Bump(ctx, string("key-a"))
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
 					})
 				},
-				Defect: mixedBumpIgnoresCancel,
+				Defect: mixedPutIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Bump.CancelGenerated(),
-				Statement:   "Bump returns an error for a cancelled context",
+				ID:          MixedChecks.Put.CancelGenerated(),
+				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
 				Probe:       spec.UnderCancelled,
 				Reason:      spec.IgnoredCancel,
@@ -185,15 +261,16 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Bump(ctx, drawnKey)
+						return h.Subject().Put(ctx, drawnKey, drawnValue)
 					})
 				},
-				Defect: mixedBumpIgnoresCancel,
+				Defect: mixedPutIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Count.Smoke(),
-				Statement:   "Count returns without a panic for derived inputs",
+				ID:          MixedChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
 				Probe:       spec.Survives,
 				Reason:      spec.Panicked,
@@ -202,15 +279,32 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().Count(ctx)
+						_, err := h.Subject().Get(ctx, string("key-a"))
 						return err
 					})
 				},
-				Defect: mixedCountPanics,
+				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Count.Cancel(),
-				Statement:   "Count returns an error for a cancelled context",
+				ID:          MixedChecks.Get.SmokeGenerated(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
+				ID:          MixedChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
 				Probe:       spec.UnderCancelled,
 				Reason:      spec.IgnoredCancel,
@@ -218,53 +312,180 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().Count(ctx)
+						_, err := h.Subject().Get(ctx, string("key-a"))
 						return err
 					})
 				},
-				Defect: mixedCountIgnoresCancel,
+				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Count.ZeroOnError(),
-				Statement:   "Count returns the zero value beside an error",
+				ID:          MixedChecks.Get.CancelGenerated(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: mixedGetIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
 				Probe:       spec.ZeroBesideError,
 				Reason:      spec.ValueBesideError,
 				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
-					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
-						return h.Subject().Count(ctx)
-					}, int(0))
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, string(""))
 				},
-				Defect: mixedCountValueBeside,
+				Defect: mixedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, drawnKey)
+					}, string(""))
+				},
+				Defect: mixedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.Get.ReadAfterWrite(),
+				Statement:   "Get returns what Put stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.WriteThenRead(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, func(ctx context.Context) (string, error) {
+						w := string("value-a")
+						err := h.Subject().Put(ctx, string("key-a"), w)
+						return w, err
+					})
+				},
+				Defect: mixedGetReadsAnotherValue,
+			},
+			{
+				ID:          MixedChecks.Get.ReadAfterWriteGenerated(),
+				Statement:   "Get returns what Put stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnValue := c.Draw(prop.Of[string](), "value")
+					probe.WriteThenRead(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, drawnKey)
+					}, func(ctx context.Context) (string, error) {
+						w := drawnValue
+						err := h.Subject().Put(ctx, drawnKey, w)
+						return w, err
+					})
+				},
+				Defect: mixedGetReadsAnotherValue,
+			},
+			{
+				ID:          MixedChecks.Get.ReadsEachLastWrite(),
+				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
+				Claim:       spec.ReadsEachLastWrite,
+				Probe:       spec.ReadsReturnTheLastWrite,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Entails:     []conform.ID[concurrent.Mixed]{MixedChecks.Get.ReadAfterWrite()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.ReadsReturnTheLastWrite(
+						h,
+						c,
+						mixedActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := mixedGetCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) string {
+							v, _ := args[1].(string)
+							return v
+						},
+					)
+				},
+				Defect: mixedGetReadsAStaleValueAfterThree,
+			},
+			{
+				ID:          MixedChecks.Get.AgreesWithTheReference(),
+				Statement:   "every sequence of calls returns on Mixed what it returns on the reference",
+				Claim:       spec.AgreesWithTheReference,
+				Probe:       spec.SequencesAgreeWithTheReference,
+				Reason:      spec.DivergesFromTheReference,
+				Law:         spec.EverySequenceAgreesWithTheReference,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences, spec.ReferenceImplementation},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.SequencesAgreeWithTheReference(h, c, mixedActions, mixedReference)
+				},
+				Defect: mixedGetDivergesAfterThree,
+			},
+			{
+				ID:        MixedChecks.Get.Linearizable(),
+				Statement: "every concurrent history of Mixed has an order in which the reference returns the same results",
+				Claim:     spec.Linearizable,
+				Probe:     spec.LinearizableHistory,
+				Reason:    spec.NotLinearizable,
+				Law:       spec.ConcurrentHistoryIsLinearizable,
+				Machineries: []spec.MachineryID{
+					spec.ConcurrentCallers,
+					spec.GeneratedSequences,
+					spec.ReferenceImplementation,
+				},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.LinearizableHistory(h, c, mixedActions, mixedReference, 2, history.Budget(200000))
+				},
+				Defect: mixedRacyReadWrite,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
-				Classification: "shape:writer",
-				Callable:       "Mixed.Bump",
+				Classification: "shape:composite-writer",
+				Callable:       "Mixed.Put",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "mixin:concurrent",
-				Callable:       "Mixed.Bump",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[concurrent.Mixed]{
 			{
-				Calls:      mixedBumpCalls,
+				Calls:      mixedPutCalls,
 				Over:       newMixedOver,
-				Callable:   MixedChecks.Bump.Callable,
+				Callable:   MixedChecks.Put.Callable,
 				Concurrent: true,
 			},
 			{
-				Calls:    mixedCountCalls,
-				Over:     newMixedOver,
-				Callable: MixedChecks.Count.Callable,
+				Calls:      mixedGetCalls,
+				Over:       newMixedOver,
+				Callable:   MixedChecks.Get.Callable,
+				Concurrent: true,
 			},
 		},
 	}
@@ -335,20 +556,22 @@ func mixedSubjects[T concurrent.Mixed](newSubject func(h *MixedHandle) T) func(h
 	return func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }
 }
 
-// mixedBumpCalls generates the calls of Mixed.Bump with the inputs that
-// each case draws.
-var mixedBumpCalls = prop.Composite(func(c *prop.Case) func(context.Context, concurrent.Mixed) error {
+// mixedPutCalls generates the calls of Mixed.Put with the inputs that each
+// case draws.
+var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, concurrent.Mixed) error {
 	key := c.Draw(prop.Of[string](), "key")
+	value := c.Draw(prop.Of[string](), "value")
 	return func(ctx context.Context, subject concurrent.Mixed) error {
-		return subject.Bump(ctx, key)
+		return subject.Put(ctx, key, value)
 	}
 })
 
-// mixedCountCalls generates the calls of Mixed.Count with the inputs that
-// each case draws.
-var mixedCountCalls = prop.Composite(func(*prop.Case) func(context.Context, concurrent.Mixed) error {
+// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
+// case draws.
+var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, concurrent.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
 	return func(ctx context.Context, subject concurrent.Mixed) error {
-		_, err := subject.Count(ctx)
+		_, err := subject.Get(ctx, key)
 		return err
 	}
 })
@@ -365,14 +588,14 @@ type mixedOver struct {
 	spend func()
 }
 
-// Bump calls spend and returns its zero results.
-func (o mixedOver) Bump(context.Context, string) (r0 error) {
+// Put calls spend and returns its zero results.
+func (o mixedOver) Put(context.Context, string, string) (r0 error) {
 	o.spend()
 	return r0
 }
 
-// Count calls spend and returns its zero results.
-func (o mixedOver) Count(context.Context) (r0 int, r1 error) {
+// Get calls spend and returns its zero results.
+func (o mixedOver) Get(context.Context, string) (r0 string, r1 error) {
 	o.spend()
 	return r0, r1
 }
@@ -383,99 +606,293 @@ func newMixedOver(_ *MixedHandle, spend func()) concurrent.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// mixedBumpPanicsDefect is the planted defect of a Mixed whose Bump
-// panics.
-type mixedBumpPanicsDefect struct {
+// mixedPutPanicsDefect is the planted defect of a Mixed whose Put panics.
+type mixedPutPanicsDefect struct {
 	mixedOverEmbedded
 }
 
-// Bump is the override of the planted defect.
-func (*mixedBumpPanicsDefect) Bump(p0 context.Context, p1 string) (r0 error) {
-	panic("the planted defect of a Mixed whose Bump panics")
+// Put is the override of the planted defect.
+func (*mixedPutPanicsDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Put panics")
 }
 
-// mixedBumpPanics returns the planted defect of a Mixed whose Bump panics
+// mixedPutPanics returns the planted defect of a Mixed whose Put panics
 // over a fresh subject.
-func mixedBumpPanics(h *MixedHandle) concurrent.Mixed {
-	return &mixedBumpPanicsDefect{mixedOverEmbedded: h.Fresh()}
+func mixedPutPanics(h *MixedHandle) concurrent.Mixed {
+	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedBumpIgnoresCancelDefect is the planted defect of a Mixed whose Bump
+// mixedPutIgnoresCancelDefect is the planted defect of a Mixed whose Put
 // ignores the context.
-type mixedBumpIgnoresCancelDefect struct {
+type mixedPutIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
-// Bump is the override of the planted defect.
-func (d *mixedBumpIgnoresCancelDefect) Bump(p0 context.Context, p1 string) (r0 error) {
+// Put is the override of the planted defect.
+func (d *mixedPutIgnoresCancelDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
 	if p0.Err() != nil {
 		return r0
 	}
-	return d.mixedOverEmbedded.Bump(p0, p1)
+	return d.mixedOverEmbedded.Put(p0, p1, p2)
 }
 
-// mixedBumpIgnoresCancel returns the planted defect of a Mixed whose Bump
+// mixedPutIgnoresCancel returns the planted defect of a Mixed whose Put
 // ignores the context over a fresh subject.
-func mixedBumpIgnoresCancel(h *MixedHandle) concurrent.Mixed {
-	return &mixedBumpIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+func mixedPutIgnoresCancel(h *MixedHandle) concurrent.Mixed {
+	return &mixedPutIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCountPanicsDefect is the planted defect of a Mixed whose Count
-// panics.
-type mixedCountPanicsDefect struct {
+// mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
+type mixedGetPanicsDefect struct {
 	mixedOverEmbedded
 }
 
-// Count is the override of the planted defect.
-func (*mixedCountPanicsDefect) Count(p0 context.Context) (r0 int, r1 error) {
-	panic("the planted defect of a Mixed whose Count panics")
+// Get is the override of the planted defect.
+func (*mixedGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Get panics")
 }
 
-// mixedCountPanics returns the planted defect of a Mixed whose Count
-// panics over a fresh subject.
-func mixedCountPanics(h *MixedHandle) concurrent.Mixed {
-	return &mixedCountPanicsDefect{mixedOverEmbedded: h.Fresh()}
+// mixedGetPanics returns the planted defect of a Mixed whose Get panics
+// over a fresh subject.
+func mixedGetPanics(h *MixedHandle) concurrent.Mixed {
+	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCountIgnoresCancelDefect is the planted defect of a Mixed whose
-// Count ignores the context.
-type mixedCountIgnoresCancelDefect struct {
+// mixedGetIgnoresCancelDefect is the planted defect of a Mixed whose Get
+// ignores the context.
+type mixedGetIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
-// Count is the override of the planted defect.
-func (d *mixedCountIgnoresCancelDefect) Count(p0 context.Context) (r0 int, r1 error) {
+// Get is the override of the planted defect.
+func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
 	if p0.Err() != nil {
 		return r0, r1
 	}
-	return d.mixedOverEmbedded.Count(p0)
+	return d.mixedOverEmbedded.Get(p0, p1)
 }
 
-// mixedCountIgnoresCancel returns the planted defect of a Mixed whose
-// Count ignores the context over a fresh subject.
-func mixedCountIgnoresCancel(h *MixedHandle) concurrent.Mixed {
-	return &mixedCountIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+// mixedGetIgnoresCancel returns the planted defect of a Mixed whose Get
+// ignores the context over a fresh subject.
+func mixedGetIgnoresCancel(h *MixedHandle) concurrent.Mixed {
+	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedCountValueBesideDefect is the planted defect of a Mixed whose Count
+// mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
 // returns a value beside an error.
-type mixedCountValueBesideDefect struct {
+type mixedGetValueBesideDefect struct {
 	mixedOverEmbedded
 }
 
-// Count is the override of the planted defect.
-func (d *mixedCountValueBesideDefect) Count(p0 context.Context) (r0 int, r1 error) {
-	r0, r1 = d.mixedOverEmbedded.Count(p0)
+// Get is the override of the planted defect.
+func (d *mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
 	if r1 != nil {
-		r0 = int(7)
+		r0 = string("sample-b")
 	}
 	return r0, r1
 }
 
-// mixedCountValueBeside returns the planted defect of a Mixed whose Count
+// mixedGetValueBeside returns the planted defect of a Mixed whose Get
 // returns a value beside an error over a fresh subject.
-func mixedCountValueBeside(h *MixedHandle) concurrent.Mixed {
-	return &mixedCountValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+func mixedGetValueBeside(h *MixedHandle) concurrent.Mixed {
+	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c0ae169f9758a17f191f49c5e1af1e7a6d7d13c8ce281d3e7e37fc154ccd19dc
+// mixedGetReadsAnotherValueDefect is the planted defect of a Mixed whose
+// Get returns a value that Put did not write.
+type mixedGetReadsAnotherValueDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (d *mixedGetReadsAnotherValueDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	if r1 == nil {
+		r0 = string("sample-b")
+	}
+	return r0, r1
+}
+
+// mixedGetReadsAnotherValue returns the planted defect of a Mixed whose
+// Get returns a value that Put did not write over a fresh subject.
+func mixedGetReadsAnotherValue(h *MixedHandle) concurrent.Mixed {
+	return &mixedGetReadsAnotherValueDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetReadsAStaleValueAfterThreeDefect is the planted defect of a
+// Mixed whose Get returns its first value again from its fourth call on.
+type mixedGetReadsAStaleValueAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+	first *string
+}
+
+// Get is the override of the planted defect.
+func (d *mixedGetReadsAStaleValueAfterThreeDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	d.calls++
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	if d.first == nil {
+		d.first = &r0
+	}
+	if d.calls > 3 {
+		r0 = *d.first
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// mixedGetReadsAStaleValueAfterThree returns the planted defect of a Mixed
+// whose Get returns its first value again from its fourth call on over a
+// fresh subject.
+func mixedGetReadsAStaleValueAfterThree(h *MixedHandle) concurrent.Mixed {
+	return &mixedGetReadsAStaleValueAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetDivergesAfterThreeDefect is the planted defect of a Mixed whose
+// first callable with a value result returns another value from its fourth
+// call on.
+type mixedGetDivergesAfterThreeDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Get is the override of the planted defect.
+func (d *mixedGetDivergesAfterThreeDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	d.calls++
+	if d.calls > 3 {
+		r0 = string("sample-b")
+	}
+	return r0, r1
+}
+
+// mixedGetDivergesAfterThree returns the planted defect of a Mixed whose
+// first callable with a value result returns another value from its fourth
+// call on over a fresh subject.
+func mixedGetDivergesAfterThree(h *MixedHandle) concurrent.Mixed {
+	return &mixedGetDivergesAfterThreeDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRacyReadWriteDefect is the planted defect of a Mixed whose first
+// callable with a value result returns another value while another call is
+// in progress.
+type mixedRacyReadWriteDefect struct {
+	mixedOverEmbedded
+	h      *MixedHandle
+	marked atomic.Int32
+}
+
+// Put is the override of the planted defect.
+func (d *mixedRacyReadWriteDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.marked.Add(1)
+	defer d.marked.Add(-1)
+	d.h.Yield()
+	return d.mixedOverEmbedded.Put(p0, p1, p2)
+}
+
+// Get is the override of the planted defect.
+func (d *mixedRacyReadWriteDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	if d.marked.Load() > 0 {
+		r0 = string("sample-b")
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Get(p0, p1)
+}
+
+// mixedRacyReadWrite returns the planted defect of a Mixed whose first
+// callable with a value result returns another value while another call is
+// in progress over a fresh subject.
+func mixedRacyReadWrite(h *MixedHandle) concurrent.Mixed {
+	return &mixedRacyReadWriteDefect{mixedOverEmbedded: h.Fresh(), h: h}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() concurrent.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "put.key")
+				value := c.Draw(prop.Of[string](), "put.value")
+				return []any{key, value}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Put", args, args[0])
+				values, err := mixedPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedPutCall(ctx context.Context, subject concurrent.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject concurrent.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// mixedReference returns the function that applies an operation of a
+// history to the reference r by the name of its callable.
+func mixedReference(r concurrent.Mixed) func(context.Context, string, []any) conform.Output {
+	return func(ctx context.Context, operation string, args []any) conform.Output {
+		var values []any
+		var err error
+		switch operation {
+		case "Put":
+			values, err = mixedPutCall(ctx, r, args)
+		case "Get":
+			values, err = mixedGetCall(ctx, r, args)
+		}
+		return conform.OutputOf(err, values...)
+	}
+}
+
+// dokimi:provenance sha256:da53e039ffdac57657d93018697833db43d3ef018022a5d255a945e49fb81634

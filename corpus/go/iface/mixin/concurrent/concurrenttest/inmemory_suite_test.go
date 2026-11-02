@@ -17,29 +17,29 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	concurrenttest.RunMixedSuite(
-		t,
-		concurrenttest.NewInMemory,
+	opts := append([]concurrenttest.MixedOption{
 		conform.Isolate[concurrent.Mixed](),
-	)
+	}, concurrenttest.InMemoryOptions()...)
+	concurrenttest.RunMixedSuite(t, concurrenttest.NewInMemory, opts...)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
 // Mixed on InMemory.
 func BenchmarkInMemoryConformsToMixed(b *testing.B) {
-	b.Run("Bump", func(b *testing.B) {
+	opts := concurrenttest.InMemoryOptions()
+	b.Run("Put", func(b *testing.B) {
 		concurrenttest.BenchMixedSuite(
 			b,
-			concurrenttest.MixedChecks.Bump.Callable,
+			concurrenttest.MixedChecks.Put.Callable,
 			func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
-		)
+			opts...)
 	})
-	b.Run("Count", func(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
 		concurrenttest.BenchMixedSuite(
 			b,
-			concurrenttest.MixedChecks.Count.Callable,
+			concurrenttest.MixedChecks.Get.Callable,
 			func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
-		)
+			opts...)
 	})
 }
 
@@ -47,33 +47,41 @@ func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 // suite of Mixed that admits concurrent calls on InMemory, on GOMAXPROCS
 // goroutines at once.
 func BenchmarkInMemoryConformsToMixedParallel(b *testing.B) {
-	b.Run("Bump", func(b *testing.B) {
+	opts := concurrenttest.InMemoryOptions()
+	b.Run("Put", func(b *testing.B) {
 		concurrenttest.BenchMixedSuiteParallel(
 			b,
-			concurrenttest.MixedChecks.Bump.Callable,
+			concurrenttest.MixedChecks.Put.Callable,
 			func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
-		)
+			opts...)
+	})
+	b.Run("Get", func(b *testing.B) {
+		concurrenttest.BenchMixedSuiteParallel(
+			b,
+			concurrenttest.MixedChecks.Get.Callable,
+			func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
+			opts...)
 	})
 }
 
-// FuzzInMemoryConformsToMixedBump fuzzes the property checks of Mixed.Bump
+// FuzzInMemoryConformsToMixedPut fuzzes the property checks of Mixed.Put
 // on InMemory.
-func FuzzInMemoryConformsToMixedBump(f *testing.F) {
+func FuzzInMemoryConformsToMixedPut(f *testing.F) {
 	concurrenttest.FuzzMixedSuite(
 		f,
-		concurrenttest.MixedChecks.Bump.Callable,
+		concurrenttest.MixedChecks.Put.Callable,
 		func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
-	)
+		concurrenttest.InMemoryOptions()...)
 }
 
-// FuzzInMemoryConformsToMixedCount fuzzes the property checks of
-// Mixed.Count on InMemory.
-func FuzzInMemoryConformsToMixedCount(f *testing.F) {
+// FuzzInMemoryConformsToMixedGet fuzzes the property checks of Mixed.Get
+// on InMemory.
+func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	concurrenttest.FuzzMixedSuite(
 		f,
-		concurrenttest.MixedChecks.Count.Callable,
+		concurrenttest.MixedChecks.Get.Callable,
 		func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
-	)
+		concurrenttest.InMemoryOptions()...)
 }
 
-// dokimi:provenance sha256:484ffd6195b2674caffd396b34360ce019f20f010754229c3fdd643546d8e02b
+// dokimi:provenance sha256:810c9e446dbdd4ce5cdf38242c025fdefd7e6e58a27d95cd34e2034126dc0992

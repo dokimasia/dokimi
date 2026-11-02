@@ -7,8 +7,10 @@ package watchertest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher"
@@ -26,6 +28,10 @@ import (
 //
 // Contract.Watch/cancel#generated: Watch returns an error for a cancelled
 // context.
+//
+// Contract.Watch/watch-sees-each-trigger: a subscription of Watch returns
+// each update that Trigger causes for its key, in order, and no update
+// after its stop.
 //
 // Contract.Trigger/smoke: Trigger returns without a panic for derived
 // inputs.
@@ -54,14 +60,8 @@ import (
 
 // The unclaimed classifications of Contract:
 //
-// The contract:watcher/watch of Contract.Watch has the stance needs. The
-// claims of the contract need generated sequences.
-//
 // The shape:composite-writer of Contract.Trigger has the stance silent. A
 // write is an input of the other checks, and its result is an error alone.
-//
-// The contract:watcher/trigger of Contract.Trigger has the stance needs.
-// The claims of the contract need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -111,6 +111,13 @@ func (c contractWatch) Cancel() conform.ID[watcher.Contract] {
 // error for a cancelled context.
 func (c contractWatch) CancelGenerated() conform.ID[watcher.Contract] {
 	return c.Check("cancel#generated")
+}
+
+// WatchSeesEachTrigger returns the identity of the check that a
+// subscription of Watch returns each update that Trigger causes for its
+// key, in order, and no update after its stop.
+func (c contractWatch) WatchSeesEachTrigger() conform.ID[watcher.Contract] {
+	return c.Check("watch-sees-each-trigger")
 }
 
 // contractTrigger is the name of Contract.Trigger, with the identities of
@@ -219,6 +226,42 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 				Defect: contractWatchIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Watch.WatchSeesEachTrigger(),
+				Statement:   "a subscription of Watch returns each update that Trigger causes for its key, in order, and no update after its stop",
+				Claim:       spec.WatchSeesEachTrigger,
+				Probe:       spec.WatchesSeeTheTriggers,
+				Reason:      spec.MissedUpdate,
+				Law:         spec.WatchReturnsEachTrigger,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.WatchesSeeTheTriggers(
+						h,
+						c,
+						contractActions,
+						"Watch",
+						"Trigger",
+						watcher.Subscription.Next,
+						watcher.Subscription.Stop,
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := contractTriggerCall(ctx, h.Subject(), []any{args[0], args[1]})
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) any {
+							return []any{args[0]}
+						},
+						func(args []any) any {
+							return []any{args[0]}
+						},
+						func(args []any) watcher.Value {
+							v, _ := args[1].(watcher.Value)
+							return v
+						},
+					)
+				},
+				Defect: contractTriggerMissesUpdatesAfterThree,
+				Around: synctest.Test,
+			},
+			{
 				ID:          ContractChecks.Trigger.Smoke(),
 				Statement:   "Trigger returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -295,22 +338,10 @@ func ContractSuite() conform.Suite[watcher.Contract] {
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
-				Classification: "contract:watcher/watch",
-				Callable:       "Contract.Watch",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
-			},
-			{
 				Classification: "shape:composite-writer",
 				Callable:       "Contract.Trigger",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "contract:watcher/trigger",
-				Callable:       "Contract.Trigger",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[watcher.Contract]{
@@ -478,6 +509,37 @@ func contractWatchIgnoresCancel(h *ContractHandle) watcher.Contract {
 	return &contractWatchIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractTriggerMissesUpdatesAfterThreeDefect is the planted defect of a
+// Contract whose Trigger does nothing from its fourth call on.
+type contractTriggerMissesUpdatesAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Trigger is the override of the planted defect.
+func (d *contractTriggerMissesUpdatesAfterThreeDefect) Trigger(
+	p0 context.Context,
+	p1 string,
+	p2 watcher.Value,
+) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.contractOverEmbedded.Trigger(p0, p1, p2)
+}
+
+// contractTriggerMissesUpdatesAfterThree returns the planted defect of a
+// Contract whose Trigger does nothing from its fourth call on over a fresh
+// subject.
+func contractTriggerMissesUpdatesAfterThree(h *ContractHandle) watcher.Contract {
+	return &contractTriggerMissesUpdatesAfterThreeDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractTriggerPanicsDefect is the planted defect of a Contract whose
 // Trigger panics.
 type contractTriggerPanicsDefect struct {
@@ -515,4 +577,56 @@ func contractTriggerIgnoresCancel(h *ContractHandle) watcher.Contract {
 	return &contractTriggerIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f1bcd21dba1c4b578675fd1c12e49b6d15ebf22e2d8a611559aea1656461ed41
+// contractActions returns the actions of the generated sequences of
+// Contract over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func contractActions(c *prop.Case, subject func() watcher.Contract) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Watch",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "watch.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Watch", args, args[0])
+				values, err := contractWatchCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Trigger",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "trigger.key")
+				v := c.Draw(prop.Of[watcher.Value](), "trigger.v")
+				return []any{key, v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Trigger", args, args[0])
+				values, err := contractTriggerCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// contractWatchCall calls Watch on subject with the arguments args, and
+// returns the values of the call beside its error.
+func contractWatchCall(ctx context.Context, subject watcher.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Watch(ctx, a0)
+	return []any{r0}, err
+}
+
+// contractTriggerCall calls Trigger on subject with the arguments args,
+// and returns the values of the call beside its error.
+func contractTriggerCall(ctx context.Context, subject watcher.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(watcher.Value)
+	return nil, subject.Trigger(ctx, a0, a1)
+}
+
+// dokimi:provenance sha256:de99cbe2a7720c1d130d261b556859e1b0f911c5a181cd503d0e99bbf310f3a3

@@ -17,6 +17,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      contract.publish/delivers-by-its-mode:
+        claim: delivers-by-its-mode
+        partners:
+          subscribe: contract.subscribe
+        law: deliveries-follow-the-mode
+        reason: wrong-delivery-count
       contract.publish/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -33,6 +39,13 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      contract.republish/redelivers-on-demand:
+        claim: redelivers-on-demand
+        partners:
+          publish: contract.publish
+          subscribe: contract.subscribe
+        law: redelivery-delivers-again
+        reason: not-redelivered
       contract.republish/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -54,18 +67,9 @@ declarations:
     refusals:
       contract.subscribe/zero-on-error: value-samples
     unclaimed:
-      - classification: contract:publisher/publish
-        callable: contract.publish
-        stance: needs
       - classification: shape:writer
         callable: contract.publish
         stance: silent
-      - classification: contract:publisher/redeliver
-        callable: contract.republish
-        stance: needs
       - classification: shape:writer
         callable: contract.republish
         stance: silent
-      - classification: contract:publisher/subscribe
-        callable: contract.subscribe
-        stance: needs

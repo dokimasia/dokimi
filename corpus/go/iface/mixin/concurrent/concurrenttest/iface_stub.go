@@ -14,73 +14,75 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// MixedBumpCall records one call of Mixed.Bump.
-type MixedBumpCall struct {
-	Ctx context.Context
-	Key string
-	Err error
+// MixedPutCall records one call of Mixed.Put.
+type MixedPutCall struct {
+	Ctx   context.Context
+	Key   string
+	Value string
+	Err   error
 }
 
-// MixedCountCall records one call of Mixed.Count.
-type MixedCountCall struct {
+// MixedGetCall records one call of Mixed.Get.
+type MixedGetCall struct {
 	Ctx    context.Context
-	Result int
+	Key    string
+	Result string
 	Err    error
 }
 
-// MixedBumpStub configures Bump and records its calls. A fault armed
-// through it takes precedence over the function and the fixed results.
-type MixedBumpStub struct {
-	*stub.MethodStub[MixedBumpCall]
+// MixedPutStub configures Put and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
+type MixedPutStub struct {
+	*stub.MethodStub[MixedPutCall]
 
-	fn       func(context.Context, string) error
-	fallback *MixedBumpReturn
+	fn       func(context.Context, string, string) error
+	fallback *MixedPutReturn
 }
 
-// MixedBumpReturn contains the fixed results of Bump.
-type MixedBumpReturn struct {
+// MixedPutReturn contains the fixed results of Put.
+type MixedPutReturn struct {
 	Err error
 }
 
-// Returns sets the results of every call of Bump. A function and an
+// Returns sets the results of every call of Put. A function and an
 // injected fault take precedence over them.
-func (s *MixedBumpStub) Returns(err error) *MixedBumpStub {
-	s.fallback = &MixedBumpReturn{Err: err}
+func (s *MixedPutStub) Returns(err error) *MixedPutStub {
+	s.fallback = &MixedPutReturn{Err: err}
 	return s
 }
 
-// Func sets the function that computes the results of Bump from its
+// Func sets the function that computes the results of Put from its
 // arguments. An injected fault takes precedence over it.
-func (s *MixedBumpStub) Func(fn func(context.Context, string) error) *MixedBumpStub {
+func (s *MixedPutStub) Func(fn func(context.Context, string, string) error) *MixedPutStub {
 	s.fn = fn
 	return s
 }
 
-// MixedCountStub configures Count and records its calls. A fault armed
-// through it takes precedence over the function and the fixed results.
-type MixedCountStub struct {
-	*stub.MethodStub[MixedCountCall]
+// MixedGetStub configures Get and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
+type MixedGetStub struct {
+	*stub.MethodStub[MixedGetCall]
 
-	fn       func(context.Context) (int, error)
-	fallback *MixedCountReturn
+	fn       func(context.Context, string) (string, error)
+	fallback *MixedGetReturn
 }
 
-// MixedCountReturn contains the fixed results of Count.
-type MixedCountReturn struct {
-	Result int
+// MixedGetReturn contains the fixed results of Get.
+type MixedGetReturn struct {
+	Result string
 	Err    error
 }
 
-// Returns sets the results of every call of Count. A function and an
+// Returns sets the results of every call of Get. A function and an
 // injected fault take precedence over them.
-func (s *MixedCountStub) Returns(result int, err error) *MixedCountStub {
-	s.fallback = &MixedCountReturn{Result: result, Err: err}
+func (s *MixedGetStub) Returns(result string, err error) *MixedGetStub {
+	s.fallback = &MixedGetReturn{Result: result, Err: err}
 	return s
 }
 
-// Func sets the function that computes the results of Count from its
+// Func sets the function that computes the results of Get from its
 // arguments. An injected fault takes precedence over it.
-func (s *MixedCountStub) Func(fn func(context.Context) (int, error)) *MixedCountStub {
+func (s *MixedGetStub) Func(fn func(context.Context, string) (string, error)) *MixedGetStub {
 	s.fn = fn
 	return s
 }
@@ -102,8 +104,8 @@ func MixedStubStrict() MixedStubOption {
 // The double still records the call.
 func MixedStubDelegateTo(impl concurrent.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
-		s.OnBump.Func(impl.Bump)
-		s.OnCount.Func(impl.Count)
+		s.OnPut.Func(impl.Put)
+		s.OnGet.Func(impl.Get)
 	}
 }
 
@@ -138,27 +140,27 @@ func MixedStubWithLatency(d time.Duration) MixedStubOption {
 // can fail. Each call of such a method then fails with err.
 func MixedStubFailing(err error) MixedStubOption {
 	return func(s *MixedStub) {
-		s.OnBump.Faults(err, 1)
-		s.OnCount.Faults(err, 1)
+		s.OnPut.Faults(err, 1)
+		s.OnGet.Faults(err, 1)
 	}
 }
 
-// WithMixedBump returns the option that sets the function of Bump.
-func WithMixedBump(fn func(context.Context, string) error) MixedStubOption {
-	return func(s *MixedStub) { s.OnBump.Func(fn) }
+// WithMixedPut returns the option that sets the function of Put.
+func WithMixedPut(fn func(context.Context, string, string) error) MixedStubOption {
+	return func(s *MixedStub) { s.OnPut.Func(fn) }
 }
 
-// WithMixedCount returns the option that sets the function of Count.
-func WithMixedCount(fn func(context.Context) (int, error)) MixedStubOption {
-	return func(s *MixedStub) { s.OnCount.Func(fn) }
+// WithMixedGet returns the option that sets the function of Get.
+func WithMixedGet(fn func(context.Context, string) (string, error)) MixedStubOption {
+	return func(s *MixedStub) { s.OnGet.Func(fn) }
 }
 
 // MixedStub is a recording test double of Mixed. Each field On<Method>
 // configures its method. An unconfigured method records the call and
 // returns the zero values of its results.
 type MixedStub struct {
-	OnBump  *MixedBumpStub
-	OnCount *MixedCountStub
+	OnPut *MixedPutStub
+	OnGet *MixedGetStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -173,12 +175,12 @@ var _ concurrent.Mixed = (*MixedStub)(nil)
 // end of the test. With a nil tb, the double reports nothing.
 func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
-		OnBump:  &MixedBumpStub{MethodStub: stub.NewMethodStub[MixedBumpCall](tb, "Mixed.Bump")},
-		OnCount: &MixedCountStub{MethodStub: stub.NewMethodStub[MixedCountCall](tb, "Mixed.Count")},
+		OnPut: &MixedPutStub{MethodStub: stub.NewMethodStub[MixedPutCall](tb, "Mixed.Put")},
+		OnGet: &MixedGetStub{MethodStub: stub.NewMethodStub[MixedGetCall](tb, "Mixed.Get")},
 	}
 	s.group = stub.NewGroup(
-		s.OnBump.MethodStub,
-		s.OnCount.MethodStub,
+		s.OnPut.MethodStub,
+		s.OnGet.MethodStub,
 	)
 	for _, opt := range opts {
 		opt(s)
@@ -213,25 +215,25 @@ func (s *MixedStub) ResetCalls() {
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedBumpStub) invoke(ctx context.Context, key string) func() MixedBumpReturn {
+func (s *MixedPutStub) invoke(ctx context.Context, key, value string) func() MixedPutReturn {
 	if s.fn == nil {
 		return nil
 	}
-	return func() MixedBumpReturn {
-		r0 := s.fn(ctx, key)
-		return MixedBumpReturn{Err: r0}
+	return func() MixedPutReturn {
+		r0 := s.fn(ctx, key, value)
+		return MixedPutReturn{Err: r0}
 	}
 }
 
-// Bump records the call. An armed fault comes first, then the function of
+// Put records the call. An armed fault comes first, then the function of
 // Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) Bump(ctx context.Context, key string) error {
-	call := MixedBumpCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnBump.MethodStub, call, stub.Arms[MixedBumpCall, MixedBumpReturn]{
-		Invoke:   s.OnBump.invoke(ctx, key),
-		Fallback: s.OnBump.fallback,
-		Fault:    func(err error) MixedBumpReturn { return MixedBumpReturn{Err: err} },
-		Stamp: func(c MixedBumpCall, r MixedBumpReturn) MixedBumpCall {
+func (s *MixedStub) Put(ctx context.Context, key, value string) error {
+	call := MixedPutCall{Ctx: ctx, Key: key, Value: value}
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[MixedPutCall, MixedPutReturn]{
+		Invoke:   s.OnPut.invoke(ctx, key, value),
+		Fallback: s.OnPut.fallback,
+		Fault:    func(err error) MixedPutReturn { return MixedPutReturn{Err: err} },
+		Stamp: func(c MixedPutCall, r MixedPutReturn) MixedPutCall {
 			c.Err = r.Err
 			return c
 		},
@@ -241,25 +243,25 @@ func (s *MixedStub) Bump(ctx context.Context, key string) error {
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedCountStub) invoke(ctx context.Context) func() MixedCountReturn {
+func (s *MixedGetStub) invoke(ctx context.Context, key string) func() MixedGetReturn {
 	if s.fn == nil {
 		return nil
 	}
-	return func() MixedCountReturn {
-		r0, r1 := s.fn(ctx)
-		return MixedCountReturn{Result: r0, Err: r1}
+	return func() MixedGetReturn {
+		r0, r1 := s.fn(ctx, key)
+		return MixedGetReturn{Result: r0, Err: r1}
 	}
 }
 
-// Count records the call. An armed fault comes first, then the function of
+// Get records the call. An armed fault comes first, then the function of
 // Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) Count(ctx context.Context) (int, error) {
-	call := MixedCountCall{Ctx: ctx}
-	r := stub.Answer(s.OnCount.MethodStub, call, stub.Arms[MixedCountCall, MixedCountReturn]{
-		Invoke:   s.OnCount.invoke(ctx),
-		Fallback: s.OnCount.fallback,
-		Fault:    func(err error) MixedCountReturn { return MixedCountReturn{Err: err} },
-		Stamp: func(c MixedCountCall, r MixedCountReturn) MixedCountCall {
+func (s *MixedStub) Get(ctx context.Context, key string) (string, error) {
+	call := MixedGetCall{Ctx: ctx, Key: key}
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
+		Invoke:   s.OnGet.invoke(ctx, key),
+		Fallback: s.OnGet.fallback,
+		Fault:    func(err error) MixedGetReturn { return MixedGetReturn{Err: err} },
+		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
 			return c
@@ -268,4 +270,4 @@ func (s *MixedStub) Count(ctx context.Context) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:b23425730fa9e3b0b6a7ff856c167531627fcd0c9cb974a337797a480fbcb5d1
+// dokimi:provenance sha256:4c25684643145ea61dd512cf3f8782ed852bb6df0976efcddce548cd69ac1df0

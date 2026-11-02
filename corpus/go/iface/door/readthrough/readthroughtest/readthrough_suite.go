@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/door/readthrough"
@@ -70,6 +71,9 @@ import (
 //
 // Cache.Put/no-partial-write#generated: Get finds no effect of a Put that
 // failed with its dependency.
+//
+// Cache.Put/no-trace-of-a-failed-call: Get finds no effect of a Put that
+// failed with its dependencies, over any sequence of calls.
 
 // The derived checks of Cache that witness their laws at the shallow end:
 //
@@ -80,6 +84,10 @@ import (
 // Cache.Put/retry-succeeds
 //
 // Cache.Put/retry-succeeds#generated
+//
+// Cache.Put/no-partial-write
+//
+// Cache.Put/no-partial-write#generated
 
 // The unclaimed classifications of Cache:
 //
@@ -236,6 +244,13 @@ func (c cachePut) NoPartialWrite() conform.ID[readthrough.Cache] {
 // no effect of a Put that failed with its dependency.
 func (c cachePut) NoPartialWriteGenerated() conform.ID[readthrough.Cache] {
 	return c.Check("no-partial-write#generated")
+}
+
+// NoTraceOfAFailedCall returns the identity of the check that Get finds no
+// effect of a Put that failed with its dependencies, over any sequence of
+// calls.
+func (c cachePut) NoTraceOfAFailedCall() conform.ID[readthrough.Cache] {
+	return c.Check("no-trace-of-a-failed-call")
 }
 
 // CacheSuite returns the checks of Cache, and the calls and the budgets of
@@ -557,6 +572,7 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Reason:      spec.PartialWrite,
 				Law:         spec.FailedCallLeavesNoEffect,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
+				Shallow:     true,
 				Apply: func(h *CacheHandle) {
 					probe.FailsWithoutEffect(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, readthrough.Value{Key: "Key-a"})
@@ -578,6 +594,7 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 					spec.GeneratedInputs,
 					spec.NothingBeyondACaller,
 				},
+				Shallow: true,
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[readthrough.Value](), "v")
 					probe.FailsWithoutEffect(h, func(ctx context.Context) error {
@@ -587,6 +604,30 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 					})
 				},
 				Defect: cacheGetHalfApplied,
+			},
+			{
+				ID:          CacheChecks.Put.NoTraceOfAFailedCall(),
+				Statement:   "Get finds no effect of a Put that failed with its dependencies, over any sequence of calls",
+				Claim:       spec.NoTraceOfAFailedCall,
+				Probe:       spec.FailedCallsLeaveNoTrace,
+				Reason:      spec.PartialWrite,
+				Law:         spec.FailedCallLeavesNoEffect,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences, spec.CallThatFailsOnDemand},
+				Entails:     []conform.ID[readthrough.Cache]{CacheChecks.Put.NoPartialWrite()},
+				Property: func(h *CacheHandle, c *prop.Case) {
+					probe.FailedCallsLeaveNoTrace(
+						h,
+						c,
+						cacheActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(readthrough.Value)
+							values, err := cacheGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+					)
+				},
+				Defect: cacheGetHalfAppliedAfterThree,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -945,4 +986,87 @@ func cacheGetHalfApplied(h *CacheHandle) readthrough.Cache {
 	return &cacheGetHalfAppliedDefect{cacheOverEmbedded: h.Fresh(), h: h}
 }
 
-// dokimi:provenance sha256:a4757407d7befa187a20fe7a9c573d9ec6e9c312e8871febf469b9a20bf105d5
+// cacheGetHalfAppliedAfterThreeDefect is the planted defect of a Cache
+// whose Get finds a part of a failed Put from its fourth read on.
+type cacheGetHalfAppliedAfterThreeDefect struct {
+	cacheOverEmbedded
+	calls int
+	h     *CacheHandle
+}
+
+// Get is the override of the planted defect.
+func (d *cacheGetHalfAppliedAfterThreeDefect) Get(p0 context.Context, p1 string) (r0 readthrough.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	failed := d.h.Injector().Failures() > 0
+	r0, r1 = d.cacheOverEmbedded.Get(p0, p1)
+	d.calls++
+	if failed && d.calls > 3 {
+		r0 = readthrough.Value{Key: "Key-b"}
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// cacheGetHalfAppliedAfterThree returns the planted defect of a Cache
+// whose Get finds a part of a failed Put from its fourth read on over a
+// fresh subject.
+func cacheGetHalfAppliedAfterThree(h *CacheHandle) readthrough.Cache {
+	return &cacheGetHalfAppliedAfterThreeDefect{cacheOverEmbedded: h.Fresh(), h: h}
+}
+
+// cacheActions returns the actions of the generated sequences of Cache
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func cacheActions(c *prop.Case, subject func() readthrough.Cache) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := cacheGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[readthrough.Value](), "put.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "put.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(readthrough.Value)
+				call := c.History().Invoke(client, "Put", args, key0.Key)
+				values, err := cachePutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// cacheGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func cacheGetCall(ctx context.Context, subject readthrough.Cache, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// cachePutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func cachePutCall(ctx context.Context, subject readthrough.Cache, args []any) ([]any, error) {
+	a0, _ := args[0].(readthrough.Value)
+	return nil, subject.Put(ctx, a0)
+}
+
+// dokimi:provenance sha256:4d715c62e847db667862c24ca744087ec57ffa556eb5ecbe86dec626ca465ac7

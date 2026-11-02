@@ -30,7 +30,7 @@ type Delta struct {
 //dokimi:out path=conservativetest/
 type Mixed interface {
 	// Apply moves a quantity without creating or destroying any of it.
-	//dokimi:mixin conservative field=Amount
+	//dokimi:mixin conservative field=Amount observe=Total
 	Apply(ctx context.Context, d Delta) error
 
 	// Total observes the fold, which is what makes the claim about Apply

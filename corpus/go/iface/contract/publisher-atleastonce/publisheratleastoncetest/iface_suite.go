@@ -7,8 +7,10 @@ package publisheratleastoncetest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	publisheratleastonce "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atleastonce"
@@ -28,6 +30,9 @@ import (
 //
 // Contract.Publish/cancel#generated: Publish returns an error for a
 // cancelled context.
+//
+// Contract.Publish/delivers-by-its-mode: each event that Publish publishes
+// arrives on the channel of Subscribe as its delivery mode states.
 //
 // Contract.Subscribe/smoke: Subscribe returns without a panic for derived
 // inputs.
@@ -52,12 +57,6 @@ import (
 //
 // The shape:writer of Contract.Publish has the stance silent. A write is
 // an input of the other checks, and its result is an error alone.
-//
-// The contract:publisher/publish of Contract.Publish has the stance needs.
-// The claims of the contract need generated sequences.
-//
-// The contract:publisher/subscribe of Contract.Subscribe has the stance
-// needs. The claims of the contract need generated sequences.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -107,6 +106,13 @@ func (c contractPublish) Cancel() conform.ID[publisheratleastonce.Contract] {
 // an error for a cancelled context.
 func (c contractPublish) CancelGenerated() conform.ID[publisheratleastonce.Contract] {
 	return c.Check("cancel#generated")
+}
+
+// DeliversByItsMode returns the identity of the check that each event that
+// Publish publishes arrives on the channel of Subscribe as its delivery
+// mode states.
+func (c contractPublish) DeliversByItsMode() conform.ID[publisheratleastonce.Contract] {
+	return c.Check("delivers-by-its-mode")
 }
 
 // contractSubscribe is the name of Contract.Subscribe, with the identities
@@ -199,6 +205,34 @@ func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 				Defect: contractPublishIgnoresCancel,
 			},
 			{
+				ID:          ContractChecks.Publish.DeliversByItsMode(),
+				Statement:   "each event that Publish publishes arrives on the channel of Subscribe as its delivery mode states",
+				Claim:       spec.DeliversByItsMode,
+				Probe:       spec.DeliveriesMatchTheMode,
+				Reason:      spec.WrongDeliveryCount,
+				Law:         spec.DeliveriesFollowTheMode,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *ContractHandle, c *prop.Case) {
+					probe.DeliveriesMatchTheMode(
+						h,
+						c,
+						contractActions,
+						"Publish",
+						func(ctx context.Context) (<-chan publisheratleastonce.Value, error) {
+							r0, err := h.Subject().Subscribe(ctx)
+							return r0, err
+						},
+						func(args []any) publisheratleastonce.Value {
+							v, _ := args[0].(publisheratleastonce.Value)
+							return v
+						},
+						"at-least-once",
+					)
+				},
+				Defect: contractPublishBreaksTheModeAfterThree,
+				Around: synctest.Test,
+			},
+			{
 				ID:          ContractChecks.Subscribe.Smoke(),
 				Statement:   "Subscribe returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -247,18 +281,6 @@ func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 				Callable:       "Contract.Publish",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
-			},
-			{
-				Classification: "contract:publisher/publish",
-				Callable:       "Contract.Publish",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
-			},
-			{
-				Classification: "contract:publisher/subscribe",
-				Callable:       "Contract.Subscribe",
-				Stance:         spec.Needs,
-				Note:           "The claims of the contract need generated sequences.",
 			},
 		},
 		Calls: []conform.Call[publisheratleastonce.Contract]{
@@ -428,6 +450,36 @@ func contractPublishIgnoresCancel(h *ContractHandle) publisheratleastonce.Contra
 	return &contractPublishIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
+// contractPublishBreaksTheModeAfterThreeDefect is the planted defect of a
+// Contract whose Publish breaks its delivery mode from its fourth call on.
+type contractPublishBreaksTheModeAfterThreeDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Publish is the override of the planted defect.
+func (d *contractPublishBreaksTheModeAfterThreeDefect) Publish(
+	p0 context.Context,
+	p1 publisheratleastonce.Value,
+) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.contractOverEmbedded.Publish(p0, p1)
+}
+
+// contractPublishBreaksTheModeAfterThree returns the planted defect of a
+// Contract whose Publish breaks its delivery mode from its fourth call on
+// over a fresh subject.
+func contractPublishBreaksTheModeAfterThree(h *ContractHandle) publisheratleastonce.Contract {
+	return &contractPublishBreaksTheModeAfterThreeDefect{contractOverEmbedded: h.Fresh()}
+}
+
 // contractSubscribePanicsDefect is the planted defect of a Contract whose
 // Subscribe panics.
 type contractSubscribePanicsDefect struct {
@@ -467,4 +519,48 @@ func contractSubscribeIgnoresCancel(h *ContractHandle) publisheratleastonce.Cont
 	return &contractSubscribeIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:64a1e12991a823da59b9af7d77fdc02ae9d3b63737e807dcb751e0561e4cffd6
+// contractActions returns the actions of the generated sequences of
+// Contract over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func contractActions(c *prop.Case, subject func() publisheratleastonce.Contract) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Publish",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[publisheratleastonce.Value](), "publish.v")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Publish", args)
+				values, err := contractPublishCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Subscribe",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Subscribe", args)
+				values, err := contractSubscribeCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// contractPublishCall calls Publish on subject with the arguments args,
+// and returns the values of the call beside its error.
+func contractPublishCall(ctx context.Context, subject publisheratleastonce.Contract, args []any) ([]any, error) {
+	a0, _ := args[0].(publisheratleastonce.Value)
+	return nil, subject.Publish(ctx, a0)
+}
+
+// contractSubscribeCall calls Subscribe on subject with the arguments
+// args, and returns the values of the call beside its error.
+func contractSubscribeCall(ctx context.Context, subject publisheratleastonce.Contract, args []any) ([]any, error) {
+	r0, err := subject.Subscribe(ctx)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:86c41f0430a6951ce4598c1a2d5df457798712123bdbd7d71b6fc044c55dc867

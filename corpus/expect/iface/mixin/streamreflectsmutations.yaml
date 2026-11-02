@@ -41,6 +41,13 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      mixed.stream/iteration-sees-mutations:
+        claim: iteration-sees-mutations
+        partners:
+          delete: mixed.remove
+          mutate: mixed.add
+        law: iteration-reflects-its-source
+        reason: stale-iteration
       mixed.stream/smoke:
         claim: smoke
         law: no-panic-on-any-input
@@ -68,6 +75,3 @@ declarations:
       - classification: shape:deleter
         callable: mixed.remove
         stance: silent
-      - classification: mixin:stream-reflects-mutations
-        callable: mixed.stream
-        stance: needs

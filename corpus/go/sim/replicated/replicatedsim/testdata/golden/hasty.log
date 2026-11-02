@@ -1,0 +1,24 @@
+the log of the run:
+step 1: primary, epoch 1, clock 0s: replicated.Started{Reply:1} -> replicated.Reply{Value:<nil> Err:<nil> To:1}
+step 2: primary, epoch 2, clock 0s, faults [partition]: replicated.Started{Reply:5} -> replicated.Reply{Value:<nil> Err:<nil> To:5}
+step 3: primary, epoch 2, clock 0s, faults [partition]: replicated.Put{Key:x Value:1 Reply:6} -> replicated.Reply{Value:<nil> Err:<nil> To:6}, replicated.Send{Key:x Value:1 Token:1 Timeout:1s}
+step 4: primary, epoch 2, clock 1s, faults [partition]: replicated.Get{Key:x Reply:7} -> replicated.Reply{Value:1 Err:<nil> To:7}
+step 5: primary, epoch 2, clock 1s: replicated.Copied{Err:sim: the process of the call crashed before it replied Token:1}
+step 6: primary, epoch 2, clock 1s: replicated.Get{Key:x Reply:11} -> replicated.Reply{Value:1 Err:<nil> To:11}
+step 7: backup, epoch 2, clock 1s: replicated.Started{Reply:9} -> replicated.Reply{Value:<nil> Err:<nil> To:9}
+step 8: backup, epoch 2, clock 1s: replicated.Get{Key:x Reply:10} -> replicated.Reply{Value: Err:<nil> To:10}
+step 9: primary, epoch 2, clock 5s: replicated.Stopped{}
+step 10: backup, epoch 2, clock 5s: replicated.Stopped{}
+the history of the calls:
+event 0: client 0 invoke get [x]
+event 1: client 0 unknown get sim: the process of the call crashed before it replied
+event 2: client 0 invoke get [x]
+event 3: client 1 invoke put [x 1]
+event 4: client 2 invoke get [x]
+event 5: client 1 ok put <nil>
+event 6: client 0 unknown get sim: the process of the call crashed before it replied
+event 7: client 2 ok get 1
+event 8: client 0 invoke get [x]
+event 9: client 1 invoke get [x]
+event 10: client 1 ok get 1
+event 11: client 0 ok get 

@@ -1,0 +1,58 @@
+{
+  "store": 1,
+  "definition": "13.6.0",
+  "property": "each event that Publish publishes arrives on the channel of Subscribe as its delivery mode states",
+  "identity": {
+    "assertion": "empty",
+    "file": "delivery.go",
+    "line": 87
+  },
+  "choices": "prop1:AAEAAQAAAAEAAAMAAwEAAAEAAQMAAwAAAA",
+  "counterexample": [
+    {
+      "label": "publish.v",
+      "value": {
+        "type": "record",
+        "fields": [
+          [
+            "Key",
+            {
+              "type": "string",
+              "value": ""
+            }
+          ],
+          [
+            "Body",
+            {
+              "type": "string",
+              "value": "0"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "label": "replay.v",
+      "value": {
+        "type": "record",
+        "fields": [
+          [
+            "Key",
+            {
+              "type": "string",
+              "value": ""
+            }
+          ],
+          [
+            "Body",
+            {
+              "type": "string",
+              "value": ""
+            }
+          ]
+        ]
+      }
+    }
+  ],
+  "found": "2026-11-01"
+}

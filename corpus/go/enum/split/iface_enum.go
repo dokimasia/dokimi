@@ -98,4 +98,9 @@ func (v *Signal) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:d2e5b0fee26bf9bf17e04958b5142b4bb2a6c853ebf677ebc30f2d1a4d0edf5d
+// StrictKanon marks Signal as a kanon.Strict type. UnmarshalText accepts
+// only the texts that MarshalText writes. A canonical decode of kanon
+// therefore does not encode a decoded Signal again.
+func (Signal) StrictKanon() {}
+
+// dokimi:provenance sha256:0687ca01597ba83d516f0b96ac9610c0eb0f868daed04b684f760f15518d3d81

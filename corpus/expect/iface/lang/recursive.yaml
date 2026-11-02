@@ -8,12 +8,19 @@ subjects:
 controls: []
 declarations:
   counter:
-    checks: {}
+    checks:
+      counter.steps/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      counter.steps/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
     authored:
       - counter.nodes/counts-the-root
       - counter.steps/takes-the-first-step
     ceilings: []
     refusals:
       counter.nodes/deterministic: input-samples
-      counter.steps/deterministic: input-samples
     unclaimed: []

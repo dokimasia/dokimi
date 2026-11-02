@@ -37,14 +37,9 @@ declarations:
     authored: []
     ceilings: []
     refusals:
+      contract.publish/delivers-by-its-mode: classification-params
       contract.subscribe/zero-on-error: value-samples
     unclaimed:
-      - classification: contract:publisher/publish
-        callable: contract.publish
-        stance: needs
       - classification: shape:writer
         callable: contract.publish
         stance: silent
-      - classification: contract:publisher/subscribe
-        callable: contract.subscribe
-        stance: needs

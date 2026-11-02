@@ -179,6 +179,8 @@ func TestConform(t *testing.T) {
 
 			assert.Equal(t, status, 1, "a failed test fails the gate")
 			assert.Contains(t, stderr, "the tests of the corpus failed: exit status 1", "the gate names the failure")
+			assert.Contains(t, stderr, " TestX\n", "the gate names the test that failed")
+			assert.Contains(t, stderr, "the fixture fails", "the gate writes the output of the test that failed")
 		})
 
 		t.Run("fails a corpus with a record that does not validate", func(t *testing.T) {

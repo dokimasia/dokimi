@@ -142,6 +142,45 @@ func TestReport(t *testing.T) {
 		}
 	})
 
+	t.Run("Failed", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns each test that failed without a failed subtest, with its output", func(t *testing.T) {
+			t.Parallel()
+
+			got, err := report.Failed(strings.NewReader(strings.Join([]string{
+				`{"Action":"run","Package":"p","Test":"TestA"}`,
+				`{"Action":"output","Package":"p","Test":"TestA","Output":"=== RUN   TestA\n"}`,
+				`{"Action":"output","Package":"p","Test":"TestA/sub","Output":"    a_test.go:9: broken\n"}`,
+				`{"Action":"fail","Package":"p","Test":"TestA/sub"}`,
+				`{"Action":"fail","Package":"p","Test":"TestA"}`,
+				`{"Action":"output","Package":"p","Test":"TestB","Output":"=== RUN   TestB\n"}`,
+				`{"Action":"pass","Package":"p","Test":"TestB"}`,
+				`{"Action":"fail","Package":"p"}`,
+				`not an event`,
+				`{"Action":"output","Package":"q","Output":"q.go:1:1: expected 'package'\n"}`,
+				`{"Action":"fail","Package":"q"}`,
+				`{"Action":"fail","Package":"r"}`,
+			}, "\n")))
+
+			assert.NoError(t, err, "the events read")
+			assert.Equal(t, got, []report.Failure{
+				{Package: "p", Test: "TestA/sub", Output: "    a_test.go:9: broken\n"},
+				{Package: "q", Output: "q.go:1:1: expected 'package'\n"},
+				{Package: "r"},
+			}, "the failures are the failed subtest and each package that failed without a test")
+		})
+
+		t.Run("returns an error that names the line of an event that does not decode", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := report.Failed(strings.NewReader("\n" + `{"Action": 7}` + "\n"))
+
+			assert.HasError(t, err, "the events do not read")
+			assert.Contains(t, err.Error(), "line 2: json: cannot unmarshal number", "the error names the line")
+		})
+	})
+
 	t.Run("Suites", func(t *testing.T) {
 		t.Parallel()
 

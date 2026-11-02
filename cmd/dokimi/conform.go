@@ -94,6 +94,12 @@ func conformRun(ctx context.Context, run *gocli.Run[cli.Global, conformOptions])
 	var errs []error
 	if failed := test.Run(); failed != nil {
 		errs = append(errs, fmt.Errorf("the tests of the corpus failed: %w", failed))
+		// Read reports an event that does not decode, so the error of Failed
+		// repeats it.
+		failures, _ := report.Failed(bytes.NewReader(events.Bytes()))
+		for _, f := range failures {
+			fmt.Fprintf(run.Stderr(), "%s\n%s", strings.TrimSpace(f.Package+" "+f.Test), f.Output)
+		}
 	}
 	records, err := report.Read(&events)
 	errs = append(errs, err)

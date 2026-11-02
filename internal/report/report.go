@@ -33,13 +33,46 @@ type Record struct {
 	spec.SuiteRecord
 }
 
-// event is the part of an event of go test -json that Read reads. An event
-// of the action attr alone has a key.
+// event is the part of an event of go test -json that Read and Failed read.
+// An event of the action attr alone has a key, and an event of the action
+// output alone has an output.
 type event struct {
 	Package string `json:"Package"`
 	Test    string `json:"Test"`
+	Action  string `json:"Action"`
 	Key     string `json:"Key"`
 	Value   string `json:"Value"`
+	Output  string `json:"Output"`
+}
+
+// The actions of the events of go test -json that Failed reads.
+const (
+	actionOutput = "output"
+	actionFail   = "fail"
+)
+
+// scan calls visit with each event of go test -json that r contains, in
+// order. It skips a line that is no JSON object, such as the output of a build
+// that failed, and returns an error that names the line of an event that does
+// not decode.
+func scan(r io.Reader, visit func(e *event)) error {
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer(nil, maxLine)
+	for line := 1; scanner.Scan(); line++ {
+		text := scanner.Bytes()
+		if len(text) == 0 || text[0] != '{' {
+			continue
+		}
+		var e event
+		if err := json.Unmarshal(text, &e); err != nil {
+			return fmt.Errorf("line %d: %w", line, err)
+		}
+		visit(&e)
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read the events: %w", err)
+	}
+	return nil
 }
 
 // Read reads the events of go test -json from r, and returns the suite
@@ -55,19 +88,9 @@ func Read(r io.Reader) ([]Record, error) {
 	type part struct{ pkg, test, key string }
 	var order []part
 	values := map[part]*strings.Builder{}
-	scanner := bufio.NewScanner(r)
-	scanner.Buffer(nil, maxLine)
-	for line := 1; scanner.Scan(); line++ {
-		text := scanner.Bytes()
-		if len(text) == 0 || text[0] != '{' {
-			continue
-		}
-		var e event
-		if err := json.Unmarshal(text, &e); err != nil {
-			return nil, fmt.Errorf("line %d: %w", line, err)
-		}
+	err := scan(r, func(e *event) {
 		if !strings.HasPrefix(e.Key, keyPrefix) {
-			continue
+			return
 		}
 		p := part{e.Package, e.Test, e.Key}
 		b, seen := values[p]
@@ -77,9 +100,9 @@ func Read(r io.Reader) ([]Record, error) {
 			order = append(order, p)
 		}
 		b.WriteString(e.Value)
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("read the events: %w", err)
+	})
+	if err != nil {
+		return nil, err
 	}
 	var records []Record
 	var errs []error
@@ -94,6 +117,59 @@ func Read(r io.Reader) ([]Record, error) {
 		records = append(records, r)
 	}
 	return records, errors.Join(errs...)
+}
+
+// Failure is a test of go test that failed: its package, its name and the
+// output that it wrote. A package that failed without a test that failed,
+// such as a package that does not build, has no test.
+type Failure struct {
+	Package string
+	Test    string
+	Output  string
+}
+
+// Failed reads the events of go test -json from r, and returns each test
+// that failed without a subtest that failed, in the order of the failures,
+// with its output. It returns each package that failed without a test that
+// failed as well. It returns an error that names the line of an event that
+// does not decode.
+func Failed(r io.Reader) ([]Failure, error) {
+	type test struct{ pkg, name string }
+	outputs := map[test]*strings.Builder{}
+	var failed []test
+	err := scan(r, func(e *event) {
+		t := test{e.Package, e.Test}
+		switch e.Action {
+		case actionOutput:
+			b, seen := outputs[t]
+			if !seen {
+				b = &strings.Builder{}
+				outputs[t] = b
+			}
+			b.WriteString(e.Output)
+		case actionFail:
+			failed = append(failed, t)
+		default:
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	var out []Failure
+	for _, t := range failed {
+		if slices.ContainsFunc(failed, func(o test) bool {
+			return o.pkg == t.pkg && o != t && (t.name == "" || strings.HasPrefix(o.name, t.name+"/"))
+		}) {
+
+			continue
+		}
+		f := Failure{Package: t.pkg, Test: t.name}
+		if b := outputs[t]; b != nil {
+			f.Output = b.String()
+		}
+		out = append(out, f)
+	}
+	return out, nil
 }
 
 // Suite contains the records of one declaration.

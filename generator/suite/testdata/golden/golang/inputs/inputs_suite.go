@@ -19,6 +19,12 @@ import (
 // Pipeline.Each/smoke#generated: Each returns without a panic for derived
 // inputs.
 //
+// Pipeline.Handle/smoke: Handle returns without a panic for derived
+// inputs.
+//
+// Pipeline.Handle/smoke#generated: Handle returns without a panic for
+// derived inputs.
+//
 // Pipeline.Do/smoke: Do returns without a panic for derived inputs.
 //
 // Pipeline.Do/smoke#generated: Do returns without a panic for derived
@@ -34,6 +40,12 @@ import (
 // Pipeline.Put/smoke#generated: Put returns without a panic for derived
 // inputs.
 //
+// Pipeline.Configure/smoke: Configure returns without a panic for derived
+// inputs.
+//
+// Pipeline.Configure/smoke#generated: Configure returns without a panic
+// for derived inputs.
+//
 // Pipeline.Label/smoke: Label returns without a panic for derived inputs.
 //
 // Pipeline.Label/smoke#generated: Label returns without a panic for
@@ -44,6 +56,8 @@ import (
 //
 // Pipeline.Each/smoke
 //
+// Pipeline.Handle/smoke
+//
 // Pipeline.Do/smoke
 //
 // Pipeline.Notify/smoke
@@ -51,6 +65,8 @@ import (
 // Pipeline.Apply/smoke
 //
 // Pipeline.Put/smoke
+//
+// Pipeline.Configure/smoke
 //
 // Pipeline.Label/smoke
 
@@ -190,6 +206,18 @@ type pipelineHandle struct {
 	conform.Callable[Pipeline]
 }
 
+// Smoke returns the identity of the check that Handle returns without a
+// panic for derived inputs.
+func (c pipelineHandle) Smoke() conform.ID[Pipeline] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Handle returns
+// without a panic for derived inputs.
+func (c pipelineHandle) SmokeGenerated() conform.ID[Pipeline] {
+	return c.Check("smoke#generated")
+}
+
 // pipelineDo is the name of Pipeline.Do, with the identities of its
 // checks.
 type pipelineDo struct {
@@ -280,6 +308,18 @@ type pipelineConfigure struct {
 	conform.Callable[Pipeline]
 }
 
+// Smoke returns the identity of the check that Configure returns without a
+// panic for derived inputs.
+func (c pipelineConfigure) Smoke() conform.ID[Pipeline] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Configure returns
+// without a panic for derived inputs.
+func (c pipelineConfigure) SmokeGenerated() conform.ID[Pipeline] {
+	return c.Check("smoke#generated")
+}
+
 // pipelineSubscribe is the name of Pipeline.Subscribe, with the identities
 // of its checks.
 type pipelineSubscribe struct {
@@ -355,6 +395,52 @@ func PipelineSuite() conform.Suite[Pipeline] {
 					})
 				},
 				Defect: pipelineEachPanics,
+			},
+			{
+				ID:          PipelineChecks.Handle.Smoke(),
+				Statement:   "Handle returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PipelineHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Handle(Handler(func(item Item) error { return nil }))
+					})
+				},
+				Defect: pipelineHandlePanics,
+			},
+			{
+				ID:          PipelineChecks.Handle.SmokeGenerated(),
+				Statement:   "Handle returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PipelineHandle, c *prop.Case) {
+					hResults := c.Draw(
+						prop.List(prop.SampledFrom[error](nil, conform.ErrGenerated)),
+						"h",
+					)
+					drawnH := func() Handler {
+						var hAt atomic.Int64
+						return func(Item) (r0 error) {
+							i := int(hAt.Add(1) - 1)
+							if i >= len(hResults) {
+								r0 = conform.ErrGenerated
+								return r0
+							}
+							return hResults[i]
+						}
+					}
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Handle(drawnH())
+					})
+				},
+				Defect: pipelineHandlePanics,
 			},
 			{
 				ID:          PipelineChecks.Do.Smoke(),
@@ -477,6 +563,40 @@ func PipelineSuite() conform.Suite[Pipeline] {
 					})
 				},
 				Defect: pipelinePutPanics,
+			},
+			{
+				ID:          PipelineChecks.Configure.Smoke(),
+				Statement:   "Configure returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PipelineHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Configure(string("name-a"), Option(func(item *Item) {}))
+						return nil
+					})
+				},
+				Defect: pipelineConfigurePanics,
+			},
+			{
+				ID:          PipelineChecks.Configure.SmokeGenerated(),
+				Statement:   "Configure returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *PipelineHandle, c *prop.Case) {
+					drawnName := c.Draw(prop.Of[string](), "name")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Configure(drawnName, Option(func(item *Item) {}))
+						return nil
+					})
+				},
+				Defect: pipelineConfigurePanics,
 			},
 			{
 				ID:          PipelineChecks.Label.Smoke(),
@@ -1423,6 +1543,23 @@ func pipelineEachPanics(h *PipelineHandle) Pipeline {
 	return &pipelineEachPanicsDefect{pipelineOverEmbedded: h.Fresh()}
 }
 
+// pipelineHandlePanicsDefect is the planted defect of a Pipeline whose
+// Handle panics.
+type pipelineHandlePanicsDefect struct {
+	pipelineOverEmbedded
+}
+
+// Handle is the override of the planted defect.
+func (*pipelineHandlePanicsDefect) Handle(p0 Handler) (r0 error) {
+	panic("the planted defect of a Pipeline whose Handle panics")
+}
+
+// pipelineHandlePanics returns the planted defect of a Pipeline whose
+// Handle panics over a fresh subject.
+func pipelineHandlePanics(h *PipelineHandle) Pipeline {
+	return &pipelineHandlePanicsDefect{pipelineOverEmbedded: h.Fresh()}
+}
+
 // pipelineDoPanicsDefect is the planted defect of a Pipeline whose Do
 // panics.
 type pipelineDoPanicsDefect struct {
@@ -1489,6 +1626,23 @@ func (*pipelinePutPanicsDefect) Put(p0 Item, p1 Line, p2 Note) (r0 error) {
 // panics over a fresh subject.
 func pipelinePutPanics(h *PipelineHandle) Pipeline {
 	return &pipelinePutPanicsDefect{pipelineOverEmbedded: h.Fresh()}
+}
+
+// pipelineConfigurePanicsDefect is the planted defect of a Pipeline whose
+// Configure panics.
+type pipelineConfigurePanicsDefect struct {
+	pipelineOverEmbedded
+}
+
+// Configure is the override of the planted defect.
+func (*pipelineConfigurePanicsDefect) Configure(p0 string, p1 ...Option) {
+	panic("the planted defect of a Pipeline whose Configure panics")
+}
+
+// pipelineConfigurePanics returns the planted defect of a Pipeline whose
+// Configure panics over a fresh subject.
+func pipelineConfigurePanics(h *PipelineHandle) Pipeline {
+	return &pipelineConfigurePanicsDefect{pipelineOverEmbedded: h.Fresh()}
 }
 
 // pipelineLabelPanicsDefect is the planted defect of a Pipeline whose

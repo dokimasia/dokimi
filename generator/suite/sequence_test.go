@@ -10,9 +10,11 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/eidos/sdk/emit"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/derive"
+	"go.dokimi.dev/dokimi/spec"
 )
 
 // sequencedPackage is the package of the Go tree that declares the
@@ -303,6 +305,199 @@ func TestSequence(t *testing.T) {
 			derivedNamed(t, suiteOf("Run"), "Advance", "follows-its-graph")
 		})
 
+		t.Run("passes the total that observe reads to the probe of a conserved quantity", func(t *testing.T) {
+			t.Parallel()
+
+			accounts := suiteOf("Accounts")
+			d := derivedNamed(t, accounts, "Transfer", "conserves-the-quantity")
+			assert.Length(t, d.Args, 3, "the probe takes the actions, the operation and the total")
+			expect.Equal(t, d.Args[1].Expr, &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Transfer"))},
+				"the operation is the name of Transfer")
+			total := d.Args[2].Closure
+			assert.NotNil(t, total, "the total is a closure")
+			expect.Equal(t, total.Method, "Total", "the total calls the reader that observe names")
+			assert.Length(t, total.Returns, 1, "the total is one value")
+			expect.Equal(t, spelled(total.Returns[0]), "int64", "the total has the type of the value of Total")
+			defect := defectOf(t, accounts, d)
+			expect.Equal(t, defect.Body, "leak", "the planted defect adds a unit to the total on each call")
+			expect.Equal(t, defect.Method.Name, "Total", "the planted defect changes the reader of the total")
+			expect.True(t, defect.Counts, "the planted defect counts the calls of Total")
+		})
+
+		t.Run("applies the read of the mixin atomic to the arguments of a call that fails", func(t *testing.T) {
+			t.Parallel()
+
+			journal := suiteOf("Journal")
+			d := derivedNamed(t, journal, "Record", "no-trace-of-a-failed-call")
+			assert.Length(t, d.Args, 3, "the probe takes the actions, the operation and the readback")
+			readback := d.Args[2].Apply
+			assert.NotNil(t, readback, "the readback applies Entry to the arguments of Record")
+			assert.Length(t, readback.Args, 1, "Entry takes the key")
+			expect.Equal(t, readback.Args[0].Select, "Key", "Entry takes the field Key of the recorded item")
+			defect := defectOf(t, journal, d)
+			expect.Equal(t, defect.Body, "half-applied-after", "the planted defect reads a sample after a failure")
+			expect.Equal(t, defect.Method.Name, "Entry", "the planted defect changes the read")
+			expect.Equal(t, defect.After, 3, "the planted defect breaks from the fourth read on")
+			expect.True(t, defect.Counts, "the planted defect counts the reads")
+			expect.True(t, defect.Keeps, "the planted defect reads the injector of its handle")
+		})
+
+		pulls := []struct {
+			name      string
+			give      string
+			wantDrain string
+			wantElems []string
+		}{
+			{
+				name: "pulls the values of a stream of values and errors", give: "Items", wantDrain: "until-error",
+				wantElems: []string{"string", "error"},
+			},
+			{
+				name: "pulls the elements of a stream", give: "Each", wantDrain: "elements",
+				wantElems: []string{"string"},
+			},
+			{
+				name: "pulls the first value of each pair of a stream of pairs", give: "Counts", wantDrain: "pairs",
+				wantElems: []string{"string", "int"},
+			},
+		}
+		for _, tt := range pulls {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				stock := suiteOf("Stock")
+				d := derivedNamed(t, stock, tt.give, "iteration-sees-mutations")
+				assert.Length(t, d.Args, 6,
+					"the probe takes the actions, the stream, two operations and two projections")
+				stream := d.Args[1].Closure
+				assert.NotNil(t, stream, "the stream is a closure")
+				expect.True(t, stream.Pull, "the closure starts a pull iteration of the stream")
+				expect.Equal(t, stream.Drain, tt.wantDrain, "the iteration pulls the stream by its drain")
+				expect.Equal(t, spelled(stream.Returns[0]), "string", "the iteration yields the items")
+				expect.Equal(t, d.Args[2].Expr, &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Add"))},
+					"the mutation is Add")
+				expect.Equal(t, d.Args[3].Expr, &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Remove"))},
+					"the delete is Remove")
+				for _, a := range d.Args[4:] {
+					assert.NotNil(t, a.Written, "each projection returns an argument of a call")
+					expect.Equal(t, a.Written.Index, 0, "Add and Remove take the item first")
+				}
+				defect := defectOf(t, stock, d)
+				expect.Equal(t, defect.Body, "copy", "the planted defect iterates a copy of the stream")
+				expect.Equal(t, defect.Stream, "r0", "the stream is the first result")
+				elems := make([]string, 0, len(defect.Elems))
+				for _, e := range defect.Elems {
+					elems = append(elems, spelled(e))
+				}
+				expect.Equal(t, elems, tt.wantElems, "the copy keeps each value of each element")
+			})
+		}
+
+		deliveries := []struct {
+			name          string
+			give          string
+			giveField     string
+			giveCheck     string
+			wantSubscribe string
+			wantBody      string
+			wantWritten   []int
+			wantArgs      int
+			wantAt        int
+		}{
+			{
+				name: "passes the channel of the subscription of an outbox to its probe", give: "Outbox",
+				giveField: "Append", giveCheck: "delivers-each-append", wantSubscribe: "Subscribe",
+				wantBody: "zero-after", wantWritten: []int{3}, wantArgs: 4, wantAt: 2,
+			},
+			{
+				name: "passes the channel of a publisher at least once to its probe", give: "Broker",
+				giveField: "Send", giveCheck: "delivers-by-its-mode", wantSubscribe: "Listen",
+				wantBody: "zero-after", wantWritten: []int{3}, wantArgs: 5, wantAt: 2,
+			},
+			{
+				name: "plants a second delivery of each event of a publisher at most once", give: "Broker",
+				giveField: "Fire", giveCheck: "delivers-by-its-mode", wantSubscribe: "Tap",
+				wantBody: "twice-after", wantWritten: []int{3}, wantArgs: 5, wantAt: 2,
+			},
+			{
+				name: "passes the channel of the subscription of a redelivery to its probe", give: "Broker",
+				giveField: "Resend", giveCheck: "redelivers-on-demand", wantSubscribe: "Listen",
+				wantBody: "zero-after", wantWritten: []int{4, 5}, wantArgs: 6, wantAt: 3,
+			},
+		}
+		for _, tt := range deliveries {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				s := suiteOf(tt.give)
+				d := derivedNamed(t, s, tt.giveField, tt.giveCheck)
+				assert.Length(t, d.Args, tt.wantArgs, "the probe takes the actions, the operations, the channel "+
+					"and the projections")
+				subscribe := d.Args[tt.wantAt].Closure
+				assert.NotNil(t, subscribe, "the subscription is a closure")
+				expect.True(t, subscribe.Channel, "the closure returns the channel of the subscription")
+				expect.Equal(t, subscribe.Method, tt.wantSubscribe, "the closure calls the role subscribe")
+				expect.Equal(t, spelled(subscribe.Returns[0]), "Event", "the channel delivers events")
+				for _, i := range tt.wantWritten {
+					assert.NotNil(t, d.Args[i].Written, "the projection returns an argument of a call")
+					expect.Equal(t, d.Args[i].Written.Index, 0, "each call passes the event first")
+				}
+				expect.True(t, d.Bubble, "the probe waits for the deliveries inside a bubble")
+				expect.Equal(t, defectOf(t, s, d).Body, tt.wantBody,
+					"the planted defect breaks from the fourth call on")
+			})
+		}
+
+		t.Run("passes the delivery mode of a publisher to its probe", func(t *testing.T) {
+			t.Parallel()
+
+			d := derivedNamed(t, suiteOf("Broker"), "Fire", "delivers-by-its-mode")
+			expect.Equal(t, d.Args[4].Expr, &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "at-most-once"))},
+				"the mode is the text of the param mode")
+		})
+
+		t.Run("passes the methods of a pointer to a subscription to the probe of a watch", func(t *testing.T) {
+			t.Parallel()
+
+			d := derivedNamed(t, suiteOf("Watches"), "Ticks", "watch-sees-each-trigger")
+			assert.NotNil(t, d.Args[3].Method, "next is a method of the subscription")
+			expect.Equal(t, spelled(d.Args[3].Method.Type), "*Ticker",
+				"the method belongs to the pointer that Ticks returns")
+			assert.NotNil(t, d.Args[7].Key, "the key of a trigger is a projection")
+			expect.Equal(t, d.Args[7].Key.Args, []int{0},
+				"the key of Tick leaves out the note that Ticks does not take")
+		})
+
+		t.Run("passes the methods of the subscription and the keys of a watch to its probe", func(t *testing.T) {
+			t.Parallel()
+
+			watches := suiteOf("Watches")
+			d := derivedNamed(t, watches, "Watch", "watch-sees-each-trigger")
+			assert.Length(t, d.Args, 9, "the probe takes the actions, two operations, two methods, the retrigger, "+
+				"two keys and the update")
+			expect.Equal(t, d.Args[2].Expr, &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Set"))},
+				"the trigger is Set")
+			methods := make([]string, 0, 2)
+			for _, a := range d.Args[3:5] {
+				assert.NotNil(t, a.Method, "next and stop are methods of the subscription")
+				expect.Equal(t, spelled(a.Method.Type), "Subscription", "the subscription is the value of Watch")
+				methods = append(methods, a.Method.Name)
+			}
+			expect.Equal(t, methods, []string{"Next", "Stop"}, "the params next and stop name the methods")
+			assert.NotNil(t, d.Args[5].Apply, "the retrigger applies Set")
+			expect.Length(t, d.Args[5].Apply.Args, 3, "Set takes the arguments of its own call")
+			assert.NotNil(t, d.Args[6].Key, "the key of a watch is a projection")
+			expect.Equal(t, d.Args[6].Key.Args, []int{1, 0}, "the key of Watch lists its key before its scope")
+			assert.NotNil(t, d.Args[7].Key, "the key of a trigger is a projection")
+			expect.Equal(t, d.Args[7].Key.Args, []int{0, 1}, "the key of Set lists its key before its scope")
+			assert.NotNil(t, d.Args[8].Written, "the update is an argument of a call of Set")
+			expect.Equal(t, d.Args[8].Written.Index, 2, "Set takes the update third")
+			expect.True(t, d.Bubble, "the probe reads the updates inside a bubble")
+			defect := defectOf(t, watches, d)
+			expect.Equal(t, defect.Method.Name, "Set", "the planted defect changes the trigger")
+			expect.Equal(t, defect.Body, "zero-after", "the planted defect drops each trigger from the fourth on")
+		})
+
 		refusals := []struct {
 			name     string
 			give     *suite.Suite
@@ -360,6 +555,99 @@ func TestSequence(t *testing.T) {
 				expect.True(t, refused, "the suite refuses the claim "+tt.want+" of "+tt.giveFrom)
 				derived := slices.ContainsFunc(tt.give.Derived, func(d suite.Derived) bool {
 					return d.Field == tt.giveFrom && strings.HasPrefix(d.Segment, tt.want)
+				})
+				expect.False(t, derived, "the suite derives no check of the refused claim")
+			})
+		}
+
+		gated := []struct {
+			name      string
+			give      string
+			giveFrom  string
+			giveClaim string
+			wantGate  spec.GateID
+		}{
+			{
+				name: "refuses a total that is no number", give: "Accounts", giveFrom: "Rename",
+				giveClaim: "conserves-the-quantity", wantGate: spec.NumericTotal,
+			},
+			{
+				name: "refuses a total without a value", give: "Accounts", giveFrom: "Fold",
+				giveClaim: "conserves-the-quantity", wantGate: spec.NumericTotal,
+			},
+			{
+				name: "refuses an iteration whose elements the mutation does not take", give: "Stock",
+				giveFrom: "Sizes", giveClaim: "iteration-sees-mutations", wantGate: spec.StreamMutations,
+			},
+			{
+				name: "refuses an iteration of a callable without a stream", give: "Stock", giveFrom: "Snapshot",
+				giveClaim: "iteration-sees-mutations", wantGate: spec.StreamMutations,
+			},
+			{
+				name: "refuses an append of no value of the channel", give: "Outbox", giveFrom: "Note",
+				giveClaim: "delivers-each-append", wantGate: spec.DeliversOnAChannel,
+			},
+			{
+				name: "refuses a subscription that returns no channel", give: "Outbox", giveFrom: "Log",
+				giveClaim: "delivers-each-append", wantGate: spec.DeliversOnAChannel,
+			},
+			{
+				name: "refuses a subscription to a channel that a caller sends to", give: "Outbox", giveFrom: "Post",
+				giveClaim: "delivers-each-append", wantGate: spec.DeliversOnAChannel,
+			},
+			{
+				name: "refuses a subscription without a value", give: "Outbox", giveFrom: "Push",
+				giveClaim: "delivers-each-append", wantGate: spec.DeliversOnAChannel,
+			},
+			{
+				name: "refuses a subscription without results", give: "Outbox", giveFrom: "Pour",
+				giveClaim: "delivers-each-append", wantGate: spec.DeliversOnAChannel,
+			},
+			{
+				name: "refuses a redelivery of a publisher at most once", give: "Broker", giveFrom: "Refire",
+				giveClaim: "redelivers-on-demand", wantGate: spec.AtLeastOnceMode,
+			},
+			{
+				name: "refuses a subscription whose next takes no wait", give: "Watches", giveFrom: "Peeks",
+				giveClaim: "watch-sees-each-trigger", wantGate: spec.SubscriptionMethods,
+			},
+			{
+				name: "refuses a subscription whose next takes a key", give: "Watches", giveFrom: "Finds",
+				giveClaim: "watch-sees-each-trigger", wantGate: spec.SubscriptionMethods,
+			},
+			{
+				name: "refuses a subscription whose next returns no flag", give: "Watches", giveFrom: "Reads",
+				giveClaim: "watch-sees-each-trigger", wantGate: spec.SubscriptionMethods,
+			},
+			{
+				name: "refuses a subscription whose stop takes a parameter", give: "Watches", giveFrom: "Cancels",
+				giveClaim: "watch-sees-each-trigger", wantGate: spec.SubscriptionMethods,
+			},
+			{
+				name: "refuses a subscription whose stop returns an error", give: "Watches", giveFrom: "Closes",
+				giveClaim: "watch-sees-each-trigger", wantGate: spec.SubscriptionMethods,
+			},
+			{
+				name: "refuses a subscription whose next is a field", give: "Watches", giveFrom: "Fields",
+				giveClaim: "watch-sees-each-trigger", wantGate: spec.SubscriptionMethods,
+			},
+			{
+				name: "refuses a watch whose trigger passes no update", give: "Watches", giveFrom: "Follows",
+				giveClaim: "watch-sees-each-trigger", wantGate: spec.SubscriptionMethods,
+			},
+		}
+		for _, tt := range gated {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				s := suiteOf(tt.give)
+				refused := slices.ContainsFunc(s.Derivation.Refusals, func(r derive.Refusal) bool {
+					return r.Callable == tt.giveFrom && string(r.Claim) == tt.giveClaim && r.Gate == tt.wantGate
+				})
+				expect.True(t, refused, "the suite refuses the claim "+tt.giveClaim+" of "+tt.giveFrom+" by the gate "+
+					string(tt.wantGate))
+				derived := slices.ContainsFunc(s.Derived, func(d suite.Derived) bool {
+					return d.Field == tt.giveFrom && strings.HasPrefix(d.Segment, tt.giveClaim)
 				})
 				expect.False(t, derived, "the suite derives no check of the refused claim")
 			})

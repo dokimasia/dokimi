@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/spec"
@@ -605,6 +606,9 @@ func cacheLenDrifts(h *CacheHandle) Cache {
 // Writer.Put/no-partial-write#generated: Get finds no effect of a Put that
 // failed with its dependency.
 //
+// Writer.Put/no-trace-of-a-failed-call: Get finds no effect of a Put that
+// failed with its dependencies, over any sequence of calls.
+//
 // Writer.Get/smoke: Get returns without a panic for derived inputs.
 //
 // Writer.Get/smoke#generated: Get returns without a panic for derived
@@ -629,6 +633,10 @@ func cacheLenDrifts(h *CacheHandle) Cache {
 // The derived checks of Writer that witness their laws at the shallow end:
 //
 // Writer.Put/smoke
+//
+// Writer.Put/no-partial-write
+//
+// Writer.Put/no-partial-write#generated
 //
 // Writer.Get/smoke
 
@@ -708,6 +716,13 @@ func (c writerPut) NoPartialWrite() conform.ID[Writer] {
 // no effect of a Put that failed with its dependency.
 func (c writerPut) NoPartialWriteGenerated() conform.ID[Writer] {
 	return c.Check("no-partial-write#generated")
+}
+
+// NoTraceOfAFailedCall returns the identity of the check that Get finds no
+// effect of a Put that failed with its dependencies, over any sequence of
+// calls.
+func (c writerPut) NoTraceOfAFailedCall() conform.ID[Writer] {
+	return c.Check("no-trace-of-a-failed-call")
 }
 
 // writerGet is the name of Writer.Get, with the identities of its checks.
@@ -883,6 +898,7 @@ func WriterSuite() conform.Suite[Writer] {
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
 				},
+				Shallow: true,
 				Apply: func(h *WriterHandle) {
 					probe.FailsWithoutEffect(h, func(ctx context.Context) error {
 						return h.Subject().Put(ctx, Value{Key: "Key-a"})
@@ -904,6 +920,7 @@ func WriterSuite() conform.Suite[Writer] {
 					spec.GeneratedInputs,
 					spec.NothingBeyondACaller,
 				},
+				Shallow: true,
 				Property: func(h *WriterHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[Value](), "v")
 					probe.FailsWithoutEffect(h, func(ctx context.Context) error {
@@ -913,6 +930,33 @@ func WriterSuite() conform.Suite[Writer] {
 					})
 				},
 				Defect: writerGetHalfApplied,
+			},
+			{
+				ID:        WriterChecks.Put.NoTraceOfAFailedCall(),
+				Statement: "Get finds no effect of a Put that failed with its dependencies, over any sequence of calls",
+				Claim:     spec.NoTraceOfAFailedCall,
+				Probe:     spec.FailedCallsLeaveNoTrace,
+				Reason:    spec.PartialWrite,
+				Law:       spec.FailedCallLeavesNoEffect,
+				Machineries: []spec.MachineryID{
+					spec.GeneratedSequences,
+					spec.CallThatFailsOnDemand,
+				},
+				Entails: []conform.ID[Writer]{WriterChecks.Put.NoPartialWrite()},
+				Property: func(h *WriterHandle, c *prop.Case) {
+					probe.FailedCallsLeaveNoTrace(
+						h,
+						c,
+						writerActions,
+						"Put",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(Value)
+							values, err := writerGetCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+					)
+				},
+				Defect: writerGetHalfAppliedAfterThree,
 			},
 			{
 				ID:          WriterChecks.Get.Smoke(),
@@ -1278,6 +1322,40 @@ func writerGetHalfApplied(h *WriterHandle) Writer {
 	return &writerGetHalfAppliedDefect{writerOverEmbedded: h.Fresh(), h: h}
 }
 
+// writerGetHalfAppliedAfterThreeDefect is the planted defect of a Writer
+// whose Get finds a part of a failed Put from its fourth read on.
+type writerGetHalfAppliedAfterThreeDefect struct {
+	writerOverEmbedded
+	calls int
+	h     *WriterHandle
+}
+
+// Get is the override of the planted defect.
+func (d *writerGetHalfAppliedAfterThreeDefect) Get(
+	p0 context.Context,
+	p1 string,
+) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	failed := d.h.Injector().Failures() > 0
+	r0, r1 = d.writerOverEmbedded.Get(p0, p1)
+	d.calls++
+	if failed && d.calls > 3 {
+		r0 = Value{Key: "Key-b"}
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// writerGetHalfAppliedAfterThree returns the planted defect of a Writer
+// whose Get finds a part of a failed Put from its fourth read on over a
+// fresh subject.
+func writerGetHalfAppliedAfterThree(h *WriterHandle) Writer {
+	return &writerGetHalfAppliedAfterThreeDefect{writerOverEmbedded: h.Fresh(), h: h}
+}
+
 // writerGetPanicsDefect is the planted defect of a Writer whose Get
 // panics.
 type writerGetPanicsDefect struct {
@@ -1362,6 +1440,61 @@ func (d *writerGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Valu
 // returns a value beside an error over a fresh subject.
 func writerGetValueBeside(h *WriterHandle) Writer {
 	return &writerGetValueBesideDefect{writerOverEmbedded: h.Fresh()}
+}
+
+// writerActions returns the actions of the generated sequences of Writer
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func writerActions(c *prop.Case, subject func() Writer) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[Value](), "put.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "put.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(Value)
+				call := c.History().Invoke(client, "Put", args, key0.Key)
+				values, err := writerPutCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := writerGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// writerPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func writerPutCall(ctx context.Context, subject Writer, args []any) ([]any, error) {
+	a0, _ := args[0].(Value)
+	return nil, subject.Put(ctx, a0)
+}
+
+// writerGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func writerGetCall(ctx context.Context, subject Writer, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
 }
 
 // The derived checks of Syncer:

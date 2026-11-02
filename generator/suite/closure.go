@@ -243,6 +243,19 @@ func (k *caller) closure(in *input) *Closure {
 		return c
 	case formLookup:
 		c.Flag = true
+	case formPull:
+		c.Pull = true
+	case formComputing:
+		k.compute(c, f)
+	case formChannel:
+		// The probe reads the channel, so the closure returns it as a channel
+		// that it receives from. Each value of a Go callable precedes its flag
+		// and its error, so the channel is the first result.
+		c.Channel, c.Error, c.Returns = true, true, []*emit.TypeRef{k.typeOf(k.channelElem(f))}
+		k.assign(c, f, false)
+		c.Assign[0] = "r0"
+		c.Results = append([]Expr{{Name: c.Assign[0]}}, errorOf(c)...)
+		return c
 	default:
 	}
 	if with != nil {
@@ -254,6 +267,26 @@ func (k *caller) closure(in *input) *Closure {
 	}
 	k.values(c, f)
 	return c
+}
+
+// compute makes c pass a computation to each input of a function type of the
+// callable of f, in place of its value. The computation records a call of the
+// callable on a new dependency of the injector of the handle and returns its
+// zero results, so the injector counts each computation, and Hold keeps each
+// computation waiting.
+func (k *caller) compute(c *Closure, f *derive.Facts) {
+	for i := range f.Inputs {
+		under := k.underlying(k.instance(k.inputRef(f, i)))
+		if under.Form != symbol.FormFunc {
+			continue
+		}
+		m := &emit.Method{}
+		appendParams(m, under)
+		for j, r := range under.Elems[under.Split:] {
+			m.Returns.Append(&emit.Return{Name: "r" + strconv.Itoa(j), Type: rules.EmitRef(r)})
+		}
+		c.Args[inputAt(f, i)] = Expr{Compute: m, Name: f.Callable}
+	}
 }
 
 // streamAt returns the position of the stream among the results of the

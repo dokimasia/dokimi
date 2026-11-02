@@ -335,6 +335,10 @@ func TestTunedSuite(t *testing.T) {
 				},
 				Defect: func(*wrap.TunedHandle) wrap.Tuned { return &tunedSubject{} },
 			}),
+			conform.Excuse(
+				wrap.TunedChecks.Turn.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -356,6 +360,10 @@ func TestTunedSuite(t *testing.T) {
 				},
 				Defect: func(*wrap.TunedHandle) wrap.Tuned { return &tunedSubject{} },
 			}),
+			conform.Excuse(
+				wrap.TunedChecks.Turn.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -377,6 +385,10 @@ func TestTunedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(wrap.TunedChecks.Tune.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(wrap.TunedChecks.Watch.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(wrap.TunedChecks.Turn.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			wrap.TunedChecks.Turn.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -387,6 +399,10 @@ func FuzzTunedSuiteTune(f *testing.F) {
 		f,
 		wrap.TunedChecks.Tune.Callable,
 		tunedIdle,
+		conform.Excuse(
+			wrap.TunedChecks.Turn.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -397,6 +413,10 @@ func FuzzTunedSuiteWatch(f *testing.F) {
 		f,
 		wrap.TunedChecks.Watch.Callable,
 		tunedIdle,
+		conform.Excuse(
+			wrap.TunedChecks.Turn.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -407,6 +427,10 @@ func FuzzTunedSuiteTurn(f *testing.F) {
 		f,
 		wrap.TunedChecks.Turn.Callable,
 		tunedIdle,
+		conform.Excuse(
+			wrap.TunedChecks.Turn.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

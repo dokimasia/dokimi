@@ -67,8 +67,9 @@ import (
 
 // The unclaimed classifications of Meter:
 //
-// The mixin:concurrent of Meter.Count has the stance needs. The claims of
-// the mixin need concurrent callers.
+// The mixin:concurrent of Meter.Count has the stance needs. The claim
+// linearizable needs the param machineries=[reference] of the directive
+// suite.
 //
 // The shape:writer of Meter.Record has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
@@ -526,7 +527,7 @@ func MeterSuite() conform.Suite[Meter] {
 				Classification: "mixin:concurrent",
 				Callable:       "Meter.Count",
 				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need concurrent callers.",
+				Note:           "The claim linearizable needs the param machineries=[reference] of the directive suite.",
 			},
 			{
 				Classification: "shape:writer",
@@ -902,8 +903,9 @@ func meterTotalDrifts(h *MeterHandle) Meter {
 
 // The unclaimed classifications of Weigh:
 //
-// The mixin:concurrent of Weigh has the stance needs. The claims of the
-// mixin need concurrent callers.
+// The mixin:concurrent of Weigh has the stance needs. The claim
+// linearizable needs the param machineries=[reference] of the directive
+// suite.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -1049,7 +1051,7 @@ func WeighSuite() conform.Suite[WeighFunc] {
 				Classification: "mixin:concurrent",
 				Callable:       "Weigh",
 				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need concurrent callers.",
+				Note:           "The claim linearizable needs the param machineries=[reference] of the directive suite.",
 			},
 		},
 		Calls: []conform.Call[WeighFunc]{

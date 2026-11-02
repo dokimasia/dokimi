@@ -2,9 +2,13 @@ package locks
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
+	"testing/synctest"
 
+	"go.dokimi.dev/assert/history"
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/spec"
@@ -37,14 +41,12 @@ import (
 // The shape:lifecycle of Lock.Acquire has the stance silent. A lifecycle
 // call returns nothing that a check could compare.
 //
-// The mixin:concurrent of Lock.Acquire has the stance needs. The claims of
-// the mixin need concurrent callers.
+// The mixin:concurrent of Lock.Acquire has the stance needs. The claim
+// linearizable needs the param machineries=[reference] of the directive
+// suite.
 //
 // The mixin:waits of Lock.Acquire has the stance silent. The mixin
 // documents that the callable can wait for another call.
-//
-// The mixin:concurrent of Lock.Release has the stance needs. The claims of
-// the mixin need concurrent callers.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -230,19 +232,13 @@ func LockSuite() conform.Suite[Lock] {
 				Classification: "mixin:concurrent",
 				Callable:       "Lock.Acquire",
 				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need concurrent callers.",
+				Note:           "The claim linearizable needs the param machineries=[reference] of the directive suite.",
 			},
 			{
 				Classification: "mixin:waits",
 				Callable:       "Lock.Acquire",
 				Stance:         spec.Silent,
 				Note:           "The mixin documents that the callable can wait for another call.",
-			},
-			{
-				Classification: "mixin:concurrent",
-				Callable:       "Lock.Release",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need concurrent callers.",
 			},
 		},
 		Calls: []conform.Call[Lock]{
@@ -493,6 +489,2552 @@ func (d *lockHeldDriftsDefect) Held() (r0 bool) {
 // another answer on the repeat over a fresh subject.
 func lockHeldDrifts(h *LockHandle) Lock {
 	return &lockHeldDriftsDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// The derived checks of Board:
+//
+// Board.Post/smoke: Post returns without a panic for derived inputs.
+//
+// Board.Post/smoke#generated: Post returns without a panic for derived
+// inputs.
+//
+// Board.Post/cancel: Post returns an error for a cancelled context.
+//
+// Board.Post/cancel#generated: Post returns an error for a cancelled
+// context.
+//
+// Board.Read/smoke: Read returns without a panic for derived inputs.
+//
+// Board.Read/cancel: Read returns an error for a cancelled context.
+//
+// Board.Read/zero-on-error: Read returns the zero value beside an error.
+//
+// Board.Read/agrees-with-the-reference: every sequence of calls returns on
+// Board what it returns on the reference.
+//
+// Board.Read/linearizable: every concurrent history of Board has an order
+// in which the reference returns the same results.
+
+// The derived checks of Board that witness their laws at the shallow end:
+//
+// Board.Post/smoke
+//
+// Board.Read/smoke
+
+// The unclaimed classifications of Board:
+//
+// The shape:writer of Board.Post has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Board writes.
+type (
+	BoardHandle = conform.Handle[Board]
+	BoardCheck  = conform.Check[Board]
+	BoardOption = conform.Option[Board]
+)
+
+// BoardChecks contains the name of each callable of Board, with the
+// identities of its checks.
+var BoardChecks = struct {
+	Post boardPost
+	Read boardRead
+}{
+	Post: boardPost{"Board.Post"},
+	Read: boardRead{"Board.Read"},
+}
+
+// boardPost is the name of Board.Post, with the identities of its checks.
+type boardPost struct {
+	conform.Callable[Board]
+}
+
+// Smoke returns the identity of the check that Post returns without a
+// panic for derived inputs.
+func (c boardPost) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Post returns
+// without a panic for derived inputs.
+func (c boardPost) SmokeGenerated() conform.ID[Board] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Post returns an error for
+// a cancelled context.
+func (c boardPost) Cancel() conform.ID[Board] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Post returns an
+// error for a cancelled context.
+func (c boardPost) CancelGenerated() conform.ID[Board] {
+	return c.Check("cancel#generated")
+}
+
+// boardRead is the name of Board.Read, with the identities of its checks.
+type boardRead struct {
+	conform.Callable[Board]
+}
+
+// Smoke returns the identity of the check that Read returns without a
+// panic for derived inputs.
+func (c boardRead) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Read returns an error for
+// a cancelled context.
+func (c boardRead) Cancel() conform.ID[Board] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Read returns the zero
+// value beside an error.
+func (c boardRead) ZeroOnError() conform.ID[Board] {
+	return c.Check("zero-on-error")
+}
+
+// AgreesWithTheReference returns the identity of the check that every
+// sequence of calls returns on Board what it returns on the reference.
+func (c boardRead) AgreesWithTheReference() conform.ID[Board] {
+	return "Board/agrees-with-the-reference"
+}
+
+// Linearizable returns the identity of the check that every concurrent
+// history of Board has an order in which the reference returns the same
+// results.
+func (c boardRead) Linearizable() conform.ID[Board] {
+	return "Board/linearizable"
+}
+
+// BoardSuite returns the checks of Board, and the calls and the budgets of
+// its callables.
+func BoardSuite() conform.Suite[Board] {
+	return conform.Suite[Board]{
+		Declaration: "Board",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Board]{
+			{
+				ID:          BoardChecks.Post.Smoke(),
+				Statement:   "Post returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Post(ctx, string("notice-a"))
+					})
+				},
+				Defect: boardPostPanics,
+			},
+			{
+				ID:          BoardChecks.Post.SmokeGenerated(),
+				Statement:   "Post returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnNotice := c.Draw(prop.Of[string](), "notice")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Post(ctx, drawnNotice)
+					})
+				},
+				Defect: boardPostPanics,
+			},
+			{
+				ID:          BoardChecks.Post.Cancel(),
+				Statement:   "Post returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BoardHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Post(ctx, string("notice-a"))
+					})
+				},
+				Defect: boardPostIgnoresCancel,
+			},
+			{
+				ID:          BoardChecks.Post.CancelGenerated(),
+				Statement:   "Post returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					drawnNotice := c.Draw(prop.Of[string](), "notice")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Post(ctx, drawnNotice)
+					})
+				},
+				Defect: boardPostIgnoresCancel,
+			},
+			{
+				ID:          BoardChecks.Read.Smoke(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx)
+						return err
+					})
+				},
+				Defect: boardReadPanics,
+			},
+			{
+				ID:          BoardChecks.Read.Cancel(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BoardHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx)
+						return err
+					})
+				},
+				Defect: boardReadIgnoresCancel,
+			},
+			{
+				ID:          BoardChecks.Read.ZeroOnError(),
+				Statement:   "Read returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BoardHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx)
+					}, string(""))
+				},
+				Defect: boardReadValueBeside,
+			},
+			{
+				ID:        BoardChecks.Read.AgreesWithTheReference(),
+				Statement: "every sequence of calls returns on Board what it returns on the reference",
+				Claim:     spec.AgreesWithTheReference,
+				Probe:     spec.SequencesAgreeWithTheReference,
+				Reason:    spec.DivergesFromTheReference,
+				Law:       spec.EverySequenceAgreesWithTheReference,
+				Machineries: []spec.MachineryID{
+					spec.GeneratedSequences,
+					spec.ReferenceImplementation,
+				},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					probe.SequencesAgreeWithTheReference(h, c, boardActions, boardReference)
+				},
+				Defect: boardReadDivergesAfterThree,
+			},
+			{
+				ID:        BoardChecks.Read.Linearizable(),
+				Statement: "every concurrent history of Board has an order in which the reference returns the same results",
+				Claim:     spec.Linearizable,
+				Probe:     spec.LinearizableHistory,
+				Reason:    spec.NotLinearizable,
+				Law:       spec.ConcurrentHistoryIsLinearizable,
+				Machineries: []spec.MachineryID{
+					spec.ConcurrentCallers,
+					spec.GeneratedSequences,
+					spec.ReferenceImplementation,
+				},
+				Property: func(h *BoardHandle, c *prop.Case) {
+					probe.LinearizableHistory(
+						h,
+						c,
+						boardActions,
+						boardReference,
+						2,
+						history.Budget(200000),
+					)
+				},
+				Defect: boardRacyReadWrite,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Board.Post",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Board]{
+			{
+				Calls:      boardPostCalls,
+				Over:       newBoardOver,
+				Callable:   BoardChecks.Post.Callable,
+				Concurrent: true,
+			},
+			{
+				Calls:      boardReadCalls,
+				Over:       newBoardOver,
+				Callable:   BoardChecks.Read.Callable,
+				Concurrent: true,
+			},
+		},
+	}
+}
+
+// RunBoardSuite applies the checks of Board, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunBoardSuite[T Board](t *testing.T, newSubject func() T, opts ...BoardOption) {
+	t.Helper()
+	RunBoardSuiteFromHandle(t, func(*BoardHandle) T { return newSubject() }, opts...)
+}
+
+// RunBoardSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunBoardSuiteFromHandle[T Board](
+	t *testing.T,
+	newSubject func(h *BoardHandle) T,
+	opts ...BoardOption,
+) {
+	t.Helper()
+	conform.Run(t, BoardSuite(), boardSubjects(newSubject), opts...)
+}
+
+// FuzzBoardSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzBoardSuite[T Board](
+	f *testing.F,
+	callable conform.Callable[Board],
+	newSubject func(h *BoardHandle) T,
+	opts ...BoardOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, BoardSuite(), callable, boardSubjects(newSubject), opts...)
+}
+
+// RunBoardBudgets applies the allocation ceilings of Board and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
+func RunBoardBudgets[T Board](
+	t *testing.T,
+	newSubject func(h *BoardHandle) T,
+	opts ...BoardOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, BoardSuite(), boardSubjects(newSubject), opts...)
+}
+
+// BenchBoardSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchBoardSuite[T Board](
+	b conform.B,
+	callable conform.Callable[Board],
+	newSubject func(h *BoardHandle) T,
+	opts ...BoardOption,
+) {
+	b.Helper()
+	conform.Bench(b, BoardSuite(), callable, boardSubjects(newSubject), opts...)
+}
+
+// BenchBoardSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchBoardSuiteParallel[T Board](
+	b *testing.B,
+	callable conform.Callable[Board],
+	newSubject func(h *BoardHandle) T,
+	opts ...BoardOption,
+) {
+	b.Helper()
+	conform.BenchParallel(b, BoardSuite(), callable, boardSubjects(newSubject), opts...)
+}
+
+// boardSubjects returns the factory of the subjects of Board that calls
+// newSubject with the handle of each check.
+func boardSubjects[T Board](newSubject func(h *BoardHandle) T) func(h *BoardHandle) Board {
+	return func(h *BoardHandle) Board { return newSubject(h) }
+}
+
+// boardPostCalls generates the calls of Board.Post with the inputs that
+// each case draws.
+var boardPostCalls = prop.Composite(func(c *prop.Case) func(context.Context, Board) error {
+	notice := c.Draw(prop.Of[string](), "notice")
+	return func(ctx context.Context, subject Board) error {
+		return subject.Post(ctx, notice)
+	}
+})
+
+// boardReadCalls generates the calls of Board.Read with the inputs that
+// each case draws.
+var boardReadCalls = prop.Composite(func(*prop.Case) func(context.Context, Board) error {
+	return func(ctx context.Context, subject Board) error {
+		_, err := subject.Read(ctx)
+		return err
+	}
+})
+
+// boardOverEmbedded is Board under the name of the field that boardOver
+// embeds.
+type boardOverEmbedded = Board
+
+// boardOver is a subject of Board whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type boardOver struct {
+	boardOverEmbedded
+	spend func()
+}
+
+// Post calls spend and returns its zero results.
+func (o boardOver) Post(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Read calls spend and returns its zero results.
+func (o boardOver) Read(context.Context) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newBoardOver returns the planted defect of a ceiling of Board, whose
+// callables call spend.
+func newBoardOver(_ *BoardHandle, spend func()) Board {
+	return boardOver{spend: spend}
+}
+
+// boardPostPanicsDefect is the planted defect of a Board whose Post
+// panics.
+type boardPostPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Post is the override of the planted defect.
+func (*boardPostPanicsDefect) Post(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Board whose Post panics")
+}
+
+// boardPostPanics returns the planted defect of a Board whose Post panics
+// over a fresh subject.
+func boardPostPanics(h *BoardHandle) Board {
+	return &boardPostPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardPostIgnoresCancelDefect is the planted defect of a Board whose Post
+// ignores the context.
+type boardPostIgnoresCancelDefect struct {
+	boardOverEmbedded
+}
+
+// Post is the override of the planted defect.
+func (d *boardPostIgnoresCancelDefect) Post(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.boardOverEmbedded.Post(p0, p1)
+}
+
+// boardPostIgnoresCancel returns the planted defect of a Board whose Post
+// ignores the context over a fresh subject.
+func boardPostIgnoresCancel(h *BoardHandle) Board {
+	return &boardPostIgnoresCancelDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardReadPanicsDefect is the planted defect of a Board whose Read
+// panics.
+type boardReadPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*boardReadPanicsDefect) Read(p0 context.Context) (r0 string, r1 error) {
+	panic("the planted defect of a Board whose Read panics")
+}
+
+// boardReadPanics returns the planted defect of a Board whose Read panics
+// over a fresh subject.
+func boardReadPanics(h *BoardHandle) Board {
+	return &boardReadPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardReadIgnoresCancelDefect is the planted defect of a Board whose Read
+// ignores the context.
+type boardReadIgnoresCancelDefect struct {
+	boardOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (d *boardReadIgnoresCancelDefect) Read(p0 context.Context) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.boardOverEmbedded.Read(p0)
+}
+
+// boardReadIgnoresCancel returns the planted defect of a Board whose Read
+// ignores the context over a fresh subject.
+func boardReadIgnoresCancel(h *BoardHandle) Board {
+	return &boardReadIgnoresCancelDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardReadValueBesideDefect is the planted defect of a Board whose Read
+// returns a value beside an error.
+type boardReadValueBesideDefect struct {
+	boardOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (d *boardReadValueBesideDefect) Read(p0 context.Context) (r0 string, r1 error) {
+	r0, r1 = d.boardOverEmbedded.Read(p0)
+	if r1 != nil {
+		r0 = string("sample-b")
+	}
+	return r0, r1
+}
+
+// boardReadValueBeside returns the planted defect of a Board whose Read
+// returns a value beside an error over a fresh subject.
+func boardReadValueBeside(h *BoardHandle) Board {
+	return &boardReadValueBesideDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardReadDivergesAfterThreeDefect is the planted defect of a Board whose
+// first callable with a value result returns another value from its fourth
+// call on.
+type boardReadDivergesAfterThreeDefect struct {
+	boardOverEmbedded
+	calls int
+}
+
+// Read is the override of the planted defect.
+func (d *boardReadDivergesAfterThreeDefect) Read(p0 context.Context) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.boardOverEmbedded.Read(p0)
+	d.calls++
+	if d.calls > 3 {
+		r0 = string("sample-b")
+	}
+	return r0, r1
+}
+
+// boardReadDivergesAfterThree returns the planted defect of a Board whose
+// first callable with a value result returns another value from its fourth
+// call on over a fresh subject.
+func boardReadDivergesAfterThree(h *BoardHandle) Board {
+	return &boardReadDivergesAfterThreeDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardRacyReadWriteDefect is the planted defect of a Board whose first
+// callable with a value result returns another value while another call is
+// in progress.
+type boardRacyReadWriteDefect struct {
+	boardOverEmbedded
+	h      *BoardHandle
+	marked atomic.Int32
+}
+
+// Post is the override of the planted defect.
+func (d *boardRacyReadWriteDefect) Post(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.marked.Add(1)
+	defer d.marked.Add(-1)
+	d.h.Yield()
+	return d.boardOverEmbedded.Post(p0, p1)
+}
+
+// Read is the override of the planted defect.
+func (d *boardRacyReadWriteDefect) Read(p0 context.Context) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	if d.marked.Load() > 0 {
+		r0 = string("sample-b")
+		return r0, r1
+	}
+	return d.boardOverEmbedded.Read(p0)
+}
+
+// boardRacyReadWrite returns the planted defect of a Board whose first
+// callable with a value result returns another value while another call is
+// in progress over a fresh subject.
+func boardRacyReadWrite(h *BoardHandle) Board {
+	return &boardRacyReadWriteDefect{boardOverEmbedded: h.Fresh(), h: h}
+}
+
+// boardActions returns the actions of the generated sequences of Board
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func boardActions(c *prop.Case, subject func() Board) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Post",
+			Input: func(c *prop.Case, _ struct{}) any {
+				notice := c.Draw(prop.Of[string](), "post.notice")
+				return []any{notice}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Post", args)
+				values, err := boardPostCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Read",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Read", args)
+				values, err := boardReadCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// boardPostCall calls Post on subject with the arguments args, and returns
+// the values of the call beside its error.
+func boardPostCall(ctx context.Context, subject Board, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Post(ctx, a0)
+}
+
+// boardReadCall calls Read on subject with the arguments args, and returns
+// the values of the call beside its error.
+func boardReadCall(ctx context.Context, subject Board, args []any) ([]any, error) {
+	r0, err := subject.Read(ctx)
+	return []any{r0}, err
+}
+
+// boardReference returns the function that applies an operation of a
+// history to the reference r by the name of its callable.
+func boardReference(r Board) func(context.Context, string, []any) conform.Output {
+	return func(ctx context.Context, operation string, args []any) conform.Output {
+		var values []any
+		var err error
+		switch operation {
+		case "Post":
+			values, err = boardPostCall(ctx, r, args)
+		case "Read":
+			values, err = boardReadCall(ctx, r, args)
+		}
+		return conform.OutputOf(err, values...)
+	}
+}
+
+// The derived checks of Shelf:
+//
+// Shelf.Add/smoke: Add returns without a panic for derived inputs.
+//
+// Shelf.Add/smoke#generated: Add returns without a panic for derived
+// inputs.
+//
+// Shelf.Add/cancel: Add returns an error for a cancelled context.
+//
+// Shelf.Add/cancel#generated: Add returns an error for a cancelled
+// context.
+//
+// Shelf.Count/smoke: Count returns without a panic for derived inputs.
+//
+// Shelf.Count/smoke#generated: Count returns without a panic for derived
+// inputs.
+//
+// Shelf.Count/cancel: Count returns an error for a cancelled context.
+//
+// Shelf.Count/cancel#generated: Count returns an error for a cancelled
+// context.
+//
+// Shelf.Count/zero-on-error: Count returns the zero value beside an error.
+//
+// Shelf.Count/zero-on-error#generated: Count returns the zero value beside
+// an error.
+//
+// Shelf.Count/reads-agree-under-concurrency: Count returns beside other
+// reads what it returns with the same arguments when it runs alone.
+
+// The derived checks of Shelf that witness their laws at the shallow end:
+//
+// Shelf.Add/smoke
+//
+// Shelf.Count/smoke
+
+// The unclaimed classifications of Shelf:
+//
+// The shape:writer of Shelf.Add has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Shelf writes.
+type (
+	ShelfHandle = conform.Handle[Shelf]
+	ShelfCheck  = conform.Check[Shelf]
+	ShelfOption = conform.Option[Shelf]
+)
+
+// ShelfChecks contains the name of each callable of Shelf, with the
+// identities of its checks.
+var ShelfChecks = struct {
+	Add   shelfAdd
+	Count shelfCount
+}{
+	Add:   shelfAdd{"Shelf.Add"},
+	Count: shelfCount{"Shelf.Count"},
+}
+
+// shelfAdd is the name of Shelf.Add, with the identities of its checks.
+type shelfAdd struct {
+	conform.Callable[Shelf]
+}
+
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c shelfAdd) Smoke() conform.ID[Shelf] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c shelfAdd) SmokeGenerated() conform.ID[Shelf] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c shelfAdd) Cancel() conform.ID[Shelf] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Add returns an
+// error for a cancelled context.
+func (c shelfAdd) CancelGenerated() conform.ID[Shelf] {
+	return c.Check("cancel#generated")
+}
+
+// shelfCount is the name of Shelf.Count, with the identities of its
+// checks.
+type shelfCount struct {
+	conform.Callable[Shelf]
+}
+
+// Smoke returns the identity of the check that Count returns without a
+// panic for derived inputs.
+func (c shelfCount) Smoke() conform.ID[Shelf] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Count returns
+// without a panic for derived inputs.
+func (c shelfCount) SmokeGenerated() conform.ID[Shelf] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Count returns an error for
+// a cancelled context.
+func (c shelfCount) Cancel() conform.ID[Shelf] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Count returns an
+// error for a cancelled context.
+func (c shelfCount) CancelGenerated() conform.ID[Shelf] {
+	return c.Check("cancel#generated")
+}
+
+// ZeroOnError returns the identity of the check that Count returns the
+// zero value beside an error.
+func (c shelfCount) ZeroOnError() conform.ID[Shelf] {
+	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Count
+// returns the zero value beside an error.
+func (c shelfCount) ZeroOnErrorGenerated() conform.ID[Shelf] {
+	return c.Check("zero-on-error#generated")
+}
+
+// ReadsAgreeUnderConcurrency returns the identity of the check that Count
+// returns beside other reads what it returns with the same arguments when
+// it runs alone.
+func (c shelfCount) ReadsAgreeUnderConcurrency() conform.ID[Shelf] {
+	return c.Check("reads-agree-under-concurrency")
+}
+
+// ShelfSuite returns the checks of Shelf, and the calls and the budgets of
+// its callables.
+func ShelfSuite() conform.Suite[Shelf] {
+	return conform.Suite[Shelf]{
+		Declaration: "Shelf",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Shelf]{
+			{
+				ID:          ShelfChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ShelfHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("key-a"))
+					})
+				},
+				Defect: shelfAddPanics,
+			},
+			{
+				ID:          ShelfChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ShelfHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnKey)
+					})
+				},
+				Defect: shelfAddPanics,
+			},
+			{
+				ID:          ShelfChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ShelfHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("key-a"))
+					})
+				},
+				Defect: shelfAddIgnoresCancel,
+			},
+			{
+				ID:          ShelfChecks.Add.CancelGenerated(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ShelfHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnKey)
+					})
+				},
+				Defect: shelfAddIgnoresCancel,
+			},
+			{
+				ID:          ShelfChecks.Count.Smoke(),
+				Statement:   "Count returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ShelfHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Count(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: shelfCountPanics,
+			},
+			{
+				ID:          ShelfChecks.Count.SmokeGenerated(),
+				Statement:   "Count returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ShelfHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Count(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: shelfCountPanics,
+			},
+			{
+				ID:          ShelfChecks.Count.Cancel(),
+				Statement:   "Count returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ShelfHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Count(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: shelfCountIgnoresCancel,
+			},
+			{
+				ID:          ShelfChecks.Count.CancelGenerated(),
+				Statement:   "Count returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ShelfHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Count(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: shelfCountIgnoresCancel,
+			},
+			{
+				ID:          ShelfChecks.Count.ZeroOnError(),
+				Statement:   "Count returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ShelfHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Count(ctx, string("key-a"))
+					}, int(0))
+				},
+				Defect: shelfCountValueBeside,
+			},
+			{
+				ID:          ShelfChecks.Count.ZeroOnErrorGenerated(),
+				Statement:   "Count returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *ShelfHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Count(ctx, drawnKey)
+					}, int(0))
+				},
+				Defect: shelfCountValueBeside,
+			},
+			{
+				ID:          ShelfChecks.Count.ReadsAgreeUnderConcurrency(),
+				Statement:   "Count returns beside other reads what it returns with the same arguments when it runs alone",
+				Claim:       spec.ReadsAgreeUnderConcurrency,
+				Probe:       spec.ConcurrentReadsAgree,
+				Reason:      spec.InconsistentConcurrentRead,
+				Law:         spec.ReadsBesideReadsReturnWhatOneReadReturns,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
+				Property: func(h *ShelfHandle, c *prop.Case) {
+					probe.ConcurrentReadsAgree(
+						h,
+						c,
+						shelfActions,
+						"Count",
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := shelfCountCall(ctx, h.Subject(), []any{args[0]})
+							return conform.OutputOf(err, values...)
+						},
+						2,
+					)
+				},
+				Defect: shelfCountRacyRead,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Shelf.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Shelf]{
+			{
+				Calls:    shelfAddCalls,
+				Over:     newShelfOver,
+				Callable: ShelfChecks.Add.Callable,
+			},
+			{
+				Calls:      shelfCountCalls,
+				Over:       newShelfOver,
+				Callable:   ShelfChecks.Count.Callable,
+				Concurrent: true,
+			},
+		},
+	}
+}
+
+// RunShelfSuite applies the checks of Shelf, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunShelfSuite[T Shelf](t *testing.T, newSubject func() T, opts ...ShelfOption) {
+	t.Helper()
+	RunShelfSuiteFromHandle(t, func(*ShelfHandle) T { return newSubject() }, opts...)
+}
+
+// RunShelfSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunShelfSuiteFromHandle[T Shelf](
+	t *testing.T,
+	newSubject func(h *ShelfHandle) T,
+	opts ...ShelfOption,
+) {
+	t.Helper()
+	conform.Run(t, ShelfSuite(), shelfSubjects(newSubject), opts...)
+}
+
+// FuzzShelfSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzShelfSuite[T Shelf](
+	f *testing.F,
+	callable conform.Callable[Shelf],
+	newSubject func(h *ShelfHandle) T,
+	opts ...ShelfOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, ShelfSuite(), callable, shelfSubjects(newSubject), opts...)
+}
+
+// RunShelfBudgets applies the allocation ceilings of Shelf and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
+func RunShelfBudgets[T Shelf](
+	t *testing.T,
+	newSubject func(h *ShelfHandle) T,
+	opts ...ShelfOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ShelfSuite(), shelfSubjects(newSubject), opts...)
+}
+
+// BenchShelfSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchShelfSuite[T Shelf](
+	b conform.B,
+	callable conform.Callable[Shelf],
+	newSubject func(h *ShelfHandle) T,
+	opts ...ShelfOption,
+) {
+	b.Helper()
+	conform.Bench(b, ShelfSuite(), callable, shelfSubjects(newSubject), opts...)
+}
+
+// BenchShelfSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchShelfSuiteParallel[T Shelf](
+	b *testing.B,
+	callable conform.Callable[Shelf],
+	newSubject func(h *ShelfHandle) T,
+	opts ...ShelfOption,
+) {
+	b.Helper()
+	conform.BenchParallel(b, ShelfSuite(), callable, shelfSubjects(newSubject), opts...)
+}
+
+// shelfSubjects returns the factory of the subjects of Shelf that calls
+// newSubject with the handle of each check.
+func shelfSubjects[T Shelf](newSubject func(h *ShelfHandle) T) func(h *ShelfHandle) Shelf {
+	return func(h *ShelfHandle) Shelf { return newSubject(h) }
+}
+
+// shelfAddCalls generates the calls of Shelf.Add with the inputs that each
+// case draws.
+var shelfAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, Shelf) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Shelf) error {
+		return subject.Add(ctx, key)
+	}
+})
+
+// shelfCountCalls generates the calls of Shelf.Count with the inputs that
+// each case draws.
+var shelfCountCalls = prop.Composite(func(c *prop.Case) func(context.Context, Shelf) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Shelf) error {
+		_, err := subject.Count(ctx, key)
+		return err
+	}
+})
+
+// shelfOverEmbedded is Shelf under the name of the field that shelfOver
+// embeds.
+type shelfOverEmbedded = Shelf
+
+// shelfOver is a subject of Shelf whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type shelfOver struct {
+	shelfOverEmbedded
+	spend func()
+}
+
+// Add calls spend and returns its zero results.
+func (o shelfOver) Add(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Count calls spend and returns its zero results.
+func (o shelfOver) Count(context.Context, string) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newShelfOver returns the planted defect of a ceiling of Shelf, whose
+// callables call spend.
+func newShelfOver(_ *ShelfHandle, spend func()) Shelf {
+	return shelfOver{spend: spend}
+}
+
+// shelfAddPanicsDefect is the planted defect of a Shelf whose Add panics.
+type shelfAddPanicsDefect struct {
+	shelfOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*shelfAddPanicsDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Shelf whose Add panics")
+}
+
+// shelfAddPanics returns the planted defect of a Shelf whose Add panics
+// over a fresh subject.
+func shelfAddPanics(h *ShelfHandle) Shelf {
+	return &shelfAddPanicsDefect{shelfOverEmbedded: h.Fresh()}
+}
+
+// shelfAddIgnoresCancelDefect is the planted defect of a Shelf whose Add
+// ignores the context.
+type shelfAddIgnoresCancelDefect struct {
+	shelfOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (d *shelfAddIgnoresCancelDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.shelfOverEmbedded.Add(p0, p1)
+}
+
+// shelfAddIgnoresCancel returns the planted defect of a Shelf whose Add
+// ignores the context over a fresh subject.
+func shelfAddIgnoresCancel(h *ShelfHandle) Shelf {
+	return &shelfAddIgnoresCancelDefect{shelfOverEmbedded: h.Fresh()}
+}
+
+// shelfCountPanicsDefect is the planted defect of a Shelf whose Count
+// panics.
+type shelfCountPanicsDefect struct {
+	shelfOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*shelfCountPanicsDefect) Count(p0 context.Context, p1 string) (r0 int, r1 error) {
+	panic("the planted defect of a Shelf whose Count panics")
+}
+
+// shelfCountPanics returns the planted defect of a Shelf whose Count
+// panics over a fresh subject.
+func shelfCountPanics(h *ShelfHandle) Shelf {
+	return &shelfCountPanicsDefect{shelfOverEmbedded: h.Fresh()}
+}
+
+// shelfCountIgnoresCancelDefect is the planted defect of a Shelf whose
+// Count ignores the context.
+type shelfCountIgnoresCancelDefect struct {
+	shelfOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (d *shelfCountIgnoresCancelDefect) Count(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.shelfOverEmbedded.Count(p0, p1)
+}
+
+// shelfCountIgnoresCancel returns the planted defect of a Shelf whose
+// Count ignores the context over a fresh subject.
+func shelfCountIgnoresCancel(h *ShelfHandle) Shelf {
+	return &shelfCountIgnoresCancelDefect{shelfOverEmbedded: h.Fresh()}
+}
+
+// shelfCountValueBesideDefect is the planted defect of a Shelf whose Count
+// returns a value beside an error.
+type shelfCountValueBesideDefect struct {
+	shelfOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (d *shelfCountValueBesideDefect) Count(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0, r1 = d.shelfOverEmbedded.Count(p0, p1)
+	if r1 != nil {
+		r0 = int(7)
+	}
+	return r0, r1
+}
+
+// shelfCountValueBeside returns the planted defect of a Shelf whose Count
+// returns a value beside an error over a fresh subject.
+func shelfCountValueBeside(h *ShelfHandle) Shelf {
+	return &shelfCountValueBesideDefect{shelfOverEmbedded: h.Fresh()}
+}
+
+// shelfCountRacyReadDefect is the planted defect of a Shelf whose Count
+// returns the results of another read that overlaps it.
+type shelfCountRacyReadDefect struct {
+	shelfOverEmbedded
+	h    *ShelfHandle
+	last atomic.Value
+}
+
+// Count is the override of the planted defect.
+func (d *shelfCountRacyReadDefect) Count(p0 context.Context, p1 string) (r0 int, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.shelfOverEmbedded.Count(p0, p1)
+	d.last.Store([]any{r0, r1})
+	d.h.Yield()
+	kept, _ := d.last.Load().([]any)
+	r0, _ = kept[0].(int)
+	r1, _ = kept[1].(error)
+	return r0, r1
+}
+
+// shelfCountRacyRead returns the planted defect of a Shelf whose Count
+// returns the results of another read that overlaps it over a fresh
+// subject.
+func shelfCountRacyRead(h *ShelfHandle) Shelf {
+	return &shelfCountRacyReadDefect{shelfOverEmbedded: h.Fresh(), h: h}
+}
+
+// shelfActions returns the actions of the generated sequences of Shelf
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func shelfActions(c *prop.Case, subject func() Shelf) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.Of[string](), "add.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := shelfAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Count",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "count.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Count", args, args[0])
+				values, err := shelfCountCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// shelfAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func shelfAddCall(ctx context.Context, subject Shelf, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Add(ctx, a0)
+}
+
+// shelfCountCall calls Count on subject with the arguments args, and
+// returns the values of the call beside its error.
+func shelfCountCall(ctx context.Context, subject Shelf, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Count(ctx, a0)
+	return []any{r0}, err
+}
+
+// The derived checks of Flight:
+//
+// Flight.Do/smoke: Do returns without a panic for derived inputs.
+//
+// Flight.Do/smoke#generated: Do returns without a panic for derived
+// inputs.
+//
+// Flight.Do/cancel: Do returns an error for a cancelled context.
+//
+// Flight.Do/cancel#generated: Do returns an error for a cancelled context.
+//
+// Flight.Do/failure-is-reported: Do returns an error when a call of its
+// dependency fails.
+//
+// Flight.Do/failure-is-reported#generated: Do returns an error when a call
+// of its dependency fails.
+//
+// Flight.Do/computes-once: calls of Do with one key at once share one
+// computation of their result.
+//
+// Flight.Do/computes-once#generated: calls of Do with one key at once
+// share one computation of their result.
+
+// The derived checks of Flight that witness their laws at the shallow end:
+//
+// Flight.Do/smoke
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Flight writes.
+type (
+	FlightHandle = conform.Handle[Flight]
+	FlightCheck  = conform.Check[Flight]
+	FlightOption = conform.Option[Flight]
+)
+
+// FlightChecks contains the name of each callable of Flight, with the
+// identities of its checks.
+var FlightChecks = struct {
+	Do flightDo
+}{
+	Do: flightDo{"Flight.Do"},
+}
+
+// flightDo is the name of Flight.Do, with the identities of its checks.
+type flightDo struct {
+	conform.Callable[Flight]
+}
+
+// Smoke returns the identity of the check that Do returns without a panic
+// for derived inputs.
+func (c flightDo) Smoke() conform.ID[Flight] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Do returns without
+// a panic for derived inputs.
+func (c flightDo) SmokeGenerated() conform.ID[Flight] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Do returns an error for a
+// cancelled context.
+func (c flightDo) Cancel() conform.ID[Flight] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Do returns an
+// error for a cancelled context.
+func (c flightDo) CancelGenerated() conform.ID[Flight] {
+	return c.Check("cancel#generated")
+}
+
+// FailureIsReported returns the identity of the check that Do returns an
+// error when a call of its dependency fails.
+func (c flightDo) FailureIsReported() conform.ID[Flight] {
+	return c.Check("failure-is-reported")
+}
+
+// FailureIsReportedGenerated returns the identity of the check that Do
+// returns an error when a call of its dependency fails.
+func (c flightDo) FailureIsReportedGenerated() conform.ID[Flight] {
+	return c.Check("failure-is-reported#generated")
+}
+
+// ComputesOnce returns the identity of the check that calls of Do with one
+// key at once share one computation of their result.
+func (c flightDo) ComputesOnce() conform.ID[Flight] {
+	return c.Check("computes-once")
+}
+
+// ComputesOnceGenerated returns the identity of the check that calls of Do
+// with one key at once share one computation of their result.
+func (c flightDo) ComputesOnceGenerated() conform.ID[Flight] {
+	return c.Check("computes-once#generated")
+}
+
+// FlightSuite returns the checks of Flight, and the calls and the budgets
+// of its callables.
+func FlightSuite() conform.Suite[Flight] {
+	return conform.Suite[Flight]{
+		Declaration: "Flight",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Flight]{
+			{
+				ID:          FlightChecks.Do.Smoke(),
+				Statement:   "Do returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *FlightHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().
+							Do(ctx, string("key-a"), Loader(func(ctx context.Context, key string) (string, error) { return "", nil }))
+						return err
+					})
+				},
+				Defect: flightDoPanics,
+			},
+			{
+				ID:          FlightChecks.Do.SmokeGenerated(),
+				Statement:   "Do returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *FlightHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					loadResults0 := c.Draw(prop.List(prop.Of[string]()), "load-0")
+					loadResults1 := c.Draw(
+						prop.List(
+							prop.SampledFrom[error](nil, conform.ErrGenerated),
+							prop.MinSize(len(loadResults0)),
+							prop.MaxSize(len(loadResults0)),
+						),
+						"load-1",
+					)
+					drawnLoad := func() Loader {
+						var loadAt atomic.Int64
+						return func(context.Context, string) (r0 string, r1 error) {
+							i := int(loadAt.Add(1) - 1)
+							if i >= len(loadResults0) {
+								r1 = conform.ErrGenerated
+								return r0, r1
+							}
+							return loadResults0[i],
+								loadResults1[i]
+						}
+					}
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Do(ctx, drawnKey, drawnLoad())
+						return err
+					})
+				},
+				Defect: flightDoPanics,
+			},
+			{
+				ID:          FlightChecks.Do.Cancel(),
+				Statement:   "Do returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *FlightHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().
+							Do(ctx, string("key-a"), Loader(func(ctx context.Context, key string) (string, error) { return "", nil }))
+						return err
+					})
+				},
+				Defect: flightDoIgnoresCancel,
+			},
+			{
+				ID:          FlightChecks.Do.CancelGenerated(),
+				Statement:   "Do returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *FlightHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					loadResults0 := c.Draw(prop.List(prop.Of[string]()), "load-0")
+					loadResults1 := c.Draw(
+						prop.List(
+							prop.SampledFrom[error](nil, conform.ErrGenerated),
+							prop.MinSize(len(loadResults0)),
+							prop.MaxSize(len(loadResults0)),
+						),
+						"load-1",
+					)
+					drawnLoad := func() Loader {
+						var loadAt atomic.Int64
+						return func(context.Context, string) (r0 string, r1 error) {
+							i := int(loadAt.Add(1) - 1)
+							if i >= len(loadResults0) {
+								r1 = conform.ErrGenerated
+								return r0, r1
+							}
+							return loadResults0[i],
+								loadResults1[i]
+						}
+					}
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Do(ctx, drawnKey, drawnLoad())
+						return err
+					})
+				},
+				Defect: flightDoIgnoresCancel,
+			},
+			{
+				ID:        FlightChecks.Do.FailureIsReported(),
+				Statement: "Do returns an error when a call of its dependency fails",
+				Claim:     spec.FailureIsReported,
+				Probe:     spec.ReportsAFailedDependency,
+				Reason:    spec.SwallowedFailure,
+				Law:       spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.NothingBeyondACaller,
+				},
+				Apply: func(h *FlightHandle) {
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						_, err := h.Subject().
+							Do(ctx, string("key-a"), Loader(func(ctx context.Context, key string) (string, error) { return "", nil }))
+						return err
+					})
+				},
+				Defect: flightDoSwallowsFailure,
+			},
+			{
+				ID:        FlightChecks.Do.FailureIsReportedGenerated(),
+				Statement: "Do returns an error when a call of its dependency fails",
+				Claim:     spec.FailureIsReported,
+				Probe:     spec.ReportsAFailedDependency,
+				Reason:    spec.SwallowedFailure,
+				Law:       spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.GeneratedInputs,
+					spec.NothingBeyondACaller,
+				},
+				Property: func(h *FlightHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					loadResults0 := c.Draw(prop.List(prop.Of[string]()), "load-0")
+					loadResults1 := c.Draw(
+						prop.List(
+							prop.SampledFrom[error](nil, conform.ErrGenerated),
+							prop.MinSize(len(loadResults0)),
+							prop.MaxSize(len(loadResults0)),
+						),
+						"load-1",
+					)
+					drawnLoad := func() Loader {
+						var loadAt atomic.Int64
+						return func(context.Context, string) (r0 string, r1 error) {
+							i := int(loadAt.Add(1) - 1)
+							if i >= len(loadResults0) {
+								r1 = conform.ErrGenerated
+								return r0, r1
+							}
+							return loadResults0[i],
+								loadResults1[i]
+						}
+					}
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						_, err := h.Subject().Do(ctx, drawnKey, drawnLoad())
+						return err
+					})
+				},
+				Defect: flightDoSwallowsFailure,
+			},
+			{
+				ID:          FlightChecks.Do.ComputesOnce(),
+				Statement:   "calls of Do with one key at once share one computation of their result",
+				Claim:       spec.ComputesOnce,
+				Probe:       spec.SharesOneComputation,
+				Reason:      spec.RepeatedComputation,
+				Law:         spec.CallsAtOnceShareOneComputation,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.CallThatFailsOnDemand},
+				Apply: func(h *FlightHandle) {
+					probe.SharesOneComputation(h, func(ctx context.Context) (string, error) {
+						return h.Subject().
+							Do(ctx, string("key-a"), func(context.Context, string) (r0 string, r1 error) {
+								_ = h.Injector().Dependency().Call("Do")
+								return r0, r1
+							})
+					}, 2)
+				},
+				Defect: flightDoComputesPerCall,
+				Around: synctest.Test,
+			},
+			{
+				ID:        FlightChecks.Do.ComputesOnceGenerated(),
+				Statement: "calls of Do with one key at once share one computation of their result",
+				Claim:     spec.ComputesOnce,
+				Probe:     spec.SharesOneComputation,
+				Reason:    spec.RepeatedComputation,
+				Law:       spec.CallsAtOnceShareOneComputation,
+				Machineries: []spec.MachineryID{
+					spec.ConcurrentCallers,
+					spec.CallThatFailsOnDemand,
+					spec.GeneratedInputs,
+				},
+				Property: func(h *FlightHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.SharesOneComputation(h, func(ctx context.Context) (string, error) {
+						return h.Subject().
+							Do(ctx, drawnKey, func(context.Context, string) (r0 string, r1 error) {
+								_ = h.Injector().Dependency().Call("Do")
+								return r0, r1
+							})
+					}, 2)
+				},
+				Defect: flightDoComputesPerCall,
+				Around: synctest.Test,
+			},
+		},
+		Calls: []conform.Call[Flight]{
+			{
+				Calls:    flightDoCalls,
+				Over:     newFlightOver,
+				Callable: FlightChecks.Do.Callable,
+			},
+		},
+	}
+}
+
+// RunFlightSuite applies the checks of Flight, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunFlightSuite[T Flight](t *testing.T, newSubject func() T, opts ...FlightOption) {
+	t.Helper()
+	RunFlightSuiteFromHandle(t, func(*FlightHandle) T { return newSubject() }, opts...)
+}
+
+// RunFlightSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunFlightSuiteFromHandle[T Flight](
+	t *testing.T,
+	newSubject func(h *FlightHandle) T,
+	opts ...FlightOption,
+) {
+	t.Helper()
+	conform.Run(t, FlightSuite(), flightSubjects(newSubject), opts...)
+}
+
+// FuzzFlightSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzFlightSuite[T Flight](
+	f *testing.F,
+	callable conform.Callable[Flight],
+	newSubject func(h *FlightHandle) T,
+	opts ...FlightOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, FlightSuite(), callable, flightSubjects(newSubject), opts...)
+}
+
+// RunFlightBudgets applies the allocation ceilings of Flight and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunFlightBudgets[T Flight](
+	t *testing.T,
+	newSubject func(h *FlightHandle) T,
+	opts ...FlightOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, FlightSuite(), flightSubjects(newSubject), opts...)
+}
+
+// BenchFlightSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchFlightSuite[T Flight](
+	b conform.B,
+	callable conform.Callable[Flight],
+	newSubject func(h *FlightHandle) T,
+	opts ...FlightOption,
+) {
+	b.Helper()
+	conform.Bench(b, FlightSuite(), callable, flightSubjects(newSubject), opts...)
+}
+
+// flightSubjects returns the factory of the subjects of Flight that calls
+// newSubject with the handle of each check.
+func flightSubjects[T Flight](newSubject func(h *FlightHandle) T) func(h *FlightHandle) Flight {
+	return func(h *FlightHandle) Flight { return newSubject(h) }
+}
+
+// flightDoCalls generates the calls of Flight.Do with the inputs that each
+// case draws.
+var flightDoCalls = prop.Composite(func(c *prop.Case) func(context.Context, Flight) error {
+	key := c.Draw(prop.Of[string](), "key")
+	loadResults0 := c.Draw(prop.List(prop.Of[string]()), "load-0")
+	loadResults1 := c.Draw(
+		prop.List(
+			prop.SampledFrom[error](nil, conform.ErrGenerated),
+			prop.MinSize(len(loadResults0)),
+			prop.MaxSize(len(loadResults0)),
+		),
+		"load-1",
+	)
+	var loadAt atomic.Int64
+	load := func(context.Context, string) (r0 string, r1 error) {
+		i := int(loadAt.Add(1) - 1)
+		if i >= len(loadResults0) {
+			r1 = conform.ErrGenerated
+			return r0, r1
+		}
+		return loadResults0[i],
+			loadResults1[i]
+	}
+	return func(ctx context.Context, subject Flight) error {
+		_, err := subject.Do(ctx, key, load)
+		return err
+	}
+})
+
+// flightOverEmbedded is Flight under the name of the field that flightOver
+// embeds.
+type flightOverEmbedded = Flight
+
+// flightOver is a subject of Flight whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type flightOver struct {
+	flightOverEmbedded
+	spend func()
+}
+
+// Do calls spend and returns its zero results.
+func (o flightOver) Do(context.Context, string, Loader) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newFlightOver returns the planted defect of a ceiling of Flight, whose
+// callables call spend.
+func newFlightOver(_ *FlightHandle, spend func()) Flight {
+	return flightOver{spend: spend}
+}
+
+// flightDoPanicsDefect is the planted defect of a Flight whose Do panics.
+type flightDoPanicsDefect struct {
+	flightOverEmbedded
+}
+
+// Do is the override of the planted defect.
+func (*flightDoPanicsDefect) Do(p0 context.Context, p1 string, p2 Loader) (r0 string, r1 error) {
+	panic("the planted defect of a Flight whose Do panics")
+}
+
+// flightDoPanics returns the planted defect of a Flight whose Do panics
+// over a fresh subject.
+func flightDoPanics(h *FlightHandle) Flight {
+	return &flightDoPanicsDefect{flightOverEmbedded: h.Fresh()}
+}
+
+// flightDoIgnoresCancelDefect is the planted defect of a Flight whose Do
+// ignores the context.
+type flightDoIgnoresCancelDefect struct {
+	flightOverEmbedded
+}
+
+// Do is the override of the planted defect.
+func (d *flightDoIgnoresCancelDefect) Do(
+	p0 context.Context,
+	p1 string,
+	p2 Loader,
+) (r0 string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.flightOverEmbedded.Do(p0, p1, p2)
+}
+
+// flightDoIgnoresCancel returns the planted defect of a Flight whose Do
+// ignores the context over a fresh subject.
+func flightDoIgnoresCancel(h *FlightHandle) Flight {
+	return &flightDoIgnoresCancelDefect{flightOverEmbedded: h.Fresh()}
+}
+
+// flightDoSwallowsFailureDefect is the planted defect of a Flight whose Do
+// returns no error when its dependency fails.
+type flightDoSwallowsFailureDefect struct {
+	flightOverEmbedded
+	h *FlightHandle
+}
+
+// Do is the override of the planted defect.
+func (d *flightDoSwallowsFailureDefect) Do(
+	p0 context.Context,
+	p1 string,
+	p2 Loader,
+) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	before := d.h.Injector().Failures()
+	r0, r1 = d.flightOverEmbedded.Do(p0, p1, p2)
+	if r1 != nil && d.h.Injector().Failures() > before {
+		r0 = *new(string)
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// flightDoSwallowsFailure returns the planted defect of a Flight whose Do
+// returns no error when its dependency fails over a fresh subject.
+func flightDoSwallowsFailure(h *FlightHandle) Flight {
+	return &flightDoSwallowsFailureDefect{flightOverEmbedded: h.Fresh(), h: h}
+}
+
+// flightDoComputesPerCallDefect is the planted defect of a Flight whose Do
+// computes its result for each call.
+type flightDoComputesPerCallDefect struct {
+	flightOverEmbedded
+	h *FlightHandle
+}
+
+// Do is the override of the planted defect.
+func (d *flightDoComputesPerCallDefect) Do(
+	p0 context.Context,
+	p1 string,
+	p2 Loader,
+) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	return d.h.Fresh().Do(p0, p1, p2)
+}
+
+// flightDoComputesPerCall returns the planted defect of a Flight whose Do
+// computes its result for each call over a fresh subject.
+func flightDoComputesPerCall(h *FlightHandle) Flight {
+	return &flightDoComputesPerCallDefect{flightOverEmbedded: h.Fresh(), h: h}
+}
+
+// The derived checks of Locker:
+//
+// Locker.Lock/smoke: Lock returns without a panic for derived inputs.
+//
+// Locker.Lock/smoke#generated: Lock returns without a panic for derived
+// inputs.
+//
+// Locker.Lock/cancel: Lock returns an error for a cancelled context.
+//
+// Locker.Lock/cancel#generated: Lock returns an error for a cancelled
+// context.
+//
+// Locker.Lock/lease: a second Lock for one key fails with the declared
+// sentinel.
+//
+// Locker.Lock/lease#generated: a second Lock for one key fails with the
+// declared sentinel.
+//
+// Locker.Lock/release-frees-the-lease: Lock grants a lease again after
+// Unlock released it.
+//
+// Locker.Lock/release-frees-the-lease#generated: Lock grants a lease again
+// after Unlock released it.
+//
+// Locker.Lock/one-holder-at-a-time: calls of Lock with one key at once
+// grant the lease once.
+//
+// Locker.Lock/one-holder-at-a-time#generated: calls of Lock with one key
+// at once grant the lease once.
+//
+// Locker.Unlock/smoke: Unlock returns without a panic for derived inputs.
+//
+// Locker.Unlock/smoke#generated: Unlock returns without a panic for
+// derived inputs.
+//
+// Locker.Unlock/cancel: Unlock returns an error for a cancelled context.
+//
+// Locker.Unlock/cancel#generated: Unlock returns an error for a cancelled
+// context.
+
+// The derived checks of Locker that witness their laws at the shallow end:
+//
+// Locker.Lock/smoke
+//
+// Locker.Lock/lease
+//
+// Locker.Lock/lease#generated
+//
+// Locker.Unlock/smoke
+
+// The unclaimed classifications of Locker:
+//
+// The shape:writer of Locker.Lock has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Locker.Unlock has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Locker writes.
+type (
+	LockerHandle = conform.Handle[Locker]
+	LockerCheck  = conform.Check[Locker]
+	LockerOption = conform.Option[Locker]
+)
+
+// LockerChecks contains the name of each callable of Locker, with the
+// identities of its checks.
+var LockerChecks = struct {
+	Lock   lockerLock
+	Unlock lockerUnlock
+}{
+	Lock:   lockerLock{"Locker.Lock"},
+	Unlock: lockerUnlock{"Locker.Unlock"},
+}
+
+// lockerLock is the name of Locker.Lock, with the identities of its
+// checks.
+type lockerLock struct {
+	conform.Callable[Locker]
+}
+
+// Smoke returns the identity of the check that Lock returns without a
+// panic for derived inputs.
+func (c lockerLock) Smoke() conform.ID[Locker] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Lock returns
+// without a panic for derived inputs.
+func (c lockerLock) SmokeGenerated() conform.ID[Locker] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Lock returns an error for
+// a cancelled context.
+func (c lockerLock) Cancel() conform.ID[Locker] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Lock returns an
+// error for a cancelled context.
+func (c lockerLock) CancelGenerated() conform.ID[Locker] {
+	return c.Check("cancel#generated")
+}
+
+// Lease returns the identity of the check that a second Lock for one key
+// fails with the declared sentinel.
+func (c lockerLock) Lease() conform.ID[Locker] {
+	return c.Check("lease")
+}
+
+// LeaseGenerated returns the identity of the check that a second Lock for
+// one key fails with the declared sentinel.
+func (c lockerLock) LeaseGenerated() conform.ID[Locker] {
+	return c.Check("lease#generated")
+}
+
+// ReleaseFreesTheLease returns the identity of the check that Lock grants
+// a lease again after Unlock released it.
+func (c lockerLock) ReleaseFreesTheLease() conform.ID[Locker] {
+	return c.Check("release-frees-the-lease")
+}
+
+// ReleaseFreesTheLeaseGenerated returns the identity of the check that
+// Lock grants a lease again after Unlock released it.
+func (c lockerLock) ReleaseFreesTheLeaseGenerated() conform.ID[Locker] {
+	return c.Check("release-frees-the-lease#generated")
+}
+
+// OneHolderAtATime returns the identity of the check that calls of Lock
+// with one key at once grant the lease once.
+func (c lockerLock) OneHolderAtATime() conform.ID[Locker] {
+	return c.Check("one-holder-at-a-time")
+}
+
+// OneHolderAtATimeGenerated returns the identity of the check that calls
+// of Lock with one key at once grant the lease once.
+func (c lockerLock) OneHolderAtATimeGenerated() conform.ID[Locker] {
+	return c.Check("one-holder-at-a-time#generated")
+}
+
+// lockerUnlock is the name of Locker.Unlock, with the identities of its
+// checks.
+type lockerUnlock struct {
+	conform.Callable[Locker]
+}
+
+// Smoke returns the identity of the check that Unlock returns without a
+// panic for derived inputs.
+func (c lockerUnlock) Smoke() conform.ID[Locker] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Unlock returns
+// without a panic for derived inputs.
+func (c lockerUnlock) SmokeGenerated() conform.ID[Locker] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Unlock returns an error
+// for a cancelled context.
+func (c lockerUnlock) Cancel() conform.ID[Locker] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Unlock returns an
+// error for a cancelled context.
+func (c lockerUnlock) CancelGenerated() conform.ID[Locker] {
+	return c.Check("cancel#generated")
+}
+
+// LockerSuite returns the checks of Locker, and the calls and the budgets
+// of its callables.
+func LockerSuite() conform.Suite[Locker] {
+	return conform.Suite[Locker]{
+		Declaration: "Locker",
+		Package:     "example.com/shop/locks",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Locker]{
+			{
+				ID:          LockerChecks.Lock.Smoke(),
+				Statement:   "Lock returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, string("key-a"))
+					})
+				},
+				Defect: lockerLockPanics,
+			},
+			{
+				ID:          LockerChecks.Lock.SmokeGenerated(),
+				Statement:   "Lock returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LockerHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, drawnKey)
+					})
+				},
+				Defect: lockerLockPanics,
+			},
+			{
+				ID:          LockerChecks.Lock.Cancel(),
+				Statement:   "Lock returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LockerHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, string("key-a"))
+					})
+				},
+				Defect: lockerLockIgnoresCancel,
+			},
+			{
+				ID:          LockerChecks.Lock.CancelGenerated(),
+				Statement:   "Lock returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LockerHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, drawnKey)
+					})
+				},
+				Defect: lockerLockIgnoresCancel,
+			},
+			{
+				ID:          LockerChecks.Lock.Lease(),
+				Statement:   "a second Lock for one key fails with the declared sentinel",
+				Claim:       spec.Lease,
+				Probe:       spec.RefusesTheSecondWrite,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockerHandle) {
+					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, string("key-a"))
+					}, ErrLocked)
+				},
+				Defect: lockerLockSucceedsAlways,
+			},
+			{
+				ID:          LockerChecks.Lock.LeaseGenerated(),
+				Statement:   "a second Lock for one key fails with the declared sentinel",
+				Claim:       spec.Lease,
+				Probe:       spec.RefusesTheSecondWrite,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *LockerHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, drawnKey)
+					}, ErrLocked)
+				},
+				Defect: lockerLockSucceedsAlways,
+			},
+			{
+				ID:          LockerChecks.Lock.ReleaseFreesTheLease(),
+				Statement:   "Lock grants a lease again after Unlock released it",
+				Claim:       spec.ReleaseFreesTheLease,
+				Probe:       spec.GrantsAfterRelease,
+				Reason:      spec.KeptAfterRelease,
+				Law:         spec.ReleasedLeaseIsGrantedAgain,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LockerHandle) {
+					probe.GrantsAfterRelease(h, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, string("key-a"))
+					}, func(ctx context.Context) error {
+						return h.Subject().Unlock(ctx, string("key-a"))
+					})
+				},
+				Defect: lockerUnlockReleaseKeepsTheLease,
+			},
+			{
+				ID:          LockerChecks.Lock.ReleaseFreesTheLeaseGenerated(),
+				Statement:   "Lock grants a lease again after Unlock released it",
+				Claim:       spec.ReleaseFreesTheLease,
+				Probe:       spec.GrantsAfterRelease,
+				Reason:      spec.KeptAfterRelease,
+				Law:         spec.ReleasedLeaseIsGrantedAgain,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LockerHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.GrantsAfterRelease(h, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, drawnKey)
+					}, func(ctx context.Context) error {
+						return h.Subject().Unlock(ctx, drawnKey)
+					})
+				},
+				Defect: lockerUnlockReleaseKeepsTheLease,
+			},
+			{
+				ID:          LockerChecks.Lock.OneHolderAtATime(),
+				Statement:   "calls of Lock with one key at once grant the lease once",
+				Claim:       spec.OneHolderAtATime,
+				Probe:       spec.ExclusiveUnderConcurrency,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers},
+				Entails:     []conform.ID[Locker]{LockerChecks.Lock.Lease()},
+				Property: func(h *LockerHandle, c *prop.Case) {
+					probe.ExclusiveUnderConcurrency(h, c, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, string("key-a"))
+					}, ErrLocked, 2)
+				},
+				Defect: lockerLockCheckThenGrant,
+			},
+			{
+				ID:          LockerChecks.Lock.OneHolderAtATimeGenerated(),
+				Statement:   "calls of Lock with one key at once grant the lease once",
+				Claim:       spec.OneHolderAtATime,
+				Probe:       spec.ExclusiveUnderConcurrency,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedInputs},
+				Entails:     []conform.ID[Locker]{LockerChecks.Lock.LeaseGenerated()},
+				Property: func(h *LockerHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ExclusiveUnderConcurrency(h, c, func(ctx context.Context) error {
+						return h.Subject().Lock(ctx, drawnKey)
+					}, ErrLocked, 2)
+				},
+				Defect: lockerLockCheckThenGrant,
+			},
+			{
+				ID:          LockerChecks.Unlock.Smoke(),
+				Statement:   "Unlock returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Unlock(ctx, string("key-a"))
+					})
+				},
+				Defect: lockerUnlockPanics,
+			},
+			{
+				ID:          LockerChecks.Unlock.SmokeGenerated(),
+				Statement:   "Unlock returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LockerHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Unlock(ctx, drawnKey)
+					})
+				},
+				Defect: lockerUnlockPanics,
+			},
+			{
+				ID:          LockerChecks.Unlock.Cancel(),
+				Statement:   "Unlock returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LockerHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Unlock(ctx, string("key-a"))
+					})
+				},
+				Defect: lockerUnlockIgnoresCancel,
+			},
+			{
+				ID:          LockerChecks.Unlock.CancelGenerated(),
+				Statement:   "Unlock returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *LockerHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Unlock(ctx, drawnKey)
+					})
+				},
+				Defect: lockerUnlockIgnoresCancel,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Locker.Lock",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Locker.Unlock",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Locker]{
+			{
+				Calls:    lockerLockCalls,
+				Over:     newLockerOver,
+				Callable: LockerChecks.Lock.Callable,
+			},
+			{
+				Calls:    lockerUnlockCalls,
+				Over:     newLockerOver,
+				Callable: LockerChecks.Unlock.Callable,
+			},
+		},
+	}
+}
+
+// RunLockerSuite applies the checks of Locker, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunLockerSuite[T Locker](t *testing.T, newSubject func() T, opts ...LockerOption) {
+	t.Helper()
+	RunLockerSuiteFromHandle(t, func(*LockerHandle) T { return newSubject() }, opts...)
+}
+
+// RunLockerSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunLockerSuiteFromHandle[T Locker](
+	t *testing.T,
+	newSubject func(h *LockerHandle) T,
+	opts ...LockerOption,
+) {
+	t.Helper()
+	conform.Run(t, LockerSuite(), lockerSubjects(newSubject), opts...)
+}
+
+// FuzzLockerSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzLockerSuite[T Locker](
+	f *testing.F,
+	callable conform.Callable[Locker],
+	newSubject func(h *LockerHandle) T,
+	opts ...LockerOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, LockerSuite(), callable, lockerSubjects(newSubject), opts...)
+}
+
+// RunLockerBudgets applies the allocation ceilings of Locker and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunLockerBudgets[T Locker](
+	t *testing.T,
+	newSubject func(h *LockerHandle) T,
+	opts ...LockerOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, LockerSuite(), lockerSubjects(newSubject), opts...)
+}
+
+// BenchLockerSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchLockerSuite[T Locker](
+	b conform.B,
+	callable conform.Callable[Locker],
+	newSubject func(h *LockerHandle) T,
+	opts ...LockerOption,
+) {
+	b.Helper()
+	conform.Bench(b, LockerSuite(), callable, lockerSubjects(newSubject), opts...)
+}
+
+// lockerSubjects returns the factory of the subjects of Locker that calls
+// newSubject with the handle of each check.
+func lockerSubjects[T Locker](newSubject func(h *LockerHandle) T) func(h *LockerHandle) Locker {
+	return func(h *LockerHandle) Locker { return newSubject(h) }
+}
+
+// lockerLockCalls generates the calls of Locker.Lock with the inputs that
+// each case draws.
+var lockerLockCalls = prop.Composite(func(c *prop.Case) func(context.Context, Locker) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Locker) error {
+		return subject.Lock(ctx, key)
+	}
+})
+
+// lockerUnlockCalls generates the calls of Locker.Unlock with the inputs
+// that each case draws.
+var lockerUnlockCalls = prop.Composite(func(c *prop.Case) func(context.Context, Locker) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Locker) error {
+		return subject.Unlock(ctx, key)
+	}
+})
+
+// lockerOverEmbedded is Locker under the name of the field that lockerOver
+// embeds.
+type lockerOverEmbedded = Locker
+
+// lockerOver is a subject of Locker whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type lockerOver struct {
+	lockerOverEmbedded
+	spend func()
+}
+
+// Lock calls spend and returns its zero results.
+func (o lockerOver) Lock(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Unlock calls spend and returns its zero results.
+func (o lockerOver) Unlock(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newLockerOver returns the planted defect of a ceiling of Locker, whose
+// callables call spend.
+func newLockerOver(_ *LockerHandle, spend func()) Locker {
+	return lockerOver{spend: spend}
+}
+
+// lockerLockPanicsDefect is the planted defect of a Locker whose Lock
+// panics.
+type lockerLockPanicsDefect struct {
+	lockerOverEmbedded
+}
+
+// Lock is the override of the planted defect.
+func (*lockerLockPanicsDefect) Lock(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Locker whose Lock panics")
+}
+
+// lockerLockPanics returns the planted defect of a Locker whose Lock
+// panics over a fresh subject.
+func lockerLockPanics(h *LockerHandle) Locker {
+	return &lockerLockPanicsDefect{lockerOverEmbedded: h.Fresh()}
+}
+
+// lockerLockIgnoresCancelDefect is the planted defect of a Locker whose
+// Lock ignores the context.
+type lockerLockIgnoresCancelDefect struct {
+	lockerOverEmbedded
+}
+
+// Lock is the override of the planted defect.
+func (d *lockerLockIgnoresCancelDefect) Lock(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.lockerOverEmbedded.Lock(p0, p1)
+}
+
+// lockerLockIgnoresCancel returns the planted defect of a Locker whose
+// Lock ignores the context over a fresh subject.
+func lockerLockIgnoresCancel(h *LockerHandle) Locker {
+	return &lockerLockIgnoresCancelDefect{lockerOverEmbedded: h.Fresh()}
+}
+
+// lockerLockSucceedsAlwaysDefect is the planted defect of a Locker whose
+// Lock grants a lease that it holds.
+type lockerLockSucceedsAlwaysDefect struct {
+	lockerOverEmbedded
+}
+
+// Lock is the override of the planted defect.
+func (*lockerLockSucceedsAlwaysDefect) Lock(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	return r0
+}
+
+// lockerLockSucceedsAlways returns the planted defect of a Locker whose
+// Lock grants a lease that it holds over a fresh subject.
+func lockerLockSucceedsAlways(h *LockerHandle) Locker {
+	return &lockerLockSucceedsAlwaysDefect{lockerOverEmbedded: h.Fresh()}
+}
+
+// lockerUnlockReleaseKeepsTheLeaseDefect is the planted defect of a Locker
+// whose Unlock keeps the lease.
+type lockerUnlockReleaseKeepsTheLeaseDefect struct {
+	lockerOverEmbedded
+}
+
+// Unlock is the override of the planted defect.
+func (*lockerUnlockReleaseKeepsTheLeaseDefect) Unlock(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	return r0
+}
+
+// lockerUnlockReleaseKeepsTheLease returns the planted defect of a Locker
+// whose Unlock keeps the lease over a fresh subject.
+func lockerUnlockReleaseKeepsTheLease(h *LockerHandle) Locker {
+	return &lockerUnlockReleaseKeepsTheLeaseDefect{lockerOverEmbedded: h.Fresh()}
+}
+
+// lockerLockCheckThenGrantDefect is the planted defect of a Locker whose
+// Lock grants a lease to two calls at once.
+type lockerLockCheckThenGrantDefect struct {
+	lockerOverEmbedded
+	h      *LockerHandle
+	marked atomic.Int32
+}
+
+// Lock is the override of the planted defect.
+func (d *lockerLockCheckThenGrantDefect) Lock(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.marked.Add(1)
+	defer d.marked.Add(-1)
+	d.h.Yield()
+	if d.marked.Load() > 1 {
+		return r0
+	}
+	return d.lockerOverEmbedded.Lock(p0, p1)
+}
+
+// lockerLockCheckThenGrant returns the planted defect of a Locker whose
+// Lock grants a lease to two calls at once over a fresh subject.
+func lockerLockCheckThenGrant(h *LockerHandle) Locker {
+	return &lockerLockCheckThenGrantDefect{lockerOverEmbedded: h.Fresh(), h: h}
+}
+
+// lockerUnlockPanicsDefect is the planted defect of a Locker whose Unlock
+// panics.
+type lockerUnlockPanicsDefect struct {
+	lockerOverEmbedded
+}
+
+// Unlock is the override of the planted defect.
+func (*lockerUnlockPanicsDefect) Unlock(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Locker whose Unlock panics")
+}
+
+// lockerUnlockPanics returns the planted defect of a Locker whose Unlock
+// panics over a fresh subject.
+func lockerUnlockPanics(h *LockerHandle) Locker {
+	return &lockerUnlockPanicsDefect{lockerOverEmbedded: h.Fresh()}
+}
+
+// lockerUnlockIgnoresCancelDefect is the planted defect of a Locker whose
+// Unlock ignores the context.
+type lockerUnlockIgnoresCancelDefect struct {
+	lockerOverEmbedded
+}
+
+// Unlock is the override of the planted defect.
+func (d *lockerUnlockIgnoresCancelDefect) Unlock(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.lockerOverEmbedded.Unlock(p0, p1)
+}
+
+// lockerUnlockIgnoresCancel returns the planted defect of a Locker whose
+// Unlock ignores the context over a fresh subject.
+func lockerUnlockIgnoresCancel(h *LockerHandle) Locker {
+	return &lockerUnlockIgnoresCancelDefect{lockerOverEmbedded: h.Fresh()}
 }
 
 // The derived checks of Gate:

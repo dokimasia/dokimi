@@ -219,6 +219,22 @@ func TestTrackerSuite(t *testing.T) {
 				},
 				Defect: func(*nested.TrackerHandle) nested.Tracker { return &trackerSubject{} },
 			}),
+			conform.Excuse(
+				nested.TrackerChecks.Walk.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nested.TrackerChecks.Walk.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nested.TrackerChecks.Tick.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nested.TrackerChecks.Tick.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -240,6 +256,22 @@ func TestTrackerSuite(t *testing.T) {
 				},
 				Defect: func(*nested.TrackerHandle) nested.Tracker { return &trackerSubject{} },
 			}),
+			conform.Excuse(
+				nested.TrackerChecks.Walk.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nested.TrackerChecks.Walk.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nested.TrackerChecks.Tick.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nested.TrackerChecks.Tick.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -274,6 +306,22 @@ func TestTrackerSuiteBudgets(t *testing.T) {
 			nested.TrackerChecks.Link.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -284,6 +332,22 @@ func FuzzTrackerSuiteRoute(f *testing.F) {
 		f,
 		nested.TrackerChecks.Route.Callable,
 		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -294,6 +358,22 @@ func FuzzTrackerSuiteFollow(f *testing.F) {
 		f,
 		nested.TrackerChecks.Follow.Callable,
 		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -304,6 +384,22 @@ func FuzzTrackerSuiteWalk(f *testing.F) {
 		f,
 		nested.TrackerChecks.Walk.Callable,
 		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -314,6 +410,22 @@ func FuzzTrackerSuiteVolley(f *testing.F) {
 		f,
 		nested.TrackerChecks.Volley.Callable,
 		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -324,6 +436,22 @@ func FuzzTrackerSuiteTrack(f *testing.F) {
 		f,
 		nested.TrackerChecks.Track.Callable,
 		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -334,6 +462,22 @@ func FuzzTrackerSuitePick(f *testing.F) {
 		f,
 		nested.TrackerChecks.Pick.Callable,
 		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -344,6 +488,22 @@ func FuzzTrackerSuitePlay(f *testing.F) {
 		f,
 		nested.TrackerChecks.Play.Callable,
 		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -354,6 +514,48 @@ func FuzzTrackerSuiteLink(f *testing.F) {
 		f,
 		nested.TrackerChecks.Link.Callable,
 		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzTrackerSuiteTick registers the fuzz target of Tracker.Tick on
+// trackerIdle, with every check of the suite excused.
+func FuzzTrackerSuiteTick(f *testing.F) {
+	nested.FuzzTrackerSuite(
+		f,
+		nested.TrackerChecks.Tick.Callable,
+		trackerIdle,
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Walk.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nested.TrackerChecks.Tick.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -383,6 +585,9 @@ func BenchmarkTrackerSuite(b *testing.B) {
 	})
 	b.Run("Link", func(b *testing.B) {
 		nested.BenchTrackerSuite(b, nested.TrackerChecks.Link.Callable, trackerIdle)
+	})
+	b.Run("Tick", func(b *testing.B) {
+		nested.BenchTrackerSuite(b, nested.TrackerChecks.Tick.Callable, trackerIdle)
 	})
 }
 
@@ -419,15 +624,7 @@ func TestHireSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				nested.HireChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
 				nested.HireChecks.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nested.HireChecks.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -453,15 +650,7 @@ func TestHireSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				nested.HireChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
 				nested.HireChecks.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nested.HireChecks.DeterministicGenerated(),
 				"the test applies the check of its option alone",
 			),
 		)

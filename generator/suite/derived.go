@@ -4,6 +4,7 @@
 package suite
 
 import (
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/node"
+	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/internal/derive"
@@ -30,8 +32,9 @@ import (
 // the shallower checks that the law of the check implies. Args are the
 // arguments of the probe after the handle. Defect is the name of the function
 // that returns the planted defect, which every check with the same break of
-// the same callable shares. Clock reports a probe of the clock, which runs
-// inside a testing/synctest bubble.
+// the same callable shares. Bubble reports a probe that runs inside a
+// testing/synctest bubble: a probe of the clock, of deliveries that arrive on
+// other goroutines, or of calls that wait on one computation.
 //
 // Generated reports a check whose inputs the property engine generates. The
 // template writes it as a property check that makes the draws Draws for each
@@ -43,6 +46,11 @@ import (
 // type argument is one type, or the two types of a probe.Pair. Whole is the
 // identity of a check of the whole declaration, which the method of its
 // identity returns, and empty for a check of a callable.
+//
+// Cased reports a check whose probe takes the case of a property check
+// without generated sequences, such as a probe whose clients the scheduler of
+// the case runs. The template writes it as a property check that passes the
+// case to its probe.
 type Derived struct {
 	Field       string
 	Type        string
@@ -61,16 +69,19 @@ type Derived struct {
 	Draws       []*Draw
 	TypeArgs    [][]*emit.TypeRef
 	Shallow     bool
-	Clock       bool
+	Bubble      bool
 	Generated   bool
 	Sequence    bool
+	Cased       bool
 }
 
 // Arg is one argument of a probe: a closure that calls the subject, an
-// expression, a projection of a field, a duration, or a part of the generated
-// sequences. Ref is the name of a function of the suite, such as the actions
-// of the declaration, which the template writes as a name that is not
-// exported.
+// expression, a projection of a field, a duration, a method of a handle, or a
+// part of the generated sequences, such as the key of a call. Ref is the name
+// of a function of the suite, such as the actions of the declaration, which
+// the template writes as a name that is not exported. Budget is the most
+// steps of the check of a history, which the template writes as the option
+// Budget of the package history of the assert library.
 type Arg struct {
 	Closure    *Closure
 	Expr       *Expr
@@ -78,8 +89,24 @@ type Arg struct {
 	Apply      *Apply
 	Written    *Written
 	Countable  *Countable
+	Method     *HandleMethod
+	Key        *Key
 	Ref        string
 	Duration   time.Duration
+	Budget     int
+}
+
+// HandleMethod is the method Name of the handle of the type Type, as a method
+// expression, which takes the handle as its first argument.
+type HandleMethod struct {
+	Type *emit.TypeRef
+	Name string
+}
+
+// Key is a function that returns the key of a call: the list of the arguments
+// of the call at the positions Args.
+type Key struct {
+	Args []int
 }
 
 // Projection is a function that returns the field Field of a value of the
@@ -94,16 +121,20 @@ type Projection struct {
 // value, the value of a draw, the field Select of another expression, a pair
 // of two expressions, an empty stream, or a word of Go such as nil or true.
 // Where Hook is set, the expression is a function of the function type Hook
-// that calls the function Name and ignores its arguments. Where Convert is
-// set, the expression is the conversion of the variable Name to the type
-// Convert. Stream are the types of the elements of an empty stream: the value
-// of an iter.Seq, or the two values of an iter.Seq2.
+// that calls the function Name and ignores its arguments. Where Compute is
+// set, the expression is a computation with the signature Compute. It records
+// a call of the callable Name on a new dependency of the injector of the
+// handle and returns its zero results. Where Convert is set, the expression is
+// the conversion of the variable Name to the type Convert. Stream are the
+// types of the elements of an empty stream: the value of an iter.Seq, or the
+// two values of an iter.Seq2.
 type Expr struct {
 	Value   *emit.Value
 	Drawn   *Drawn
 	Of      *Expr
 	Pair    *PairExpr
 	Hook    *emit.TypeRef
+	Compute *emit.Method
 	Convert *emit.TypeRef
 	Name    string
 	Select  string
@@ -132,7 +163,11 @@ type PairExpr struct {
 // of the elements. Drain is the drain of a stream that the callable returns,
 // which the closure returns as a list of the types Returns: drainElements,
 // drainUntilError or drainPairs. A closure that drains a stream returns the
-// stream Results[0] after the error Results[1] of the call.
+// stream Results[0] after the error Results[1] of the call. Pull reports a
+// closure that returns a pull iteration of the stream in place of its drain,
+// which yields the first value of each element of the stream. Channel reports
+// a closure that returns the channel Results[0] of the call as a channel of
+// the values Returns that the closure receives from.
 type Closure struct {
 	Param    *ClosureParam
 	Receiver *Expr
@@ -149,6 +184,8 @@ type Closure struct {
 	Error    bool
 	Flag     bool
 	Pair     bool
+	Pull     bool
+	Channel  bool
 }
 
 // ClosureParam is the parameter of a closure after the context. Hook and
@@ -265,31 +302,81 @@ const (
 	formCountable
 	// formCount is the int of a param, or the default of its binding.
 	formCount
+	// formTotal returns the total that the callable of the input reads,
+	// beside the error.
+	formTotal
+	// formPull starts a pull iteration of the stream that the callable of the
+	// input returns.
+	formPull
+	// formChannel returns the channel that the callable of the input returns,
+	// beside the error.
+	formChannel
+	// formNext is the method that a param names on the handle that the
+	// callable of another input returns. The method takes a wait and returns
+	// an update beside a presence flag.
+	formNext
+	// formStop is the method that a param names on the handle that the
+	// callable of another input returns. The method takes and returns
+	// nothing.
+	formStop
+	// formElementArg returns the argument of a call of the callable of the
+	// input that has the type of the elements of another input: the first
+	// values of a stream, the values of a channel or the updates of a handle.
+	formElementArg
+	// formKey returns the key of a call of the callable of the input: the
+	// arguments of the inputs that it shares by name and type with the
+	// callable of another input.
+	formKey
+	// formClients is the number of the clients of a concurrent section after
+	// the first, as stateful.Clients counts them.
+	formClients
+	// formBudget is the most steps of the check of a history.
+	formBudget
+	// formComputing is formCall with a computation for each input of a
+	// function type, which records a call on a dependency of the injector.
+	formComputing
+)
+
+// concurrentClients is the number of the clients of a concurrent section
+// after the first, so three clients call the subject at once. historyBudget
+// is the most steps that the checker of a history takes.
+const (
+	concurrentClients = 2
+	historyBudget     = 200_000
 )
 
 // slot is one input of a probe: its name in the entry of the spec, its form,
 // and the input whose results a zero or a projection reads. A fresh slot
-// calls its callable on a new subject of the factory.
+// calls its callable on a new subject of the factory. gate is the gate that
+// the suite generator judges on the input, which refuses the check where the
+// callable of the input does not fit the form of the input.
 type slot struct {
 	name  string
 	of    string
+	gate  spec.GateID
 	form  form
 	fresh bool
 }
 
 // The names of the inputs of the probes that more than one probe takes.
 const (
-	inCall     = "call"
-	inZero     = "zero"
-	inSentinel = "sentinel"
-	inRead     = "read"
-	inWrite    = "write"
-	inObserve  = "observe"
-	inPut      = "put"
-	inDrain    = "drain"
-	inAttempts = "attempts"
-	inClose    = "close"
-	inReplay   = "replay"
+	inCall      = "call"
+	inZero      = "zero"
+	inSentinel  = "sentinel"
+	inRead      = "read"
+	inWrite     = "write"
+	inObserve   = "observe"
+	inPut       = "put"
+	inDrain     = "drain"
+	inAttempts  = "attempts"
+	inClose     = "close"
+	inReplay    = "replay"
+	inAppend    = "append"
+	inStream    = "stream"
+	inWritten   = "written"
+	inSubscribe = "subscribe"
+	inWatch     = "watch"
+	inTrigger   = "trigger"
 )
 
 // The inputs that many probes share.
@@ -304,6 +391,7 @@ var (
 	put      = slot{name: inPut, form: formAct}
 	observe  = slot{name: inObserve, form: formCall}
 	attempts = slot{name: inAttempts, form: formInt}
+	clients  = slot{name: "clients", form: formClients}
 )
 
 // probes contains the inputs of each probe that a suite calls, in the order
@@ -400,7 +488,7 @@ var probes = map[spec.ProbeID][]slot{
 	spec.ReportsNoError:              {act},
 	spec.BoundedByTheSize:            {{name: inCall, form: formPosition}, {name: "size", form: formCall}},
 	spec.AgreesWithTheSibling:        {call, {name: "sibling", form: formCall, fresh: true}},
-	spec.VerifiesAfterAppends:        {act, {name: "append", form: formActs}},
+	spec.VerifiesAfterAppends:        {act, {name: inAppend, form: formActs}},
 	spec.GrantsAfterRelease:          {act, {name: "release", form: formAct}},
 	spec.MovesWithALoan:              {call, {name: "get", form: formAct}},
 	spec.ResultsNeverFall:            {actions, readOp},
@@ -409,7 +497,7 @@ var probes = map[spec.ProbeID][]slot{
 	spec.WrittenVersionsRise:         {actions, writeOp, {name: inRead, of: inWrite, form: formApply}, version},
 	spec.ReadsSeeTheLastWrite:        {actions, readOp, writeOp, readback, version},
 	spec.WritesRiseAboveReads:        {actions, writeOp, readOp, readback, version},
-	spec.PositionsRise:               {actions, {name: "append", form: formOperation}},
+	spec.PositionsRise:               {actions, {name: inAppend, form: formOperation}},
 	spec.ReplaysFollowTheStamps: {
 		actions, {name: inReplay, form: formOperation}, {name: "stamp", of: inReplay, form: formStamp},
 	},
@@ -422,9 +510,18 @@ var probes = map[spec.ProbeID][]slot{
 	spec.ReadsReturnTheLastWrite:        {actions, writeOp, readback, written},
 	spec.ReadsAgreeWithTheBacking:       {actions, readOp, {name: "backing", of: inRead, form: formApply}},
 	spec.SequencesAgreeWithTheReference: {actions, {name: "reference", form: formReference}},
+	spec.LinearizableHistory: {
+		actions,
+		{name: "reference", form: formReference},
+		clients,
+		{name: "budget", form: formBudget},
+	},
+	spec.ConcurrentReadsAgree:      {actions, readOp, {name: "again", of: inRead, form: formApply}, clients},
+	spec.SharesOneComputation:      {{name: inCall, form: formComputing}, clients},
+	spec.ExclusiveUnderConcurrency: {act, sentinel, clients},
 	spec.UseIsWithinTheBounds: {
 		actions,
-		{name: inObserve, form: formCountable},
+		{name: inObserve, form: formCountable, gate: spec.CountableUse},
 		{name: "min", form: formCount},
 		{name: "limit", form: formCount},
 	},
@@ -437,7 +534,51 @@ var probes = map[spec.ProbeID][]slot{
 		{name: inObserve, of: "fn", form: formApply},
 		{name: "transitions", form: formValue},
 	},
+	spec.MovesKeepTheTotal: {
+		actions, {name: inCall, form: formOperation}, {name: inObserve, form: formTotal, gate: spec.NumericTotal},
+	},
+	spec.FailedCallsLeaveNoTrace: {
+		actions, {name: inCall, form: formOperation}, {name: "readback", of: inCall, form: formApply},
+	},
+	spec.IterationsSeeTheMutations: {
+		actions,
+		{name: inStream, form: formPull, gate: spec.StreamMutations},
+		{name: "mutate", form: formOperation},
+		{name: "delete", form: formOperation},
+		{name: inWritten, of: inStream, form: formElementArg, gate: spec.StreamMutations},
+		{name: "removed", of: inStream, form: formElementArg, gate: spec.StreamMutations},
+	},
+	spec.AppendsArrive:          {actions, {name: inAppend, form: formOperation}, subscribe, delivered},
+	spec.DeliveriesMatchTheMode: {actions, publishOp, subscribe, delivered, {name: "mode", form: formName}},
+	spec.RedeliveriesArrive: {
+		actions,
+		publishOp,
+		{name: "redeliver", form: formOperation},
+		subscribe,
+		delivered,
+		{name: "redelivered", of: inSubscribe, form: formElementArg, gate: spec.DeliversOnAChannel},
+	},
+	spec.WatchesSeeTheTriggers: {
+		actions,
+		{name: inWatch, form: formOperation},
+		{name: inTrigger, form: formOperation},
+		{name: "next", of: inWatch, form: formNext, gate: spec.SubscriptionMethods},
+		{name: "stop", of: inWatch, form: formStop, gate: spec.SubscriptionMethods},
+		{name: "retrigger", of: inTrigger, form: formApply},
+		{name: "watch-key", of: inTrigger, form: formKey},
+		{name: "trigger-key", of: inWatch, form: formKey},
+		{name: "triggered", of: "next", form: formElementArg, gate: spec.SubscriptionMethods},
+	},
 }
+
+// The inputs that the probes of deliveries share: the subscription, the
+// operation of a publish, and the value that a call of a callable passes to
+// the subscription.
+var (
+	subscribe = slot{name: inSubscribe, form: formChannel, gate: spec.DeliversOnAChannel}
+	publishOp = slot{name: "publish", form: formOperation}
+	delivered = slot{name: inWritten, of: inSubscribe, form: formElementArg, gate: spec.DeliversOnAChannel}
+)
 
 // The inputs that the probes of generated sequences share: the actions, the
 // operations of a read, a write and a drain, the version of a read, the read
@@ -449,7 +590,7 @@ var (
 	drainOp  = slot{name: inDrain, form: formOperation}
 	version  = slot{name: "version", of: inRead, form: formProjection}
 	readback = slot{name: "readback", of: inWrite, form: formApply}
-	written  = slot{name: "written", of: inWrite, form: formWrittenArg}
+	written  = slot{name: inWritten, of: inWrite, form: formWrittenArg}
 )
 
 // The inputs that the probes of a callable that combines two values share.
@@ -459,11 +600,19 @@ var (
 	secondInput = slot{name: "second", form: formInput}
 )
 
-// clockProbes are the probes that advance the clock of the handle.
-var clockProbes = []spec.ProbeID{
+// bubbled are the probes that run inside a testing/synctest bubble: the
+// probes that advance the clock of the handle, and the probes of deliveries
+// and of one computation, which wait until each goroutine of the bubble is
+// blocked.
+var bubbled = []spec.ProbeID{
 	spec.ReturnsWithin, spec.CountsWithinWindow, spec.RunsOnSchedule, spec.MovesWithTheClock,
-	spec.SteadyWhileTheClockStops, spec.ExpiresAfter,
+	spec.SteadyWhileTheClockStops, spec.ExpiresAfter, spec.AppendsArrive, spec.DeliveriesMatchTheMode,
+	spec.RedeliveriesArrive, spec.WatchesSeeTheTriggers, spec.SharesOneComputation,
 }
+
+// cased are the probes that take the case of a property check without
+// generated sequences: the probes whose clients the scheduler of the case runs.
+var cased = []spec.ProbeID{spec.ExclusiveUnderConcurrency}
 
 // goName returns the name of the constant of id in the package spec of the
 // Go runtime, as the naming table of the spec spells it.
@@ -489,8 +638,8 @@ func (k *caller) derived(s *Suite) {
 		d := Derived{
 			Field: callable.Field, Type: callable.Type, Method: method, Segment: segment, Statement: c.Statement,
 			Claim: goName(c.Claim.ID), Probe: goName(c.Claim.Probe), Reason: goName(c.Claim.Defect.Reason),
-			Law: goName(c.Claim.Law), Shallow: c.Shallow, Clock: slices.Contains(clockProbes, c.Claim.Probe),
-			Generated: c.Generated,
+			Law: goName(c.Claim.Law), Shallow: c.Shallow, Bubble: slices.Contains(bubbled, c.Claim.Probe),
+			Generated: c.Generated, Cased: slices.Contains(cased, c.Claim.Probe),
 		}
 		for _, m := range c.Machineries() {
 			d.Machineries = append(d.Machineries, goName(m))
@@ -504,6 +653,9 @@ func (k *caller) derived(s *Suite) {
 			d.Entails = append(d.Entails, Identity{Field: shallow.Field, Method: shallowMethod, ID: e.Shallower})
 		}
 		b := binder{k: k, check: c, s: s}
+		if c.Claim.Probe == spec.RedeliveriesArrive && !b.redelivers() {
+			b.refused = spec.AtLeastOnceMode
+		}
 		if c.Generated {
 			b.drawn = k.newDraws(s.Facts, s.Calls)
 		}
@@ -576,11 +728,14 @@ func (k *caller) referableArgs(args []Arg) bool {
 func (k *caller) referableExpr(e *Expr) bool { return e.Value == nil || k.referable(e.Value) }
 
 // referableDefect reports whether the file of the suite can refer to the
-// sample of each value that the planted defect d returns. The zero value of a
-// type is a literal of the type, which the file can refer to with the type.
+// sample of each value that the planted defect d and its overrides return.
+// The zero value of a type is a literal of the type, which the file can refer
+// to with the type.
 func (k *caller) referableDefect(d *Defect) bool {
-	return !slices.ContainsFunc(d.Results, func(o Outcome) bool {
-		return o.Sample != nil && !k.referableExpr(o.Sample)
+	return !slices.ContainsFunc(append([]*Defect{d}, d.Overrides...), func(o *Defect) bool {
+		return slices.ContainsFunc(o.Results, func(r Outcome) bool {
+			return r.Sample != nil && !k.referableExpr(r.Sample)
+		})
 	})
 }
 
@@ -613,7 +768,7 @@ func (b *binder) typeArgs() [][]*emit.TypeRef {
 		f, _ := b.facts(inRead)
 		return [][]*emit.TypeRef{{b.k.typeOf(b.k.resultRef(f, 0))}}
 	case spec.PositionsRise:
-		f, _ := b.facts("append")
+		f, _ := b.facts(inAppend)
 		return [][]*emit.TypeRef{{b.k.typeOf(b.k.resultRef(f, 0))}}
 	case spec.DrainsWithoutRepeats:
 		f, _ := b.facts(inDrain)
@@ -638,13 +793,24 @@ func (b *binder) pairOf(target *derive.Facts) *derive.Pair {
 
 // args returns the argument of the probe of the check for each input of the
 // probe, in the order of the parameters of its Go function after the handle.
+// A gate that refuses an input refuses the check, so args binds no input
+// after it.
 func (b *binder) args() []Arg {
 	slots := probes[b.check.Claim.Probe]
 	out := make([]Arg, 0, len(slots))
 	for i := range slots {
 		out = append(out, b.arg(&slots[i]))
+		if b.refused != "" {
+			break
+		}
 	}
 	return out
+}
+
+// refuse sets the gate of the input sl as refused, and returns no argument.
+func (b *binder) refuse(sl *slot) Arg {
+	b.refused = sl.gate
+	return Arg{}
 }
 
 // binding returns the binding of the input name of the claim of the check.
@@ -683,13 +849,26 @@ func same(a, b *derive.Facts) bool { return a != nil && a.ID == b.ID }
 
 // param returns the value of the param key of the classifications of the
 // callable of the check, and nil where none sets it.
-func (b *binder) param(key string) any {
-	for _, params := range b.check.Facts.Class.Params {
+func (b *binder) param(key string) any { return paramOf(b.check.Facts, key) }
+
+// paramOf returns the value of the param key of the classifications of the
+// callable of f, and nil where none sets it.
+func paramOf(f *derive.Facts, key string) any {
+	for _, params := range f.Class.Params {
 		if v, ok := params[directive.ParamKey(key)]; ok {
 			return v
 		}
 	}
 	return nil
+}
+
+// redelivers reports whether the publish of the check states the delivery
+// mode at-least-once, the one mode under which a redelivery delivers an event
+// once more. A second delivery breaks the other modes, so their check of the
+// mode judges the redeliveries.
+func (b *binder) redelivers() bool {
+	publish, _ := b.facts(publishOp.name)
+	return nameOf(paramOf(publish, modeParam)) == atLeastOnce
 }
 
 // arg returns the argument of the probe for the input sl.
@@ -705,6 +884,10 @@ func (b *binder) arg(sl *slot) Arg {
 		return Arg{Expr: &Expr{Value: new(emit.Literal(emit.LiteralString, name))}}
 	case formInt:
 		return Arg{Expr: &Expr{Word: intOf(b.param(b.binding(sl.name).Param))}}
+	case formClients:
+		return Arg{Expr: &Expr{Word: strconv.Itoa(concurrentClients)}}
+	case formBudget:
+		return Arg{Budget: historyBudget}
 	case formDuration:
 		d, _ := time.ParseDuration(nameOf(b.param(b.binding(sl.name).Param)))
 		return Arg{Duration: d}
@@ -717,8 +900,22 @@ func (b *binder) arg(sl *slot) Arg {
 		bound := b.binding(sl.name)
 		v := b.drawn.value(b.check.Facts, bound.Position, bound.Sample)
 		return Arg{Expr: &v}
-	case formActions, formOperation, formApply, formReference, formWrittenArg, formStamp, formCountable, formCount:
+	case formActions, formOperation, formApply, formReference, formWrittenArg, formStamp, formCountable, formCount,
+		formNext, formStop, formElementArg, formKey:
 		return b.sequenceArg(sl)
+	case formTotal:
+		// Only a number has a scalar class.
+		if f, _ := b.facts(sl.name); len(f.Results) == 0 || f.Results[0].Shape.Class == 0 {
+			return b.refuse(sl)
+		}
+	case formPull:
+		if f, _ := b.facts(sl.name); streamAt(f) < 0 {
+			return b.refuse(sl)
+		}
+	case formChannel:
+		if f, _ := b.facts(sl.name); !b.k.subscribes(f) {
+			return b.refuse(sl)
+		}
 	default:
 	}
 	in := &input{sl: sl, drawn: b.drawn}
@@ -747,8 +944,8 @@ func (b *binder) arg(sl *slot) Arg {
 }
 
 // sequenceArg returns the argument of a probe of generated sequences for the
-// input sl. It sets the gate countable-use as refused for an observer whose
-// value is no use.
+// input sl. It sets the gate of sl as refused for an input that does not fit
+// its form, such as an observer whose value is no use.
 func (b *binder) sequenceArg(sl *slot) Arg {
 	q := b.s.Sequences
 	switch sl.form {
@@ -778,9 +975,27 @@ func (b *binder) sequenceArg(sl *slot) Arg {
 		f, _ := b.facts(sl.name)
 		c, ok := b.k.countableOf(b.s, q, f)
 		if !ok {
-			b.refused = spec.CountableUse
+			return b.refuse(sl)
 		}
 		return Arg{Countable: c}
+	case formNext, formStop:
+		m, _, ok := b.handleMethod(sl)
+		if !ok {
+			return b.refuse(sl)
+		}
+		return Arg{Method: m}
+	case formElementArg:
+		f, _ := b.facts(sl.name)
+		elem := b.k.b.TypeOf(b.k.instance(b.element(sl.of)))
+		at := slices.IndexFunc(f.Inputs, func(v derive.Value) bool { return reflect.DeepEqual(v.Shape, elem) })
+		if at < 0 {
+			return b.refuse(sl)
+		}
+		return Arg{Written: &Written{Type: b.k.typeOf(b.k.inputRef(f, at)), Index: at}}
+	case formKey:
+		f, _ := b.facts(sl.name)
+		other, _ := b.facts(sl.of)
+		return Arg{Key: &Key{Args: shared(f, other)}}
 	default:
 		bound := b.binding(sl.name)
 		count := intOf(b.param(bound.Param))
@@ -789,6 +1004,96 @@ func (b *binder) sequenceArg(sl *slot) Arg {
 		}
 		return Arg{Expr: &Expr{Word: count}}
 	}
+}
+
+// The package and the name of the type of the wait of the method next of a
+// handle.
+const (
+	timePackage  = "time"
+	durationType = "Duration"
+)
+
+// handleMethod returns the method that the param of the input sl names on
+// the handle that the callable of the input sl.of returns, as a method
+// expression, with the facts of the method. It returns false where the param
+// names no method of the handle, such as a field, and where the method does
+// not fit the form of sl: next takes a wait and returns an update beside a
+// presence flag, and stop takes and returns nothing.
+func (b *binder) handleMethod(sl *slot) (*HandleMethod, *derive.Facts, bool) {
+	watch, _ := b.facts(sl.of)
+	handle := b.k.resultRef(watch, 0)
+	ref := handle
+	if ref.Form == symbol.FormOptional {
+		ref = ref.Elems[0]
+	}
+	decl, _ := b.k.m.Reader().Lookup(ref.Target)
+	bound := b.k.b
+	methods := methodsOf(&bound, decl)
+	name := nameOf(b.param(b.binding(sl.name).Param))
+	at := slices.IndexFunc(methods, func(m *node.Method) bool { return m.Name == name })
+	if at < 0 {
+		return nil, nil, false
+	}
+	f := b.k.factsOf(methods[at])
+	s := &f.Signature
+	fits := len(s.Params) == 0 && len(s.Returns) == 0
+	if sl.form == formNext {
+		fits = len(s.Params) == 1 && is(&s.Params[0].Ref.Target, timePackage, durationType) &&
+			slices.ContainsFunc(s.Returns, func(r rules.ReturnView) bool { return r.Role == rules.ReturnOkBool })
+	}
+	return &HandleMethod{Type: b.k.typeOf(handle), Name: name}, &f, fits
+}
+
+// element returns the type of the elements of the input name of the probe of
+// the check, which passed its gate: the first value of each element of a
+// stream, the values of a channel, or the update that the method next of a
+// handle returns.
+func (b *binder) element(name string) *node.TypeRef {
+	slots := probes[b.check.Claim.Probe]
+	sl := &slots[slices.IndexFunc(slots, func(s slot) bool { return s.name == name })]
+	f, _ := b.facts(name)
+	switch sl.form {
+	case formPull:
+		return b.k.elementRefs(f)[0]
+	case formChannel:
+		return b.k.channelElem(f)
+	default:
+		_, next, _ := b.handleMethod(sl)
+		return b.k.resultRef(next, 0)
+	}
+}
+
+// subscribes reports whether the callable of f returns first a channel that a
+// caller receives from.
+func (k *caller) subscribes(f *derive.Facts) bool {
+	if len(f.Results) == 0 {
+		return false
+	}
+	under := k.underlying(k.resultRef(f, 0))
+	return under.Form == symbol.FormStream && !sends(under.Spelling)
+}
+
+// channelElem returns the type of the values of the channel that the callable
+// of f returns first.
+func (k *caller) channelElem(f *derive.Facts) *node.TypeRef {
+	return k.underlying(k.resultRef(f, 0)).Elems[0]
+}
+
+// shared returns the positions of the inputs of the callable of f that the
+// callable of other takes under the same name, in the order of their names,
+// so the key of a watch and the key of its trigger list the same inputs in one
+// order. The derivation pairs a watch with its trigger only where the trigger
+// takes each input of the watch with its name and its type.
+func shared(f, other *derive.Facts) []int {
+	var at []int
+	for i := range f.Inputs {
+		v := &f.Inputs[i]
+		if slices.ContainsFunc(other.Inputs, func(o derive.Value) bool { return o.Name == v.Name }) {
+			at = append(at, i)
+		}
+	}
+	slices.SortFunc(at, func(x, y int) int { return strings.Compare(f.Inputs[x].Name, f.Inputs[y].Name) })
+	return at
 }
 
 // stampParam is the param of the mixin causal that names the field of the

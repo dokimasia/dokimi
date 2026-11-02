@@ -9,6 +9,7 @@ import (
 
 	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/sdk/node"
+	"go.dokimi.dev/eidos/sdk/rules"
 
 	"go.dokimi.dev/dokimi/internal/derive"
 )
@@ -71,14 +72,47 @@ func (k *caller) newDraws(facts []derive.Facts, calls []Call) *draws {
 // input of generated functions, because such an input keeps its sample. A
 // probe that calls twice passes one drawn value to both calls, so the second
 // call would see what the first consumed. A generated function or
-// implementation of the input itself is built anew for each call instead.
+// implementation of the input itself is built anew for each call instead,
+// and keeps its sample only where its results have such a part.
 func (d *draws) param(f *derive.Facts, i int) *Param {
 	j := slices.IndexFunc(d.facts, func(o derive.Facts) bool { return o.ID == f.ID })
 	p := &d.calls[j].Params[inputAt(f, i)]
-	if p.Sample != nil || p.Funcs == nil && d.k.consumes(d.k.inputRef(f, i), map[string]bool{}) {
+	ref := d.k.inputRef(f, i)
+	switch {
+	case p.Sample != nil:
 		return nil
+	case p.Funcs != nil:
+		if d.k.yieldsConsumable(d.k.instance(ref)) {
+			return nil
+		}
+		return p
+	case d.k.consumes(ref, map[string]bool{}):
+		return nil
+	default:
+		return p
 	}
-	return p
+}
+
+// yieldsConsumable reports whether a generated function or implementation of
+// the type ref returns a value with a part that a call consumes: a result of
+// the function type, or of a method of the interface. Each call of a check
+// takes a new function or implementation, which returns the values of the
+// lists that the case drew once, so two calls share such a value.
+func (k *caller) yieldsConsumable(ref *node.TypeRef) bool {
+	var results []*node.TypeRef
+	if iface, under, isInterface := k.interfaceOf(ref); isInterface {
+		b := k.b
+		for _, m := range methodsOf(&b, iface) {
+			for _, r := range m.Returns {
+				results = append(results, rules.Substitute(r.Type, iface.TypeParams, under.Args))
+			}
+		}
+	} else {
+		under := k.underlying(ref)
+		results = under.Elems[under.Split:]
+	}
+	met := map[string]bool{}
+	return slices.ContainsFunc(results, func(r *node.TypeRef) bool { return k.consumes(r, met) })
 }
 
 // consumes reports whether a value of the type ref has a part that a call can

@@ -147,6 +147,26 @@ type Links struct {
 	Linker Linker
 }
 
+// Ticker returns the steps of a route. Its authored samples are two tickers.
+//
+//dokimi:sample value=FirstTicker() alternate=SecondTicker()
+type Ticker interface {
+	// Next returns the next step.
+	Next() Step
+}
+
+// steps is a ticker whose steps end at once.
+type steps struct{}
+
+// Next returns the step that ends the route.
+func (steps) Next() Step { return nil }
+
+// FirstTicker returns the first ticker of the samples.
+func FirstTicker() Ticker { return steps{} }
+
+// SecondTicker returns the second ticker of the samples.
+func SecondTicker() Ticker { return &steps{} }
+
 // Tracker tracks the routes of the parcels of the shop.
 //
 //dokimi:suite
@@ -167,6 +187,8 @@ type Tracker interface {
 	Play(m Match) int
 	// Link counts the links of the route.
 	Link(l Links) int
+	// Tick counts the steps of the ticker.
+	Tick(t Ticker) int
 }
 
 // Hire hires the labelers that hire returns, and returns how many it hired.

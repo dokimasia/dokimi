@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/assert/stateful"
@@ -16,6 +17,10 @@ import (
 )
 
 // The derived checks of Counter:
+//
+// Counter.Inc/smoke: Inc returns without a panic for derived inputs.
+//
+// Counter.Inc/cancel: Inc returns an error for a cancelled context.
 //
 // Counter.Inc/keeps-within-its-bounds: Inc keeps the use that Value reads
 // within its bounds, over any sequence of calls.
@@ -61,6 +66,8 @@ import (
 // The derived checks of Counter that witness their laws at the shallow
 // end:
 //
+// Counter.Inc/smoke
+//
 // Counter.Value/smoke
 //
 // Counter.Value/monotonic
@@ -74,10 +81,6 @@ import (
 // Counter.Load/smoke
 
 // The refused claims of Counter:
-//
-// Counter.Inc/cancel: eidos derives no sample of the parameter opts of
-// Inc. The remedy is to author a sample of the parameter opts with the
-// directive sample.
 //
 // Counter.Throttle/keeps-within-its-bounds: the reader that observe names
 // for Throttle returns no number and no length. The remedy is to name with
@@ -127,6 +130,18 @@ var CounterChecks = struct {
 // checks.
 type counterInc struct {
 	conform.Callable[Counter]
+}
+
+// Smoke returns the identity of the check that Inc returns without a panic
+// for derived inputs.
+func (c counterInc) Smoke() conform.ID[Counter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Inc returns an error for a
+// cancelled context.
+func (c counterInc) Cancel() conform.ID[Counter] {
+	return c.Check("cancel")
 }
 
 // KeepsWithinItsBounds returns the identity of the check that Inc keeps
@@ -269,6 +284,37 @@ func CounterSuite() conform.Suite[Counter] {
 		Package:     "example.com/shop/sequenced",
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Counter]{
+			{
+				ID:          CounterChecks.Inc.Smoke(),
+				Statement:   "Inc returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CounterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Inc(ctx, Option(func(*int) {}))
+					})
+				},
+				Defect: counterIncPanics,
+			},
+			{
+				ID:          CounterChecks.Inc.Cancel(),
+				Statement:   "Inc returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CounterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Inc(ctx, Option(func(*int) {}))
+					})
+				},
+				Defect: counterIncIgnoresCancel,
+			},
 			{
 				ID:          CounterChecks.Inc.KeepsWithinItsBounds(),
 				Statement:   "Inc keeps the use that Value reads within its bounds, over any sequence of calls",
@@ -556,13 +602,6 @@ func CounterSuite() conform.Suite[Counter] {
 		},
 		Refusals: []conform.Refusal{
 			{
-				Claim:    spec.Cancel,
-				Callable: "Counter.Inc",
-				Gate:     spec.InputSamples,
-				Why:      "eidos derives no sample of the parameter opts of Inc",
-				Remedy:   "author a sample of the parameter opts with the directive sample",
-			},
-			{
 				Claim:    spec.KeepsWithinItsBounds,
 				Callable: "Counter.Throttle",
 				Gate:     spec.CountableUse,
@@ -791,6 +830,43 @@ func (o counterOver) Load(context.Context) (r0 float64, r1 error) {
 // callables call spend.
 func newCounterOver(_ *CounterHandle, spend func()) Counter {
 	return counterOver{spend: spend}
+}
+
+// counterIncPanicsDefect is the planted defect of a Counter whose Inc
+// panics.
+type counterIncPanicsDefect struct {
+	counterOverEmbedded
+}
+
+// Inc is the override of the planted defect.
+func (*counterIncPanicsDefect) Inc(p0 context.Context, p1 ...Option) (r0 error) {
+	panic("the planted defect of a Counter whose Inc panics")
+}
+
+// counterIncPanics returns the planted defect of a Counter whose Inc
+// panics over a fresh subject.
+func counterIncPanics(h *CounterHandle) Counter {
+	return &counterIncPanicsDefect{counterOverEmbedded: h.Fresh()}
+}
+
+// counterIncIgnoresCancelDefect is the planted defect of a Counter whose
+// Inc ignores the context.
+type counterIncIgnoresCancelDefect struct {
+	counterOverEmbedded
+}
+
+// Inc is the override of the planted defect.
+func (d *counterIncIgnoresCancelDefect) Inc(p0 context.Context, p1 ...Option) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.counterOverEmbedded.Inc(p0, p1...)
+}
+
+// counterIncIgnoresCancel returns the planted defect of a Counter whose
+// Inc ignores the context over a fresh subject.
+func counterIncIgnoresCancel(h *CounterHandle) Counter {
+	return &counterIncIgnoresCancelDefect{counterOverEmbedded: h.Fresh()}
 }
 
 // counterValueGrowsPastTheLimitAfterThreeDefect is the planted defect of a
@@ -14056,4 +14132,11685 @@ func (d *versionedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 I
 // Get returns a value beside an error over a fresh subject.
 func versionedGetValueBeside(h *VersionedHandle) Versioned {
 	return &versionedGetValueBesideDefect{versionedOverEmbedded: h.Fresh()}
+}
+
+// The derived checks of Accounts:
+//
+// Accounts.Transfer/smoke: Transfer returns without a panic for derived
+// inputs.
+//
+// Accounts.Transfer/smoke#generated: Transfer returns without a panic for
+// derived inputs.
+//
+// Accounts.Transfer/cancel: Transfer returns an error for a cancelled
+// context.
+//
+// Accounts.Transfer/cancel#generated: Transfer returns an error for a
+// cancelled context.
+//
+// Accounts.Transfer/conserves-the-quantity: each call of Transfer keeps
+// the total that Total reads, over any sequence of calls.
+//
+// Accounts.Total/smoke: Total returns without a panic for derived inputs.
+//
+// Accounts.Total/cancel: Total returns an error for a cancelled context.
+//
+// Accounts.Total/zero-on-error: Total returns the zero value beside an
+// error.
+//
+// Accounts.Rename/smoke: Rename returns without a panic for derived
+// inputs.
+//
+// Accounts.Rename/smoke#generated: Rename returns without a panic for
+// derived inputs.
+//
+// Accounts.Rename/cancel: Rename returns an error for a cancelled context.
+//
+// Accounts.Rename/cancel#generated: Rename returns an error for a
+// cancelled context.
+//
+// Accounts.Names/smoke: Names returns without a panic for derived inputs.
+//
+// Accounts.Names/cancel: Names returns an error for a cancelled context.
+//
+// Accounts.Names/zero-on-error: Names returns the zero value beside an
+// error.
+//
+// Accounts.Fold/smoke: Fold returns without a panic for derived inputs.
+//
+// Accounts.Fold/smoke#generated: Fold returns without a panic for derived
+// inputs.
+//
+// Accounts.Fold/cancel: Fold returns an error for a cancelled context.
+//
+// Accounts.Fold/cancel#generated: Fold returns an error for a cancelled
+// context.
+//
+// Accounts.Audit/smoke: Audit returns without a panic for derived inputs.
+//
+// Accounts.Audit/cancel: Audit returns an error for a cancelled context.
+
+// The derived checks of Accounts that witness their laws at the shallow
+// end:
+//
+// Accounts.Transfer/smoke
+//
+// Accounts.Total/smoke
+//
+// Accounts.Rename/smoke
+//
+// Accounts.Names/smoke
+//
+// Accounts.Fold/smoke
+//
+// Accounts.Audit/smoke
+
+// The refused claims of Accounts:
+//
+// Accounts.Rename/conserves-the-quantity: the reader that observe names
+// for Rename returns no number. The remedy is to name with observe a
+// callable that returns the total that Rename moves as a number.
+//
+// Accounts.Fold/conserves-the-quantity: the reader that observe names for
+// Fold returns no number. The remedy is to name with observe a callable
+// that returns the total that Fold moves as a number.
+
+// The unclaimed classifications of Accounts:
+//
+// The shape:writer of Accounts.Transfer has the stance silent. A write is
+// an input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Accounts.Rename has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Accounts.Fold has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:lifecycle of Accounts.Audit has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Accounts writes.
+type (
+	AccountsHandle = conform.Handle[Accounts]
+	AccountsCheck  = conform.Check[Accounts]
+	AccountsOption = conform.Option[Accounts]
+)
+
+// AccountsChecks contains the name of each callable of Accounts, with the
+// identities of its checks.
+var AccountsChecks = struct {
+	Transfer accountsTransfer
+	Total    accountsTotal
+	Rename   accountsRename
+	Names    accountsNames
+	Fold     accountsFold
+	Audit    accountsAudit
+}{
+	Transfer: accountsTransfer{"Accounts.Transfer"},
+	Total:    accountsTotal{"Accounts.Total"},
+	Rename:   accountsRename{"Accounts.Rename"},
+	Names:    accountsNames{"Accounts.Names"},
+	Fold:     accountsFold{"Accounts.Fold"},
+	Audit:    accountsAudit{"Accounts.Audit"},
+}
+
+// accountsTransfer is the name of Accounts.Transfer, with the identities
+// of its checks.
+type accountsTransfer struct {
+	conform.Callable[Accounts]
+}
+
+// Smoke returns the identity of the check that Transfer returns without a
+// panic for derived inputs.
+func (c accountsTransfer) Smoke() conform.ID[Accounts] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Transfer returns
+// without a panic for derived inputs.
+func (c accountsTransfer) SmokeGenerated() conform.ID[Accounts] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Transfer returns an error
+// for a cancelled context.
+func (c accountsTransfer) Cancel() conform.ID[Accounts] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Transfer returns
+// an error for a cancelled context.
+func (c accountsTransfer) CancelGenerated() conform.ID[Accounts] {
+	return c.Check("cancel#generated")
+}
+
+// ConservesTheQuantity returns the identity of the check that each call of
+// Transfer keeps the total that Total reads, over any sequence of calls.
+func (c accountsTransfer) ConservesTheQuantity() conform.ID[Accounts] {
+	return c.Check("conserves-the-quantity")
+}
+
+// accountsTotal is the name of Accounts.Total, with the identities of its
+// checks.
+type accountsTotal struct {
+	conform.Callable[Accounts]
+}
+
+// Smoke returns the identity of the check that Total returns without a
+// panic for derived inputs.
+func (c accountsTotal) Smoke() conform.ID[Accounts] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Total returns an error for
+// a cancelled context.
+func (c accountsTotal) Cancel() conform.ID[Accounts] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Total returns the
+// zero value beside an error.
+func (c accountsTotal) ZeroOnError() conform.ID[Accounts] {
+	return c.Check("zero-on-error")
+}
+
+// accountsRename is the name of Accounts.Rename, with the identities of
+// its checks.
+type accountsRename struct {
+	conform.Callable[Accounts]
+}
+
+// Smoke returns the identity of the check that Rename returns without a
+// panic for derived inputs.
+func (c accountsRename) Smoke() conform.ID[Accounts] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Rename returns
+// without a panic for derived inputs.
+func (c accountsRename) SmokeGenerated() conform.ID[Accounts] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Rename returns an error
+// for a cancelled context.
+func (c accountsRename) Cancel() conform.ID[Accounts] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Rename returns an
+// error for a cancelled context.
+func (c accountsRename) CancelGenerated() conform.ID[Accounts] {
+	return c.Check("cancel#generated")
+}
+
+// accountsNames is the name of Accounts.Names, with the identities of its
+// checks.
+type accountsNames struct {
+	conform.Callable[Accounts]
+}
+
+// Smoke returns the identity of the check that Names returns without a
+// panic for derived inputs.
+func (c accountsNames) Smoke() conform.ID[Accounts] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Names returns an error for
+// a cancelled context.
+func (c accountsNames) Cancel() conform.ID[Accounts] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Names returns the
+// zero value beside an error.
+func (c accountsNames) ZeroOnError() conform.ID[Accounts] {
+	return c.Check("zero-on-error")
+}
+
+// accountsFold is the name of Accounts.Fold, with the identities of its
+// checks.
+type accountsFold struct {
+	conform.Callable[Accounts]
+}
+
+// Smoke returns the identity of the check that Fold returns without a
+// panic for derived inputs.
+func (c accountsFold) Smoke() conform.ID[Accounts] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Fold returns
+// without a panic for derived inputs.
+func (c accountsFold) SmokeGenerated() conform.ID[Accounts] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Fold returns an error for
+// a cancelled context.
+func (c accountsFold) Cancel() conform.ID[Accounts] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Fold returns an
+// error for a cancelled context.
+func (c accountsFold) CancelGenerated() conform.ID[Accounts] {
+	return c.Check("cancel#generated")
+}
+
+// accountsAudit is the name of Accounts.Audit, with the identities of its
+// checks.
+type accountsAudit struct {
+	conform.Callable[Accounts]
+}
+
+// Smoke returns the identity of the check that Audit returns without a
+// panic for derived inputs.
+func (c accountsAudit) Smoke() conform.ID[Accounts] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Audit returns an error for
+// a cancelled context.
+func (c accountsAudit) Cancel() conform.ID[Accounts] {
+	return c.Check("cancel")
+}
+
+// AccountsSuite returns the checks of Accounts, and the calls and the
+// budgets of its callables.
+func AccountsSuite() conform.Suite[Accounts] {
+	return conform.Suite[Accounts]{
+		Declaration: "Accounts",
+		Package:     "example.com/shop/sequenced",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Accounts]{
+			{
+				ID:          AccountsChecks.Transfer.Smoke(),
+				Statement:   "Transfer returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *AccountsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Transfer(ctx, Move{From: "From-a"})
+					})
+				},
+				Defect: accountsTransferPanics,
+			},
+			{
+				ID:          AccountsChecks.Transfer.SmokeGenerated(),
+				Statement:   "Transfer returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AccountsHandle, c *prop.Case) {
+					drawnM := c.Draw(prop.Of[Move](), "m")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Transfer(ctx, drawnM)
+					})
+				},
+				Defect: accountsTransferPanics,
+			},
+			{
+				ID:          AccountsChecks.Transfer.Cancel(),
+				Statement:   "Transfer returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AccountsHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Transfer(ctx, Move{From: "From-a"})
+					})
+				},
+				Defect: accountsTransferIgnoresCancel,
+			},
+			{
+				ID:          AccountsChecks.Transfer.CancelGenerated(),
+				Statement:   "Transfer returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AccountsHandle, c *prop.Case) {
+					drawnM := c.Draw(prop.Of[Move](), "m")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Transfer(ctx, drawnM)
+					})
+				},
+				Defect: accountsTransferIgnoresCancel,
+			},
+			{
+				ID:          AccountsChecks.Transfer.ConservesTheQuantity(),
+				Statement:   "each call of Transfer keeps the total that Total reads, over any sequence of calls",
+				Claim:       spec.ConservesTheQuantity,
+				Probe:       spec.MovesKeepTheTotal,
+				Reason:      spec.NotConserved,
+				Law:         spec.MovesConserveTheTotal,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *AccountsHandle, c *prop.Case) {
+					probe.MovesKeepTheTotal(
+						h,
+						c,
+						accountsActions,
+						"Transfer",
+						func(ctx context.Context) (int64, error) {
+							return h.Subject().Total(ctx)
+						},
+					)
+				},
+				Defect: accountsTotalLeaksOneUnit,
+			},
+			{
+				ID:          AccountsChecks.Total.Smoke(),
+				Statement:   "Total returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *AccountsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Total(ctx)
+						return err
+					})
+				},
+				Defect: accountsTotalPanics,
+			},
+			{
+				ID:          AccountsChecks.Total.Cancel(),
+				Statement:   "Total returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AccountsHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Total(ctx)
+						return err
+					})
+				},
+				Defect: accountsTotalIgnoresCancel,
+			},
+			{
+				ID:          AccountsChecks.Total.ZeroOnError(),
+				Statement:   "Total returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AccountsHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().Total(ctx)
+					}, int64(0))
+				},
+				Defect: accountsTotalValueBeside,
+			},
+			{
+				ID:          AccountsChecks.Rename.Smoke(),
+				Statement:   "Rename returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *AccountsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Rename(ctx, string("from-a"), string("to-a"))
+					})
+				},
+				Defect: accountsRenamePanics,
+			},
+			{
+				ID:          AccountsChecks.Rename.SmokeGenerated(),
+				Statement:   "Rename returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AccountsHandle, c *prop.Case) {
+					drawnFrom := c.Draw(prop.Of[string](), "from")
+					drawnTo := c.Draw(prop.Of[string](), "to")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Rename(ctx, drawnFrom, drawnTo)
+					})
+				},
+				Defect: accountsRenamePanics,
+			},
+			{
+				ID:          AccountsChecks.Rename.Cancel(),
+				Statement:   "Rename returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AccountsHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Rename(ctx, string("from-a"), string("to-a"))
+					})
+				},
+				Defect: accountsRenameIgnoresCancel,
+			},
+			{
+				ID:          AccountsChecks.Rename.CancelGenerated(),
+				Statement:   "Rename returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AccountsHandle, c *prop.Case) {
+					drawnFrom := c.Draw(prop.Of[string](), "from")
+					drawnTo := c.Draw(prop.Of[string](), "to")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Rename(ctx, drawnFrom, drawnTo)
+					})
+				},
+				Defect: accountsRenameIgnoresCancel,
+			},
+			{
+				ID:          AccountsChecks.Names.Smoke(),
+				Statement:   "Names returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *AccountsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Names(ctx)
+						return err
+					})
+				},
+				Defect: accountsNamesPanics,
+			},
+			{
+				ID:          AccountsChecks.Names.Cancel(),
+				Statement:   "Names returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AccountsHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Names(ctx)
+						return err
+					})
+				},
+				Defect: accountsNamesIgnoresCancel,
+			},
+			{
+				ID:          AccountsChecks.Names.ZeroOnError(),
+				Statement:   "Names returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AccountsHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]string, error) {
+						return h.Subject().Names(ctx)
+					}, []string(nil))
+				},
+				Defect: accountsNamesValueBeside,
+			},
+			{
+				ID:          AccountsChecks.Fold.Smoke(),
+				Statement:   "Fold returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *AccountsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Fold(ctx, string("to-a"))
+					})
+				},
+				Defect: accountsFoldPanics,
+			},
+			{
+				ID:          AccountsChecks.Fold.SmokeGenerated(),
+				Statement:   "Fold returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AccountsHandle, c *prop.Case) {
+					drawnTo := c.Draw(prop.Of[string](), "to")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Fold(ctx, drawnTo)
+					})
+				},
+				Defect: accountsFoldPanics,
+			},
+			{
+				ID:          AccountsChecks.Fold.Cancel(),
+				Statement:   "Fold returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AccountsHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Fold(ctx, string("to-a"))
+					})
+				},
+				Defect: accountsFoldIgnoresCancel,
+			},
+			{
+				ID:          AccountsChecks.Fold.CancelGenerated(),
+				Statement:   "Fold returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *AccountsHandle, c *prop.Case) {
+					drawnTo := c.Draw(prop.Of[string](), "to")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Fold(ctx, drawnTo)
+					})
+				},
+				Defect: accountsFoldIgnoresCancel,
+			},
+			{
+				ID:          AccountsChecks.Audit.Smoke(),
+				Statement:   "Audit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *AccountsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Audit(ctx)
+					})
+				},
+				Defect: accountsAuditPanics,
+			},
+			{
+				ID:          AccountsChecks.Audit.Cancel(),
+				Statement:   "Audit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AccountsHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Audit(ctx)
+					})
+				},
+				Defect: accountsAuditIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ConservesTheQuantity,
+				Callable: "Accounts.Rename",
+				Gate:     spec.NumericTotal,
+				Why:      "the reader that observe names for Rename returns no number",
+				Remedy:   "name with observe a callable that returns the total that Rename moves as a number",
+			},
+			{
+				Claim:    spec.ConservesTheQuantity,
+				Callable: "Accounts.Fold",
+				Gate:     spec.NumericTotal,
+				Why:      "the reader that observe names for Fold returns no number",
+				Remedy:   "name with observe a callable that returns the total that Fold moves as a number",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Accounts.Transfer",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Accounts.Rename",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Accounts.Fold",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Accounts.Audit",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+		},
+		Calls: []conform.Call[Accounts]{
+			{
+				Calls:    accountsTransferCalls,
+				Over:     newAccountsOver,
+				Callable: AccountsChecks.Transfer.Callable,
+			},
+			{
+				Calls:    accountsTotalCalls,
+				Over:     newAccountsOver,
+				Callable: AccountsChecks.Total.Callable,
+			},
+			{
+				Calls:    accountsRenameCalls,
+				Over:     newAccountsOver,
+				Callable: AccountsChecks.Rename.Callable,
+			},
+			{
+				Calls:    accountsNamesCalls,
+				Over:     newAccountsOver,
+				Callable: AccountsChecks.Names.Callable,
+			},
+			{
+				Calls:    accountsFoldCalls,
+				Over:     newAccountsOver,
+				Callable: AccountsChecks.Fold.Callable,
+			},
+			{
+				Calls:    accountsAuditCalls,
+				Over:     newAccountsOver,
+				Callable: AccountsChecks.Audit.Callable,
+			},
+		},
+	}
+}
+
+// RunAccountsSuite applies the checks of Accounts, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunAccountsSuite[T Accounts](t *testing.T, newSubject func() T, opts ...AccountsOption) {
+	t.Helper()
+	RunAccountsSuiteFromHandle(t, func(*AccountsHandle) T { return newSubject() }, opts...)
+}
+
+// RunAccountsSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunAccountsSuiteFromHandle[T Accounts](
+	t *testing.T,
+	newSubject func(h *AccountsHandle) T,
+	opts ...AccountsOption,
+) {
+	t.Helper()
+	conform.Run(t, AccountsSuite(), accountsSubjects(newSubject), opts...)
+}
+
+// FuzzAccountsSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzAccountsSuite[T Accounts](
+	f *testing.F,
+	callable conform.Callable[Accounts],
+	newSubject func(h *AccountsHandle) T,
+	opts ...AccountsOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, AccountsSuite(), callable, accountsSubjects(newSubject), opts...)
+}
+
+// RunAccountsBudgets applies the allocation ceilings of Accounts and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunAccountsBudgets[T Accounts](
+	t *testing.T,
+	newSubject func(h *AccountsHandle) T,
+	opts ...AccountsOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, AccountsSuite(), accountsSubjects(newSubject), opts...)
+}
+
+// BenchAccountsSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchAccountsSuite[T Accounts](
+	b conform.B,
+	callable conform.Callable[Accounts],
+	newSubject func(h *AccountsHandle) T,
+	opts ...AccountsOption,
+) {
+	b.Helper()
+	conform.Bench(b, AccountsSuite(), callable, accountsSubjects(newSubject), opts...)
+}
+
+// accountsSubjects returns the factory of the subjects of Accounts that
+// calls newSubject with the handle of each check.
+func accountsSubjects[T Accounts](
+	newSubject func(h *AccountsHandle) T,
+) func(h *AccountsHandle) Accounts {
+	return func(h *AccountsHandle) Accounts { return newSubject(h) }
+}
+
+// accountsTransferCalls generates the calls of Accounts.Transfer with the
+// inputs that each case draws.
+var accountsTransferCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, Accounts) error {
+		m := c.Draw(prop.Of[Move](), "m")
+		return func(ctx context.Context, subject Accounts) error {
+			return subject.Transfer(ctx, m)
+		}
+	},
+)
+
+// accountsTotalCalls generates the calls of Accounts.Total with the inputs
+// that each case draws.
+var accountsTotalCalls = prop.Composite(func(*prop.Case) func(context.Context, Accounts) error {
+	return func(ctx context.Context, subject Accounts) error {
+		_, err := subject.Total(ctx)
+		return err
+	}
+})
+
+// accountsRenameCalls generates the calls of Accounts.Rename with the
+// inputs that each case draws.
+var accountsRenameCalls = prop.Composite(func(c *prop.Case) func(context.Context, Accounts) error {
+	from := c.Draw(prop.Of[string](), "from")
+	to := c.Draw(prop.Of[string](), "to")
+	return func(ctx context.Context, subject Accounts) error {
+		return subject.Rename(ctx, from, to)
+	}
+})
+
+// accountsNamesCalls generates the calls of Accounts.Names with the inputs
+// that each case draws.
+var accountsNamesCalls = prop.Composite(func(*prop.Case) func(context.Context, Accounts) error {
+	return func(ctx context.Context, subject Accounts) error {
+		_, err := subject.Names(ctx)
+		return err
+	}
+})
+
+// accountsFoldCalls generates the calls of Accounts.Fold with the inputs
+// that each case draws.
+var accountsFoldCalls = prop.Composite(func(c *prop.Case) func(context.Context, Accounts) error {
+	to := c.Draw(prop.Of[string](), "to")
+	return func(ctx context.Context, subject Accounts) error {
+		return subject.Fold(ctx, to)
+	}
+})
+
+// accountsAuditCalls generates the calls of Accounts.Audit with the inputs
+// that each case draws.
+var accountsAuditCalls = prop.Composite(func(*prop.Case) func(context.Context, Accounts) error {
+	return func(ctx context.Context, subject Accounts) error {
+		return subject.Audit(ctx)
+	}
+})
+
+// accountsOverEmbedded is Accounts under the name of the field that
+// accountsOver embeds.
+type accountsOverEmbedded = Accounts
+
+// accountsOver is a subject of Accounts whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type accountsOver struct {
+	accountsOverEmbedded
+	spend func()
+}
+
+// Transfer calls spend and returns its zero results.
+func (o accountsOver) Transfer(context.Context, Move) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Total calls spend and returns its zero results.
+func (o accountsOver) Total(context.Context) (r0 int64, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Rename calls spend and returns its zero results.
+func (o accountsOver) Rename(context.Context, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Names calls spend and returns its zero results.
+func (o accountsOver) Names(context.Context) (r0 []string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Fold calls spend and returns its zero results.
+func (o accountsOver) Fold(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Audit calls spend and returns its zero results.
+func (o accountsOver) Audit(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newAccountsOver returns the planted defect of a ceiling of Accounts,
+// whose callables call spend.
+func newAccountsOver(_ *AccountsHandle, spend func()) Accounts {
+	return accountsOver{spend: spend}
+}
+
+// accountsTransferPanicsDefect is the planted defect of a Accounts whose
+// Transfer panics.
+type accountsTransferPanicsDefect struct {
+	accountsOverEmbedded
+}
+
+// Transfer is the override of the planted defect.
+func (*accountsTransferPanicsDefect) Transfer(p0 context.Context, p1 Move) (r0 error) {
+	panic("the planted defect of a Accounts whose Transfer panics")
+}
+
+// accountsTransferPanics returns the planted defect of a Accounts whose
+// Transfer panics over a fresh subject.
+func accountsTransferPanics(h *AccountsHandle) Accounts {
+	return &accountsTransferPanicsDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsTransferIgnoresCancelDefect is the planted defect of a Accounts
+// whose Transfer ignores the context.
+type accountsTransferIgnoresCancelDefect struct {
+	accountsOverEmbedded
+}
+
+// Transfer is the override of the planted defect.
+func (d *accountsTransferIgnoresCancelDefect) Transfer(p0 context.Context, p1 Move) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.accountsOverEmbedded.Transfer(p0, p1)
+}
+
+// accountsTransferIgnoresCancel returns the planted defect of a Accounts
+// whose Transfer ignores the context over a fresh subject.
+func accountsTransferIgnoresCancel(h *AccountsHandle) Accounts {
+	return &accountsTransferIgnoresCancelDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsTotalLeaksOneUnitDefect is the planted defect of a Accounts
+// whose Total reads one unit more on each call.
+type accountsTotalLeaksOneUnitDefect struct {
+	accountsOverEmbedded
+	calls int
+}
+
+// Total is the override of the planted defect.
+func (d *accountsTotalLeaksOneUnitDefect) Total(p0 context.Context) (r0 int64, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.accountsOverEmbedded.Total(p0)
+	d.calls++
+	r0 += int64(d.calls)
+	return r0, r1
+}
+
+// accountsTotalLeaksOneUnit returns the planted defect of a Accounts whose
+// Total reads one unit more on each call over a fresh subject.
+func accountsTotalLeaksOneUnit(h *AccountsHandle) Accounts {
+	return &accountsTotalLeaksOneUnitDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsTotalPanicsDefect is the planted defect of a Accounts whose
+// Total panics.
+type accountsTotalPanicsDefect struct {
+	accountsOverEmbedded
+}
+
+// Total is the override of the planted defect.
+func (*accountsTotalPanicsDefect) Total(p0 context.Context) (r0 int64, r1 error) {
+	panic("the planted defect of a Accounts whose Total panics")
+}
+
+// accountsTotalPanics returns the planted defect of a Accounts whose Total
+// panics over a fresh subject.
+func accountsTotalPanics(h *AccountsHandle) Accounts {
+	return &accountsTotalPanicsDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsTotalIgnoresCancelDefect is the planted defect of a Accounts
+// whose Total ignores the context.
+type accountsTotalIgnoresCancelDefect struct {
+	accountsOverEmbedded
+}
+
+// Total is the override of the planted defect.
+func (d *accountsTotalIgnoresCancelDefect) Total(p0 context.Context) (r0 int64, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.accountsOverEmbedded.Total(p0)
+}
+
+// accountsTotalIgnoresCancel returns the planted defect of a Accounts
+// whose Total ignores the context over a fresh subject.
+func accountsTotalIgnoresCancel(h *AccountsHandle) Accounts {
+	return &accountsTotalIgnoresCancelDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsTotalValueBesideDefect is the planted defect of a Accounts whose
+// Total returns a value beside an error.
+type accountsTotalValueBesideDefect struct {
+	accountsOverEmbedded
+}
+
+// Total is the override of the planted defect.
+func (d *accountsTotalValueBesideDefect) Total(p0 context.Context) (r0 int64, r1 error) {
+	r0, r1 = d.accountsOverEmbedded.Total(p0)
+	if r1 != nil {
+		r0 = int64(7)
+	}
+	return r0, r1
+}
+
+// accountsTotalValueBeside returns the planted defect of a Accounts whose
+// Total returns a value beside an error over a fresh subject.
+func accountsTotalValueBeside(h *AccountsHandle) Accounts {
+	return &accountsTotalValueBesideDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsRenamePanicsDefect is the planted defect of a Accounts whose
+// Rename panics.
+type accountsRenamePanicsDefect struct {
+	accountsOverEmbedded
+}
+
+// Rename is the override of the planted defect.
+func (*accountsRenamePanicsDefect) Rename(p0 context.Context, p1, p2 string) (r0 error) {
+	panic("the planted defect of a Accounts whose Rename panics")
+}
+
+// accountsRenamePanics returns the planted defect of a Accounts whose
+// Rename panics over a fresh subject.
+func accountsRenamePanics(h *AccountsHandle) Accounts {
+	return &accountsRenamePanicsDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsRenameIgnoresCancelDefect is the planted defect of a Accounts
+// whose Rename ignores the context.
+type accountsRenameIgnoresCancelDefect struct {
+	accountsOverEmbedded
+}
+
+// Rename is the override of the planted defect.
+func (d *accountsRenameIgnoresCancelDefect) Rename(p0 context.Context, p1, p2 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.accountsOverEmbedded.Rename(p0, p1, p2)
+}
+
+// accountsRenameIgnoresCancel returns the planted defect of a Accounts
+// whose Rename ignores the context over a fresh subject.
+func accountsRenameIgnoresCancel(h *AccountsHandle) Accounts {
+	return &accountsRenameIgnoresCancelDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsNamesPanicsDefect is the planted defect of a Accounts whose
+// Names panics.
+type accountsNamesPanicsDefect struct {
+	accountsOverEmbedded
+}
+
+// Names is the override of the planted defect.
+func (*accountsNamesPanicsDefect) Names(p0 context.Context) (r0 []string, r1 error) {
+	panic("the planted defect of a Accounts whose Names panics")
+}
+
+// accountsNamesPanics returns the planted defect of a Accounts whose Names
+// panics over a fresh subject.
+func accountsNamesPanics(h *AccountsHandle) Accounts {
+	return &accountsNamesPanicsDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsNamesIgnoresCancelDefect is the planted defect of a Accounts
+// whose Names ignores the context.
+type accountsNamesIgnoresCancelDefect struct {
+	accountsOverEmbedded
+}
+
+// Names is the override of the planted defect.
+func (d *accountsNamesIgnoresCancelDefect) Names(p0 context.Context) (r0 []string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.accountsOverEmbedded.Names(p0)
+}
+
+// accountsNamesIgnoresCancel returns the planted defect of a Accounts
+// whose Names ignores the context over a fresh subject.
+func accountsNamesIgnoresCancel(h *AccountsHandle) Accounts {
+	return &accountsNamesIgnoresCancelDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsNamesValueBesideDefect is the planted defect of a Accounts whose
+// Names returns a value beside an error.
+type accountsNamesValueBesideDefect struct {
+	accountsOverEmbedded
+}
+
+// Names is the override of the planted defect.
+func (d *accountsNamesValueBesideDefect) Names(p0 context.Context) (r0 []string, r1 error) {
+	r0, r1 = d.accountsOverEmbedded.Names(p0)
+	if r1 != nil {
+		r0 = []string{"sample-b"}
+	}
+	return r0, r1
+}
+
+// accountsNamesValueBeside returns the planted defect of a Accounts whose
+// Names returns a value beside an error over a fresh subject.
+func accountsNamesValueBeside(h *AccountsHandle) Accounts {
+	return &accountsNamesValueBesideDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsFoldPanicsDefect is the planted defect of a Accounts whose Fold
+// panics.
+type accountsFoldPanicsDefect struct {
+	accountsOverEmbedded
+}
+
+// Fold is the override of the planted defect.
+func (*accountsFoldPanicsDefect) Fold(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Accounts whose Fold panics")
+}
+
+// accountsFoldPanics returns the planted defect of a Accounts whose Fold
+// panics over a fresh subject.
+func accountsFoldPanics(h *AccountsHandle) Accounts {
+	return &accountsFoldPanicsDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsFoldIgnoresCancelDefect is the planted defect of a Accounts
+// whose Fold ignores the context.
+type accountsFoldIgnoresCancelDefect struct {
+	accountsOverEmbedded
+}
+
+// Fold is the override of the planted defect.
+func (d *accountsFoldIgnoresCancelDefect) Fold(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.accountsOverEmbedded.Fold(p0, p1)
+}
+
+// accountsFoldIgnoresCancel returns the planted defect of a Accounts whose
+// Fold ignores the context over a fresh subject.
+func accountsFoldIgnoresCancel(h *AccountsHandle) Accounts {
+	return &accountsFoldIgnoresCancelDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsAuditPanicsDefect is the planted defect of a Accounts whose
+// Audit panics.
+type accountsAuditPanicsDefect struct {
+	accountsOverEmbedded
+}
+
+// Audit is the override of the planted defect.
+func (*accountsAuditPanicsDefect) Audit(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Accounts whose Audit panics")
+}
+
+// accountsAuditPanics returns the planted defect of a Accounts whose Audit
+// panics over a fresh subject.
+func accountsAuditPanics(h *AccountsHandle) Accounts {
+	return &accountsAuditPanicsDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsAuditIgnoresCancelDefect is the planted defect of a Accounts
+// whose Audit ignores the context.
+type accountsAuditIgnoresCancelDefect struct {
+	accountsOverEmbedded
+}
+
+// Audit is the override of the planted defect.
+func (d *accountsAuditIgnoresCancelDefect) Audit(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.accountsOverEmbedded.Audit(p0)
+}
+
+// accountsAuditIgnoresCancel returns the planted defect of a Accounts
+// whose Audit ignores the context over a fresh subject.
+func accountsAuditIgnoresCancel(h *AccountsHandle) Accounts {
+	return &accountsAuditIgnoresCancelDefect{accountsOverEmbedded: h.Fresh()}
+}
+
+// accountsActions returns the actions of the generated sequences of
+// Accounts over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func accountsActions(c *prop.Case, subject func() Accounts) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Transfer",
+			Input: func(c *prop.Case, _ struct{}) any {
+				m := c.Draw(prop.Of[Move](), "transfer.m")
+				return []any{m}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Transfer", args)
+				values, err := accountsTransferCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Total",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Total", args)
+				values, err := accountsTotalCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Rename",
+			Input: func(c *prop.Case, _ struct{}) any {
+				from := c.Draw(prop.SampledFrom(keysString...), "rename.from")
+				to := c.Draw(prop.Of[string](), "rename.to")
+				return []any{from, to}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Rename", args, args[0])
+				values, err := accountsRenameCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Names",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Names", args)
+				values, err := accountsNamesCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Fold",
+			Input: func(c *prop.Case, _ struct{}) any {
+				to := c.Draw(prop.Of[string](), "fold.to")
+				return []any{to}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Fold", args)
+				values, err := accountsFoldCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Audit",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Audit", args)
+				values, err := accountsAuditCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// accountsTransferCall calls Transfer on subject with the arguments args,
+// and returns the values of the call beside its error.
+func accountsTransferCall(ctx context.Context, subject Accounts, args []any) ([]any, error) {
+	a0, _ := args[0].(Move)
+	return nil, subject.Transfer(ctx, a0)
+}
+
+// accountsTotalCall calls Total on subject with the arguments args, and
+// returns the values of the call beside its error.
+func accountsTotalCall(ctx context.Context, subject Accounts, args []any) ([]any, error) {
+	r0, err := subject.Total(ctx)
+	return []any{r0}, err
+}
+
+// accountsRenameCall calls Rename on subject with the arguments args, and
+// returns the values of the call beside its error.
+func accountsRenameCall(ctx context.Context, subject Accounts, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	return nil, subject.Rename(ctx, a0, a1)
+}
+
+// accountsNamesCall calls Names on subject with the arguments args, and
+// returns the values of the call beside its error.
+func accountsNamesCall(ctx context.Context, subject Accounts, args []any) ([]any, error) {
+	r0, err := subject.Names(ctx)
+	return []any{r0}, err
+}
+
+// accountsFoldCall calls Fold on subject with the arguments args, and
+// returns the values of the call beside its error.
+func accountsFoldCall(ctx context.Context, subject Accounts, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Fold(ctx, a0)
+}
+
+// accountsAuditCall calls Audit on subject with the arguments args, and
+// returns the values of the call beside its error.
+func accountsAuditCall(ctx context.Context, subject Accounts, args []any) ([]any, error) {
+	return nil, subject.Audit(ctx)
+}
+
+// The derived checks of Journal:
+//
+// Journal.Record/smoke: Record returns without a panic for derived inputs.
+//
+// Journal.Record/smoke#generated: Record returns without a panic for
+// derived inputs.
+//
+// Journal.Record/cancel: Record returns an error for a cancelled context.
+//
+// Journal.Record/cancel#generated: Record returns an error for a cancelled
+// context.
+//
+// Journal.Record/failure-is-reported: Record returns an error when a call
+// of its dependency fails.
+//
+// Journal.Record/failure-is-reported#generated: Record returns an error
+// when a call of its dependency fails.
+//
+// Journal.Record/no-partial-write: Entry finds no effect of a Record that
+// failed with its dependency.
+//
+// Journal.Record/no-partial-write#generated: Entry finds no effect of a
+// Record that failed with its dependency.
+//
+// Journal.Record/no-trace-of-a-failed-call: Entry finds no effect of a
+// Record that failed with its dependencies, over any sequence of calls.
+//
+// Journal.Entry/smoke: Entry returns without a panic for derived inputs.
+//
+// Journal.Entry/smoke#generated: Entry returns without a panic for derived
+// inputs.
+//
+// Journal.Entry/cancel: Entry returns an error for a cancelled context.
+//
+// Journal.Entry/cancel#generated: Entry returns an error for a cancelled
+// context.
+//
+// Journal.Entry/failure-is-reported: Entry returns an error when a call of
+// its dependency fails.
+//
+// Journal.Entry/failure-is-reported#generated: Entry returns an error when
+// a call of its dependency fails.
+//
+// Journal.Entry/zero-on-error: Entry returns the zero value beside an
+// error.
+//
+// Journal.Entry/zero-on-error#generated: Entry returns the zero value
+// beside an error.
+
+// The derived checks of Journal that witness their laws at the shallow
+// end:
+//
+// Journal.Record/smoke
+//
+// Journal.Record/no-partial-write
+//
+// Journal.Record/no-partial-write#generated
+//
+// Journal.Entry/smoke
+
+// The unclaimed classifications of Journal:
+//
+// The shape:writer of Journal.Record has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Journal writes.
+type (
+	JournalHandle = conform.Handle[Journal]
+	JournalCheck  = conform.Check[Journal]
+	JournalOption = conform.Option[Journal]
+)
+
+// JournalChecks contains the name of each callable of Journal, with the
+// identities of its checks.
+var JournalChecks = struct {
+	Record journalRecord
+	Entry  journalEntry
+}{
+	Record: journalRecord{"Journal.Record"},
+	Entry:  journalEntry{"Journal.Entry"},
+}
+
+// journalRecord is the name of Journal.Record, with the identities of its
+// checks.
+type journalRecord struct {
+	conform.Callable[Journal]
+}
+
+// Smoke returns the identity of the check that Record returns without a
+// panic for derived inputs.
+func (c journalRecord) Smoke() conform.ID[Journal] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Record returns
+// without a panic for derived inputs.
+func (c journalRecord) SmokeGenerated() conform.ID[Journal] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Record returns an error
+// for a cancelled context.
+func (c journalRecord) Cancel() conform.ID[Journal] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Record returns an
+// error for a cancelled context.
+func (c journalRecord) CancelGenerated() conform.ID[Journal] {
+	return c.Check("cancel#generated")
+}
+
+// FailureIsReported returns the identity of the check that Record returns
+// an error when a call of its dependency fails.
+func (c journalRecord) FailureIsReported() conform.ID[Journal] {
+	return c.Check("failure-is-reported")
+}
+
+// FailureIsReportedGenerated returns the identity of the check that Record
+// returns an error when a call of its dependency fails.
+func (c journalRecord) FailureIsReportedGenerated() conform.ID[Journal] {
+	return c.Check("failure-is-reported#generated")
+}
+
+// NoPartialWrite returns the identity of the check that Entry finds no
+// effect of a Record that failed with its dependency.
+func (c journalRecord) NoPartialWrite() conform.ID[Journal] {
+	return c.Check("no-partial-write")
+}
+
+// NoPartialWriteGenerated returns the identity of the check that Entry
+// finds no effect of a Record that failed with its dependency.
+func (c journalRecord) NoPartialWriteGenerated() conform.ID[Journal] {
+	return c.Check("no-partial-write#generated")
+}
+
+// NoTraceOfAFailedCall returns the identity of the check that Entry finds
+// no effect of a Record that failed with its dependencies, over any
+// sequence of calls.
+func (c journalRecord) NoTraceOfAFailedCall() conform.ID[Journal] {
+	return c.Check("no-trace-of-a-failed-call")
+}
+
+// journalEntry is the name of Journal.Entry, with the identities of its
+// checks.
+type journalEntry struct {
+	conform.Callable[Journal]
+}
+
+// Smoke returns the identity of the check that Entry returns without a
+// panic for derived inputs.
+func (c journalEntry) Smoke() conform.ID[Journal] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Entry returns
+// without a panic for derived inputs.
+func (c journalEntry) SmokeGenerated() conform.ID[Journal] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Entry returns an error for
+// a cancelled context.
+func (c journalEntry) Cancel() conform.ID[Journal] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Entry returns an
+// error for a cancelled context.
+func (c journalEntry) CancelGenerated() conform.ID[Journal] {
+	return c.Check("cancel#generated")
+}
+
+// FailureIsReported returns the identity of the check that Entry returns
+// an error when a call of its dependency fails.
+func (c journalEntry) FailureIsReported() conform.ID[Journal] {
+	return c.Check("failure-is-reported")
+}
+
+// FailureIsReportedGenerated returns the identity of the check that Entry
+// returns an error when a call of its dependency fails.
+func (c journalEntry) FailureIsReportedGenerated() conform.ID[Journal] {
+	return c.Check("failure-is-reported#generated")
+}
+
+// ZeroOnError returns the identity of the check that Entry returns the
+// zero value beside an error.
+func (c journalEntry) ZeroOnError() conform.ID[Journal] {
+	return c.Check("zero-on-error")
+}
+
+// ZeroOnErrorGenerated returns the identity of the check that Entry
+// returns the zero value beside an error.
+func (c journalEntry) ZeroOnErrorGenerated() conform.ID[Journal] {
+	return c.Check("zero-on-error#generated")
+}
+
+// JournalSuite returns the checks of Journal, and the calls and the
+// budgets of its callables.
+func JournalSuite() conform.Suite[Journal] {
+	return conform.Suite[Journal]{
+		Declaration: "Journal",
+		Package:     "example.com/shop/sequenced",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Journal]{
+			{
+				ID:          JournalChecks.Record.Smoke(),
+				Statement:   "Record returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *JournalHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, Item{Key: "Key-a"})
+					})
+				},
+				Defect: journalRecordPanics,
+			},
+			{
+				ID:          JournalChecks.Record.SmokeGenerated(),
+				Statement:   "Record returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnIt := c.Draw(prop.Of[Item](), "it")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnIt)
+					})
+				},
+				Defect: journalRecordPanics,
+			},
+			{
+				ID:          JournalChecks.Record.Cancel(),
+				Statement:   "Record returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *JournalHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, Item{Key: "Key-a"})
+					})
+				},
+				Defect: journalRecordIgnoresCancel,
+			},
+			{
+				ID:          JournalChecks.Record.CancelGenerated(),
+				Statement:   "Record returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnIt := c.Draw(prop.Of[Item](), "it")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnIt)
+					})
+				},
+				Defect: journalRecordIgnoresCancel,
+			},
+			{
+				ID:        JournalChecks.Record.FailureIsReported(),
+				Statement: "Record returns an error when a call of its dependency fails",
+				Claim:     spec.FailureIsReported,
+				Probe:     spec.ReportsAFailedDependency,
+				Reason:    spec.SwallowedFailure,
+				Law:       spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.NothingBeyondACaller,
+				},
+				Apply: func(h *JournalHandle) {
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, Item{Key: "Key-a"})
+					})
+				},
+				Defect: journalRecordSwallowsFailure,
+			},
+			{
+				ID:        JournalChecks.Record.FailureIsReportedGenerated(),
+				Statement: "Record returns an error when a call of its dependency fails",
+				Claim:     spec.FailureIsReported,
+				Probe:     spec.ReportsAFailedDependency,
+				Reason:    spec.SwallowedFailure,
+				Law:       spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.GeneratedInputs,
+					spec.NothingBeyondACaller,
+				},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnIt := c.Draw(prop.Of[Item](), "it")
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnIt)
+					})
+				},
+				Defect: journalRecordSwallowsFailure,
+			},
+			{
+				ID:        JournalChecks.Record.NoPartialWrite(),
+				Statement: "Entry finds no effect of a Record that failed with its dependency",
+				Claim:     spec.NoPartialWrite,
+				Probe:     spec.FailsWithoutEffect,
+				Reason:    spec.PartialWrite,
+				Law:       spec.FailedCallLeavesNoEffect,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.NothingBeyondACaller,
+				},
+				Shallow: true,
+				Apply: func(h *JournalHandle) {
+					probe.FailsWithoutEffect(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, Item{Key: "Key-a"})
+					}, func(ctx context.Context) (Item, error) {
+						return h.Subject().Entry(ctx, (Item{Key: "Key-a"}).Key)
+					})
+				},
+				Defect: journalEntryHalfApplied,
+			},
+			{
+				ID:        JournalChecks.Record.NoPartialWriteGenerated(),
+				Statement: "Entry finds no effect of a Record that failed with its dependency",
+				Claim:     spec.NoPartialWrite,
+				Probe:     spec.FailsWithoutEffect,
+				Reason:    spec.PartialWrite,
+				Law:       spec.FailedCallLeavesNoEffect,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.GeneratedInputs,
+					spec.NothingBeyondACaller,
+				},
+				Shallow: true,
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnIt := c.Draw(prop.Of[Item](), "it")
+					probe.FailsWithoutEffect(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, drawnIt)
+					}, func(ctx context.Context) (Item, error) {
+						return h.Subject().Entry(ctx, drawnIt.Key)
+					})
+				},
+				Defect: journalEntryHalfApplied,
+			},
+			{
+				ID:        JournalChecks.Record.NoTraceOfAFailedCall(),
+				Statement: "Entry finds no effect of a Record that failed with its dependencies, over any sequence of calls",
+				Claim:     spec.NoTraceOfAFailedCall,
+				Probe:     spec.FailedCallsLeaveNoTrace,
+				Reason:    spec.PartialWrite,
+				Law:       spec.FailedCallLeavesNoEffect,
+				Machineries: []spec.MachineryID{
+					spec.GeneratedSequences,
+					spec.CallThatFailsOnDemand,
+				},
+				Entails: []conform.ID[Journal]{JournalChecks.Record.NoPartialWrite()},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					probe.FailedCallsLeaveNoTrace(
+						h,
+						c,
+						journalActions,
+						"Record",
+						func(ctx context.Context, args []any) conform.Output {
+							w, _ := args[0].(Item)
+							values, err := journalEntryCall(ctx, h.Subject(), []any{w.Key})
+							return conform.OutputOf(err, values...)
+						},
+					)
+				},
+				Defect: journalEntryHalfAppliedAfterThree,
+			},
+			{
+				ID:          JournalChecks.Entry.Smoke(),
+				Statement:   "Entry returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *JournalHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Entry(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: journalEntryPanics,
+			},
+			{
+				ID:          JournalChecks.Entry.SmokeGenerated(),
+				Statement:   "Entry returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Entry(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: journalEntryPanics,
+			},
+			{
+				ID:          JournalChecks.Entry.Cancel(),
+				Statement:   "Entry returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *JournalHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Entry(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: journalEntryIgnoresCancel,
+			},
+			{
+				ID:          JournalChecks.Entry.CancelGenerated(),
+				Statement:   "Entry returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Entry(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: journalEntryIgnoresCancel,
+			},
+			{
+				ID:        JournalChecks.Entry.FailureIsReported(),
+				Statement: "Entry returns an error when a call of its dependency fails",
+				Claim:     spec.FailureIsReported,
+				Probe:     spec.ReportsAFailedDependency,
+				Reason:    spec.SwallowedFailure,
+				Law:       spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.NothingBeyondACaller,
+				},
+				Apply: func(h *JournalHandle) {
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						_, err := h.Subject().Entry(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: journalEntrySwallowsFailure,
+			},
+			{
+				ID:        JournalChecks.Entry.FailureIsReportedGenerated(),
+				Statement: "Entry returns an error when a call of its dependency fails",
+				Claim:     spec.FailureIsReported,
+				Probe:     spec.ReportsAFailedDependency,
+				Reason:    spec.SwallowedFailure,
+				Law:       spec.FailedDependencyIsReported,
+				Machineries: []spec.MachineryID{
+					spec.CallThatFailsOnDemand,
+					spec.GeneratedInputs,
+					spec.NothingBeyondACaller,
+				},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
+						_, err := h.Subject().Entry(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: journalEntrySwallowsFailure,
+			},
+			{
+				ID:          JournalChecks.Entry.ZeroOnError(),
+				Statement:   "Entry returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *JournalHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (Item, error) {
+						return h.Subject().Entry(ctx, string("key-a"))
+					}, Item{})
+				},
+				Defect: journalEntryValueBeside,
+			},
+			{
+				ID:          JournalChecks.Entry.ZeroOnErrorGenerated(),
+				Statement:   "Entry returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *JournalHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ZeroBesideError(h, func(ctx context.Context) (Item, error) {
+						return h.Subject().Entry(ctx, drawnKey)
+					}, Item{})
+				},
+				Defect: journalEntryValueBeside,
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Journal.Record",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Journal]{
+			{
+				Calls:    journalRecordCalls,
+				Over:     newJournalOver,
+				Callable: JournalChecks.Record.Callable,
+			},
+			{
+				Calls:    journalEntryCalls,
+				Over:     newJournalOver,
+				Callable: JournalChecks.Entry.Callable,
+			},
+		},
+	}
+}
+
+// RunJournalSuite applies the checks of Journal, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunJournalSuite[T Journal](t *testing.T, newSubject func() T, opts ...JournalOption) {
+	t.Helper()
+	RunJournalSuiteFromHandle(t, func(*JournalHandle) T { return newSubject() }, opts...)
+}
+
+// RunJournalSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunJournalSuiteFromHandle[T Journal](
+	t *testing.T,
+	newSubject func(h *JournalHandle) T,
+	opts ...JournalOption,
+) {
+	t.Helper()
+	conform.Run(t, JournalSuite(), journalSubjects(newSubject), opts...)
+}
+
+// FuzzJournalSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzJournalSuite[T Journal](
+	f *testing.F,
+	callable conform.Callable[Journal],
+	newSubject func(h *JournalHandle) T,
+	opts ...JournalOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, JournalSuite(), callable, journalSubjects(newSubject), opts...)
+}
+
+// RunJournalBudgets applies the allocation ceilings of Journal and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunJournalBudgets[T Journal](
+	t *testing.T,
+	newSubject func(h *JournalHandle) T,
+	opts ...JournalOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, JournalSuite(), journalSubjects(newSubject), opts...)
+}
+
+// BenchJournalSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchJournalSuite[T Journal](
+	b conform.B,
+	callable conform.Callable[Journal],
+	newSubject func(h *JournalHandle) T,
+	opts ...JournalOption,
+) {
+	b.Helper()
+	conform.Bench(b, JournalSuite(), callable, journalSubjects(newSubject), opts...)
+}
+
+// journalSubjects returns the factory of the subjects of Journal that
+// calls newSubject with the handle of each check.
+func journalSubjects[T Journal](
+	newSubject func(h *JournalHandle) T,
+) func(h *JournalHandle) Journal {
+	return func(h *JournalHandle) Journal { return newSubject(h) }
+}
+
+// journalRecordCalls generates the calls of Journal.Record with the inputs
+// that each case draws.
+var journalRecordCalls = prop.Composite(func(c *prop.Case) func(context.Context, Journal) error {
+	it := c.Draw(prop.Of[Item](), "it")
+	return func(ctx context.Context, subject Journal) error {
+		return subject.Record(ctx, it)
+	}
+})
+
+// journalEntryCalls generates the calls of Journal.Entry with the inputs
+// that each case draws.
+var journalEntryCalls = prop.Composite(func(c *prop.Case) func(context.Context, Journal) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Journal) error {
+		_, err := subject.Entry(ctx, key)
+		return err
+	}
+})
+
+// journalOverEmbedded is Journal under the name of the field that
+// journalOver embeds.
+type journalOverEmbedded = Journal
+
+// journalOver is a subject of Journal whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type journalOver struct {
+	journalOverEmbedded
+	spend func()
+}
+
+// Record calls spend and returns its zero results.
+func (o journalOver) Record(context.Context, Item) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Entry calls spend and returns its zero results.
+func (o journalOver) Entry(context.Context, string) (r0 Item, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newJournalOver returns the planted defect of a ceiling of Journal, whose
+// callables call spend.
+func newJournalOver(_ *JournalHandle, spend func()) Journal {
+	return journalOver{spend: spend}
+}
+
+// journalRecordPanicsDefect is the planted defect of a Journal whose
+// Record panics.
+type journalRecordPanicsDefect struct {
+	journalOverEmbedded
+}
+
+// Record is the override of the planted defect.
+func (*journalRecordPanicsDefect) Record(p0 context.Context, p1 Item) (r0 error) {
+	panic("the planted defect of a Journal whose Record panics")
+}
+
+// journalRecordPanics returns the planted defect of a Journal whose Record
+// panics over a fresh subject.
+func journalRecordPanics(h *JournalHandle) Journal {
+	return &journalRecordPanicsDefect{journalOverEmbedded: h.Fresh()}
+}
+
+// journalRecordIgnoresCancelDefect is the planted defect of a Journal
+// whose Record ignores the context.
+type journalRecordIgnoresCancelDefect struct {
+	journalOverEmbedded
+}
+
+// Record is the override of the planted defect.
+func (d *journalRecordIgnoresCancelDefect) Record(p0 context.Context, p1 Item) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.journalOverEmbedded.Record(p0, p1)
+}
+
+// journalRecordIgnoresCancel returns the planted defect of a Journal whose
+// Record ignores the context over a fresh subject.
+func journalRecordIgnoresCancel(h *JournalHandle) Journal {
+	return &journalRecordIgnoresCancelDefect{journalOverEmbedded: h.Fresh()}
+}
+
+// journalRecordSwallowsFailureDefect is the planted defect of a Journal
+// whose Record returns no error when its dependency fails.
+type journalRecordSwallowsFailureDefect struct {
+	journalOverEmbedded
+	h *JournalHandle
+}
+
+// Record is the override of the planted defect.
+func (d *journalRecordSwallowsFailureDefect) Record(p0 context.Context, p1 Item) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	before := d.h.Injector().Failures()
+	r0 = d.journalOverEmbedded.Record(p0, p1)
+	if r0 != nil && d.h.Injector().Failures() > before {
+		r0 = nil
+	}
+	return r0
+}
+
+// journalRecordSwallowsFailure returns the planted defect of a Journal
+// whose Record returns no error when its dependency fails over a fresh
+// subject.
+func journalRecordSwallowsFailure(h *JournalHandle) Journal {
+	return &journalRecordSwallowsFailureDefect{journalOverEmbedded: h.Fresh(), h: h}
+}
+
+// journalEntryHalfAppliedDefect is the planted defect of a Journal whose
+// Entry finds a part of a Record that failed.
+type journalEntryHalfAppliedDefect struct {
+	journalOverEmbedded
+	h *JournalHandle
+}
+
+// Entry is the override of the planted defect.
+func (d *journalEntryHalfAppliedDefect) Entry(p0 context.Context, p1 string) (r0 Item, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	failed := d.h.Injector().Failures() > 0
+	r0, r1 = d.journalOverEmbedded.Entry(p0, p1)
+	if failed {
+		r0 = Item{Key: "Key-b"}
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// journalEntryHalfApplied returns the planted defect of a Journal whose
+// Entry finds a part of a Record that failed over a fresh subject.
+func journalEntryHalfApplied(h *JournalHandle) Journal {
+	return &journalEntryHalfAppliedDefect{journalOverEmbedded: h.Fresh(), h: h}
+}
+
+// journalEntryHalfAppliedAfterThreeDefect is the planted defect of a
+// Journal whose Entry finds a part of a failed Record from its fourth read
+// on.
+type journalEntryHalfAppliedAfterThreeDefect struct {
+	journalOverEmbedded
+	calls int
+	h     *JournalHandle
+}
+
+// Entry is the override of the planted defect.
+func (d *journalEntryHalfAppliedAfterThreeDefect) Entry(
+	p0 context.Context,
+	p1 string,
+) (r0 Item, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	failed := d.h.Injector().Failures() > 0
+	r0, r1 = d.journalOverEmbedded.Entry(p0, p1)
+	d.calls++
+	if failed && d.calls > 3 {
+		r0 = Item{Key: "Key-b"}
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// journalEntryHalfAppliedAfterThree returns the planted defect of a
+// Journal whose Entry finds a part of a failed Record from its fourth read
+// on over a fresh subject.
+func journalEntryHalfAppliedAfterThree(h *JournalHandle) Journal {
+	return &journalEntryHalfAppliedAfterThreeDefect{journalOverEmbedded: h.Fresh(), h: h}
+}
+
+// journalEntryPanicsDefect is the planted defect of a Journal whose Entry
+// panics.
+type journalEntryPanicsDefect struct {
+	journalOverEmbedded
+}
+
+// Entry is the override of the planted defect.
+func (*journalEntryPanicsDefect) Entry(p0 context.Context, p1 string) (r0 Item, r1 error) {
+	panic("the planted defect of a Journal whose Entry panics")
+}
+
+// journalEntryPanics returns the planted defect of a Journal whose Entry
+// panics over a fresh subject.
+func journalEntryPanics(h *JournalHandle) Journal {
+	return &journalEntryPanicsDefect{journalOverEmbedded: h.Fresh()}
+}
+
+// journalEntryIgnoresCancelDefect is the planted defect of a Journal whose
+// Entry ignores the context.
+type journalEntryIgnoresCancelDefect struct {
+	journalOverEmbedded
+}
+
+// Entry is the override of the planted defect.
+func (d *journalEntryIgnoresCancelDefect) Entry(p0 context.Context, p1 string) (r0 Item, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.journalOverEmbedded.Entry(p0, p1)
+}
+
+// journalEntryIgnoresCancel returns the planted defect of a Journal whose
+// Entry ignores the context over a fresh subject.
+func journalEntryIgnoresCancel(h *JournalHandle) Journal {
+	return &journalEntryIgnoresCancelDefect{journalOverEmbedded: h.Fresh()}
+}
+
+// journalEntrySwallowsFailureDefect is the planted defect of a Journal
+// whose Entry returns no error when its dependency fails.
+type journalEntrySwallowsFailureDefect struct {
+	journalOverEmbedded
+	h *JournalHandle
+}
+
+// Entry is the override of the planted defect.
+func (d *journalEntrySwallowsFailureDefect) Entry(
+	p0 context.Context,
+	p1 string,
+) (r0 Item, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	before := d.h.Injector().Failures()
+	r0, r1 = d.journalOverEmbedded.Entry(p0, p1)
+	if r1 != nil && d.h.Injector().Failures() > before {
+		r0 = *new(Item)
+		r1 = nil
+	}
+	return r0, r1
+}
+
+// journalEntrySwallowsFailure returns the planted defect of a Journal
+// whose Entry returns no error when its dependency fails over a fresh
+// subject.
+func journalEntrySwallowsFailure(h *JournalHandle) Journal {
+	return &journalEntrySwallowsFailureDefect{journalOverEmbedded: h.Fresh(), h: h}
+}
+
+// journalEntryValueBesideDefect is the planted defect of a Journal whose
+// Entry returns a value beside an error.
+type journalEntryValueBesideDefect struct {
+	journalOverEmbedded
+}
+
+// Entry is the override of the planted defect.
+func (d *journalEntryValueBesideDefect) Entry(p0 context.Context, p1 string) (r0 Item, r1 error) {
+	r0, r1 = d.journalOverEmbedded.Entry(p0, p1)
+	if r1 != nil {
+		r0 = Item{Key: "Key-b"}
+	}
+	return r0, r1
+}
+
+// journalEntryValueBeside returns the planted defect of a Journal whose
+// Entry returns a value beside an error over a fresh subject.
+func journalEntryValueBeside(h *JournalHandle) Journal {
+	return &journalEntryValueBesideDefect{journalOverEmbedded: h.Fresh()}
+}
+
+// journalActions returns the actions of the generated sequences of Journal
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func journalActions(c *prop.Case, subject func() Journal) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Record",
+			Input: func(c *prop.Case, _ struct{}) any {
+				it := c.Draw(prop.Of[Item](), "record.it")
+				it.Key = c.Draw(prop.SampledFrom(keysString...), "record.it.key")
+				return []any{it}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(Item)
+				call := c.History().Invoke(client, "Record", args, key0.Key)
+				values, err := journalRecordCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Entry",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "entry.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Entry", args, args[0])
+				values, err := journalEntryCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// journalRecordCall calls Record on subject with the arguments args, and
+// returns the values of the call beside its error.
+func journalRecordCall(ctx context.Context, subject Journal, args []any) ([]any, error) {
+	a0, _ := args[0].(Item)
+	return nil, subject.Record(ctx, a0)
+}
+
+// journalEntryCall calls Entry on subject with the arguments args, and
+// returns the values of the call beside its error.
+func journalEntryCall(ctx context.Context, subject Journal, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Entry(ctx, a0)
+	return []any{r0}, err
+}
+
+// The derived checks of Stock:
+//
+// Stock.Items/smoke: Items returns without a panic for derived inputs.
+//
+// Stock.Items/streams-what-was-stored: Items yields each value that Add
+// stored.
+//
+// Stock.Items/streams-what-was-stored#generated: Items yields each value
+// that Add stored.
+//
+// Stock.Items/iteration-sees-mutations: an iteration of Items yields each
+// value that Add writes and no value that Remove removes while it runs.
+//
+// Stock.Each/smoke: Each returns without a panic for derived inputs.
+//
+// Stock.Each/streams-what-was-stored: Each yields each value that Add
+// stored.
+//
+// Stock.Each/streams-what-was-stored#generated: Each yields each value
+// that Add stored.
+//
+// Stock.Each/iteration-sees-mutations: an iteration of Each yields each
+// value that Add writes and no value that Remove removes while it runs.
+//
+// Stock.Counts/smoke: Counts returns without a panic for derived inputs.
+//
+// Stock.Counts/streams-what-was-stored: Counts yields each value that Add
+// stored.
+//
+// Stock.Counts/streams-what-was-stored#generated: Counts yields each value
+// that Add stored.
+//
+// Stock.Counts/iteration-sees-mutations: an iteration of Counts yields
+// each value that Add writes and no value that Remove removes while it
+// runs.
+//
+// Stock.Sizes/smoke: Sizes returns without a panic for derived inputs.
+//
+// Stock.Sizes/streams-what-was-stored: Sizes yields each value that Add
+// stored.
+//
+// Stock.Sizes/streams-what-was-stored#generated: Sizes yields each value
+// that Add stored.
+//
+// Stock.Snapshot/smoke: Snapshot returns without a panic for derived
+// inputs.
+//
+// Stock.Snapshot/cancel: Snapshot returns an error for a cancelled
+// context.
+//
+// Stock.Snapshot/zero-on-error: Snapshot returns the zero value beside an
+// error.
+//
+// Stock.Add/smoke: Add returns without a panic for derived inputs.
+//
+// Stock.Add/smoke#generated: Add returns without a panic for derived
+// inputs.
+//
+// Stock.Add/cancel: Add returns an error for a cancelled context.
+//
+// Stock.Add/cancel#generated: Add returns an error for a cancelled
+// context.
+//
+// Stock.Remove/smoke: Remove returns without a panic for derived inputs.
+//
+// Stock.Remove/smoke#generated: Remove returns without a panic for derived
+// inputs.
+//
+// Stock.Remove/cancel: Remove returns an error for a cancelled context.
+//
+// Stock.Remove/cancel#generated: Remove returns an error for a cancelled
+// context.
+
+// The derived checks of Stock that witness their laws at the shallow end:
+//
+// Stock.Items/smoke
+//
+// Stock.Items/streams-what-was-stored
+//
+// Stock.Items/streams-what-was-stored#generated
+//
+// Stock.Each/smoke
+//
+// Stock.Each/streams-what-was-stored
+//
+// Stock.Each/streams-what-was-stored#generated
+//
+// Stock.Counts/smoke
+//
+// Stock.Counts/streams-what-was-stored
+//
+// Stock.Counts/streams-what-was-stored#generated
+//
+// Stock.Sizes/smoke
+//
+// Stock.Sizes/streams-what-was-stored
+//
+// Stock.Sizes/streams-what-was-stored#generated
+//
+// Stock.Snapshot/smoke
+//
+// Stock.Add/smoke
+//
+// Stock.Remove/smoke
+
+// The refused claims of Stock:
+//
+// Stock.Items/cancel: Items cannot fail. The remedy is to give Items an
+// error result.
+//
+// Stock.Each/cancel: Each cannot fail. The remedy is to give Each an error
+// result.
+//
+// Stock.Counts/cancel: Counts cannot fail. The remedy is to give Counts an
+// error result.
+//
+// Stock.Sizes/cancel: Sizes cannot fail. The remedy is to give Sizes an
+// error result.
+//
+// Stock.Sizes/iteration-sees-mutations: Sizes returns no stream of a value
+// that Add and Remove take. The remedy is to name with mutate and delete
+// the callables that write and remove an element of the stream of Sizes.
+//
+// Stock.Snapshot/iteration-sees-mutations: Snapshot returns no stream of a
+// value that Add and Remove take. The remedy is to name with mutate and
+// delete the callables that write and remove an element of the stream of
+// Snapshot.
+
+// The unclaimed classifications of Stock:
+//
+// The shape:writer of Stock.Add has the stance silent. A write is an input
+// of the other checks, and its result is an error alone.
+//
+// The shape:deleter of Stock.Remove has the stance silent. A delete is an
+// input of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Stock writes.
+type (
+	StockHandle = conform.Handle[Stock]
+	StockCheck  = conform.Check[Stock]
+	StockOption = conform.Option[Stock]
+)
+
+// StockChecks contains the name of each callable of Stock, with the
+// identities of its checks.
+var StockChecks = struct {
+	Items    stockItems
+	Each     stockEach
+	Counts   stockCounts
+	Sizes    stockSizes
+	Snapshot stockSnapshot
+	Add      stockAdd
+	Remove   stockRemove
+}{
+	Items:    stockItems{"Stock.Items"},
+	Each:     stockEach{"Stock.Each"},
+	Counts:   stockCounts{"Stock.Counts"},
+	Sizes:    stockSizes{"Stock.Sizes"},
+	Snapshot: stockSnapshot{"Stock.Snapshot"},
+	Add:      stockAdd{"Stock.Add"},
+	Remove:   stockRemove{"Stock.Remove"},
+}
+
+// stockItems is the name of Stock.Items, with the identities of its
+// checks.
+type stockItems struct {
+	conform.Callable[Stock]
+}
+
+// Smoke returns the identity of the check that Items returns without a
+// panic for derived inputs.
+func (c stockItems) Smoke() conform.ID[Stock] {
+	return c.Check("smoke")
+}
+
+// StreamsWhatWasStored returns the identity of the check that Items yields
+// each value that Add stored.
+func (c stockItems) StreamsWhatWasStored() conform.ID[Stock] {
+	return c.Check("streams-what-was-stored")
+}
+
+// StreamsWhatWasStoredGenerated returns the identity of the check that
+// Items yields each value that Add stored.
+func (c stockItems) StreamsWhatWasStoredGenerated() conform.ID[Stock] {
+	return c.Check("streams-what-was-stored#generated")
+}
+
+// IterationSeesMutations returns the identity of the check that an
+// iteration of Items yields each value that Add writes and no value that
+// Remove removes while it runs.
+func (c stockItems) IterationSeesMutations() conform.ID[Stock] {
+	return c.Check("iteration-sees-mutations")
+}
+
+// stockEach is the name of Stock.Each, with the identities of its checks.
+type stockEach struct {
+	conform.Callable[Stock]
+}
+
+// Smoke returns the identity of the check that Each returns without a
+// panic for derived inputs.
+func (c stockEach) Smoke() conform.ID[Stock] {
+	return c.Check("smoke")
+}
+
+// StreamsWhatWasStored returns the identity of the check that Each yields
+// each value that Add stored.
+func (c stockEach) StreamsWhatWasStored() conform.ID[Stock] {
+	return c.Check("streams-what-was-stored")
+}
+
+// StreamsWhatWasStoredGenerated returns the identity of the check that
+// Each yields each value that Add stored.
+func (c stockEach) StreamsWhatWasStoredGenerated() conform.ID[Stock] {
+	return c.Check("streams-what-was-stored#generated")
+}
+
+// IterationSeesMutations returns the identity of the check that an
+// iteration of Each yields each value that Add writes and no value that
+// Remove removes while it runs.
+func (c stockEach) IterationSeesMutations() conform.ID[Stock] {
+	return c.Check("iteration-sees-mutations")
+}
+
+// stockCounts is the name of Stock.Counts, with the identities of its
+// checks.
+type stockCounts struct {
+	conform.Callable[Stock]
+}
+
+// Smoke returns the identity of the check that Counts returns without a
+// panic for derived inputs.
+func (c stockCounts) Smoke() conform.ID[Stock] {
+	return c.Check("smoke")
+}
+
+// StreamsWhatWasStored returns the identity of the check that Counts
+// yields each value that Add stored.
+func (c stockCounts) StreamsWhatWasStored() conform.ID[Stock] {
+	return c.Check("streams-what-was-stored")
+}
+
+// StreamsWhatWasStoredGenerated returns the identity of the check that
+// Counts yields each value that Add stored.
+func (c stockCounts) StreamsWhatWasStoredGenerated() conform.ID[Stock] {
+	return c.Check("streams-what-was-stored#generated")
+}
+
+// IterationSeesMutations returns the identity of the check that an
+// iteration of Counts yields each value that Add writes and no value that
+// Remove removes while it runs.
+func (c stockCounts) IterationSeesMutations() conform.ID[Stock] {
+	return c.Check("iteration-sees-mutations")
+}
+
+// stockSizes is the name of Stock.Sizes, with the identities of its
+// checks.
+type stockSizes struct {
+	conform.Callable[Stock]
+}
+
+// Smoke returns the identity of the check that Sizes returns without a
+// panic for derived inputs.
+func (c stockSizes) Smoke() conform.ID[Stock] {
+	return c.Check("smoke")
+}
+
+// StreamsWhatWasStored returns the identity of the check that Sizes yields
+// each value that Add stored.
+func (c stockSizes) StreamsWhatWasStored() conform.ID[Stock] {
+	return c.Check("streams-what-was-stored")
+}
+
+// StreamsWhatWasStoredGenerated returns the identity of the check that
+// Sizes yields each value that Add stored.
+func (c stockSizes) StreamsWhatWasStoredGenerated() conform.ID[Stock] {
+	return c.Check("streams-what-was-stored#generated")
+}
+
+// stockSnapshot is the name of Stock.Snapshot, with the identities of its
+// checks.
+type stockSnapshot struct {
+	conform.Callable[Stock]
+}
+
+// Smoke returns the identity of the check that Snapshot returns without a
+// panic for derived inputs.
+func (c stockSnapshot) Smoke() conform.ID[Stock] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Snapshot returns an error
+// for a cancelled context.
+func (c stockSnapshot) Cancel() conform.ID[Stock] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Snapshot returns the
+// zero value beside an error.
+func (c stockSnapshot) ZeroOnError() conform.ID[Stock] {
+	return c.Check("zero-on-error")
+}
+
+// stockAdd is the name of Stock.Add, with the identities of its checks.
+type stockAdd struct {
+	conform.Callable[Stock]
+}
+
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c stockAdd) Smoke() conform.ID[Stock] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Add returns
+// without a panic for derived inputs.
+func (c stockAdd) SmokeGenerated() conform.ID[Stock] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c stockAdd) Cancel() conform.ID[Stock] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Add returns an
+// error for a cancelled context.
+func (c stockAdd) CancelGenerated() conform.ID[Stock] {
+	return c.Check("cancel#generated")
+}
+
+// stockRemove is the name of Stock.Remove, with the identities of its
+// checks.
+type stockRemove struct {
+	conform.Callable[Stock]
+}
+
+// Smoke returns the identity of the check that Remove returns without a
+// panic for derived inputs.
+func (c stockRemove) Smoke() conform.ID[Stock] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Remove returns
+// without a panic for derived inputs.
+func (c stockRemove) SmokeGenerated() conform.ID[Stock] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Remove returns an error
+// for a cancelled context.
+func (c stockRemove) Cancel() conform.ID[Stock] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Remove returns an
+// error for a cancelled context.
+func (c stockRemove) CancelGenerated() conform.ID[Stock] {
+	return c.Check("cancel#generated")
+}
+
+// StockSuite returns the checks of Stock, and the calls and the budgets of
+// its callables.
+func StockSuite() conform.Suite[Stock] {
+	return conform.Suite[Stock]{
+		Declaration: "Stock",
+		Package:     "example.com/shop/sequenced",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Stock]{
+			{
+				ID:          StockChecks.Items.Smoke(),
+				Statement:   "Items returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Items(ctx)
+						return nil
+					})
+				},
+				Defect: stockItemsPanics,
+			},
+			{
+				ID:          StockChecks.Items.StreamsWhatWasStored(),
+				Statement:   "Items yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]string, error) {
+						r0 := h.Subject().Items(ctx)
+						var drained []string
+						for e, err := range r0 {
+							if err != nil {
+								return drained, err
+							}
+							drained = append(drained, e)
+						}
+						return drained, nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := string("item-a")
+							if calls > 1 {
+								w = string("item-b")
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: stockItemsDrainsNothing,
+			},
+			{
+				ID:          StockChecks.Items.StreamsWhatWasStoredGenerated(),
+				Statement:   "Items yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *StockHandle, c *prop.Case) {
+					drawnItem := c.Draw(
+						prop.List(
+							prop.Of[string](),
+							prop.Unique(),
+							prop.MinSize(2),
+							prop.MaxSize(2),
+						),
+						"item",
+					)
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]string, error) {
+						r0 := h.Subject().Items(ctx)
+						var drained []string
+						for e, err := range r0 {
+							if err != nil {
+								return drained, err
+							}
+							drained = append(drained, e)
+						}
+						return drained, nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := drawnItem[0]
+							if calls > 1 {
+								w = drawnItem[1]
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: stockItemsDrainsNothing,
+			},
+			{
+				ID:          StockChecks.Items.IterationSeesMutations(),
+				Statement:   "an iteration of Items yields each value that Add writes and no value that Remove removes while it runs",
+				Claim:       spec.IterationSeesMutations,
+				Probe:       spec.IterationsSeeTheMutations,
+				Reason:      spec.StaleIteration,
+				Law:         spec.IterationReflectsItsSource,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *StockHandle, c *prop.Case) {
+					probe.IterationsSeeTheMutations(
+						h,
+						c,
+						stockActions,
+						func(ctx context.Context) (func() (string, bool), func(), error) {
+							r0 := h.Subject().Items(ctx)
+							next, stop := iter.Pull2(r0)
+							return func() (string, bool) {
+								v, err, ok := next()
+								return v, ok && err == nil
+							}, stop, nil
+						},
+						"Add",
+						"Remove",
+						func(args []any) string {
+							v, _ := args[0].(string)
+							return v
+						},
+						func(args []any) string {
+							v, _ := args[0].(string)
+							return v
+						},
+					)
+				},
+				Defect: stockItemsIteratesACopy,
+			},
+			{
+				ID:          StockChecks.Each.Smoke(),
+				Statement:   "Each returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Each(ctx)
+						return nil
+					})
+				},
+				Defect: stockEachPanics,
+			},
+			{
+				ID:          StockChecks.Each.StreamsWhatWasStored(),
+				Statement:   "Each yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]string, error) {
+						r0 := h.Subject().Each(ctx)
+						return slices.Collect(r0), nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := string("item-a")
+							if calls > 1 {
+								w = string("item-b")
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: stockEachDrainsNothing,
+			},
+			{
+				ID:          StockChecks.Each.StreamsWhatWasStoredGenerated(),
+				Statement:   "Each yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *StockHandle, c *prop.Case) {
+					drawnItem := c.Draw(
+						prop.List(
+							prop.Of[string](),
+							prop.Unique(),
+							prop.MinSize(2),
+							prop.MaxSize(2),
+						),
+						"item",
+					)
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]string, error) {
+						r0 := h.Subject().Each(ctx)
+						return slices.Collect(r0), nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := drawnItem[0]
+							if calls > 1 {
+								w = drawnItem[1]
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: stockEachDrainsNothing,
+			},
+			{
+				ID:          StockChecks.Each.IterationSeesMutations(),
+				Statement:   "an iteration of Each yields each value that Add writes and no value that Remove removes while it runs",
+				Claim:       spec.IterationSeesMutations,
+				Probe:       spec.IterationsSeeTheMutations,
+				Reason:      spec.StaleIteration,
+				Law:         spec.IterationReflectsItsSource,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *StockHandle, c *prop.Case) {
+					probe.IterationsSeeTheMutations(
+						h,
+						c,
+						stockActions,
+						func(ctx context.Context) (func() (string, bool), func(), error) {
+							r0 := h.Subject().Each(ctx)
+							next, stop := iter.Pull(r0)
+							return next, stop, nil
+						},
+						"Add",
+						"Remove",
+						func(args []any) string {
+							v, _ := args[0].(string)
+							return v
+						},
+						func(args []any) string {
+							v, _ := args[0].(string)
+							return v
+						},
+					)
+				},
+				Defect: stockEachIteratesACopy,
+			},
+			{
+				ID:          StockChecks.Counts.Smoke(),
+				Statement:   "Counts returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Counts(ctx)
+						return nil
+					})
+				},
+				Defect: stockCountsPanics,
+			},
+			{
+				ID:          StockChecks.Counts.StreamsWhatWasStored(),
+				Statement:   "Counts yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.KeepsWhatWentIn(
+						h,
+						func(ctx context.Context) ([]probe.Pair[string, int], error) {
+							r0 := h.Subject().Counts(ctx)
+							var drained []probe.Pair[string, int]
+							for k, v := range r0 {
+								drained = append(
+									drained,
+									probe.Pair[string, int]{First: k, Second: v},
+								)
+							}
+							return drained, nil
+						},
+						func() func(ctx context.Context) error {
+							calls := 0
+							return func(ctx context.Context) error {
+								calls++
+								w := string("item-a")
+								if calls > 1 {
+									w = string("item-b")
+								}
+								return h.Subject().Add(ctx, w)
+							}
+						}(),
+					)
+				},
+				Defect: stockCountsDrainsNothing,
+			},
+			{
+				ID:          StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+				Statement:   "Counts yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *StockHandle, c *prop.Case) {
+					drawnItem := c.Draw(
+						prop.List(
+							prop.Of[string](),
+							prop.Unique(),
+							prop.MinSize(2),
+							prop.MaxSize(2),
+						),
+						"item",
+					)
+					probe.KeepsWhatWentIn(
+						h,
+						func(ctx context.Context) ([]probe.Pair[string, int], error) {
+							r0 := h.Subject().Counts(ctx)
+							var drained []probe.Pair[string, int]
+							for k, v := range r0 {
+								drained = append(
+									drained,
+									probe.Pair[string, int]{First: k, Second: v},
+								)
+							}
+							return drained, nil
+						},
+						func() func(ctx context.Context) error {
+							calls := 0
+							return func(ctx context.Context) error {
+								calls++
+								w := drawnItem[0]
+								if calls > 1 {
+									w = drawnItem[1]
+								}
+								return h.Subject().Add(ctx, w)
+							}
+						}(),
+					)
+				},
+				Defect: stockCountsDrainsNothing,
+			},
+			{
+				ID:          StockChecks.Counts.IterationSeesMutations(),
+				Statement:   "an iteration of Counts yields each value that Add writes and no value that Remove removes while it runs",
+				Claim:       spec.IterationSeesMutations,
+				Probe:       spec.IterationsSeeTheMutations,
+				Reason:      spec.StaleIteration,
+				Law:         spec.IterationReflectsItsSource,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *StockHandle, c *prop.Case) {
+					probe.IterationsSeeTheMutations(
+						h,
+						c,
+						stockActions,
+						func(ctx context.Context) (func() (string, bool), func(), error) {
+							r0 := h.Subject().Counts(ctx)
+							next, stop := iter.Pull2(r0)
+							return func() (string, bool) {
+								v, _, ok := next()
+								return v, ok
+							}, stop, nil
+						},
+						"Add",
+						"Remove",
+						func(args []any) string {
+							v, _ := args[0].(string)
+							return v
+						},
+						func(args []any) string {
+							v, _ := args[0].(string)
+							return v
+						},
+					)
+				},
+				Defect: stockCountsIteratesACopy,
+			},
+			{
+				ID:          StockChecks.Sizes.Smoke(),
+				Statement:   "Sizes returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Sizes(ctx)
+						return nil
+					})
+				},
+				Defect: stockSizesPanics,
+			},
+			{
+				ID:          StockChecks.Sizes.StreamsWhatWasStored(),
+				Statement:   "Sizes yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]int, error) {
+						r0 := h.Subject().Sizes(ctx)
+						return slices.Collect(r0), nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := string("item-a")
+							if calls > 1 {
+								w = string("item-b")
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: stockSizesDrainsNothing,
+			},
+			{
+				ID:          StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+				Statement:   "Sizes yields each value that Add stored",
+				Claim:       spec.StreamsWhatWasStored,
+				Probe:       spec.KeepsWhatWentIn,
+				Reason:      spec.ShrunkDrain,
+				Law:         spec.DrainKeepsWhatWentIn,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *StockHandle, c *prop.Case) {
+					drawnItem := c.Draw(
+						prop.List(
+							prop.Of[string](),
+							prop.Unique(),
+							prop.MinSize(2),
+							prop.MaxSize(2),
+						),
+						"item",
+					)
+					probe.KeepsWhatWentIn(h, func(ctx context.Context) ([]int, error) {
+						r0 := h.Subject().Sizes(ctx)
+						return slices.Collect(r0), nil
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := drawnItem[0]
+							if calls > 1 {
+								w = drawnItem[1]
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: stockSizesDrainsNothing,
+			},
+			{
+				ID:          StockChecks.Snapshot.Smoke(),
+				Statement:   "Snapshot returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Snapshot(ctx)
+						return err
+					})
+				},
+				Defect: stockSnapshotPanics,
+			},
+			{
+				ID:          StockChecks.Snapshot.Cancel(),
+				Statement:   "Snapshot returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StockHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Snapshot(ctx)
+						return err
+					})
+				},
+				Defect: stockSnapshotIgnoresCancel,
+			},
+			{
+				ID:          StockChecks.Snapshot.ZeroOnError(),
+				Statement:   "Snapshot returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StockHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]string, error) {
+						return h.Subject().Snapshot(ctx)
+					}, []string(nil))
+				},
+				Defect: stockSnapshotValueBeside,
+			},
+			{
+				ID:          StockChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("item-a"))
+					})
+				},
+				Defect: stockAddPanics,
+			},
+			{
+				ID:          StockChecks.Add.SmokeGenerated(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StockHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnItem)
+					})
+				},
+				Defect: stockAddPanics,
+			},
+			{
+				ID:          StockChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StockHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("item-a"))
+					})
+				},
+				Defect: stockAddIgnoresCancel,
+			},
+			{
+				ID:          StockChecks.Add.CancelGenerated(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StockHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, drawnItem)
+					})
+				},
+				Defect: stockAddIgnoresCancel,
+			},
+			{
+				ID:          StockChecks.Remove.Smoke(),
+				Statement:   "Remove returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Remove(ctx, string("item-a"))
+					})
+				},
+				Defect: stockRemovePanics,
+			},
+			{
+				ID:          StockChecks.Remove.SmokeGenerated(),
+				Statement:   "Remove returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StockHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Remove(ctx, drawnItem)
+					})
+				},
+				Defect: stockRemovePanics,
+			},
+			{
+				ID:          StockChecks.Remove.Cancel(),
+				Statement:   "Remove returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StockHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Remove(ctx, string("item-a"))
+					})
+				},
+				Defect: stockRemoveIgnoresCancel,
+			},
+			{
+				ID:          StockChecks.Remove.CancelGenerated(),
+				Statement:   "Remove returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StockHandle, c *prop.Case) {
+					drawnItem := c.Draw(prop.Of[string](), "item")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Remove(ctx, drawnItem)
+					})
+				},
+				Defect: stockRemoveIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.Cancel,
+				Callable: "Stock.Items",
+				Gate:     spec.Failure,
+				Why:      "Items cannot fail",
+				Remedy:   "give Items an error result",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Stock.Each",
+				Gate:     spec.Failure,
+				Why:      "Each cannot fail",
+				Remedy:   "give Each an error result",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Stock.Counts",
+				Gate:     spec.Failure,
+				Why:      "Counts cannot fail",
+				Remedy:   "give Counts an error result",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Stock.Sizes",
+				Gate:     spec.Failure,
+				Why:      "Sizes cannot fail",
+				Remedy:   "give Sizes an error result",
+			},
+			{
+				Claim:    spec.IterationSeesMutations,
+				Callable: "Stock.Sizes",
+				Gate:     spec.StreamMutations,
+				Why:      "Sizes returns no stream of a value that Add and Remove take",
+				Remedy:   "name with mutate and delete the callables that write and remove an element of the stream of Sizes",
+			},
+			{
+				Claim:    spec.IterationSeesMutations,
+				Callable: "Stock.Snapshot",
+				Gate:     spec.StreamMutations,
+				Why:      "Snapshot returns no stream of a value that Add and Remove take",
+				Remedy:   "name with mutate and delete the callables that write and remove an element of the stream of Snapshot",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Stock.Add",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:deleter",
+				Callable:       "Stock.Remove",
+				Stance:         spec.Silent,
+				Note:           "A delete is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Stock]{
+			{
+				Calls:    stockItemsCalls,
+				Over:     newStockOver,
+				Callable: StockChecks.Items.Callable,
+			},
+			{
+				Calls:    stockEachCalls,
+				Over:     newStockOver,
+				Callable: StockChecks.Each.Callable,
+			},
+			{
+				Calls:    stockCountsCalls,
+				Over:     newStockOver,
+				Callable: StockChecks.Counts.Callable,
+			},
+			{
+				Calls:    stockSizesCalls,
+				Over:     newStockOver,
+				Callable: StockChecks.Sizes.Callable,
+			},
+			{
+				Calls:    stockSnapshotCalls,
+				Over:     newStockOver,
+				Callable: StockChecks.Snapshot.Callable,
+			},
+			{
+				Calls:    stockAddCalls,
+				Over:     newStockOver,
+				Callable: StockChecks.Add.Callable,
+			},
+			{
+				Calls:    stockRemoveCalls,
+				Over:     newStockOver,
+				Callable: StockChecks.Remove.Callable,
+			},
+		},
+	}
+}
+
+// RunStockSuite applies the checks of Stock, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunStockSuite[T Stock](t *testing.T, newSubject func() T, opts ...StockOption) {
+	t.Helper()
+	RunStockSuiteFromHandle(t, func(*StockHandle) T { return newSubject() }, opts...)
+}
+
+// RunStockSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStockSuiteFromHandle[T Stock](
+	t *testing.T,
+	newSubject func(h *StockHandle) T,
+	opts ...StockOption,
+) {
+	t.Helper()
+	conform.Run(t, StockSuite(), stockSubjects(newSubject), opts...)
+}
+
+// FuzzStockSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzStockSuite[T Stock](
+	f *testing.F,
+	callable conform.Callable[Stock],
+	newSubject func(h *StockHandle) T,
+	opts ...StockOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, StockSuite(), callable, stockSubjects(newSubject), opts...)
+}
+
+// RunStockBudgets applies the allocation ceilings of Stock and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
+func RunStockBudgets[T Stock](
+	t *testing.T,
+	newSubject func(h *StockHandle) T,
+	opts ...StockOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, StockSuite(), stockSubjects(newSubject), opts...)
+}
+
+// BenchStockSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchStockSuite[T Stock](
+	b conform.B,
+	callable conform.Callable[Stock],
+	newSubject func(h *StockHandle) T,
+	opts ...StockOption,
+) {
+	b.Helper()
+	conform.Bench(b, StockSuite(), callable, stockSubjects(newSubject), opts...)
+}
+
+// stockSubjects returns the factory of the subjects of Stock that calls
+// newSubject with the handle of each check.
+func stockSubjects[T Stock](newSubject func(h *StockHandle) T) func(h *StockHandle) Stock {
+	return func(h *StockHandle) Stock { return newSubject(h) }
+}
+
+// stockItemsCalls generates the calls of Stock.Items with the inputs that
+// each case draws.
+var stockItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, Stock) error {
+	return func(ctx context.Context, subject Stock) error {
+		_ = subject.Items(ctx)
+		return nil
+	}
+})
+
+// stockEachCalls generates the calls of Stock.Each with the inputs that
+// each case draws.
+var stockEachCalls = prop.Composite(func(*prop.Case) func(context.Context, Stock) error {
+	return func(ctx context.Context, subject Stock) error {
+		_ = subject.Each(ctx)
+		return nil
+	}
+})
+
+// stockCountsCalls generates the calls of Stock.Counts with the inputs
+// that each case draws.
+var stockCountsCalls = prop.Composite(func(*prop.Case) func(context.Context, Stock) error {
+	return func(ctx context.Context, subject Stock) error {
+		_ = subject.Counts(ctx)
+		return nil
+	}
+})
+
+// stockSizesCalls generates the calls of Stock.Sizes with the inputs that
+// each case draws.
+var stockSizesCalls = prop.Composite(func(*prop.Case) func(context.Context, Stock) error {
+	return func(ctx context.Context, subject Stock) error {
+		_ = subject.Sizes(ctx)
+		return nil
+	}
+})
+
+// stockSnapshotCalls generates the calls of Stock.Snapshot with the inputs
+// that each case draws.
+var stockSnapshotCalls = prop.Composite(func(*prop.Case) func(context.Context, Stock) error {
+	return func(ctx context.Context, subject Stock) error {
+		_, err := subject.Snapshot(ctx)
+		return err
+	}
+})
+
+// stockAddCalls generates the calls of Stock.Add with the inputs that each
+// case draws.
+var stockAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, Stock) error {
+	item := c.Draw(prop.Of[string](), "item")
+	return func(ctx context.Context, subject Stock) error {
+		return subject.Add(ctx, item)
+	}
+})
+
+// stockRemoveCalls generates the calls of Stock.Remove with the inputs
+// that each case draws.
+var stockRemoveCalls = prop.Composite(func(c *prop.Case) func(context.Context, Stock) error {
+	item := c.Draw(prop.Of[string](), "item")
+	return func(ctx context.Context, subject Stock) error {
+		return subject.Remove(ctx, item)
+	}
+})
+
+// stockOverEmbedded is Stock under the name of the field that stockOver
+// embeds.
+type stockOverEmbedded = Stock
+
+// stockOver is a subject of Stock whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type stockOver struct {
+	stockOverEmbedded
+	spend func()
+}
+
+// Items calls spend and returns its zero results.
+func (o stockOver) Items(context.Context) (r0 iter.Seq2[string, error]) {
+	o.spend()
+	return r0
+}
+
+// Each calls spend and returns its zero results.
+func (o stockOver) Each(context.Context) (r0 iter.Seq[string]) {
+	o.spend()
+	return r0
+}
+
+// Counts calls spend and returns its zero results.
+func (o stockOver) Counts(context.Context) (r0 iter.Seq2[string, int]) {
+	o.spend()
+	return r0
+}
+
+// Sizes calls spend and returns its zero results.
+func (o stockOver) Sizes(context.Context) (r0 iter.Seq[int]) {
+	o.spend()
+	return r0
+}
+
+// Snapshot calls spend and returns its zero results.
+func (o stockOver) Snapshot(context.Context) (r0 []string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Add calls spend and returns its zero results.
+func (o stockOver) Add(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Remove calls spend and returns its zero results.
+func (o stockOver) Remove(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newStockOver returns the planted defect of a ceiling of Stock, whose
+// callables call spend.
+func newStockOver(_ *StockHandle, spend func()) Stock {
+	return stockOver{spend: spend}
+}
+
+// stockItemsPanicsDefect is the planted defect of a Stock whose Items
+// panics.
+type stockItemsPanicsDefect struct {
+	stockOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*stockItemsPanicsDefect) Items(p0 context.Context) (r0 iter.Seq2[string, error]) {
+	panic("the planted defect of a Stock whose Items panics")
+}
+
+// stockItemsPanics returns the planted defect of a Stock whose Items
+// panics over a fresh subject.
+func stockItemsPanics(h *StockHandle) Stock {
+	return &stockItemsPanicsDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockItemsDrainsNothingDefect is the planted defect of a Stock whose
+// Items loses what Add stored.
+type stockItemsDrainsNothingDefect struct {
+	stockOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*stockItemsDrainsNothingDefect) Items(p0 context.Context) (r0 iter.Seq2[string, error]) {
+	r0 = func(func(string, error) bool) {}
+	return r0
+}
+
+// stockItemsDrainsNothing returns the planted defect of a Stock whose
+// Items loses what Add stored over a fresh subject.
+func stockItemsDrainsNothing(h *StockHandle) Stock {
+	return &stockItemsDrainsNothingDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockItemsIteratesACopyDefect is the planted defect of a Stock whose
+// Items iterates a copy of its source.
+type stockItemsIteratesACopyDefect struct {
+	stockOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (d *stockItemsIteratesACopyDefect) Items(p0 context.Context) (r0 iter.Seq2[string, error]) {
+	r0 = d.stockOverEmbedded.Items(p0)
+	var firsts []string
+	var seconds []error
+	for first, second := range r0 {
+		firsts, seconds = append(firsts, first), append(seconds, second)
+	}
+	r0 = func(yield func(string, error) bool) {
+		for i := range firsts {
+			if !yield(firsts[i], seconds[i]) {
+				return
+			}
+		}
+	}
+	return r0
+}
+
+// stockItemsIteratesACopy returns the planted defect of a Stock whose
+// Items iterates a copy of its source over a fresh subject.
+func stockItemsIteratesACopy(h *StockHandle) Stock {
+	return &stockItemsIteratesACopyDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockEachPanicsDefect is the planted defect of a Stock whose Each
+// panics.
+type stockEachPanicsDefect struct {
+	stockOverEmbedded
+}
+
+// Each is the override of the planted defect.
+func (*stockEachPanicsDefect) Each(p0 context.Context) (r0 iter.Seq[string]) {
+	panic("the planted defect of a Stock whose Each panics")
+}
+
+// stockEachPanics returns the planted defect of a Stock whose Each panics
+// over a fresh subject.
+func stockEachPanics(h *StockHandle) Stock {
+	return &stockEachPanicsDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockEachDrainsNothingDefect is the planted defect of a Stock whose Each
+// loses what Add stored.
+type stockEachDrainsNothingDefect struct {
+	stockOverEmbedded
+}
+
+// Each is the override of the planted defect.
+func (*stockEachDrainsNothingDefect) Each(p0 context.Context) (r0 iter.Seq[string]) {
+	r0 = func(func(string) bool) {}
+	return r0
+}
+
+// stockEachDrainsNothing returns the planted defect of a Stock whose Each
+// loses what Add stored over a fresh subject.
+func stockEachDrainsNothing(h *StockHandle) Stock {
+	return &stockEachDrainsNothingDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockEachIteratesACopyDefect is the planted defect of a Stock whose Each
+// iterates a copy of its source.
+type stockEachIteratesACopyDefect struct {
+	stockOverEmbedded
+}
+
+// Each is the override of the planted defect.
+func (d *stockEachIteratesACopyDefect) Each(p0 context.Context) (r0 iter.Seq[string]) {
+	r0 = d.stockOverEmbedded.Each(p0)
+	r0 = slices.Values(slices.Collect(r0))
+	return r0
+}
+
+// stockEachIteratesACopy returns the planted defect of a Stock whose Each
+// iterates a copy of its source over a fresh subject.
+func stockEachIteratesACopy(h *StockHandle) Stock {
+	return &stockEachIteratesACopyDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockCountsPanicsDefect is the planted defect of a Stock whose Counts
+// panics.
+type stockCountsPanicsDefect struct {
+	stockOverEmbedded
+}
+
+// Counts is the override of the planted defect.
+func (*stockCountsPanicsDefect) Counts(p0 context.Context) (r0 iter.Seq2[string, int]) {
+	panic("the planted defect of a Stock whose Counts panics")
+}
+
+// stockCountsPanics returns the planted defect of a Stock whose Counts
+// panics over a fresh subject.
+func stockCountsPanics(h *StockHandle) Stock {
+	return &stockCountsPanicsDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockCountsDrainsNothingDefect is the planted defect of a Stock whose
+// Counts loses what Add stored.
+type stockCountsDrainsNothingDefect struct {
+	stockOverEmbedded
+}
+
+// Counts is the override of the planted defect.
+func (*stockCountsDrainsNothingDefect) Counts(p0 context.Context) (r0 iter.Seq2[string, int]) {
+	r0 = func(func(string, int) bool) {}
+	return r0
+}
+
+// stockCountsDrainsNothing returns the planted defect of a Stock whose
+// Counts loses what Add stored over a fresh subject.
+func stockCountsDrainsNothing(h *StockHandle) Stock {
+	return &stockCountsDrainsNothingDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockCountsIteratesACopyDefect is the planted defect of a Stock whose
+// Counts iterates a copy of its source.
+type stockCountsIteratesACopyDefect struct {
+	stockOverEmbedded
+}
+
+// Counts is the override of the planted defect.
+func (d *stockCountsIteratesACopyDefect) Counts(p0 context.Context) (r0 iter.Seq2[string, int]) {
+	r0 = d.stockOverEmbedded.Counts(p0)
+	var firsts []string
+	var seconds []int
+	for first, second := range r0 {
+		firsts, seconds = append(firsts, first), append(seconds, second)
+	}
+	r0 = func(yield func(string, int) bool) {
+		for i := range firsts {
+			if !yield(firsts[i], seconds[i]) {
+				return
+			}
+		}
+	}
+	return r0
+}
+
+// stockCountsIteratesACopy returns the planted defect of a Stock whose
+// Counts iterates a copy of its source over a fresh subject.
+func stockCountsIteratesACopy(h *StockHandle) Stock {
+	return &stockCountsIteratesACopyDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockSizesPanicsDefect is the planted defect of a Stock whose Sizes
+// panics.
+type stockSizesPanicsDefect struct {
+	stockOverEmbedded
+}
+
+// Sizes is the override of the planted defect.
+func (*stockSizesPanicsDefect) Sizes(p0 context.Context) (r0 iter.Seq[int]) {
+	panic("the planted defect of a Stock whose Sizes panics")
+}
+
+// stockSizesPanics returns the planted defect of a Stock whose Sizes
+// panics over a fresh subject.
+func stockSizesPanics(h *StockHandle) Stock {
+	return &stockSizesPanicsDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockSizesDrainsNothingDefect is the planted defect of a Stock whose
+// Sizes loses what Add stored.
+type stockSizesDrainsNothingDefect struct {
+	stockOverEmbedded
+}
+
+// Sizes is the override of the planted defect.
+func (*stockSizesDrainsNothingDefect) Sizes(p0 context.Context) (r0 iter.Seq[int]) {
+	r0 = func(func(int) bool) {}
+	return r0
+}
+
+// stockSizesDrainsNothing returns the planted defect of a Stock whose
+// Sizes loses what Add stored over a fresh subject.
+func stockSizesDrainsNothing(h *StockHandle) Stock {
+	return &stockSizesDrainsNothingDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockSnapshotPanicsDefect is the planted defect of a Stock whose
+// Snapshot panics.
+type stockSnapshotPanicsDefect struct {
+	stockOverEmbedded
+}
+
+// Snapshot is the override of the planted defect.
+func (*stockSnapshotPanicsDefect) Snapshot(p0 context.Context) (r0 []string, r1 error) {
+	panic("the planted defect of a Stock whose Snapshot panics")
+}
+
+// stockSnapshotPanics returns the planted defect of a Stock whose Snapshot
+// panics over a fresh subject.
+func stockSnapshotPanics(h *StockHandle) Stock {
+	return &stockSnapshotPanicsDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockSnapshotIgnoresCancelDefect is the planted defect of a Stock whose
+// Snapshot ignores the context.
+type stockSnapshotIgnoresCancelDefect struct {
+	stockOverEmbedded
+}
+
+// Snapshot is the override of the planted defect.
+func (d *stockSnapshotIgnoresCancelDefect) Snapshot(p0 context.Context) (r0 []string, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.stockOverEmbedded.Snapshot(p0)
+}
+
+// stockSnapshotIgnoresCancel returns the planted defect of a Stock whose
+// Snapshot ignores the context over a fresh subject.
+func stockSnapshotIgnoresCancel(h *StockHandle) Stock {
+	return &stockSnapshotIgnoresCancelDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockSnapshotValueBesideDefect is the planted defect of a Stock whose
+// Snapshot returns a value beside an error.
+type stockSnapshotValueBesideDefect struct {
+	stockOverEmbedded
+}
+
+// Snapshot is the override of the planted defect.
+func (d *stockSnapshotValueBesideDefect) Snapshot(p0 context.Context) (r0 []string, r1 error) {
+	r0, r1 = d.stockOverEmbedded.Snapshot(p0)
+	if r1 != nil {
+		r0 = []string{"sample-b"}
+	}
+	return r0, r1
+}
+
+// stockSnapshotValueBeside returns the planted defect of a Stock whose
+// Snapshot returns a value beside an error over a fresh subject.
+func stockSnapshotValueBeside(h *StockHandle) Stock {
+	return &stockSnapshotValueBesideDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockAddPanicsDefect is the planted defect of a Stock whose Add panics.
+type stockAddPanicsDefect struct {
+	stockOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*stockAddPanicsDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Stock whose Add panics")
+}
+
+// stockAddPanics returns the planted defect of a Stock whose Add panics
+// over a fresh subject.
+func stockAddPanics(h *StockHandle) Stock {
+	return &stockAddPanicsDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockAddIgnoresCancelDefect is the planted defect of a Stock whose Add
+// ignores the context.
+type stockAddIgnoresCancelDefect struct {
+	stockOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (d *stockAddIgnoresCancelDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.stockOverEmbedded.Add(p0, p1)
+}
+
+// stockAddIgnoresCancel returns the planted defect of a Stock whose Add
+// ignores the context over a fresh subject.
+func stockAddIgnoresCancel(h *StockHandle) Stock {
+	return &stockAddIgnoresCancelDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockRemovePanicsDefect is the planted defect of a Stock whose Remove
+// panics.
+type stockRemovePanicsDefect struct {
+	stockOverEmbedded
+}
+
+// Remove is the override of the planted defect.
+func (*stockRemovePanicsDefect) Remove(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Stock whose Remove panics")
+}
+
+// stockRemovePanics returns the planted defect of a Stock whose Remove
+// panics over a fresh subject.
+func stockRemovePanics(h *StockHandle) Stock {
+	return &stockRemovePanicsDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockRemoveIgnoresCancelDefect is the planted defect of a Stock whose
+// Remove ignores the context.
+type stockRemoveIgnoresCancelDefect struct {
+	stockOverEmbedded
+}
+
+// Remove is the override of the planted defect.
+func (d *stockRemoveIgnoresCancelDefect) Remove(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.stockOverEmbedded.Remove(p0, p1)
+}
+
+// stockRemoveIgnoresCancel returns the planted defect of a Stock whose
+// Remove ignores the context over a fresh subject.
+func stockRemoveIgnoresCancel(h *StockHandle) Stock {
+	return &stockRemoveIgnoresCancelDefect{stockOverEmbedded: h.Fresh()}
+}
+
+// stockActions returns the actions of the generated sequences of Stock
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func stockActions(c *prop.Case, subject func() Stock) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Items",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Items", args)
+				values, err := stockItemsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Each",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Each", args)
+				values, err := stockEachCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Counts",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Counts", args)
+				values, err := stockCountsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Sizes",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Sizes", args)
+				values, err := stockSizesCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Snapshot",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Snapshot", args)
+				values, err := stockSnapshotCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Add",
+			Input: func(c *prop.Case, _ struct{}) any {
+				item := c.Draw(prop.Of[string](), "add.item")
+				return []any{item}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Add", args)
+				values, err := stockAddCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Remove",
+			Input: func(c *prop.Case, _ struct{}) any {
+				item := c.Draw(prop.SampledFrom(keysString...), "remove.item")
+				return []any{item}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Remove", args, args[0])
+				values, err := stockRemoveCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// stockItemsCall calls Items on subject with the arguments args, and
+// returns the values of the call beside its error.
+func stockItemsCall(ctx context.Context, subject Stock, args []any) ([]any, error) {
+	r0 := subject.Items(ctx)
+	var drained []string
+	for e, err := range r0 {
+		if err != nil {
+			return []any{drained}, err
+		}
+		drained = append(drained, e)
+	}
+	return []any{drained}, nil
+}
+
+// stockEachCall calls Each on subject with the arguments args, and returns
+// the values of the call beside its error.
+func stockEachCall(ctx context.Context, subject Stock, args []any) ([]any, error) {
+	r0 := subject.Each(ctx)
+	return []any{slices.Collect(r0)}, nil
+}
+
+// stockCountsCall calls Counts on subject with the arguments args, and
+// returns the values of the call beside its error.
+func stockCountsCall(ctx context.Context, subject Stock, args []any) ([]any, error) {
+	r0 := subject.Counts(ctx)
+	var drained []probe.Pair[string, int]
+	for k, v := range r0 {
+		drained = append(drained, probe.Pair[string, int]{First: k, Second: v})
+	}
+	return []any{drained}, nil
+}
+
+// stockSizesCall calls Sizes on subject with the arguments args, and
+// returns the values of the call beside its error.
+func stockSizesCall(ctx context.Context, subject Stock, args []any) ([]any, error) {
+	r0 := subject.Sizes(ctx)
+	return []any{slices.Collect(r0)}, nil
+}
+
+// stockSnapshotCall calls Snapshot on subject with the arguments args, and
+// returns the values of the call beside its error.
+func stockSnapshotCall(ctx context.Context, subject Stock, args []any) ([]any, error) {
+	r0, err := subject.Snapshot(ctx)
+	return []any{r0}, err
+}
+
+// stockAddCall calls Add on subject with the arguments args, and returns
+// the values of the call beside its error.
+func stockAddCall(ctx context.Context, subject Stock, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Add(ctx, a0)
+}
+
+// stockRemoveCall calls Remove on subject with the arguments args, and
+// returns the values of the call beside its error.
+func stockRemoveCall(ctx context.Context, subject Stock, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Remove(ctx, a0)
+}
+
+// The derived checks of Outbox:
+//
+// Outbox.Append/smoke: Append returns without a panic for derived inputs.
+//
+// Outbox.Append/smoke#generated: Append returns without a panic for
+// derived inputs.
+//
+// Outbox.Append/cancel: Append returns an error for a cancelled context.
+//
+// Outbox.Append/cancel#generated: Append returns an error for a cancelled
+// context.
+//
+// Outbox.Append/delivers-each-append: each message that Append records
+// arrives on the channel of Subscribe.
+//
+// Outbox.Subscribe/smoke: Subscribe returns without a panic for derived
+// inputs.
+//
+// Outbox.Subscribe/cancel: Subscribe returns an error for a cancelled
+// context.
+//
+// Outbox.Note/smoke: Note returns without a panic for derived inputs.
+//
+// Outbox.Note/smoke#generated: Note returns without a panic for derived
+// inputs.
+//
+// Outbox.Note/cancel: Note returns an error for a cancelled context.
+//
+// Outbox.Note/cancel#generated: Note returns an error for a cancelled
+// context.
+//
+// Outbox.Notes/smoke: Notes returns without a panic for derived inputs.
+//
+// Outbox.Notes/cancel: Notes returns an error for a cancelled context.
+//
+// Outbox.Log/smoke: Log returns without a panic for derived inputs.
+//
+// Outbox.Log/smoke#generated: Log returns without a panic for derived
+// inputs.
+//
+// Outbox.Log/cancel: Log returns an error for a cancelled context.
+//
+// Outbox.Log/cancel#generated: Log returns an error for a cancelled
+// context.
+//
+// Outbox.Logged/smoke: Logged returns without a panic for derived inputs.
+//
+// Outbox.Logged/cancel: Logged returns an error for a cancelled context.
+//
+// Outbox.Logged/zero-on-error: Logged returns the zero value beside an
+// error.
+//
+// Outbox.Post/smoke: Post returns without a panic for derived inputs.
+//
+// Outbox.Post/smoke#generated: Post returns without a panic for derived
+// inputs.
+//
+// Outbox.Post/cancel: Post returns an error for a cancelled context.
+//
+// Outbox.Post/cancel#generated: Post returns an error for a cancelled
+// context.
+//
+// Outbox.Queue/smoke: Queue returns without a panic for derived inputs.
+//
+// Outbox.Queue/cancel: Queue returns an error for a cancelled context.
+//
+// Outbox.Push/smoke: Push returns without a panic for derived inputs.
+//
+// Outbox.Push/smoke#generated: Push returns without a panic for derived
+// inputs.
+//
+// Outbox.Push/cancel: Push returns an error for a cancelled context.
+//
+// Outbox.Push/cancel#generated: Push returns an error for a cancelled
+// context.
+//
+// Outbox.Flush/smoke: Flush returns without a panic for derived inputs.
+//
+// Outbox.Flush/cancel: Flush returns an error for a cancelled context.
+//
+// Outbox.Pour/smoke: Pour returns without a panic for derived inputs.
+//
+// Outbox.Pour/smoke#generated: Pour returns without a panic for derived
+// inputs.
+//
+// Outbox.Pour/cancel: Pour returns an error for a cancelled context.
+//
+// Outbox.Pour/cancel#generated: Pour returns an error for a cancelled
+// context.
+//
+// Outbox.Drain/smoke: Drain returns without a panic for derived inputs.
+
+// The derived checks of Outbox that witness their laws at the shallow end:
+//
+// Outbox.Append/smoke
+//
+// Outbox.Subscribe/smoke
+//
+// Outbox.Note/smoke
+//
+// Outbox.Notes/smoke
+//
+// Outbox.Log/smoke
+//
+// Outbox.Logged/smoke
+//
+// Outbox.Post/smoke
+//
+// Outbox.Queue/smoke
+//
+// Outbox.Push/smoke
+//
+// Outbox.Flush/smoke
+//
+// Outbox.Pour/smoke
+//
+// Outbox.Drain/smoke
+
+// The refused claims of Outbox:
+//
+// Outbox.Subscribe/zero-on-error: eidos derives no sample of a result of
+// Subscribe. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Outbox.Notes/zero-on-error: eidos derives no sample of a result of
+// Notes. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Outbox.Queue/zero-on-error: eidos derives no sample of a result of
+// Queue. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Outbox.Drain/cancel: Drain cannot fail. The remedy is to give Drain an
+// error result.
+//
+// Outbox.Note/delivers-each-append: Notes returns no channel of a value
+// that Note passes. The remedy is to subscribe through a callable that
+// returns a channel of the values that Note passes.
+//
+// Outbox.Log/delivers-each-append: Logged returns no channel of a value
+// that Log passes. The remedy is to subscribe through a callable that
+// returns a channel of the values that Log passes.
+//
+// Outbox.Post/delivers-each-append: Queue returns no channel of a value
+// that Post passes. The remedy is to subscribe through a callable that
+// returns a channel of the values that Post passes.
+//
+// Outbox.Push/delivers-each-append: Flush returns no channel of a value
+// that Push passes. The remedy is to subscribe through a callable that
+// returns a channel of the values that Push passes.
+//
+// Outbox.Pour/delivers-each-append: Drain returns no channel of a value
+// that Pour passes. The remedy is to subscribe through a callable that
+// returns a channel of the values that Pour passes.
+
+// The unclaimed classifications of Outbox:
+//
+// The shape:writer of Outbox.Append has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Outbox.Note has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Outbox.Log has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Outbox.Post has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Outbox.Push has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:lifecycle of Outbox.Flush has the stance silent. A lifecycle
+// call returns nothing that a check could compare.
+//
+// The shape:writer of Outbox.Pour has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Outbox writes.
+type (
+	OutboxHandle = conform.Handle[Outbox]
+	OutboxCheck  = conform.Check[Outbox]
+	OutboxOption = conform.Option[Outbox]
+)
+
+// OutboxChecks contains the name of each callable of Outbox, with the
+// identities of its checks.
+var OutboxChecks = struct {
+	Append    outboxAppend
+	Subscribe outboxSubscribe
+	Note      outboxNote
+	Notes     outboxNotes
+	Log       outboxLog
+	Logged    outboxLogged
+	Post      outboxPost
+	Queue     outboxQueue
+	Push      outboxPush
+	Flush     outboxFlush
+	Pour      outboxPour
+	Drain     outboxDrain
+}{
+	Append:    outboxAppend{"Outbox.Append"},
+	Subscribe: outboxSubscribe{"Outbox.Subscribe"},
+	Note:      outboxNote{"Outbox.Note"},
+	Notes:     outboxNotes{"Outbox.Notes"},
+	Log:       outboxLog{"Outbox.Log"},
+	Logged:    outboxLogged{"Outbox.Logged"},
+	Post:      outboxPost{"Outbox.Post"},
+	Queue:     outboxQueue{"Outbox.Queue"},
+	Push:      outboxPush{"Outbox.Push"},
+	Flush:     outboxFlush{"Outbox.Flush"},
+	Pour:      outboxPour{"Outbox.Pour"},
+	Drain:     outboxDrain{"Outbox.Drain"},
+}
+
+// outboxAppend is the name of Outbox.Append, with the identities of its
+// checks.
+type outboxAppend struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Append returns without a
+// panic for derived inputs.
+func (c outboxAppend) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Append returns
+// without a panic for derived inputs.
+func (c outboxAppend) SmokeGenerated() conform.ID[Outbox] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Append returns an error
+// for a cancelled context.
+func (c outboxAppend) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Append returns an
+// error for a cancelled context.
+func (c outboxAppend) CancelGenerated() conform.ID[Outbox] {
+	return c.Check("cancel#generated")
+}
+
+// DeliversEachAppend returns the identity of the check that each message
+// that Append records arrives on the channel of Subscribe.
+func (c outboxAppend) DeliversEachAppend() conform.ID[Outbox] {
+	return c.Check("delivers-each-append")
+}
+
+// outboxSubscribe is the name of Outbox.Subscribe, with the identities of
+// its checks.
+type outboxSubscribe struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Subscribe returns without a
+// panic for derived inputs.
+func (c outboxSubscribe) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Subscribe returns an error
+// for a cancelled context.
+func (c outboxSubscribe) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// outboxNote is the name of Outbox.Note, with the identities of its
+// checks.
+type outboxNote struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Note returns without a
+// panic for derived inputs.
+func (c outboxNote) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Note returns
+// without a panic for derived inputs.
+func (c outboxNote) SmokeGenerated() conform.ID[Outbox] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Note returns an error for
+// a cancelled context.
+func (c outboxNote) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Note returns an
+// error for a cancelled context.
+func (c outboxNote) CancelGenerated() conform.ID[Outbox] {
+	return c.Check("cancel#generated")
+}
+
+// outboxNotes is the name of Outbox.Notes, with the identities of its
+// checks.
+type outboxNotes struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Notes returns without a
+// panic for derived inputs.
+func (c outboxNotes) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Notes returns an error for
+// a cancelled context.
+func (c outboxNotes) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// outboxLog is the name of Outbox.Log, with the identities of its checks.
+type outboxLog struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Log returns without a panic
+// for derived inputs.
+func (c outboxLog) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Log returns
+// without a panic for derived inputs.
+func (c outboxLog) SmokeGenerated() conform.ID[Outbox] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Log returns an error for a
+// cancelled context.
+func (c outboxLog) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Log returns an
+// error for a cancelled context.
+func (c outboxLog) CancelGenerated() conform.ID[Outbox] {
+	return c.Check("cancel#generated")
+}
+
+// outboxLogged is the name of Outbox.Logged, with the identities of its
+// checks.
+type outboxLogged struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Logged returns without a
+// panic for derived inputs.
+func (c outboxLogged) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Logged returns an error
+// for a cancelled context.
+func (c outboxLogged) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Logged returns the
+// zero value beside an error.
+func (c outboxLogged) ZeroOnError() conform.ID[Outbox] {
+	return c.Check("zero-on-error")
+}
+
+// outboxPost is the name of Outbox.Post, with the identities of its
+// checks.
+type outboxPost struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Post returns without a
+// panic for derived inputs.
+func (c outboxPost) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Post returns
+// without a panic for derived inputs.
+func (c outboxPost) SmokeGenerated() conform.ID[Outbox] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Post returns an error for
+// a cancelled context.
+func (c outboxPost) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Post returns an
+// error for a cancelled context.
+func (c outboxPost) CancelGenerated() conform.ID[Outbox] {
+	return c.Check("cancel#generated")
+}
+
+// outboxQueue is the name of Outbox.Queue, with the identities of its
+// checks.
+type outboxQueue struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Queue returns without a
+// panic for derived inputs.
+func (c outboxQueue) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Queue returns an error for
+// a cancelled context.
+func (c outboxQueue) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// outboxPush is the name of Outbox.Push, with the identities of its
+// checks.
+type outboxPush struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Push returns without a
+// panic for derived inputs.
+func (c outboxPush) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Push returns
+// without a panic for derived inputs.
+func (c outboxPush) SmokeGenerated() conform.ID[Outbox] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Push returns an error for
+// a cancelled context.
+func (c outboxPush) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Push returns an
+// error for a cancelled context.
+func (c outboxPush) CancelGenerated() conform.ID[Outbox] {
+	return c.Check("cancel#generated")
+}
+
+// outboxFlush is the name of Outbox.Flush, with the identities of its
+// checks.
+type outboxFlush struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Flush returns without a
+// panic for derived inputs.
+func (c outboxFlush) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Flush returns an error for
+// a cancelled context.
+func (c outboxFlush) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// outboxPour is the name of Outbox.Pour, with the identities of its
+// checks.
+type outboxPour struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Pour returns without a
+// panic for derived inputs.
+func (c outboxPour) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Pour returns
+// without a panic for derived inputs.
+func (c outboxPour) SmokeGenerated() conform.ID[Outbox] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Pour returns an error for
+// a cancelled context.
+func (c outboxPour) Cancel() conform.ID[Outbox] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Pour returns an
+// error for a cancelled context.
+func (c outboxPour) CancelGenerated() conform.ID[Outbox] {
+	return c.Check("cancel#generated")
+}
+
+// outboxDrain is the name of Outbox.Drain, with the identities of its
+// checks.
+type outboxDrain struct {
+	conform.Callable[Outbox]
+}
+
+// Smoke returns the identity of the check that Drain returns without a
+// panic for derived inputs.
+func (c outboxDrain) Smoke() conform.ID[Outbox] {
+	return c.Check("smoke")
+}
+
+// OutboxSuite returns the checks of Outbox, and the calls and the budgets
+// of its callables.
+func OutboxSuite() conform.Suite[Outbox] {
+	return conform.Suite[Outbox]{
+		Declaration: "Outbox",
+		Package:     "example.com/shop/sequenced",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Outbox]{
+			{
+				ID:          OutboxChecks.Append.Smoke(),
+				Statement:   "Append returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxAppendPanics,
+			},
+			{
+				ID:          OutboxChecks.Append.SmokeGenerated(),
+				Statement:   "Append returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnE)
+					})
+				},
+				Defect: outboxAppendPanics,
+			},
+			{
+				ID:          OutboxChecks.Append.Cancel(),
+				Statement:   "Append returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxAppendIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Append.CancelGenerated(),
+				Statement:   "Append returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnE)
+					})
+				},
+				Defect: outboxAppendIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Append.DeliversEachAppend(),
+				Statement:   "each message that Append records arrives on the channel of Subscribe",
+				Claim:       spec.DeliversEachAppend,
+				Probe:       spec.AppendsArrive,
+				Reason:      spec.LostMessage,
+				Law:         spec.EachAppendIsDelivered,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					probe.AppendsArrive(
+						h,
+						c,
+						outboxActions,
+						"Append",
+						func(ctx context.Context) (<-chan Event, error) {
+							r0, err := h.Subject().Subscribe(ctx)
+							return r0, err
+						},
+						func(args []any) Event {
+							v, _ := args[0].(Event)
+							return v
+						},
+					)
+				},
+				Defect: outboxAppendDropsAppendsAfterThree,
+				Around: synctest.Test,
+			},
+			{
+				ID:          OutboxChecks.Subscribe.Smoke(),
+				Statement:   "Subscribe returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Subscribe(ctx)
+						return err
+					})
+				},
+				Defect: outboxSubscribePanics,
+			},
+			{
+				ID:          OutboxChecks.Subscribe.Cancel(),
+				Statement:   "Subscribe returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Subscribe(ctx)
+						return err
+					})
+				},
+				Defect: outboxSubscribeIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Note.Smoke(),
+				Statement:   "Note returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Note(ctx, string("text-a"))
+					})
+				},
+				Defect: outboxNotePanics,
+			},
+			{
+				ID:          OutboxChecks.Note.SmokeGenerated(),
+				Statement:   "Note returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnText := c.Draw(prop.Of[string](), "text")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Note(ctx, drawnText)
+					})
+				},
+				Defect: outboxNotePanics,
+			},
+			{
+				ID:          OutboxChecks.Note.Cancel(),
+				Statement:   "Note returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Note(ctx, string("text-a"))
+					})
+				},
+				Defect: outboxNoteIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Note.CancelGenerated(),
+				Statement:   "Note returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnText := c.Draw(prop.Of[string](), "text")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Note(ctx, drawnText)
+					})
+				},
+				Defect: outboxNoteIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Notes.Smoke(),
+				Statement:   "Notes returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Notes(ctx)
+						return err
+					})
+				},
+				Defect: outboxNotesPanics,
+			},
+			{
+				ID:          OutboxChecks.Notes.Cancel(),
+				Statement:   "Notes returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Notes(ctx)
+						return err
+					})
+				},
+				Defect: outboxNotesIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Log.Smoke(),
+				Statement:   "Log returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Log(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxLogPanics,
+			},
+			{
+				ID:          OutboxChecks.Log.SmokeGenerated(),
+				Statement:   "Log returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Log(ctx, drawnE)
+					})
+				},
+				Defect: outboxLogPanics,
+			},
+			{
+				ID:          OutboxChecks.Log.Cancel(),
+				Statement:   "Log returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Log(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxLogIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Log.CancelGenerated(),
+				Statement:   "Log returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Log(ctx, drawnE)
+					})
+				},
+				Defect: outboxLogIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Logged.Smoke(),
+				Statement:   "Logged returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Logged(ctx)
+						return err
+					})
+				},
+				Defect: outboxLoggedPanics,
+			},
+			{
+				ID:          OutboxChecks.Logged.Cancel(),
+				Statement:   "Logged returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Logged(ctx)
+						return err
+					})
+				},
+				Defect: outboxLoggedIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Logged.ZeroOnError(),
+				Statement:   "Logged returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]Event, error) {
+						return h.Subject().Logged(ctx)
+					}, []Event(nil))
+				},
+				Defect: outboxLoggedValueBeside,
+			},
+			{
+				ID:          OutboxChecks.Post.Smoke(),
+				Statement:   "Post returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Post(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxPostPanics,
+			},
+			{
+				ID:          OutboxChecks.Post.SmokeGenerated(),
+				Statement:   "Post returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Post(ctx, drawnE)
+					})
+				},
+				Defect: outboxPostPanics,
+			},
+			{
+				ID:          OutboxChecks.Post.Cancel(),
+				Statement:   "Post returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Post(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxPostIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Post.CancelGenerated(),
+				Statement:   "Post returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Post(ctx, drawnE)
+					})
+				},
+				Defect: outboxPostIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Queue.Smoke(),
+				Statement:   "Queue returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Queue(ctx)
+						return err
+					})
+				},
+				Defect: outboxQueuePanics,
+			},
+			{
+				ID:          OutboxChecks.Queue.Cancel(),
+				Statement:   "Queue returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Queue(ctx)
+						return err
+					})
+				},
+				Defect: outboxQueueIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Push.Smoke(),
+				Statement:   "Push returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Push(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxPushPanics,
+			},
+			{
+				ID:          OutboxChecks.Push.SmokeGenerated(),
+				Statement:   "Push returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Push(ctx, drawnE)
+					})
+				},
+				Defect: outboxPushPanics,
+			},
+			{
+				ID:          OutboxChecks.Push.Cancel(),
+				Statement:   "Push returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Push(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxPushIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Push.CancelGenerated(),
+				Statement:   "Push returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Push(ctx, drawnE)
+					})
+				},
+				Defect: outboxPushIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Flush.Smoke(),
+				Statement:   "Flush returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Flush(ctx)
+					})
+				},
+				Defect: outboxFlushPanics,
+			},
+			{
+				ID:          OutboxChecks.Flush.Cancel(),
+				Statement:   "Flush returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Flush(ctx)
+					})
+				},
+				Defect: outboxFlushIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Pour.Smoke(),
+				Statement:   "Pour returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Pour(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxPourPanics,
+			},
+			{
+				ID:          OutboxChecks.Pour.SmokeGenerated(),
+				Statement:   "Pour returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Pour(ctx, drawnE)
+					})
+				},
+				Defect: outboxPourPanics,
+			},
+			{
+				ID:          OutboxChecks.Pour.Cancel(),
+				Statement:   "Pour returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *OutboxHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Pour(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: outboxPourIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Pour.CancelGenerated(),
+				Statement:   "Pour returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *OutboxHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Pour(ctx, drawnE)
+					})
+				},
+				Defect: outboxPourIgnoresCancel,
+			},
+			{
+				ID:          OutboxChecks.Drain.Smoke(),
+				Statement:   "Drain returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OutboxHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Drain(ctx)
+						return nil
+					})
+				},
+				Defect: outboxDrainPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Outbox.Subscribe",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Subscribe",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Outbox.Notes",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Notes",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Outbox.Queue",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Queue",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Outbox.Drain",
+				Gate:     spec.Failure,
+				Why:      "Drain cannot fail",
+				Remedy:   "give Drain an error result",
+			},
+			{
+				Claim:    spec.DeliversEachAppend,
+				Callable: "Outbox.Note",
+				Gate:     spec.DeliversOnAChannel,
+				Why:      "Notes returns no channel of a value that Note passes",
+				Remedy:   "subscribe through a callable that returns a channel of the values that Note passes",
+			},
+			{
+				Claim:    spec.DeliversEachAppend,
+				Callable: "Outbox.Log",
+				Gate:     spec.DeliversOnAChannel,
+				Why:      "Logged returns no channel of a value that Log passes",
+				Remedy:   "subscribe through a callable that returns a channel of the values that Log passes",
+			},
+			{
+				Claim:    spec.DeliversEachAppend,
+				Callable: "Outbox.Post",
+				Gate:     spec.DeliversOnAChannel,
+				Why:      "Queue returns no channel of a value that Post passes",
+				Remedy:   "subscribe through a callable that returns a channel of the values that Post passes",
+			},
+			{
+				Claim:    spec.DeliversEachAppend,
+				Callable: "Outbox.Push",
+				Gate:     spec.DeliversOnAChannel,
+				Why:      "Flush returns no channel of a value that Push passes",
+				Remedy:   "subscribe through a callable that returns a channel of the values that Push passes",
+			},
+			{
+				Claim:    spec.DeliversEachAppend,
+				Callable: "Outbox.Pour",
+				Gate:     spec.DeliversOnAChannel,
+				Why:      "Drain returns no channel of a value that Pour passes",
+				Remedy:   "subscribe through a callable that returns a channel of the values that Pour passes",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Outbox.Append",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Outbox.Note",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Outbox.Log",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Outbox.Post",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Outbox.Push",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:lifecycle",
+				Callable:       "Outbox.Flush",
+				Stance:         spec.Silent,
+				Note:           "A lifecycle call returns nothing that a check could compare.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Outbox.Pour",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Outbox]{
+			{
+				Calls:    outboxAppendCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Append.Callable,
+			},
+			{
+				Calls:    outboxSubscribeCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Subscribe.Callable,
+			},
+			{
+				Calls:    outboxNoteCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Note.Callable,
+			},
+			{
+				Calls:    outboxNotesCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Notes.Callable,
+			},
+			{
+				Calls:    outboxLogCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Log.Callable,
+			},
+			{
+				Calls:    outboxLoggedCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Logged.Callable,
+			},
+			{
+				Calls:    outboxPostCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Post.Callable,
+			},
+			{
+				Calls:    outboxQueueCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Queue.Callable,
+			},
+			{
+				Calls:    outboxPushCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Push.Callable,
+			},
+			{
+				Calls:    outboxFlushCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Flush.Callable,
+			},
+			{
+				Calls:    outboxPourCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Pour.Callable,
+			},
+			{
+				Calls:    outboxDrainCalls,
+				Over:     newOutboxOver,
+				Callable: OutboxChecks.Drain.Callable,
+			},
+		},
+	}
+}
+
+// RunOutboxSuite applies the checks of Outbox, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunOutboxSuite[T Outbox](t *testing.T, newSubject func() T, opts ...OutboxOption) {
+	t.Helper()
+	RunOutboxSuiteFromHandle(t, func(*OutboxHandle) T { return newSubject() }, opts...)
+}
+
+// RunOutboxSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunOutboxSuiteFromHandle[T Outbox](
+	t *testing.T,
+	newSubject func(h *OutboxHandle) T,
+	opts ...OutboxOption,
+) {
+	t.Helper()
+	conform.Run(t, OutboxSuite(), outboxSubjects(newSubject), opts...)
+}
+
+// FuzzOutboxSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzOutboxSuite[T Outbox](
+	f *testing.F,
+	callable conform.Callable[Outbox],
+	newSubject func(h *OutboxHandle) T,
+	opts ...OutboxOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, OutboxSuite(), callable, outboxSubjects(newSubject), opts...)
+}
+
+// RunOutboxBudgets applies the allocation ceilings of Outbox and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunOutboxBudgets[T Outbox](
+	t *testing.T,
+	newSubject func(h *OutboxHandle) T,
+	opts ...OutboxOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, OutboxSuite(), outboxSubjects(newSubject), opts...)
+}
+
+// BenchOutboxSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchOutboxSuite[T Outbox](
+	b conform.B,
+	callable conform.Callable[Outbox],
+	newSubject func(h *OutboxHandle) T,
+	opts ...OutboxOption,
+) {
+	b.Helper()
+	conform.Bench(b, OutboxSuite(), callable, outboxSubjects(newSubject), opts...)
+}
+
+// outboxSubjects returns the factory of the subjects of Outbox that calls
+// newSubject with the handle of each check.
+func outboxSubjects[T Outbox](newSubject func(h *OutboxHandle) T) func(h *OutboxHandle) Outbox {
+	return func(h *OutboxHandle) Outbox { return newSubject(h) }
+}
+
+// outboxAppendCalls generates the calls of Outbox.Append with the inputs
+// that each case draws.
+var outboxAppendCalls = prop.Composite(func(c *prop.Case) func(context.Context, Outbox) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Outbox) error {
+		return subject.Append(ctx, e)
+	}
+})
+
+// outboxSubscribeCalls generates the calls of Outbox.Subscribe with the
+// inputs that each case draws.
+var outboxSubscribeCalls = prop.Composite(func(*prop.Case) func(context.Context, Outbox) error {
+	return func(ctx context.Context, subject Outbox) error {
+		_, err := subject.Subscribe(ctx)
+		return err
+	}
+})
+
+// outboxNoteCalls generates the calls of Outbox.Note with the inputs that
+// each case draws.
+var outboxNoteCalls = prop.Composite(func(c *prop.Case) func(context.Context, Outbox) error {
+	text := c.Draw(prop.Of[string](), "text")
+	return func(ctx context.Context, subject Outbox) error {
+		return subject.Note(ctx, text)
+	}
+})
+
+// outboxNotesCalls generates the calls of Outbox.Notes with the inputs
+// that each case draws.
+var outboxNotesCalls = prop.Composite(func(*prop.Case) func(context.Context, Outbox) error {
+	return func(ctx context.Context, subject Outbox) error {
+		_, err := subject.Notes(ctx)
+		return err
+	}
+})
+
+// outboxLogCalls generates the calls of Outbox.Log with the inputs that
+// each case draws.
+var outboxLogCalls = prop.Composite(func(c *prop.Case) func(context.Context, Outbox) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Outbox) error {
+		return subject.Log(ctx, e)
+	}
+})
+
+// outboxLoggedCalls generates the calls of Outbox.Logged with the inputs
+// that each case draws.
+var outboxLoggedCalls = prop.Composite(func(*prop.Case) func(context.Context, Outbox) error {
+	return func(ctx context.Context, subject Outbox) error {
+		_, err := subject.Logged(ctx)
+		return err
+	}
+})
+
+// outboxPostCalls generates the calls of Outbox.Post with the inputs that
+// each case draws.
+var outboxPostCalls = prop.Composite(func(c *prop.Case) func(context.Context, Outbox) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Outbox) error {
+		return subject.Post(ctx, e)
+	}
+})
+
+// outboxQueueCalls generates the calls of Outbox.Queue with the inputs
+// that each case draws.
+var outboxQueueCalls = prop.Composite(func(*prop.Case) func(context.Context, Outbox) error {
+	return func(ctx context.Context, subject Outbox) error {
+		_, err := subject.Queue(ctx)
+		return err
+	}
+})
+
+// outboxPushCalls generates the calls of Outbox.Push with the inputs that
+// each case draws.
+var outboxPushCalls = prop.Composite(func(c *prop.Case) func(context.Context, Outbox) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Outbox) error {
+		return subject.Push(ctx, e)
+	}
+})
+
+// outboxFlushCalls generates the calls of Outbox.Flush with the inputs
+// that each case draws.
+var outboxFlushCalls = prop.Composite(func(*prop.Case) func(context.Context, Outbox) error {
+	return func(ctx context.Context, subject Outbox) error {
+		return subject.Flush(ctx)
+	}
+})
+
+// outboxPourCalls generates the calls of Outbox.Pour with the inputs that
+// each case draws.
+var outboxPourCalls = prop.Composite(func(c *prop.Case) func(context.Context, Outbox) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Outbox) error {
+		return subject.Pour(ctx, e)
+	}
+})
+
+// outboxDrainCalls generates the calls of Outbox.Drain with the inputs
+// that each case draws.
+var outboxDrainCalls = prop.Composite(func(*prop.Case) func(context.Context, Outbox) error {
+	return func(ctx context.Context, subject Outbox) error {
+		subject.Drain(ctx)
+		return nil
+	}
+})
+
+// outboxOverEmbedded is Outbox under the name of the field that outboxOver
+// embeds.
+type outboxOverEmbedded = Outbox
+
+// outboxOver is a subject of Outbox whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type outboxOver struct {
+	outboxOverEmbedded
+	spend func()
+}
+
+// Append calls spend and returns its zero results.
+func (o outboxOver) Append(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Subscribe calls spend and returns its zero results.
+func (o outboxOver) Subscribe(context.Context) (r0 <-chan Event, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Note calls spend and returns its zero results.
+func (o outboxOver) Note(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Notes calls spend and returns its zero results.
+func (o outboxOver) Notes(context.Context) (r0 <-chan Event, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Log calls spend and returns its zero results.
+func (o outboxOver) Log(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Logged calls spend and returns its zero results.
+func (o outboxOver) Logged(context.Context) (r0 []Event, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Post calls spend and returns its zero results.
+func (o outboxOver) Post(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Queue calls spend and returns its zero results.
+func (o outboxOver) Queue(context.Context) (r0 chan<- Event, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Push calls spend and returns its zero results.
+func (o outboxOver) Push(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Flush calls spend and returns its zero results.
+func (o outboxOver) Flush(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Pour calls spend and returns its zero results.
+func (o outboxOver) Pour(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Drain calls spend and returns its zero results.
+func (o outboxOver) Drain(context.Context) {
+	o.spend()
+}
+
+// newOutboxOver returns the planted defect of a ceiling of Outbox, whose
+// callables call spend.
+func newOutboxOver(_ *OutboxHandle, spend func()) Outbox {
+	return outboxOver{spend: spend}
+}
+
+// outboxAppendPanicsDefect is the planted defect of a Outbox whose Append
+// panics.
+type outboxAppendPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (*outboxAppendPanicsDefect) Append(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Outbox whose Append panics")
+}
+
+// outboxAppendPanics returns the planted defect of a Outbox whose Append
+// panics over a fresh subject.
+func outboxAppendPanics(h *OutboxHandle) Outbox {
+	return &outboxAppendPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxAppendIgnoresCancelDefect is the planted defect of a Outbox whose
+// Append ignores the context.
+type outboxAppendIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (d *outboxAppendIgnoresCancelDefect) Append(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.outboxOverEmbedded.Append(p0, p1)
+}
+
+// outboxAppendIgnoresCancel returns the planted defect of a Outbox whose
+// Append ignores the context over a fresh subject.
+func outboxAppendIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxAppendIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxAppendDropsAppendsAfterThreeDefect is the planted defect of a
+// Outbox whose Append records nothing from its fourth call on.
+type outboxAppendDropsAppendsAfterThreeDefect struct {
+	outboxOverEmbedded
+	calls int
+}
+
+// Append is the override of the planted defect.
+func (d *outboxAppendDropsAppendsAfterThreeDefect) Append(p0 context.Context, p1 Event) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.outboxOverEmbedded.Append(p0, p1)
+}
+
+// outboxAppendDropsAppendsAfterThree returns the planted defect of a
+// Outbox whose Append records nothing from its fourth call on over a fresh
+// subject.
+func outboxAppendDropsAppendsAfterThree(h *OutboxHandle) Outbox {
+	return &outboxAppendDropsAppendsAfterThreeDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxSubscribePanicsDefect is the planted defect of a Outbox whose
+// Subscribe panics.
+type outboxSubscribePanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Subscribe is the override of the planted defect.
+func (*outboxSubscribePanicsDefect) Subscribe(p0 context.Context) (r0 <-chan Event, r1 error) {
+	panic("the planted defect of a Outbox whose Subscribe panics")
+}
+
+// outboxSubscribePanics returns the planted defect of a Outbox whose
+// Subscribe panics over a fresh subject.
+func outboxSubscribePanics(h *OutboxHandle) Outbox {
+	return &outboxSubscribePanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxSubscribeIgnoresCancelDefect is the planted defect of a Outbox
+// whose Subscribe ignores the context.
+type outboxSubscribeIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Subscribe is the override of the planted defect.
+func (d *outboxSubscribeIgnoresCancelDefect) Subscribe(
+	p0 context.Context,
+) (r0 <-chan Event, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.outboxOverEmbedded.Subscribe(p0)
+}
+
+// outboxSubscribeIgnoresCancel returns the planted defect of a Outbox
+// whose Subscribe ignores the context over a fresh subject.
+func outboxSubscribeIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxSubscribeIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxNotePanicsDefect is the planted defect of a Outbox whose Note
+// panics.
+type outboxNotePanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Note is the override of the planted defect.
+func (*outboxNotePanicsDefect) Note(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Outbox whose Note panics")
+}
+
+// outboxNotePanics returns the planted defect of a Outbox whose Note
+// panics over a fresh subject.
+func outboxNotePanics(h *OutboxHandle) Outbox {
+	return &outboxNotePanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxNoteIgnoresCancelDefect is the planted defect of a Outbox whose
+// Note ignores the context.
+type outboxNoteIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Note is the override of the planted defect.
+func (d *outboxNoteIgnoresCancelDefect) Note(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.outboxOverEmbedded.Note(p0, p1)
+}
+
+// outboxNoteIgnoresCancel returns the planted defect of a Outbox whose
+// Note ignores the context over a fresh subject.
+func outboxNoteIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxNoteIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxNotesPanicsDefect is the planted defect of a Outbox whose Notes
+// panics.
+type outboxNotesPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Notes is the override of the planted defect.
+func (*outboxNotesPanicsDefect) Notes(p0 context.Context) (r0 <-chan Event, r1 error) {
+	panic("the planted defect of a Outbox whose Notes panics")
+}
+
+// outboxNotesPanics returns the planted defect of a Outbox whose Notes
+// panics over a fresh subject.
+func outboxNotesPanics(h *OutboxHandle) Outbox {
+	return &outboxNotesPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxNotesIgnoresCancelDefect is the planted defect of a Outbox whose
+// Notes ignores the context.
+type outboxNotesIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Notes is the override of the planted defect.
+func (d *outboxNotesIgnoresCancelDefect) Notes(p0 context.Context) (r0 <-chan Event, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.outboxOverEmbedded.Notes(p0)
+}
+
+// outboxNotesIgnoresCancel returns the planted defect of a Outbox whose
+// Notes ignores the context over a fresh subject.
+func outboxNotesIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxNotesIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxLogPanicsDefect is the planted defect of a Outbox whose Log
+// panics.
+type outboxLogPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Log is the override of the planted defect.
+func (*outboxLogPanicsDefect) Log(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Outbox whose Log panics")
+}
+
+// outboxLogPanics returns the planted defect of a Outbox whose Log panics
+// over a fresh subject.
+func outboxLogPanics(h *OutboxHandle) Outbox {
+	return &outboxLogPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxLogIgnoresCancelDefect is the planted defect of a Outbox whose Log
+// ignores the context.
+type outboxLogIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Log is the override of the planted defect.
+func (d *outboxLogIgnoresCancelDefect) Log(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.outboxOverEmbedded.Log(p0, p1)
+}
+
+// outboxLogIgnoresCancel returns the planted defect of a Outbox whose Log
+// ignores the context over a fresh subject.
+func outboxLogIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxLogIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxLoggedPanicsDefect is the planted defect of a Outbox whose Logged
+// panics.
+type outboxLoggedPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Logged is the override of the planted defect.
+func (*outboxLoggedPanicsDefect) Logged(p0 context.Context) (r0 []Event, r1 error) {
+	panic("the planted defect of a Outbox whose Logged panics")
+}
+
+// outboxLoggedPanics returns the planted defect of a Outbox whose Logged
+// panics over a fresh subject.
+func outboxLoggedPanics(h *OutboxHandle) Outbox {
+	return &outboxLoggedPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxLoggedIgnoresCancelDefect is the planted defect of a Outbox whose
+// Logged ignores the context.
+type outboxLoggedIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Logged is the override of the planted defect.
+func (d *outboxLoggedIgnoresCancelDefect) Logged(p0 context.Context) (r0 []Event, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.outboxOverEmbedded.Logged(p0)
+}
+
+// outboxLoggedIgnoresCancel returns the planted defect of a Outbox whose
+// Logged ignores the context over a fresh subject.
+func outboxLoggedIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxLoggedIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxLoggedValueBesideDefect is the planted defect of a Outbox whose
+// Logged returns a value beside an error.
+type outboxLoggedValueBesideDefect struct {
+	outboxOverEmbedded
+}
+
+// Logged is the override of the planted defect.
+func (d *outboxLoggedValueBesideDefect) Logged(p0 context.Context) (r0 []Event, r1 error) {
+	r0, r1 = d.outboxOverEmbedded.Logged(p0)
+	if r1 != nil {
+		r0 = []Event{{Key: "Key-b"}}
+	}
+	return r0, r1
+}
+
+// outboxLoggedValueBeside returns the planted defect of a Outbox whose
+// Logged returns a value beside an error over a fresh subject.
+func outboxLoggedValueBeside(h *OutboxHandle) Outbox {
+	return &outboxLoggedValueBesideDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxPostPanicsDefect is the planted defect of a Outbox whose Post
+// panics.
+type outboxPostPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Post is the override of the planted defect.
+func (*outboxPostPanicsDefect) Post(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Outbox whose Post panics")
+}
+
+// outboxPostPanics returns the planted defect of a Outbox whose Post
+// panics over a fresh subject.
+func outboxPostPanics(h *OutboxHandle) Outbox {
+	return &outboxPostPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxPostIgnoresCancelDefect is the planted defect of a Outbox whose
+// Post ignores the context.
+type outboxPostIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Post is the override of the planted defect.
+func (d *outboxPostIgnoresCancelDefect) Post(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.outboxOverEmbedded.Post(p0, p1)
+}
+
+// outboxPostIgnoresCancel returns the planted defect of a Outbox whose
+// Post ignores the context over a fresh subject.
+func outboxPostIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxPostIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxQueuePanicsDefect is the planted defect of a Outbox whose Queue
+// panics.
+type outboxQueuePanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Queue is the override of the planted defect.
+func (*outboxQueuePanicsDefect) Queue(p0 context.Context) (r0 chan<- Event, r1 error) {
+	panic("the planted defect of a Outbox whose Queue panics")
+}
+
+// outboxQueuePanics returns the planted defect of a Outbox whose Queue
+// panics over a fresh subject.
+func outboxQueuePanics(h *OutboxHandle) Outbox {
+	return &outboxQueuePanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxQueueIgnoresCancelDefect is the planted defect of a Outbox whose
+// Queue ignores the context.
+type outboxQueueIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Queue is the override of the planted defect.
+func (d *outboxQueueIgnoresCancelDefect) Queue(p0 context.Context) (r0 chan<- Event, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.outboxOverEmbedded.Queue(p0)
+}
+
+// outboxQueueIgnoresCancel returns the planted defect of a Outbox whose
+// Queue ignores the context over a fresh subject.
+func outboxQueueIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxQueueIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxPushPanicsDefect is the planted defect of a Outbox whose Push
+// panics.
+type outboxPushPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Push is the override of the planted defect.
+func (*outboxPushPanicsDefect) Push(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Outbox whose Push panics")
+}
+
+// outboxPushPanics returns the planted defect of a Outbox whose Push
+// panics over a fresh subject.
+func outboxPushPanics(h *OutboxHandle) Outbox {
+	return &outboxPushPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxPushIgnoresCancelDefect is the planted defect of a Outbox whose
+// Push ignores the context.
+type outboxPushIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Push is the override of the planted defect.
+func (d *outboxPushIgnoresCancelDefect) Push(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.outboxOverEmbedded.Push(p0, p1)
+}
+
+// outboxPushIgnoresCancel returns the planted defect of a Outbox whose
+// Push ignores the context over a fresh subject.
+func outboxPushIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxPushIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxFlushPanicsDefect is the planted defect of a Outbox whose Flush
+// panics.
+type outboxFlushPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Flush is the override of the planted defect.
+func (*outboxFlushPanicsDefect) Flush(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Outbox whose Flush panics")
+}
+
+// outboxFlushPanics returns the planted defect of a Outbox whose Flush
+// panics over a fresh subject.
+func outboxFlushPanics(h *OutboxHandle) Outbox {
+	return &outboxFlushPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxFlushIgnoresCancelDefect is the planted defect of a Outbox whose
+// Flush ignores the context.
+type outboxFlushIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Flush is the override of the planted defect.
+func (d *outboxFlushIgnoresCancelDefect) Flush(p0 context.Context) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.outboxOverEmbedded.Flush(p0)
+}
+
+// outboxFlushIgnoresCancel returns the planted defect of a Outbox whose
+// Flush ignores the context over a fresh subject.
+func outboxFlushIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxFlushIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxPourPanicsDefect is the planted defect of a Outbox whose Pour
+// panics.
+type outboxPourPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Pour is the override of the planted defect.
+func (*outboxPourPanicsDefect) Pour(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Outbox whose Pour panics")
+}
+
+// outboxPourPanics returns the planted defect of a Outbox whose Pour
+// panics over a fresh subject.
+func outboxPourPanics(h *OutboxHandle) Outbox {
+	return &outboxPourPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxPourIgnoresCancelDefect is the planted defect of a Outbox whose
+// Pour ignores the context.
+type outboxPourIgnoresCancelDefect struct {
+	outboxOverEmbedded
+}
+
+// Pour is the override of the planted defect.
+func (d *outboxPourIgnoresCancelDefect) Pour(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.outboxOverEmbedded.Pour(p0, p1)
+}
+
+// outboxPourIgnoresCancel returns the planted defect of a Outbox whose
+// Pour ignores the context over a fresh subject.
+func outboxPourIgnoresCancel(h *OutboxHandle) Outbox {
+	return &outboxPourIgnoresCancelDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxDrainPanicsDefect is the planted defect of a Outbox whose Drain
+// panics.
+type outboxDrainPanicsDefect struct {
+	outboxOverEmbedded
+}
+
+// Drain is the override of the planted defect.
+func (*outboxDrainPanicsDefect) Drain(p0 context.Context) {
+	panic("the planted defect of a Outbox whose Drain panics")
+}
+
+// outboxDrainPanics returns the planted defect of a Outbox whose Drain
+// panics over a fresh subject.
+func outboxDrainPanics(h *OutboxHandle) Outbox {
+	return &outboxDrainPanicsDefect{outboxOverEmbedded: h.Fresh()}
+}
+
+// outboxActions returns the actions of the generated sequences of Outbox
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func outboxActions(c *prop.Case, subject func() Outbox) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Append",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "append.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Append", args)
+				values, err := outboxAppendCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Subscribe",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Subscribe", args)
+				values, err := outboxSubscribeCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Note",
+			Input: func(c *prop.Case, _ struct{}) any {
+				text := c.Draw(prop.Of[string](), "note.text")
+				return []any{text}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Note", args)
+				values, err := outboxNoteCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Notes",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Notes", args)
+				values, err := outboxNotesCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Log",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "log.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Log", args)
+				values, err := outboxLogCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Logged",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Logged", args)
+				values, err := outboxLoggedCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Post",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "post.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Post", args)
+				values, err := outboxPostCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Queue",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Queue", args)
+				values, err := outboxQueueCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Push",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "push.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Push", args)
+				values, err := outboxPushCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Flush",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Flush", args)
+				values, err := outboxFlushCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Pour",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "pour.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Pour", args)
+				values, err := outboxPourCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Drain",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Drain", args)
+				values, err := outboxDrainCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// outboxAppendCall calls Append on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxAppendCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Append(ctx, a0)
+}
+
+// outboxSubscribeCall calls Subscribe on subject with the arguments args,
+// and returns the values of the call beside its error.
+func outboxSubscribeCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	r0, err := subject.Subscribe(ctx)
+	return []any{r0}, err
+}
+
+// outboxNoteCall calls Note on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxNoteCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Note(ctx, a0)
+}
+
+// outboxNotesCall calls Notes on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxNotesCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	r0, err := subject.Notes(ctx)
+	return []any{r0}, err
+}
+
+// outboxLogCall calls Log on subject with the arguments args, and returns
+// the values of the call beside its error.
+func outboxLogCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Log(ctx, a0)
+}
+
+// outboxLoggedCall calls Logged on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxLoggedCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	r0, err := subject.Logged(ctx)
+	return []any{r0}, err
+}
+
+// outboxPostCall calls Post on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxPostCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Post(ctx, a0)
+}
+
+// outboxQueueCall calls Queue on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxQueueCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	r0, err := subject.Queue(ctx)
+	return []any{r0}, err
+}
+
+// outboxPushCall calls Push on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxPushCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Push(ctx, a0)
+}
+
+// outboxFlushCall calls Flush on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxFlushCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	return nil, subject.Flush(ctx)
+}
+
+// outboxPourCall calls Pour on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxPourCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Pour(ctx, a0)
+}
+
+// outboxDrainCall calls Drain on subject with the arguments args, and
+// returns the values of the call beside its error.
+func outboxDrainCall(ctx context.Context, subject Outbox, args []any) ([]any, error) {
+	subject.Drain(ctx)
+	return nil, nil
+}
+
+// The derived checks of Broker:
+//
+// Broker.Send/smoke: Send returns without a panic for derived inputs.
+//
+// Broker.Send/smoke#generated: Send returns without a panic for derived
+// inputs.
+//
+// Broker.Send/cancel: Send returns an error for a cancelled context.
+//
+// Broker.Send/cancel#generated: Send returns an error for a cancelled
+// context.
+//
+// Broker.Send/delivers-by-its-mode: each event that Send publishes arrives
+// on the channel of Listen as its delivery mode states.
+//
+// Broker.Resend/smoke: Resend returns without a panic for derived inputs.
+//
+// Broker.Resend/smoke#generated: Resend returns without a panic for
+// derived inputs.
+//
+// Broker.Resend/cancel: Resend returns an error for a cancelled context.
+//
+// Broker.Resend/cancel#generated: Resend returns an error for a cancelled
+// context.
+//
+// Broker.Resend/redelivers-on-demand: each event that Resend redelivers
+// arrives on the channel of Listen once more.
+//
+// Broker.Listen/smoke: Listen returns without a panic for derived inputs.
+//
+// Broker.Listen/cancel: Listen returns an error for a cancelled context.
+//
+// Broker.Fire/smoke: Fire returns without a panic for derived inputs.
+//
+// Broker.Fire/smoke#generated: Fire returns without a panic for derived
+// inputs.
+//
+// Broker.Fire/cancel: Fire returns an error for a cancelled context.
+//
+// Broker.Fire/cancel#generated: Fire returns an error for a cancelled
+// context.
+//
+// Broker.Fire/delivers-by-its-mode: each event that Fire publishes arrives
+// on the channel of Tap as its delivery mode states.
+//
+// Broker.Refire/smoke: Refire returns without a panic for derived inputs.
+//
+// Broker.Refire/smoke#generated: Refire returns without a panic for
+// derived inputs.
+//
+// Broker.Refire/cancel: Refire returns an error for a cancelled context.
+//
+// Broker.Refire/cancel#generated: Refire returns an error for a cancelled
+// context.
+//
+// Broker.Tap/smoke: Tap returns without a panic for derived inputs.
+
+// The derived checks of Broker that witness their laws at the shallow end:
+//
+// Broker.Send/smoke
+//
+// Broker.Resend/smoke
+//
+// Broker.Listen/smoke
+//
+// Broker.Fire/smoke
+//
+// Broker.Refire/smoke
+//
+// Broker.Tap/smoke
+
+// The refused claims of Broker:
+//
+// Broker.Listen/zero-on-error: eidos derives no sample of a result of
+// Listen. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Broker.Tap/cancel: Tap cannot fail. The remedy is to give Tap an error
+// result.
+//
+// Broker.Tap/zero-on-error: Tap cannot fail. The remedy is to give Tap an
+// error result.
+//
+// Broker.Refire/redelivers-on-demand: Fire states no delivery mode
+// at-least-once, so a redelivery of Refire need not deliver an event
+// again. The remedy is to state the delivery mode of Fire, whose check
+// judges the redeliveries of Refire under any mode.
+
+// The unclaimed classifications of Broker:
+//
+// The shape:writer of Broker.Send has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Broker.Resend has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Broker.Fire has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Broker.Refire has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Broker writes.
+type (
+	BrokerHandle = conform.Handle[Broker]
+	BrokerCheck  = conform.Check[Broker]
+	BrokerOption = conform.Option[Broker]
+)
+
+// BrokerChecks contains the name of each callable of Broker, with the
+// identities of its checks.
+var BrokerChecks = struct {
+	Send   brokerSend
+	Resend brokerResend
+	Listen brokerListen
+	Fire   brokerFire
+	Refire brokerRefire
+	Tap    brokerTap
+}{
+	Send:   brokerSend{"Broker.Send"},
+	Resend: brokerResend{"Broker.Resend"},
+	Listen: brokerListen{"Broker.Listen"},
+	Fire:   brokerFire{"Broker.Fire"},
+	Refire: brokerRefire{"Broker.Refire"},
+	Tap:    brokerTap{"Broker.Tap"},
+}
+
+// brokerSend is the name of Broker.Send, with the identities of its
+// checks.
+type brokerSend struct {
+	conform.Callable[Broker]
+}
+
+// Smoke returns the identity of the check that Send returns without a
+// panic for derived inputs.
+func (c brokerSend) Smoke() conform.ID[Broker] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Send returns
+// without a panic for derived inputs.
+func (c brokerSend) SmokeGenerated() conform.ID[Broker] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Send returns an error for
+// a cancelled context.
+func (c brokerSend) Cancel() conform.ID[Broker] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Send returns an
+// error for a cancelled context.
+func (c brokerSend) CancelGenerated() conform.ID[Broker] {
+	return c.Check("cancel#generated")
+}
+
+// DeliversByItsMode returns the identity of the check that each event that
+// Send publishes arrives on the channel of Listen as its delivery mode
+// states.
+func (c brokerSend) DeliversByItsMode() conform.ID[Broker] {
+	return c.Check("delivers-by-its-mode")
+}
+
+// brokerResend is the name of Broker.Resend, with the identities of its
+// checks.
+type brokerResend struct {
+	conform.Callable[Broker]
+}
+
+// Smoke returns the identity of the check that Resend returns without a
+// panic for derived inputs.
+func (c brokerResend) Smoke() conform.ID[Broker] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Resend returns
+// without a panic for derived inputs.
+func (c brokerResend) SmokeGenerated() conform.ID[Broker] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Resend returns an error
+// for a cancelled context.
+func (c brokerResend) Cancel() conform.ID[Broker] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Resend returns an
+// error for a cancelled context.
+func (c brokerResend) CancelGenerated() conform.ID[Broker] {
+	return c.Check("cancel#generated")
+}
+
+// RedeliversOnDemand returns the identity of the check that each event
+// that Resend redelivers arrives on the channel of Listen once more.
+func (c brokerResend) RedeliversOnDemand() conform.ID[Broker] {
+	return c.Check("redelivers-on-demand")
+}
+
+// brokerListen is the name of Broker.Listen, with the identities of its
+// checks.
+type brokerListen struct {
+	conform.Callable[Broker]
+}
+
+// Smoke returns the identity of the check that Listen returns without a
+// panic for derived inputs.
+func (c brokerListen) Smoke() conform.ID[Broker] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Listen returns an error
+// for a cancelled context.
+func (c brokerListen) Cancel() conform.ID[Broker] {
+	return c.Check("cancel")
+}
+
+// brokerFire is the name of Broker.Fire, with the identities of its
+// checks.
+type brokerFire struct {
+	conform.Callable[Broker]
+}
+
+// Smoke returns the identity of the check that Fire returns without a
+// panic for derived inputs.
+func (c brokerFire) Smoke() conform.ID[Broker] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Fire returns
+// without a panic for derived inputs.
+func (c brokerFire) SmokeGenerated() conform.ID[Broker] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Fire returns an error for
+// a cancelled context.
+func (c brokerFire) Cancel() conform.ID[Broker] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Fire returns an
+// error for a cancelled context.
+func (c brokerFire) CancelGenerated() conform.ID[Broker] {
+	return c.Check("cancel#generated")
+}
+
+// DeliversByItsMode returns the identity of the check that each event that
+// Fire publishes arrives on the channel of Tap as its delivery mode
+// states.
+func (c brokerFire) DeliversByItsMode() conform.ID[Broker] {
+	return c.Check("delivers-by-its-mode")
+}
+
+// brokerRefire is the name of Broker.Refire, with the identities of its
+// checks.
+type brokerRefire struct {
+	conform.Callable[Broker]
+}
+
+// Smoke returns the identity of the check that Refire returns without a
+// panic for derived inputs.
+func (c brokerRefire) Smoke() conform.ID[Broker] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Refire returns
+// without a panic for derived inputs.
+func (c brokerRefire) SmokeGenerated() conform.ID[Broker] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Refire returns an error
+// for a cancelled context.
+func (c brokerRefire) Cancel() conform.ID[Broker] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Refire returns an
+// error for a cancelled context.
+func (c brokerRefire) CancelGenerated() conform.ID[Broker] {
+	return c.Check("cancel#generated")
+}
+
+// brokerTap is the name of Broker.Tap, with the identities of its checks.
+type brokerTap struct {
+	conform.Callable[Broker]
+}
+
+// Smoke returns the identity of the check that Tap returns without a panic
+// for derived inputs.
+func (c brokerTap) Smoke() conform.ID[Broker] {
+	return c.Check("smoke")
+}
+
+// BrokerSuite returns the checks of Broker, and the calls and the budgets
+// of its callables.
+func BrokerSuite() conform.Suite[Broker] {
+	return conform.Suite[Broker]{
+		Declaration: "Broker",
+		Package:     "example.com/shop/sequenced",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Broker]{
+			{
+				ID:          BrokerChecks.Send.Smoke(),
+				Statement:   "Send returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BrokerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Send(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: brokerSendPanics,
+			},
+			{
+				ID:          BrokerChecks.Send.SmokeGenerated(),
+				Statement:   "Send returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Send(ctx, drawnE)
+					})
+				},
+				Defect: brokerSendPanics,
+			},
+			{
+				ID:          BrokerChecks.Send.Cancel(),
+				Statement:   "Send returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BrokerHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Send(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: brokerSendIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Send.CancelGenerated(),
+				Statement:   "Send returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Send(ctx, drawnE)
+					})
+				},
+				Defect: brokerSendIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Send.DeliversByItsMode(),
+				Statement:   "each event that Send publishes arrives on the channel of Listen as its delivery mode states",
+				Claim:       spec.DeliversByItsMode,
+				Probe:       spec.DeliveriesMatchTheMode,
+				Reason:      spec.WrongDeliveryCount,
+				Law:         spec.DeliveriesFollowTheMode,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					probe.DeliveriesMatchTheMode(
+						h,
+						c,
+						brokerActions,
+						"Send",
+						func(ctx context.Context) (<-chan Event, error) {
+							r0, err := h.Subject().Listen(ctx)
+							return r0, err
+						},
+						func(args []any) Event {
+							v, _ := args[0].(Event)
+							return v
+						},
+						"at-least-once",
+					)
+				},
+				Defect: brokerSendBreaksTheModeAfterThree,
+				Around: synctest.Test,
+			},
+			{
+				ID:          BrokerChecks.Resend.Smoke(),
+				Statement:   "Resend returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BrokerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Resend(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: brokerResendPanics,
+			},
+			{
+				ID:          BrokerChecks.Resend.SmokeGenerated(),
+				Statement:   "Resend returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Resend(ctx, drawnE)
+					})
+				},
+				Defect: brokerResendPanics,
+			},
+			{
+				ID:          BrokerChecks.Resend.Cancel(),
+				Statement:   "Resend returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BrokerHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Resend(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: brokerResendIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Resend.CancelGenerated(),
+				Statement:   "Resend returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Resend(ctx, drawnE)
+					})
+				},
+				Defect: brokerResendIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Resend.RedeliversOnDemand(),
+				Statement:   "each event that Resend redelivers arrives on the channel of Listen once more",
+				Claim:       spec.RedeliversOnDemand,
+				Probe:       spec.RedeliveriesArrive,
+				Reason:      spec.NotRedelivered,
+				Law:         spec.RedeliveryDeliversAgain,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					probe.RedeliveriesArrive(
+						h,
+						c,
+						brokerActions,
+						"Send",
+						"Resend",
+						func(ctx context.Context) (<-chan Event, error) {
+							r0, err := h.Subject().Listen(ctx)
+							return r0, err
+						},
+						func(args []any) Event {
+							v, _ := args[0].(Event)
+							return v
+						},
+						func(args []any) Event {
+							v, _ := args[0].(Event)
+							return v
+						},
+					)
+				},
+				Defect: brokerResendSkipsARedeliveryAfterThree,
+				Around: synctest.Test,
+			},
+			{
+				ID:          BrokerChecks.Listen.Smoke(),
+				Statement:   "Listen returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BrokerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Listen(ctx)
+						return err
+					})
+				},
+				Defect: brokerListenPanics,
+			},
+			{
+				ID:          BrokerChecks.Listen.Cancel(),
+				Statement:   "Listen returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BrokerHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Listen(ctx)
+						return err
+					})
+				},
+				Defect: brokerListenIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Fire.Smoke(),
+				Statement:   "Fire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BrokerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Fire(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: brokerFirePanics,
+			},
+			{
+				ID:          BrokerChecks.Fire.SmokeGenerated(),
+				Statement:   "Fire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Fire(ctx, drawnE)
+					})
+				},
+				Defect: brokerFirePanics,
+			},
+			{
+				ID:          BrokerChecks.Fire.Cancel(),
+				Statement:   "Fire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BrokerHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Fire(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: brokerFireIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Fire.CancelGenerated(),
+				Statement:   "Fire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Fire(ctx, drawnE)
+					})
+				},
+				Defect: brokerFireIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Fire.DeliversByItsMode(),
+				Statement:   "each event that Fire publishes arrives on the channel of Tap as its delivery mode states",
+				Claim:       spec.DeliversByItsMode,
+				Probe:       spec.DeliveriesMatchTheMode,
+				Reason:      spec.WrongDeliveryCount,
+				Law:         spec.DeliveriesFollowTheMode,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					probe.DeliveriesMatchTheMode(
+						h,
+						c,
+						brokerActions,
+						"Fire",
+						func(ctx context.Context) (<-chan Event, error) {
+							r0 := h.Subject().Tap(ctx)
+							return r0, nil
+						},
+						func(args []any) Event {
+							v, _ := args[0].(Event)
+							return v
+						},
+						"at-most-once",
+					)
+				},
+				Defect: brokerFireBreaksTheModeAfterThree,
+				Around: synctest.Test,
+			},
+			{
+				ID:          BrokerChecks.Refire.Smoke(),
+				Statement:   "Refire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BrokerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Refire(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: brokerRefirePanics,
+			},
+			{
+				ID:          BrokerChecks.Refire.SmokeGenerated(),
+				Statement:   "Refire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Refire(ctx, drawnE)
+					})
+				},
+				Defect: brokerRefirePanics,
+			},
+			{
+				ID:          BrokerChecks.Refire.Cancel(),
+				Statement:   "Refire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BrokerHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Refire(ctx, Event{Key: "Key-a"})
+					})
+				},
+				Defect: brokerRefireIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Refire.CancelGenerated(),
+				Statement:   "Refire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *BrokerHandle, c *prop.Case) {
+					drawnE := c.Draw(prop.Of[Event](), "e")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Refire(ctx, drawnE)
+					})
+				},
+				Defect: brokerRefireIgnoresCancel,
+			},
+			{
+				ID:          BrokerChecks.Tap.Smoke(),
+				Statement:   "Tap returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BrokerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Tap(ctx)
+						return nil
+					})
+				},
+				Defect: brokerTapPanics,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Broker.Listen",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Listen",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.Cancel,
+				Callable: "Broker.Tap",
+				Gate:     spec.Failure,
+				Why:      "Tap cannot fail",
+				Remedy:   "give Tap an error result",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Broker.Tap",
+				Gate:     spec.Failure,
+				Why:      "Tap cannot fail",
+				Remedy:   "give Tap an error result",
+			},
+			{
+				Claim:    spec.RedeliversOnDemand,
+				Callable: "Broker.Refire",
+				Gate:     spec.AtLeastOnceMode,
+				Why:      "Fire states no delivery mode at-least-once, so a redelivery of Refire need not deliver an event again",
+				Remedy:   "state the delivery mode of Fire, whose check judges the redeliveries of Refire under any mode",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:writer",
+				Callable:       "Broker.Send",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Broker.Resend",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Broker.Fire",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Broker.Refire",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Broker]{
+			{
+				Calls:    brokerSendCalls,
+				Over:     newBrokerOver,
+				Callable: BrokerChecks.Send.Callable,
+			},
+			{
+				Calls:    brokerResendCalls,
+				Over:     newBrokerOver,
+				Callable: BrokerChecks.Resend.Callable,
+			},
+			{
+				Calls:    brokerListenCalls,
+				Over:     newBrokerOver,
+				Callable: BrokerChecks.Listen.Callable,
+			},
+			{
+				Calls:    brokerFireCalls,
+				Over:     newBrokerOver,
+				Callable: BrokerChecks.Fire.Callable,
+			},
+			{
+				Calls:    brokerRefireCalls,
+				Over:     newBrokerOver,
+				Callable: BrokerChecks.Refire.Callable,
+			},
+			{
+				Calls:    brokerTapCalls,
+				Over:     newBrokerOver,
+				Callable: BrokerChecks.Tap.Callable,
+			},
+		},
+	}
+}
+
+// RunBrokerSuite applies the checks of Broker, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunBrokerSuite[T Broker](t *testing.T, newSubject func() T, opts ...BrokerOption) {
+	t.Helper()
+	RunBrokerSuiteFromHandle(t, func(*BrokerHandle) T { return newSubject() }, opts...)
+}
+
+// RunBrokerSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunBrokerSuiteFromHandle[T Broker](
+	t *testing.T,
+	newSubject func(h *BrokerHandle) T,
+	opts ...BrokerOption,
+) {
+	t.Helper()
+	conform.Run(t, BrokerSuite(), brokerSubjects(newSubject), opts...)
+}
+
+// FuzzBrokerSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzBrokerSuite[T Broker](
+	f *testing.F,
+	callable conform.Callable[Broker],
+	newSubject func(h *BrokerHandle) T,
+	opts ...BrokerOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, BrokerSuite(), callable, brokerSubjects(newSubject), opts...)
+}
+
+// RunBrokerBudgets applies the allocation ceilings of Broker and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunBrokerBudgets[T Broker](
+	t *testing.T,
+	newSubject func(h *BrokerHandle) T,
+	opts ...BrokerOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, BrokerSuite(), brokerSubjects(newSubject), opts...)
+}
+
+// BenchBrokerSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchBrokerSuite[T Broker](
+	b conform.B,
+	callable conform.Callable[Broker],
+	newSubject func(h *BrokerHandle) T,
+	opts ...BrokerOption,
+) {
+	b.Helper()
+	conform.Bench(b, BrokerSuite(), callable, brokerSubjects(newSubject), opts...)
+}
+
+// brokerSubjects returns the factory of the subjects of Broker that calls
+// newSubject with the handle of each check.
+func brokerSubjects[T Broker](newSubject func(h *BrokerHandle) T) func(h *BrokerHandle) Broker {
+	return func(h *BrokerHandle) Broker { return newSubject(h) }
+}
+
+// brokerSendCalls generates the calls of Broker.Send with the inputs that
+// each case draws.
+var brokerSendCalls = prop.Composite(func(c *prop.Case) func(context.Context, Broker) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Broker) error {
+		return subject.Send(ctx, e)
+	}
+})
+
+// brokerResendCalls generates the calls of Broker.Resend with the inputs
+// that each case draws.
+var brokerResendCalls = prop.Composite(func(c *prop.Case) func(context.Context, Broker) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Broker) error {
+		return subject.Resend(ctx, e)
+	}
+})
+
+// brokerListenCalls generates the calls of Broker.Listen with the inputs
+// that each case draws.
+var brokerListenCalls = prop.Composite(func(*prop.Case) func(context.Context, Broker) error {
+	return func(ctx context.Context, subject Broker) error {
+		_, err := subject.Listen(ctx)
+		return err
+	}
+})
+
+// brokerFireCalls generates the calls of Broker.Fire with the inputs that
+// each case draws.
+var brokerFireCalls = prop.Composite(func(c *prop.Case) func(context.Context, Broker) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Broker) error {
+		return subject.Fire(ctx, e)
+	}
+})
+
+// brokerRefireCalls generates the calls of Broker.Refire with the inputs
+// that each case draws.
+var brokerRefireCalls = prop.Composite(func(c *prop.Case) func(context.Context, Broker) error {
+	e := c.Draw(prop.Of[Event](), "e")
+	return func(ctx context.Context, subject Broker) error {
+		return subject.Refire(ctx, e)
+	}
+})
+
+// brokerTapCalls generates the calls of Broker.Tap with the inputs that
+// each case draws.
+var brokerTapCalls = prop.Composite(func(*prop.Case) func(context.Context, Broker) error {
+	return func(ctx context.Context, subject Broker) error {
+		_ = subject.Tap(ctx)
+		return nil
+	}
+})
+
+// brokerOverEmbedded is Broker under the name of the field that brokerOver
+// embeds.
+type brokerOverEmbedded = Broker
+
+// brokerOver is a subject of Broker whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type brokerOver struct {
+	brokerOverEmbedded
+	spend func()
+}
+
+// Send calls spend and returns its zero results.
+func (o brokerOver) Send(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Resend calls spend and returns its zero results.
+func (o brokerOver) Resend(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Listen calls spend and returns its zero results.
+func (o brokerOver) Listen(context.Context) (r0 chan Event, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Fire calls spend and returns its zero results.
+func (o brokerOver) Fire(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Refire calls spend and returns its zero results.
+func (o brokerOver) Refire(context.Context, Event) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Tap calls spend and returns its zero results.
+func (o brokerOver) Tap(context.Context) (r0 <-chan Event) {
+	o.spend()
+	return r0
+}
+
+// newBrokerOver returns the planted defect of a ceiling of Broker, whose
+// callables call spend.
+func newBrokerOver(_ *BrokerHandle, spend func()) Broker {
+	return brokerOver{spend: spend}
+}
+
+// brokerSendPanicsDefect is the planted defect of a Broker whose Send
+// panics.
+type brokerSendPanicsDefect struct {
+	brokerOverEmbedded
+}
+
+// Send is the override of the planted defect.
+func (*brokerSendPanicsDefect) Send(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Broker whose Send panics")
+}
+
+// brokerSendPanics returns the planted defect of a Broker whose Send
+// panics over a fresh subject.
+func brokerSendPanics(h *BrokerHandle) Broker {
+	return &brokerSendPanicsDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerSendIgnoresCancelDefect is the planted defect of a Broker whose
+// Send ignores the context.
+type brokerSendIgnoresCancelDefect struct {
+	brokerOverEmbedded
+}
+
+// Send is the override of the planted defect.
+func (d *brokerSendIgnoresCancelDefect) Send(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.brokerOverEmbedded.Send(p0, p1)
+}
+
+// brokerSendIgnoresCancel returns the planted defect of a Broker whose
+// Send ignores the context over a fresh subject.
+func brokerSendIgnoresCancel(h *BrokerHandle) Broker {
+	return &brokerSendIgnoresCancelDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerSendBreaksTheModeAfterThreeDefect is the planted defect of a
+// Broker whose Send breaks its delivery mode from its fourth call on.
+type brokerSendBreaksTheModeAfterThreeDefect struct {
+	brokerOverEmbedded
+	calls int
+}
+
+// Send is the override of the planted defect.
+func (d *brokerSendBreaksTheModeAfterThreeDefect) Send(p0 context.Context, p1 Event) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.brokerOverEmbedded.Send(p0, p1)
+}
+
+// brokerSendBreaksTheModeAfterThree returns the planted defect of a Broker
+// whose Send breaks its delivery mode from its fourth call on over a fresh
+// subject.
+func brokerSendBreaksTheModeAfterThree(h *BrokerHandle) Broker {
+	return &brokerSendBreaksTheModeAfterThreeDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerResendPanicsDefect is the planted defect of a Broker whose Resend
+// panics.
+type brokerResendPanicsDefect struct {
+	brokerOverEmbedded
+}
+
+// Resend is the override of the planted defect.
+func (*brokerResendPanicsDefect) Resend(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Broker whose Resend panics")
+}
+
+// brokerResendPanics returns the planted defect of a Broker whose Resend
+// panics over a fresh subject.
+func brokerResendPanics(h *BrokerHandle) Broker {
+	return &brokerResendPanicsDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerResendIgnoresCancelDefect is the planted defect of a Broker whose
+// Resend ignores the context.
+type brokerResendIgnoresCancelDefect struct {
+	brokerOverEmbedded
+}
+
+// Resend is the override of the planted defect.
+func (d *brokerResendIgnoresCancelDefect) Resend(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.brokerOverEmbedded.Resend(p0, p1)
+}
+
+// brokerResendIgnoresCancel returns the planted defect of a Broker whose
+// Resend ignores the context over a fresh subject.
+func brokerResendIgnoresCancel(h *BrokerHandle) Broker {
+	return &brokerResendIgnoresCancelDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerResendSkipsARedeliveryAfterThreeDefect is the planted defect of a
+// Broker whose Resend does nothing from its fourth call on.
+type brokerResendSkipsARedeliveryAfterThreeDefect struct {
+	brokerOverEmbedded
+	calls int
+}
+
+// Resend is the override of the planted defect.
+func (d *brokerResendSkipsARedeliveryAfterThreeDefect) Resend(
+	p0 context.Context,
+	p1 Event,
+) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.brokerOverEmbedded.Resend(p0, p1)
+}
+
+// brokerResendSkipsARedeliveryAfterThree returns the planted defect of a
+// Broker whose Resend does nothing from its fourth call on over a fresh
+// subject.
+func brokerResendSkipsARedeliveryAfterThree(h *BrokerHandle) Broker {
+	return &brokerResendSkipsARedeliveryAfterThreeDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerListenPanicsDefect is the planted defect of a Broker whose Listen
+// panics.
+type brokerListenPanicsDefect struct {
+	brokerOverEmbedded
+}
+
+// Listen is the override of the planted defect.
+func (*brokerListenPanicsDefect) Listen(p0 context.Context) (r0 chan Event, r1 error) {
+	panic("the planted defect of a Broker whose Listen panics")
+}
+
+// brokerListenPanics returns the planted defect of a Broker whose Listen
+// panics over a fresh subject.
+func brokerListenPanics(h *BrokerHandle) Broker {
+	return &brokerListenPanicsDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerListenIgnoresCancelDefect is the planted defect of a Broker whose
+// Listen ignores the context.
+type brokerListenIgnoresCancelDefect struct {
+	brokerOverEmbedded
+}
+
+// Listen is the override of the planted defect.
+func (d *brokerListenIgnoresCancelDefect) Listen(p0 context.Context) (r0 chan Event, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.brokerOverEmbedded.Listen(p0)
+}
+
+// brokerListenIgnoresCancel returns the planted defect of a Broker whose
+// Listen ignores the context over a fresh subject.
+func brokerListenIgnoresCancel(h *BrokerHandle) Broker {
+	return &brokerListenIgnoresCancelDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerFirePanicsDefect is the planted defect of a Broker whose Fire
+// panics.
+type brokerFirePanicsDefect struct {
+	brokerOverEmbedded
+}
+
+// Fire is the override of the planted defect.
+func (*brokerFirePanicsDefect) Fire(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Broker whose Fire panics")
+}
+
+// brokerFirePanics returns the planted defect of a Broker whose Fire
+// panics over a fresh subject.
+func brokerFirePanics(h *BrokerHandle) Broker {
+	return &brokerFirePanicsDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerFireIgnoresCancelDefect is the planted defect of a Broker whose
+// Fire ignores the context.
+type brokerFireIgnoresCancelDefect struct {
+	brokerOverEmbedded
+}
+
+// Fire is the override of the planted defect.
+func (d *brokerFireIgnoresCancelDefect) Fire(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.brokerOverEmbedded.Fire(p0, p1)
+}
+
+// brokerFireIgnoresCancel returns the planted defect of a Broker whose
+// Fire ignores the context over a fresh subject.
+func brokerFireIgnoresCancel(h *BrokerHandle) Broker {
+	return &brokerFireIgnoresCancelDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerFireBreaksTheModeAfterThreeDefect is the planted defect of a
+// Broker whose Fire breaks its delivery mode from its fourth call on.
+type brokerFireBreaksTheModeAfterThreeDefect struct {
+	brokerOverEmbedded
+	calls int
+}
+
+// Fire is the override of the planted defect.
+func (d *brokerFireBreaksTheModeAfterThreeDefect) Fire(p0 context.Context, p1 Event) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		r0 = d.brokerOverEmbedded.Fire(p0, p1)
+	}
+	return d.brokerOverEmbedded.Fire(p0, p1)
+}
+
+// brokerFireBreaksTheModeAfterThree returns the planted defect of a Broker
+// whose Fire breaks its delivery mode from its fourth call on over a fresh
+// subject.
+func brokerFireBreaksTheModeAfterThree(h *BrokerHandle) Broker {
+	return &brokerFireBreaksTheModeAfterThreeDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerRefirePanicsDefect is the planted defect of a Broker whose Refire
+// panics.
+type brokerRefirePanicsDefect struct {
+	brokerOverEmbedded
+}
+
+// Refire is the override of the planted defect.
+func (*brokerRefirePanicsDefect) Refire(p0 context.Context, p1 Event) (r0 error) {
+	panic("the planted defect of a Broker whose Refire panics")
+}
+
+// brokerRefirePanics returns the planted defect of a Broker whose Refire
+// panics over a fresh subject.
+func brokerRefirePanics(h *BrokerHandle) Broker {
+	return &brokerRefirePanicsDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerRefireIgnoresCancelDefect is the planted defect of a Broker whose
+// Refire ignores the context.
+type brokerRefireIgnoresCancelDefect struct {
+	brokerOverEmbedded
+}
+
+// Refire is the override of the planted defect.
+func (d *brokerRefireIgnoresCancelDefect) Refire(p0 context.Context, p1 Event) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.brokerOverEmbedded.Refire(p0, p1)
+}
+
+// brokerRefireIgnoresCancel returns the planted defect of a Broker whose
+// Refire ignores the context over a fresh subject.
+func brokerRefireIgnoresCancel(h *BrokerHandle) Broker {
+	return &brokerRefireIgnoresCancelDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerTapPanicsDefect is the planted defect of a Broker whose Tap
+// panics.
+type brokerTapPanicsDefect struct {
+	brokerOverEmbedded
+}
+
+// Tap is the override of the planted defect.
+func (*brokerTapPanicsDefect) Tap(p0 context.Context) (r0 <-chan Event) {
+	panic("the planted defect of a Broker whose Tap panics")
+}
+
+// brokerTapPanics returns the planted defect of a Broker whose Tap panics
+// over a fresh subject.
+func brokerTapPanics(h *BrokerHandle) Broker {
+	return &brokerTapPanicsDefect{brokerOverEmbedded: h.Fresh()}
+}
+
+// brokerActions returns the actions of the generated sequences of Broker
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func brokerActions(c *prop.Case, subject func() Broker) []stateful.Action[struct{}] {
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Send",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "send.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Send", args)
+				values, err := brokerSendCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Resend",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "resend.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Resend", args)
+				values, err := brokerResendCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Listen",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Listen", args)
+				values, err := brokerListenCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Fire",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "fire.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Fire", args)
+				values, err := brokerFireCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Refire",
+			Input: func(c *prop.Case, _ struct{}) any {
+				e := c.Draw(prop.Of[Event](), "refire.e")
+				return []any{e}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Refire", args)
+				values, err := brokerRefireCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Tap",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Tap", args)
+				values, err := brokerTapCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// brokerSendCall calls Send on subject with the arguments args, and
+// returns the values of the call beside its error.
+func brokerSendCall(ctx context.Context, subject Broker, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Send(ctx, a0)
+}
+
+// brokerResendCall calls Resend on subject with the arguments args, and
+// returns the values of the call beside its error.
+func brokerResendCall(ctx context.Context, subject Broker, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Resend(ctx, a0)
+}
+
+// brokerListenCall calls Listen on subject with the arguments args, and
+// returns the values of the call beside its error.
+func brokerListenCall(ctx context.Context, subject Broker, args []any) ([]any, error) {
+	r0, err := subject.Listen(ctx)
+	return []any{r0}, err
+}
+
+// brokerFireCall calls Fire on subject with the arguments args, and
+// returns the values of the call beside its error.
+func brokerFireCall(ctx context.Context, subject Broker, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Fire(ctx, a0)
+}
+
+// brokerRefireCall calls Refire on subject with the arguments args, and
+// returns the values of the call beside its error.
+func brokerRefireCall(ctx context.Context, subject Broker, args []any) ([]any, error) {
+	a0, _ := args[0].(Event)
+	return nil, subject.Refire(ctx, a0)
+}
+
+// brokerTapCall calls Tap on subject with the arguments args, and returns
+// the values of the call beside its error.
+func brokerTapCall(ctx context.Context, subject Broker, args []any) ([]any, error) {
+	r0 := subject.Tap(ctx)
+	return []any{r0}, nil
+}
+
+// The derived checks of Watches:
+//
+// Watches.Watch/smoke: Watch returns without a panic for derived inputs.
+//
+// Watches.Watch/smoke#generated: Watch returns without a panic for derived
+// inputs.
+//
+// Watches.Watch/cancel: Watch returns an error for a cancelled context.
+//
+// Watches.Watch/cancel#generated: Watch returns an error for a cancelled
+// context.
+//
+// Watches.Watch/watch-sees-each-trigger: a subscription of Watch returns
+// each update that Set causes for its key, in order, and no update after
+// its stop.
+//
+// Watches.Set/smoke: Set returns without a panic for derived inputs.
+//
+// Watches.Set/smoke#generated: Set returns without a panic for derived
+// inputs.
+//
+// Watches.Set/cancel: Set returns an error for a cancelled context.
+//
+// Watches.Set/cancel#generated: Set returns an error for a cancelled
+// context.
+//
+// Watches.Ticks/smoke: Ticks returns without a panic for derived inputs.
+//
+// Watches.Ticks/smoke#generated: Ticks returns without a panic for derived
+// inputs.
+//
+// Watches.Ticks/cancel: Ticks returns an error for a cancelled context.
+//
+// Watches.Ticks/cancel#generated: Ticks returns an error for a cancelled
+// context.
+//
+// Watches.Ticks/watch-sees-each-trigger: a subscription of Ticks returns
+// each update that Tick causes for its key, in order, and no update after
+// its stop.
+//
+// Watches.Tick/smoke: Tick returns without a panic for derived inputs.
+//
+// Watches.Tick/smoke#generated: Tick returns without a panic for derived
+// inputs.
+//
+// Watches.Tick/cancel: Tick returns an error for a cancelled context.
+//
+// Watches.Tick/cancel#generated: Tick returns an error for a cancelled
+// context.
+//
+// Watches.Peeks/smoke: Peeks returns without a panic for derived inputs.
+//
+// Watches.Peeks/smoke#generated: Peeks returns without a panic for derived
+// inputs.
+//
+// Watches.Peeks/cancel: Peeks returns an error for a cancelled context.
+//
+// Watches.Peeks/cancel#generated: Peeks returns an error for a cancelled
+// context.
+//
+// Watches.Peeked/smoke: Peeked returns without a panic for derived inputs.
+//
+// Watches.Peeked/smoke#generated: Peeked returns without a panic for
+// derived inputs.
+//
+// Watches.Peeked/cancel: Peeked returns an error for a cancelled context.
+//
+// Watches.Peeked/cancel#generated: Peeked returns an error for a cancelled
+// context.
+//
+// Watches.Finds/smoke: Finds returns without a panic for derived inputs.
+//
+// Watches.Finds/smoke#generated: Finds returns without a panic for derived
+// inputs.
+//
+// Watches.Finds/cancel: Finds returns an error for a cancelled context.
+//
+// Watches.Finds/cancel#generated: Finds returns an error for a cancelled
+// context.
+//
+// Watches.Found/smoke: Found returns without a panic for derived inputs.
+//
+// Watches.Found/smoke#generated: Found returns without a panic for derived
+// inputs.
+//
+// Watches.Found/cancel: Found returns an error for a cancelled context.
+//
+// Watches.Found/cancel#generated: Found returns an error for a cancelled
+// context.
+//
+// Watches.Reads/smoke: Reads returns without a panic for derived inputs.
+//
+// Watches.Reads/smoke#generated: Reads returns without a panic for derived
+// inputs.
+//
+// Watches.Reads/cancel: Reads returns an error for a cancelled context.
+//
+// Watches.Reads/cancel#generated: Reads returns an error for a cancelled
+// context.
+//
+// Watches.Written/smoke: Written returns without a panic for derived
+// inputs.
+//
+// Watches.Written/smoke#generated: Written returns without a panic for
+// derived inputs.
+//
+// Watches.Written/cancel: Written returns an error for a cancelled
+// context.
+//
+// Watches.Written/cancel#generated: Written returns an error for a
+// cancelled context.
+//
+// Watches.Cancels/smoke: Cancels returns without a panic for derived
+// inputs.
+//
+// Watches.Cancels/smoke#generated: Cancels returns without a panic for
+// derived inputs.
+//
+// Watches.Cancels/cancel: Cancels returns an error for a cancelled
+// context.
+//
+// Watches.Cancels/cancel#generated: Cancels returns an error for a
+// cancelled context.
+//
+// Watches.Cancelled/smoke: Cancelled returns without a panic for derived
+// inputs.
+//
+// Watches.Cancelled/smoke#generated: Cancelled returns without a panic for
+// derived inputs.
+//
+// Watches.Cancelled/cancel: Cancelled returns an error for a cancelled
+// context.
+//
+// Watches.Cancelled/cancel#generated: Cancelled returns an error for a
+// cancelled context.
+//
+// Watches.Closes/smoke: Closes returns without a panic for derived inputs.
+//
+// Watches.Closes/smoke#generated: Closes returns without a panic for
+// derived inputs.
+//
+// Watches.Closes/cancel: Closes returns an error for a cancelled context.
+//
+// Watches.Closes/cancel#generated: Closes returns an error for a cancelled
+// context.
+//
+// Watches.Closed/smoke: Closed returns without a panic for derived inputs.
+//
+// Watches.Closed/smoke#generated: Closed returns without a panic for
+// derived inputs.
+//
+// Watches.Closed/cancel: Closed returns an error for a cancelled context.
+//
+// Watches.Closed/cancel#generated: Closed returns an error for a cancelled
+// context.
+//
+// Watches.Fields/smoke: Fields returns without a panic for derived inputs.
+//
+// Watches.Fields/smoke#generated: Fields returns without a panic for
+// derived inputs.
+//
+// Watches.Fields/cancel: Fields returns an error for a cancelled context.
+//
+// Watches.Fields/cancel#generated: Fields returns an error for a cancelled
+// context.
+//
+// Watches.Filled/smoke: Filled returns without a panic for derived inputs.
+//
+// Watches.Filled/smoke#generated: Filled returns without a panic for
+// derived inputs.
+//
+// Watches.Filled/cancel: Filled returns an error for a cancelled context.
+//
+// Watches.Filled/cancel#generated: Filled returns an error for a cancelled
+// context.
+//
+// Watches.Follows/smoke: Follows returns without a panic for derived
+// inputs.
+//
+// Watches.Follows/smoke#generated: Follows returns without a panic for
+// derived inputs.
+//
+// Watches.Follows/cancel: Follows returns an error for a cancelled
+// context.
+//
+// Watches.Follows/cancel#generated: Follows returns an error for a
+// cancelled context.
+//
+// Watches.Touch/smoke: Touch returns without a panic for derived inputs.
+//
+// Watches.Touch/smoke#generated: Touch returns without a panic for derived
+// inputs.
+//
+// Watches.Touch/cancel: Touch returns an error for a cancelled context.
+//
+// Watches.Touch/cancel#generated: Touch returns an error for a cancelled
+// context.
+
+// The derived checks of Watches that witness their laws at the shallow
+// end:
+//
+// Watches.Watch/smoke
+//
+// Watches.Set/smoke
+//
+// Watches.Ticks/smoke
+//
+// Watches.Tick/smoke
+//
+// Watches.Peeks/smoke
+//
+// Watches.Peeked/smoke
+//
+// Watches.Finds/smoke
+//
+// Watches.Found/smoke
+//
+// Watches.Reads/smoke
+//
+// Watches.Written/smoke
+//
+// Watches.Cancels/smoke
+//
+// Watches.Cancelled/smoke
+//
+// Watches.Closes/smoke
+//
+// Watches.Closed/smoke
+//
+// Watches.Fields/smoke
+//
+// Watches.Filled/smoke
+//
+// Watches.Follows/smoke
+//
+// Watches.Touch/smoke
+
+// The refused claims of Watches:
+//
+// Watches.Ticks/zero-on-error: eidos derives no sample of a result of
+// Ticks. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Watches.Peeks/zero-on-error: eidos derives no sample of a result of
+// Peeks. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Watches.Finds/zero-on-error: eidos derives no sample of a result of
+// Finds. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Watches.Reads/zero-on-error: eidos derives no sample of a result of
+// Reads. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Watches.Cancels/zero-on-error: eidos derives no sample of a result of
+// Cancels. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Watches.Closes/zero-on-error: eidos derives no sample of a result of
+// Closes. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Watches.Fields/zero-on-error: eidos derives no sample of a result of
+// Fields. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Watches.Follows/zero-on-error: eidos derives no sample of a result of
+// Follows. The remedy is to author a sample of the result type with the
+// directive sample.
+//
+// Watches.Peeks/watch-sees-each-trigger: the methods that next and stop
+// name on the subscription of Peeks, or the value that Peeked passes, do
+// not fit a read of updates. The remedy is to name with next a method that
+// takes a wait and returns the update and a flag, and with stop a method
+// without parameters and results.
+//
+// Watches.Finds/watch-sees-each-trigger: the methods that next and stop
+// name on the subscription of Finds, or the value that Found passes, do
+// not fit a read of updates. The remedy is to name with next a method that
+// takes a wait and returns the update and a flag, and with stop a method
+// without parameters and results.
+//
+// Watches.Reads/watch-sees-each-trigger: the methods that next and stop
+// name on the subscription of Reads, or the value that Written passes, do
+// not fit a read of updates. The remedy is to name with next a method that
+// takes a wait and returns the update and a flag, and with stop a method
+// without parameters and results.
+//
+// Watches.Cancels/watch-sees-each-trigger: the methods that next and stop
+// name on the subscription of Cancels, or the value that Cancelled passes,
+// do not fit a read of updates. The remedy is to name with next a method
+// that takes a wait and returns the update and a flag, and with stop a
+// method without parameters and results.
+//
+// Watches.Closes/watch-sees-each-trigger: the methods that next and stop
+// name on the subscription of Closes, or the value that Closed passes, do
+// not fit a read of updates. The remedy is to name with next a method that
+// takes a wait and returns the update and a flag, and with stop a method
+// without parameters and results.
+//
+// Watches.Fields/watch-sees-each-trigger: the methods that next and stop
+// name on the subscription of Fields, or the value that Filled passes, do
+// not fit a read of updates. The remedy is to name with next a method that
+// takes a wait and returns the update and a flag, and with stop a method
+// without parameters and results.
+//
+// Watches.Follows/watch-sees-each-trigger: the methods that next and stop
+// name on the subscription of Follows, or the value that Touch passes, do
+// not fit a read of updates. The remedy is to name with next a method that
+// takes a wait and returns the update and a flag, and with stop a method
+// without parameters and results.
+
+// The unclaimed classifications of Watches:
+//
+// The shape:multi-arg-writer of Watches.Set has the stance silent. A write
+// is an input of the other checks, and its result is an error alone.
+//
+// The shape:multi-arg-writer of Watches.Tick has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Watches.Peeked has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Watches.Found has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Watches.Written has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Watches.Cancelled has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Watches.Closed has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:composite-writer of Watches.Filled has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Watches.Touch has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Watches writes.
+type (
+	WatchesHandle = conform.Handle[Watches]
+	WatchesCheck  = conform.Check[Watches]
+	WatchesOption = conform.Option[Watches]
+)
+
+// WatchesChecks contains the name of each callable of Watches, with the
+// identities of its checks.
+var WatchesChecks = struct {
+	Watch     watchesWatch
+	Set       watchesSet
+	Ticks     watchesTicks
+	Tick      watchesTick
+	Peeks     watchesPeeks
+	Peeked    watchesPeeked
+	Finds     watchesFinds
+	Found     watchesFound
+	Reads     watchesReads
+	Written   watchesWritten
+	Cancels   watchesCancels
+	Cancelled watchesCancelled
+	Closes    watchesCloses
+	Closed    watchesClosed
+	Fields    watchesFields
+	Filled    watchesFilled
+	Follows   watchesFollows
+	Touch     watchesTouch
+}{
+	Watch:     watchesWatch{"Watches.Watch"},
+	Set:       watchesSet{"Watches.Set"},
+	Ticks:     watchesTicks{"Watches.Ticks"},
+	Tick:      watchesTick{"Watches.Tick"},
+	Peeks:     watchesPeeks{"Watches.Peeks"},
+	Peeked:    watchesPeeked{"Watches.Peeked"},
+	Finds:     watchesFinds{"Watches.Finds"},
+	Found:     watchesFound{"Watches.Found"},
+	Reads:     watchesReads{"Watches.Reads"},
+	Written:   watchesWritten{"Watches.Written"},
+	Cancels:   watchesCancels{"Watches.Cancels"},
+	Cancelled: watchesCancelled{"Watches.Cancelled"},
+	Closes:    watchesCloses{"Watches.Closes"},
+	Closed:    watchesClosed{"Watches.Closed"},
+	Fields:    watchesFields{"Watches.Fields"},
+	Filled:    watchesFilled{"Watches.Filled"},
+	Follows:   watchesFollows{"Watches.Follows"},
+	Touch:     watchesTouch{"Watches.Touch"},
+}
+
+// watchesWatch is the name of Watches.Watch, with the identities of its
+// checks.
+type watchesWatch struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Watch returns without a
+// panic for derived inputs.
+func (c watchesWatch) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Watch returns
+// without a panic for derived inputs.
+func (c watchesWatch) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Watch returns an error for
+// a cancelled context.
+func (c watchesWatch) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Watch returns an
+// error for a cancelled context.
+func (c watchesWatch) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// WatchSeesEachTrigger returns the identity of the check that a
+// subscription of Watch returns each update that Set causes for its key,
+// in order, and no update after its stop.
+func (c watchesWatch) WatchSeesEachTrigger() conform.ID[Watches] {
+	return c.Check("watch-sees-each-trigger")
+}
+
+// watchesSet is the name of Watches.Set, with the identities of its
+// checks.
+type watchesSet struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Set returns without a panic
+// for derived inputs.
+func (c watchesSet) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Set returns
+// without a panic for derived inputs.
+func (c watchesSet) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Set returns an error for a
+// cancelled context.
+func (c watchesSet) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Set returns an
+// error for a cancelled context.
+func (c watchesSet) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesTicks is the name of Watches.Ticks, with the identities of its
+// checks.
+type watchesTicks struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Ticks returns without a
+// panic for derived inputs.
+func (c watchesTicks) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Ticks returns
+// without a panic for derived inputs.
+func (c watchesTicks) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Ticks returns an error for
+// a cancelled context.
+func (c watchesTicks) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Ticks returns an
+// error for a cancelled context.
+func (c watchesTicks) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// WatchSeesEachTrigger returns the identity of the check that a
+// subscription of Ticks returns each update that Tick causes for its key,
+// in order, and no update after its stop.
+func (c watchesTicks) WatchSeesEachTrigger() conform.ID[Watches] {
+	return c.Check("watch-sees-each-trigger")
+}
+
+// watchesTick is the name of Watches.Tick, with the identities of its
+// checks.
+type watchesTick struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Tick returns without a
+// panic for derived inputs.
+func (c watchesTick) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Tick returns
+// without a panic for derived inputs.
+func (c watchesTick) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Tick returns an error for
+// a cancelled context.
+func (c watchesTick) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Tick returns an
+// error for a cancelled context.
+func (c watchesTick) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesPeeks is the name of Watches.Peeks, with the identities of its
+// checks.
+type watchesPeeks struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Peeks returns without a
+// panic for derived inputs.
+func (c watchesPeeks) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Peeks returns
+// without a panic for derived inputs.
+func (c watchesPeeks) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Peeks returns an error for
+// a cancelled context.
+func (c watchesPeeks) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Peeks returns an
+// error for a cancelled context.
+func (c watchesPeeks) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesPeeked is the name of Watches.Peeked, with the identities of its
+// checks.
+type watchesPeeked struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Peeked returns without a
+// panic for derived inputs.
+func (c watchesPeeked) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Peeked returns
+// without a panic for derived inputs.
+func (c watchesPeeked) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Peeked returns an error
+// for a cancelled context.
+func (c watchesPeeked) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Peeked returns an
+// error for a cancelled context.
+func (c watchesPeeked) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesFinds is the name of Watches.Finds, with the identities of its
+// checks.
+type watchesFinds struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Finds returns without a
+// panic for derived inputs.
+func (c watchesFinds) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Finds returns
+// without a panic for derived inputs.
+func (c watchesFinds) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Finds returns an error for
+// a cancelled context.
+func (c watchesFinds) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Finds returns an
+// error for a cancelled context.
+func (c watchesFinds) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesFound is the name of Watches.Found, with the identities of its
+// checks.
+type watchesFound struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Found returns without a
+// panic for derived inputs.
+func (c watchesFound) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Found returns
+// without a panic for derived inputs.
+func (c watchesFound) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Found returns an error for
+// a cancelled context.
+func (c watchesFound) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Found returns an
+// error for a cancelled context.
+func (c watchesFound) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesReads is the name of Watches.Reads, with the identities of its
+// checks.
+type watchesReads struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Reads returns without a
+// panic for derived inputs.
+func (c watchesReads) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Reads returns
+// without a panic for derived inputs.
+func (c watchesReads) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Reads returns an error for
+// a cancelled context.
+func (c watchesReads) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Reads returns an
+// error for a cancelled context.
+func (c watchesReads) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesWritten is the name of Watches.Written, with the identities of
+// its checks.
+type watchesWritten struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Written returns without a
+// panic for derived inputs.
+func (c watchesWritten) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Written returns
+// without a panic for derived inputs.
+func (c watchesWritten) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Written returns an error
+// for a cancelled context.
+func (c watchesWritten) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Written returns
+// an error for a cancelled context.
+func (c watchesWritten) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesCancels is the name of Watches.Cancels, with the identities of
+// its checks.
+type watchesCancels struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Cancels returns without a
+// panic for derived inputs.
+func (c watchesCancels) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Cancels returns
+// without a panic for derived inputs.
+func (c watchesCancels) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Cancels returns an error
+// for a cancelled context.
+func (c watchesCancels) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Cancels returns
+// an error for a cancelled context.
+func (c watchesCancels) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesCancelled is the name of Watches.Cancelled, with the identities
+// of its checks.
+type watchesCancelled struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Cancelled returns without a
+// panic for derived inputs.
+func (c watchesCancelled) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Cancelled returns
+// without a panic for derived inputs.
+func (c watchesCancelled) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Cancelled returns an error
+// for a cancelled context.
+func (c watchesCancelled) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Cancelled returns
+// an error for a cancelled context.
+func (c watchesCancelled) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesCloses is the name of Watches.Closes, with the identities of its
+// checks.
+type watchesCloses struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Closes returns without a
+// panic for derived inputs.
+func (c watchesCloses) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Closes returns
+// without a panic for derived inputs.
+func (c watchesCloses) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Closes returns an error
+// for a cancelled context.
+func (c watchesCloses) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Closes returns an
+// error for a cancelled context.
+func (c watchesCloses) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesClosed is the name of Watches.Closed, with the identities of its
+// checks.
+type watchesClosed struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Closed returns without a
+// panic for derived inputs.
+func (c watchesClosed) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Closed returns
+// without a panic for derived inputs.
+func (c watchesClosed) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Closed returns an error
+// for a cancelled context.
+func (c watchesClosed) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Closed returns an
+// error for a cancelled context.
+func (c watchesClosed) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesFields is the name of Watches.Fields, with the identities of its
+// checks.
+type watchesFields struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Fields returns without a
+// panic for derived inputs.
+func (c watchesFields) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Fields returns
+// without a panic for derived inputs.
+func (c watchesFields) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Fields returns an error
+// for a cancelled context.
+func (c watchesFields) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Fields returns an
+// error for a cancelled context.
+func (c watchesFields) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesFilled is the name of Watches.Filled, with the identities of its
+// checks.
+type watchesFilled struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Filled returns without a
+// panic for derived inputs.
+func (c watchesFilled) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Filled returns
+// without a panic for derived inputs.
+func (c watchesFilled) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Filled returns an error
+// for a cancelled context.
+func (c watchesFilled) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Filled returns an
+// error for a cancelled context.
+func (c watchesFilled) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesFollows is the name of Watches.Follows, with the identities of
+// its checks.
+type watchesFollows struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Follows returns without a
+// panic for derived inputs.
+func (c watchesFollows) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Follows returns
+// without a panic for derived inputs.
+func (c watchesFollows) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Follows returns an error
+// for a cancelled context.
+func (c watchesFollows) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Follows returns
+// an error for a cancelled context.
+func (c watchesFollows) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// watchesTouch is the name of Watches.Touch, with the identities of its
+// checks.
+type watchesTouch struct {
+	conform.Callable[Watches]
+}
+
+// Smoke returns the identity of the check that Touch returns without a
+// panic for derived inputs.
+func (c watchesTouch) Smoke() conform.ID[Watches] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Touch returns
+// without a panic for derived inputs.
+func (c watchesTouch) SmokeGenerated() conform.ID[Watches] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Touch returns an error for
+// a cancelled context.
+func (c watchesTouch) Cancel() conform.ID[Watches] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Touch returns an
+// error for a cancelled context.
+func (c watchesTouch) CancelGenerated() conform.ID[Watches] {
+	return c.Check("cancel#generated")
+}
+
+// WatchesSuite returns the checks of Watches, and the calls and the
+// budgets of its callables.
+func WatchesSuite() conform.Suite[Watches] {
+	return conform.Suite[Watches]{
+		Declaration: "Watches",
+		Package:     "example.com/shop/sequenced",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Watches]{
+			{
+				ID:          WatchesChecks.Watch.Smoke(),
+				Statement:   "Watch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Watch(ctx, string("scope-a"), string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesWatchPanics,
+			},
+			{
+				ID:          WatchesChecks.Watch.SmokeGenerated(),
+				Statement:   "Watch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnScope := c.Draw(prop.Of[string](), "scope")
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Watch(ctx, drawnScope, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesWatchPanics,
+			},
+			{
+				ID:          WatchesChecks.Watch.Cancel(),
+				Statement:   "Watch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Watch(ctx, string("scope-a"), string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesWatchIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Watch.CancelGenerated(),
+				Statement:   "Watch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnScope := c.Draw(prop.Of[string](), "scope")
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Watch(ctx, drawnScope, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesWatchIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Watch.WatchSeesEachTrigger(),
+				Statement:   "a subscription of Watch returns each update that Set causes for its key, in order, and no update after its stop",
+				Claim:       spec.WatchSeesEachTrigger,
+				Probe:       spec.WatchesSeeTheTriggers,
+				Reason:      spec.MissedUpdate,
+				Law:         spec.WatchReturnsEachTrigger,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					probe.WatchesSeeTheTriggers(
+						h,
+						c,
+						watchesActions,
+						"Watch",
+						"Set",
+						Subscription.Next,
+						Subscription.Stop,
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := watchesSetCall(
+								ctx,
+								h.Subject(),
+								[]any{args[0], args[1], args[2]},
+							)
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) any {
+							return []any{args[1], args[0]}
+						},
+						func(args []any) any {
+							return []any{args[0], args[1]}
+						},
+						func(args []any) Update {
+							v, _ := args[2].(Update)
+							return v
+						},
+					)
+				},
+				Defect: watchesSetMissesUpdatesAfterThree,
+				Around: synctest.Test,
+			},
+			{
+				ID:          WatchesChecks.Set.Smoke(),
+				Statement:   "Set returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().
+							Set(ctx, string("key-a"), string("scope-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesSetPanics,
+			},
+			{
+				ID:          WatchesChecks.Set.SmokeGenerated(),
+				Statement:   "Set returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnScope := c.Draw(prop.Of[string](), "scope")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, drawnKey, drawnScope, drawnU)
+					})
+				},
+				Defect: watchesSetPanics,
+			},
+			{
+				ID:          WatchesChecks.Set.Cancel(),
+				Statement:   "Set returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().
+							Set(ctx, string("key-a"), string("scope-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesSetIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Set.CancelGenerated(),
+				Statement:   "Set returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnScope := c.Draw(prop.Of[string](), "scope")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, drawnKey, drawnScope, drawnU)
+					})
+				},
+				Defect: watchesSetIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Ticks.Smoke(),
+				Statement:   "Ticks returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Ticks(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesTicksPanics,
+			},
+			{
+				ID:          WatchesChecks.Ticks.SmokeGenerated(),
+				Statement:   "Ticks returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Ticks(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesTicksPanics,
+			},
+			{
+				ID:          WatchesChecks.Ticks.Cancel(),
+				Statement:   "Ticks returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Ticks(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesTicksIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Ticks.CancelGenerated(),
+				Statement:   "Ticks returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Ticks(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesTicksIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Ticks.WatchSeesEachTrigger(),
+				Statement:   "a subscription of Ticks returns each update that Tick causes for its key, in order, and no update after its stop",
+				Claim:       spec.WatchSeesEachTrigger,
+				Probe:       spec.WatchesSeeTheTriggers,
+				Reason:      spec.MissedUpdate,
+				Law:         spec.WatchReturnsEachTrigger,
+				Machineries: []spec.MachineryID{spec.GeneratedSequences},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					probe.WatchesSeeTheTriggers(
+						h,
+						c,
+						watchesActions,
+						"Ticks",
+						"Tick",
+						(*Ticker).Next,
+						(*Ticker).Stop,
+						func(ctx context.Context, args []any) conform.Output {
+							values, err := watchesTickCall(
+								ctx,
+								h.Subject(),
+								[]any{args[0], args[1], args[2]},
+							)
+							return conform.OutputOf(err, values...)
+						},
+						func(args []any) any {
+							return []any{args[0]}
+						},
+						func(args []any) any {
+							return []any{args[0]}
+						},
+						func(args []any) Update {
+							v, _ := args[2].(Update)
+							return v
+						},
+					)
+				},
+				Defect: watchesTickMissesUpdatesAfterThree,
+				Around: synctest.Test,
+			},
+			{
+				ID:          WatchesChecks.Tick.Smoke(),
+				Statement:   "Tick returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().
+							Tick(ctx, string("key-a"), string("note-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesTickPanics,
+			},
+			{
+				ID:          WatchesChecks.Tick.SmokeGenerated(),
+				Statement:   "Tick returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnNote := c.Draw(prop.Of[string](), "note")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Tick(ctx, drawnKey, drawnNote, drawnU)
+					})
+				},
+				Defect: watchesTickPanics,
+			},
+			{
+				ID:          WatchesChecks.Tick.Cancel(),
+				Statement:   "Tick returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().
+							Tick(ctx, string("key-a"), string("note-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesTickIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Tick.CancelGenerated(),
+				Statement:   "Tick returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnNote := c.Draw(prop.Of[string](), "note")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Tick(ctx, drawnKey, drawnNote, drawnU)
+					})
+				},
+				Defect: watchesTickIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Peeks.Smoke(),
+				Statement:   "Peeks returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Peeks(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesPeeksPanics,
+			},
+			{
+				ID:          WatchesChecks.Peeks.SmokeGenerated(),
+				Statement:   "Peeks returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Peeks(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesPeeksPanics,
+			},
+			{
+				ID:          WatchesChecks.Peeks.Cancel(),
+				Statement:   "Peeks returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Peeks(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesPeeksIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Peeks.CancelGenerated(),
+				Statement:   "Peeks returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Peeks(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesPeeksIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Peeked.Smoke(),
+				Statement:   "Peeked returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Peeked(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesPeekedPanics,
+			},
+			{
+				ID:          WatchesChecks.Peeked.SmokeGenerated(),
+				Statement:   "Peeked returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Peeked(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesPeekedPanics,
+			},
+			{
+				ID:          WatchesChecks.Peeked.Cancel(),
+				Statement:   "Peeked returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Peeked(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesPeekedIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Peeked.CancelGenerated(),
+				Statement:   "Peeked returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Peeked(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesPeekedIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Finds.Smoke(),
+				Statement:   "Finds returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Finds(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesFindsPanics,
+			},
+			{
+				ID:          WatchesChecks.Finds.SmokeGenerated(),
+				Statement:   "Finds returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Finds(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesFindsPanics,
+			},
+			{
+				ID:          WatchesChecks.Finds.Cancel(),
+				Statement:   "Finds returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Finds(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesFindsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Finds.CancelGenerated(),
+				Statement:   "Finds returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Finds(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesFindsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Found.Smoke(),
+				Statement:   "Found returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Found(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesFoundPanics,
+			},
+			{
+				ID:          WatchesChecks.Found.SmokeGenerated(),
+				Statement:   "Found returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Found(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesFoundPanics,
+			},
+			{
+				ID:          WatchesChecks.Found.Cancel(),
+				Statement:   "Found returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Found(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesFoundIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Found.CancelGenerated(),
+				Statement:   "Found returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Found(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesFoundIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Reads.Smoke(),
+				Statement:   "Reads returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Reads(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesReadsPanics,
+			},
+			{
+				ID:          WatchesChecks.Reads.SmokeGenerated(),
+				Statement:   "Reads returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Reads(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesReadsPanics,
+			},
+			{
+				ID:          WatchesChecks.Reads.Cancel(),
+				Statement:   "Reads returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Reads(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesReadsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Reads.CancelGenerated(),
+				Statement:   "Reads returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Reads(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesReadsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Written.Smoke(),
+				Statement:   "Written returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Written(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesWrittenPanics,
+			},
+			{
+				ID:          WatchesChecks.Written.SmokeGenerated(),
+				Statement:   "Written returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Written(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesWrittenPanics,
+			},
+			{
+				ID:          WatchesChecks.Written.Cancel(),
+				Statement:   "Written returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Written(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesWrittenIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Written.CancelGenerated(),
+				Statement:   "Written returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Written(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesWrittenIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Cancels.Smoke(),
+				Statement:   "Cancels returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Cancels(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesCancelsPanics,
+			},
+			{
+				ID:          WatchesChecks.Cancels.SmokeGenerated(),
+				Statement:   "Cancels returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Cancels(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesCancelsPanics,
+			},
+			{
+				ID:          WatchesChecks.Cancels.Cancel(),
+				Statement:   "Cancels returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Cancels(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesCancelsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Cancels.CancelGenerated(),
+				Statement:   "Cancels returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Cancels(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesCancelsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Cancelled.Smoke(),
+				Statement:   "Cancelled returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Cancelled(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesCancelledPanics,
+			},
+			{
+				ID:          WatchesChecks.Cancelled.SmokeGenerated(),
+				Statement:   "Cancelled returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Cancelled(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesCancelledPanics,
+			},
+			{
+				ID:          WatchesChecks.Cancelled.Cancel(),
+				Statement:   "Cancelled returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Cancelled(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesCancelledIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Cancelled.CancelGenerated(),
+				Statement:   "Cancelled returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Cancelled(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesCancelledIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Closes.Smoke(),
+				Statement:   "Closes returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Closes(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesClosesPanics,
+			},
+			{
+				ID:          WatchesChecks.Closes.SmokeGenerated(),
+				Statement:   "Closes returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Closes(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesClosesPanics,
+			},
+			{
+				ID:          WatchesChecks.Closes.Cancel(),
+				Statement:   "Closes returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Closes(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesClosesIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Closes.CancelGenerated(),
+				Statement:   "Closes returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Closes(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesClosesIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Closed.Smoke(),
+				Statement:   "Closed returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Closed(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesClosedPanics,
+			},
+			{
+				ID:          WatchesChecks.Closed.SmokeGenerated(),
+				Statement:   "Closed returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Closed(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesClosedPanics,
+			},
+			{
+				ID:          WatchesChecks.Closed.Cancel(),
+				Statement:   "Closed returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Closed(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesClosedIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Closed.CancelGenerated(),
+				Statement:   "Closed returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Closed(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesClosedIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Fields.Smoke(),
+				Statement:   "Fields returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fields(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesFieldsPanics,
+			},
+			{
+				ID:          WatchesChecks.Fields.SmokeGenerated(),
+				Statement:   "Fields returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fields(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesFieldsPanics,
+			},
+			{
+				ID:          WatchesChecks.Fields.Cancel(),
+				Statement:   "Fields returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fields(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesFieldsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Fields.CancelGenerated(),
+				Statement:   "Fields returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fields(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesFieldsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Filled.Smoke(),
+				Statement:   "Filled returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Filled(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesFilledPanics,
+			},
+			{
+				ID:          WatchesChecks.Filled.SmokeGenerated(),
+				Statement:   "Filled returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Filled(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesFilledPanics,
+			},
+			{
+				ID:          WatchesChecks.Filled.Cancel(),
+				Statement:   "Filled returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Filled(ctx, string("key-a"), Update{Key: "Key-a"})
+					})
+				},
+				Defect: watchesFilledIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Filled.CancelGenerated(),
+				Statement:   "Filled returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnU := c.Draw(prop.Of[Update](), "u")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Filled(ctx, drawnKey, drawnU)
+					})
+				},
+				Defect: watchesFilledIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Follows.Smoke(),
+				Statement:   "Follows returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Follows(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesFollowsPanics,
+			},
+			{
+				ID:          WatchesChecks.Follows.SmokeGenerated(),
+				Statement:   "Follows returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Follows(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesFollowsPanics,
+			},
+			{
+				ID:          WatchesChecks.Follows.Cancel(),
+				Statement:   "Follows returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Follows(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: watchesFollowsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Follows.CancelGenerated(),
+				Statement:   "Follows returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Follows(ctx, drawnKey)
+						return err
+					})
+				},
+				Defect: watchesFollowsIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Touch.Smoke(),
+				Statement:   "Touch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WatchesHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, string("key-a"))
+					})
+				},
+				Defect: watchesTouchPanics,
+			},
+			{
+				ID:          WatchesChecks.Touch.SmokeGenerated(),
+				Statement:   "Touch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, drawnKey)
+					})
+				},
+				Defect: watchesTouchPanics,
+			},
+			{
+				ID:          WatchesChecks.Touch.Cancel(),
+				Statement:   "Touch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WatchesHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, string("key-a"))
+					})
+				},
+				Defect: watchesTouchIgnoresCancel,
+			},
+			{
+				ID:          WatchesChecks.Touch.CancelGenerated(),
+				Statement:   "Touch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *WatchesHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, drawnKey)
+					})
+				},
+				Defect: watchesTouchIgnoresCancel,
+			},
+		},
+		Refusals: []conform.Refusal{
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Watches.Ticks",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Ticks",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Watches.Peeks",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Peeks",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Watches.Finds",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Finds",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Watches.Reads",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Reads",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Watches.Cancels",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Cancels",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Watches.Closes",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Closes",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Watches.Fields",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Fields",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.ZeroOnError,
+				Callable: "Watches.Follows",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Follows",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.WatchSeesEachTrigger,
+				Callable: "Watches.Peeks",
+				Gate:     spec.SubscriptionMethods,
+				Why:      "the methods that next and stop name on the subscription of Peeks, or the value that Peeked passes, do not fit a read of updates",
+				Remedy:   "name with next a method that takes a wait and returns the update and a flag, and with stop a method without parameters and results",
+			},
+			{
+				Claim:    spec.WatchSeesEachTrigger,
+				Callable: "Watches.Finds",
+				Gate:     spec.SubscriptionMethods,
+				Why:      "the methods that next and stop name on the subscription of Finds, or the value that Found passes, do not fit a read of updates",
+				Remedy:   "name with next a method that takes a wait and returns the update and a flag, and with stop a method without parameters and results",
+			},
+			{
+				Claim:    spec.WatchSeesEachTrigger,
+				Callable: "Watches.Reads",
+				Gate:     spec.SubscriptionMethods,
+				Why:      "the methods that next and stop name on the subscription of Reads, or the value that Written passes, do not fit a read of updates",
+				Remedy:   "name with next a method that takes a wait and returns the update and a flag, and with stop a method without parameters and results",
+			},
+			{
+				Claim:    spec.WatchSeesEachTrigger,
+				Callable: "Watches.Cancels",
+				Gate:     spec.SubscriptionMethods,
+				Why:      "the methods that next and stop name on the subscription of Cancels, or the value that Cancelled passes, do not fit a read of updates",
+				Remedy:   "name with next a method that takes a wait and returns the update and a flag, and with stop a method without parameters and results",
+			},
+			{
+				Claim:    spec.WatchSeesEachTrigger,
+				Callable: "Watches.Closes",
+				Gate:     spec.SubscriptionMethods,
+				Why:      "the methods that next and stop name on the subscription of Closes, or the value that Closed passes, do not fit a read of updates",
+				Remedy:   "name with next a method that takes a wait and returns the update and a flag, and with stop a method without parameters and results",
+			},
+			{
+				Claim:    spec.WatchSeesEachTrigger,
+				Callable: "Watches.Fields",
+				Gate:     spec.SubscriptionMethods,
+				Why:      "the methods that next and stop name on the subscription of Fields, or the value that Filled passes, do not fit a read of updates",
+				Remedy:   "name with next a method that takes a wait and returns the update and a flag, and with stop a method without parameters and results",
+			},
+			{
+				Claim:    spec.WatchSeesEachTrigger,
+				Callable: "Watches.Follows",
+				Gate:     spec.SubscriptionMethods,
+				Why:      "the methods that next and stop name on the subscription of Follows, or the value that Touch passes, do not fit a read of updates",
+				Remedy:   "name with next a method that takes a wait and returns the update and a flag, and with stop a method without parameters and results",
+			},
+		},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "Watches.Set",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "Watches.Tick",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Watches.Peeked",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Watches.Found",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Watches.Written",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Watches.Cancelled",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Watches.Closed",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:composite-writer",
+				Callable:       "Watches.Filled",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Watches.Touch",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Watches]{
+			{
+				Calls:    watchesWatchCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Watch.Callable,
+			},
+			{
+				Calls:    watchesSetCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Set.Callable,
+			},
+			{
+				Calls:    watchesTicksCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Ticks.Callable,
+			},
+			{
+				Calls:    watchesTickCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Tick.Callable,
+			},
+			{
+				Calls:    watchesPeeksCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Peeks.Callable,
+			},
+			{
+				Calls:    watchesPeekedCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Peeked.Callable,
+			},
+			{
+				Calls:    watchesFindsCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Finds.Callable,
+			},
+			{
+				Calls:    watchesFoundCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Found.Callable,
+			},
+			{
+				Calls:    watchesReadsCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Reads.Callable,
+			},
+			{
+				Calls:    watchesWrittenCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Written.Callable,
+			},
+			{
+				Calls:    watchesCancelsCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Cancels.Callable,
+			},
+			{
+				Calls:    watchesCancelledCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Cancelled.Callable,
+			},
+			{
+				Calls:    watchesClosesCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Closes.Callable,
+			},
+			{
+				Calls:    watchesClosedCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Closed.Callable,
+			},
+			{
+				Calls:    watchesFieldsCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Fields.Callable,
+			},
+			{
+				Calls:    watchesFilledCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Filled.Callable,
+			},
+			{
+				Calls:    watchesFollowsCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Follows.Callable,
+			},
+			{
+				Calls:    watchesTouchCalls,
+				Over:     newWatchesOver,
+				Callable: WatchesChecks.Touch.Callable,
+			},
+		},
+	}
+}
+
+// RunWatchesSuite applies the checks of Watches, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunWatchesSuite[T Watches](t *testing.T, newSubject func() T, opts ...WatchesOption) {
+	t.Helper()
+	RunWatchesSuiteFromHandle(t, func(*WatchesHandle) T { return newSubject() }, opts...)
+}
+
+// RunWatchesSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunWatchesSuiteFromHandle[T Watches](
+	t *testing.T,
+	newSubject func(h *WatchesHandle) T,
+	opts ...WatchesOption,
+) {
+	t.Helper()
+	conform.Run(t, WatchesSuite(), watchesSubjects(newSubject), opts...)
+}
+
+// FuzzWatchesSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzWatchesSuite[T Watches](
+	f *testing.F,
+	callable conform.Callable[Watches],
+	newSubject func(h *WatchesHandle) T,
+	opts ...WatchesOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, WatchesSuite(), callable, watchesSubjects(newSubject), opts...)
+}
+
+// RunWatchesBudgets applies the allocation ceilings of Watches and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunWatchesBudgets[T Watches](
+	t *testing.T,
+	newSubject func(h *WatchesHandle) T,
+	opts ...WatchesOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, WatchesSuite(), watchesSubjects(newSubject), opts...)
+}
+
+// BenchWatchesSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchWatchesSuite[T Watches](
+	b conform.B,
+	callable conform.Callable[Watches],
+	newSubject func(h *WatchesHandle) T,
+	opts ...WatchesOption,
+) {
+	b.Helper()
+	conform.Bench(b, WatchesSuite(), callable, watchesSubjects(newSubject), opts...)
+}
+
+// watchesSubjects returns the factory of the subjects of Watches that
+// calls newSubject with the handle of each check.
+func watchesSubjects[T Watches](
+	newSubject func(h *WatchesHandle) T,
+) func(h *WatchesHandle) Watches {
+	return func(h *WatchesHandle) Watches { return newSubject(h) }
+}
+
+// watchesWatchCalls generates the calls of Watches.Watch with the inputs
+// that each case draws.
+var watchesWatchCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	scope := c.Draw(prop.Of[string](), "scope")
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Watch(ctx, scope, key)
+		return err
+	}
+})
+
+// watchesSetCalls generates the calls of Watches.Set with the inputs that
+// each case draws.
+var watchesSetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	scope := c.Draw(prop.Of[string](), "scope")
+	u := c.Draw(prop.Of[Update](), "u")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Set(ctx, key, scope, u)
+	}
+})
+
+// watchesTicksCalls generates the calls of Watches.Ticks with the inputs
+// that each case draws.
+var watchesTicksCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Ticks(ctx, key)
+		return err
+	}
+})
+
+// watchesTickCalls generates the calls of Watches.Tick with the inputs
+// that each case draws.
+var watchesTickCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	note := c.Draw(prop.Of[string](), "note")
+	u := c.Draw(prop.Of[Update](), "u")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Tick(ctx, key, note, u)
+	}
+})
+
+// watchesPeeksCalls generates the calls of Watches.Peeks with the inputs
+// that each case draws.
+var watchesPeeksCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Peeks(ctx, key)
+		return err
+	}
+})
+
+// watchesPeekedCalls generates the calls of Watches.Peeked with the inputs
+// that each case draws.
+var watchesPeekedCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	u := c.Draw(prop.Of[Update](), "u")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Peeked(ctx, key, u)
+	}
+})
+
+// watchesFindsCalls generates the calls of Watches.Finds with the inputs
+// that each case draws.
+var watchesFindsCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Finds(ctx, key)
+		return err
+	}
+})
+
+// watchesFoundCalls generates the calls of Watches.Found with the inputs
+// that each case draws.
+var watchesFoundCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	u := c.Draw(prop.Of[Update](), "u")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Found(ctx, key, u)
+	}
+})
+
+// watchesReadsCalls generates the calls of Watches.Reads with the inputs
+// that each case draws.
+var watchesReadsCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Reads(ctx, key)
+		return err
+	}
+})
+
+// watchesWrittenCalls generates the calls of Watches.Written with the
+// inputs that each case draws.
+var watchesWrittenCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	u := c.Draw(prop.Of[Update](), "u")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Written(ctx, key, u)
+	}
+})
+
+// watchesCancelsCalls generates the calls of Watches.Cancels with the
+// inputs that each case draws.
+var watchesCancelsCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Cancels(ctx, key)
+		return err
+	}
+})
+
+// watchesCancelledCalls generates the calls of Watches.Cancelled with the
+// inputs that each case draws.
+var watchesCancelledCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	u := c.Draw(prop.Of[Update](), "u")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Cancelled(ctx, key, u)
+	}
+})
+
+// watchesClosesCalls generates the calls of Watches.Closes with the inputs
+// that each case draws.
+var watchesClosesCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Closes(ctx, key)
+		return err
+	}
+})
+
+// watchesClosedCalls generates the calls of Watches.Closed with the inputs
+// that each case draws.
+var watchesClosedCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	u := c.Draw(prop.Of[Update](), "u")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Closed(ctx, key, u)
+	}
+})
+
+// watchesFieldsCalls generates the calls of Watches.Fields with the inputs
+// that each case draws.
+var watchesFieldsCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Fields(ctx, key)
+		return err
+	}
+})
+
+// watchesFilledCalls generates the calls of Watches.Filled with the inputs
+// that each case draws.
+var watchesFilledCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	u := c.Draw(prop.Of[Update](), "u")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Filled(ctx, key, u)
+	}
+})
+
+// watchesFollowsCalls generates the calls of Watches.Follows with the
+// inputs that each case draws.
+var watchesFollowsCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		_, err := subject.Follows(ctx, key)
+		return err
+	}
+})
+
+// watchesTouchCalls generates the calls of Watches.Touch with the inputs
+// that each case draws.
+var watchesTouchCalls = prop.Composite(func(c *prop.Case) func(context.Context, Watches) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject Watches) error {
+		return subject.Touch(ctx, key)
+	}
+})
+
+// watchesOverEmbedded is Watches under the name of the field that
+// watchesOver embeds.
+type watchesOverEmbedded = Watches
+
+// watchesOver is a subject of Watches whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type watchesOver struct {
+	watchesOverEmbedded
+	spend func()
+}
+
+// Watch calls spend and returns its zero results.
+func (o watchesOver) Watch(context.Context, string, string) (r0 Subscription, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Set calls spend and returns its zero results.
+func (o watchesOver) Set(context.Context, string, string, Update) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Ticks calls spend and returns its zero results.
+func (o watchesOver) Ticks(context.Context, string) (r0 *Ticker, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Tick calls spend and returns its zero results.
+func (o watchesOver) Tick(context.Context, string, string, Update) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Peeks calls spend and returns its zero results.
+func (o watchesOver) Peeks(context.Context, string) (r0 Subscription, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Peeked calls spend and returns its zero results.
+func (o watchesOver) Peeked(context.Context, string, Update) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Finds calls spend and returns its zero results.
+func (o watchesOver) Finds(context.Context, string) (r0 Subscription, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Found calls spend and returns its zero results.
+func (o watchesOver) Found(context.Context, string, Update) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Reads calls spend and returns its zero results.
+func (o watchesOver) Reads(context.Context, string) (r0 Subscription, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Written calls spend and returns its zero results.
+func (o watchesOver) Written(context.Context, string, Update) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Cancels calls spend and returns its zero results.
+func (o watchesOver) Cancels(context.Context, string) (r0 Subscription, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Cancelled calls spend and returns its zero results.
+func (o watchesOver) Cancelled(context.Context, string, Update) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Closes calls spend and returns its zero results.
+func (o watchesOver) Closes(context.Context, string) (r0 Subscription, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Closed calls spend and returns its zero results.
+func (o watchesOver) Closed(context.Context, string, Update) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Fields calls spend and returns its zero results.
+func (o watchesOver) Fields(context.Context, string) (r0 *Ticker, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Filled calls spend and returns its zero results.
+func (o watchesOver) Filled(context.Context, string, Update) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Follows calls spend and returns its zero results.
+func (o watchesOver) Follows(context.Context, string) (r0 Subscription, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Touch calls spend and returns its zero results.
+func (o watchesOver) Touch(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newWatchesOver returns the planted defect of a ceiling of Watches, whose
+// callables call spend.
+func newWatchesOver(_ *WatchesHandle, spend func()) Watches {
+	return watchesOver{spend: spend}
+}
+
+// watchesWatchPanicsDefect is the planted defect of a Watches whose Watch
+// panics.
+type watchesWatchPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Watch is the override of the planted defect.
+func (*watchesWatchPanicsDefect) Watch(
+	p0 context.Context,
+	p1, p2 string,
+) (r0 Subscription, r1 error) {
+	panic("the planted defect of a Watches whose Watch panics")
+}
+
+// watchesWatchPanics returns the planted defect of a Watches whose Watch
+// panics over a fresh subject.
+func watchesWatchPanics(h *WatchesHandle) Watches {
+	return &watchesWatchPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesWatchIgnoresCancelDefect is the planted defect of a Watches whose
+// Watch ignores the context.
+type watchesWatchIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Watch is the override of the planted defect.
+func (d *watchesWatchIgnoresCancelDefect) Watch(
+	p0 context.Context,
+	p1, p2 string,
+) (r0 Subscription, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Watch(p0, p1, p2)
+}
+
+// watchesWatchIgnoresCancel returns the planted defect of a Watches whose
+// Watch ignores the context over a fresh subject.
+func watchesWatchIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesWatchIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesSetMissesUpdatesAfterThreeDefect is the planted defect of a
+// Watches whose Set does nothing from its fourth call on.
+type watchesSetMissesUpdatesAfterThreeDefect struct {
+	watchesOverEmbedded
+	calls int
+}
+
+// Set is the override of the planted defect.
+func (d *watchesSetMissesUpdatesAfterThreeDefect) Set(
+	p0 context.Context,
+	p1, p2 string,
+	p3 Update,
+) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.watchesOverEmbedded.Set(p0, p1, p2, p3)
+}
+
+// watchesSetMissesUpdatesAfterThree returns the planted defect of a
+// Watches whose Set does nothing from its fourth call on over a fresh
+// subject.
+func watchesSetMissesUpdatesAfterThree(h *WatchesHandle) Watches {
+	return &watchesSetMissesUpdatesAfterThreeDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesSetPanicsDefect is the planted defect of a Watches whose Set
+// panics.
+type watchesSetPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Set is the override of the planted defect.
+func (*watchesSetPanicsDefect) Set(p0 context.Context, p1, p2 string, p3 Update) (r0 error) {
+	panic("the planted defect of a Watches whose Set panics")
+}
+
+// watchesSetPanics returns the planted defect of a Watches whose Set
+// panics over a fresh subject.
+func watchesSetPanics(h *WatchesHandle) Watches {
+	return &watchesSetPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesSetIgnoresCancelDefect is the planted defect of a Watches whose
+// Set ignores the context.
+type watchesSetIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Set is the override of the planted defect.
+func (d *watchesSetIgnoresCancelDefect) Set(
+	p0 context.Context,
+	p1, p2 string,
+	p3 Update,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Set(p0, p1, p2, p3)
+}
+
+// watchesSetIgnoresCancel returns the planted defect of a Watches whose
+// Set ignores the context over a fresh subject.
+func watchesSetIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesSetIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesTicksPanicsDefect is the planted defect of a Watches whose Ticks
+// panics.
+type watchesTicksPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Ticks is the override of the planted defect.
+func (*watchesTicksPanicsDefect) Ticks(p0 context.Context, p1 string) (r0 *Ticker, r1 error) {
+	panic("the planted defect of a Watches whose Ticks panics")
+}
+
+// watchesTicksPanics returns the planted defect of a Watches whose Ticks
+// panics over a fresh subject.
+func watchesTicksPanics(h *WatchesHandle) Watches {
+	return &watchesTicksPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesTicksIgnoresCancelDefect is the planted defect of a Watches whose
+// Ticks ignores the context.
+type watchesTicksIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Ticks is the override of the planted defect.
+func (d *watchesTicksIgnoresCancelDefect) Ticks(
+	p0 context.Context,
+	p1 string,
+) (r0 *Ticker, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Ticks(p0, p1)
+}
+
+// watchesTicksIgnoresCancel returns the planted defect of a Watches whose
+// Ticks ignores the context over a fresh subject.
+func watchesTicksIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesTicksIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesTickMissesUpdatesAfterThreeDefect is the planted defect of a
+// Watches whose Tick does nothing from its fourth call on.
+type watchesTickMissesUpdatesAfterThreeDefect struct {
+	watchesOverEmbedded
+	calls int
+}
+
+// Tick is the override of the planted defect.
+func (d *watchesTickMissesUpdatesAfterThreeDefect) Tick(
+	p0 context.Context,
+	p1, p2 string,
+	p3 Update,
+) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.calls++
+	if d.calls > 3 {
+		return r0
+	}
+	return d.watchesOverEmbedded.Tick(p0, p1, p2, p3)
+}
+
+// watchesTickMissesUpdatesAfterThree returns the planted defect of a
+// Watches whose Tick does nothing from its fourth call on over a fresh
+// subject.
+func watchesTickMissesUpdatesAfterThree(h *WatchesHandle) Watches {
+	return &watchesTickMissesUpdatesAfterThreeDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesTickPanicsDefect is the planted defect of a Watches whose Tick
+// panics.
+type watchesTickPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Tick is the override of the planted defect.
+func (*watchesTickPanicsDefect) Tick(p0 context.Context, p1, p2 string, p3 Update) (r0 error) {
+	panic("the planted defect of a Watches whose Tick panics")
+}
+
+// watchesTickPanics returns the planted defect of a Watches whose Tick
+// panics over a fresh subject.
+func watchesTickPanics(h *WatchesHandle) Watches {
+	return &watchesTickPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesTickIgnoresCancelDefect is the planted defect of a Watches whose
+// Tick ignores the context.
+type watchesTickIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Tick is the override of the planted defect.
+func (d *watchesTickIgnoresCancelDefect) Tick(
+	p0 context.Context,
+	p1, p2 string,
+	p3 Update,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Tick(p0, p1, p2, p3)
+}
+
+// watchesTickIgnoresCancel returns the planted defect of a Watches whose
+// Tick ignores the context over a fresh subject.
+func watchesTickIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesTickIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesPeeksPanicsDefect is the planted defect of a Watches whose Peeks
+// panics.
+type watchesPeeksPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Peeks is the override of the planted defect.
+func (*watchesPeeksPanicsDefect) Peeks(p0 context.Context, p1 string) (r0 Subscription, r1 error) {
+	panic("the planted defect of a Watches whose Peeks panics")
+}
+
+// watchesPeeksPanics returns the planted defect of a Watches whose Peeks
+// panics over a fresh subject.
+func watchesPeeksPanics(h *WatchesHandle) Watches {
+	return &watchesPeeksPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesPeeksIgnoresCancelDefect is the planted defect of a Watches whose
+// Peeks ignores the context.
+type watchesPeeksIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Peeks is the override of the planted defect.
+func (d *watchesPeeksIgnoresCancelDefect) Peeks(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Peeks(p0, p1)
+}
+
+// watchesPeeksIgnoresCancel returns the planted defect of a Watches whose
+// Peeks ignores the context over a fresh subject.
+func watchesPeeksIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesPeeksIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesPeekedPanicsDefect is the planted defect of a Watches whose
+// Peeked panics.
+type watchesPeekedPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Peeked is the override of the planted defect.
+func (*watchesPeekedPanicsDefect) Peeked(p0 context.Context, p1 string, p2 Update) (r0 error) {
+	panic("the planted defect of a Watches whose Peeked panics")
+}
+
+// watchesPeekedPanics returns the planted defect of a Watches whose Peeked
+// panics over a fresh subject.
+func watchesPeekedPanics(h *WatchesHandle) Watches {
+	return &watchesPeekedPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesPeekedIgnoresCancelDefect is the planted defect of a Watches
+// whose Peeked ignores the context.
+type watchesPeekedIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Peeked is the override of the planted defect.
+func (d *watchesPeekedIgnoresCancelDefect) Peeked(
+	p0 context.Context,
+	p1 string,
+	p2 Update,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Peeked(p0, p1, p2)
+}
+
+// watchesPeekedIgnoresCancel returns the planted defect of a Watches whose
+// Peeked ignores the context over a fresh subject.
+func watchesPeekedIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesPeekedIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFindsPanicsDefect is the planted defect of a Watches whose Finds
+// panics.
+type watchesFindsPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Finds is the override of the planted defect.
+func (*watchesFindsPanicsDefect) Finds(p0 context.Context, p1 string) (r0 Subscription, r1 error) {
+	panic("the planted defect of a Watches whose Finds panics")
+}
+
+// watchesFindsPanics returns the planted defect of a Watches whose Finds
+// panics over a fresh subject.
+func watchesFindsPanics(h *WatchesHandle) Watches {
+	return &watchesFindsPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFindsIgnoresCancelDefect is the planted defect of a Watches whose
+// Finds ignores the context.
+type watchesFindsIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Finds is the override of the planted defect.
+func (d *watchesFindsIgnoresCancelDefect) Finds(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Finds(p0, p1)
+}
+
+// watchesFindsIgnoresCancel returns the planted defect of a Watches whose
+// Finds ignores the context over a fresh subject.
+func watchesFindsIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesFindsIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFoundPanicsDefect is the planted defect of a Watches whose Found
+// panics.
+type watchesFoundPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Found is the override of the planted defect.
+func (*watchesFoundPanicsDefect) Found(p0 context.Context, p1 string, p2 Update) (r0 error) {
+	panic("the planted defect of a Watches whose Found panics")
+}
+
+// watchesFoundPanics returns the planted defect of a Watches whose Found
+// panics over a fresh subject.
+func watchesFoundPanics(h *WatchesHandle) Watches {
+	return &watchesFoundPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFoundIgnoresCancelDefect is the planted defect of a Watches whose
+// Found ignores the context.
+type watchesFoundIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Found is the override of the planted defect.
+func (d *watchesFoundIgnoresCancelDefect) Found(
+	p0 context.Context,
+	p1 string,
+	p2 Update,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Found(p0, p1, p2)
+}
+
+// watchesFoundIgnoresCancel returns the planted defect of a Watches whose
+// Found ignores the context over a fresh subject.
+func watchesFoundIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesFoundIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesReadsPanicsDefect is the planted defect of a Watches whose Reads
+// panics.
+type watchesReadsPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Reads is the override of the planted defect.
+func (*watchesReadsPanicsDefect) Reads(p0 context.Context, p1 string) (r0 Subscription, r1 error) {
+	panic("the planted defect of a Watches whose Reads panics")
+}
+
+// watchesReadsPanics returns the planted defect of a Watches whose Reads
+// panics over a fresh subject.
+func watchesReadsPanics(h *WatchesHandle) Watches {
+	return &watchesReadsPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesReadsIgnoresCancelDefect is the planted defect of a Watches whose
+// Reads ignores the context.
+type watchesReadsIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Reads is the override of the planted defect.
+func (d *watchesReadsIgnoresCancelDefect) Reads(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Reads(p0, p1)
+}
+
+// watchesReadsIgnoresCancel returns the planted defect of a Watches whose
+// Reads ignores the context over a fresh subject.
+func watchesReadsIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesReadsIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesWrittenPanicsDefect is the planted defect of a Watches whose
+// Written panics.
+type watchesWrittenPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Written is the override of the planted defect.
+func (*watchesWrittenPanicsDefect) Written(p0 context.Context, p1 string, p2 Update) (r0 error) {
+	panic("the planted defect of a Watches whose Written panics")
+}
+
+// watchesWrittenPanics returns the planted defect of a Watches whose
+// Written panics over a fresh subject.
+func watchesWrittenPanics(h *WatchesHandle) Watches {
+	return &watchesWrittenPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesWrittenIgnoresCancelDefect is the planted defect of a Watches
+// whose Written ignores the context.
+type watchesWrittenIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Written is the override of the planted defect.
+func (d *watchesWrittenIgnoresCancelDefect) Written(
+	p0 context.Context,
+	p1 string,
+	p2 Update,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Written(p0, p1, p2)
+}
+
+// watchesWrittenIgnoresCancel returns the planted defect of a Watches
+// whose Written ignores the context over a fresh subject.
+func watchesWrittenIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesWrittenIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesCancelsPanicsDefect is the planted defect of a Watches whose
+// Cancels panics.
+type watchesCancelsPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Cancels is the override of the planted defect.
+func (*watchesCancelsPanicsDefect) Cancels(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	panic("the planted defect of a Watches whose Cancels panics")
+}
+
+// watchesCancelsPanics returns the planted defect of a Watches whose
+// Cancels panics over a fresh subject.
+func watchesCancelsPanics(h *WatchesHandle) Watches {
+	return &watchesCancelsPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesCancelsIgnoresCancelDefect is the planted defect of a Watches
+// whose Cancels ignores the context.
+type watchesCancelsIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Cancels is the override of the planted defect.
+func (d *watchesCancelsIgnoresCancelDefect) Cancels(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Cancels(p0, p1)
+}
+
+// watchesCancelsIgnoresCancel returns the planted defect of a Watches
+// whose Cancels ignores the context over a fresh subject.
+func watchesCancelsIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesCancelsIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesCancelledPanicsDefect is the planted defect of a Watches whose
+// Cancelled panics.
+type watchesCancelledPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Cancelled is the override of the planted defect.
+func (*watchesCancelledPanicsDefect) Cancelled(
+	p0 context.Context,
+	p1 string,
+	p2 Update,
+) (r0 error) {
+	panic("the planted defect of a Watches whose Cancelled panics")
+}
+
+// watchesCancelledPanics returns the planted defect of a Watches whose
+// Cancelled panics over a fresh subject.
+func watchesCancelledPanics(h *WatchesHandle) Watches {
+	return &watchesCancelledPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesCancelledIgnoresCancelDefect is the planted defect of a Watches
+// whose Cancelled ignores the context.
+type watchesCancelledIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Cancelled is the override of the planted defect.
+func (d *watchesCancelledIgnoresCancelDefect) Cancelled(
+	p0 context.Context,
+	p1 string,
+	p2 Update,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Cancelled(p0, p1, p2)
+}
+
+// watchesCancelledIgnoresCancel returns the planted defect of a Watches
+// whose Cancelled ignores the context over a fresh subject.
+func watchesCancelledIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesCancelledIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesClosesPanicsDefect is the planted defect of a Watches whose
+// Closes panics.
+type watchesClosesPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Closes is the override of the planted defect.
+func (*watchesClosesPanicsDefect) Closes(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	panic("the planted defect of a Watches whose Closes panics")
+}
+
+// watchesClosesPanics returns the planted defect of a Watches whose Closes
+// panics over a fresh subject.
+func watchesClosesPanics(h *WatchesHandle) Watches {
+	return &watchesClosesPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesClosesIgnoresCancelDefect is the planted defect of a Watches
+// whose Closes ignores the context.
+type watchesClosesIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Closes is the override of the planted defect.
+func (d *watchesClosesIgnoresCancelDefect) Closes(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Closes(p0, p1)
+}
+
+// watchesClosesIgnoresCancel returns the planted defect of a Watches whose
+// Closes ignores the context over a fresh subject.
+func watchesClosesIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesClosesIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesClosedPanicsDefect is the planted defect of a Watches whose
+// Closed panics.
+type watchesClosedPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Closed is the override of the planted defect.
+func (*watchesClosedPanicsDefect) Closed(p0 context.Context, p1 string, p2 Update) (r0 error) {
+	panic("the planted defect of a Watches whose Closed panics")
+}
+
+// watchesClosedPanics returns the planted defect of a Watches whose Closed
+// panics over a fresh subject.
+func watchesClosedPanics(h *WatchesHandle) Watches {
+	return &watchesClosedPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesClosedIgnoresCancelDefect is the planted defect of a Watches
+// whose Closed ignores the context.
+type watchesClosedIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Closed is the override of the planted defect.
+func (d *watchesClosedIgnoresCancelDefect) Closed(
+	p0 context.Context,
+	p1 string,
+	p2 Update,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Closed(p0, p1, p2)
+}
+
+// watchesClosedIgnoresCancel returns the planted defect of a Watches whose
+// Closed ignores the context over a fresh subject.
+func watchesClosedIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesClosedIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFieldsPanicsDefect is the planted defect of a Watches whose
+// Fields panics.
+type watchesFieldsPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Fields is the override of the planted defect.
+func (*watchesFieldsPanicsDefect) Fields(p0 context.Context, p1 string) (r0 *Ticker, r1 error) {
+	panic("the planted defect of a Watches whose Fields panics")
+}
+
+// watchesFieldsPanics returns the planted defect of a Watches whose Fields
+// panics over a fresh subject.
+func watchesFieldsPanics(h *WatchesHandle) Watches {
+	return &watchesFieldsPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFieldsIgnoresCancelDefect is the planted defect of a Watches
+// whose Fields ignores the context.
+type watchesFieldsIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Fields is the override of the planted defect.
+func (d *watchesFieldsIgnoresCancelDefect) Fields(
+	p0 context.Context,
+	p1 string,
+) (r0 *Ticker, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Fields(p0, p1)
+}
+
+// watchesFieldsIgnoresCancel returns the planted defect of a Watches whose
+// Fields ignores the context over a fresh subject.
+func watchesFieldsIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesFieldsIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFilledPanicsDefect is the planted defect of a Watches whose
+// Filled panics.
+type watchesFilledPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Filled is the override of the planted defect.
+func (*watchesFilledPanicsDefect) Filled(p0 context.Context, p1 string, p2 Update) (r0 error) {
+	panic("the planted defect of a Watches whose Filled panics")
+}
+
+// watchesFilledPanics returns the planted defect of a Watches whose Filled
+// panics over a fresh subject.
+func watchesFilledPanics(h *WatchesHandle) Watches {
+	return &watchesFilledPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFilledIgnoresCancelDefect is the planted defect of a Watches
+// whose Filled ignores the context.
+type watchesFilledIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Filled is the override of the planted defect.
+func (d *watchesFilledIgnoresCancelDefect) Filled(
+	p0 context.Context,
+	p1 string,
+	p2 Update,
+) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Filled(p0, p1, p2)
+}
+
+// watchesFilledIgnoresCancel returns the planted defect of a Watches whose
+// Filled ignores the context over a fresh subject.
+func watchesFilledIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesFilledIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFollowsPanicsDefect is the planted defect of a Watches whose
+// Follows panics.
+type watchesFollowsPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Follows is the override of the planted defect.
+func (*watchesFollowsPanicsDefect) Follows(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	panic("the planted defect of a Watches whose Follows panics")
+}
+
+// watchesFollowsPanics returns the planted defect of a Watches whose
+// Follows panics over a fresh subject.
+func watchesFollowsPanics(h *WatchesHandle) Watches {
+	return &watchesFollowsPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesFollowsIgnoresCancelDefect is the planted defect of a Watches
+// whose Follows ignores the context.
+type watchesFollowsIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Follows is the override of the planted defect.
+func (d *watchesFollowsIgnoresCancelDefect) Follows(
+	p0 context.Context,
+	p1 string,
+) (r0 Subscription, r1 error) {
+	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.watchesOverEmbedded.Follows(p0, p1)
+}
+
+// watchesFollowsIgnoresCancel returns the planted defect of a Watches
+// whose Follows ignores the context over a fresh subject.
+func watchesFollowsIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesFollowsIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesTouchPanicsDefect is the planted defect of a Watches whose Touch
+// panics.
+type watchesTouchPanicsDefect struct {
+	watchesOverEmbedded
+}
+
+// Touch is the override of the planted defect.
+func (*watchesTouchPanicsDefect) Touch(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Watches whose Touch panics")
+}
+
+// watchesTouchPanics returns the planted defect of a Watches whose Touch
+// panics over a fresh subject.
+func watchesTouchPanics(h *WatchesHandle) Watches {
+	return &watchesTouchPanicsDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesTouchIgnoresCancelDefect is the planted defect of a Watches whose
+// Touch ignores the context.
+type watchesTouchIgnoresCancelDefect struct {
+	watchesOverEmbedded
+}
+
+// Touch is the override of the planted defect.
+func (d *watchesTouchIgnoresCancelDefect) Touch(p0 context.Context, p1 string) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.watchesOverEmbedded.Touch(p0, p1)
+}
+
+// watchesTouchIgnoresCancel returns the planted defect of a Watches whose
+// Touch ignores the context over a fresh subject.
+func watchesTouchIgnoresCancel(h *WatchesHandle) Watches {
+	return &watchesTouchIgnoresCancelDefect{watchesOverEmbedded: h.Fresh()}
+}
+
+// watchesActions returns the actions of the generated sequences of Watches
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func watchesActions(c *prop.Case, subject func() Watches) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Watch",
+			Input: func(c *prop.Case, _ struct{}) any {
+				scope := c.Draw(prop.Of[string](), "watch.scope")
+				key := c.Draw(prop.Of[string](), "watch.key")
+				return []any{scope, key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Watch", args)
+				values, err := watchesWatchCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Set",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.Of[string](), "set.key")
+				scope := c.Draw(prop.Of[string](), "set.scope")
+				u := c.Draw(prop.Of[Update](), "set.u")
+				return []any{key, scope, u}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Set", args)
+				values, err := watchesSetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Ticks",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "ticks.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Ticks", args, args[0])
+				values, err := watchesTicksCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Tick",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "tick.key")
+				note := c.Draw(prop.Of[string](), "tick.note")
+				u := c.Draw(prop.Of[Update](), "tick.u")
+				return []any{key, note, u}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Tick", args, args[0])
+				values, err := watchesTickCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Peeks",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "peeks.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Peeks", args, args[0])
+				values, err := watchesPeeksCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Peeked",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "peeked.key")
+				u := c.Draw(prop.Of[Update](), "peeked.u")
+				return []any{key, u}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Peeked", args, args[0])
+				values, err := watchesPeekedCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Finds",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "finds.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Finds", args, args[0])
+				values, err := watchesFindsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Found",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "found.key")
+				u := c.Draw(prop.Of[Update](), "found.u")
+				return []any{key, u}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Found", args, args[0])
+				values, err := watchesFoundCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Reads",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "reads.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Reads", args, args[0])
+				values, err := watchesReadsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Written",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "written.key")
+				u := c.Draw(prop.Of[Update](), "written.u")
+				return []any{key, u}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Written", args, args[0])
+				values, err := watchesWrittenCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Cancels",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "cancels.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Cancels", args, args[0])
+				values, err := watchesCancelsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Cancelled",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "cancelled.key")
+				u := c.Draw(prop.Of[Update](), "cancelled.u")
+				return []any{key, u}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Cancelled", args, args[0])
+				values, err := watchesCancelledCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Closes",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "closes.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Closes", args, args[0])
+				values, err := watchesClosesCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Closed",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "closed.key")
+				u := c.Draw(prop.Of[Update](), "closed.u")
+				return []any{key, u}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Closed", args, args[0])
+				values, err := watchesClosedCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Fields",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "fields.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Fields", args, args[0])
+				values, err := watchesFieldsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Filled",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "filled.key")
+				u := c.Draw(prop.Of[Update](), "filled.u")
+				return []any{key, u}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Filled", args, args[0])
+				values, err := watchesFilledCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Follows",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "follows.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Follows", args, args[0])
+				values, err := watchesFollowsCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Touch",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "touch.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Touch", args, args[0])
+				values, err := watchesTouchCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// watchesWatchCall calls Watch on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesWatchCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	r0, err := subject.Watch(ctx, a0, a1)
+	return []any{r0}, err
+}
+
+// watchesSetCall calls Set on subject with the arguments args, and returns
+// the values of the call beside its error.
+func watchesSetCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	a2, _ := args[2].(Update)
+	return nil, subject.Set(ctx, a0, a1, a2)
+}
+
+// watchesTicksCall calls Ticks on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesTicksCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Ticks(ctx, a0)
+	return []any{r0}, err
+}
+
+// watchesTickCall calls Tick on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesTickCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	a2, _ := args[2].(Update)
+	return nil, subject.Tick(ctx, a0, a1, a2)
+}
+
+// watchesPeeksCall calls Peeks on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesPeeksCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Peeks(ctx, a0)
+	return []any{r0}, err
+}
+
+// watchesPeekedCall calls Peeked on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesPeekedCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Update)
+	return nil, subject.Peeked(ctx, a0, a1)
+}
+
+// watchesFindsCall calls Finds on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesFindsCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Finds(ctx, a0)
+	return []any{r0}, err
+}
+
+// watchesFoundCall calls Found on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesFoundCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Update)
+	return nil, subject.Found(ctx, a0, a1)
+}
+
+// watchesReadsCall calls Reads on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesReadsCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Reads(ctx, a0)
+	return []any{r0}, err
+}
+
+// watchesWrittenCall calls Written on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesWrittenCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Update)
+	return nil, subject.Written(ctx, a0, a1)
+}
+
+// watchesCancelsCall calls Cancels on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesCancelsCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Cancels(ctx, a0)
+	return []any{r0}, err
+}
+
+// watchesCancelledCall calls Cancelled on subject with the arguments args,
+// and returns the values of the call beside its error.
+func watchesCancelledCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Update)
+	return nil, subject.Cancelled(ctx, a0, a1)
+}
+
+// watchesClosesCall calls Closes on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesClosesCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Closes(ctx, a0)
+	return []any{r0}, err
+}
+
+// watchesClosedCall calls Closed on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesClosedCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Update)
+	return nil, subject.Closed(ctx, a0, a1)
+}
+
+// watchesFieldsCall calls Fields on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesFieldsCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Fields(ctx, a0)
+	return []any{r0}, err
+}
+
+// watchesFilledCall calls Filled on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesFilledCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(Update)
+	return nil, subject.Filled(ctx, a0, a1)
+}
+
+// watchesFollowsCall calls Follows on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesFollowsCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Follows(ctx, a0)
+	return []any{r0}, err
+}
+
+// watchesTouchCall calls Touch on subject with the arguments args, and
+// returns the values of the call beside its error.
+func watchesTouchCall(ctx context.Context, subject Watches, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	return nil, subject.Touch(ctx, a0)
 }

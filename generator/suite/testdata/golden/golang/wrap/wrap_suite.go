@@ -704,11 +704,20 @@ func reachGearCall(ctx context.Context, subject Reach, args []any) ([]any, error
 	return []any{r0}, err
 }
 
+// The derived checks of Tuned:
+//
+// Tuned.Turn/smoke#generated: Turn returns without a panic for derived
+// inputs.
+
 // The refused claims of Tuned:
 //
 // Tuned.Tune/smoke: a sample of the check refers to a declaration that the
 // file of the suite cannot import. The remedy is to author a sample of
 // each input of Tune with the directive sample.
+//
+// Tuned.Turn/smoke: a sample of the check refers to a declaration that the
+// file of the suite cannot import. The remedy is to author a sample of
+// each input of Turn with the directive sample.
 
 // The unclaimed classifications of Tuned:
 //
@@ -759,6 +768,12 @@ type tunedTurn struct {
 	conform.Callable[Tuned]
 }
 
+// SmokeGenerated returns the identity of the check that Turn returns
+// without a panic for derived inputs.
+func (c tunedTurn) SmokeGenerated() conform.ID[Tuned] {
+	return c.Check("smoke#generated")
+}
+
 // TunedSuite returns the checks of Tuned, and the calls and the budgets of
 // its callables.
 func TunedSuite() conform.Suite[Tuned] {
@@ -766,6 +781,25 @@ func TunedSuite() conform.Suite[Tuned] {
 		Declaration: "Tuned",
 		Package:     "example.com/shop/wrap",
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Tuned]{
+			{
+				ID:          TunedChecks.Turn.SmokeGenerated(),
+				Statement:   "Turn returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *TunedHandle, c *prop.Case) {
+					drawnD := c.Draw(prop.Of[tool.Dial](), "d")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Turn(drawnD)
+						return nil
+					})
+				},
+				Defect: tunedTurnPanics,
+			},
+		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Smoke,
@@ -773,6 +807,13 @@ func TunedSuite() conform.Suite[Tuned] {
 				Gate:     spec.ImportableSamples,
 				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
 				Remedy:   "author a sample of each input of Tune with the directive sample",
+			},
+			{
+				Claim:    spec.Smoke,
+				Callable: "Tuned.Turn",
+				Gate:     spec.ImportableSamples,
+				Why:      "a sample of the check refers to a declaration that the file of the suite cannot import",
+				Remedy:   "author a sample of each input of Turn with the directive sample",
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -985,6 +1026,23 @@ func (o tunedOver) Turn(tool.Dial) {
 // callables call spend.
 func newTunedOver(_ *TunedHandle, spend func()) Tuned {
 	return tunedOver{spend: spend}
+}
+
+// tunedTurnPanicsDefect is the planted defect of a Tuned whose Turn
+// panics.
+type tunedTurnPanicsDefect struct {
+	tunedOverEmbedded
+}
+
+// Turn is the override of the planted defect.
+func (*tunedTurnPanicsDefect) Turn(p0 tool.Dial) {
+	panic("the planted defect of a Tuned whose Turn panics")
+}
+
+// tunedTurnPanics returns the planted defect of a Tuned whose Turn panics
+// over a fresh subject.
+func tunedTurnPanics(h *TunedHandle) Tuned {
+	return &tunedTurnPanicsDefect{tunedOverEmbedded: h.Fresh()}
 }
 
 // The derived checks of Limited:

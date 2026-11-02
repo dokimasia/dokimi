@@ -4,6 +4,7 @@ import (
 	"context"
 	"iter"
 	"slices"
+	"sync/atomic"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
@@ -4357,6 +4358,12 @@ func tagsHasDropsTheLastKey(h *TagsHandle) Tags {
 // Vault.Acquire/release-frees-the-lease#generated: Acquire grants a lease
 // again after Release released it.
 //
+// Vault.Acquire/one-holder-at-a-time: calls of Acquire with one key at
+// once grant the lease once.
+//
+// Vault.Acquire/one-holder-at-a-time#generated: calls of Acquire with one
+// key at once grant the lease once.
+//
 // Vault.Release/smoke: Release returns without a panic for derived inputs.
 //
 // Vault.Release/smoke#generated: Release returns without a panic for
@@ -4614,6 +4621,18 @@ func (c vaultAcquire) ReleaseFreesTheLease() conform.ID[Vault] {
 // Acquire grants a lease again after Release released it.
 func (c vaultAcquire) ReleaseFreesTheLeaseGenerated() conform.ID[Vault] {
 	return c.Check("release-frees-the-lease#generated")
+}
+
+// OneHolderAtATime returns the identity of the check that calls of Acquire
+// with one key at once grant the lease once.
+func (c vaultAcquire) OneHolderAtATime() conform.ID[Vault] {
+	return c.Check("one-holder-at-a-time")
+}
+
+// OneHolderAtATimeGenerated returns the identity of the check that calls
+// of Acquire with one key at once grant the lease once.
+func (c vaultAcquire) OneHolderAtATimeGenerated() conform.ID[Vault] {
+	return c.Check("one-holder-at-a-time#generated")
 }
 
 // vaultRelease is the name of Vault.Release, with the identities of its
@@ -5105,6 +5124,39 @@ func VaultSuite() conform.Suite[Vault] {
 					})
 				},
 				Defect: vaultReleaseReleaseKeepsTheLease,
+			},
+			{
+				ID:          VaultChecks.Acquire.OneHolderAtATime(),
+				Statement:   "calls of Acquire with one key at once grant the lease once",
+				Claim:       spec.OneHolderAtATime,
+				Probe:       spec.ExclusiveUnderConcurrency,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers},
+				Entails:     []conform.ID[Vault]{VaultChecks.Acquire.Lease()},
+				Property: func(h *VaultHandle, c *prop.Case) {
+					probe.ExclusiveUnderConcurrency(h, c, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					}, ErrHeld, 2)
+				},
+				Defect: vaultAcquireCheckThenGrant,
+			},
+			{
+				ID:          VaultChecks.Acquire.OneHolderAtATimeGenerated(),
+				Statement:   "calls of Acquire with one key at once grant the lease once",
+				Claim:       spec.OneHolderAtATime,
+				Probe:       spec.ExclusiveUnderConcurrency,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedInputs},
+				Entails:     []conform.ID[Vault]{VaultChecks.Acquire.LeaseGenerated()},
+				Property: func(h *VaultHandle, c *prop.Case) {
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					probe.ExclusiveUnderConcurrency(h, c, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, drawnKey)
+					}, ErrHeld, 2)
+				},
+				Defect: vaultAcquireCheckThenGrant,
 			},
 			{
 				ID:          VaultChecks.Release.Smoke(),
@@ -5892,6 +5944,35 @@ func (*vaultReleaseReleaseKeepsTheLeaseDefect) Release(p0 context.Context, p1 st
 // whose Release keeps the lease over a fresh subject.
 func vaultReleaseReleaseKeepsTheLease(h *VaultHandle) Vault {
 	return &vaultReleaseReleaseKeepsTheLeaseDefect{vaultOverEmbedded: h.Fresh()}
+}
+
+// vaultAcquireCheckThenGrantDefect is the planted defect of a Vault whose
+// Acquire grants a lease to two calls at once.
+type vaultAcquireCheckThenGrantDefect struct {
+	vaultOverEmbedded
+	h      *VaultHandle
+	marked atomic.Int32
+}
+
+// Acquire is the override of the planted defect.
+func (d *vaultAcquireCheckThenGrantDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	d.marked.Add(1)
+	defer d.marked.Add(-1)
+	d.h.Yield()
+	if d.marked.Load() > 1 {
+		return r0
+	}
+	return d.vaultOverEmbedded.Acquire(p0, p1)
+}
+
+// vaultAcquireCheckThenGrant returns the planted defect of a Vault whose
+// Acquire grants a lease to two calls at once over a fresh subject.
+func vaultAcquireCheckThenGrant(h *VaultHandle) Vault {
+	return &vaultAcquireCheckThenGrantDefect{vaultOverEmbedded: h.Fresh(), h: h}
 }
 
 // vaultReleasePanicsDefect is the planted defect of a Vault whose Release

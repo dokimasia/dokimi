@@ -1,7 +1,10 @@
 // Package locks grants the locks of a resource.
 package locks
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 // Lock grants a resource to one holder at a time.
 //
@@ -16,6 +19,57 @@ type Lock interface {
 	Release()
 	// Held reports whether a caller holds the lock.
 	Held() bool
+}
+
+// Board keeps the last notice for concurrent callers, and a reference
+// implementation checks it.
+//
+//dokimi:suite machineries=[reference]
+type Board interface {
+	// Post stores notice.
+	//dokimi:mixin concurrent
+	Post(ctx context.Context, notice string) error
+	// Read returns the last notice.
+	//dokimi:mixin concurrent
+	Read(ctx context.Context) (string, error)
+}
+
+// Shelf counts the items under each key for concurrent readers.
+//
+//dokimi:suite
+type Shelf interface {
+	// Add adds one item under key.
+	Add(ctx context.Context, key string) error
+	// Count returns the count of the items under key.
+	//dokimi:mixin concurrent-readers
+	Count(ctx context.Context, key string) (int, error)
+}
+
+// Loader loads the value of a key.
+type Loader func(ctx context.Context, key string) (string, error)
+
+// Flight shares one load of a key among the calls of the key at once.
+//
+//dokimi:suite machineries=[faults]
+type Flight interface {
+	// Do returns the value that load loads for key.
+	//dokimi:contract single-flight role=fn
+	Do(ctx context.Context, key string, load Loader) (string, error)
+}
+
+// ErrLocked is the error of a lock of a key that another caller holds.
+var ErrLocked = errors.New("locks: the key is locked")
+
+// Locker leases each key to one caller at a time.
+//
+//dokimi:suite
+type Locker interface {
+	// Lock takes the lease of key.
+	//dokimi:contract lease role=acquire taken=ErrLocked
+	Lock(ctx context.Context, key string) error
+	// Unlock returns the lease of key.
+	//dokimi:contract lease role=release
+	Unlock(ctx context.Context, key string) error
 }
 
 // Gate lets one caller pass at a time.

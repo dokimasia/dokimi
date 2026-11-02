@@ -5474,6 +5474,14 @@ func TestVaultSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				classified.VaultChecks.Acquire.OneHolderAtATime(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				classified.VaultChecks.Release.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -5646,6 +5654,14 @@ func TestVaultSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				classified.VaultChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				classified.VaultChecks.Acquire.OneHolderAtATime(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -5847,6 +5863,14 @@ func TestVaultSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			classified.VaultChecks.Release.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -6002,6 +6026,14 @@ func FuzzVaultSuiteAppend(f *testing.F) {
 		),
 		conform.Excuse(
 			classified.VaultChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -6163,6 +6195,14 @@ func FuzzVaultSuiteReplay(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			classified.VaultChecks.Release.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -6318,6 +6358,14 @@ func FuzzVaultSuiteVerify(f *testing.F) {
 		),
 		conform.Excuse(
 			classified.VaultChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -6479,6 +6527,14 @@ func FuzzVaultSuiteAcquire(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			classified.VaultChecks.Release.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -6634,6 +6690,14 @@ func FuzzVaultSuiteRelease(f *testing.F) {
 		),
 		conform.Excuse(
 			classified.VaultChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -6795,6 +6859,14 @@ func FuzzVaultSuiteBorrow(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			classified.VaultChecks.Release.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -6953,6 +7025,14 @@ func FuzzVaultSuiteReturn(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			classified.VaultChecks.Release.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -7108,6 +7188,14 @@ func FuzzVaultSuiteStats(f *testing.F) {
 		),
 		conform.Excuse(
 			classified.VaultChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			classified.VaultChecks.Acquire.OneHolderAtATimeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(

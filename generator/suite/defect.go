@@ -38,8 +38,9 @@ import (
 // returns in place of its own, and Handled the type of the handle that it
 // wraps. Delegates reports a body that calls the callable of the fresh
 // subject, and Counts a body that counts its calls. Keeps reports a body that
-// keeps the handle that builds the defect, to read the injector of the handle
-// or to build a fresh subject for each call. Acquire is the callable that the
+// keeps the handle that builds the defect, to read the injector of the handle,
+// to build a fresh subject for each call, or to yield to the scheduler of the
+// handle. Acquire is the callable that the
 // param open of the mixin leak-free names, which a body of the form
 // opens-without-closing calls once more on a dependency of its own, and empty
 // for any other body. Context is the parameter of the context of the
@@ -53,10 +54,18 @@ import (
 // the callable does before its break. Limit is the most use that the param
 // limit of the mixin bounded states, and Grow the count of the use that the
 // body of grows-past-the-limit-after-three returns above it: int or len.
+// Stream is the name of the result of the stream that the body of
+// iterates-a-copy copies, and Elems the types of the values of each element of
+// the stream.
+//
+// Overrides are the overrides of a planted defect that changes every callable
+// of its declaration, each with the signature and the body of one callable.
+// The template writes them in place of the one override of Method.
 type Defect struct {
 	Method    *emit.Method
 	Handle    *Defect
 	Handled   *emit.TypeRef
+	Overrides []*Defect
 	Name      string
 	Type      string
 	Doc       string
@@ -66,8 +75,10 @@ type Defect struct {
 	Acquire   string
 	Limit     string
 	Grow      string
+	Stream    string
 	Args      []string
 	Results   []Outcome
+	Elems     []*emit.TypeRef
 	Budget    time.Duration
 	Input     int
 	Second    int
@@ -139,6 +150,14 @@ const (
 	bodyDivergeAfter   = "diverge-after"
 	bodyGrowAfter      = "grow-after"
 	bodyTwiceAfter     = "twice-after"
+	bodyHalfAfter      = "half-applied-after"
+	bodyLeak           = "leak"
+	bodyCopy           = "copy"
+	bodyRacy           = "racy"
+	bodyMark           = "mark"
+	bodyMarkedSample   = "marked-sample"
+	bodySharedResult   = "shared-result"
+	bodyCheckThenGrant = "check-then-grant"
 )
 
 // afterBodies are the bodies of the defect forms of generated sequences,
@@ -146,7 +165,7 @@ const (
 // form counts.
 var afterBodies = []string{
 	bodyFirstAfter, bodyReverseAfter, bodyVersionAfter, bodyZeroAfter, bodyRepeatAfter, bodyDropAfter,
-	bodyDivergeAfter, bodyGrowAfter, bodyTwiceAfter,
+	bodyDivergeAfter, bodyGrowAfter, bodyTwiceAfter, bodyHalfAfter,
 }
 
 // limitParam is the param of the mixin bounded that states the most use, and
@@ -235,6 +254,17 @@ var bodies = map[spec.DefectFormID]string{
 	spec.DivergesAfterThree:            bodyDivergeAfter,
 	spec.GrowsPastTheLimitAfterThree:   bodyGrowAfter,
 	spec.IgnoresTheOtherReplica:        bodyZero,
+	spec.LeaksOneUnit:                  bodyLeak,
+	spec.HalfAppliedAfterThree:         bodyHalfAfter,
+	spec.IteratesACopy:                 bodyCopy,
+	spec.DropsAppendsAfterThree:        bodyZeroAfter,
+	spec.BreaksTheModeAfterThree:       bodyZeroAfter,
+	spec.SkipsARedeliveryAfterThree:    bodyZeroAfter,
+	spec.MissesUpdatesAfterThree:       bodyZeroAfter,
+	spec.RacyReadWrite:                 bodyRacy,
+	spec.RacyRead:                      bodySharedResult,
+	spec.ComputesPerCall:               bodyFreshEachCall,
+	spec.CheckThenGrant:                bodyCheckThenGrant,
 }
 
 // partnerOf returns the pair of the partner name of the check c: the partner
@@ -256,12 +286,15 @@ var (
 		bodyPanicLater, bodyFailLater, bodyFailSuccess, bodyZeroLater, bodyBesideFalse, bodyBesideError,
 		bodySampleSuccess, bodyUncancelled, bodyVersionZero, bodyDrainTwice, bodyReorder, bodyReverse, bodySlow,
 		bodyFirstPage, bodyLiveHandle, bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyOpenOnFailure,
-		bodyZeroSecond, bodyKeepFirst, bodyDropLast,
+		bodyZeroSecond, bodyKeepFirst, bodyDropLast, bodyLeak, bodyCopy, bodySharedResult, bodyCheckThenGrant,
 	}, afterBodies)
 	counting = slices.Concat([]string{
-		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyDrift, bodyDescend, bodyVersionDescend, bodyReorder,
+		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyDrift, bodyDescend, bodyVersionDescend, bodyReorder, bodyLeak,
 	}, afterBodies)
-	keeping = []string{bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyFreshEachCall}
+	keeping = []string{
+		bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyFreshEachCall, bodyHalfAfter, bodySharedResult,
+		bodyCheckThenGrant,
+	}
 )
 
 // cancelling are the bodies that do not return the error of a cancelled
@@ -271,10 +304,15 @@ var cancelling = []string{bodyPanic, bodyBesideError, bodyUncancelled}
 
 // budgetParam is the param of the mixin timeout that states the budget, and
 // openParam the param of the mixin leak-free whose value is the callable that
-// acquires a resource.
+// acquires a resource. modeParam is the param of the contract publisher that
+// states the delivery mode. atLeastOnce is the mode that allows a second
+// delivery, and atMostOnce the mode that allows a lost event.
 const (
 	budgetParam = "duration"
 	openParam   = "open"
+	modeParam   = "mode"
+	atLeastOnce = "at-least-once"
+	atMostOnce  = "at-most-once"
 )
 
 // defect returns the planted defect of the check c, and whether s already has
@@ -285,8 +323,9 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	if partner, ok := strings.CutPrefix(form.Changes, "partner:"); ok {
 		f = partnerOf(c, partner).Partner
 	}
+	racy := form.ID == spec.RacyReadWrite
 	words := []string{s.Declaration}
-	if f.Declaration != "" {
+	if f.Declaration != "" && !racy {
 		words = append(words, f.Callable)
 	}
 	name := k.e.JoinName(naming.Pascal(string(form.ID)), strings.Join(words, ""))
@@ -305,6 +344,10 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 		// A range over a nil stream panics, so a callable that returns a
 		// stream returns an empty one.
 		d.Body = bodySample
+	case form.ID == spec.BreaksTheModeAfterThree && nameOf(b.param(modeParam)) == atMostOnce:
+		// A publisher at most once may drop an event, so it breaks its mode
+		// by a second delivery of each event.
+		d.Body = bodyTwiceAfter
 	default:
 	}
 	switch d.Body {
@@ -312,6 +355,12 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 		d.Input = inputAt(f, 0)
 	case bodyZeroSecond:
 		d.Second = inputAt(f, 1)
+	case bodyCopy:
+		at := streamAt(f)
+		d.Stream = "r" + strconv.Itoa(at)
+		for _, e := range k.elemsOf(f.Signature.Returns[at].Ref) {
+			d.Elems = append(d.Elems, k.typeOf(e))
+		}
 	case bodyGrowAfter:
 		d.Limit = intOf(b.param(limitParam))
 		if use, ok := k.countableOf(s, s.Sequences, f); ok {
@@ -341,16 +390,46 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	}
 	d.Method, d.Args = k.signatureOf(f)
 	d.Results = k.outcomesOf(f)
+	guard(d, f)
+	if form.ID == spec.OpensALiveHandle {
+		d.Handle = k.liveHandle(f, nameOf(b.param(nextParam)), k.e.JoinName(handleWord, name))
+	}
+	if racy {
+		d.Keeps, d.Overrides = true, k.racy(s)
+	}
+	return d, false
+}
+
+// guard sets the parameter of the context of the callable of f on d, and
+// whether d returns the error of a cancelled context first.
+func guard(d *Defect, f *derive.Facts) {
 	if ctx := slices.IndexFunc(f.Signature.Params, func(p rules.ParamView) bool {
 		return p.Role == rules.ParamContext
 	}); ctx >= 0 {
 		d.Context = d.Args[ctx]
 		d.Guards = hasError(f) && !slices.Contains(cancelling, d.Body)
 	}
-	if form.ID == spec.OpensALiveHandle {
-		d.Handle = k.liveHandle(f, nameOf(b.param(nextParam)), k.e.JoinName(handleWord, name))
+}
+
+// racy returns the overrides of the planted defect racy-read-write of the
+// methods of s. The first method with a value result returns its sample while
+// another call is marked. Every other method marks its call, yields to the
+// scheduler of the case, and then calls the subject.
+func (k *caller) racy(s *Suite) []*Defect {
+	read := slices.IndexFunc(s.Facts, func(f derive.Facts) bool { return len(f.Results) > 0 })
+	out := make([]*Defect, 0, len(s.Facts))
+	for i := range s.Facts {
+		f := &s.Facts[i]
+		o := &Defect{Body: bodyMark, Delegates: true}
+		if i == read {
+			o.Body = bodyMarkedSample
+		}
+		o.Method, o.Args = k.signatureOf(f)
+		o.Results = k.outcomesOf(f)
+		guard(o, f)
+		out = append(out, o)
 	}
-	return d, false
+	return out
 }
 
 // nextParam is the param of the contract cursor that names the method that

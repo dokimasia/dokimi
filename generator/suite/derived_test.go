@@ -39,7 +39,7 @@ func TestDerived(t *testing.T) {
 			expect.Equal(t, d.Reason, "UnobservedWrite", "the reason is the constant of the reason of the defect")
 			expect.Equal(t, d.Law, "ReadReturnsTheWriteBeforeIt", "the law is the constant of the law")
 			expect.Equal(t, d.Machineries, []string{"NothingBeyondACaller"}, "the machineries are their constants")
-			expect.False(t, d.Clock, "the probe does not advance the clock")
+			expect.False(t, d.Bubble, "the probe runs outside a bubble")
 		})
 
 		t.Run("passes the read and the write that returns the written value to a probe of a pair", func(t *testing.T) {
@@ -169,6 +169,106 @@ func TestDerived(t *testing.T) {
 			expect.True(t, lacks(screened, "Store", "validates#generated"),
 				"the probe of validates passes each value that Store takes")
 		})
+
+		t.Run("passes the actions, the reference, the clients and the budget to the probe of linearizable",
+			func(t *testing.T) {
+				t.Parallel()
+
+				board := generate(t, goTree, locksPackage).suites["Board"]
+				d := derivedNamed(t, &board, "Read", "linearizable")
+				expect.Equal(
+					t,
+					[]any{d.Probe, d.Whole, d.Sequence},
+					[]any{"LinearizableHistory", "Board/linearizable", true},
+					"the check of the whole declaration runs generated sequences",
+				)
+				assert.NotNil(t, board.Sequences, "the declaration has the generated sequences of its reference")
+				expect.Equal(t, d.Args, []suite.Arg{
+					{Ref: board.Sequences.Actions},
+					{Ref: board.Sequences.Reference},
+					{Expr: &suite.Expr{Word: "2"}},
+					{Budget: 200_000},
+				}, "three clients call the subject, and the checker takes at most 200,000 steps")
+			})
+
+		t.Run("passes the actions, the read, the read again and the clients to the probe of concurrent reads",
+			func(t *testing.T) {
+				t.Parallel()
+
+				shelf := generate(t, goTree, locksPackage).suites["Shelf"]
+				d := derivedNamed(t, &shelf, "Count", "reads-agree-under-concurrency")
+				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{"ConcurrentReadsAgree", true},
+					"the check runs generated sequences")
+				assert.NotNil(t, shelf.Sequences, "the declaration has generated sequences")
+				assert.Length(t, d.Args, 4, "the probe takes the actions, the read, the read again and the clients")
+				expect.Equal(t, d.Args[0], suite.Arg{Ref: shelf.Sequences.Actions}, "the actions are those of Shelf")
+				expect.Equal(t, d.Args[1].Expr, &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Count"))},
+					"the read is the operation Count")
+				assert.NotNil(t, d.Args[2].Apply, "the read again applies Count to the arguments of a read")
+				expect.Equal(t, d.Args[3], suite.Arg{Expr: &suite.Expr{Word: "2"}}, "three clients read at once")
+			})
+
+		flight := generate(t, goTree, locksPackage).suites["Flight"]
+
+		t.Run("passes a call with a computation for each input of a function type to the probe of one computation",
+			func(t *testing.T) {
+				t.Parallel()
+
+				d := derivedNamed(t, &flight, "Do", "computes-once")
+				expect.Equal(t, []any{d.Probe, d.Bubble}, []any{"SharesOneComputation", true},
+					"the probe waits inside a bubble until each call blocks")
+				assert.Length(t, d.Args, 2, "the probe takes the call and the clients")
+				expect.Equal(t, d.Args[1], suite.Arg{Expr: &suite.Expr{Word: "2"}}, "three clients call at once")
+				call := d.Args[0].Closure
+				assert.NotNil(t, call, "the call is a closure")
+				expect.Equal(t, []any{call.Method, call.Error, len(call.Returns)}, []any{"Do", true, 1},
+					"the call returns the value of Do beside its error")
+				assert.Length(t, call.Args, 3, "the call passes the context, the key and the load")
+				expect.Nil(t, call.Args[1].Compute, "the key keeps its sample")
+				load := call.Args[2]
+				assert.NotNil(t, load.Compute, "the load is a computation")
+				expect.Equal(t, load.Name, "Do", "the computation records a call of Do")
+				signature := make([]string, 0, load.Compute.Params.Len()+load.Compute.Returns.Len())
+				for _, p := range load.Compute.Params.Items() {
+					signature = append(signature, spelled(p.Type))
+				}
+				for _, r := range load.Compute.Returns.Items() {
+					signature = append(signature, r.Name+" "+spelled(r.Type))
+				}
+				expect.Equal(t, signature, []string{"context.Context", "string", "r0 string", "r1 error"},
+					"the computation has the parameters and the named results of Loader")
+			})
+
+		locker := generate(t, goTree, locksPackage).suites["Locker"]
+
+		t.Run("passes the case, the call, the sentinel and the clients to the probe of one holder", func(t *testing.T) {
+			t.Parallel()
+
+			d := derivedNamed(t, &locker, "Lock", "one-holder-at-a-time")
+			expect.Equal(t, []any{d.Probe, d.Cased, d.Sequence}, []any{"ExclusiveUnderConcurrency", true, false},
+				"the probe takes the case, whose scheduler runs the clients of a planted defect")
+			assert.Length(t, d.Args, 3, "the probe takes the call, the sentinel and the clients")
+			assert.NotNil(t, d.Args[0].Closure, "the call is a closure")
+			expect.Equal(t, d.Args[0].Closure.Method, "Lock", "the call calls Lock")
+			assert.NotNil(t, d.Args[1].Expr, "the sentinel is an expression")
+			expect.Equal(t, d.Args[1].Expr.Value.Callee.Name, "ErrLocked", "the sentinel is the value that taken names")
+			expect.Equal(t, d.Args[2], suite.Arg{Expr: &suite.Expr{Word: "2"}}, "three clients call at once")
+			expect.Equal(t, d.Entails, []suite.Identity{{Field: "Lock", Method: "Lease", ID: "Locker.Lock/lease"}},
+				"the check entails the check of a single caller of its law")
+		})
+
+		t.Run("passes a computation beside the drawn key in the generated binding of one computation",
+			func(t *testing.T) {
+				t.Parallel()
+
+				d := derivedNamed(t, &flight, "Do", "computes-once#generated")
+				assert.Length(t, d.Draws, 1, "the check draws the key alone")
+				expect.Equal(t, d.Draws[0].Name, "drawnKey", "the draw is the key")
+				call := d.Args[0].Closure
+				assert.NotNil(t, call, "the call is a closure")
+				expect.Equal(t, drawnOf(t, &call.Args[1]).Draw, d.Draws[0], "the call passes the drawn key")
+				expect.NotNil(t, call.Args[2].Compute, "the load is a computation")
+			})
 
 		reach := generate(t, goTree, wrapPackage, toolPackage, deepPackage).suites["Reach"]
 		refusals := []struct {

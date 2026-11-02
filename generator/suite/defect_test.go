@@ -329,6 +329,53 @@ func TestDefect(t *testing.T) {
 			})
 		}
 
+		t.Run("races the callables of a declaration through the yield of its handle", func(t *testing.T) {
+			t.Parallel()
+
+			board := generate(t, goTree, locksPackage).suites["Board"]
+			d := defectNamed(t, &board, "BoardRacyReadWrite")
+			expect.Equal(t, []any{d.Type, d.Keeps}, []any{"BoardRacyReadWriteDefect", true},
+				"the defect of the declaration keeps the handle whose yield it calls")
+			overrides := make([]string, 0, len(d.Overrides))
+			for _, o := range d.Overrides {
+				overrides = append(overrides, o.Method.Name+" "+o.Body)
+			}
+			expect.Equal(t, overrides, []string{"Post mark", "Read marked-sample"},
+				"the first callable with a value result returns its sample, and every other callable marks its call")
+			read := d.Overrides[1]
+			expect.Equal(t, []any{read.Context, read.Guards, read.Delegates}, []any{"p0", true, true},
+				"the read returns the error of a cancelled context first, and calls the subject otherwise")
+			assert.Length(t, read.Results, 2, "the read returns its value and its error")
+			expect.NotNil(t, read.Results[0].Sample, "the value of the read has a sample")
+		})
+
+		t.Run("keeps the results of the subject in a field and yields before it returns them", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, locksPackage).suites["Shelf"]
+			d := defectNamed(t, &shelf, "ShelfCountRacyRead")
+			expect.Equal(t, []any{d.Body, d.Keeps, d.Delegates}, []any{"shared-result", true, true},
+				"the defect calls the subject and keeps the handle whose yield it calls")
+		})
+
+		t.Run("marks each call and yields before it grants a call that finds another call marked", func(t *testing.T) {
+			t.Parallel()
+
+			locker := generate(t, goTree, locksPackage).suites["Locker"]
+			d := defectNamed(t, &locker, "LockerLockCheckThenGrant")
+			expect.Equal(t, []any{d.Body, d.Keeps, d.Delegates, d.Guards}, []any{"check-then-grant", true, true, true},
+				"the defect keeps the handle whose yield it calls, and calls the subject one call at a time")
+		})
+
+		t.Run("calls a fresh subject of its handle for each call of one key", func(t *testing.T) {
+			t.Parallel()
+
+			flight := generate(t, goTree, locksPackage).suites["Flight"]
+			d := defectNamed(t, &flight, "FlightDoComputesPerCall")
+			expect.Equal(t, []any{d.Body, d.Keeps, d.Delegates}, []any{"fresh-each-call", true, false},
+				"the defect keeps the handle whose fresh subject each call calls")
+		})
+
 		t.Run("records the method next of the live handle of an opened cursor", func(t *testing.T) {
 			t.Parallel()
 

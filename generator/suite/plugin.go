@@ -1981,8 +1981,8 @@ func suited(m sdk.SubjectMatch, id *symbol.Identity) bool {
 }
 
 // suites returns the declarations under the directive suite, in either
-// spelling. The store lists the declarations of a directive by the name as
-// written.
+// spelling, in identity order. The store lists the declarations of a
+// directive by the name as written, each name in identity order.
 func suites(m sdk.SubjectMatch) []node.Declaration {
 	var out []node.Declaration
 	for _, name := range []directive.Name{SuiteDirective, canonical} {
@@ -1992,11 +1992,12 @@ func suites(m sdk.SubjectMatch) []node.Declaration {
 			}
 		}
 	}
+	slices.SortFunc(out, func(a, b node.Declaration) int { return a.Identity().Compare(b.Identity()) })
 	return out
 }
 
-// canonical is the canonical name of the directive suite, under which the
-// reader lists the declarations under it.
+// canonical is the canonical name of the directive suite, the spelling that
+// names the plugin.
 var canonical = directive.Schema{Plugin: string(ID), Name: SuiteDirective}.Canonical()
 
 // methodsOf returns the exported methods of the member walk of the

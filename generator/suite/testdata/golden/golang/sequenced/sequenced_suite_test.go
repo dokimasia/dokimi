@@ -50,6 +50,14 @@ func TestCounterSuite(t *testing.T) {
 				Defect: func(*sequenced.CounterHandle) sequenced.Counter { return &counterSubject{} },
 			}),
 			conform.Excuse(
+				sequenced.CounterChecks.Inc.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.CounterChecks.Inc.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 				"the test applies the check of its option alone",
 			),
@@ -144,6 +152,14 @@ func TestCounterSuite(t *testing.T) {
 				},
 				Defect: func(*sequenced.CounterHandle) sequenced.Counter { return &counterSubject{} },
 			}),
+			conform.Excuse(
+				sequenced.CounterChecks.Inc.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.CounterChecks.Inc.Cancel(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 				"the test applies the check of its option alone",
@@ -255,6 +271,14 @@ func TestCounterSuiteBudgets(t *testing.T) {
 			conform.Budget{Allocs: new(uint64(0))},
 		),
 		conform.Excuse(
+			sequenced.CounterChecks.Inc.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -332,6 +356,14 @@ func FuzzCounterSuiteInc(f *testing.F) {
 		f,
 		sequenced.CounterChecks.Inc.Callable,
 		counterIdle,
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -411,6 +443,14 @@ func FuzzCounterSuiteValue(f *testing.F) {
 		sequenced.CounterChecks.Value.Callable,
 		counterIdle,
 		conform.Excuse(
+			sequenced.CounterChecks.Inc.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -488,6 +528,14 @@ func FuzzCounterSuiteGrow(f *testing.F) {
 		f,
 		sequenced.CounterChecks.Grow.Callable,
 		counterIdle,
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -567,6 +615,14 @@ func FuzzCounterSuiteSize(f *testing.F) {
 		sequenced.CounterChecks.Size.Callable,
 		counterIdle,
 		conform.Excuse(
+			sequenced.CounterChecks.Inc.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -645,6 +701,14 @@ func FuzzCounterSuiteThrottle(f *testing.F) {
 		sequenced.CounterChecks.Throttle.Callable,
 		counterIdle,
 		conform.Excuse(
+			sequenced.CounterChecks.Inc.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -722,6 +786,14 @@ func FuzzCounterSuiteLoad(f *testing.F) {
 		f,
 		sequenced.CounterChecks.Load.Callable,
 		counterIdle,
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.CounterChecks.Inc.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			sequenced.CounterChecks.Inc.KeepsWithinItsBounds(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -8499,5 +8571,12789 @@ func BenchmarkVersionedSuite(b *testing.B) {
 	})
 	b.Run("Get", func(b *testing.B) {
 		sequenced.BenchVersionedSuite(b, sequenced.VersionedChecks.Get.Callable, versionedIdle)
+	})
+}
+
+// accountsSubjectEmbedded is sequenced.Accounts under the name of the
+// field that accountsSubject embeds.
+type accountsSubjectEmbedded = sequenced.Accounts
+
+// accountsSubject is a value of Accounts that only TestAccountsSuite
+// builds.
+type accountsSubject struct{ accountsSubjectEmbedded }
+
+// TestAccountsSuite checks the suite of Accounts and the two forms of its
+// application.
+func TestAccountsSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("AccountsSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, sequenced.AccountsSuite())
+	})
+
+	t.Run("RunAccountsSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *accountsSubject
+		sequenced.RunAccountsSuite(
+			t,
+			func() *accountsSubject {
+				built = &accountsSubject{}
+				return built
+			},
+			conform.With(sequenced.AccountsCheck{
+				ID:        "Accounts/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.AccountsHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Accounts(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.AccountsHandle) sequenced.Accounts { return &accountsSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Total.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Total.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Total.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Rename.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Rename.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Rename.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Rename.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Names.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Names.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Names.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Fold.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Fold.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Fold.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Fold.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Audit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Audit.Cancel(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunAccountsSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *accountsSubject
+		sequenced.RunAccountsSuiteFromHandle(
+			t,
+			func(*sequenced.AccountsHandle) *accountsSubject {
+				built = &accountsSubject{}
+				return built
+			},
+			conform.With(sequenced.AccountsCheck{
+				ID:        "Accounts/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.AccountsHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Accounts(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.AccountsHandle) sequenced.Accounts { return &accountsSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Total.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Total.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Total.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Rename.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Rename.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Rename.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Rename.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Names.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Names.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Names.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Fold.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Fold.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Fold.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Fold.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Audit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.AccountsChecks.Audit.Cancel(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// accountsIdle returns the planted defect of a ceiling of Accounts with a
+// spend of nothing, a subject that answers each call at once.
+func accountsIdle(h *sequenced.AccountsHandle) sequenced.Accounts {
+	return sequenced.AccountsSuite().Calls[0].Over(h, func() {})
+}
+
+// TestAccountsSuiteBudgets applies the allocation ceilings of the suite of
+// Accounts to accountsIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestAccountsSuiteBudgets(t *testing.T) {
+	sequenced.RunAccountsBudgets(
+		t,
+		accountsIdle,
+		conform.Ceilings(
+			sequenced.AccountsChecks.Transfer.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.AccountsChecks.Total.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.AccountsChecks.Rename.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.AccountsChecks.Names.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.AccountsChecks.Fold.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.AccountsChecks.Audit.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzAccountsSuiteTransfer registers the fuzz target of Accounts.Transfer
+// on accountsIdle, with every check of the suite excused.
+func FuzzAccountsSuiteTransfer(f *testing.F) {
+	sequenced.FuzzAccountsSuite(
+		f,
+		sequenced.AccountsChecks.Transfer.Callable,
+		accountsIdle,
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzAccountsSuiteTotal registers the fuzz target of Accounts.Total on
+// accountsIdle, with every check of the suite excused.
+func FuzzAccountsSuiteTotal(f *testing.F) {
+	sequenced.FuzzAccountsSuite(
+		f,
+		sequenced.AccountsChecks.Total.Callable,
+		accountsIdle,
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzAccountsSuiteRename registers the fuzz target of Accounts.Rename on
+// accountsIdle, with every check of the suite excused.
+func FuzzAccountsSuiteRename(f *testing.F) {
+	sequenced.FuzzAccountsSuite(
+		f,
+		sequenced.AccountsChecks.Rename.Callable,
+		accountsIdle,
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzAccountsSuiteNames registers the fuzz target of Accounts.Names on
+// accountsIdle, with every check of the suite excused.
+func FuzzAccountsSuiteNames(f *testing.F) {
+	sequenced.FuzzAccountsSuite(
+		f,
+		sequenced.AccountsChecks.Names.Callable,
+		accountsIdle,
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzAccountsSuiteFold registers the fuzz target of Accounts.Fold on
+// accountsIdle, with every check of the suite excused.
+func FuzzAccountsSuiteFold(f *testing.F) {
+	sequenced.FuzzAccountsSuite(
+		f,
+		sequenced.AccountsChecks.Fold.Callable,
+		accountsIdle,
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzAccountsSuiteAudit registers the fuzz target of Accounts.Audit on
+// accountsIdle, with every check of the suite excused.
+func FuzzAccountsSuiteAudit(f *testing.F) {
+	sequenced.FuzzAccountsSuite(
+		f,
+		sequenced.AccountsChecks.Audit.Callable,
+		accountsIdle,
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Transfer.ConservesTheQuantity(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Rename.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Names.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Fold.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.AccountsChecks.Audit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkAccountsSuite measures each callable of the suite of Accounts
+// on accountsIdle.
+func BenchmarkAccountsSuite(b *testing.B) {
+	b.Run("Transfer", func(b *testing.B) {
+		sequenced.BenchAccountsSuite(b, sequenced.AccountsChecks.Transfer.Callable, accountsIdle)
+	})
+	b.Run("Total", func(b *testing.B) {
+		sequenced.BenchAccountsSuite(b, sequenced.AccountsChecks.Total.Callable, accountsIdle)
+	})
+	b.Run("Rename", func(b *testing.B) {
+		sequenced.BenchAccountsSuite(b, sequenced.AccountsChecks.Rename.Callable, accountsIdle)
+	})
+	b.Run("Names", func(b *testing.B) {
+		sequenced.BenchAccountsSuite(b, sequenced.AccountsChecks.Names.Callable, accountsIdle)
+	})
+	b.Run("Fold", func(b *testing.B) {
+		sequenced.BenchAccountsSuite(b, sequenced.AccountsChecks.Fold.Callable, accountsIdle)
+	})
+	b.Run("Audit", func(b *testing.B) {
+		sequenced.BenchAccountsSuite(b, sequenced.AccountsChecks.Audit.Callable, accountsIdle)
+	})
+}
+
+// journalSubjectEmbedded is sequenced.Journal under the name of the field
+// that journalSubject embeds.
+type journalSubjectEmbedded = sequenced.Journal
+
+// journalSubject is a value of Journal that only TestJournalSuite builds.
+type journalSubject struct{ journalSubjectEmbedded }
+
+// TestJournalSuite checks the suite of Journal and the two forms of its
+// application.
+func TestJournalSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("JournalSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, sequenced.JournalSuite())
+	})
+
+	t.Run("RunJournalSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *journalSubject
+		sequenced.RunJournalSuite(
+			t,
+			func() *journalSubject {
+				built = &journalSubject{}
+				return built
+			},
+			conform.With(sequenced.JournalCheck{
+				ID:        "Journal/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.JournalHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Journal(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.JournalHandle) sequenced.Journal { return &journalSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.FailureIsReported(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.FailureIsReportedGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.NoPartialWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.NoPartialWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.NoTraceOfAFailedCall(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.FailureIsReported(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.FailureIsReportedGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunJournalSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *journalSubject
+		sequenced.RunJournalSuiteFromHandle(
+			t,
+			func(*sequenced.JournalHandle) *journalSubject {
+				built = &journalSubject{}
+				return built
+			},
+			conform.With(sequenced.JournalCheck{
+				ID:        "Journal/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.JournalHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Journal(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.JournalHandle) sequenced.Journal { return &journalSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.FailureIsReported(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.FailureIsReportedGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.NoPartialWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.NoPartialWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Record.NoTraceOfAFailedCall(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.FailureIsReported(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.FailureIsReportedGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.JournalChecks.Entry.ZeroOnErrorGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// journalIdle returns the planted defect of a ceiling of Journal with a
+// spend of nothing, a subject that answers each call at once.
+func journalIdle(h *sequenced.JournalHandle) sequenced.Journal {
+	return sequenced.JournalSuite().Calls[0].Over(h, func() {})
+}
+
+// TestJournalSuiteBudgets applies the allocation ceilings of the suite of
+// Journal to journalIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestJournalSuiteBudgets(t *testing.T) {
+	sequenced.RunJournalBudgets(
+		t,
+		journalIdle,
+		conform.Ceilings(
+			sequenced.JournalChecks.Record.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.JournalChecks.Entry.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.FailureIsReported(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.FailureIsReportedGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoPartialWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoPartialWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoTraceOfAFailedCall(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.FailureIsReported(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.FailureIsReportedGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzJournalSuiteRecord registers the fuzz target of Journal.Record on
+// journalIdle, with every check of the suite excused.
+func FuzzJournalSuiteRecord(f *testing.F) {
+	sequenced.FuzzJournalSuite(
+		f,
+		sequenced.JournalChecks.Record.Callable,
+		journalIdle,
+		conform.Excuse(
+			sequenced.JournalChecks.Record.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.FailureIsReported(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.FailureIsReportedGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoPartialWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoPartialWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoTraceOfAFailedCall(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.FailureIsReported(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.FailureIsReportedGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzJournalSuiteEntry registers the fuzz target of Journal.Entry on
+// journalIdle, with every check of the suite excused.
+func FuzzJournalSuiteEntry(f *testing.F) {
+	sequenced.FuzzJournalSuite(
+		f,
+		sequenced.JournalChecks.Entry.Callable,
+		journalIdle,
+		conform.Excuse(
+			sequenced.JournalChecks.Record.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.FailureIsReported(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.FailureIsReportedGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoPartialWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoPartialWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Record.NoTraceOfAFailedCall(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.FailureIsReported(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.FailureIsReportedGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.JournalChecks.Entry.ZeroOnErrorGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkJournalSuite measures each callable of the suite of Journal on
+// journalIdle.
+func BenchmarkJournalSuite(b *testing.B) {
+	b.Run("Record", func(b *testing.B) {
+		sequenced.BenchJournalSuite(b, sequenced.JournalChecks.Record.Callable, journalIdle)
+	})
+	b.Run("Entry", func(b *testing.B) {
+		sequenced.BenchJournalSuite(b, sequenced.JournalChecks.Entry.Callable, journalIdle)
+	})
+}
+
+// stockSubjectEmbedded is sequenced.Stock under the name of the field that
+// stockSubject embeds.
+type stockSubjectEmbedded = sequenced.Stock
+
+// stockSubject is a value of Stock that only TestStockSuite builds.
+type stockSubject struct{ stockSubjectEmbedded }
+
+// TestStockSuite checks the suite of Stock and the two forms of its
+// application.
+func TestStockSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("StockSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, sequenced.StockSuite())
+	})
+
+	t.Run("RunStockSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *stockSubject
+		sequenced.RunStockSuite(
+			t,
+			func() *stockSubject {
+				built = &stockSubject{}
+				return built
+			},
+			conform.With(sequenced.StockCheck{
+				ID:        "Stock/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.StockHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, sequenced.Stock(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*sequenced.StockHandle) sequenced.Stock { return &stockSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.StockChecks.Items.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Items.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Items.IterationSeesMutations(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Each.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Each.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Each.IterationSeesMutations(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Counts.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Counts.IterationSeesMutations(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Sizes.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Snapshot.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Snapshot.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Snapshot.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Add.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Add.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Add.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Add.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Remove.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Remove.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Remove.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Remove.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunStockSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *stockSubject
+		sequenced.RunStockSuiteFromHandle(
+			t,
+			func(*sequenced.StockHandle) *stockSubject {
+				built = &stockSubject{}
+				return built
+			},
+			conform.With(sequenced.StockCheck{
+				ID:        "Stock/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.StockHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, sequenced.Stock(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*sequenced.StockHandle) sequenced.Stock { return &stockSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.StockChecks.Items.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Items.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Items.IterationSeesMutations(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Each.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Each.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Each.IterationSeesMutations(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Counts.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Counts.IterationSeesMutations(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Sizes.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Snapshot.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Snapshot.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Snapshot.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Add.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Add.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Add.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Add.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Remove.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Remove.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Remove.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.StockChecks.Remove.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// stockIdle returns the planted defect of a ceiling of Stock with a spend
+// of nothing, a subject that answers each call at once.
+func stockIdle(h *sequenced.StockHandle) sequenced.Stock {
+	return sequenced.StockSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStockSuiteBudgets applies the allocation ceilings of the suite of
+// Stock to stockIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
+func TestStockSuiteBudgets(t *testing.T) {
+	sequenced.RunStockBudgets(
+		t,
+		stockIdle,
+		conform.Ceilings(
+			sequenced.StockChecks.Items.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.StockChecks.Each.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.StockChecks.Counts.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.StockChecks.Sizes.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.StockChecks.Snapshot.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.StockChecks.Add.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.StockChecks.Remove.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStockSuiteItems registers the fuzz target of Stock.Items on
+// stockIdle, with every check of the suite excused.
+func FuzzStockSuiteItems(f *testing.F) {
+	sequenced.FuzzStockSuite(
+		f,
+		sequenced.StockChecks.Items.Callable,
+		stockIdle,
+		conform.Excuse(
+			sequenced.StockChecks.Items.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStockSuiteEach registers the fuzz target of Stock.Each on stockIdle,
+// with every check of the suite excused.
+func FuzzStockSuiteEach(f *testing.F) {
+	sequenced.FuzzStockSuite(
+		f,
+		sequenced.StockChecks.Each.Callable,
+		stockIdle,
+		conform.Excuse(
+			sequenced.StockChecks.Items.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStockSuiteCounts registers the fuzz target of Stock.Counts on
+// stockIdle, with every check of the suite excused.
+func FuzzStockSuiteCounts(f *testing.F) {
+	sequenced.FuzzStockSuite(
+		f,
+		sequenced.StockChecks.Counts.Callable,
+		stockIdle,
+		conform.Excuse(
+			sequenced.StockChecks.Items.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStockSuiteSizes registers the fuzz target of Stock.Sizes on
+// stockIdle, with every check of the suite excused.
+func FuzzStockSuiteSizes(f *testing.F) {
+	sequenced.FuzzStockSuite(
+		f,
+		sequenced.StockChecks.Sizes.Callable,
+		stockIdle,
+		conform.Excuse(
+			sequenced.StockChecks.Items.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStockSuiteSnapshot registers the fuzz target of Stock.Snapshot on
+// stockIdle, with every check of the suite excused.
+func FuzzStockSuiteSnapshot(f *testing.F) {
+	sequenced.FuzzStockSuite(
+		f,
+		sequenced.StockChecks.Snapshot.Callable,
+		stockIdle,
+		conform.Excuse(
+			sequenced.StockChecks.Items.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStockSuiteAdd registers the fuzz target of Stock.Add on stockIdle,
+// with every check of the suite excused.
+func FuzzStockSuiteAdd(f *testing.F) {
+	sequenced.FuzzStockSuite(
+		f,
+		sequenced.StockChecks.Add.Callable,
+		stockIdle,
+		conform.Excuse(
+			sequenced.StockChecks.Items.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStockSuiteRemove registers the fuzz target of Stock.Remove on
+// stockIdle, with every check of the suite excused.
+func FuzzStockSuiteRemove(f *testing.F) {
+	sequenced.FuzzStockSuite(
+		f,
+		sequenced.StockChecks.Remove.Callable,
+		stockIdle,
+		conform.Excuse(
+			sequenced.StockChecks.Items.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Items.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Each.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Counts.IterationSeesMutations(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStored(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Sizes.StreamsWhatWasStoredGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Snapshot.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Add.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.StockChecks.Remove.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkStockSuite measures each callable of the suite of Stock on
+// stockIdle.
+func BenchmarkStockSuite(b *testing.B) {
+	b.Run("Items", func(b *testing.B) {
+		sequenced.BenchStockSuite(b, sequenced.StockChecks.Items.Callable, stockIdle)
+	})
+	b.Run("Each", func(b *testing.B) {
+		sequenced.BenchStockSuite(b, sequenced.StockChecks.Each.Callable, stockIdle)
+	})
+	b.Run("Counts", func(b *testing.B) {
+		sequenced.BenchStockSuite(b, sequenced.StockChecks.Counts.Callable, stockIdle)
+	})
+	b.Run("Sizes", func(b *testing.B) {
+		sequenced.BenchStockSuite(b, sequenced.StockChecks.Sizes.Callable, stockIdle)
+	})
+	b.Run("Snapshot", func(b *testing.B) {
+		sequenced.BenchStockSuite(b, sequenced.StockChecks.Snapshot.Callable, stockIdle)
+	})
+	b.Run("Add", func(b *testing.B) {
+		sequenced.BenchStockSuite(b, sequenced.StockChecks.Add.Callable, stockIdle)
+	})
+	b.Run("Remove", func(b *testing.B) {
+		sequenced.BenchStockSuite(b, sequenced.StockChecks.Remove.Callable, stockIdle)
+	})
+}
+
+// outboxSubjectEmbedded is sequenced.Outbox under the name of the field
+// that outboxSubject embeds.
+type outboxSubjectEmbedded = sequenced.Outbox
+
+// outboxSubject is a value of Outbox that only TestOutboxSuite builds.
+type outboxSubject struct{ outboxSubjectEmbedded }
+
+// TestOutboxSuite checks the suite of Outbox and the two forms of its
+// application.
+func TestOutboxSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("OutboxSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, sequenced.OutboxSuite())
+	})
+
+	t.Run("RunOutboxSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *outboxSubject
+		sequenced.RunOutboxSuite(
+			t,
+			func() *outboxSubject {
+				built = &outboxSubject{}
+				return built
+			},
+			conform.With(sequenced.OutboxCheck{
+				ID:        "Outbox/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.OutboxHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Outbox(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.OutboxHandle) sequenced.Outbox { return &outboxSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.DeliversEachAppend(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Subscribe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Subscribe.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Note.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Note.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Note.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Note.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Notes.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Notes.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Log.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Log.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Log.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Log.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Logged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Logged.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Logged.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Post.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Post.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Post.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Post.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Queue.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Queue.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Push.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Push.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Push.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Push.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Flush.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Flush.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Pour.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Pour.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Pour.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Pour.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Drain.Smoke(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunOutboxSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *outboxSubject
+		sequenced.RunOutboxSuiteFromHandle(
+			t,
+			func(*sequenced.OutboxHandle) *outboxSubject {
+				built = &outboxSubject{}
+				return built
+			},
+			conform.With(sequenced.OutboxCheck{
+				ID:        "Outbox/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.OutboxHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Outbox(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.OutboxHandle) sequenced.Outbox { return &outboxSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Append.DeliversEachAppend(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Subscribe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Subscribe.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Note.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Note.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Note.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Note.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Notes.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Notes.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Log.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Log.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Log.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Log.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Logged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Logged.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Logged.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Post.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Post.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Post.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Post.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Queue.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Queue.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Push.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Push.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Push.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Push.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Flush.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Flush.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Pour.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Pour.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Pour.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Pour.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.OutboxChecks.Drain.Smoke(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// outboxIdle returns the planted defect of a ceiling of Outbox with a
+// spend of nothing, a subject that answers each call at once.
+func outboxIdle(h *sequenced.OutboxHandle) sequenced.Outbox {
+	return sequenced.OutboxSuite().Calls[0].Over(h, func() {})
+}
+
+// TestOutboxSuiteBudgets applies the allocation ceilings of the suite of
+// Outbox to outboxIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestOutboxSuiteBudgets(t *testing.T) {
+	sequenced.RunOutboxBudgets(
+		t,
+		outboxIdle,
+		conform.Ceilings(
+			sequenced.OutboxChecks.Append.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Subscribe.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Note.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Notes.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Log.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Logged.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Post.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Queue.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Push.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Flush.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Pour.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.OutboxChecks.Drain.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteAppend registers the fuzz target of Outbox.Append on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteAppend(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Append.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteSubscribe registers the fuzz target of Outbox.Subscribe
+// on outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteSubscribe(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Subscribe.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteNote registers the fuzz target of Outbox.Note on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteNote(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Note.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteNotes registers the fuzz target of Outbox.Notes on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteNotes(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Notes.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteLog registers the fuzz target of Outbox.Log on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteLog(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Log.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteLogged registers the fuzz target of Outbox.Logged on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteLogged(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Logged.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuitePost registers the fuzz target of Outbox.Post on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuitePost(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Post.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteQueue registers the fuzz target of Outbox.Queue on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteQueue(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Queue.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuitePush registers the fuzz target of Outbox.Push on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuitePush(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Push.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteFlush registers the fuzz target of Outbox.Flush on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteFlush(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Flush.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuitePour registers the fuzz target of Outbox.Pour on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuitePour(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Pour.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzOutboxSuiteDrain registers the fuzz target of Outbox.Drain on
+// outboxIdle, with every check of the suite excused.
+func FuzzOutboxSuiteDrain(f *testing.F) {
+	sequenced.FuzzOutboxSuite(
+		f,
+		sequenced.OutboxChecks.Drain.Callable,
+		outboxIdle,
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Append.DeliversEachAppend(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Note.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Notes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Log.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Logged.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Post.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Queue.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Push.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Flush.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Pour.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.OutboxChecks.Drain.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkOutboxSuite measures each callable of the suite of Outbox on
+// outboxIdle.
+func BenchmarkOutboxSuite(b *testing.B) {
+	b.Run("Append", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Append.Callable, outboxIdle)
+	})
+	b.Run("Subscribe", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Subscribe.Callable, outboxIdle)
+	})
+	b.Run("Note", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Note.Callable, outboxIdle)
+	})
+	b.Run("Notes", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Notes.Callable, outboxIdle)
+	})
+	b.Run("Log", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Log.Callable, outboxIdle)
+	})
+	b.Run("Logged", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Logged.Callable, outboxIdle)
+	})
+	b.Run("Post", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Post.Callable, outboxIdle)
+	})
+	b.Run("Queue", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Queue.Callable, outboxIdle)
+	})
+	b.Run("Push", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Push.Callable, outboxIdle)
+	})
+	b.Run("Flush", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Flush.Callable, outboxIdle)
+	})
+	b.Run("Pour", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Pour.Callable, outboxIdle)
+	})
+	b.Run("Drain", func(b *testing.B) {
+		sequenced.BenchOutboxSuite(b, sequenced.OutboxChecks.Drain.Callable, outboxIdle)
+	})
+}
+
+// brokerSubjectEmbedded is sequenced.Broker under the name of the field
+// that brokerSubject embeds.
+type brokerSubjectEmbedded = sequenced.Broker
+
+// brokerSubject is a value of Broker that only TestBrokerSuite builds.
+type brokerSubject struct{ brokerSubjectEmbedded }
+
+// TestBrokerSuite checks the suite of Broker and the two forms of its
+// application.
+func TestBrokerSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("BrokerSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, sequenced.BrokerSuite())
+	})
+
+	t.Run("RunBrokerSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *brokerSubject
+		sequenced.RunBrokerSuite(
+			t,
+			func() *brokerSubject {
+				built = &brokerSubject{}
+				return built
+			},
+			conform.With(sequenced.BrokerCheck{
+				ID:        "Broker/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.BrokerHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Broker(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.BrokerHandle) sequenced.Broker { return &brokerSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.DeliversByItsMode(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Listen.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Listen.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Refire.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Refire.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Refire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Refire.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Tap.Smoke(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunBrokerSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *brokerSubject
+		sequenced.RunBrokerSuiteFromHandle(
+			t,
+			func(*sequenced.BrokerHandle) *brokerSubject {
+				built = &brokerSubject{}
+				return built
+			},
+			conform.With(sequenced.BrokerCheck{
+				ID:        "Broker/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.BrokerHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Broker(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.BrokerHandle) sequenced.Broker { return &brokerSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Send.DeliversByItsMode(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Listen.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Listen.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Refire.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Refire.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Refire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Refire.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.BrokerChecks.Tap.Smoke(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// brokerIdle returns the planted defect of a ceiling of Broker with a
+// spend of nothing, a subject that answers each call at once.
+func brokerIdle(h *sequenced.BrokerHandle) sequenced.Broker {
+	return sequenced.BrokerSuite().Calls[0].Over(h, func() {})
+}
+
+// TestBrokerSuiteBudgets applies the allocation ceilings of the suite of
+// Broker to brokerIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestBrokerSuiteBudgets(t *testing.T) {
+	sequenced.RunBrokerBudgets(
+		t,
+		brokerIdle,
+		conform.Ceilings(
+			sequenced.BrokerChecks.Send.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.BrokerChecks.Resend.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.BrokerChecks.Listen.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.BrokerChecks.Fire.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.BrokerChecks.Refire.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.BrokerChecks.Tap.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Tap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBrokerSuiteSend registers the fuzz target of Broker.Send on
+// brokerIdle, with every check of the suite excused.
+func FuzzBrokerSuiteSend(f *testing.F) {
+	sequenced.FuzzBrokerSuite(
+		f,
+		sequenced.BrokerChecks.Send.Callable,
+		brokerIdle,
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Tap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBrokerSuiteResend registers the fuzz target of Broker.Resend on
+// brokerIdle, with every check of the suite excused.
+func FuzzBrokerSuiteResend(f *testing.F) {
+	sequenced.FuzzBrokerSuite(
+		f,
+		sequenced.BrokerChecks.Resend.Callable,
+		brokerIdle,
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Tap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBrokerSuiteListen registers the fuzz target of Broker.Listen on
+// brokerIdle, with every check of the suite excused.
+func FuzzBrokerSuiteListen(f *testing.F) {
+	sequenced.FuzzBrokerSuite(
+		f,
+		sequenced.BrokerChecks.Listen.Callable,
+		brokerIdle,
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Tap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBrokerSuiteFire registers the fuzz target of Broker.Fire on
+// brokerIdle, with every check of the suite excused.
+func FuzzBrokerSuiteFire(f *testing.F) {
+	sequenced.FuzzBrokerSuite(
+		f,
+		sequenced.BrokerChecks.Fire.Callable,
+		brokerIdle,
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Tap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBrokerSuiteRefire registers the fuzz target of Broker.Refire on
+// brokerIdle, with every check of the suite excused.
+func FuzzBrokerSuiteRefire(f *testing.F) {
+	sequenced.FuzzBrokerSuite(
+		f,
+		sequenced.BrokerChecks.Refire.Callable,
+		brokerIdle,
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Tap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBrokerSuiteTap registers the fuzz target of Broker.Tap on
+// brokerIdle, with every check of the suite excused.
+func FuzzBrokerSuiteTap(f *testing.F) {
+	sequenced.FuzzBrokerSuite(
+		f,
+		sequenced.BrokerChecks.Tap.Callable,
+		brokerIdle,
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Send.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Resend.RedeliversOnDemand(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Listen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Fire.DeliversByItsMode(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Refire.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.BrokerChecks.Tap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkBrokerSuite measures each callable of the suite of Broker on
+// brokerIdle.
+func BenchmarkBrokerSuite(b *testing.B) {
+	b.Run("Send", func(b *testing.B) {
+		sequenced.BenchBrokerSuite(b, sequenced.BrokerChecks.Send.Callable, brokerIdle)
+	})
+	b.Run("Resend", func(b *testing.B) {
+		sequenced.BenchBrokerSuite(b, sequenced.BrokerChecks.Resend.Callable, brokerIdle)
+	})
+	b.Run("Listen", func(b *testing.B) {
+		sequenced.BenchBrokerSuite(b, sequenced.BrokerChecks.Listen.Callable, brokerIdle)
+	})
+	b.Run("Fire", func(b *testing.B) {
+		sequenced.BenchBrokerSuite(b, sequenced.BrokerChecks.Fire.Callable, brokerIdle)
+	})
+	b.Run("Refire", func(b *testing.B) {
+		sequenced.BenchBrokerSuite(b, sequenced.BrokerChecks.Refire.Callable, brokerIdle)
+	})
+	b.Run("Tap", func(b *testing.B) {
+		sequenced.BenchBrokerSuite(b, sequenced.BrokerChecks.Tap.Callable, brokerIdle)
+	})
+}
+
+// watchesSubjectEmbedded is sequenced.Watches under the name of the field
+// that watchesSubject embeds.
+type watchesSubjectEmbedded = sequenced.Watches
+
+// watchesSubject is a value of Watches that only TestWatchesSuite builds.
+type watchesSubject struct{ watchesSubjectEmbedded }
+
+// TestWatchesSuite checks the suite of Watches and the two forms of its
+// application.
+func TestWatchesSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("WatchesSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, sequenced.WatchesSuite())
+	})
+
+	t.Run("RunWatchesSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *watchesSubject
+		sequenced.RunWatchesSuite(
+			t,
+			func() *watchesSubject {
+				built = &watchesSubject{}
+				return built
+			},
+			conform.With(sequenced.WatchesCheck{
+				ID:        "Watches/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.WatchesHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Watches(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.WatchesHandle) sequenced.Watches { return &watchesSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Set.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Set.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Set.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Set.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Tick.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Tick.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Tick.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Tick.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeks.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeks.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeked.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeked.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeked.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Finds.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Finds.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Finds.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Finds.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Found.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Found.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Found.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Found.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Reads.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Reads.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Reads.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Reads.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Written.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Written.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Written.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Written.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancels.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancels.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancels.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancelled.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancelled.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closes.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closes.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closes.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closes.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closed.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closed.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closed.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closed.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Fields.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Fields.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Fields.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Fields.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Filled.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Filled.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Filled.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Filled.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Follows.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Follows.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Follows.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Follows.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Touch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Touch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Touch.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunWatchesSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *watchesSubject
+		sequenced.RunWatchesSuiteFromHandle(
+			t,
+			func(*sequenced.WatchesHandle) *watchesSubject {
+				built = &watchesSubject{}
+				return built
+			},
+			conform.With(sequenced.WatchesCheck{
+				ID:        "Watches/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *sequenced.WatchesHandle) {
+					got := h.Subject()
+					assert.Equal(
+						h,
+						got,
+						sequenced.Watches(built),
+						h.Statement(),
+						assert.ByIdentity(),
+					)
+				},
+				Defect: func(*sequenced.WatchesHandle) sequenced.Watches { return &watchesSubject{} },
+			}),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Set.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Set.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Set.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Set.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Tick.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Tick.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Tick.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Tick.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeks.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeks.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeked.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeked.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Peeked.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Finds.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Finds.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Finds.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Finds.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Found.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Found.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Found.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Found.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Reads.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Reads.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Reads.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Reads.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Written.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Written.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Written.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Written.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancels.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancels.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancels.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancelled.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancelled.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closes.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closes.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closes.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closes.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closed.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closed.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closed.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Closed.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Fields.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Fields.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Fields.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Fields.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Filled.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Filled.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Filled.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Filled.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Follows.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Follows.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Follows.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Follows.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Touch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Touch.SmokeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sequenced.WatchesChecks.Touch.CancelGenerated(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// watchesIdle returns the planted defect of a ceiling of Watches with a
+// spend of nothing, a subject that answers each call at once.
+func watchesIdle(h *sequenced.WatchesHandle) sequenced.Watches {
+	return sequenced.WatchesSuite().Calls[0].Over(h, func() {})
+}
+
+// TestWatchesSuiteBudgets applies the allocation ceilings of the suite of
+// Watches to watchesIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestWatchesSuiteBudgets(t *testing.T) {
+	sequenced.RunWatchesBudgets(
+		t,
+		watchesIdle,
+		conform.Ceilings(
+			sequenced.WatchesChecks.Watch.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Set.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Ticks.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Tick.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Peeks.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Peeked.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Finds.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Found.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Reads.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Written.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Cancels.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Cancelled.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Closes.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Closed.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Fields.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Filled.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Follows.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			sequenced.WatchesChecks.Touch.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteWatch registers the fuzz target of Watches.Watch on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteWatch(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Watch.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteSet registers the fuzz target of Watches.Set on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteSet(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Set.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteTicks registers the fuzz target of Watches.Ticks on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteTicks(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Ticks.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteTick registers the fuzz target of Watches.Tick on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteTick(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Tick.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuitePeeks registers the fuzz target of Watches.Peeks on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuitePeeks(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Peeks.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuitePeeked registers the fuzz target of Watches.Peeked on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuitePeeked(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Peeked.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteFinds registers the fuzz target of Watches.Finds on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteFinds(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Finds.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteFound registers the fuzz target of Watches.Found on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteFound(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Found.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteReads registers the fuzz target of Watches.Reads on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteReads(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Reads.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteWritten registers the fuzz target of Watches.Written on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteWritten(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Written.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteCancels registers the fuzz target of Watches.Cancels on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteCancels(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Cancels.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteCancelled registers the fuzz target of Watches.Cancelled
+// on watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteCancelled(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Cancelled.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteCloses registers the fuzz target of Watches.Closes on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteCloses(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Closes.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteClosed registers the fuzz target of Watches.Closed on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteClosed(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Closed.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteFields registers the fuzz target of Watches.Fields on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteFields(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Fields.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteFilled registers the fuzz target of Watches.Filled on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteFilled(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Filled.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteFollows registers the fuzz target of Watches.Follows on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteFollows(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Follows.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzWatchesSuiteTouch registers the fuzz target of Watches.Touch on
+// watchesIdle, with every check of the suite excused.
+func FuzzWatchesSuiteTouch(f *testing.F) {
+	sequenced.FuzzWatchesSuite(
+		f,
+		sequenced.WatchesChecks.Touch.Callable,
+		watchesIdle,
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Watch.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Set.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Ticks.WatchSeesEachTrigger(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Tick.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeks.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Peeked.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Finds.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Found.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Reads.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Written.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancels.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Cancelled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closes.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Closed.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Fields.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Filled.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Follows.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.SmokeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sequenced.WatchesChecks.Touch.CancelGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkWatchesSuite measures each callable of the suite of Watches on
+// watchesIdle.
+func BenchmarkWatchesSuite(b *testing.B) {
+	b.Run("Watch", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Watch.Callable, watchesIdle)
+	})
+	b.Run("Set", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Set.Callable, watchesIdle)
+	})
+	b.Run("Ticks", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Ticks.Callable, watchesIdle)
+	})
+	b.Run("Tick", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Tick.Callable, watchesIdle)
+	})
+	b.Run("Peeks", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Peeks.Callable, watchesIdle)
+	})
+	b.Run("Peeked", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Peeked.Callable, watchesIdle)
+	})
+	b.Run("Finds", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Finds.Callable, watchesIdle)
+	})
+	b.Run("Found", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Found.Callable, watchesIdle)
+	})
+	b.Run("Reads", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Reads.Callable, watchesIdle)
+	})
+	b.Run("Written", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Written.Callable, watchesIdle)
+	})
+	b.Run("Cancels", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Cancels.Callable, watchesIdle)
+	})
+	b.Run("Cancelled", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Cancelled.Callable, watchesIdle)
+	})
+	b.Run("Closes", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Closes.Callable, watchesIdle)
+	})
+	b.Run("Closed", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Closed.Callable, watchesIdle)
+	})
+	b.Run("Fields", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Fields.Callable, watchesIdle)
+	})
+	b.Run("Filled", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Filled.Callable, watchesIdle)
+	})
+	b.Run("Follows", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Follows.Callable, watchesIdle)
+	})
+	b.Run("Touch", func(b *testing.B) {
+		sequenced.BenchWatchesSuite(b, sequenced.WatchesChecks.Touch.Callable, watchesIdle)
 	})
 }

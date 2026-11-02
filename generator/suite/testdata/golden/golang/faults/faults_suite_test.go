@@ -416,6 +416,10 @@ func TestWriterSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				faults.WriterChecks.Put.NoTraceOfAFailedCall(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				faults.WriterChecks.Get.Smoke(),
 				"the test applies the check of its option alone",
 			),
@@ -498,6 +502,10 @@ func TestWriterSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				faults.WriterChecks.Put.NoPartialWriteGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				faults.WriterChecks.Put.NoTraceOfAFailedCall(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -585,6 +593,10 @@ func TestWriterSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			faults.WriterChecks.Put.NoTraceOfAFailedCall(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			faults.WriterChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -659,6 +671,10 @@ func FuzzWriterSuitePut(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			faults.WriterChecks.Put.NoTraceOfAFailedCall(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			faults.WriterChecks.Get.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -730,6 +746,10 @@ func FuzzWriterSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			faults.WriterChecks.Put.NoPartialWriteGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			faults.WriterChecks.Put.NoTraceOfAFailedCall(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(

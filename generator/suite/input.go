@@ -117,13 +117,7 @@ const sentinelParam = "sentinel"
 // a result.
 func (k *caller) funcOf(ref *node.TypeRef, name, label string, taken map[string]bool, from root, owner string) Func {
 	f := Func{Signature: &emit.Method{}}
-	for _, p := range ref.Elems[:ref.Split] {
-		param := &emit.Param{Type: rules.EmitRef(p)}
-		if strings.HasPrefix(p.Spelling, variadicSpelling) {
-			param.Type, param.Variadic = rules.EmitRef(p.Elems[0]), symbol.VariadicPositional
-		}
-		f.Signature.Params.Append(param)
-	}
+	appendParams(f.Signature, ref)
 	returns := ref.Elems[ref.Split:]
 	for i, r := range returns {
 		res := k.result(from.to(r, "a result of "+owner), name, label, i, len(returns), nil, taken)
@@ -137,6 +131,19 @@ func (k *caller) funcOf(ref *node.TypeRef, name, label string, taken map[string]
 // variadicSpelling opens the spelling of the last parameter of a variadic
 // function type, and the spelling of no other parameter.
 const variadicSpelling = "..."
+
+// appendParams appends the parameters of the function type ref to m, without
+// names. The last parameter of a variadic function type takes the type of its
+// elements.
+func appendParams(m *emit.Method, ref *node.TypeRef) {
+	for _, p := range ref.Elems[:ref.Split] {
+		param := &emit.Param{Type: rules.EmitRef(p)}
+		if strings.HasPrefix(p.Spelling, variadicSpelling) {
+			param.Type, param.Variadic = rules.EmitRef(p.Elems[0]), symbol.VariadicPositional
+		}
+		m.Params.Append(param)
+	}
+}
 
 // result returns the list of the result at the position i of n results of
 // the generated function name with the label label. at is the root of the

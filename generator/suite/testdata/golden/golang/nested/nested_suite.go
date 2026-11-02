@@ -441,6 +441,29 @@ func courierSendPanics(h *CourierHandle) Courier {
 	return &courierSendPanicsDefect{courierOverEmbedded: h.Fresh()}
 }
 
+// The derived checks of Tracker:
+//
+// Tracker.Walk/smoke: Walk returns without a panic for derived inputs.
+//
+// Tracker.Walk/deterministic: Walk returns the same value for the same
+// inputs.
+//
+// Tracker.Tick/smoke: Tick returns without a panic for derived inputs.
+//
+// Tracker.Tick/deterministic: Tick returns the same value for the same
+// inputs.
+
+// The derived checks of Tracker that witness their laws at the shallow
+// end:
+//
+// Tracker.Walk/smoke
+//
+// Tracker.Walk/deterministic
+//
+// Tracker.Tick/smoke
+//
+// Tracker.Tick/deterministic
+
 // The refused claims of Tracker:
 //
 // Tracker.Route/deterministic: eidos derives no sample of the parameter
@@ -449,10 +472,6 @@ func courierSendPanics(h *CourierHandle) Courier {
 //
 // Tracker.Follow/deterministic: eidos derives no sample of the parameter b
 // of Follow. The remedy is to author a sample of the parameter b with the
-// directive sample.
-//
-// Tracker.Walk/deterministic: eidos derives no sample of the parameter s
-// of Walk. The remedy is to author a sample of the parameter s with the
 // directive sample.
 //
 // Tracker.Volley/deterministic: eidos derives no sample of the parameter p
@@ -496,6 +515,7 @@ var TrackerChecks = struct {
 	Pick   trackerPick
 	Play   trackerPlay
 	Link   trackerLink
+	Tick   trackerTick
 }{
 	Route:  trackerRoute{"Tracker.Route"},
 	Follow: trackerFollow{"Tracker.Follow"},
@@ -505,6 +525,7 @@ var TrackerChecks = struct {
 	Pick:   trackerPick{"Tracker.Pick"},
 	Play:   trackerPlay{"Tracker.Play"},
 	Link:   trackerLink{"Tracker.Link"},
+	Tick:   trackerTick{"Tracker.Tick"},
 }
 
 // trackerRoute is the name of Tracker.Route, with the identities of its
@@ -523,6 +544,18 @@ type trackerFollow struct {
 // checks.
 type trackerWalk struct {
 	conform.Callable[Tracker]
+}
+
+// Smoke returns the identity of the check that Walk returns without a
+// panic for derived inputs.
+func (c trackerWalk) Smoke() conform.ID[Tracker] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Walk returns the
+// same value for the same inputs.
+func (c trackerWalk) Deterministic() conform.ID[Tracker] {
+	return c.Check("deterministic")
 }
 
 // trackerVolley is the name of Tracker.Volley, with the identities of its
@@ -555,6 +588,24 @@ type trackerLink struct {
 	conform.Callable[Tracker]
 }
 
+// trackerTick is the name of Tracker.Tick, with the identities of its
+// checks.
+type trackerTick struct {
+	conform.Callable[Tracker]
+}
+
+// Smoke returns the identity of the check that Tick returns without a
+// panic for derived inputs.
+func (c trackerTick) Smoke() conform.ID[Tracker] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Tick returns the
+// same value for the same inputs.
+func (c trackerTick) Deterministic() conform.ID[Tracker] {
+	return c.Check("deterministic")
+}
+
 // TrackerSuite returns the checks of Tracker, and the calls and the
 // budgets of its callables.
 func TrackerSuite() conform.Suite[Tracker] {
@@ -562,6 +613,78 @@ func TrackerSuite() conform.Suite[Tracker] {
 		Declaration: "Tracker",
 		Package:     "example.com/shop/nested",
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Checks: []conform.Check[Tracker]{
+			{
+				ID:          TrackerChecks.Walk.Smoke(),
+				Statement:   "Walk returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *TrackerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Walk(Step(func(at string) Step { return Step(nil) }))
+						return nil
+					})
+				},
+				Defect: trackerWalkPanics,
+			},
+			{
+				ID:          TrackerChecks.Walk.Deterministic(),
+				Statement:   "Walk returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Entails:     []conform.ID[Tracker]{TrackerChecks.Walk.Smoke()},
+				Apply: func(h *TrackerHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Walk(Step(func(at string) Step { return Step(nil) }))
+						return r0, nil
+					})
+				},
+				Defect: trackerWalkDrifts,
+			},
+			{
+				ID:          TrackerChecks.Tick.Smoke(),
+				Statement:   "Tick returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *TrackerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Tick(FirstTicker())
+						return nil
+					})
+				},
+				Defect: trackerTickPanics,
+			},
+			{
+				ID:          TrackerChecks.Tick.Deterministic(),
+				Statement:   "Tick returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Entails:     []conform.ID[Tracker]{TrackerChecks.Tick.Smoke()},
+				Apply: func(h *TrackerHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Tick(FirstTicker())
+						return r0, nil
+					})
+				},
+				Defect: trackerTickDrifts,
+			},
+		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Deterministic,
@@ -576,13 +699,6 @@ func TrackerSuite() conform.Suite[Tracker] {
 				Gate:     spec.InputSamples,
 				Why:      "eidos derives no sample of the parameter b of Follow",
 				Remedy:   "author a sample of the parameter b with the directive sample",
-			},
-			{
-				Claim:    spec.Deterministic,
-				Callable: "Tracker.Walk",
-				Gate:     spec.InputSamples,
-				Why:      "eidos derives no sample of the parameter s of Walk",
-				Remedy:   "author a sample of the parameter s with the directive sample",
 			},
 			{
 				Claim:    spec.Deterministic,
@@ -660,6 +776,11 @@ func TrackerSuite() conform.Suite[Tracker] {
 				Calls:    trackerLinkCalls,
 				Over:     newTrackerOver,
 				Callable: TrackerChecks.Link.Callable,
+			},
+			{
+				Calls:    trackerTickCalls,
+				Over:     newTrackerOver,
+				Callable: TrackerChecks.Tick.Callable,
 			},
 		},
 		Using: []prop.Option{
@@ -1071,6 +1192,26 @@ var trackerLinkCalls = prop.Composite(func(c *prop.Case) func(context.Context, T
 	}
 })
 
+// trackerTickCalls generates the calls of Tracker.Tick with the inputs
+// that each case draws.
+var trackerTickCalls = prop.Composite(func(c *prop.Case) func(context.Context, Tracker) error {
+	tNextResults := c.Draw(prop.List(prop.Of[Step]()), "t-next")
+	var tNextAt atomic.Int64
+	t := &trackerTickerInput{
+		onNext: func() (r0 Step) {
+			i := int(tNextAt.Add(1) - 1)
+			if i >= len(tNextResults) {
+				return r0
+			}
+			return tNextResults[i]
+		},
+	}
+	return func(_ context.Context, subject Tracker) error {
+		_ = subject.Tick(t)
+		return nil
+	}
+})
+
 // trackerNodeInputEmbedded is Node under the name of the field that
 // trackerNodeInput embeds.
 type trackerNodeInputEmbedded = Node
@@ -1139,6 +1280,22 @@ type trackerLabelerInput struct {
 // Label calls the function of Label.
 func (in trackerLabelerInput) Label(a0 string) (Receipt, error) {
 	return in.onLabel(a0)
+}
+
+// trackerTickerInputEmbedded is Ticker under the name of the field that
+// trackerTickerInput embeds.
+type trackerTickerInputEmbedded = Ticker
+
+// trackerTickerInput implements Ticker. Its methods return the results
+// that the generators of the suite of Tracker draw for them, in turn.
+type trackerTickerInput struct {
+	trackerTickerInputEmbedded
+	onNext func() Step
+}
+
+// Next calls the function of Next.
+func (in trackerTickerInput) Next() Step {
+	return in.onNext()
 }
 
 // trackerPongInputEmbedded is Pong under the name of the field that
@@ -1271,22 +1428,101 @@ func (o trackerOver) Link(Links) (r0 int) {
 	return r0
 }
 
+// Tick calls spend and returns its zero results.
+func (o trackerOver) Tick(Ticker) (r0 int) {
+	o.spend()
+	return r0
+}
+
 // newTrackerOver returns the planted defect of a ceiling of Tracker, whose
 // callables call spend.
 func newTrackerOver(_ *TrackerHandle, spend func()) Tracker {
 	return trackerOver{spend: spend}
 }
 
+// trackerWalkPanicsDefect is the planted defect of a Tracker whose Walk
+// panics.
+type trackerWalkPanicsDefect struct {
+	trackerOverEmbedded
+}
+
+// Walk is the override of the planted defect.
+func (*trackerWalkPanicsDefect) Walk(p0 Step) (r0 int) {
+	panic("the planted defect of a Tracker whose Walk panics")
+}
+
+// trackerWalkPanics returns the planted defect of a Tracker whose Walk
+// panics over a fresh subject.
+func trackerWalkPanics(h *TrackerHandle) Tracker {
+	return &trackerWalkPanicsDefect{trackerOverEmbedded: h.Fresh()}
+}
+
+// trackerWalkDriftsDefect is the planted defect of a Tracker whose Walk
+// returns another value on the repeat.
+type trackerWalkDriftsDefect struct {
+	trackerOverEmbedded
+	calls int
+}
+
+// Walk is the override of the planted defect.
+func (d *trackerWalkDriftsDefect) Walk(p0 Step) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// trackerWalkDrifts returns the planted defect of a Tracker whose Walk
+// returns another value on the repeat over a fresh subject.
+func trackerWalkDrifts(h *TrackerHandle) Tracker {
+	return &trackerWalkDriftsDefect{trackerOverEmbedded: h.Fresh()}
+}
+
+// trackerTickPanicsDefect is the planted defect of a Tracker whose Tick
+// panics.
+type trackerTickPanicsDefect struct {
+	trackerOverEmbedded
+}
+
+// Tick is the override of the planted defect.
+func (*trackerTickPanicsDefect) Tick(p0 Ticker) (r0 int) {
+	panic("the planted defect of a Tracker whose Tick panics")
+}
+
+// trackerTickPanics returns the planted defect of a Tracker whose Tick
+// panics over a fresh subject.
+func trackerTickPanics(h *TrackerHandle) Tracker {
+	return &trackerTickPanicsDefect{trackerOverEmbedded: h.Fresh()}
+}
+
+// trackerTickDriftsDefect is the planted defect of a Tracker whose Tick
+// returns another value on the repeat.
+type trackerTickDriftsDefect struct {
+	trackerOverEmbedded
+	calls int
+}
+
+// Tick is the override of the planted defect.
+func (d *trackerTickDriftsDefect) Tick(p0 Ticker) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// trackerTickDrifts returns the planted defect of a Tracker whose Tick
+// returns another value on the repeat over a fresh subject.
+func trackerTickDrifts(h *TrackerHandle) Tracker {
+	return &trackerTickDriftsDefect{trackerOverEmbedded: h.Fresh()}
+}
+
 // The derived checks of Hire:
 //
 // Hire/smoke: Hire returns without a panic for derived inputs.
 //
-// Hire/smoke#generated: Hire returns without a panic for derived inputs.
-//
 // Hire/deterministic: Hire returns the same value for the same inputs.
-//
-// Hire/deterministic#generated: Hire returns the same value for the same
-// inputs.
 
 // The derived checks of Hire that witness their laws at the shallow end:
 //
@@ -1323,22 +1559,10 @@ func (c hireCallable) Smoke() conform.ID[HireFunc] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Hire returns
-// without a panic for derived inputs.
-func (c hireCallable) SmokeGenerated() conform.ID[HireFunc] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Hire returns the
 // same value for the same inputs.
 func (c hireCallable) Deterministic() conform.ID[HireFunc] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Hire
-// returns the same value for the same inputs.
-func (c hireCallable) DeterministicGenerated() conform.ID[HireFunc] {
-	return c.Check("deterministic#generated")
 }
 
 // HireSuite returns the checks of Hire, and the calls and the budgets of
@@ -1367,33 +1591,6 @@ func HireSuite() conform.Suite[HireFunc] {
 				Defect: hirePanics,
 			},
 			{
-				ID:          HireChecks.SmokeGenerated(),
-				Statement:   "Hire returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *HireHandle, c *prop.Case) {
-					hireResults := c.Draw(prop.List(prop.Of[Labeler]()), "hire")
-					drawnHire := func() func() Labeler {
-						var hireAt atomic.Int64
-						return func() (r0 Labeler) {
-							i := int(hireAt.Add(1) - 1)
-							if i >= len(hireResults) {
-								return r0
-							}
-							return hireResults[i]
-						}
-					}
-					probe.Survives(h, func(ctx context.Context) error {
-						h.Subject()(drawnHire())
-						return nil
-					})
-				},
-				Defect: hirePanics,
-			},
-			{
 				ID:          HireChecks.Deterministic(),
 				Statement:   "Hire returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
@@ -1406,34 +1603,6 @@ func HireSuite() conform.Suite[HireFunc] {
 				Apply: func(h *HireHandle) {
 					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
 						r0 := h.Subject()(func() Labeler { return nil })
-						return r0, nil
-					})
-				},
-				Defect: hireDrifts,
-			},
-			{
-				ID:          HireChecks.DeterministicGenerated(),
-				Statement:   "Hire returns the same value for the same inputs",
-				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[HireFunc]{HireChecks.SmokeGenerated()},
-				Property: func(h *HireHandle, c *prop.Case) {
-					hireResults := c.Draw(prop.List(prop.Of[Labeler]()), "hire")
-					drawnHire := func() func() Labeler {
-						var hireAt atomic.Int64
-						return func() (r0 Labeler) {
-							i := int(hireAt.Add(1) - 1)
-							if i >= len(hireResults) {
-								return r0
-							}
-							return hireResults[i]
-						}
-					}
-					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
-						r0 := h.Subject()(drawnHire())
 						return r0, nil
 					})
 				},

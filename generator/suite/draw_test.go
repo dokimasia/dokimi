@@ -166,6 +166,29 @@ func TestDraw(t *testing.T) {
 			expect.NotNil(t, c.Args[2].Value, "the plan takes the value of its sample")
 		})
 
+		tracker := generate(t, goTree, nestedPackage).suites["Tracker"]
+		samples := []struct {
+			name string
+			give string
+		}{
+			{name: "keeps the sample of a generated function whose results are generated functions", give: "Walk"},
+			{
+				name: "keeps the sample of a generated implementation whose methods return generated functions",
+				give: "Tick",
+			},
+		}
+		for _, tt := range samples {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				derivedNamed(t, &tracker, tt.give, "deterministic")
+				drawn := slices.ContainsFunc(tracker.Derived, func(d suite.Derived) bool {
+					return d.Field == tt.give && d.Segment == "deterministic#generated"
+				})
+				expect.False(t, drawn, "the input of "+tt.give+" keeps its sample, so the check draws no input")
+			})
+		}
+
 		t.Run("draws an input of a type that contains itself", func(t *testing.T) {
 			t.Parallel()
 

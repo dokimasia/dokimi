@@ -1,9 +1,9 @@
 ---
 milestone: 0002
 title: Every classification has a law or a stance
-status: In progress
+status: Done
 depends-on: none
-released-in: unscheduled
+released-in: 0.7.0
 deadline: none
 deadline-source: none
 prd: none
@@ -28,7 +28,7 @@ A reader finds in the directory `spec` of dokimi, for each classification of the
 - [x] Every claim with a partner names one of the seven partner modes, and every claim of a mixin that implies a shallower claim states the pair in `entails`.
 - [x] The test of the package `spec` passes, and it fails for a classification of the shape catalog without a claim or an entry in `unclaimed`.
 - [x] Every claim names a probe, a defect form and a reason code that the spec defines, and every probe lists the reason codes that it reports.
-- [ ] A release of dokimi contains the spec, so a runtime can vendor it from a tag.
+- [x] A release of dokimi contains the spec, so a runtime can vendor it from a tag.
 
 ## Why now
 
@@ -63,3 +63,4 @@ Nothing has to exist first. The derivation of checks in milestone 0003 reads the
 | 2026-10-28 | The scope gains the claims of enumerations and errors | The checks of the generators `enum` and `sentinel` are claims of the spec, and no milestone contained their data |
 | 2026-10-28 | The spec does not vendor assert-spec, and a probe lists no assertions | The build of each runtime fails on an assertion that its assert library lacks, so a copy of the definition checked nothing more |
 | 2026-10-28 | In progress, with five of the six lines of Done when met | The spec, its renderer and its test exist. A release of dokimi that contains the spec is the last line |
+| 2026-11-01 | Done, released in 0.7.0 | The release v0.7.0 of dokimi contains the spec, and dokimi-go vendors its copy from that tag |

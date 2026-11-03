@@ -33,6 +33,7 @@ import (
 	"go.dokimi.dev/dokimi/annotator/fault"
 	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/generator/enum"
+	"go.dokimi.dev/dokimi/generator/fake"
 	"go.dokimi.dev/dokimi/generator/sentinel"
 	"go.dokimi.dev/dokimi/generator/sim"
 	"go.dokimi.dev/dokimi/generator/stub"
@@ -123,6 +124,24 @@ func TestDokimi(t *testing.T) {
 
 			sims := func(g plugin.Generator) bool { return g.Name() == sim.ID }
 			expect.False(t, slices.ContainsFunc(dokimi.Plans()[1].Generators, sims), "the plan writes no simulation")
+		})
+
+		t.Run("returns a plan go that runs fake after suite", func(t *testing.T) {
+			t.Parallel()
+
+			names := make([]plugin.ID, 0, len(dokimi.Plans()[0].Generators))
+			for _, g := range dokimi.Plans()[0].Generators {
+				names = append(names, g.Name())
+			}
+			expect.True(t, slices.Index(names, fake.ID) > slices.Index(names, suite.ID),
+				"the plan writes the fakes after the suites that their tests apply")
+		})
+
+		t.Run("returns a plan typescript that runs no fake", func(t *testing.T) {
+			t.Parallel()
+
+			fakes := func(g plugin.Generator) bool { return g.Name() == fake.ID }
+			expect.False(t, slices.ContainsFunc(dokimi.Plans()[1].Generators, fakes), "the plan writes no fake")
 		})
 
 		sources := []struct {

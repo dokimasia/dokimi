@@ -17,6 +17,7 @@ comment of its declaration, or of the package clause for a directive of the pack
 | Replace a dependency in a test | The interface or the struct | `stub` | `<X>Stub`, which records each call, returns the configured results and injects faults and latency, and its spec |
 | Prove that each implementation of an interface keeps its contract | The interface, the struct or the function | `suite` | The checks, `Run<X>Suite`, the fuzz targets, the budgets and the benchmarks, the test of the planted defects, and the double of `stub` |
 | Run a suite against one implementation | The struct of the implementation | `subject <X> new=<factory>` | `Test<Impl>ConformsTo<X>`, the benchmarks, and the allocation test where a budget caps allocations |
+| Give the tests of another team an implementation in memory of a persister, a cache or an appender | The interface under `suite` | `fake` | `<X>Fake`, `New<X>Fake`, the error `Err<X>FakeNotFound` of an absent key, and `Test<X>Fake`, which applies the suite to the fake |
 | Parse and print the constants of a defined type | The defined type | `enum` | `Parse<X>`, `String`, `IsValid`, `<X>Values`, `MarshalText`, `UnmarshalText` and `StrictKanon`, and their spec |
 | Keep the error values of a package distinct | The package clause | `sentinel` | The spec of each error value and each error type |
 
@@ -28,6 +29,9 @@ you review and keep.
 - Use `stub` on the dependencies of the code under test, not on the code under test itself.
 - Use `suite` on an interface whose contract each implementation must keep, such as a store in
   memory and a store on disk, or on a callable that needs fuzz targets and budgets.
+- Use `fake` on an interface that the tests of another team replace, such as a store that their
+  service reads. Give each method a role of the contract `persister`, `cache` or `appender`. A
+  method of a cache without a role can write as the shape `writer` or `composite-writer`.
 
 ## Shape the generated code
 
@@ -42,6 +46,7 @@ Each of these directives changes what a generator writes, and none of them gener
 | Pass one value of a parameter in each generated call of its callable, such as the part of a domain that its contract admits | `//dokimi:sample value=0x01` on the line before the parameter |
 | Give a double helpers that fail a call with an error value of the package | `//dokimi:fault errors=[ErrNotFound]` on the method |
 | Name the field that configures each method of a double, such as for a subject with the methods `Node` and `OnNode` | `//dokimi:stub field={{.Method}}Stub`, which gives `Node` the field `NodeStub` in place of `OnNode` |
+| Name the error that a fake returns for a key without a value | `//dokimi:fake absent=ErrNo{{.Name}}`, which gives the fake of `Store` the error `ErrNoStore` in place of `ErrStoreFakeNotFound` |
 | State a property that a suite checks | `//dokimi:mixin not-found sentinel=ErrNotFound`, `//dokimi:mixin concurrent` and the other mixins of the shape catalog, on the method |
 | Leave a callable that waits for another call out of each benchmark and budget, such as a lock whose `Acquire` waits for `Release` | `//dokimi:mixin waits` on the method or the function |
 | Leave a callable that runs until its context ends, such as the `Run` of a server, out of the checks of a single caller and of each benchmark and budget | `//dokimi:mixin runs-until-cancelled` on the method or the function, and a check of your own that ends the context of the call |
@@ -183,6 +188,33 @@ without a generator. An interface with an unexported method is such a type when 
 library declares it or when its package does not export an implementation. Register a generator of
 such a type with `prop.Register` in the test process and suppress the warning with
 `//dokimi:diag off=DOKIMISUITE-0010`.
+
+### Give the tests of another team a fake
+
+```go
+//dokimi:suite
+//dokimi:fake
+//dokimi:out path=persistertest/
+type Contract interface {
+	//dokimi:contract persister role=writer
+	Put(ctx context.Context, v Value) (Value, error)
+
+	//dokimi:contract persister role=reader
+	Get(ctx context.Context, key string) (Value, error)
+}
+```
+
+```go
+store := persistertest.NewContractFake()
+_, err := store.Put(t.Context(), persister.Value{Key: "a", Body: "first"})
+```
+
+The fake keeps each value of `Put` under its field `Key`, because the parameter `key` of `Get`
+selects that field. `Get` returns `persistertest.ErrContractFakeNotFound` for a key without a
+value. The generated test `TestContractFake` applies the suite of `Contract` to the fake, so the
+fake passes each check that the production implementation passes. dokimi reports
+`DOKIMIFAKE-0003` at a method outside every reference form, such as a method with the mixin
+`ttl`, and does not write a fake of its interface.
 
 ### Parse an enumeration
 

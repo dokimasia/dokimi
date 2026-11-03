@@ -1,0 +1,84 @@
+{{- $sync := import "sync"}}
+{{- range .Records}}
+{{- $d := .Decl}}
+{{- $c := .Data}}
+{{- if eq $d.Name $c.Fake}}
+{{- $fake := $d.Name}}
+{{- $tp := typeparams $d.TypeParams}}
+{{- $ta := typeargs $d.TypeParams}}
+{{- if eq $c.State "map"}}
+{{- $errors := import "errors"}}
+
+{{docs (wrapdocs (printf `%s is the error of a load of %s for a key without a value.` $c.Absent $fake))}}
+{{- ""}}var {{$c.Absent}} = {{$errors}}.New("{{package $.Pkg}}: no value under the key")
+
+{{docs (wrapdocs (printf `%s implements %s in memory, and is safe for concurrent use. It keeps the
+values that its methods store in a map under their keys. The test of %s
+applies the suite of %s to it.` $fake $c.Subject $fake $c.Subject))}}
+{{- ""}}type {{$fake}}{{$tp}} struct {
+	values map[{{spell $c.Key}}]{{spell $c.Value}}
+	mu     {{$sync}}.Mutex
+}
+{{- else}}
+
+{{docs (wrapdocs (printf `%s implements %s in memory, and is safe for concurrent use. It appends
+the values of its methods to a list. The test of %s applies the suite of
+%s to it.` $fake $c.Subject $fake $c.Subject))}}
+{{- ""}}type {{$fake}}{{$tp}} struct {
+	entries []{{spell $c.Value}}
+	mu      {{$sync}}.Mutex
+}
+{{- end}}
+
+{{docs (wrapdocs (printf `The compiler checks that %s implements %s.` $fake $c.Subject))}}
+{{- ""}}var _ {{spell $c.Guard}} = (*{{$fake}}{{typeargs $c.Witnesses}})(nil)
+
+{{docs (wrapdocs (printf `%s returns an empty %s.` $c.New $fake))}}
+{{- ""}}func {{$c.New}}{{$tp}}() *{{$fake}}{{$ta}} {
+{{- if eq $c.State "map"}}
+	return &{{$fake}}{{$ta}}{values: map[{{spell $c.Key}}]{{spell $c.Value}}{}}
+{{- else}}
+	return &{{$fake}}{{$ta}}{}
+{{- end}}
+}
+{{- range $i, $m := $c.Methods}}
+{{- $dm := index $d.Methods.Items $i}}
+{{- $r := $m.Receiver}}
+
+{{if eq $m.Effect "store" -}}
+{{docs (wrapdocs (printf `%s stores %s under %s.` $m.Name $m.Value $m.Key))}}
+{{- else if eq $m.Effect "load" -}}
+{{docs (wrapdocs (printf `%s returns the value under %s, and %s where the fake has none.` $m.Name $m.Key $c.Absent))}}
+{{- else -}}
+{{docs (wrapdocs (printf `%s appends %s, and returns the length of the list as its position.` $m.Name $m.Value))}}
+{{- end}}
+{{- ""}}func ({{receiver $dm}}) {{$dm.Name}}({{params $dm.Params}}){{results $dm.Returns}} {
+{{- with $m.Context}}
+{{- range $m.Results}}{{if not .Error}}
+	var {{.Local}} {{spell .Type}}
+{{- end}}{{end}}
+	if err := {{.}}.Err(); err != nil {
+		return {{range $j, $res := $m.Results}}{{if $j}}, {{end}}{{if $res.Error}}err{{else}}{{$res.Local}}{{end}}{{end}}
+	}
+{{- end}}
+	{{$r}}.mu.Lock()
+	defer {{$r}}.mu.Unlock()
+{{- if eq $m.Effect "store"}}
+	{{$r}}.values[{{$m.Key}}] = {{$m.Value}}
+{{- with $m.Results}}
+	return {{range $j, $res := .}}{{if $j}}, {{end}}{{if $res.Error}}nil{{else}}{{$m.Value}}{{end}}{{end}}
+{{- end}}
+{{- else if eq $m.Effect "load"}}
+	{{range $m.Results}}{{if not .Error}}{{.Local}}{{end}}{{end}}, {{$m.Present}} := {{$r}}.values[{{$m.Key}}]
+	if !{{$m.Present}} {
+		return {{range $j, $res := $m.Results}}{{if $j}}, {{end}}{{if $res.Error}}{{$c.Absent}}{{else}}{{$res.Local}}{{end}}{{end}}
+	}
+	return {{range $j, $res := $m.Results}}{{if $j}}, {{end}}{{if $res.Error}}nil{{else}}{{$res.Local}}{{end}}{{end}}
+{{- else}}
+	{{$r}}.entries = append({{$r}}.entries, {{$m.Value}})
+	return {{range $j, $res := $m.Results}}{{if $j}}, {{end}}{{if $res.Error}}nil{{else}}{{spell $res.Type}}(len({{$r}}.entries)){{end}}{{end}}
+{{- end}}
+}
+{{- end}}
+{{- end}}
+{{- end}}

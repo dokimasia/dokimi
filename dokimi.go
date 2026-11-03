@@ -26,6 +26,7 @@ import (
 	"go.dokimi.dev/dokimi/annotator/fault"
 	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/generator/enum"
+	"go.dokimi.dev/dokimi/generator/fake"
 	"go.dokimi.dev/dokimi/generator/sentinel"
 	"go.dokimi.dev/dokimi/generator/sim"
 	"go.dokimi.dev/dokimi/generator/stub"
@@ -70,8 +71,10 @@ func Base() *workspace.Builder {
 // interface that embeds io.Closer then has the method Close. Both plans share
 // one instance of each generator: builder, stub, enum and sentinel. The plan
 // go also runs suite, which writes the suites of Go and the lock of their
-// checks at the root of the workspace as dokimi.go.lock, and sim, which
-// writes the simulation of each machine interface. builder also has an
+// checks at the root of the workspace as dokimi.go.lock, sim, which writes the
+// simulation of each machine interface, and fake, which writes the verified
+// fake of each interface under its directive. The test of a fake applies the
+// suite of its interface, so fake runs after suite. builder also has an
 // annotate half, which the workspace runs with the annotators. It stamps the
 // names of each builder, which the stub generator reads for the default
 // results of a double. Each call returns new plugin instances.
@@ -81,7 +84,7 @@ func Plans() []workspace.Plan {
 		{
 			Name:       GoPlan,
 			Sources:    workspace.Sources{Lang: golang.Lang},
-			Generators: append(slices.Clone(generators), suite.New(), sim.New()),
+			Generators: append(slices.Clone(generators), suite.New(), sim.New(), fake.New()),
 			Backend:    gobackend.New(),
 			Layout: layout.Config{Families: map[layout.Family]layout.Refinement{
 				{Plugin: suite.ID, Tag: suite.LockTag}: {Dir: ".", File: "dokimi." + GoPlan + ".lock"},

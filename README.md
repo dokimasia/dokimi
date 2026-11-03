@@ -31,6 +31,7 @@ and fails when the check passes on it.
   its suite.
 - Doubles that record each call, return the results that a test configures, and inject faults and
   latency.
+- In-memory fakes of persisters, caches and appenders that pass the suite of their interface.
 - Fixture builders, the parse and print functions of enumerations, and the specs of error values.
 - Generated code that imports the runtime modules and the assertions alone, and runs under
   `go test` without dokimi.
@@ -164,6 +165,7 @@ Commit the generated files with the directives, and add `.dokimi/` to `.gitignor
 | `check` | A function in the package of the suite | The binding of the function and its planted defect to a method or a function of the suite |
 | `subject` | The struct of an implementation | `Test<Impl>ConformsTo<X>`, the benchmarks, the fuzz targets, and the allocation test where a budget caps allocations |
 | `stub` | An interface or a struct | `<X>Stub`, which records each call, returns the configured results and injects faults and latency, and its spec |
+| `fake` | An interface under `suite` whose methods have the roles of a persister, a cache or an appender | `<X>Fake`, `New<X>Fake`, the error `Err<X>FakeNotFound` of an absent key, and `Test<X>Fake`, which applies the suite to the fake |
 | `builder` | A struct | `New<X>Builder` with a setter of each field, `Mutate`, `Clone` and `Build`, and its spec |
 | `enum` | A defined type with constants | `Parse<X>`, `String`, `IsValid`, `<X>Values`, `MarshalText`, `UnmarshalText` and `StrictKanon`, and their spec |
 | `sentinel` | The package clause | The spec of each error value and each error type |

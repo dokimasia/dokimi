@@ -1,0 +1,12 @@
+{{- $testing := import "testing"}}
+{{- range .Records}}
+{{- $refs := .Decl.Fields.Items}}
+{{- $c := .Data}}
+
+{{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $c.Test $c.Subject $c.Fake))}}
+{{- ""}}func {{$c.Test}}(t *{{$testing}}.T) {
+	t.Parallel()
+
+	{{spell (index $refs 0).Type}}(t, {{spell (index $refs 1).Type}})
+}
+{{- end}}

@@ -24,7 +24,7 @@ A Go team whose components are sans-IO machines writes directives on their decla
 ## Done when
 
 - [x] RFC-0025 is accepted.
-- [ ] dokimi-go has released the module `go.dokimi.dev/sim` with the world, the clocks, the epochs, the faults, the strategies `uniform` and `pct`, the log and its checksum.
+- [x] dokimi-go has released the module `go.dokimi.dev/sim` with the world, the clocks, the epochs, the faults, the strategies `uniform` and `pct`, the log and its checksum.
 - [x] `dokimi run` writes the simulation of a fixture of the corpus with two machines, from the directives `sim`, `token`, `reply`, `perform`, `system`, `action`, `spec`, `invariant`, `converges`, `fingerprint` and `scenario`.
 - [x] An effect type without `perform` fails generation with the type and the remedy.
 - [x] Each of the five rules of a runtime fails on its planted defect with its reason code at the seed of falsification, and each invariant of the fixture fails on its defect system.

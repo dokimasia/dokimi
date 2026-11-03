@@ -73,7 +73,7 @@ flowchart LR
 | 15 | [0019](0019-the-isolation-levels-of-transactions.md) Transactions are checked for their isolation level | Planned | 0011 | unscheduled |
 | 16 | [0012](0012-verified-fakes.md) A downstream team uses a verified fake | Done | 0003, 0004 | unscheduled |
 | 17 | [0013](0013-a-breakable-medium.md) A durable subject survives a breakable medium | Done | 0003, 0015 | unscheduled |
-| 18 | [0014](0014-dead-and-subsumed-checks.md) A report names dead and subsumed checks | In progress | 0005 | unscheduled |
+| 18 | [0014](0014-dead-and-subsumed-checks.md) A report names dead and subsumed checks | Done | 0005 | unscheduled |
 | 19 | [0008](0008-typescript-declarations-get-proven-suites.md) A TypeScript declaration gets a proven suite | Planned | 0007 | unscheduled |
 
 ## Capabilities without a milestone

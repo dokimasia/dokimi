@@ -73,6 +73,14 @@ type Pair struct {
 	Written int
 }
 
+// Pairing binds the arguments of read to write by the rule of [Partner], with
+// write as the partner of the pair. It returns the gate partner-arguments
+// instead when a parameter of read selects nothing of write, beside the pair
+// of the partner without a read and a write.
+func Pairing(read, write *Facts) (*Pair, *spec.Gate) {
+	return paired(spec.ModeNamed, write, read, write)
+}
+
 // Partner resolves the partner p of a claim on the callable of f, among the
 // callables of decl, by the mode of p, and binds the arguments of the read.
 // It returns the gate that refuses the claim instead: the gate partner-found
@@ -80,10 +88,12 @@ type Pair struct {
 // a parameter of the read selects nothing of the write, and rewritable when
 // a second write could not change what the read returns.
 //
-// Every mode but establishing resolves the partner before it binds the
-// arguments. For those modes, Partner returns the pair of the partner without
-// a read and a write beside the gate partner-arguments. A claim whose probe
-// calls the partner by its name takes that pair.
+// Every mode but establishing and paired resolves the partner before it binds
+// the arguments. For those modes, Partner returns the pair of the partner
+// without a read and a write beside the gate partner-arguments. A claim whose
+// probe calls the partner by its name takes that pair. The mode paired takes
+// the one other callable whose read pairs with the callable of f by the rule
+// of [Pairing], and whose result is the value that f writes.
 func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 	switch p.Mode {
 	case spec.ModeNamed, spec.ModeInterposed:
@@ -122,6 +132,16 @@ func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 			return nil, gate
 		}
 		return paired(p.Mode, partner, f, partner)
+	case spec.ModePaired:
+		// A read that does not pair with f has no written value.
+		partner, gate := one(f, decl, func(c *Facts) bool {
+			pair, _ := Pairing(c, f)
+			return pair.Written >= 0
+		})
+		if gate != nil {
+			return nil, gate
+		}
+		return paired(p.Mode, partner, partner, f)
 	case spec.ModeRole:
 		partner, gate := role(p, f, decl)
 		if gate != nil {

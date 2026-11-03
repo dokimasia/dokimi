@@ -75,7 +75,8 @@ const lossy = "lossy"
 // enumeration and of the errors of a package judges their facts. The suite
 // generator of a language judges the code that it writes for a derived check,
 // and the types of the partners and of the variables that the params of a
-// classification name.
+// classification name. [ReferenceOf] judges the classifications, the keys and
+// the results of the callables of a declaration under the directive fake.
 var OtherGates = []spec.GateID{
 	spec.InputSamples, spec.ClassificationParams, spec.InterfaceHandle, spec.ImportableSamples,
 	spec.PartnerFound, spec.OnePartner, spec.PartnerArguments, spec.Rewritable, spec.WriteReturnsTheValue,
@@ -84,7 +85,7 @@ var OtherGates = []spec.GateID{
 	spec.ErrorValues, spec.TwoErrorValues, spec.ErrorTypes, spec.TwoErrorTypes,
 	spec.SelfComparingType, spec.ErrorCause,
 	spec.CountableUse, spec.NumericTotal, spec.TakesAReplica, spec.GraphOfStates, spec.DeliversOnAChannel,
-	spec.AtLeastOnceMode, spec.StreamMutations, spec.SubscriptionMethods,
+	spec.AtLeastOnceMode, spec.StreamMutations, spec.SubscriptionMethods, spec.ReferenceRole,
 }
 
 // Passes reports whether the facts f of a callable pass the gate id, and

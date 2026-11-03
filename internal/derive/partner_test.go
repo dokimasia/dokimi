@@ -8,18 +8,12 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/eidos/plugin/shape"
-	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/internal/derive"
 	"go.dokimi.dev/dokimi/spec"
 )
-
-// idOf returns the identity of the method name of Store.
-func idOf(name string) symbol.Identity {
-	return symbol.Identity{Lang: golang, Package: "example.com/store", Owner: "Store", Name: name}
-}
 
 // fieldID returns the identity of the field name of Item.
 func fieldID(name string) symbol.Identity {
@@ -30,62 +24,6 @@ func fieldID(name string) symbol.Identity {
 		Name:    name,
 		Kind:    symbol.KindField,
 	}
-}
-
-// getter returns the facts of Store.Get(ctx, id string) (Item, error).
-func getter() derive.Facts {
-	inputs := []derive.Value{text("id")}
-	return derive.Facts{
-		Declaration: "Store",
-		Callable:    "Get",
-		ID:          idOf("Get"),
-		Signature: signature(
-			"Get",
-			true,
-			inputs,
-			[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError},
-			rules.ErrorsLastReturn,
-		),
-		Inputs:  inputs,
-		Results: []derive.Value{item("")},
-	}
-}
-
-// putter returns the facts of Store.Put(ctx, it Item) error with its
-// identity.
-func putter() derive.Facts {
-	f := writer()
-	f.ID = idOf("Put")
-	return f
-}
-
-// keyedPutter returns the facts of Store.Set(ctx, id string, it Item) error.
-func keyedPutter() derive.Facts {
-	inputs := []derive.Value{text("id"), item("it")}
-	return derive.Facts{
-		Declaration: "Store", Callable: "Set", ID: idOf("Set"),
-		Signature: signature("Set", true, inputs, []rules.ReturnRole{rules.ReturnError}, rules.ErrorsLastReturn),
-		Inputs:    inputs,
-	}
-}
-
-// withParam returns f with the param key of the classification name set to
-// value.
-func withParam(f derive.Facts, name, key string, value any) derive.Facts {
-	f.Class.Params = map[string]shape.Params{name: {directiveKey(key): value}}
-	return f
-}
-
-// withShape returns f with the shape s.
-func withShape(f derive.Facts, s shape.Shape) derive.Facts {
-	f.Class.Shape = s
-	return f
-}
-
-// withRole returns f with the role of an instance of the contract.
-func withRole(f derive.Facts, contract shape.Contract, role shape.Role) derive.Facts {
-	f.Class.Contracts = append(f.Class.Contracts, shape.Membership{Contract: contract, Role: role})
-	return f
 }
 
 // argumentsOf returns the arguments of a pair.
@@ -1043,6 +981,24 @@ func TestPartner(t *testing.T) {
 				},
 				want: spec.Rewritable,
 			},
+			{
+				name:     "refuses with partner-found for a write that no read pairs with",
+				give:     spec.Partner{Name: "read", Mode: spec.ModePaired},
+				giveDecl: []derive.Facts{putter(), hasher(), withShape(reader(), "reader")},
+				want:     spec.PartnerFound,
+			},
+			{
+				name:     "refuses with partner-found for a write of no value that a read returns",
+				give:     spec.Partner{Name: "read", Mode: spec.ModePaired},
+				giveDecl: []derive.Facts{marker(), getter()},
+				want:     spec.PartnerFound,
+			},
+			{
+				name:     "refuses with one-partner for a write that two reads pair with",
+				give:     spec.Partner{Name: "read", Mode: spec.ModePaired},
+				giveDecl: []derive.Facts{putter(), getter(), renamed(getter(), "Find")},
+				want:     spec.OnePartner,
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -1054,6 +1010,65 @@ func TestPartner(t *testing.T) {
 				assert.Equal(t, gate.ID, tt.want, "the claim refuses with the gate")
 			})
 		}
+
+		t.Run("binds the one read that pairs with the write in the mode paired", func(t *testing.T) {
+			t.Parallel()
+			decl := []derive.Facts{putter(), hasher(), getter()}
+
+			got, gate := derive.Partner(&spec.Partner{Name: "read", Mode: spec.ModePaired}, &decl[0], decl)
+
+			assert.Nil(t, gate, "Get pairs with Put")
+			assert.Equal(t, []any{got.Partner.Callable, got.Read.Callable, got.Write.Callable, got.Written},
+				[]any{"Get", "Get", "Put", 0}, "the read is the partner, and the licensed callable writes")
+			assert.Equal(t, argumentsOf(got), []derive.Argument{
+				{Name: "ctx", Kind: derive.ArgContext},
+				{Name: "id", Kind: derive.ArgField, Field: "ID"},
+			}, "the read takes the field ID of the written value")
+		})
+	})
+
+	t.Run("Pairing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("binds the read to the field of the written value of its name", func(t *testing.T) {
+			t.Parallel()
+			get, put := getter(), putter()
+
+			got, gate := derive.Pairing(&get, &put)
+
+			assert.Nil(t, gate, "the read pairs with the write")
+			assert.Equal(t, []any{got.Partner.Callable, got.Read.Callable, got.Write.Callable, got.Written},
+				[]any{"Put", "Get", "Put", 0}, "the write is the partner, and its input it is the written value")
+			assert.Equal(t, argumentsOf(got), []derive.Argument{
+				{Name: "ctx", Kind: derive.ArgContext},
+				{Name: "id", Kind: derive.ArgField, Field: "ID"},
+			}, "the read takes the context and the field ID of the written value")
+		})
+
+		t.Run("shares the parameter of one name and one type of both calls", func(t *testing.T) {
+			t.Parallel()
+			get, set := getter(), keyedPutter()
+
+			got, gate := derive.Pairing(&get, &set)
+
+			assert.Nil(t, gate, "the read pairs with the write")
+			assert.Equal(t, got.Written, 1, "the input it of the write is the written value")
+			assert.Equal(t, argumentsOf(got), []derive.Argument{
+				{Name: "ctx", Kind: derive.ArgContext},
+				{Name: "id", Kind: derive.ArgShared, Param: "id"},
+			}, "the read shares the parameter id of the write")
+		})
+
+		t.Run("refuses with partner-arguments for a parameter that selects nothing of the write", func(t *testing.T) {
+			t.Parallel()
+			read, put := reader(), putter()
+
+			got, gate := derive.Pairing(&read, &put)
+
+			assert.NotNil(t, gate, "the read does not pair with the write")
+			assert.Equal(t, gate.ID, spec.PartnerArguments, "the parameter key selects no field of Item")
+			assert.Nil(t, got.Read, "the pair has no read")
+		})
 	})
 }
 
@@ -1080,17 +1095,6 @@ func hasher() derive.Facts {
 	return f
 }
 
-// marker returns the facts of Store.Mark(ctx, id string) error, which takes
-// no value of the read.
-func marker() derive.Facts {
-	inputs := []derive.Value{text("id")}
-	return derive.Facts{
-		Declaration: "Store", Callable: "Mark", ID: idOf("Mark"),
-		Signature: signature("Mark", true, inputs, []rules.ReturnRole{rules.ReturnError}, rules.ErrorsLastReturn),
-		Inputs:    inputs,
-	}
-}
-
 // intID returns f with a written value whose field ID is an int.
 func intID(f derive.Facts) derive.Facts {
 	f.Inputs = append([]derive.Value(nil), f.Inputs...)
@@ -1104,6 +1108,3 @@ func onlyID(f derive.Facts) derive.Facts {
 	f.Inputs[0].Fields = f.Inputs[0].Fields[:1]
 	return f
 }
-
-// directiveKey returns the key of a param of a classification.
-func directiveKey(key string) directive.ParamKey { return directive.ParamKey(key) }

@@ -5,6 +5,7 @@ package derive_test
 
 import (
 	"go.dokimi.dev/eidos/plugin/shape"
+	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
@@ -14,6 +15,11 @@ import (
 
 // golang is the language of the raw values of the samples.
 const golang symbol.Lang = "go"
+
+// idOf returns the identity of the method name of Store.
+func idOf(name string) symbol.Identity {
+	return symbol.Identity{Lang: golang, Package: "example.com/store", Owner: "Store", Name: name}
+}
 
 // text returns a value of a string type with two distinct samples.
 func text(name string) derive.Value {
@@ -146,6 +152,82 @@ func stream() derive.Facts {
 			rules.ErrorsLastReturn,
 		),
 	}
+}
+
+// getter returns the facts of Store.Get(ctx, id string) (Item, error).
+func getter() derive.Facts {
+	inputs := []derive.Value{text("id")}
+	return derive.Facts{
+		Declaration: "Store",
+		Callable:    "Get",
+		ID:          idOf("Get"),
+		Signature: signature(
+			"Get",
+			true,
+			inputs,
+			[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError},
+			rules.ErrorsLastReturn,
+		),
+		Inputs:  inputs,
+		Results: []derive.Value{item("")},
+	}
+}
+
+// renamed returns f as the callable name of Store.
+func renamed(f derive.Facts, name string) derive.Facts {
+	f.Callable, f.ID, f.Signature.Name = name, idOf(name), name
+	return f
+}
+
+// putter returns the facts of Store.Put(ctx, it Item) error with its
+// identity.
+func putter() derive.Facts {
+	f := writer()
+	f.ID = idOf("Put")
+	return f
+}
+
+// keyedPutter returns the facts of Store.Set(ctx, id string, it Item) error.
+func keyedPutter() derive.Facts {
+	inputs := []derive.Value{text("id"), item("it")}
+	return derive.Facts{
+		Declaration: "Store", Callable: "Set", ID: idOf("Set"),
+		Signature: signature("Set", true, inputs, []rules.ReturnRole{rules.ReturnError}, rules.ErrorsLastReturn),
+		Inputs:    inputs,
+	}
+}
+
+// marker returns the facts of Store.Mark(ctx, id string) error, which takes
+// no value of the read.
+func marker() derive.Facts {
+	inputs := []derive.Value{text("id")}
+	return derive.Facts{
+		Declaration: "Store", Callable: "Mark", ID: idOf("Mark"),
+		Signature: signature("Mark", true, inputs, []rules.ReturnRole{rules.ReturnError}, rules.ErrorsLastReturn),
+		Inputs:    inputs,
+	}
+}
+
+// withParam returns f with the param key of the classification name set to
+// value.
+func withParam(f derive.Facts, name, key string, value any) derive.Facts {
+	f.Class.Params = map[string]shape.Params{name: {directiveKey(key): value}}
+	return f
+}
+
+// directiveKey returns the key of a param of a classification.
+func directiveKey(key string) directive.ParamKey { return directive.ParamKey(key) }
+
+// withShape returns f with the shape s.
+func withShape(f derive.Facts, s shape.Shape) derive.Facts {
+	f.Class.Shape = s
+	return f
+}
+
+// withRole returns f with the role of an instance of the contract.
+func withRole(f derive.Facts, contract shape.Contract, role shape.Role) derive.Facts {
+	f.Class.Contracts = append(f.Class.Contracts, shape.Membership{Contract: contract, Role: role})
+	return f
 }
 
 // withMixins returns f with the mixins.

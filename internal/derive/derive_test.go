@@ -721,6 +721,50 @@ func TestDerive(t *testing.T) {
 				[]spec.MachineryID{spec.NothingBeyondACaller}, "the sample binding has the machineries of its claim")
 		})
 
+		t.Run("lists the inputs of a builder of the subject before nothing-beyond-a-caller", func(t *testing.T) {
+			t.Parallel()
+			built := reader()
+			built.SubjectBuilder = true
+
+			got, err := derive.Derive(
+				[]derive.Facts{built}, []spec.Claim{claimOn("plain", spec.Licence{Callable: true})}, nil, runtime, nil,
+			)
+
+			assert.NoError(t, err, "the declaration derives")
+			plain := checkOf(t, got, "Store.Read/plain")
+			assert.Equal(t, plain.Machineries(),
+				[]spec.MachineryID{spec.InputsBuiltFromTheSubject, spec.NothingBeyondACaller},
+				"the check takes the values of the builder")
+		})
+
+		t.Run("lists the inputs of a builder of the subject for the builder of a partner", func(t *testing.T) {
+			t.Parallel()
+			get := withParam(
+				withMixins(withShape(getter(), "reader"), "read-after-write"),
+				"read-after-write",
+				"write",
+				idOf("Put"),
+			)
+			put := putter()
+			put.SubjectBuilder = true
+
+			got, err := derive.Derive([]derive.Facts{get, put}, spec.Claims(), nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			read, smoke := checkOf(t, got, "Store.Get/read-after-write"), checkOf(t, got, "Store.Get/smoke")
+			assert.Contains(t, read.Machineries(), spec.InputsBuiltFromTheSubject,
+				"the check calls its write with the values of the builder of the write")
+			assert.NotContains(t, smoke.Machineries(), spec.InputsBuiltFromTheSubject,
+				"a check without a partner takes the samples of its own callable")
+
+			plain, err := derive.Derive([]derive.Facts{get, putter()}, spec.Claims(), nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			unbuilt := checkOf(t, plain, "Store.Get/read-after-write")
+			assert.NotContains(t, unbuilt.Machineries(), spec.InputsBuiltFromTheSubject,
+				"a write without a builder gives its check the samples of its inputs")
+		})
+
 		t.Run("adds the edge of two claims between their generated bindings", func(t *testing.T) {
 			t.Parallel()
 			deeper := claimOn("deeper", spec.Licence{Callable: true})
@@ -1021,6 +1065,106 @@ func TestDerive(t *testing.T) {
 			assert.Equal(t, got.Checks[0].Key, "slug/own", "the key has no declaration")
 			assert.Equal(t, got.Checks[0].Clause, "a Slug that breaks", "the function is its own declaration")
 		})
+
+		t.Run("refuses a claim that a directive refuse names, with the reason of the directive", func(t *testing.T) {
+			t.Parallel()
+			read := withShape(reader(), "reader")
+			read.Refused = map[spec.ClaimID]string{spec.ZeroOnError: "Read fails only for a closed store"}
+
+			got, err := derive.Derive([]derive.Facts{read}, spec.Claims(), nil, runtime, drawsAll)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{
+				"Store.Read/smoke", "Store.Read/smoke#generated", "Store.Read/cancel", "Store.Read/cancel#generated",
+			}, "the refused claim has neither a sample binding nor a generated binding")
+			assert.Equal(t, got.Refusals, []derive.Refusal{{
+				Claim: spec.ZeroOnError, Callable: "Read", Key: "store.read/zero-on-error", Gate: spec.Unrefused,
+				Why:    "Read fails only for a closed store",
+				Remedy: "remove the directive refuse of the claim where Read makes it",
+			}}, "the refusal has the reason of the directive")
+		})
+
+		t.Run("refuses a claim of every callable that a directive refuse names", func(t *testing.T) {
+			t.Parallel()
+			read := withShape(reader(), "reader")
+			read.Refused = map[spec.ClaimID]string{spec.Smoke: "Read panics for a key that no store has"}
+
+			got, err := derive.Derive([]derive.Facts{read}, spec.Claims(), nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Store.Read/cancel", "Store.Read/zero-on-error"},
+				"smoke has no check")
+			assert.Equal(t, gatesOf(got), []spec.GateID{spec.Unrefused},
+				"the claim of every callable refuses by the directive and not in silence")
+		})
+
+		t.Run("keeps the claim that a refused claim entails", func(t *testing.T) {
+			t.Parallel()
+			hash := withShape(pure(), "computation")
+			hash.Refused = map[spec.ClaimID]string{spec.Deterministic: "Hash salts each call"}
+
+			got, err := derive.Derive([]derive.Facts{hash}, spec.Claims(), nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Store.Hash/smoke"}, "the entailed claim binds")
+			assert.Empty(t, got.Edges, "a refused claim entails no check")
+		})
+
+		{
+			tests := []struct {
+				name      string
+				give      derive.Facts
+				wantClaim spec.ClaimID
+				wantWhy   string
+			}{
+				{
+					name: "refuses deterministic for a computation that reads the clock",
+					give: withMixins(withShape(pure(), "computation"), "time-aware"), wantClaim: spec.Deterministic,
+					wantWhy: "Hash reads the clock or changes its subject, so a repeat can return another value",
+				},
+				{
+					name: "refuses predicate for a predicate that changes its subject",
+					give: withMixins(withShape(renamed(withResult(pure(), symbol.FormBool), "Stop"), "predicate"),
+						"side-effect"),
+					wantClaim: spec.Predicate,
+					wantWhy:   "Stop reads the clock or changes its subject, so a repeat can return another value",
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got, err := derive.Derive([]derive.Facts{tt.give}, spec.Claims(), nil, runtime, nil)
+
+					assert.NoError(t, err, "the declaration derives")
+					assert.True(t, slices.ContainsFunc(got.Refusals, func(r derive.Refusal) bool {
+						return r.Claim == tt.wantClaim && r.Gate == spec.StableSubject && r.Why == tt.wantWhy
+					}), "the claim of a repeat refuses with the gate stable-subject")
+					assert.Equal(t, identities(got), []string{tt.give.Declaration + "." + tt.give.Callable + "/smoke"},
+						"the callable keeps smoke alone")
+				})
+			}
+		}
+
+		t.Run("binds returns-on-error in place of zero-on-error for a callable that returns a field of its request",
+			func(t *testing.T) {
+				t.Parallel()
+				read := withParam(withMixins(withShape(reader(), "reader"), "returns-on-error"), "returns-on-error",
+					"field", symbol.Identity{Name: "Dst"})
+
+				got, err := derive.Derive([]derive.Facts{read}, spec.Claims(), nil, runtime, nil)
+
+				assert.NoError(t, err, "the declaration derives")
+				assert.Equal(t, identities(got),
+					[]string{"Store.Read/smoke", "Store.Read/cancel", "Store.Read/returns-on-error"},
+					"the claim of the mixin binds without the param result")
+				assert.Equal(t, got.Refusals, []derive.Refusal{{
+					Claim: spec.ZeroOnError, Callable: "Read", Key: "store.read/zero-on-error",
+					Gate:   spec.ReturnsNoField,
+					Why:    "Read returns a field of its request beside an error, as its mixin returns-on-error states",
+					Remedy: "remove the mixin returns-on-error where Read returns the zero value beside an error",
+				}}, "zero-on-error refuses with the gate returns-no-field")
+			})
 
 		t.Run("returns an error for two callables with one key", func(t *testing.T) {
 			t.Parallel()

@@ -63,23 +63,31 @@ var conditions = map[spec.GateID]func(f *Facts) bool{
 			return m == shape.Waits || m == shape.RunsUntilCancelled
 		})
 	},
+	spec.StableSubject: func(f *Facts) bool {
+		return !slices.ContainsFunc(f.Class.Mixins, func(m shape.Mixin) bool {
+			return m == shape.TimeAware || m == shape.SideEffect
+		})
+	},
+	spec.ReturnsNoField: func(f *Facts) bool { return !slices.Contains(f.Class.Mixins, shape.ReturnsOnError) },
 }
 
 // lossy is the fidelity of a codec whose round trip drops a part of a value.
 const lossy = "lossy"
 
 // OtherGates are the gates of the spec that another part of dokimi judges.
-// The binding of a claim judges the samples of the inputs of the callable, the
-// params that the claim reads and the values that its partners return. The
-// partner resolution judges the partner of a claim. The derivation of an
-// enumeration and of the errors of a package judges their facts. The suite
-// generator of a language judges the code that it writes for a derived check,
-// and the types of the partners and of the variables that the params of a
-// classification name. [ReferenceOf] judges the classifications, the keys and
-// the results of the callables of a declaration under the directive fake.
+// The binding of a claim judges the directives refuse of the callable, the
+// samples of the inputs of the callable, the params that the claim reads, the
+// values that its partners return and the scope of a transaction. The partner
+// resolution judges the partner of a claim. The derivation of an enumeration
+// and of the errors of a package judges their facts. The suite generator of a
+// language judges the code that it writes for a derived check, and the types
+// of the partners and of the variables that the params of a classification
+// name. [ReferenceOf] judges the classifications, the keys and the results of
+// the callables of a declaration under the directive fake.
 var OtherGates = []spec.GateID{
-	spec.InputSamples, spec.ClassificationParams, spec.InterfaceHandle, spec.ImportableSamples,
+	spec.Unrefused, spec.InputSamples, spec.ClassificationParams, spec.InterfaceHandle, spec.ImportableSamples,
 	spec.PartnerFound, spec.OnePartner, spec.PartnerArguments, spec.Rewritable, spec.WriteReturnsTheValue,
+	spec.Transactions,
 	spec.Members, spec.TwoMembers, spec.ListFunction, spec.ValidFunction, spec.OutsideValue, spec.ParseFunction,
 	spec.TextEncoding,
 	spec.ErrorValues, spec.TwoErrorValues, spec.ErrorTypes, spec.TwoErrorTypes,

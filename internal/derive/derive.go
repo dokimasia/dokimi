@@ -41,8 +41,23 @@ type Facts struct {
 	// for its type. Results does the same for each return in the role value.
 	Inputs, Results []Value
 
+	// Refused contains each claim that a directive refuse of the callable
+	// names, with the reason of the directive.
+	Refused map[spec.ClaimID]string
+
+	// Handle are the facts of the methods of the handle that the callable
+	// returns, for a callable with the role begin of the contract tx. A claim
+	// with the gate transactions takes its licence from a method of the
+	// handle as from a callable of the declaration.
+	Handle []Facts
+
 	// Signature is the normalized view of the callable.
 	Signature rules.Callable
+
+	// SubjectBuilder reports that a builder that takes the subject returns
+	// the inputs of each derived call of the callable, as the mixin sample of
+	// the callable states.
+	SubjectBuilder bool
 }
 
 // Value is one parameter or return with what eidos derives for its type.
@@ -127,6 +142,10 @@ type Check struct {
 	// Pairs contains the partner of each name of a partner of the claim.
 	Pairs map[string]*Pair
 
+	// Transaction is the scope of the transactions of a claim with the gate
+	// transactions, and nil for any other claim.
+	Transaction *Transaction
+
 	// Identity is the identity of the check, such as Store.Read/zero-on-error,
 	// and Key the key that joins it across languages, such as
 	// store.read/zero-on-error.
@@ -149,18 +168,44 @@ type Check struct {
 
 // Machineries returns the machineries of the check, the deepest first. They
 // are the machineries of its claim. A generated binding of a claim of samples
-// adds generated-inputs before nothing-beyond-a-caller, or at the end of a
-// list without it.
+// adds generated-inputs. A check that calls a callable whose inputs a builder
+// of the subject returns adds inputs-built-from-the-subject, because the
+// builder can call each callable of the declaration. Each goes before
+// nothing-beyond-a-caller, or at the end of a list without it.
 func (c *Check) Machineries() []spec.MachineryID {
 	m := c.Claim.Machineries
-	if !c.Generated || slices.Contains(m, spec.GeneratedInputs) {
-		return m
+	if c.Generated && !slices.Contains(m, spec.GeneratedInputs) {
+		m = beforeACaller(m, spec.GeneratedInputs)
 	}
+	if c.built() {
+		m = beforeACaller(m, spec.InputsBuiltFromTheSubject)
+	}
+	return m
+}
+
+// built reports whether a call of the check takes the values of a builder of
+// the subject: a call of its callable or of a partner whose inputs such a
+// builder returns.
+func (c *Check) built() bool {
+	if c.Facts.SubjectBuilder {
+		return true
+	}
+	for _, p := range c.Pairs {
+		if p.Partner.SubjectBuilder {
+			return true
+		}
+	}
+	return false
+}
+
+// beforeACaller returns a copy of the machineries m with the machinery id
+// before nothing-beyond-a-caller, or at the end of a list without it.
+func beforeACaller(m []spec.MachineryID, id spec.MachineryID) []spec.MachineryID {
 	at := slices.Index(m, spec.NothingBeyondACaller)
 	if at < 0 {
 		at = len(m)
 	}
-	return slices.Insert(slices.Clone(m), at, spec.GeneratedInputs)
+	return slices.Insert(slices.Clone(m), at, id)
 }
 
 // Refusal is a licensed claim whose gate failed on a callable.
@@ -329,8 +374,12 @@ func cover(covered map[string]bool, licensings []licensing) {
 
 // bind binds the claim c through the licensing l on the callable of f. It
 // returns the check, or the refusal of the claim, or silent for a claim of
-// every callable whose gate fails. The identity of a claim of a declaration
-// names the declaration, as Store/agrees-with-the-reference.
+// every callable whose gate fails. A claim that a directive refuse of the
+// callable lists refuses by the gate unrefused, also a claim of every
+// callable. A claim with the gate transactions binds with the scope of its
+// transactions, and the write of the scope is the callable of its statement
+// and its clause. The identity of a claim of a declaration opens with the
+// declaration, as Store/agrees-with-the-reference.
 func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, bool) {
 	everyCallable := l.licence.Callable
 	names := namesOf(f)
@@ -348,8 +397,21 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		r := refusal(c.ID, f, spec.Key(identity), gate, names)
 		return Check{}, &r, false
 	}
+	if reason, refused := f.Refused[c.ID]; refused {
+		r := refusal(c.ID, f, spec.Key(identity), gateOf(spec.Unrefused), mapWith(names, "reason", reason))
+		return Check{}, &r, false
+	}
 	if g, failed := failing(c.Gates, f); failed {
 		return refuse(gateOf(g), names)
+	}
+	var tx *Transaction
+	if transactional(c) {
+		write := licensee(c, l.licence, f)
+		names["callable"] = write.Callable
+		var fits bool
+		if tx, fits = transactionOf(write, decl); !fits {
+			return refuse(gateOf(spec.Transactions), names)
+		}
 	}
 	for i := range f.Inputs {
 		in := &f.Inputs[i]
@@ -377,7 +439,7 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 	}
 	law, _ := spec.LawOf(c.Law)
 	return Check{
-		Claim: c, Facts: f, Pairs: pairs,
+		Claim: c, Facts: f, Pairs: pairs, Transaction: tx,
 		Identity: identity, Key: spec.Key(identity),
 		Statement: fill(c.Statement, names), Clause: fill(c.Defect.Clause, names),
 		Shallow:   !slices.Contains(c.Machineries, law.Depth),
@@ -431,12 +493,16 @@ func generatedOf(c *Check) Check {
 
 // Refuse returns the refusal of the check c by the gate id, with the names of
 // the callable of c and of each of its partners in the reason and the remedy.
-// The suite generator of a language refuses a derived check by a gate on the
-// code that it writes, such as importable-samples.
+// The reason and the remedy of a check of transactions contain its write. The
+// suite generator of a language refuses a derived check by a gate on the code
+// that it writes, such as importable-samples.
 func Refuse(c *Check, id spec.GateID) Refusal {
 	names := namesOf(c.Facts)
 	for name, pair := range c.Pairs {
 		names[name] = pair.Partner.Callable
+	}
+	if c.Transaction != nil {
+		names["callable"] = c.Transaction.Write.Facts.Callable
 	}
 	return refusal(c.Claim.ID, c.Facts, c.Key, gateOf(id), names)
 }
@@ -466,7 +532,8 @@ func namesOf(f *Facts) map[string]string {
 // claim of the declaration: the first callable that passes the gates of c, or
 // the first callable where none does. For a claim of the scope declaration
 // whose licence is a classification, that callable is among the callables
-// with the classification.
+// with the classification. For a claim with the gate transactions, it can
+// also be the begin of a handle with a method of the classification.
 func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 	var out []licensing
 	for li := range c.Licences {
@@ -489,9 +556,8 @@ func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 				out = append(out, licensing{licence: l})
 			}
 		case c.Scope == spec.ScopeDeclaration:
-			cls := l.Classification
-			if f == anchorOf(c, decl, func(g *Facts) bool { return has(g, cls) }) {
-				out = append(out, licensing{licence: l, classification: labelOf(cls)})
+			if f == anchorOf(c, decl, func(g *Facts) bool { return licensee(c, l, g) != nil }) {
+				out = append(out, licensing{licence: l, classification: labelOf(l.Classification)})
 			}
 		case l.Contract != "":
 			var memberships []shape.Membership
@@ -507,11 +573,17 @@ func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 				}
 				out = append(out, licensing{licence: l, classification: labelOf(l.Classification), instance: instance})
 			}
-		case has(f, l.Classification) && (l.NeedsParam == "" || hasClassParam(f, l.NeedsParam)):
+		case holds(l, f):
 			out = append(out, licensing{licence: l, classification: labelOf(l.Classification)})
 		}
 	}
 	return out
+}
+
+// holds reports whether the callable of f has the classification of the
+// licence l, with the param that l needs.
+func holds(l *spec.Licence, f *Facts) bool {
+	return has(f, l.Classification) && (l.NeedsParam == "" || hasClassParam(f, l.NeedsParam))
 }
 
 // anchorOf returns the callable of decl on which a claim c of the declaration

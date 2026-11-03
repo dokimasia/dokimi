@@ -254,6 +254,26 @@ func TestGate(t *testing.T) {
 				giveGate: spec.ReturnsAValue,
 				give:     withMixins(reader(), "runs-until-cancelled"), want: false,
 			},
+			{
+				name:     "passes stable-subject for a callable without the mixins time-aware and side-effect",
+				giveGate: spec.StableSubject, give: withMixins(pure(), "idempotent"), want: true,
+			},
+			{
+				name: "fails stable-subject for a callable with the mixin time-aware", giveGate: spec.StableSubject,
+				give: withMixins(pure(), "time-aware"), want: false,
+			},
+			{
+				name: "fails stable-subject for a callable with the mixin side-effect", giveGate: spec.StableSubject,
+				give: withMixins(pure(), "idempotent", "side-effect"), want: false,
+			},
+			{
+				name:     "passes returns-no-field for a callable without the mixin returns-on-error",
+				giveGate: spec.ReturnsNoField, give: withMixins(reader(), "idempotent"), want: true,
+			},
+			{
+				name:     "fails returns-no-field for a callable with the mixin returns-on-error",
+				giveGate: spec.ReturnsNoField, give: withMixins(reader(), "returns-on-error"), want: false,
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

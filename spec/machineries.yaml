@@ -15,6 +15,10 @@ machineries:
     supplies: Inputs of the calls of a check that the property engine generates and shrinks.
     by: runtime
     since: 1.0.0
+  inputs-built-from-the-subject:
+    supplies: Inputs of the calls of a check that a builder of the declaration returns from the subject of the check.
+    by: declaration
+    since: 1.2.0
   benchmark-run:
     supplies: A run of the benchmarks of the test runner, such as go test -bench or vitest bench.
     by: runtime

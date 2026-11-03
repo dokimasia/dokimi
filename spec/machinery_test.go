@@ -36,7 +36,8 @@ func TestMachinery(t *testing.T) {
 			t.Parallel()
 			params := make([]string, 0, len(spec.Machineries()))
 			for _, m := range spec.Machineries() {
-				expect.True(t, slices.Contains([]spec.Supplier{spec.ByRuntime, spec.ByConsumer, spec.BySim}, m.By),
+				suppliers := []spec.Supplier{spec.ByRuntime, spec.ByConsumer, spec.BySim, spec.ByDeclaration}
+				expect.True(t, slices.Contains(suppliers, m.By),
 					"machinery "+string(m.ID)+" has a supplier of the spec")
 				expect.Equal(
 					t,
@@ -64,6 +65,16 @@ func TestMachinery(t *testing.T) {
 
 			assert.True(t, ok, "the spec has the machinery")
 			assert.Equal(t, got.Param, "reference", "the machinery has the param of its directive")
+		})
+
+		t.Run("returns the machinery of the inputs that a builder of the declaration returns", func(t *testing.T) {
+			t.Parallel()
+
+			got, ok := spec.MachineryOf(spec.InputsBuiltFromTheSubject)
+
+			assert.True(t, ok, "the spec has the machinery")
+			assert.Equal(t, []any{got.By, got.Param, got.Since}, []any{spec.ByDeclaration, "", "1.2.0"},
+				"the package of the declaration supplies the machinery without a param of the directive suite")
 		})
 
 		t.Run("returns false for an identifier without a machinery", func(t *testing.T) {

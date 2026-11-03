@@ -52,7 +52,8 @@ const (
 	KindValues InputKind = "values"
 
 	// KindActions are the actions of a machine over the subject. Each action
-	// calls one callable and records the call in the history of the case.
+	// calls one callable, or runs one transaction, and records the call in
+	// the history of the case.
 	KindActions InputKind = "actions"
 
 	// KindOperation is the name of a callable as the history of a case

@@ -220,8 +220,9 @@ const (
 	FromClock SourceKind = "clock"
 
 	// FromDeclaration is a function that the generator writes once for the
-	// declaration: the actions of its callables, or the function that applies
-	// an operation of a history to a subject by the name of its callable.
+	// declaration: the actions of its callables and of its transactions, or
+	// the function that applies an operation of a history to a subject by the
+	// name of its callable.
 	FromDeclaration SourceKind = "declaration"
 
 	// FromMembers are the members of an enumeration with their names.
@@ -268,7 +269,7 @@ type Source struct {
 
 	// Default is the value of a FromParam source whose param the
 	// classification does not set. A source without a default needs the
-	// param.
+	// param. The default of a projection is ., the whole value.
 	Default string `json:"default,omitempty"`
 
 	// Partner is the name of the partner of a FromPartner source.

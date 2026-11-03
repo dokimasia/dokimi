@@ -1079,3 +1079,26 @@ probes:
     reasons: [half-written-on-full]
     vacuous: No last write writes a byte.
     since: 1.1.0
+  field-beside-error:
+    summary: A call that fails returns the value that the field of its request had before the call.
+    inputs:
+      - {name: call, kind: call}
+      - {name: field, kind: projection}
+      - {name: want, kind: value}
+    reasons: [field-lost-on-error]
+    vacuous: No call fails, with the sample inputs or with a cancelled context.
+    since: 1.2.0
+  serializable-history:
+    summary: The transactions of generated sequences on concurrent clients have a serial order of the committed transactions in which each read returns the same result.
+    inputs:
+      - {name: actions, kind: actions}
+    reasons: [not-serializable]
+    vacuous: No transaction of a run commits.
+    since: 1.2.0
+  snapshot-history:
+    summary: The transactions of generated sequences on concurrent clients have no anomaly that snapshot isolation excludes.
+    inputs:
+      - {name: actions, kind: actions}
+    reasons: [not-snapshot-isolated]
+    vacuous: No transaction of a run commits.
+    since: 1.2.0

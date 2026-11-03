@@ -22,6 +22,11 @@ const (
 
 	// BySim is the generator sim.
 	BySim Supplier = "sim"
+
+	// ByDeclaration is the package of the declaration, through a function
+	// that a directive of a callable names, such as the builder of the mixin
+	// sample.
+	ByDeclaration Supplier = "declaration"
 )
 
 // Machinery is what a run supplies before a check exercises its claim.

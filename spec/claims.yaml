@@ -60,7 +60,7 @@ claims:
       - shape: answering-writer
       - shape: stream-consumer
     unless: default-on-error
-    gates: [failure, returns-beside-error, one-value, value-samples, returns-unaided, context-or-input, returns-before-cancel]
+    gates: [failure, returns-beside-error, one-value, value-samples, returns-unaided, context-or-input, returns-before-cancel, returns-no-field]
     law: no-value-beside-an-error
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the zero value beside an error"
@@ -73,6 +73,24 @@ claims:
       clause: "a {declaration} whose {callable} returns a value beside an error"
       reason: value-beside-error
     since: 1.0.0
+  returns-on-error:
+    generator: suite
+    licences:
+      - mixin: returns-on-error
+    gates: [failure, returns-beside-error, one-value, value-samples, returns-unaided, context-or-input, returns-before-cancel]
+    law: failure-returns-the-request-field
+    machineries: [nothing-beyond-a-caller]
+    statement: "{callable} returns the field of its request beside an error"
+    probe: field-beside-error
+    inputs:
+      call: {from: callable}
+      field: {from: param, param: result, default: "."}
+      want: {from: param, param: field}
+    defect:
+      form: drops-the-field
+      clause: "a {declaration} whose {callable} returns the zero value of its result in place of the field of its request"
+      reason: field-lost-on-error
+    since: 1.2.0
   zeroes-on-error:
     generator: suite
     licences:
@@ -162,7 +180,7 @@ claims:
     generator: suite
     licences:
       - shape: computation
-    gates: [one-value, value-samples, returns-unaided, returns-before-cancel]
+    gates: [one-value, value-samples, returns-unaided, returns-before-cancel, stable-subject]
     law: repeat-returns-alike
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the same value for the same inputs"
@@ -179,7 +197,7 @@ claims:
     generator: suite
     licences:
       - shape: predicate
-    gates: [one-value, returns-unaided, returns-before-cancel]
+    gates: [one-value, returns-unaided, returns-before-cancel, stable-subject]
     law: repeat-returns-alike
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the same answer twice for an unchanged subject"
@@ -2071,6 +2089,42 @@ claims:
       clause: "a {declaration} whose first callable with a value result returns another value while another call is in progress"
       reason: not-linearizable
     since: 1.1.0
+  serializable:
+    generator: suite
+    scope: declaration
+    licences:
+      - mixin: serializable
+        needs-param: read
+    gates: [transactions]
+    law: concurrent-transactions-are-serializable
+    machineries: [concurrent-callers, generated-sequences]
+    statement: "every concurrent history of the transactions of {declaration} has a serial order in which each read returns the same result"
+    probe: serializable-history
+    inputs:
+      actions: {from: declaration}
+    defect:
+      form: reads-uncommitted
+      clause: "a {declaration} whose read returns the write of a transaction that has not committed"
+      reason: not-serializable
+    since: 1.2.0
+  snapshot-isolation:
+    generator: suite
+    scope: declaration
+    licences:
+      - mixin: snapshot-isolation
+        needs-param: read
+    gates: [transactions]
+    law: concurrent-transactions-are-snapshot-isolated
+    machineries: [concurrent-callers, generated-sequences]
+    statement: "every concurrent history of the transactions of {declaration} has no anomaly that snapshot isolation excludes"
+    probe: snapshot-history
+    inputs:
+      actions: {from: declaration}
+    defect:
+      form: writes-without-a-snapshot
+      clause: "a {declaration} whose commit applies the writes of its transaction without the snapshot of the transaction"
+      reason: not-snapshot-isolated
+    since: 1.2.0
   reads-agree-under-concurrency:
     generator: suite
     licences:

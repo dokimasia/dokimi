@@ -69,11 +69,11 @@ flowchart LR
 | 11 | [0010](0010-sequences-against-a-reference.md) Laws of a history are judged over generated sequences | Done | 0003 | unscheduled |
 | 12 | [0018](0018-deliveries-iterations-totals-and-faults.md) Deliveries, iterations, totals and failed calls are judged over generated sequences | Done | 0010 | unscheduled |
 | 13 | [0015](0015-a-simulation-of-sans-io-machines.md) A system of sans-IO machines runs in a deterministic simulation | In progress | 0009, 0010 | unscheduled |
-| 14 | [0011](0011-concurrent-callers.md) Concurrent callers are checked for linearizability | In progress | 0009, 0010 | unscheduled |
+| 14 | [0011](0011-concurrent-callers.md) Concurrent callers are checked for linearizability | Done | 0009, 0010 | unscheduled |
 | 15 | [0019](0019-the-isolation-levels-of-transactions.md) Transactions are checked for their isolation level | Planned | 0011 | unscheduled |
-| 16 | [0012](0012-verified-fakes.md) A downstream team uses a verified fake | Planned | 0003, 0004 | unscheduled |
+| 16 | [0012](0012-verified-fakes.md) A downstream team uses a verified fake | Done | 0003, 0004 | unscheduled |
 | 17 | [0013](0013-a-breakable-medium.md) A durable subject survives a breakable medium | Planned | 0003, 0015 | unscheduled |
-| 18 | [0014](0014-dead-and-subsumed-checks.md) A report names dead and subsumed checks | Planned | 0005 | unscheduled |
+| 18 | [0014](0014-dead-and-subsumed-checks.md) A report names dead and subsumed checks | In progress | 0005 | unscheduled |
 | 19 | [0008](0008-typescript-declarations-get-proven-suites.md) A TypeScript declaration gets a proven suite | Planned | 0007 | unscheduled |
 
 ## Capabilities without a milestone

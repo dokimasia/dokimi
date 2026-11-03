@@ -176,6 +176,7 @@ var Families = []Family{
 			"iface/mixin/validates/validatestest.InMemory",
 			"iface/mixin/wrappedvia/wrappedviatest.InMemory",
 			"iface/mixin/writesfollowreads/writesfollowreadstest.InMemory",
+			"iface/mutation/deadcheck/deadchecktest.InMemory",
 		},
 		Controls: []string{"iface/mixin/readafterwrite/sorted.Store"},
 	},

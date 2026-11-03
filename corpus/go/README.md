@@ -25,9 +25,9 @@ A shape family is a group of subjects whose state has one representation. `famil
 
 | Family | Representation of its subjects | Subjects | Control | Representation of the control |
 |---|---|---|---|---|
-| stores-and-readers | A map keyed by the input, with a counter or a revision beside it, or a single value | 66 | `iface/mixin/readafterwrite/sorted` | A sorted slice of keys, searched by binary search |
+| stores-and-readers | A map keyed by the input, with a counter or a revision beside it, or a single value | 68 | `iface/mixin/readafterwrite/sorted` | A sorted slice of keys, searched by binary search |
 | appenders-and-logs | A slice that grows at its end, with a position beside it | 21 | `iface/mixin/stableorder/chunked` | A list of blocks of four values |
-| caches | A map in front of a backing store | 6 | `iface/contract/cache/oneentry` | A cache of one entry that each miss replaces |
+| caches | A map in front of a backing store | 7 | `iface/contract/cache/oneentry` | A cache of one entry that each miss replaces |
 | queues | A channel, or a slice that the oldest element leaves first | 5 | `iface/door/queue/ring` | A ring buffer of two items under a mutex |
 | publishers | A slice of the channels or the functions of the subscribers | 8 | `iface/contract/publisher/mailbox` | An unbounded mailbox and a delivering goroutine per subscriber |
 | flags-and-lifecycles | A flag or a small state machine | 13 | `iface/detector/lifecycle/atomicstate` | An atomic integer without a mutex |

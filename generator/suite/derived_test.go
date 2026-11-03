@@ -208,6 +208,49 @@ func TestDerived(t *testing.T) {
 				expect.Equal(t, d.Args[3], suite.Arg{Expr: &suite.Expr{Word: "2"}}, "three clients read at once")
 			})
 
+		t.Run("passes the actions, the read, the write and the clients to the probe of a pinned read",
+			func(t *testing.T) {
+				t.Parallel()
+
+				snapshots := family("Snapshots")
+				d := derivedNamed(t, snapshots, "Get", "pins-the-snapshot-under-writes")
+				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{"PinnedUnderConcurrentWrites", true},
+					"the check runs generated sequences")
+				assert.NotNil(t, snapshots.Sequences, "the declaration has generated sequences")
+				expect.Equal(t, d.Args, []suite.Arg{
+					{Ref: snapshots.Sequences.Actions},
+					{Expr: &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Get"))}},
+					{Expr: &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Store"))}},
+					{Expr: &suite.Expr{Word: "2"}},
+				}, "the probe reads with Get beside the writes of Store on three clients")
+				expect.Equal(t, d.Entails,
+					[]suite.Identity{{Field: "Get", Method: "PointInTime", ID: "Snapshots.Get/point-in-time"}},
+					"the check entails the check of a single caller of its law")
+			})
+
+		t.Run("passes the actions, the read, the write, the version and the clients to the probe of a causal order",
+			func(t *testing.T) {
+				t.Parallel()
+
+				stamped := family("Stamped")
+				d := derivedNamed(t, stamped, "Get", "causal-history")
+				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{"VersionsFollowTheCausalOrder", true},
+					"the check runs generated sequences")
+				assert.NotNil(t, stamped.Sequences, "the declaration has generated sequences")
+				assert.Length(t, d.Args, 5,
+					"the probe takes the actions, the read, the write, the version and the clients")
+				expect.Equal(t, d.Args[:3], []suite.Arg{
+					{Ref: stamped.Sequences.Actions},
+					{Expr: &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Get"))}},
+					{Expr: &suite.Expr{Value: new(emit.Literal(emit.LiteralString, "Store"))}},
+				}, "the probe reads with Get beside the writes of Store")
+				assert.NotNil(t, d.Args[3].Projection, "the version is a projection")
+				expect.Equal(t, d.Args[3].Projection.Field, "Rev", "the version reads the field that version names")
+				expect.Equal(t, d.Args[4], suite.Arg{Expr: &suite.Expr{Word: "2"}}, "three clients call at once")
+				expect.Equal(t, d.Entails, []suite.Identity{{Field: "Get", Method: "Causal", ID: "Stamped.Get/causal"}},
+					"the check entails the check of a single caller of its law")
+			})
+
 		flight := generate(t, goTree, locksPackage).suites["Flight"]
 
 		t.Run("passes a call with a computation for each input of a function type to the probe of one computation",

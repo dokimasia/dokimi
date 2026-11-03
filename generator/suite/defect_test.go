@@ -199,6 +199,14 @@ func TestDefect(t *testing.T) {
 				name: "returns its first input where that input is the value of its first call", giveSuite: "Tallies",
 				give: "TalliesMergeKeepsItsFirstResult", wantBody: "keep-first", wantDelegates: true,
 			},
+			{
+				name: "returns the read that another read pinned while the two overlap", giveSuite: "Snapshots",
+				give: "SnapshotsGetRacyPin", wantBody: "shared-result", wantDelegates: true, wantKeeps: true,
+			},
+			{
+				name: "returns the version of another read that overlaps it", giveSuite: "Stamped",
+				give: "StampedGetRacyCausalRead", wantBody: "shared-result", wantDelegates: true, wantKeeps: true,
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

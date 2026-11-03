@@ -3488,6 +3488,12 @@ func keyedDeleteCall(ctx context.Context, subject Keyed, args []any) ([]any, err
 // Stamped.Get/read-after-write#generated: Get returns what Store stored
 // before it.
 //
+// Stamped.Get/causal: Get observes the write of Store that it causally
+// follows.
+//
+// Stamped.Get/causal#generated: Get observes the write of Store that it
+// causally follows.
+//
 // Stamped.Get/writes-follow-reads: a Store after Get has a version above
 // the version that Get returned.
 //
@@ -3500,6 +3506,9 @@ func keyedDeleteCall(ctx context.Context, subject Keyed, args []any) ([]any, err
 //
 // Stamped.Get/reads-each-last-write: Get returns what Store wrote right
 // before it, over any sequence of calls.
+//
+// Stamped.Get/causal-history: the versions that Get and Store return keep
+// the causal order of their calls across concurrent clients.
 
 // The derived checks of Stamped that witness their laws at the shallow
 // end:
@@ -3511,6 +3520,10 @@ func keyedDeleteCall(ctx context.Context, subject Keyed, args []any) ([]any, err
 // Stamped.Get/read-after-write
 //
 // Stamped.Get/read-after-write#generated
+//
+// Stamped.Get/causal
+//
+// Stamped.Get/causal#generated
 //
 // Stamped.Get/writes-follow-reads
 //
@@ -3632,6 +3645,18 @@ func (c stampedGet) ReadAfterWriteGenerated() conform.ID[Stamped] {
 	return c.Check("read-after-write#generated")
 }
 
+// Causal returns the identity of the check that Get observes the write of
+// Store that it causally follows.
+func (c stampedGet) Causal() conform.ID[Stamped] {
+	return c.Check("causal")
+}
+
+// CausalGenerated returns the identity of the check that Get observes the
+// write of Store that it causally follows.
+func (c stampedGet) CausalGenerated() conform.ID[Stamped] {
+	return c.Check("causal#generated")
+}
+
 // WritesFollowReads returns the identity of the check that a Store after
 // Get has a version above the version that Get returned.
 func (c stampedGet) WritesFollowReads() conform.ID[Stamped] {
@@ -3655,6 +3680,13 @@ func (c stampedGet) WritesFollowTheirReads() conform.ID[Stamped] {
 // what Store wrote right before it, over any sequence of calls.
 func (c stampedGet) ReadsEachLastWrite() conform.ID[Stamped] {
 	return c.Check("reads-each-last-write")
+}
+
+// CausalHistory returns the identity of the check that the versions that
+// Get and Store return keep the causal order of their calls across
+// concurrent clients.
+func (c stampedGet) CausalHistory() conform.ID[Stamped] {
+	return c.Check("causal-history")
 }
 
 // StampedSuite returns the checks of Stamped, and the calls and the
@@ -3901,6 +3933,45 @@ func StampedSuite() conform.Suite[Stamped] {
 				Defect: stampedGetReadsAnotherValue,
 			},
 			{
+				ID:          StampedChecks.Get.Causal(),
+				Statement:   "Get observes the write of Store that it causally follows",
+				Claim:       spec.Causal,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadObservesItsCausalPast,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StampedHandle) {
+					probe.WriteThenRead(h, func(ctx context.Context) (Value, error) {
+						return h.Subject().Get(ctx, (Value{Key: "Key-a"}).Key)
+					}, func(ctx context.Context) (Value, error) {
+						w := Value{Key: "Key-a"}
+						return h.Subject().Store(ctx, w)
+					})
+				},
+				Defect: stampedGetReadsAnotherValue,
+			},
+			{
+				ID:          StampedChecks.Get.CausalGenerated(),
+				Statement:   "Get observes the write of Store that it causally follows",
+				Claim:       spec.Causal,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadObservesItsCausalPast,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Shallow:     true,
+				Property: func(h *StampedHandle, c *prop.Case) {
+					drawnV := c.Draw(prop.Of[Value](), "v")
+					probe.WriteThenRead(h, func(ctx context.Context) (Value, error) {
+						return h.Subject().Get(ctx, drawnV.Key)
+					}, func(ctx context.Context) (Value, error) {
+						w := drawnV
+						return h.Subject().Store(ctx, w)
+					})
+				},
+				Defect: stampedGetReadsAnotherValue,
+			},
+			{
 				ID:          StampedChecks.Get.WritesFollowReads(),
 				Statement:   "a Store after Get has a version above the version that Get returned",
 				Claim:       spec.WritesFollowReads,
@@ -3990,6 +4061,28 @@ func StampedSuite() conform.Suite[Stamped] {
 					)
 				},
 				Defect: stampedGetReadsAStaleValueAfterThree,
+			},
+			{
+				ID:          StampedChecks.Get.CausalHistory(),
+				Statement:   "the versions that Get and Store return keep the causal order of their calls across concurrent clients",
+				Claim:       spec.CausalHistory,
+				Probe:       spec.VersionsFollowTheCausalOrder,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadObservesItsCausalPast,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
+				Entails:     []conform.ID[Stamped]{StampedChecks.Get.Causal()},
+				Property: func(h *StampedHandle, c *prop.Case) {
+					probe.VersionsFollowTheCausalOrder(
+						h,
+						c,
+						stampedActions,
+						"Get",
+						"Store",
+						func(v Value) int64 { return v.Rev },
+						2,
+					)
+				},
+				Defect: stampedGetRacyCausalRead,
 			},
 		},
 		Calls: []conform.Call[Stamped]{
@@ -4352,6 +4445,36 @@ func (d *stampedGetReadsAStaleValueAfterThreeDefect) Get(
 // over a fresh subject.
 func stampedGetReadsAStaleValueAfterThree(h *StampedHandle) Stamped {
 	return &stampedGetReadsAStaleValueAfterThreeDefect{stampedOverEmbedded: h.Fresh()}
+}
+
+// stampedGetRacyCausalReadDefect is the planted defect of a Stamped whose
+// Get returns the version of another read that overlaps it.
+type stampedGetRacyCausalReadDefect struct {
+	stampedOverEmbedded
+	h    *StampedHandle
+	last atomic.Value
+}
+
+// Get is the override of the planted defect.
+func (d *stampedGetRacyCausalReadDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.stampedOverEmbedded.Get(p0, p1)
+	d.last.Store([]any{r0, r1})
+	d.h.Yield()
+	kept, _ := d.last.Load().([]any)
+	r0, _ = kept[0].(Value)
+	r1, _ = kept[1].(error)
+	return r0, r1
+}
+
+// stampedGetRacyCausalRead returns the planted defect of a Stamped whose
+// Get returns the version of another read that overlaps it over a fresh
+// subject.
+func stampedGetRacyCausalRead(h *StampedHandle) Stamped {
+	return &stampedGetRacyCausalReadDefect{stampedOverEmbedded: h.Fresh(), h: h}
 }
 
 // stampedActions returns the actions of the generated sequences of Stamped
@@ -7546,6 +7669,9 @@ func taggedGetCall(ctx context.Context, subject Tagged, args []any) ([]any, erro
 //
 // Snapshots.Get/point-in-time#generated: Get returns the same value twice
 // across a Store between the reads.
+//
+// Snapshots.Get/pins-the-snapshot-under-writes: calls of Get with the same
+// arguments return one value beside concurrent calls of Store.
 
 // The derived checks of Snapshots that witness their laws at the shallow
 // end:
@@ -7665,6 +7791,13 @@ func (c snapshotsGet) PointInTime() conform.ID[Snapshots] {
 // the same value twice across a Store between the reads.
 func (c snapshotsGet) PointInTimeGenerated() conform.ID[Snapshots] {
 	return c.Check("point-in-time#generated")
+}
+
+// PinsTheSnapshotUnderWrites returns the identity of the check that calls
+// of Get with the same arguments return one value beside concurrent calls
+// of Store.
+func (c snapshotsGet) PinsTheSnapshotUnderWrites() conform.ID[Snapshots] {
+	return c.Check("pins-the-snapshot-under-writes")
 }
 
 // SnapshotsSuite returns the checks of Snapshots, and the calls and the
@@ -7899,6 +8032,20 @@ func SnapshotsSuite() conform.Suite[Snapshots] {
 					}())
 				},
 				Defect: snapshotsGetDrifts,
+			},
+			{
+				ID:          SnapshotsChecks.Get.PinsTheSnapshotUnderWrites(),
+				Statement:   "calls of Get with the same arguments return one value beside concurrent calls of Store",
+				Claim:       spec.PinsTheSnapshotUnderWrites,
+				Probe:       spec.PinnedUnderConcurrentWrites,
+				Reason:      spec.UnpinnedRead,
+				Law:         spec.ReadKeepsItsSnapshot,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
+				Entails:     []conform.ID[Snapshots]{SnapshotsChecks.Get.PointInTime()},
+				Property: func(h *SnapshotsHandle, c *prop.Case) {
+					probe.PinnedUnderConcurrentWrites(h, c, snapshotsActions, "Get", "Store", 2)
+				},
+				Defect: snapshotsGetRacyPin,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -8155,6 +8302,90 @@ func (d *snapshotsGetDriftsDefect) Get(p0 context.Context, p1 string) (r0 Value,
 // returns another value on the second read over a fresh subject.
 func snapshotsGetDrifts(h *SnapshotsHandle) Snapshots {
 	return &snapshotsGetDriftsDefect{snapshotsOverEmbedded: h.Fresh()}
+}
+
+// snapshotsGetRacyPinDefect is the planted defect of a Snapshots whose Get
+// returns the value of another read that overlaps it.
+type snapshotsGetRacyPinDefect struct {
+	snapshotsOverEmbedded
+	h    *SnapshotsHandle
+	last atomic.Value
+}
+
+// Get is the override of the planted defect.
+func (d *snapshotsGetRacyPinDefect) Get(p0 context.Context, p1 string) (r0 Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.snapshotsOverEmbedded.Get(p0, p1)
+	d.last.Store([]any{r0, r1})
+	d.h.Yield()
+	kept, _ := d.last.Load().([]any)
+	r0, _ = kept[0].(Value)
+	r1, _ = kept[1].(error)
+	return r0, r1
+}
+
+// snapshotsGetRacyPin returns the planted defect of a Snapshots whose Get
+// returns the value of another read that overlaps it over a fresh subject.
+func snapshotsGetRacyPin(h *SnapshotsHandle) Snapshots {
+	return &snapshotsGetRacyPinDefect{snapshotsOverEmbedded: h.Fresh(), h: h}
+}
+
+// snapshotsActions returns the actions of the generated sequences of
+// Snapshots over the subject that subject returns. The actions of a case
+// take their keys from the pools that it draws.
+func snapshotsActions(c *prop.Case, subject func() Snapshots) []stateful.Action[struct{}] {
+	keysString := c.Draw(
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[Value](), "store.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "store.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(Value)
+				call := c.History().Invoke(client, "Store", args, key0.Key)
+				values, err := snapshotsStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := snapshotsGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// snapshotsStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func snapshotsStoreCall(ctx context.Context, subject Snapshots, args []any) ([]any, error) {
+	a0, _ := args[0].(Value)
+	return nil, subject.Store(ctx, a0)
+}
+
+// snapshotsGetCall calls Get on subject with the arguments args, and
+// returns the values of the call beside its error.
+func snapshotsGetCall(ctx context.Context, subject Snapshots, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
 }
 
 // The derived checks of Bag:
@@ -11383,6 +11614,9 @@ func pagerFetchServesOnePage(h *PagerHandle) Pager {
 //
 // Log.Append/causal: Append does not return exactly one value. The remedy
 // is to return one value from Append.
+//
+// Log.Append/causal-history: Append does not return exactly one value. The
+// remedy is to return one value from Append.
 
 // The unclaimed classifications of Log:
 //
@@ -11741,6 +11975,13 @@ func LogSuite() conform.Suite[Log] {
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Causal,
+				Callable: "Log.Append",
+				Gate:     spec.OneValue,
+				Why:      "Append does not return exactly one value",
+				Remedy:   "return one value from Append",
+			},
+			{
+				Claim:    spec.CausalHistory,
 				Callable: "Log.Append",
 				Gate:     spec.OneValue,
 				Why:      "Append does not return exactly one value",

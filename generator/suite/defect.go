@@ -263,6 +263,8 @@ var bodies = map[spec.DefectFormID]string{
 	spec.MissesUpdatesAfterThree:       bodyZeroAfter,
 	spec.RacyReadWrite:                 bodyRacy,
 	spec.RacyRead:                      bodySharedResult,
+	spec.RacyPin:                       bodySharedResult,
+	spec.RacyCausalRead:                bodySharedResult,
 	spec.ComputesPerCall:               bodyFreshEachCall,
 	spec.CheckThenGrant:                bodyCheckThenGrant,
 }

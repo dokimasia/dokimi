@@ -512,6 +512,7 @@ example.com/shop/families	log.append	shape:writer	silent	-
 example.com/shop/families	log.append/cancel	cancel	check	-
 example.com/shop/families	log.append/cancel#generated	cancel	check	-
 example.com/shop/families	log.append/causal	causal	refused	-
+example.com/shop/families	log.append/causal-history	causal-history	refused	-
 example.com/shop/families	log.append/chain	chain	check	replay=log.replay
 example.com/shop/families	log.append/chain#generated	chain	check	replay=log.replay
 example.com/shop/families	log.append/chain-causal	chain-causal	check	replay=log.replay
@@ -630,6 +631,7 @@ example.com/shop/families	shards.put/smoke	smoke	check	-
 example.com/shop/families	shards.put/smoke#generated	smoke	check	-
 example.com/shop/families	snapshots.get/cancel	cancel	check	-
 example.com/shop/families	snapshots.get/cancel#generated	cancel	check	-
+example.com/shop/families	snapshots.get/pins-the-snapshot-under-writes	pins-the-snapshot-under-writes	check	write=snapshots.store
 example.com/shop/families	snapshots.get/point-in-time	point-in-time	check	write=snapshots.store
 example.com/shop/families	snapshots.get/point-in-time#generated	point-in-time	check	write=snapshots.store
 example.com/shop/families	snapshots.get/smoke	smoke	check	-
@@ -643,6 +645,9 @@ example.com/shop/families	snapshots.store/smoke	smoke	check	-
 example.com/shop/families	snapshots.store/smoke#generated	smoke	check	-
 example.com/shop/families	stamped.get/cancel	cancel	check	-
 example.com/shop/families	stamped.get/cancel#generated	cancel	check	-
+example.com/shop/families	stamped.get/causal	causal	check	write=stamped.store
+example.com/shop/families	stamped.get/causal#generated	causal	check	write=stamped.store
+example.com/shop/families	stamped.get/causal-history	causal-history	check	write=stamped.store
 example.com/shop/families	stamped.get/read-after-write	read-after-write	check	write=stamped.store
 example.com/shop/families	stamped.get/read-after-write#generated	read-after-write	check	write=stamped.store
 example.com/shop/families	stamped.get/reads-each-last-write	reads-each-last-write	check	write=stamped.store

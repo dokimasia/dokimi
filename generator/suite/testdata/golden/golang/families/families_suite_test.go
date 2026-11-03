@@ -3174,6 +3174,14 @@ func TestStampedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				families.StampedChecks.Get.Causal(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StampedChecks.Get.CausalGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				families.StampedChecks.Get.WritesFollowReads(),
 				"the test applies the check of its option alone",
 			),
@@ -3187,6 +3195,10 @@ func TestStampedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.StampedChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StampedChecks.Get.CausalHistory(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3273,6 +3285,14 @@ func TestStampedSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
+				families.StampedChecks.Get.Causal(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StampedChecks.Get.CausalGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				families.StampedChecks.Get.WritesFollowReads(),
 				"the test applies the check of its option alone",
 			),
@@ -3286,6 +3306,10 @@ func TestStampedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.StampedChecks.Get.ReadsEachLastWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.StampedChecks.Get.CausalHistory(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3371,6 +3395,14 @@ func TestStampedSuiteBudgets(t *testing.T) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StampedChecks.Get.Causal(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.CausalGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StampedChecks.Get.WritesFollowReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -3384,6 +3416,10 @@ func TestStampedSuiteBudgets(t *testing.T) {
 		),
 		conform.Excuse(
 			families.StampedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.CausalHistory(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3453,6 +3489,14 @@ func FuzzStampedSuiteStore(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StampedChecks.Get.Causal(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.CausalGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StampedChecks.Get.WritesFollowReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -3466,6 +3510,10 @@ func FuzzStampedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StampedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.CausalHistory(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -3535,6 +3583,14 @@ func FuzzStampedSuiteGet(f *testing.F) {
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
+			families.StampedChecks.Get.Causal(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.CausalGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			families.StampedChecks.Get.WritesFollowReads(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -3548,6 +3604,10 @@ func FuzzStampedSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			families.StampedChecks.Get.ReadsEachLastWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.StampedChecks.Get.CausalHistory(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -5336,6 +5396,10 @@ func TestSnapshotsSuite(t *testing.T) {
 				families.SnapshotsChecks.Get.PointInTimeGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				families.SnapshotsChecks.Get.PinsTheSnapshotUnderWrites(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -5409,6 +5473,10 @@ func TestSnapshotsSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				families.SnapshotsChecks.Get.PointInTimeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				families.SnapshotsChecks.Get.PinsTheSnapshotUnderWrites(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -5485,6 +5553,10 @@ func TestSnapshotsSuiteBudgets(t *testing.T) {
 			families.SnapshotsChecks.Get.PointInTimeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.SnapshotsChecks.Get.PinsTheSnapshotUnderWrites(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -5543,6 +5615,10 @@ func FuzzSnapshotsSuiteStore(f *testing.F) {
 			families.SnapshotsChecks.Get.PointInTimeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			families.SnapshotsChecks.Get.PinsTheSnapshotUnderWrites(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -5599,6 +5675,10 @@ func FuzzSnapshotsSuiteGet(f *testing.F) {
 		),
 		conform.Excuse(
 			families.SnapshotsChecks.Get.PointInTimeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			families.SnapshotsChecks.Get.PinsTheSnapshotUnderWrites(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)

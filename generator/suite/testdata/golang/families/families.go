@@ -139,6 +139,7 @@ type Stamped interface {
 	//
 	//dokimi:mixin read-after-write write=Store
 	//dokimi:mixin writes-follow-reads version=Rev
+	//dokimi:mixin causal version=Rev
 	Get(ctx context.Context, key string) (Value, error)
 }
 

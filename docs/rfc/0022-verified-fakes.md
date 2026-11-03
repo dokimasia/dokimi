@@ -2,7 +2,7 @@
 rfc: 0022
 title: Verified fakes
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-10-28
 updated: 2026-11-03
 discussion: none
@@ -116,13 +116,13 @@ A test of the package resolves the contract and each role of a form against the 
 
 ### The declarations that get a fake
 
-A declaration opts in with the directive `fake`, as it opts in to the other generators through `stub` and `suite`. It also needs the directive `suite`, because the test of the fake applies that suite. Each callable of the declaration has a role of a contract with a reference form or is a writer of such a form, and the catalog gives it no other classification. The fake satisfies the laws of its forms and the claims that every callable gets: `smoke`, `cancel` and `zero-on-error`. A mixin such as `ttl` or `monotonic-reads` states a law that the forms do not cover, so its callable refuses.
+A declaration opts in with the directive `fake`, as it opts in to the other generators through `stub` and `suite`. It also needs the directive `suite`, because the test of the fake applies that suite. Each callable of the declaration has a role of a contract with a reference form or is a writer of such a form. It has no mixin and no role in another contract. The fake satisfies the laws of its forms and the claims that every callable gets: `smoke`, `cancel` and `zero-on-error`. A mixin such as `ttl` or `monotonic-reads` states a law that the forms do not cover, so its callable refuses. The catalog also detects a shape on a callable with a role, such as `answering-writer` on the writer `Put` of a persister. That shape describes the signature of the role, and the effect of the role covers it.
 
 Any other declaration does not get a fake. It gets the refusal of the gate `reference-role`, which the run reports as a finding of the generator. The finding contains the declaration, the callable, the classification outside every form, and the remedy of the gate:
 
 ```yaml
 reference-role:
-  passes: Each callable has a role of a contract with a reference form, or is a writer of such a form, and has no other classification.
+  passes: Each callable has a role of a contract with a reference form, or is a writer of such a form, and has no mixin and no role in another contract.
   why: "{callable} has no role of a contract with a reference form"
   remedy: "give {callable} a role of a contract with a reference form, or leave {declaration} without the directive fake"
   since: 1.1.0
@@ -132,7 +132,17 @@ reference-role:
 
 A fake is safe for concurrent use. One mutex guards its state, and each call locks the mutex once. Each callable that takes a context returns the error of a done context first, with the zero value of each result. A load of an absent key returns the zero value of each result beside the absent error.
 
-The absent error is a sentinel that the file of the fake declares, `ErrContractFakeNotFound` for the fake `ContractFake`. The directive `fake` takes the param `absent`, a name template of that sentinel, as the directive `stub` takes the name templates of its fields. Its default is `Err{{.Name}}FakeNotFound`.
+The absent error is a sentinel that the file of the fake declares, `ErrContractFakeNotFound` for the fake `ContractFake`. The directive `fake` takes the param `absent`, a name template of that sentinel, as the directive `stub` takes the name templates of its fields. Its default is `Err{{.Name}}FakeNotFound`. A fake of the state `list` has no load, so its file does not declare a sentinel.
+
+A generic declaration gets a generic fake with the type parameters of the declaration. Its test applies the suite at the witnesses of the type parameters, as the test of a subject of a generic declaration does. A Go map keys its values only by a comparable type, so the generator refuses a key of a slice, a map or a function type, and a key of a type parameter whose constraint is not `comparable`.
+
+The generator also refuses a declaration that a fake cannot implement or that the test of the fake cannot refer to:
+
+- A declaration that its package does not export.
+- A declaration that the file of the fake cannot import.
+- A declaration whose members are incomplete.
+- A declaration with an unexported method, or without a method.
+- A generic declaration without witnesses that the files of the fake can refer to.
 
 ### The generated files
 

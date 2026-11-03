@@ -116,7 +116,7 @@ func (h *Handle[S]) Yield()
 
 ### The probes of the other claims
 
-Each probe of generated sequences runs its clients through `stateful.Steps` with `stateful.Clients(2)`, the schedule of the handle and `stateful.Swarm(false)`, as `LinearizableHistory` does. `SharesOneComputation` runs its three clients on goroutines of the bubble of its check, because `synctest.Wait` returns once every call waits on a held dependency.
+Each probe of generated sequences runs its clients through `stateful.Steps` with `stateful.Clients(2)`, the schedule of the handle and `stateful.Swarm(false)`, as `LinearizableHistory` does. `PinnedUnderConcurrentWrites` and `VersionsFollowTheCausalOrder` also pass `stateful.ConcurrentMean(16)`. Their racy reads show only where reads of two keys overlap in one section, and a section averages 5 steps by default. `SharesOneComputation` runs its three clients on goroutines of the bubble of its check, because `synctest.Wait` returns once every call waits on a held dependency.
 
 ```go
 // ConcurrentReadsAgree runs generated sequences of the actions on the subject
@@ -133,29 +133,30 @@ func ConcurrentReadsAgree[S any](
 
 // PinnedUnderConcurrentWrites runs generated sequences of the actions on the
 // subject of h, with a concurrent section of the actions read and write on
-// the clients 0 to clients, which the schedule of h runs. Each other action
-// runs on client 0 alone. After the last step it compares each read that
-// succeeds with the first read that succeeded with the same arguments, and
-// fails when the outputs differ. A case without a read that succeeds after
-// another read with the same arguments does not engage h.
+// the clients 0 to clients, which the schedule of h runs. The section
+// averages 16 steps. Each other action runs on client 0 alone. After the last
+// step it compares each read that succeeds with the first read that succeeded
+// with the same arguments, and fails when the outputs differ. A case without a
+// read that succeeds after another read with the same arguments does not
+// engage h.
 func PinnedUnderConcurrentWrites[S any](
 	h *conform.Handle[S], c *prop.Case, actions Actions[S], read, write string, clients int,
 )
 
 // VersionsFollowTheCausalOrder runs generated sequences of the actions on the
 // subject of h, with a concurrent section of the actions read and write on
-// the clients 0 to clients, which the schedule of h runs. Each other action
-// runs on client 0 alone. After the last step it orders the calls of read and
-// write that succeed. A call follows each call of its client before it. A
-// read follows the write with the same keys and the version that the read
-// returns, where that write started before the read returned and no other
-// write with the same keys has that version. The probe fails when a write
-// returns a version that is not above the version of a call with the same
-// keys that it follows, and when a read returns a version below it. It also
-// fails when a read that follows a write with the same keys returns a version
-// that no write with those keys returned. Each call of write returns the value
-// that it wrote. A case without a call that follows a call with the same keys
-// does not engage h.
+// the clients 0 to clients, which the schedule of h runs. The section
+// averages 16 steps. Each other action runs on client 0 alone. After the last
+// step it orders the calls of read and write that succeed. A call follows each
+// call of its client before it. A read follows the write with the same keys
+// and the version that the read returns, where that write started before the
+// read returned and no other write with the same keys has that version. The
+// probe fails when a write returns a version that is not above the version of
+// a call with the same keys that it follows, and when a read returns a version
+// below it. It also fails when a read that follows a write with the same keys
+// returns a version that no write with those keys returned. Each call of write
+// returns the value that it wrote. A case without a call that follows a call
+// with the same keys does not engage h.
 func VersionsFollowTheCausalOrder[S, V any, O cmp.Ordered](
 	h *conform.Handle[S], c *prop.Case, actions Actions[S], read, write string, version func(v V) O, clients int,
 )
@@ -207,7 +208,7 @@ probe.SharesOneComputation(h, func(ctx context.Context) (string, error) {
 
 `racy-read-write` wraps a fresh subject. Its write stores the value in two steps with a call of `Handle.Yield` between them, so a read that the scheduler places between the steps returns a half-written state. Called one at a time it is correct, so the checks of a single caller and the judges of a single client pass on it.
 
-The proof gives the same result on every run, because the yield of the defect goes through the scheduler of the case. Falsification runs the check with the strategy `Uniform` and a seed from the key of the check. `PCT(3)` switches tasks only at its two change points, so it proved the torn store of the specs at 15 of 40 seeds. `Uniform` with every action in each case proved it at all 40, so the proof does not depend on the name of the declaration. The racy lease of the specs of `ExclusiveUnderConcurrency` is proven at all 40 seeds as well.
+The proof gives the same result on every run, because the yield of the defect goes through the scheduler of the case. Falsification runs the check with the strategy `Uniform` and a seed from the key of the check. `PCT(3)` switches tasks only at its two change points, so it proved the torn store of the specs at 15 of 40 seeds. `Uniform` with every action in each case proved it at all 40, so the proof does not depend on the name of the declaration. The racy lease of the specs of `ExclusiveUnderConcurrency` is proven at all 40 seeds as well. A section of 5 steps on average proved the racy pinned read of the specs at 33 of 40 seeds and the racy causal read at 30 of 40. Sections of 16 steps on average prove both at 200 of 200 seeds in the same time.
 
 The check of linearizability compares each call of each callable with the reference, as the check of agreement with a reference does. So the isolation of a planted defect leaves out both checks, for the defect of any claim.
 

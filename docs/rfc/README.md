@@ -30,9 +30,9 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0019](0019-calls-that-fail-on-demand.md) | Calls that fail on demand | Accepted |
 | [0020](0020-sequences-against-a-reference.md) | Generated sequences and the judges of their histories | Accepted |
 | [0021](0021-concurrent-callers.md) | Concurrent callers and the consistency of their histories | Accepted |
-| [0022](0022-verified-fakes.md) | Verified fakes | Draft |
-| [0023](0023-a-breakable-medium.md) | A breakable medium | Draft |
-| [0024](0024-dead-and-subsumed-checks.md) | Dead and subsumed checks from mutation records | Draft |
+| [0022](0022-verified-fakes.md) | Verified fakes | Accepted |
+| [0023](0023-a-breakable-medium.md) | A breakable medium | Accepted |
+| [0024](0024-dead-and-subsumed-checks.md) | Dead and subsumed checks from mutation records | Accepted |
 | [0025](0025-a-simulation-of-sans-io-machines.md) | A deterministic simulation of sans-IO machines | Accepted |
 | [0026](0026-workloads-on-a-real-cluster.md) | The workloads and checkers of a simulation on a real cluster | Draft |
 | [0027](0027-the-go-probes.md) | The Go probes | Accepted |

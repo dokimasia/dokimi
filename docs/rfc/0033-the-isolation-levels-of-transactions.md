@@ -4,7 +4,7 @@ title: The isolation levels of transactions
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Draft
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 discussion: none
 supersedes: none
 superseded-by: none
@@ -35,9 +35,11 @@ The checkers of assert-go read each transaction of a history as one call of the 
 | Claim | Licence | Machineries | Probe | Reason | Defect form |
 |---|---|---|---|---|---|
 | `serializable` | The mixin `serializable` with its param `read` | `concurrent-callers`, `generated-sequences` | `serializable-history` | `not-serializable` | `reads-uncommitted` |
-| `snapshot-isolation` | The mixin `snapshot-isolation` with its param `read` | `concurrent-callers`, `generated-sequences` | `snapshot-history` | `lost-update` | `writes-without-a-snapshot` |
+| `snapshot-isolation` | The mixin `snapshot-isolation` with its param `read` | `concurrent-callers`, `generated-sequences` | `snapshot-history` | `not-snapshot-isolated` | `writes-without-a-snapshot` |
 
-Both claims have the scope `declaration`. Each takes its licence from the callable with its mixin and binds once for the declaration, as `linearizable` does. Both list the gate `transactions`.
+Both claims have the scope `declaration`. Each takes its licence from the callable with its mixin and binds once for the declaration of the role `begin`, as `linearizable` binds once for its declaration. Both list the gate `transactions`.
+
+`history.HasSnapshotIsolation` fails a history for each anomaly that snapshot isolation excludes, such as a dirty read or a lost update. The reason `not-snapshot-isolated` covers each of those anomalies, as `not-serializable` covers each anomaly of a history that is not serializable.
 
 ### The scope of a transaction
 
@@ -51,6 +53,30 @@ The callables of one transaction are the roles of an instance of the contract `t
 | Commit and rollback | The roles `commit` and `rollback`. Each takes the handle |
 
 A read that returns a list of the type of the written value makes a history of list appends, and the write appends its value to the list of the key. Any other read makes a history of registers, and the write sets the value of the key.
+
+A begin can also return a handle whose own methods write, read, commit and roll back, as `database/sql` returns a `*sql.Tx`. eidos joins the callables of one package that have a role in a contract into one instance, also when they are methods of two types. So the roles `commit` and `rollback` and the mixin can be on the methods of the handle type, and the param `read` names a method of the same type first. The claim then binds for the declaration of the role `begin`, and each call of the transaction calls the method of the handle:
+
+```go
+type Store interface {
+	//dokimi:contract tx role=begin closed=ErrClosed
+	Begin(ctx context.Context) (Tx, error)
+}
+
+type Tx interface {
+	//dokimi:contract tx role=commit
+	Commit(ctx context.Context) error
+
+	//dokimi:contract tx role=rollback
+	Rollback(ctx context.Context) error
+
+	//dokimi:mixin serializable read=Get
+	Append(ctx context.Context, key string, v int) error
+
+	Get(ctx context.Context, key string) ([]int, error)
+}
+```
+
+A handle type of another package, such as `*sql.Tx`, cannot carry a directive. The gate `transactions` refuses it, and its remedy is an interface of the package that the handle implements.
 
 ```go
 type Store interface {
@@ -86,9 +112,9 @@ The action begins the transaction, calls the write or the read of each micro-ope
 
 ```yaml
 transactions:
-  passes: The declaration has the roles begin, commit and rollback of one instance of the contract tx, the write takes the handle that begin returns, a key and a value of an integer or a string type, and the read takes the handle and the key.
+  passes: The roles begin, commit and rollback of one instance of the contract tx are in the package of the declaration, the write takes the handle that begin returns or is a method of it, the write takes a key and a value of an integer or a string type, and the read takes the handle or is a method of it and takes the key.
   why: "{callable} and the read of its mixin do not run in the scope of a transaction of {declaration}"
-  remedy: "give {callable} and its read the handle that begin returns, a key, and a value of an integer or a string type"
+  remedy: "give {callable} and its read the handle that begin returns, or declare them on an interface of the package that the handle implements, with a key and a value of an integer or a string type"
   since: 1.1.0
 ```
 
@@ -136,12 +162,12 @@ Elle reads list appends, because each read of a list reveals the order of the ap
 
 - **Value types.** A unique value of each write needs an integer or a string type. A declaration whose value has another type refuses both claims with the gate `transactions`.
 - **A read outside the scope.** A read that takes no handle, such as the read of the committed state of the `tx` fixture of the corpus, refuses both claims.
+- **A handle of another package.** A begin that returns `*sql.Tx` refuses both claims until the consumer declares an interface of the handle.
 - **Larger histories.** Each step runs up to six calls of the subject, so a case of three clients records more calls than a case of single calls.
 
 ## Open questions
 
-1. A begin can return a handle whose methods write and read, as `database/sql` returns a `*sql.Tx`. A directive cannot be on a method of that handle when the handle type is outside the declaration. Should the param `read` and a new param `write` name methods of the handle?
-2. The reason `lost-update` names one of the anomalies that snapshot isolation forbids. Should the reason of `snapshot-isolation` be `not-snapshot-isolated`, as the reason of `serializable` is `not-serializable`?
+None.
 
 ## References
 

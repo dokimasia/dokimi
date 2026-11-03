@@ -1,5 +1,48 @@
 # go.dokimi.dev/dokimi
 
+## 0.8.0
+
+### Minor Changes
+
+- 26a0797: Add the claim `causal-history` to the spec, with its probe and defect form.
+- 554bc2a: Add the claim `computes-once` to the spec, with its law, reason, probe and defect form.
+- 554bc2a: Add the claim `linearizable` to the spec, with its law, reason, probe and defect form.
+- 554bc2a: Add the claim `one-holder-at-a-time` to the spec, with its probe and defect form.
+- 26a0797: Add the claim `pins-the-snapshot-under-writes` to the spec, with its probe and defect form.
+- 554bc2a: Add the claim `reads-agree-under-concurrency` to the spec, with its law, reason, probe and defect form.
+- 554bc2a: Add the five claims of the rules of a runtime of the generator `sim` to the spec, with their laws, reasons, probes and defect forms.
+- 554bc2a: Add the seven claims of deliveries, iterations, totals and failed calls to the spec, with their laws, reasons, probes, gates and defect forms.
+- e766b0b: Add the claims `synced-writes-survive`, `no-torn-record`, `corruption-is-reported` and `full-medium-is-reported` of the mixin `durable` to the spec.
+- e766b0b: Add the gate `reference-role` to the spec, which the generator `fake` judges.
+- 24d69ed: Add the generator `fake`, which writes an in-memory fake of an interface under the directive `fake` and a test that applies the suite of the interface to it.
+- 5365049: Add the generator `sim`, which writes the deterministic simulation of a system of sans-IO machines and its tests from the directives on their declarations.
+- 378b01a: Add the partner mode `paired`, which binds the one read of a declaration that pairs with the licensed write.
+- e766b0b: Add the field `points` to the check record of the suite schema, the points of a medium that a check enumerated.
+- e766b0b: Add the reference forms of the contracts `persister`, `cache` and `appender` to the spec, with `spec.References` and `spec.ReferenceOf`.
+- 554bc2a: Add the stance `gap` of the mixin `returns-on-error` to the spec.
+- f9e5c64: Export `suite.Suited` and `suite.NamesOf` for a generator that writes a test of the suite of a declaration.
+- f9e5c64: Generate the checks of the mixin `durable` over `probe.Durable`, with planted defects that open over a medium.
+- dd9cc74: Judge each fake that the key `fakes` of an expectation file lists, as `dokimi conform` judges a subject without an excusal.
+- 378b01a: Judge the classifications, the keys and the results of the callables of a declaration under the directive `fake` by the reference forms of the spec.
+- 88a1009: License a claim of the scope declaration through a mixin of one of the callables of the declaration.
+- 2ff1bac: Write the marker `StrictKanon` of `kanon.Strict` beside the generated `MarshalText` and `UnmarshalText` of a Go enumeration.
+- 114b6f3: Accept the faults `torn-write`, `corruption` and `full-disk` in the params `tolerate` and `require` of `//dokimi:sim`.
+- c7e65c0: Write the check `causal-history` and its planted defect `racy-causal-read` in the Go suite of a read with the mixin `causal`.
+- eb9d0db: Write the check `computes-once` and its planted defect `computes-per-call` in the Go suite of a callable with the contract `single-flight`.
+- eb9d0db: Write the check `linearizable` and its planted defect `racy-read-write` in the Go suite of a concurrent declaration with a reference.
+- eb9d0db: Write the check `one-holder-at-a-time` and its planted defect `check-then-grant` in the Go suite of a callable with the contract `lease`.
+- c7e65c0: Write the check `pins-the-snapshot-under-writes` and its planted defect `racy-pin` in the Go suite of a read with the mixin `point-in-time`.
+- eb9d0db: Write the check `reads-agree-under-concurrency` and its planted defect `racy-read` in the Go suite of a callable with the mixin `concurrent-readers`.
+- eb9d0db: Write the checks of deliveries, iterations, totals and failed calls in the Go suites.
+
+### Patch Changes
+
+- 88a1009: Fix the derivation to bind the claims of an input of a defined function type.
+- eb9d0db: Fix the generated binding to keep the sample of a generated function whose results are generated functions.
+- 8ab433b: Fix `dokimi conform` to write each test of the corpus that fails, with its output.
+- eb9d0db: Name the partners of a check in the reason and the remedy of each gate that the suite generator judges.
+- eb9d0db: Fix the order of the declarations under the directive `suite` to their identity order, whatever the spelling of the directive.
+
 ## 0.7.0
 
 ### Minor Changes

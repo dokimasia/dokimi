@@ -11,6 +11,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/medium"
 
 	"go.dokimi.dev/dokimi/corpus/go/iface/door/durable"
 )
@@ -66,7 +67,7 @@ func forgetsOnRestart(*StoreHandle) durable.Store { return NewJournal() }
 func forget(*StoreHandle, durable.Store) durable.Store { return NewJournal() }
 
 // torn is a journal whose Put writes the first half of each value and then
-// the whole value. A cut of its medium between the two writes leaves half of
+// the whole value. A crash of its medium between the two writes leaves half of
 // the value.
 type torn struct {
 	*Journal
@@ -89,21 +90,22 @@ func reopenTorn(_ *StoreHandle, s durable.Store) durable.Store {
 	return torn{Journal: &Journal{medium: tornMedium(s)}}
 }
 
-// tear cuts the medium of the torn journal s after the first write of call,
-// runs call, and returns a torn journal over the medium.
+// tear crashes the medium of the torn journal s in place of the third
+// persistence point of call, the sync of the file of its second write, runs
+// call, and returns a torn journal over the medium.
 func tear(_ *StoreHandle, s durable.Store, call func()) durable.Store {
-	medium := tornMedium(s)
-	medium.Cut(1)
+	m := tornMedium(s)
+	m.CrashAt(m.Points() + 2)
 	call()
-	medium.Heal()
-	return torn{Journal: &Journal{medium: medium}}
+	m.Crash()
+	return torn{Journal: &Journal{medium: m}}
 }
 
 // tornMedium returns the medium of the torn journal s, and a new medium for a
 // store that is no torn journal.
-func tornMedium(s durable.Store) *Medium {
+func tornMedium(s durable.Store) *medium.Memory {
 	if t, isTorn := s.(torn); isTorn {
 		return t.medium
 	}
-	return NewMedium()
+	return medium.NewMemory()
 }

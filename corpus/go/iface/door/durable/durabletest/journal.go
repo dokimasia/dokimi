@@ -5,103 +5,79 @@ package durabletest
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
-	"sync"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
 
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/medium"
 
 	"go.dokimi.dev/dokimi/corpus/go/iface/door/durable"
 )
 
-// ErrCut is the error of a write to a medium after its cut.
-var ErrCut = errors.New("durabletest: the medium is cut")
-
-// Medium is a medium in memory: the records of the values by key, which each
-// journal over the medium reads and writes. A cut medium refuses each write
-// after a number of writes, as a crash stops a disk.
-type Medium struct {
-	records map[string]string
-	left    int
-	mu      sync.Mutex
-	cut     bool
-}
-
-// NewMedium returns an empty medium without a cut.
-func NewMedium() *Medium { return &Medium{records: map[string]string{}} }
-
-// Cut makes the medium refuse each write after n more writes.
-func (m *Medium) Cut(n int) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.left, m.cut = n, true
-}
-
-// Heal ends the cut of the medium.
-func (m *Medium) Heal() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.cut = false
-}
-
-// write writes the record of the key, and returns ErrCut where the cut of the
-// medium refuses the write.
-func (m *Medium) write(key, value string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.cut {
-		if m.left == 0 {
-			return ErrCut
-		}
-		m.left--
-	}
-	m.records[key] = value
-	return nil
-}
-
-// read returns the record of the key, and whether the medium has one.
-func (m *Medium) read(key string) (string, bool) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	value, found := m.records[key]
-	return value, found
-}
-
-// Journal is the Store over a medium. Its Put writes each value in one write
-// of the medium, so a cut of the medium leaves the value before the Put or the
-// whole new value. The corpus applies the suite of Store to it as a subject,
-// with its doors.
+// Journal is the Store over a medium in memory. Its Put writes the value to a
+// temporary file, syncs it, renames it to the file of the key and syncs the
+// directory, so a crash leaves the value before the Put or the whole new
+// value. The corpus applies the suite of Store to it as a subject, with its
+// doors.
 //
 //dokimi:subject durable.Store new=NewJournal options=JournalOptions
 type Journal struct {
-	medium *Medium
+	medium *medium.Memory
 }
 
 // NewJournal returns a journal over an empty medium.
-func NewJournal() *Journal { return &Journal{medium: NewMedium()} }
+func NewJournal() *Journal { return &Journal{medium: medium.NewMemory()} }
 
-// Put writes the value to the record of the key.
+// Put writes the value to the file of the key.
 func (j *Journal) Put(ctx context.Context, key, value string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return j.medium.write(key, value)
+	name := hex.EncodeToString([]byte(key))
+	f, err := j.medium.OpenFile("t"+name, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return failed("create", err)
+	}
+	defer func() { _ = f.Close() }()
+	if _, err := io.WriteString(f, value); err != nil {
+		return failed("write", err)
+	}
+	if err := f.Sync(); err != nil {
+		return failed("sync", err)
+	}
+	if err := j.medium.Rename("t"+name, "k"+name); err != nil {
+		return failed("rename", err)
+	}
+	return failed("sync the directory", j.medium.SyncDir("."))
 }
 
-// Get reads the record of the key.
+// Get reads the file of the key.
 func (j *Journal) Get(ctx context.Context, key string) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
-	value, found := j.medium.read(key)
-	if !found {
+	f, err := j.medium.OpenFile("k"+hex.EncodeToString([]byte(key)), os.O_RDONLY, 0)
+	if errors.Is(err, fs.ErrNotExist) {
 		return "", durable.ErrNotFound
 	}
-	return value, nil
+	if err != nil {
+		return "", failed("open", err)
+	}
+	defer func() { _ = f.Close() }()
+	value, err := io.ReadAll(f)
+	if err != nil {
+		return "", failed("read", err)
+	}
+	return string(value), nil
 }
 
 // JournalOptions returns the restart and the crash of a journal. The restart
-// opens a new journal over the medium of the journal. The crash cuts the
-// medium after 0 or 1 writes of the call.
+// opens a new journal over the medium of the journal. The crash falls in
+// place of one of the next three persistence points of the medium.
 func JournalOptions() []StoreOption {
 	return []StoreOption{conform.Restartable(reopen), conform.Crashable(crash)}
 }
@@ -112,24 +88,35 @@ func reopen(_ *StoreHandle, s durable.Store) durable.Store {
 	return &Journal{medium: mediumOf(s)}
 }
 
-// crash cuts the medium of the journal s after 0 or 1 writes, which the random
-// source of the check draws, runs call, and returns a new journal over the
-// medium.
+// crash arms a crash of the medium of the journal s in place of one of its
+// next three persistence points, which the random source of the check draws,
+// runs call, crashes the medium and returns a new journal over it. A Put has
+// two persistence points, so a crash at the third keeps the whole value of a
+// Put that call makes.
 func crash(h *StoreHandle, s durable.Store, call func()) durable.Store {
-	medium := mediumOf(s)
-	medium.Cut(int(h.Rand().Uint64() % 2))
+	m := mediumOf(s)
+	m.CrashAt(m.Points() + int(h.Rand().Uint64()%3))
 	call()
-	medium.Heal()
-	return &Journal{medium: medium}
+	m.Crash()
+	return &Journal{medium: m}
 }
 
 // mediumOf returns the medium of the journal s, and a new medium for a store
 // that is no journal.
-func mediumOf(s durable.Store) *Medium {
+func mediumOf(s durable.Store) *medium.Memory {
 	if j, isJournal := s.(*Journal); isJournal {
 		return j.medium
 	}
-	return NewMedium()
+	return medium.NewMemory()
+}
+
+// failed returns the error err of the operation op on the medium with the
+// prefix of the package, and nil for a nil err.
+func failed(op string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("durabletest: %s: %w", op, err)
 }
 
 // The compiler checks that Journal implements [durable.Store].

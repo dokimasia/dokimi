@@ -22,11 +22,12 @@ import (
 
 // The packages and modules that this spec alone reads.
 const (
-	priorityPackage = "example.com/shop/priority"
-	splitPackage    = "example.com/shop/split"
-	customPackage   = "example.com/shop/custom"
-	badPackage      = "example.com/shop/bad"
-	badModule       = "bad"
+	priorityPackage  = "example.com/shop/priority"
+	splitPackage     = "example.com/shop/split"
+	customPackage    = "example.com/shop/custom"
+	badPackage       = "example.com/shop/bad"
+	validatedPackage = "example.com/shop/validated"
+	badModule        = "bad"
 )
 
 // The enumerations that this spec alone reads.
@@ -222,6 +223,11 @@ func TestEnum(t *testing.T) {
 			})
 		}
 
+		// validator is the surface of an enumeration that kanon encodes as a
+		// kanon.Validator: every member but the marker of kanon.Strict.
+		validator := enum.Members{
+			Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+		}
 		surfaces := []struct {
 			name   string
 			target plugin.Target
@@ -327,6 +333,88 @@ func TestEnum(t *testing.T) {
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Speed",
 				want:  enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true},
 				calls: enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true},
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that the kanon directive of its file names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Grade", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that a kanon directive in its doc names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Ring", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type with the method of kanon.Validator",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Tier", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "keeps the marker of kanon.Strict of a type that the directive of another command names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Hue",
+				want: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+					Strict: true,
+				},
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that a kanon directive of an alias names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Pitch", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that a kanon directive of a constant names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Tempo", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that a kanon directive of a variable names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Meter", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that a kanon directive of an interface names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Chord", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that a kanon directive of a function names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Scale", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that a kanon directive of a struct names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Voice", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that a kanon directive of a method names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Clef", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "leaves out the marker of kanon.Strict of a type that the kanon executable of Windows names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Shell", want: validator,
+				calls: validator,
+			},
+			{
+				name:   "keeps the marker of kanon.Strict of a type that a command in a directory names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Shade",
+				want: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+					Strict: true,
+				},
+				calls: validator,
+			},
+			{
+				name:   "keeps the marker of kanon.Strict of a type that a positional argument of kanon names",
+				target: golang.Target, tree: goTree, pkg: validatedPackage, give: "Note",
+				want: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+					Strict: true,
+				},
+				calls: validator,
 			},
 			{
 				name:   "records the functions of the surface of a TypeScript enum",

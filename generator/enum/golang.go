@@ -213,6 +213,104 @@ func (golangPart) literal(v *emit.Value) string {
 // package through the name of that package, as in catalog.ParseStatus.
 func (golangPart) qualified() bool { return true }
 
+// golangValidate is the method of kanon.Validator. kanon writes it for each
+// named type that is not a struct and that a directive of kanon names.
+const golangValidate = "ValidateKanon"
+
+// These constants describe a go:generate directive that runs kanon. goGenerate
+// is the name of the annotation of the directive. kanonCommand is the name of
+// the command, kanonExe the suffix of an executable of Windows, and
+// kanonVersion the mark of a module version. kanonTypes is the flag of the
+// types, whose names kanonSeparator separates.
+const (
+	goGenerate     = "go:generate"
+	kanonCommand   = "kanon"
+	kanonExe       = ".exe"
+	kanonVersion   = "@"
+	kanonTypes     = "type"
+	kanonSeparator = ","
+)
+
+// validated reports whether kanon encodes e as a kanon.Validator through its
+// underlying type: e has the method ValidateKanon, or a go:generate directive
+// of a file of pkg runs kanon with e in its flag -type. kanon encodes such a
+// type through its underlying type before it writes the method.
+func (golangPart) validated(e *node.Enum, pkg *node.Package) bool {
+	if slices.ContainsFunc(e.Methods, func(m *node.Method) bool { return m.Name == golangValidate }) {
+		return true
+	}
+	for _, f := range pkg.Files {
+		for s := range node.All(f) {
+			for _, a := range annotationsOf(s) {
+				//dokimi:mutate-skip ror-true, lcr-right: no other annotation of a Go file takes a command line
+				if a.Name == goGenerate && slices.Contains(kanonNames(a.Args), e.Name) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// annotationsOf returns the annotations of the symbol s. A go:generate
+// directive of a Go file is an annotation of the file, of a declaration at the
+// level of the package or of a method, and annotationsOf returns nil for any
+// other symbol.
+func annotationsOf(s symbol.Symbol) symbol.Annotations {
+	switch d := s.(type) {
+	case *node.File:
+		return d.Annotations
+	case *node.Alias:
+		return d.Annotations
+	case *node.Constant:
+		return d.Annotations
+	case *node.Enum:
+		return d.Annotations
+	case *node.Function:
+		return d.Annotations
+	case *node.Interface:
+		return d.Annotations
+	case *node.Method:
+		return d.Annotations
+	case *node.Struct:
+		return d.Annotations
+	case *node.Variable:
+		return d.Annotations
+	default:
+		return nil
+	}
+}
+
+// kanonNames returns the names of the types of the flag -type of a directive
+// of go generate with the arguments args, and nil for a directive that does
+// not run kanon. An argument runs kanon where the last element of its
+// path, before the version of a module, is kanon, with or without the suffix
+// of an executable of Windows, as in go tool kanon and in go run
+// go.thesmos.sh/kanon/cmd/kanon@v0.5.0. kanon reads its own directive by the
+// same rule.
+func kanonNames(args []string) []string {
+	at := slices.IndexFunc(args, func(arg string) bool {
+		name, _, _ := strings.Cut(arg[strings.LastIndexAny(arg, `/\`)+1:], kanonVersion)
+		rest, named := strings.CutPrefix(name, kanonCommand)
+		return named && (rest == "" || strings.EqualFold(rest, kanonExe))
+	})
+	if at < 0 {
+		return nil
+	}
+	flags := args[at+1:]
+	for i, arg := range flags {
+		name, value, valued := strings.Cut(strings.TrimLeft(arg, "-"), "=")
+		if !strings.HasPrefix(arg, "-") || name != kanonTypes {
+			continue
+		}
+		if !valued && i+1 < len(flags) {
+			value = flags[i+1]
+		}
+		return strings.Split(value, kanonSeparator)
+	}
+	return nil
+}
+
 // table returns the table of the texts of an enumeration of integers, from
 // which the render of Go slices the text of a value in the form of the tool
 // stringer. The value of each variant is the exact value that the frontend

@@ -22,7 +22,11 @@
 // In Go the surface also writes MarshalText and UnmarshalText. Where it
 // writes both of them, the parse function and the validity method, it also
 // writes StrictKanon, the marker of kanon.Strict. UnmarshalText then accepts
-// only the texts that MarshalText writes.
+// only the texts that MarshalText writes. kanon encodes a kanon.Validator
+// through its underlying type and refuses the marker on it. The surface
+// therefore does not write the marker for an enumeration with the method
+// ValidateKanon, or for one in the flag -type of a go:generate directive of
+// kanon.
 //
 // The text of a variant of an enumeration of text is its value, and the text
 // of any other variant is its name. Under the directive enum text=comment, the

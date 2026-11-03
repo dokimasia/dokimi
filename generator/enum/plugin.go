@@ -447,6 +447,10 @@ type part interface {
 	// m is the match of e, and b are the rules of its language.
 	table(m sdk.Matcher, b *rules.Bound, e *node.Enum, variants []rules.VariantText,
 		ids map[string]symbol.Identity) *Table
+	// validated reports whether an encoder of the language encodes the
+	// enumeration e of the package pkg through its underlying type, in place
+	// of the encode and the decode of the surface.
+	validated(e *node.Enum, pkg *node.Package) bool
 }
 
 // parts are the parts of enum, one for each language that it serves.
@@ -497,7 +501,8 @@ var schema = directive.Schema{
 // function wraps the error that the package declares. A decode needs a parse
 // function, and an encode needs a decode. In Go the surface also writes
 // StrictKanon, the marker of kanon.Strict, where it writes the encode, the
-// decode, the parse function and the validity method. The value off of
+// decode, the parse function and the validity method, and kanon does not
+// encode the enumeration as a kanon.Validator. The value off of
 // [MethodsParam] leaves out the whole surface and keeps the checks.
 //
 // The text of a variant of an enumeration of text is its value, and the text
@@ -562,7 +567,7 @@ func (g *generator) generate(m *sdk.EnumMatch, p part, e *sdk.Emitter) error {
 		Render: has(memberRender), Parse: has(memberParse), Error: has(memberError), Values: has(memberValues),
 		Valid: has(memberValid), Encode: has(memberEncode), Decode: has(memberDecode), Strict: has(memberStrict),
 	}
-	generated := surface(m, &names, &declared)
+	generated := surface(m, &names, &declared, p.validated(enum, pkg))
 	typ := &emit.TypeRef{Spelling: enum.Name, Target: enum.ID}
 	fallback, format := p.fallback(&b, enum, textual)
 	ids := make(map[string]symbol.Identity, len(enum.Variants))
@@ -765,7 +770,10 @@ func declares(
 // function, and an encode needs a decode. The strict marker needs the encode,
 // the decode, the parse function and the validity method of the surface,
 // because a declared member can accept a text that the encode does not write.
-func surface(m *sdk.EnumMatch, n *Names, declared *Members) Members {
+// It also needs validated to be false. An encoder that encodes the
+// enumeration through its underlying type does not call the encode or the
+// decode.
+func surface(m *sdk.EnumMatch, n *Names, declared *Members, validated bool) Members {
 	if _, off := m.Directive().Params[MethodsParam]; off {
 		return Members{}
 	}
@@ -777,6 +785,6 @@ func surface(m *sdk.EnumMatch, n *Names, declared *Members) Members {
 	}
 	out.Decode = !declared.Decode && (out.Parse || declared.Parse)
 	out.Encode = !declared.Encode && (out.Decode || declared.Decode)
-	out.Strict = !declared.Strict && out.Encode && out.Decode && out.Parse && out.Valid
+	out.Strict = !declared.Strict && !validated && out.Encode && out.Decode && out.Parse && out.Valid
 	return out
 }

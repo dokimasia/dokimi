@@ -155,6 +155,10 @@ func (p typescriptPart) member(name string) string {
 // function of the surface from the module of the surface.
 func (typescriptPart) qualified() bool { return false }
 
+// validated reports false, because the surface of TypeScript has no encode
+// and no decode that an encoder could replace.
+func (typescriptPart) validated(*node.Enum, *node.Package) bool { return false }
+
 // table returns nil, because the render of TypeScript switches over the
 // members of an enum.
 func (typescriptPart) table(

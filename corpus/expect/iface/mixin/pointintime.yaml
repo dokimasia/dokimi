@@ -17,6 +17,12 @@ declarations:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
+      mixed.get/pins-the-snapshot-under-writes:
+        claim: pins-the-snapshot-under-writes
+        partners:
+          write: mixed.store
+        law: read-keeps-its-snapshot
+        reason: unpinned-read
       mixed.get/point-in-time:
         claim: point-in-time
         partners:

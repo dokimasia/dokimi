@@ -96,6 +96,10 @@ func TestMixedSuite(t *testing.T) {
 				pointintimetest.MixedChecks.Get.PointInTimeGenerated(),
 				"the test applies the check of its option alone",
 			),
+			conform.Excuse(
+				pointintimetest.MixedChecks.Get.PinsTheSnapshotUnderWrites(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -163,6 +167,10 @@ func TestMixedSuite(t *testing.T) {
 			),
 			conform.Excuse(
 				pointintimetest.MixedChecks.Get.PointInTimeGenerated(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				pointintimetest.MixedChecks.Get.PinsTheSnapshotUnderWrites(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -233,6 +241,10 @@ func TestMixedSuiteBudgets(t *testing.T) {
 			pointintimetest.MixedChecks.Get.PointInTimeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			pointintimetest.MixedChecks.Get.PinsTheSnapshotUnderWrites(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -289,6 +301,10 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		),
 		conform.Excuse(
 			pointintimetest.MixedChecks.Get.PointInTimeGenerated(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			pointintimetest.MixedChecks.Get.PinsTheSnapshotUnderWrites(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -349,6 +365,10 @@ func FuzzMixedSuiteGet(f *testing.F) {
 			pointintimetest.MixedChecks.Get.PointInTimeGenerated(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
+		conform.Excuse(
+			pointintimetest.MixedChecks.Get.PinsTheSnapshotUnderWrites(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -363,4 +383,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:65ec9a641d30f5aa08956f5027618f2081e78ccb81356335d5f8ef108e920654
+// dokimi:provenance sha256:cee77df4622c71c30ff4d4cece1bcd7baefc03377d7c24440caedf7b556439b9

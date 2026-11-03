@@ -6,9 +6,11 @@ package causaltest
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal"
@@ -52,6 +54,9 @@ import (
 //
 // Mixed.Get/causal#generated: Get observes the write of Store that it
 // causally follows.
+//
+// Mixed.Get/causal-history: the versions that Get and Store return keep
+// the causal order of their calls across concurrent clients.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -176,6 +181,13 @@ func (c mixedGet) Causal() conform.ID[causal.Mixed] {
 // write of Store that it causally follows.
 func (c mixedGet) CausalGenerated() conform.ID[causal.Mixed] {
 	return c.Check("causal#generated")
+}
+
+// CausalHistory returns the identity of the check that the versions that
+// Get and Store return keep the causal order of their calls across
+// concurrent clients.
+func (c mixedGet) CausalHistory() conform.ID[causal.Mixed] {
+	return c.Check("causal-history")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -420,6 +432,28 @@ func MixedSuite() conform.Suite[causal.Mixed] {
 					})
 				},
 				Defect: mixedGetReadsAnotherValue,
+			},
+			{
+				ID:          MixedChecks.Get.CausalHistory(),
+				Statement:   "the versions that Get and Store return keep the causal order of their calls across concurrent clients",
+				Claim:       spec.CausalHistory,
+				Probe:       spec.VersionsFollowTheCausalOrder,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadObservesItsCausalPast,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
+				Entails:     []conform.ID[causal.Mixed]{MixedChecks.Get.Causal()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.VersionsFollowTheCausalOrder(
+						h,
+						c,
+						mixedActions,
+						"Get",
+						"Store",
+						func(v causal.Value) int64 { return v.Rev },
+						2,
+					)
+				},
+				Defect: mixedGetRacyCausalRead,
 			},
 		},
 		Calls: []conform.Call[causal.Mixed]{
@@ -680,4 +714,87 @@ func mixedGetReadsAnotherValue(h *MixedHandle) causal.Mixed {
 	return &mixedGetReadsAnotherValueDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6b5a6005e8d914aa0760ee913f514e41eafbeddcc5388171dfe20aa7e94fa3d6
+// mixedGetRacyCausalReadDefect is the planted defect of a Mixed whose Get
+// returns the version of another read that overlaps it.
+type mixedGetRacyCausalReadDefect struct {
+	mixedOverEmbedded
+	h    *MixedHandle
+	last atomic.Value
+}
+
+// Get is the override of the planted defect.
+func (d *mixedGetRacyCausalReadDefect) Get(p0 context.Context, p1 string) (r0 causal.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	d.last.Store([]any{r0, r1})
+	d.h.Yield()
+	kept, _ := d.last.Load().([]any)
+	r0, _ = kept[0].(causal.Value)
+	r1, _ = kept[1].(error)
+	return r0, r1
+}
+
+// mixedGetRacyCausalRead returns the planted defect of a Mixed whose Get
+// returns the version of another read that overlaps it over a fresh
+// subject.
+func mixedGetRacyCausalRead(h *MixedHandle) causal.Mixed {
+	return &mixedGetRacyCausalReadDefect{mixedOverEmbedded: h.Fresh(), h: h}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() causal.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[causal.Value](), "store.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "store.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(causal.Value)
+				call := c.History().Invoke(client, "Store", args, key0.Key)
+				values, err := mixedStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedStoreCall(ctx context.Context, subject causal.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(causal.Value)
+	r0, err := subject.Store(ctx, a0)
+	return []any{r0}, err
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject causal.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:fa85b1ff21dd6e360451749590183286f8fb5447f66c50d14ec029f0e7e983d4

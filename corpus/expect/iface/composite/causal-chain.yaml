@@ -80,6 +80,7 @@ declarations:
     ceilings: []
     refusals:
       log.append/causal: one-value
+      log.append/causal-history: one-value
     unclaimed:
       - classification: shape:writer
         callable: log.append

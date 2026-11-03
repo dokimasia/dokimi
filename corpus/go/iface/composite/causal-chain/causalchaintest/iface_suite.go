@@ -64,6 +64,9 @@ import (
 //
 // Log.Append/causal: Append does not return exactly one value. The remedy
 // is to return one value from Append.
+//
+// Log.Append/causal-history: Append does not return exactly one value. The
+// remedy is to return one value from Append.
 
 // The unclaimed classifications of Log:
 //
@@ -446,6 +449,13 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				Why:      "Append does not return exactly one value",
 				Remedy:   "return one value from Append",
 			},
+			{
+				Claim:    spec.CausalHistory,
+				Callable: "Log.Append",
+				Gate:     spec.OneValue,
+				Why:      "Append does not return exactly one value",
+				Remedy:   "return one value from Append",
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -805,4 +815,4 @@ func logReplayCall(ctx context.Context, subject causalchain.Log, args []any) ([]
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:09dff57ac435ac56d39ad51ec54735685d48fa7c737b58f0837e556b00132c38
+// dokimi:provenance sha256:97c8c5a5a2f450d629c745a8c89b89dc7dcbc8c071cacb7bab95fe4086e23acb

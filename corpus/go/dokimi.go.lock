@@ -30,6 +30,7 @@ go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain	log.append	shape:wri
 go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain	log.append/cancel	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain	log.append/cancel#generated	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain	log.append/causal	causal	refused	-
+go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain	log.append/causal-history	causal-history	refused	-
 go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain	log.append/chain	chain	check	replay=log.replay
 go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain	log.append/chain#generated	chain	check	replay=log.replay
 go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain	log.append/chain-causal	chain-causal	check	replay=log.replay
@@ -1093,6 +1094,7 @@ go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal	mixed.get/cancel	cancel	check	
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal	mixed.get/cancel#generated	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal	mixed.get/causal	causal	check	write=mixed.store
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal	mixed.get/causal#generated	causal	check	write=mixed.store
+go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal	mixed.get/causal-history	causal-history	check	write=mixed.store
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal	mixed.get/smoke	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal	mixed.get/smoke#generated	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal	mixed.get/zero-on-error	zero-on-error	check	-
@@ -1406,6 +1408,7 @@ go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation	mixed.items/smoke	smoke	c
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation	mixed.items/zero-on-error	zero-on-error	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime	mixed.get/cancel	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime	mixed.get/cancel#generated	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime	mixed.get/pins-the-snapshot-under-writes	pins-the-snapshot-under-writes	check	write=mixed.store
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime	mixed.get/point-in-time	point-in-time	check	write=mixed.store
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime	mixed.get/point-in-time#generated	point-in-time	check	write=mixed.store
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime	mixed.get/smoke	smoke	check	-

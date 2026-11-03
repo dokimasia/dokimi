@@ -6,9 +6,11 @@ package pointintimetest
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime"
@@ -47,6 +49,9 @@ import (
 //
 // Mixed.Get/point-in-time#generated: Get returns the same value twice
 // across a Store between the reads.
+//
+// Mixed.Get/pins-the-snapshot-under-writes: calls of Get with the same
+// arguments return one value beside concurrent calls of Store.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
@@ -164,6 +169,13 @@ func (c mixedGet) PointInTime() conform.ID[pointintime.Mixed] {
 // the same value twice across a Store between the reads.
 func (c mixedGet) PointInTimeGenerated() conform.ID[pointintime.Mixed] {
 	return c.Check("point-in-time#generated")
+}
+
+// PinsTheSnapshotUnderWrites returns the identity of the check that calls
+// of Get with the same arguments return one value beside concurrent calls
+// of Store.
+func (c mixedGet) PinsTheSnapshotUnderWrites() conform.ID[pointintime.Mixed] {
+	return c.Check("pins-the-snapshot-under-writes")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -393,6 +405,20 @@ func MixedSuite() conform.Suite[pointintime.Mixed] {
 					}())
 				},
 				Defect: mixedGetDrifts,
+			},
+			{
+				ID:          MixedChecks.Get.PinsTheSnapshotUnderWrites(),
+				Statement:   "calls of Get with the same arguments return one value beside concurrent calls of Store",
+				Claim:       spec.PinsTheSnapshotUnderWrites,
+				Probe:       spec.PinnedUnderConcurrentWrites,
+				Reason:      spec.UnpinnedRead,
+				Law:         spec.ReadKeepsItsSnapshot,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
+				Entails:     []conform.ID[pointintime.Mixed]{MixedChecks.Get.PointInTime()},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.PinnedUnderConcurrentWrites(h, c, mixedActions, "Get", "Store", 2)
+				},
+				Defect: mixedGetRacyPin,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -644,4 +670,85 @@ func mixedGetDrifts(h *MixedHandle) pointintime.Mixed {
 	return &mixedGetDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:da2633d874aac18e6cb8051d8d595b656e7f909b3bbbab255e53f0ebb60644f0
+// mixedGetRacyPinDefect is the planted defect of a Mixed whose Get returns
+// the value of another read that overlaps it.
+type mixedGetRacyPinDefect struct {
+	mixedOverEmbedded
+	h    *MixedHandle
+	last atomic.Value
+}
+
+// Get is the override of the planted defect.
+func (d *mixedGetRacyPinDefect) Get(p0 context.Context, p1 string) (r0 pointintime.Value, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
+	d.last.Store([]any{r0, r1})
+	d.h.Yield()
+	kept, _ := d.last.Load().([]any)
+	r0, _ = kept[0].(pointintime.Value)
+	r1, _ = kept[1].(error)
+	return r0, r1
+}
+
+// mixedGetRacyPin returns the planted defect of a Mixed whose Get returns
+// the value of another read that overlaps it over a fresh subject.
+func mixedGetRacyPin(h *MixedHandle) pointintime.Mixed {
+	return &mixedGetRacyPinDefect{mixedOverEmbedded: h.Fresh(), h: h}
+}
+
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() pointintime.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Store",
+			Input: func(c *prop.Case, _ struct{}) any {
+				v := c.Draw(prop.Of[pointintime.Value](), "store.v")
+				v.Key = c.Draw(prop.SampledFrom(keysString...), "store.v.key")
+				return []any{v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				key0, _ := args[0].(pointintime.Value)
+				call := c.History().Invoke(client, "Store", args, key0.Key)
+				values, err := mixedStoreCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				key := c.Draw(prop.SampledFrom(keysString...), "get.key")
+				return []any{key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args, args[0])
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+	}
+}
+
+// mixedStoreCall calls Store on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedStoreCall(ctx context.Context, subject pointintime.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(pointintime.Value)
+	return nil, subject.Store(ctx, a0)
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject pointintime.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:62ba10b0eccfcf75f1844b900906566527d50eb6c54f0e85b1be62ad8ca651b7

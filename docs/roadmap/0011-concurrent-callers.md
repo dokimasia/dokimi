@@ -25,9 +25,9 @@ A Go team whose declaration has the mixin `concurrent` and a reference gets a ch
 
 - [x] RFC-0021 is accepted.
 - [x] The suite generator writes the check `linearizable` for a declaration with the mixin `concurrent` and `machineries=[reference]`.
-- [ ] The suite generator writes `reads-agree-under-concurrency`, `computes-once`, `causal-history`, `pins-the-snapshot-under-writes` and `one-holder-at-a-time` for each callable that their mixin or contract classifies.
+- [x] The suite generator writes `reads-agree-under-concurrency`, `computes-once`, `causal-history`, `pins-the-snapshot-under-writes` and `one-holder-at-a-time` for each callable that their mixin or contract classifies.
 - [x] `computes-once` runs inside a `testing/synctest` bubble and keeps the computation waiting through the injector of milestone 0009.
-- [ ] `causal-history`, `pins-the-snapshot-under-writes` and `one-holder-at-a-time` entail the claims of a single caller of their laws, and each pair passes the proof of its depth.
+- [x] `causal-history`, `pins-the-snapshot-under-writes` and `one-holder-at-a-time` entail the claims of a single caller of their laws, and each pair passes the proof of its depth.
 - [ ] Each planted defect fails its check with its reason code at the seed of falsification under the strategy `Uniform`, and the checks of milestone 0010 pass on it.
 - [x] A check whose every case the budget cannot decide is vacuous in the census.
 - [x] The concurrent fixtures of the corpus run `linearizable` with three clients and a partition by key.
@@ -56,3 +56,4 @@ The probe `linearizable-history` over the checker of assert-go, the probes of th
 | 2026-11-02 | The claims `serializable` and `snapshot-isolation` move to milestone 0019 | Their checks drive transactions, and RFC-0033 designs the actions of a transaction |
 | 2026-11-02 | A planted defect runs under the strategy `Uniform` in place of `PCT` | `PCT(3)` proved the planted races at 15 and 8 of 40 seeds, and `Uniform` with every action at 40 of 40 |
 | 2026-11-02 | The claims `reads-agree-under-concurrency`, `causal-history` and `pins-the-snapshot-under-writes` take the machinery `generated-sequences` | A racy read shows only when two overlapping reads return distinct values, and the key pools of the generated sequences give reads of several keys |
+| 2026-11-03 | The last box waits for an option of the steps of assert-spec that sets the mean number of steps of a concurrent section | A concurrent section averages five steps. The planted defects `racy-pin` and `racy-causal-read` race in few cases, and their proofs held at 33 and 30 of 40 seeds of the specs. [dokimasia/assert-spec#31](https://github.com/dokimasia/assert-spec/issues/31) requests the option |

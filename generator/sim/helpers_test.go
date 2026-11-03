@@ -24,6 +24,8 @@ const (
 	registerPackage    = "example.com/shop/register"
 	registerSimPackage = "example.com/shop/register/registersim"
 	plainPackage       = "example.com/shop/plain"
+	disksPackage       = "example.com/shop/disks"
+	disksSimPackage    = "example.com/shop/disks/diskssim"
 	plainSimPackage    = "example.com/shop/plain/plainsim"
 	genericPackage     = "example.com/shop/generic"
 	genericSimPackage  = "example.com/shop/generic/genericsim"

@@ -157,7 +157,8 @@ var faults = map[string]string{
 	"crash": "FaultCrash", "restart": "FaultRestart", "pause": "FaultPause", "partition": "FaultPartition",
 	"drop": "FaultDrop", "delay": "FaultDelay", "duplicate": "FaultDuplicate", "lose-before": "FaultLoseBefore",
 	"lose-after": "FaultLoseAfter", "outage": "FaultOutage", "slow": "FaultSlow", "clock-jump": "FaultClockJump",
-	"clock-strobe": "FaultClockStrobe",
+	"clock-strobe": "FaultClockStrobe", "torn-write": "FaultTornWrite", "corruption": "FaultCorruption",
+	"full-disk": "FaultFullDisk",
 }
 
 // Model is the data of the record of the simulation of one machine

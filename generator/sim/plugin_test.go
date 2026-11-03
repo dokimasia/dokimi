@@ -137,6 +137,17 @@ func TestNew(t *testing.T) {
 			"a share of 1 requires the pause in every case")
 	})
 
+	t.Run("records the faults of the media of a process", func(t *testing.T) {
+		t.Parallel()
+
+		m := generate(t, disksPackage, disksSimPackage).models(t)["Disks"]
+		expect.Equal(t, m.Tolerate, []sim.Bound{
+			{Fault: "FaultTornWrite", N: 1}, {Fault: "FaultCorruption", N: 1}, {Fault: "FaultFullDisk", N: 1},
+		}, "the param tolerate bounds each fault of the media")
+		expect.Equal(t, m.Require, []sim.Share{{Fault: "FaultFullDisk", Share: "0.5"}},
+			"the param require gives the full disk its share")
+	})
+
 	t.Run("records a spec of a subject", func(t *testing.T) {
 		t.Parallel()
 

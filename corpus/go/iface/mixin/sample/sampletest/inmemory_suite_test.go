@@ -34,13 +34,6 @@ func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 			func(*sampletest.MixedHandle) *sampletest.InMemory { return sampletest.NewInMemory() },
 		)
 	})
-	b.Run("NewInput", func(b *testing.B) {
-		sampletest.BenchMixedSuite(
-			b,
-			sampletest.MixedChecks.NewInput.Callable,
-			func(*sampletest.MixedHandle) *sampletest.InMemory { return sampletest.NewInMemory() },
-		)
-	})
 }
 
 // FuzzInMemoryConformsToMixedProcess fuzzes the property checks of
@@ -53,14 +46,4 @@ func FuzzInMemoryConformsToMixedProcess(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryConformsToMixedNewInput fuzzes the property checks of
-// Mixed.NewInput on InMemory.
-func FuzzInMemoryConformsToMixedNewInput(f *testing.F) {
-	sampletest.FuzzMixedSuite(
-		f,
-		sampletest.MixedChecks.NewInput.Callable,
-		func(*sampletest.MixedHandle) *sampletest.InMemory { return sampletest.NewInMemory() },
-	)
-}
-
-// dokimi:provenance sha256:4593c2c3392644ccb5106165c955ee2e1d0a633c235f9562417b50985f131de5
+// dokimi:provenance sha256:c7e25b3c310806555da06659f3fa6833b32b323ced40196c8acffffd9dc117e5

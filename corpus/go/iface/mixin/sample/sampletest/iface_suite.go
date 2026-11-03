@@ -19,39 +19,19 @@ import (
 //
 // Mixed.Process/smoke: Process returns without a panic for derived inputs.
 //
-// Mixed.Process/smoke#generated: Process returns without a panic for
-// derived inputs.
-//
 // Mixed.Process/cancel: Process returns an error for a cancelled context.
 //
-// Mixed.Process/cancel#generated: Process returns an error for a cancelled
-// context.
-//
 // Mixed.Process/zero-on-error: Process returns the zero value beside an
-// error.
-//
-// Mixed.Process/zero-on-error#generated: Process returns the zero value
-// beside an error.
-//
-// Mixed.NewInput/smoke: NewInput returns without a panic for derived
-// inputs.
-//
-// Mixed.NewInput/cancel: NewInput returns an error for a cancelled
-// context.
-//
-// Mixed.NewInput/zero-on-error: NewInput returns the zero value beside an
 // error.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
 // Mixed.Process/smoke
-//
-// Mixed.NewInput/smoke
 
 // The unclaimed classifications of Mixed:
 //
-// The mixin:sample of Mixed.Process has the stance silent. The mixin
-// documents the sample of a value.
+// The mixin:sample of Mixed.Process has the stance silent. The mixin names
+// the builder of the inputs of each derived call of the callable.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -66,11 +46,9 @@ type (
 // MixedChecks contains the name of each callable of Mixed, with the
 // identities of its checks.
 var MixedChecks = struct {
-	Process  mixedProcess
-	NewInput mixedNewInput
+	Process mixedProcess
 }{
-	Process:  mixedProcess{"Mixed.Process"},
-	NewInput: mixedNewInput{"Mixed.NewInput"},
+	Process: mixedProcess{"Mixed.Process"},
 }
 
 // mixedProcess is the name of Mixed.Process, with the identities of its
@@ -85,57 +63,15 @@ func (c mixedProcess) Smoke() conform.ID[sample.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Process returns
-// without a panic for derived inputs.
-func (c mixedProcess) SmokeGenerated() conform.ID[sample.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Process returns an error
 // for a cancelled context.
 func (c mixedProcess) Cancel() conform.ID[sample.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Process returns
-// an error for a cancelled context.
-func (c mixedProcess) CancelGenerated() conform.ID[sample.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Process returns the
 // zero value beside an error.
 func (c mixedProcess) ZeroOnError() conform.ID[sample.Mixed] {
-	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Process
-// returns the zero value beside an error.
-func (c mixedProcess) ZeroOnErrorGenerated() conform.ID[sample.Mixed] {
-	return c.Check("zero-on-error#generated")
-}
-
-// mixedNewInput is the name of Mixed.NewInput, with the identities of its
-// checks.
-type mixedNewInput struct {
-	conform.Callable[sample.Mixed]
-}
-
-// Smoke returns the identity of the check that NewInput returns without a
-// panic for derived inputs.
-func (c mixedNewInput) Smoke() conform.ID[sample.Mixed] {
-	return c.Check("smoke")
-}
-
-// Cancel returns the identity of the check that NewInput returns an error
-// for a cancelled context.
-func (c mixedNewInput) Cancel() conform.ID[sample.Mixed] {
-	return c.Check("cancel")
-}
-
-// ZeroOnError returns the identity of the check that NewInput returns the
-// zero value beside an error.
-func (c mixedNewInput) ZeroOnError() conform.ID[sample.Mixed] {
 	return c.Check("zero-on-error")
 }
 
@@ -158,24 +94,8 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().Process(ctx, string("input-a"))
-						return err
-					})
-				},
-				Defect: mixedProcessPanics,
-			},
-			{
-				ID:          MixedChecks.Process.SmokeGenerated(),
-				Statement:   "Process returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnInput := c.Draw(prop.Of[string](), "input")
-					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().Process(ctx, drawnInput)
+						builtProcess0 := sample.NewInput()
+						_, err := h.Subject().Process(ctx, builtProcess0)
 						return err
 					})
 				},
@@ -191,24 +111,8 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().Process(ctx, string("input-a"))
-						return err
-					})
-				},
-				Defect: mixedProcessIgnoresCancel,
-			},
-			{
-				ID:          MixedChecks.Process.CancelGenerated(),
-				Statement:   "Process returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnInput := c.Draw(prop.Of[string](), "input")
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().Process(ctx, drawnInput)
+						builtProcess0 := sample.NewInput()
+						_, err := h.Subject().Process(ctx, builtProcess0)
 						return err
 					})
 				},
@@ -224,74 +128,11 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
-						return h.Subject().Process(ctx, string("input-a"))
+						builtProcess0 := sample.NewInput()
+						return h.Subject().Process(ctx, builtProcess0)
 					}, string(""))
 				},
 				Defect: mixedProcessValueBeside,
-			},
-			{
-				ID:          MixedChecks.Process.ZeroOnErrorGenerated(),
-				Statement:   "Process returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnInput := c.Draw(prop.Of[string](), "input")
-					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
-						return h.Subject().Process(ctx, drawnInput)
-					}, string(""))
-				},
-				Defect: mixedProcessValueBeside,
-			},
-			{
-				ID:          MixedChecks.NewInput.Smoke(),
-				Statement:   "NewInput returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Shallow:     true,
-				Apply: func(h *MixedHandle) {
-					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().NewInput(ctx)
-						return err
-					})
-				},
-				Defect: mixedNewInputPanics,
-			},
-			{
-				ID:          MixedChecks.NewInput.Cancel(),
-				Statement:   "NewInput returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Apply: func(h *MixedHandle) {
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().NewInput(ctx)
-						return err
-					})
-				},
-				Defect: mixedNewInputIgnoresCancel,
-			},
-			{
-				ID:          MixedChecks.NewInput.ZeroOnError(),
-				Statement:   "NewInput returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Apply: func(h *MixedHandle) {
-					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
-						return h.Subject().NewInput(ctx)
-					}, string(""))
-				},
-				Defect: mixedNewInputValueBeside,
 			},
 		},
 		Unclaimed: []conform.Unclaimed{
@@ -299,7 +140,7 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				Classification: "mixin:sample",
 				Callable:       "Mixed.Process",
 				Stance:         spec.Silent,
-				Note:           "The mixin documents the sample of a value.",
+				Note:           "The mixin names the builder of the inputs of each derived call of the callable.",
 			},
 		},
 		Calls: []conform.Call[sample.Mixed]{
@@ -307,11 +148,6 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				Calls:    mixedProcessCalls,
 				Over:     newMixedOver,
 				Callable: MixedChecks.Process.Callable,
-			},
-			{
-				Calls:    mixedNewInputCalls,
-				Over:     newMixedOver,
-				Callable: MixedChecks.NewInput.Callable,
 			},
 		},
 	}
@@ -371,20 +207,11 @@ func mixedSubjects[T sample.Mixed](newSubject func(h *MixedHandle) T) func(h *Mi
 }
 
 // mixedProcessCalls generates the calls of Mixed.Process with the inputs
-// that each case draws.
-var mixedProcessCalls = prop.Composite(func(c *prop.Case) func(context.Context, sample.Mixed) error {
-	input := c.Draw(prop.Of[string](), "input")
+// that its builder NewInput returns.
+var mixedProcessCalls = prop.Composite(func(*prop.Case) func(context.Context, sample.Mixed) error {
 	return func(ctx context.Context, subject sample.Mixed) error {
+		input := sample.NewInput()
 		_, err := subject.Process(ctx, input)
-		return err
-	}
-})
-
-// mixedNewInputCalls generates the calls of Mixed.NewInput with the inputs
-// that each case draws.
-var mixedNewInputCalls = prop.Composite(func(*prop.Case) func(context.Context, sample.Mixed) error {
-	return func(ctx context.Context, subject sample.Mixed) error {
-		_, err := subject.NewInput(ctx)
 		return err
 	}
 })
@@ -403,12 +230,6 @@ type mixedOver struct {
 
 // Process calls spend and returns its zero results.
 func (o mixedOver) Process(context.Context, string) (r0 string, r1 error) {
-	o.spend()
-	return r0, r1
-}
-
-// NewInput calls spend and returns its zero results.
-func (o mixedOver) NewInput(context.Context) (r0 string, r1 error) {
 	o.spend()
 	return r0, r1
 }
@@ -477,62 +298,4 @@ func mixedProcessValueBeside(h *MixedHandle) sample.Mixed {
 	return &mixedProcessValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedNewInputPanicsDefect is the planted defect of a Mixed whose
-// NewInput panics.
-type mixedNewInputPanicsDefect struct {
-	mixedOverEmbedded
-}
-
-// NewInput is the override of the planted defect.
-func (*mixedNewInputPanicsDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
-	panic("the planted defect of a Mixed whose NewInput panics")
-}
-
-// mixedNewInputPanics returns the planted defect of a Mixed whose NewInput
-// panics over a fresh subject.
-func mixedNewInputPanics(h *MixedHandle) sample.Mixed {
-	return &mixedNewInputPanicsDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedNewInputIgnoresCancelDefect is the planted defect of a Mixed whose
-// NewInput ignores the context.
-type mixedNewInputIgnoresCancelDefect struct {
-	mixedOverEmbedded
-}
-
-// NewInput is the override of the planted defect.
-func (d *mixedNewInputIgnoresCancelDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
-	if p0.Err() != nil {
-		return r0, r1
-	}
-	return d.mixedOverEmbedded.NewInput(p0)
-}
-
-// mixedNewInputIgnoresCancel returns the planted defect of a Mixed whose
-// NewInput ignores the context over a fresh subject.
-func mixedNewInputIgnoresCancel(h *MixedHandle) sample.Mixed {
-	return &mixedNewInputIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedNewInputValueBesideDefect is the planted defect of a Mixed whose
-// NewInput returns a value beside an error.
-type mixedNewInputValueBesideDefect struct {
-	mixedOverEmbedded
-}
-
-// NewInput is the override of the planted defect.
-func (d *mixedNewInputValueBesideDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
-	r0, r1 = d.mixedOverEmbedded.NewInput(p0)
-	if r1 != nil {
-		r0 = string("sample-b")
-	}
-	return r0, r1
-}
-
-// mixedNewInputValueBeside returns the planted defect of a Mixed whose
-// NewInput returns a value beside an error over a fresh subject.
-func mixedNewInputValueBeside(h *MixedHandle) sample.Mixed {
-	return &mixedNewInputValueBesideDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// dokimi:provenance sha256:85fef967ae46fa5535c751649c098d48faf960eb71534b1d8d5a17694de7619f
+// dokimi:provenance sha256:26ee5934ee70942d3649aff1a92940e5479f3e0e351c55990a76c075d8f5e6a2

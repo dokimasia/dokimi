@@ -61,9 +61,6 @@ import (
 //
 // The shape:writer of Mixed.Record has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
-//
-// The mixin:snapshot-isolation of Mixed.History has the stance needs. The
-// claims of the mixin need concurrent callers.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -407,12 +404,6 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
-			{
-				Classification: "mixin:snapshot-isolation",
-				Callable:       "Mixed.History",
-				Stance:         spec.Needs,
-				Note:           "The claims of the mixin need concurrent callers.",
-			},
 		},
 		Calls: []conform.Call[snapshotisolation.Mixed]{
 			{
@@ -709,4 +700,4 @@ func mixedGetValueBeside(h *MixedHandle) snapshotisolation.Mixed {
 	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:42bf9871d3f41650065bbc811d06eae6bb3f3ccf356f1c26a91e8abba228be3c
+// dokimi:provenance sha256:a63df85a04e7553bb65ebae543672c827d67fc6849c87b0424bf2863e75d15ec

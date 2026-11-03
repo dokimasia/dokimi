@@ -9,43 +9,28 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"sync"
 
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample"
 )
 
-// ErrUnprocessable is the error of Process for an input that NewInput did not
-// return.
+// ErrUnprocessable is the error of Process for an input that NewInput does
+// not return.
 var ErrUnprocessable = errors.New("sampletest: input is not sampled")
 
-// inputPrefix is the prefix of each input that NewInput returns.
+// inputPrefix is the prefix of each input that sample.NewInput returns.
 const inputPrefix = "sample:"
 
 // InMemory implements [sample.Mixed] in memory. The corpus applies the suite
 // of Mixed to it as a subject.
 //
 //dokimi:subject sample.Mixed new=NewInMemory
-type InMemory struct {
-	mu   sync.Mutex
-	next int
-}
+type InMemory struct{}
 
 // The compiler checks that InMemory implements [sample.Mixed].
 var _ sample.Mixed = (*InMemory)(nil)
 
 // NewInMemory returns a new InMemory.
 func NewInMemory() *InMemory { return &InMemory{} }
-
-// NewInput implements [sample.Mixed].
-func (s *InMemory) NewInput(ctx context.Context) (string, error) {
-	if err := contextErr(ctx); err != nil {
-		return "", err
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.next++
-	return inputPrefix + string(rune('a'+(s.next-1)%26)), nil
-}
 
 // Process implements [sample.Mixed].
 func (*InMemory) Process(ctx context.Context, input string) (string, error) {

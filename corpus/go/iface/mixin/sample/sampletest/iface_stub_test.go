@@ -42,29 +42,6 @@ func mixedStubProcessPins() (string, error) {
 	return want0, want1
 }
 
-// mixedStubNewInputArgs returns the samples of the arguments of NewInput.
-func mixedStubNewInputArgs(tb assert.TB) context.Context {
-	tb.Helper()
-	a0 := assert.Context(tb)
-	return a0
-}
-
-// mixedStubNewInput calls NewInput of s with the samples of its arguments.
-func mixedStubNewInput(tb assert.TB, s *sampletest.MixedStub) (string, error) {
-	tb.Helper()
-	a0 := mixedStubNewInputArgs(tb)
-	return s.NewInput(a0)
-}
-
-// mixedStubNewInputPins returns the samples of the results of NewInput,
-// with a new error as its error result.
-func mixedStubNewInputPins() (string, error) {
-	var want0 string
-	want1 := errors.New("NewInput-returns")
-	want0 = "NewInput-a"
-	return want0, want1
-}
-
 // mixedStubProcessSubject returns the subject of [stub.Behaviour] for
 // Process. The subject calls a new double that reports to tb.
 func mixedStubProcessSubject(tb assert.TB) stub.Subject[sampletest.MixedProcessCall, sampletest.MixedProcessReturn] {
@@ -89,35 +66,6 @@ func mixedStubProcessSubject(tb assert.TB) stub.Subject[sampletest.MixedProcessC
 		},
 		Fails: func() error {
 			_, r1 := mixedStubProcess(tb, s)
-			return r1
-		},
-	}
-}
-
-// mixedStubNewInputSubject returns the subject of [stub.Behaviour] for
-// NewInput. The subject calls a new double that reports to tb.
-func mixedStubNewInputSubject(tb assert.TB) stub.Subject[sampletest.MixedNewInputCall, sampletest.MixedNewInputReturn] {
-	tb.Helper()
-	s := sampletest.NewMixedStub(tb)
-	return stub.Subject[sampletest.MixedNewInputCall, sampletest.MixedNewInputReturn]{
-		Stub: s.OnNewInput.MethodStub,
-		Call: func() {
-			_, _ = mixedStubNewInput(tb, s)
-		},
-		Result: func() sampletest.MixedNewInputReturn {
-			got0, got1 := mixedStubNewInput(tb, s)
-			return sampletest.MixedNewInputReturn{Result: got0, Err: got1}
-		},
-		Override: func(mark func()) {
-			s.OnNewInput.Func(func(_ context.Context) (string, error) {
-				mark()
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-		},
-		Fails: func() error {
-			_, r1 := mixedStubNewInput(tb, s)
 			return r1
 		},
 	}
@@ -170,30 +118,6 @@ func TestMixedStub(t *testing.T) {
 		})
 	})
 
-	t.Run("NewInput", func(t *testing.T) {
-		t.Parallel()
-		stub.Behaviour(t, "NewInput", mixedStubNewInputSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sampletest.NewMixedStub(t)
-			_, _ = mixedStubNewInput(t, s)
-			got := s.OnNewInput.AssertCalledOnce(t, "NewInput records the call")
-			a0 := mixedStubNewInputArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sampletest.NewMixedStub(t)
-			var seen []sampletest.MixedNewInputCall
-			s.OnNewInput.OnRecord(func(c sampletest.MixedNewInputCall) { seen = append(seen, c) })
-			_, _ = mixedStubNewInput(t, s)
-			_, _ = mixedStubNewInput(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of NewInput")
-		})
-	})
-
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
 		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
@@ -218,25 +142,6 @@ func TestMixedStub(t *testing.T) {
 			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Process")
 			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Process")
 		})
-
-		t.Run("clears the recorded calls of NewInput", func(t *testing.T) {
-			t.Parallel()
-			s := sampletest.NewMixedStub(t)
-			_, _ = mixedStubNewInput(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNewInput.CallCount(), 0, "ResetCalls clears the calls of NewInput")
-		})
-
-		t.Run("keeps the results of Returns of NewInput", func(t *testing.T) {
-			t.Parallel()
-			s := sampletest.NewMixedStub(t)
-			want0, want1 := mixedStubNewInputPins()
-			s.OnNewInput.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubNewInput(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of NewInput")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of NewInput")
-		})
 	})
 
 	t.Run("NewMixedStubDelayed", func(t *testing.T) {
@@ -255,14 +160,6 @@ func TestMixedStub(t *testing.T) {
 			s := sampletest.NewMixedStubFailing(t, want)
 			_, r1 := mixedStubProcess(t, s)
 			assert.ErrorIs(t, r1, want, "Process fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails NewInput with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("NewInput-failing")
-			s := sampletest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubNewInput(t, s)
-			assert.ErrorIs(t, r1, want, "NewInput fails with the error of NewMixedStubFailing")
 		})
 	})
 
@@ -292,24 +189,6 @@ func TestMixedStub(t *testing.T) {
 			s := sampletest.NewMixedStub(t, sampletest.MixedStubDelegateTo(inner))
 			_, r1 := mixedStubProcess(t, s)
 			assert.ErrorIs(t, r1, want, "Process fails with the error of the implementation")
-		})
-
-		t.Run("passes NewInput to the implementation", func(t *testing.T) {
-			t.Parallel()
-			inner := sampletest.NewMixedStub(t)
-			s := sampletest.NewMixedStub(t, sampletest.MixedStubDelegateTo(inner))
-			_, _ = mixedStubNewInput(t, s)
-			inner.OnNewInput.AssertCalledOnce(t, "NewInput calls the implementation")
-		})
-
-		t.Run("fails NewInput with the error of the implementation", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("NewInput-delegate")
-			inner := sampletest.NewMixedStub(t)
-			inner.OnNewInput.Faults(want, 1)
-			s := sampletest.NewMixedStub(t, sampletest.MixedStubDelegateTo(inner))
-			_, r1 := mixedStubNewInput(t, s)
-			assert.ErrorIs(t, r1, want, "NewInput fails with the error of the implementation")
 		})
 	})
 
@@ -354,14 +233,6 @@ func TestMixedStub(t *testing.T) {
 			_, r1 := mixedStubProcess(t, s)
 			assert.ErrorIs(t, r1, want, "Process fails with the error of MixedStubFailing")
 		})
-
-		t.Run("fails NewInput with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("NewInput-failing")
-			s := sampletest.NewMixedStub(t, sampletest.MixedStubFailing(want))
-			_, r1 := mixedStubNewInput(t, s)
-			assert.ErrorIs(t, r1, want, "NewInput fails with the error of MixedStubFailing")
-		})
 	})
 
 	t.Run("WithMixedProcess", func(t *testing.T) {
@@ -381,23 +252,6 @@ func TestMixedStub(t *testing.T) {
 			)
 			_, _ = mixedStubProcess(t, s)
 			assert.True(t, called, "WithMixedProcess sets the function of Process")
-		})
-	})
-
-	t.Run("WithMixedNewInput", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the function of NewInput", func(t *testing.T) {
-			t.Parallel()
-			called := false
-			s := sampletest.NewMixedStub(t, sampletest.WithMixedNewInput(func(_ context.Context) (string, error) {
-				called = true
-				var z0 string
-				var z1 error
-				return z0, z1
-			}))
-			_, _ = mixedStubNewInput(t, s)
-			assert.True(t, called, "WithMixedNewInput sets the function of NewInput")
 		})
 	})
 }
@@ -455,55 +309,4 @@ func TestMixedProcessStub(t *testing.T) {
 	})
 }
 
-// TestMixedNewInputStub checks the methods of MixedNewInputStub, which
-// configures NewInput.
-func TestMixedNewInputStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of NewInput", func(t *testing.T) {
-			t.Parallel()
-			s := sampletest.NewMixedStub(t)
-			want0, want1 := mixedStubNewInputPins()
-			s.OnNewInput.Returns(want0, want1)
-			got0, got1 := mixedStubNewInput(t, s)
-			expect.Equal(t, got0, want0, "NewInput returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "NewInput returns the error that Returns sets")
-		})
-
-		t.Run("configures NewInput for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sampletest.NewMixedStub(r)
-			s.OnNewInput.Strict()
-			var want0 string
-			var want1 error
-			s.OnNewInput.Returns(want0, want1)
-			_, _ = mixedStubNewInput(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of NewInput")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of NewInput to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sampletest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnNewInput.Func(func(p0 context.Context) (string, error) {
-				got0 = p0
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubNewInput(t, s)
-			a0 := mixedStubNewInputArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:81fb226cb132e7aae816bcaa6b17cb5bba72369e20fcd50c4894b5f946b178ae
+// dokimi:provenance sha256:38f371c2b608a0828bd1b0492ca2ac639fb266b5b5b3e489c66d90a2be23cb5d

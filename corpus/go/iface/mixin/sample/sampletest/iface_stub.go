@@ -22,13 +22,6 @@ type MixedProcessCall struct {
 	Err    error
 }
 
-// MixedNewInputCall records one call of Mixed.NewInput.
-type MixedNewInputCall struct {
-	Ctx    context.Context
-	Result string
-	Err    error
-}
-
 // MixedProcessStub configures Process and records its calls. A fault armed
 // through it takes precedence over the function and the fixed results.
 type MixedProcessStub struct {
@@ -58,36 +51,6 @@ func (s *MixedProcessStub) Func(fn func(context.Context, string) (string, error)
 	return s
 }
 
-// MixedNewInputStub configures NewInput and records its calls. A fault
-// armed through it takes precedence over the function and the fixed
-// results.
-type MixedNewInputStub struct {
-	*stub.MethodStub[MixedNewInputCall]
-
-	fn       func(context.Context) (string, error)
-	fallback *MixedNewInputReturn
-}
-
-// MixedNewInputReturn contains the fixed results of NewInput.
-type MixedNewInputReturn struct {
-	Result string
-	Err    error
-}
-
-// Returns sets the results of every call of NewInput. A function and an
-// injected fault take precedence over them.
-func (s *MixedNewInputStub) Returns(result string, err error) *MixedNewInputStub {
-	s.fallback = &MixedNewInputReturn{Result: result, Err: err}
-	return s
-}
-
-// Func sets the function that computes the results of NewInput from its
-// arguments. An injected fault takes precedence over it.
-func (s *MixedNewInputStub) Func(fn func(context.Context) (string, error)) *MixedNewInputStub {
-	s.fn = fn
-	return s
-}
-
 // The reference to stub.CompatV1 fails the build against another major
 // version of the runtime of doubles.
 var _ = stub.CompatV1
@@ -106,7 +69,6 @@ func MixedStubStrict() MixedStubOption {
 func MixedStubDelegateTo(impl sample.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnProcess.Func(impl.Process)
-		s.OnNewInput.Func(impl.NewInput)
 	}
 }
 
@@ -142,7 +104,6 @@ func MixedStubWithLatency(d time.Duration) MixedStubOption {
 func MixedStubFailing(err error) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnProcess.Faults(err, 1)
-		s.OnNewInput.Faults(err, 1)
 	}
 }
 
@@ -151,17 +112,11 @@ func WithMixedProcess(fn func(context.Context, string) (string, error)) MixedStu
 	return func(s *MixedStub) { s.OnProcess.Func(fn) }
 }
 
-// WithMixedNewInput returns the option that sets the function of NewInput.
-func WithMixedNewInput(fn func(context.Context) (string, error)) MixedStubOption {
-	return func(s *MixedStub) { s.OnNewInput.Func(fn) }
-}
-
 // MixedStub is a recording test double of Mixed. Each field On<Method>
 // configures its method. An unconfigured method records the call and
 // returns the zero values of its results.
 type MixedStub struct {
-	OnProcess  *MixedProcessStub
-	OnNewInput *MixedNewInputStub
+	OnProcess *MixedProcessStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -176,12 +131,10 @@ var _ sample.Mixed = (*MixedStub)(nil)
 // end of the test. With a nil tb, the double reports nothing.
 func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
-		OnProcess:  &MixedProcessStub{MethodStub: stub.NewMethodStub[MixedProcessCall](tb, "Mixed.Process")},
-		OnNewInput: &MixedNewInputStub{MethodStub: stub.NewMethodStub[MixedNewInputCall](tb, "Mixed.NewInput")},
+		OnProcess: &MixedProcessStub{MethodStub: stub.NewMethodStub[MixedProcessCall](tb, "Mixed.Process")},
 	}
 	s.group = stub.NewGroup(
 		s.OnProcess.MethodStub,
-		s.OnNewInput.MethodStub,
 	)
 	for _, opt := range opts {
 		opt(s)
@@ -243,33 +196,4 @@ func (s *MixedStub) Process(ctx context.Context, input string) (string, error) {
 	return r.Result, r.Err
 }
 
-// invoke returns a call of the function of Func with the arguments, and nil
-// where no function is set.
-func (s *MixedNewInputStub) invoke(ctx context.Context) func() MixedNewInputReturn {
-	if s.fn == nil {
-		return nil
-	}
-	return func() MixedNewInputReturn {
-		r0, r1 := s.fn(ctx)
-		return MixedNewInputReturn{Result: r0, Err: r1}
-	}
-}
-
-// NewInput records the call. An armed fault comes first, then the function
-// of Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) NewInput(ctx context.Context) (string, error) {
-	call := MixedNewInputCall{Ctx: ctx}
-	r := stub.Answer(s.OnNewInput.MethodStub, call, stub.Arms[MixedNewInputCall, MixedNewInputReturn]{
-		Invoke:   s.OnNewInput.invoke(ctx),
-		Fallback: s.OnNewInput.fallback,
-		Fault:    func(err error) MixedNewInputReturn { return MixedNewInputReturn{Err: err} },
-		Stamp: func(c MixedNewInputCall, r MixedNewInputReturn) MixedNewInputCall {
-			c.Result = r.Result
-			c.Err = r.Err
-			return c
-		},
-	})
-	return r.Result, r.Err
-}
-
-// dokimi:provenance sha256:2a67825f463ae218b536d83a0a47f814f92badd7bb4f950cd7eba295da094f8c
+// dokimi:provenance sha256:7cd5f626b3b4a15e72cf47c499589953b090395040b41ea3b393d54896089600

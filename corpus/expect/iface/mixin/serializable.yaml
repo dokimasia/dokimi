@@ -65,9 +65,6 @@ declarations:
     ceilings: []
     refusals: {}
     unclaimed:
-      - classification: mixin:serializable
-        callable: mixed.history
-        stance: needs
       - classification: shape:writer
         callable: mixed.record
         stance: silent

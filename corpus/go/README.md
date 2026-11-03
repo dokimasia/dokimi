@@ -31,8 +31,8 @@ A shape family is a group of subjects whose state has one representation. `famil
 | queues | A channel, or a slice that the oldest element leaves first | 5 | `iface/door/queue/ring` | A ring buffer of two items under a mutex |
 | publishers | A slice of the channels or the functions of the subscribers | 8 | `iface/contract/publisher/mailbox` | An unbounded mailbox and a delivering goroutine per subscriber |
 | flags-and-lifecycles | A flag or a small state machine | 13 | `iface/detector/lifecycle/atomicstate` | An atomic integer without a mutex |
-| counters | One integer | 8 | `iface/mixin/commutative/perkey` | A total for each key, summed on each read |
-| stateless | No state, or a value that the constructor sets | 13 | `iface/mixin/xsssafe/htmlescape` | `html.EscapeString` of the standard library |
+| counters | One integer | 7 | `iface/mixin/commutative/perkey` | A total for each key, summed on each read |
+| stateless | No state, or a value that the constructor sets | 14 | `iface/mixin/xsssafe/htmlescape` | `html.EscapeString` of the standard library |
 | clocked | Instants of a clock beside the values | 7 | `iface/mixin/ttl/deadline` | The deadline of each value in place of the instant of its write |
 | transactional | Staged writes beside committed ones, a snapshot, or a history | 6 | `iface/contract/tx/writelog` | One log of every write, read through the order of the commits |
 | leases | The holders of keys, which a release or the end of a context frees | 5 | `iface/contract/lease/sortedkeys` | A sorted slice of the held keys |

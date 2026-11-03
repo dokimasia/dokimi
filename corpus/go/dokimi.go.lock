@@ -1503,16 +1503,10 @@ go.dokimi.dev/dokimi/corpus/go/iface/mixin/runsuntilcancelled	worker.run/cancel	
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/runsuntilcancelled	worker.run/stops-when-its-context-ends	stops-when-its-context-ends	authored	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/runsuntilcancelled	worker.running/predicate	predicate	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/runsuntilcancelled	worker.running/smoke	smoke	check	-
-go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.new-input/cancel	cancel	check	-
-go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.new-input/smoke	smoke	check	-
-go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.new-input/zero-on-error	zero-on-error	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.process	mixin:sample	silent	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.process/cancel	cancel	check	-
-go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.process/cancel#generated	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.process/smoke	smoke	check	-
-go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.process/smoke#generated	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.process/zero-on-error	zero-on-error	check	-
-go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample	mixed.process/zero-on-error#generated	zero-on-error	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/scheduled	mixed.at	shape:writer	silent	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/scheduled	mixed.at/cancel	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/scheduled	mixed.at/cancel#generated	cancel	check	-
@@ -1541,7 +1535,6 @@ go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable	mixed.get/smoke	smoke	ch
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable	mixed.get/smoke#generated	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable	mixed.get/zero-on-error	zero-on-error	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable	mixed.get/zero-on-error#generated	zero-on-error	check	-
-go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable	mixed.history	mixin:serializable	needs	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable	mixed.history/cancel	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable	mixed.history/smoke	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable	mixed.history/zero-on-error	zero-on-error	check	-
@@ -1569,7 +1562,6 @@ go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation	mixed.get/smoke	smo
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation	mixed.get/smoke#generated	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation	mixed.get/zero-on-error	zero-on-error	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation	mixed.get/zero-on-error#generated	zero-on-error	check	-
-go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation	mixed.history	mixin:snapshot-isolation	needs	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation	mixed.history/cancel	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation	mixed.history/smoke	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation	mixed.history/zero-on-error	zero-on-error	check	-

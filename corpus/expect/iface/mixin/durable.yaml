@@ -1,0 +1,82 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/durable
+level: 2
+subjects:
+  - type: iface/mixin/durable/durabletest.Files
+controls: []
+declarations:
+  vault:
+    checks:
+      vault.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      vault.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      vault.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      vault.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      vault.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      vault.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      vault.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      vault.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      vault.put/corruption-is-reported:
+        claim: corruption-is-reported
+        partners:
+          read: vault.get
+        law: corrupted-read-is-reported
+        reason: unreported-corruption
+      vault.put/full-medium-is-reported:
+        claim: full-medium-is-reported
+        partners:
+          read: vault.get
+        law: refused-write-leaves-the-state
+        reason: half-written-on-full
+      vault.put/no-torn-record:
+        claim: no-torn-record
+        partners:
+          read: vault.get
+        law: recovery-returns-whole-records
+        reason: torn-record
+      vault.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      vault.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      vault.put/synced-writes-survive:
+        claim: synced-writes-survive
+        partners:
+          read: vault.get
+        law: acknowledged-write-survives-a-crash
+        reason: lost-acknowledged-write
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: vault.put
+        stance: silent

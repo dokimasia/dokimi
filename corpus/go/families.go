@@ -157,6 +157,7 @@ var Families = []Family{
 			"iface/mixin/defaultonerror/defaultonerrortest.InMemory",
 			"iface/mixin/deleteremoves/deleteremovestest.InMemory",
 			"iface/mixin/deprecated/deprecatedtest.InMemory",
+			"iface/mixin/durable/durabletest.Files",
 			"iface/mixin/errors/errorstest.InMemory",
 			"iface/mixin/idempotent/idempotenttest.InMemory",
 			"iface/mixin/injectionsafe/injectionsafetest.InMemory",

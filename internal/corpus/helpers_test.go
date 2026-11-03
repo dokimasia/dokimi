@@ -11,11 +11,12 @@ import (
 	"go.dokimi.dev/dokimi/spec"
 )
 
-// The fixture of the specs, its subject and its control.
+// The fixture of the specs, its subject, its control and its fake.
 const (
 	ttl     = "iface/mixin/ttl"
 	subject = "iface/mixin/ttl/ttltest.InMemory"
 	control = "iface/mixin/ttl/deadline.Store"
+	fake    = "iface/mixin/ttl/ttltest.MixedFake"
 )
 
 // expectation returns the expected outcome of the fixture ttl: two derived

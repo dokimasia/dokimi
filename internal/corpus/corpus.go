@@ -50,13 +50,18 @@ type Expectation struct {
 	// fixture to, such as iface/mixin/ttl/deadline.Store.
 	Controls []string `yaml:"controls"`
 
+	// Fakes are the verified fakes that the generator fake writes for the
+	// declarations of the fixture, such as
+	// iface/contract/persister/persistertest.ContractFake.
+	Fakes []string `yaml:"fakes,omitempty"`
+
 	// Level is the conformance level of the fixture, from 1 to 4.
 	Level int `yaml:"level"`
 }
 
 // fileKeys are the keys of a file of expected outcomes in the order in which
 // a person reads them.
-var fileKeys = []string{"fixture", "level", "subjects", "controls", "declarations"}
+var fileKeys = []string{"fixture", "level", "subjects", "controls", "fakes", "declarations"}
 
 // Subject is a subject of a fixture: the directory of its file relative to
 // the corpus, a dot and the name of its type, with the keys of the checks
@@ -143,6 +148,7 @@ const (
 	PhaseFalsification Phase = "falsification"
 	PhaseSubject       Phase = "subject"
 	PhaseControls      Phase = "controls"
+	PhaseFakes         Phase = "fakes"
 	PhaseDeclaration   Phase = "declaration"
 )
 
@@ -227,8 +233,8 @@ func decode(fsys fs.FS, name string, v any) error {
 // WriteExpectation writes e into its file under dir, the path of its fixture
 // with the extension .yaml, as [ReadExpectations] reads it. The new file
 // keeps the comment lines that open the file that it replaces, and writes the
-// fixture, its level, its subjects, its controls and its declarations in
-// that order.
+// fixture, its level, its subjects, its controls, its fakes and its
+// declarations in that order. A fixture without a fake has no key fakes.
 func WriteExpectation(dir string, e *Expectation) error {
 	name := filepath.Join(dir, filepath.FromSlash(e.Fixture)+".yaml")
 	old, err := os.ReadFile(name)

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -193,6 +194,22 @@ diverge:
 			assert.NoError(t, err, "the file is written")
 			files.HasContent(t, filepath.Join(dir, "iface", "mixin", "ttl.yaml"), ttlFile,
 				"the file has the comment lines and then the expectation")
+		})
+
+		t.Run("writes the fakes after the controls, as ReadExpectations reads them", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, files.Tree{"iface/mixin/ttl.yaml": files.Text(header)})
+			e := expectation()
+			e.Fakes = []string{fake}
+
+			assert.NoError(t, corpus.WriteExpectation(dir, &e), "the file is written")
+
+			want := strings.Replace(ttlFile, "declarations:", "fakes:\n  - "+fake+"\ndeclarations:", 1)
+			files.HasContent(t, filepath.Join(dir, "iface", "mixin", "ttl.yaml"), want,
+				"the file lists the fakes after the controls")
+			got, err := corpus.ReadExpectations(os.DirFS(dir))
+			assert.NoError(t, err, "the file decodes")
+			assert.Equal(t, got, []corpus.Expectation{e}, "the expectation reads back with its fakes")
 		})
 
 		t.Run("returns the error of a fixture without a file", func(t *testing.T) {

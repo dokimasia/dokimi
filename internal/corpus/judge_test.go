@@ -673,6 +673,89 @@ func TestJudge(t *testing.T) {
 					Got: "ended in TestMixedSuite: the seed is not a number",
 				}},
 			},
+			{
+				name: "accepts a fake whose record passes each check of the declaration",
+				give: func(e *corpus.Expectation, o *corpus.Outcome, _ *corpus.Overlay) {
+					e.Fakes = []string{fake}
+					o.Records = append(o.Records, record(spec.OnSubject, fake, o.Records[onSubject].Checks...))
+				},
+			},
+			{
+				name: "reports a fake without a record",
+				give: func(e *corpus.Expectation, _ *corpus.Outcome, _ *corpus.Overlay) {
+					e.Fakes = []string{fake}
+				},
+				want: []corpus.Finding{{
+					Fixture: ttl, Phase: corpus.PhaseFakes, Key: fake, Want: "a subject record", Got: "none",
+				}},
+			},
+			{
+				name: "reports a check that is vacuous on a fake",
+				give: func(e *corpus.Expectation, o *corpus.Outcome, _ *corpus.Overlay) {
+					e.Fakes = []string{fake}
+					r := record(spec.OnSubject, fake, o.Records[onSubject].Checks...)
+					r.Checks[0].Result = spec.Vacuous
+					o.Records = append(o.Records, r)
+				},
+				want: []corpus.Finding{{
+					Fixture: ttl, Phase: corpus.PhaseFakes, Key: "mixed.read/cancel",
+					Want: "pass", Got: "vacuous on " + fake,
+				}},
+			},
+			{
+				name: "reports a check that a fake excuses, because a fake has no excusal",
+				give: func(e *corpus.Expectation, o *corpus.Outcome, _ *corpus.Overlay) {
+					e.Fakes = []string{fake}
+					e.Subjects[0].Excused = []string{"mixed.read/keeps-the-item"}
+					r := record(spec.OnSubject, fake, o.Records[onSubject].Checks...)
+					r.Checks[2].Result, r.Checks[2].Why = spec.Excused, "the fake keeps no item"
+					o.Records = append(o.Records, r)
+					c := &o.Records[onSubject].Checks[2]
+					c.Result, c.Why = spec.Excused, "the subject keeps no item"
+				},
+				want: []corpus.Finding{{
+					Fixture: ttl, Phase: corpus.PhaseFakes, Key: "mixed.read/keeps-the-item",
+					Want: "pass", Got: "excused: the fake keeps no item on " + fake,
+				}},
+			},
+			{
+				name: "reports a check of the declaration without a record on a fake",
+				give: func(e *corpus.Expectation, o *corpus.Outcome, _ *corpus.Overlay) {
+					e.Fakes = []string{fake}
+					o.Records = append(o.Records, record(spec.OnSubject, fake, o.Records[onSubject].Checks[1:]...))
+				},
+				want: []corpus.Finding{{
+					Fixture: ttl, Phase: corpus.PhaseFakes, Key: "mixed.read/cancel",
+					Want: "pass", Got: "no record on " + fake,
+				}},
+			},
+			{
+				name: "reports an application to a fake that ended before its checks",
+				give: func(e *corpus.Expectation, o *corpus.Outcome, _ *corpus.Overlay) {
+					e.Fakes = []string{fake}
+					r := record(spec.OnSubject, fake, o.Records[onSubject].Checks...)
+					r.Ended, r.Checks = "the seed is not a number", nil
+					o.Records = append(o.Records, r)
+				},
+				want: []corpus.Finding{
+					{
+						Fixture: ttl, Phase: corpus.PhaseFakes, Key: "mixed", Want: "every check",
+						Got: "ended in TestMixedSuite: the seed is not a number",
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseFakes, Key: "mixed.read/cancel",
+						Want: "pass", Got: "no record on " + fake,
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseFakes, Key: "mixed.read/expires",
+						Want: "pass", Got: "no record on " + fake,
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseFakes, Key: "mixed.read/keeps-the-item",
+						Want: "pass", Got: "no record on " + fake,
+					},
+				},
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

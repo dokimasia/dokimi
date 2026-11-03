@@ -100,9 +100,11 @@ func (e *Entry) declares(fixture string, d *difference) bool {
 //     does not pass or that its excusal does not excuse.
 //   - controls: a control without a record, and a check that fails on a
 //     control.
+//   - fakes: a fake without a record, and a check of a fake that does not
+//     pass. A fake has no excusal.
 //   - declaration: an entry of overlay that declares no difference.
 //
-// A falsification, subject or control record whose field ended lists
+// A falsification, subject, control or fake record whose field ended lists
 // problems fails its phase. Judge also reports each outcome without an
 // expectation, and each fixture of the level without an outcome that no
 // entry declares as blocked. declared is the number of the entries of
@@ -148,7 +150,8 @@ func Judge(expected []Expectation, overlay Overlay, outcomes []Outcome) (found [
 				})
 			}
 		}
-		found = slices.Concat(found, falsification(e, o, changed), subjects(e, o, changed), controls(e, o))
+		found = slices.Concat(found, falsification(e, o, changed), subjects(e, o, changed), controls(e, o),
+			fakes(e, o, changed))
 	}
 	for i := range outcomes {
 		if _, ok := levels[outcomes[i].Fixture]; !ok {
@@ -313,56 +316,70 @@ func falsification(e *Expectation, o *Outcome, changed map[string]bool) []Findin
 }
 
 // subjects returns the findings of the subject records of each subject of e
-// in o. Each derived and each authored check of the declarations of the
-// records of a subject has a record on the subject, unless its key is
-// changed, which the phase generation judges. A subject without a check
-// builds no value, so a subject of a fixture without a check needs no
-// record. A ceiling of latency runs in a benchmark, which go test does not
-// run, so the phase judges a ceiling only where it has a record.
+// in o, as [applied] judges them.
 func subjects(e *Expectation, o *Outcome, changed map[string]bool) []Finding {
 	var found []Finding
-	applies := appliedKeys(e)
 	for _, s := range e.Subjects {
-		records := applications(o, s.Type)
-		if len(records) == 0 && len(applies) > 0 {
-			found = append(found, Finding{
-				Fixture: e.Fixture, Phase: PhaseSubject, Key: s.Type, Want: "a subject record", Got: none,
-			})
+		found = slices.Concat(found, applied(e, o, changed, PhaseSubject, &s))
+	}
+	return found
+}
+
+// fakes returns the findings of the subject records of each fake of e in o,
+// as [applied] judges them for a subject without an excusal.
+func fakes(e *Expectation, o *Outcome, changed map[string]bool) []Finding {
+	var found []Finding
+	for _, fake := range e.Fakes {
+		found = slices.Concat(found, applied(e, o, changed, PhaseFakes, &Subject{Type: fake}))
+	}
+	return found
+}
+
+// applied returns the findings of phase of the subject records of s in o.
+// Each derived and each authored check of the declarations of the records of
+// s has a record on s, unless its key is changed, which the phase generation
+// judges. A subject without a check builds no value, so a subject of a
+// fixture without a check needs no record. A ceiling of latency runs in a
+// benchmark, which go test does not run, so the phase judges a ceiling only
+// where it has a record.
+func applied(e *Expectation, o *Outcome, changed map[string]bool, phase Phase, s *Subject) []Finding {
+	var found []Finding
+	applies := appliedKeys(e)
+	records := applications(o, s.Type)
+	if len(records) == 0 && len(applies) > 0 {
+		return []Finding{{Fixture: e.Fixture, Phase: phase, Key: s.Type, Want: "a subject record", Got: none}}
+	}
+	recorded, declarations := map[string]bool{}, map[string]bool{}
+	for _, r := range records {
+		declarations[spec.Key(r.Suite.Declaration)] = true
+		if r.Ended != "" {
+			found = append(found, ended(e.Fixture, phase, r))
 			continue
 		}
-		applied, declarations := map[string]bool{}, map[string]bool{}
-		for _, r := range records {
-			declarations[spec.Key(r.Suite.Declaration)] = true
-			if r.Ended != "" {
-				found = append(found, ended(e.Fixture, PhaseSubject, r))
-				continue
+		for i := range r.Checks {
+			c := &r.Checks[i]
+			recorded[c.Key] = true
+			// The excusal of a check also excuses its generated binding.
+			excused := slices.ContainsFunc(s.Excused, func(key string) bool {
+				return key == c.Key || derive.GeneratedOf(key) == c.Key
+			})
+			want := spec.Pass
+			if excused {
+				want = spec.Excused
 			}
-			for i := range r.Checks {
-				c := &r.Checks[i]
-				applied[c.Key] = true
-				// The excusal of a check also excuses its generated binding.
-				excused := slices.ContainsFunc(s.Excused, func(key string) bool {
-					return key == c.Key || derive.GeneratedOf(key) == c.Key
+			if c.Result != want {
+				found = append(found, Finding{
+					Fixture: e.Fixture, Phase: phase, Key: c.Key, Want: string(want),
+					Got: resultOf(c) + " on " + s.Type,
 				})
-				want := spec.Pass
-				if excused {
-					want = spec.Excused
-				}
-				if c.Result != want {
-					found = append(found, Finding{
-						Fixture: e.Fixture, Phase: PhaseSubject, Key: c.Key, Want: string(want),
-						Got: resultOf(c) + " on " + s.Type,
-					})
-				}
 			}
 		}
-		for _, key := range applies {
-			if declarations[declarationOf(key)] && !applied[key] && !changed[key] {
-				found = append(found, Finding{
-					Fixture: e.Fixture, Phase: PhaseSubject, Key: key, Want: string(spec.Pass),
-					Got: "no record on " + s.Type,
-				})
-			}
+	}
+	for _, key := range applies {
+		if declarations[declarationOf(key)] && !recorded[key] && !changed[key] {
+			found = append(found, Finding{
+				Fixture: e.Fixture, Phase: phase, Key: key, Want: string(spec.Pass), Got: "no record on " + s.Type,
+			})
 		}
 	}
 	return found

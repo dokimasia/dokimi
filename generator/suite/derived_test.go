@@ -370,6 +370,58 @@ func TestDerived(t *testing.T) {
 				expect.NotNil(t, call.Args[2].Compute, "the load is a computation")
 			})
 
+		records := generate(t, goTree, bufferedPackage).suites["Records"]
+
+		t.Run("passes the call, the field of the result and the field of the request to the probe of a field beside "+
+			"an error", func(t *testing.T) {
+			t.Parallel()
+
+			d := derivedNamed(t, &records, "Read", "returns-on-error")
+			expect.Equal(t, d.Probe, "FieldBesideError", "the probe compares the field beside an error")
+			assert.Length(t, d.Args, 3,
+				"the probe takes the call, the field of the result and the field of the request")
+			call := d.Args[0].Closure
+			assert.NotNil(t, call, "the call is a closure")
+			expect.Equal(t, call.Method, "Read", "the call calls Read")
+			projection := d.Args[1].Projection
+			assert.NotNil(t, projection, "the field of the result is a projection")
+			expect.Equal(t, []string{projection.Type.Spelling, projection.Result.Spelling, projection.Field},
+				[]string{"Result", "[]byte", "Record"}, "the projection reads the field that result names")
+			assert.Length(t, call.Lets, 2, "the call declares the request and sets its field")
+			expect.Equal(t, []string{call.Lets[1].Name, call.Lets[1].Select}, []string{call.Lets[0].Name, "Dst"},
+				"the call sets the field of the request that field names")
+			expect.Equal(t, call.Args[1], suite.Expr{Name: call.Lets[0].Name}, "the call passes the request")
+			want := d.Args[2].Expr
+			assert.NotNil(t, want, "the field of the request is an expression")
+			expect.Equal(t, *want, call.Lets[1].Value, "the probe expects the value of the field that the call sets")
+			assert.NotNil(t, want.Value, "the value of the field is a sample")
+			expect.Length(t, want.Value.Fields, 1, "the sample of the field has one byte, so it is not the zero value")
+		})
+
+		t.Run("projects the whole result of a callable without the param result", func(t *testing.T) {
+			t.Parallel()
+
+			d := derivedNamed(t, &records, "Fill", "returns-on-error")
+			projection := d.Args[1].Projection
+			assert.NotNil(t, projection, "the field of the result is a projection")
+			expect.Equal(t, []string{projection.Type.Spelling, projection.Result.Spelling, projection.Field},
+				[]string{"[]byte", "[]byte", ""}, "the projection returns the whole result")
+		})
+
+		t.Run("passes the field of the drawn request to the generated binding of a field beside an error",
+			func(t *testing.T) {
+				t.Parallel()
+
+				d := derivedNamed(t, &records, "Read", "returns-on-error#generated")
+				call := d.Args[0].Closure
+				assert.NotNil(t, call, "the call is a closure")
+				expect.Empty(t, call.Lets, "the call passes the drawn request, whose field the case draws")
+				want := d.Args[2].Expr
+				assert.NotNil(t, want, "the field of the request is an expression")
+				expect.Equal(t, drawnOf(t, want.Of).Draw, drawnOf(t, &call.Args[1]).Draw,
+					"the field is a field of the drawn request of the call")
+			})
+
 		reach := generate(t, goTree, wrapPackage, toolPackage, deepPackage).suites["Reach"]
 		refusals := []struct {
 			name     string
@@ -392,6 +444,10 @@ func TestDerived(t *testing.T) {
 			{
 				name: "refuses a check whose planted defect returns a sample that the suite cannot import",
 				give: &reach, giveFrom: "Gear", want: "zero-on-error",
+			},
+			{
+				name: "refuses a check of a field beside an error whose field no input of the call has", give: &records,
+				giveFrom: "Peek", want: "returns-on-error",
 			},
 		}
 		for _, tt := range refusals {

@@ -223,10 +223,15 @@ func used(args []Arg) []*Draw {
 	return out
 }
 
-// argOf returns the value which of the i-th input of the callable of f: its
-// sample in a sample binding, where d is nil, and the value that d draws in a
-// generated binding.
+// argOf returns the value which of the i-th input of the callable of f: the
+// value that its builder returns, its sample in a sample binding, where d is
+// nil, and the value that d draws in a generated binding. A builder returns
+// one value of each input, so both values of a callable with a builder are
+// the value of its builder.
 func (k *caller) argOf(d *draws, f *derive.Facts, i, which int) Expr {
+	if built, ok := k.builtOf(f, i); ok {
+		return built
+	}
 	if d == nil {
 		return k.sampleOf(f, i, which)
 	}

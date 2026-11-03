@@ -43,9 +43,11 @@ const (
 // one. Normalize is the function of the param normalize of the directive
 // suite, which maps the values of each call, and nil without the param. Pools
 // are the pools of the keys that the actions of a case share, and Steps the
-// callables of the declaration, in their order.
+// callables of the declaration, in their order. Txn is the action of a
+// transaction, and nil for a declaration without a check of transactions.
 type Sequences struct {
 	Normalize *emit.TypeRef
+	Txn       *Txn
 	Actions   string
 	Reference string
 	Pools     []Pool
@@ -70,20 +72,27 @@ type Pool struct {
 // error, which is empty for a callable without one. Drain is the drain of a
 // stream that the callable returns, Stream the name of the result that is the
 // stream, and Elems the types of the elements of the stream. Action reports a
-// callable with an action, which returns on its own.
+// callable with an action, which returns on its own. Builder is the builder of
+// the mixin sample of the callable, whose values the call takes in place of
+// the arguments of the list, and nil for a callable without one. An action of
+// a callable with a builder draws no input, and its calls have no keys.
+// Receiver is the type of the handle whose method a step of a transaction
+// calls, and nil for a step that calls the subject.
 type Step struct {
-	Name   string
-	Call   string
-	Field  string
-	Error  string
-	Drain  string
-	Stream string
-	Params []StepParam
-	Keys   []StepKey
-	Assign []string
-	Values []string
-	Elems  []*emit.TypeRef
-	Action bool
+	Builder  *Builder
+	Receiver *emit.TypeRef
+	Name     string
+	Call     string
+	Field    string
+	Error    string
+	Drain    string
+	Stream   string
+	Params   []StepParam
+	Keys     []StepKey
+	Assign   []string
+	Values   []string
+	Elems    []*emit.TypeRef
+	Action   bool
 }
 
 // StepParam is one parameter of the call of a step: the parameter of the call
@@ -168,6 +177,8 @@ func sequenced(c *derive.Check) bool {
 // to a key input of its read. The checks are visited in their order, and the
 // partners of each in the order of its claim, so each run writes the keys in
 // one order. [Sequences.used] drops the parts that no derived check calls.
+// The action of a transaction joins the actions where a check of the
+// derivation has the scope of a transaction.
 func (k *caller) sequencesOf(s *Suite) *Sequences {
 	q := &Sequences{
 		Actions:   k.e.JoinName(actionsWord, s.Declaration),
@@ -181,6 +192,9 @@ func (k *caller) sequencesOf(s *Suite) *Sequences {
 		c := &s.Derivation.Checks[i]
 		for _, p := range c.Claim.Partners {
 			poolFields(s, q, c.Pairs[p.Name])
+		}
+		if c.Transaction != nil {
+			q.Txn = k.txnOf(s, q, c.Transaction)
 		}
 	}
 	return q
@@ -263,7 +277,10 @@ func (k *caller) step(s *Suite, q *Sequences, i int) Step {
 		base = s.Callables[i].Type
 	}
 	label := naming.Kebab(f.Callable)
-	st := Step{Name: f.Callable, Call: k.e.JoinName(callWord, base), Field: call.Field, Action: call.repeatable()}
+	st := Step{
+		Name: f.Callable, Call: k.e.JoinName(callWord, base), Field: call.Field, Action: call.repeatable(),
+		Builder: call.Builder,
+	}
 	keys := keyNames(f)
 	arg := 0
 	for j := range call.Params {
@@ -271,7 +288,7 @@ func (k *caller) step(s *Suite, q *Sequences, i int) Step {
 		if !p.Context && !p.Omitted {
 			p.Arg, p.Local = arg, "a"+strconv.Itoa(arg)
 			arg++
-			if slices.Contains(keys, f.Signature.Params[j].Name) {
+			if call.Builder == nil && slices.Contains(keys, f.Signature.Params[j].Name) {
 				p.Pool = q.pool(p.Type).Name
 				st.Keys = append(st.Keys, StepKey{Arg: p.Arg})
 			}
@@ -310,12 +327,17 @@ func (q *Sequences) pool(t *emit.TypeRef) *Pool {
 // poolFields gives the write of pair the keys of the pools that its read takes
 // as keys: a shared parameter of the write takes the pool, and a field of the
 // written value takes it in the action of the write. Each becomes a key of
-// the calls of the write. A pair without a read has no write either.
+// the calls of the write. A pair without a read has no write either. A read
+// with a builder takes no pool, and a write with a builder takes the values of
+// the builder in place of keys.
 func poolFields(s *Suite, q *Sequences, pair *derive.Pair) {
 	if pair.Read == nil {
 		return
 	}
 	read, write := stepOf(s, q, pair.Read), stepOf(s, q, pair.Write)
+	if write.Builder != nil {
+		return
+	}
 	for _, a := range pair.Arguments {
 		rp := paramNamed(read, pair.Read, a.Name)
 		if rp.Pool == "" {

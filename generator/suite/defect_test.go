@@ -32,6 +32,7 @@ func TestDefect(t *testing.T) {
 	faults := generate(t, goTree, faultsPackage).suites
 	maps.Copy(families, generate(t, goTree, drawnPackage).suites)
 	maps.Copy(families, generate(t, goTree, classifiedPackage).suites)
+	maps.Copy(families, generate(t, goTree, bufferedPackage).suites)
 	family := func(name string) *suite.Suite {
 		s, found := families[name]
 		if !found {
@@ -95,6 +96,10 @@ func TestDefect(t *testing.T) {
 			{
 				name: "returns a sample beside the error of the subject", giveSuite: "Store",
 				give: "StoreGetValueBeside", wantBody: "beside-error", wantDelegates: true,
+			},
+			{
+				name: "returns the zero value beside the error of the subject", giveSuite: "Records",
+				give: "RecordsReadDropsTheField", wantBody: "zero-beside-error", wantDelegates: true,
 			},
 			{
 				name: "calls the subject under a context that the caller cannot cancel", giveSuite: "Store",

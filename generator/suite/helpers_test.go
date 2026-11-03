@@ -63,6 +63,10 @@ const (
 	drawnPackage       = "example.com/shop/drawn"
 	classifiedPackage  = "example.com/shop/classified"
 	vaultPackage       = "example.com/shop/vault"
+	refusedPackage     = "example.com/shop/refused"
+	bufferedPackage    = "example.com/shop/buffered"
+	isolatedPackage    = "example.com/shop/isolated"
+	sealedPackage      = "example.com/shop/sealed"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )

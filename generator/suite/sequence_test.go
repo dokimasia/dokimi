@@ -264,6 +264,15 @@ func TestSequence(t *testing.T) {
 			expect.Equal(t, store.Params[1].Fields[0].Name, "Key", "Get selects the item by its key")
 		})
 
+		t.Run("gives no key of a pool to a write whose builder returns its inputs", func(t *testing.T) {
+			t.Parallel()
+
+			shelf := generate(t, goTree, sealedPackage).suites["Shelf"]
+			put := stepOf(t, &shelf, "Put")
+			assert.Length(t, put.Params, 3, "Put takes the context, the key and the number")
+			expect.Equal(t, put.Params[1].Pool, "", "Put takes its key from its builder")
+		})
+
 		t.Run("passes the values of each call through the function of the param normalize", func(t *testing.T) {
 			t.Parallel()
 

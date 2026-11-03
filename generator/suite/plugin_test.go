@@ -365,6 +365,14 @@ func TestSuite(t *testing.T) {
 						"Label": {Field: "Label", Ceiled: true},
 					},
 				},
+				{
+					name:     "records no 0 ceiling at a level whose calls take the inputs of a builder",
+					givePkgs: []string{sealedPackage}, give: "TestAEADSuite",
+					wantLevels: map[string]suite.Level{
+						"Seal":      {Field: "Seal"},
+						"NonceSize": {Field: "NonceSize", Ceiled: true},
+					},
+				},
 			}
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -662,6 +670,23 @@ func TestSuite(t *testing.T) {
 						"LogAppendDescendsAfterThreeDefect", "LogSuite", "RunLogSuite", "RunLogSuiteFromHandle",
 						"FuzzLogSuite", "RunLogBudgets", "BenchLogSuite", "LogHandle", "LogCheck", "LogOption",
 						"LogSubjects",
+					},
+				},
+				{
+					name:    "declares the steps and the wrapper of the handle of a transaction",
+					givePkg: isolatedPackage, give: "Registers",
+					wantDecl: []string{
+						"RegistersBegin", "RegistersLatest", "RegistersBeginCalls", "RegistersLatestCalls",
+						"RegistersOver", "RegistersOverEmbedded", "NewRegistersOver", "RegistersActions",
+						"RegistersBeginCall", "RegistersLatestCall", "TxnSetCall", "TxnLoadCall", "TxnCommitCall",
+						"TxnRollbackCall", "RegistersBeginPanics", "RegistersBeginPanicsDefect",
+						"RegistersBeginIgnoresCancel", "RegistersBeginIgnoresCancelDefect",
+						"RegistersWritesWithoutASnapshot", "RegistersWritesWithoutASnapshotDefect",
+						"RegistersWritesWithoutASnapshotTxn", "RegistersLatestPanics", "RegistersLatestPanicsDefect",
+						"RegistersLatestIgnoresCancel", "RegistersLatestIgnoresCancelDefect", "RegistersSuite",
+						"RunRegistersSuite", "RunRegistersSuiteFromHandle", "FuzzRegistersSuite", "RunRegistersBudgets",
+						"BenchRegistersSuite", "RegistersHandle", "RegistersCheck", "RegistersOption",
+						"RegistersSubjects",
 					},
 				},
 				{

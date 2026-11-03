@@ -39,9 +39,12 @@ import (
 // mixin runs-until-cancelled, so no benchmark and no ceiling calls it with a
 // context that does not end. Over is the signature of the callable in the planted
 // defect of a ceiling, whose parameters have no names and whose results have
-// the names r0, r1 and so on.
+// the names r0, r1 and so on. Builder is the builder of the mixin sample of
+// the callable, which returns the value of each parameter but the context in
+// place of a draw, and nil for a callable without one.
 type Call struct {
 	Over               *emit.Method
+	Builder            *Builder
 	Var                string
 	Field              string
 	Type               string
@@ -163,8 +166,13 @@ func (k *caller) call(c *Callable, sym symbol.Symbol, id *symbol.Identity) Call 
 	case *node.Function:
 		nodes = d.Params
 	}
+	builder := k.builderOf(id, view.Name)
+	params := k.params(&view, nodes, mixed(k.m, id, shape.NilSafe), c.Name)
+	if builder != nil {
+		params = k.built(&view)
+	}
 	return Call{
-		Var: name, Field: c.Field, Type: c.Type, Params: k.params(&view, nodes, mixed(k.m, id, shape.NilSafe), c.Name),
+		Var: name, Field: c.Field, Type: c.Type, Params: params, Builder: builder,
 		Assign: assign, Returns: returns, Budget: k.g.budgetFact(k.m, id),
 		Concurrent:         mixed(k.m, id, shape.Concurrent) || mixed(k.m, id, shape.ConcurrentReaders),
 		Waits:              mixed(k.m, id, shape.Waits),
@@ -245,6 +253,37 @@ func (k *caller) params(view *rules.Callable, nodes []*node.Param, nilSafe bool,
 			k.roots = append(k.roots, at)
 		}
 		out = append(out, param)
+	}
+	return out
+}
+
+// built returns the parameters of the callable of view for a call generator
+// that takes the value of each parameter from the builder of the callable. A
+// parameter in the role context takes the context of the call, and any other
+// parameter takes the value of the builder under its own name, or the first
+// free name, as [caller.params] names it. The call generator draws nothing,
+// so no parameter is a root of the overrides of the suite.
+func (k *caller) built(view *rules.Callable) []Param {
+	refs := make([]*node.TypeRef, 0, len(view.Params))
+	for _, p := range view.Params {
+		refs = append(refs, p.Ref)
+	}
+	taken := k.taken(refs...)
+	out := make([]Param, 0, len(view.Params))
+	for i, p := range view.Params {
+		if p.Role == rules.ParamContext {
+			out = append(out, Param{Context: true})
+			continue
+		}
+		base := p.Name
+		if base == "" || base == "_" {
+			base = fmt.Sprintf("a%d", i)
+		}
+		name := naming.Unique(taken, base)
+		taken[name] = true
+		out = append(out, Param{
+			Type: rules.EmitRef(k.instance(p.Ref)), Name: name, Label: naming.Kebab(base), Variadic: p.Variadic,
+		})
 	}
 	return out
 }

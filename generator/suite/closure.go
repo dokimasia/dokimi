@@ -17,13 +17,15 @@ import (
 )
 
 // The names that a closure declares: the value that a write writes, the
-// value of a round trip and the delay of a registration, the parameter of a
-// closure that takes a value, the two parameters of a closure that combines
-// two values, the handle of a call, the hook of a registrar, the body of a
-// scope, the position of an indexed call, the error of a call, the context of
-// a call, the subject of a durable call and the presence flag of a read.
+// request of a call, the value of a round trip and the delay of a
+// registration, the parameter of a closure that takes a value, the two
+// parameters of a closure that combines two values, the handle of a call, the
+// hook of a registrar, the body of a scope, the position of an indexed call,
+// the error of a call, the context of a call, the subject of a durable call
+// and the presence flag of a read.
 const (
 	writtenName  = "w"
+	requestName  = "req"
 	inName       = "in"
 	delayName    = "d"
 	takenName    = "v"
@@ -65,9 +67,10 @@ const (
 // does neither. with is the value that the first input of the call takes in
 // place of its sample, and nil for the sample. stamps is the field of the
 // stamp of an entry, and handle the type of the handle of a call. changed is
-// the field of the value of a guarded write that the predicate judges. drawn
-// are the draws of a generated binding, whose values the calls take in place
-// of their samples, and nil for a sample binding.
+// the field of the value of a guarded write that the predicate judges, and
+// field the field of the request that the sample binding of a call of
+// formFielded sets. drawn are the draws of a generated binding, whose values
+// the calls take in place of their samples, and nil for a sample binding.
 type input struct {
 	sl      *slot
 	f       *derive.Facts
@@ -78,10 +81,20 @@ type input struct {
 	method  string
 	stamps  string
 	changed string
+	field   string
 }
 
-// closure returns the closure of the input in of a probe.
+// closure returns the closure of the input in of a probe. It calls the
+// builder of each value of a builder that it takes once, before its call.
 func (k *caller) closure(in *input) *Closure {
+	c := k.closureOf(in)
+	declareBuilt(c)
+	return c
+}
+
+// closureOf returns the closure of the input in of a probe, by the form of
+// the input.
+func (k *caller) closureOf(in *input) *Closure {
 	sl, f, pair, with, d := in.sl, in.f, in.pair, in.with, in.drawn
 	c := &Closure{}
 	if sl.form == formHandle {
@@ -249,6 +262,18 @@ func (k *caller) closure(in *input) *Closure {
 		c.Pull = true
 	case formComputing:
 		k.compute(c, f)
+	case formFielded:
+		// A failed call returns the field of its request. The sample of a
+		// request sets one field alone, so a sample binding sets the field to
+		// a sample that is not its zero value. A drawn request draws the field.
+		if at := requestAt(f, in.field); at >= 0 && d == nil {
+			first, _, _ := k.fieldSamples(f, at, in.field)
+			c.Lets = []Let{
+				{Name: requestName, Value: k.argOf(nil, f, at, 0)},
+				{Name: requestName, Select: in.field, Value: first},
+			}
+			c.Args[inputAt(f, at)] = Expr{Name: requestName}
+		}
 	case formChannel:
 		// The probe reads the channel, so the closure returns it as a channel
 		// that it receives from. Each value of a Go callable precedes its flag
@@ -295,9 +320,11 @@ func (k *caller) durableOf(d *draws, pair *derive.Pair) *Durable {
 				read.Absent, read.Assign[i] = true, flagName
 			}
 		}
-		out.Writes[which], out.Reads[which] = write, read
 		out.Wants[which] = k.argOf(d, pair.Write, pair.Written, which)
 		out.Keys[which] = slices.DeleteFunc(slices.Clone(read.Args), func(e Expr) bool { return e.Word == ctxName })
+		declareBuilt(write)
+		declareBuilt(read)
+		out.Writes[which], out.Reads[which] = write, read
 	}
 	return out
 }

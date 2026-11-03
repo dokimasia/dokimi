@@ -180,3 +180,26 @@ var BadNormalize = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  14,
 	Meaning: "the function of the param normalize of the directive suite does not map the values of a call",
 })
+
+// UnknownRefusal reports a directive refuse whose claim the derivation does
+// not license for its callable. The finding is an Error at the declaration,
+// and its message lists the claims of the callable. suite records nothing for
+// the declaration. UnknownRefusal also reports a directive refuse of a callable
+// of a declaration without the directive suite, and a second directive refuse
+// of one claim of a callable. Both findings are Errors at the directive.
+var UnknownRefusal = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 15,
+	Meaning: "the directive refuse names a claim that the derivation does not license for its callable, or a " +
+		"claim that another directive refuse of the callable names",
+})
+
+// BadBuilder reports a callable whose builder of the mixin sample takes
+// another parameter than the subject of the suite, or returns other values
+// than one value of the type of each input of the callable, in order. Every
+// derived call of the callable takes its inputs from the builder, so the
+// finding is an Error at the declaration, and suite records nothing for it.
+var BadBuilder = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 16,
+	Meaning: "the builder of the mixin sample of a callable takes another parameter than the subject, or does not " +
+		"return one value of the type of each input of the callable",
+})

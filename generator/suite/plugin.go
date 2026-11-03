@@ -515,8 +515,9 @@ type Identity struct {
 // reports that the callable admits concurrent calls, so the parallel benchmark
 // has the level as well. Ceiled reports that the test of a suite adds an
 // allocation ceiling of 0 to the callable: the declaration states no budget of
-// it, and its calls build no implementation of an interface and no channel of
-// their own, so a call of the planted defect allocates nothing.
+// it, its calls build no implementation of an interface and no channel of
+// their own, and no builder returns their inputs, so a call of the planted
+// defect does not allocate.
 type Level struct {
 	Field      string
 	Concurrent bool
@@ -701,6 +702,8 @@ type generator struct {
 	options     meta.Key[symbol.Identity]
 	around      meta.Key[symbol.Identity]
 	machineries meta.Key[[]string]
+	refused     meta.Key[[]string]
+	refusedWhy  meta.Key[[]string]
 	values      meta.Key[[]symbol.Identity]
 	doors       [len(doors)]meta.Key[symbol.Identity]
 }
@@ -746,7 +749,10 @@ type Options struct {
 // It reports [UnknownCallable] and [BadCheck] at the directive of a check that
 // it cannot bind, [UnknownExcusal] at an excusal of a check that the suite
 // does not have, and [UnknownMachinery] at a value of the param machineries
-// that names no machinery of a consumer.
+// that is not a machinery of a consumer. It reports [BadBuilder] at a
+// declaration with a callable whose builder of the mixin sample it cannot
+// call, and [UnknownRefusal] at a directive refuse of a claim that the
+// derivation does not license.
 // suite records and stamps nothing for a declaration that it reports. Each
 // call returns a new plugin.
 func New() sdk.Dual {
@@ -773,6 +779,9 @@ func New() sdk.Dual {
 		sdk.Directive(subjectSchema, sdk.OnStruct(lang.Served(parts, g.conformanceOf))),
 		sdk.Directive(checkSchema, sdk.OnFunction(lang.Served(parts, g.concludeCheck))),
 		sdk.Directive(excuseSchema),
+		sdk.Directive(refuseSchema,
+			sdk.OnMethod(lang.Served(parts, g.refusalsOfMethod)),
+			sdk.OnFunction(lang.Served(parts, g.refusalsOfFunction))),
 		sdk.Directive(budgetSchema,
 			sdk.OnMethod(lang.Served(parts, g.budgetOfMethod)),
 			sdk.OnFunction(lang.Served(parts, g.budgetOfFunction)),
@@ -795,7 +804,7 @@ func (g *generator) register(r *meta.Registry) error {
 	budgetKey := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindMethod, symbol.KindFunction}, Doc: doc}
 	}
-	var errs [17]error
+	var errs [19]error
 	var doorErrs [len(doors)]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
 	g.declaration, errs[1] = meta.Register[symbol.Identity](r, checkKey(KeyDeclaration,
@@ -833,6 +842,10 @@ func (g *generator) register(r *meta.Registry) error {
 	})
 	g.values, errs[16] = meta.Register[[]symbol.Identity](r, checkKey(KeyValues,
 		"contains the identity of the function of each door of a value of the planted defect of the check"))
+	g.refused, errs[17] = meta.Register[[]string](r, budgetKey(KeyRefused,
+		"contains the claim of each directive refuse of the callable, in the order of the directives"))
+	g.refusedWhy, errs[18] = meta.Register[[]string](r, budgetKey(KeyRefusedWhy,
+		"contains the reason of each directive refuse of the callable, in the order of its claims"))
 	for i, d := range &doors {
 		g.doors[i], doorErrs[i] = meta.Register[symbol.Identity](r, checkKey(d.key,
 			"contains the identity of the function of the door "+string(d.param)+" of the planted defect of the check"))
@@ -1447,8 +1460,9 @@ func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ part, e *sdk.Emitt
 		return nil
 	}
 	s := Suite{Subject: subject, Declaration: i.Name, Names: NamesOf(e, i.Name)}
-	g.callsOf(&k, &s, methods)
-	write(e, &i.ID, &s)
+	if g.callsOf(&k, &s, methods) {
+		write(e, &i.ID, &s)
+	}
 	return nil
 }
 
@@ -1474,8 +1488,9 @@ func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	for _, method := range callables {
 		methods.Methods.Append(sdk.Mirror(names.Methods, method))
 	}
-	g.callsOf(&caller{m: m, g: g, e: e, b: b, origin: st.ID, decl: st.Name}, &s, callables)
-	write(e, &st.ID, &s)
+	if g.callsOf(&caller{m: m, g: g, e: e, b: b, origin: st.ID, decl: st.Name}, &s, callables) {
+		write(e, &st.ID, &s)
+	}
 	return nil
 }
 
@@ -1483,8 +1498,9 @@ func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 // of methods, the checks that the annotate half binds to them, the overrides
 // that the calls take, and the implementations of the interfaces that they
 // take. k writes the calls. A suite with callables names the type of its
-// planted defects and the function that returns one.
-func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) {
+// planted defects and the function that returns one. callsOf returns false
+// where the derivation of s reports a finding, and s is then incomplete.
+func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) bool {
 	syms := make([]symbol.Symbol, 0, len(methods))
 	for _, method := range methods {
 		c := callableOf(k.e, s.Declaration, method.Name)
@@ -1492,7 +1508,9 @@ func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) {
 		s.Calls = append(s.Calls, k.call(&c, method, &method.ID))
 		syms = append(syms, method)
 	}
-	k.derivation(s, syms)
+	if !k.derivation(s, syms) {
+		return false
+	}
 	k.overrides(s)
 	s.Checks = g.checksOf(k.m, &k.origin, s.Callables)
 	if len(methods) > 0 {
@@ -1500,6 +1518,7 @@ func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) {
 		s.Names.NewOver = k.e.JoinName(s.Names.Over, newWord)
 		s.Names.Embedded = k.e.JoinName(embeddedWord, s.Names.Over)
 	}
+	return true
 }
 
 // suiteOfFunction records the suite of a function. The subject type is the
@@ -1526,8 +1545,9 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 		Calls: []Call{k.call(&callables[0], f, &f.ID)},
 	}
 	k.overrides(&s)
-	k.derivation(&s, []symbol.Symbol{f})
-	write(e, &f.ID, &s)
+	if k.derivation(&s, []symbol.Symbol{f}) {
+		write(e, &f.ID, &s)
+	}
 	return nil
 }
 
@@ -1597,6 +1617,12 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 			decls = append(decls,
 				&emit.Function{Origin: *origin, Name: q.Steps[i].Call, Visibility: symbol.VisibilityPackage})
 		}
+		if q.Txn != nil {
+			for i := range q.Txn.Steps {
+				decls = append(decls,
+					&emit.Function{Origin: *origin, Name: q.Txn.Steps[i].Call, Visibility: symbol.VisibilityPackage})
+			}
+		}
 	}
 	for _, d := range s.Defects {
 		decls = append(decls, &emit.Function{Origin: *origin, Name: d.Name, Visibility: symbol.VisibilityPackage})
@@ -1608,6 +1634,10 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 				decls,
 				&emit.Struct{Origin: *origin, Name: d.Handle.Type, Visibility: symbol.VisibilityPackage},
 			)
+		}
+		if d.Wrapper != nil {
+			decls = append(decls,
+				&emit.Struct{Origin: *origin, Name: d.Wrapper.Name, Visibility: symbol.VisibilityPackage})
 		}
 	}
 	decls = append(decls, public(n.Suite), public(n.Run), public(n.RunFromHandle), public(n.Fuzz),
@@ -1717,7 +1747,8 @@ func (c *Conformance) idle(e *sdk.Emitter, n *Names, calls []Call) {
 		if !call.repeatable() {
 			continue
 		}
-		builds := slices.ContainsFunc(call.Params, func(p Param) bool { return p.Input != "" || p.Receive })
+		builds := call.Builder != nil ||
+			slices.ContainsFunc(call.Params, func(p Param) bool { return p.Input != "" || p.Receive })
 		c.Levels = append(c.Levels, Level{
 			Field: call.Field, Concurrent: call.Concurrent, Ceiled: call.Budget == Budget{} && !builds,
 		})

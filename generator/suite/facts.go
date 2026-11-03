@@ -34,15 +34,22 @@ var runtime = func() []spec.MachineryID {
 // checks that the claims of the conformance spec derive from them. syms are
 // the methods or the function of the callables, in the order of s.Callables
 // and s.Calls. The suite of a function has no declaration beside the function.
-func (k *caller) derivation(s *Suite, syms []symbol.Symbol) {
+// derivation returns false where a directive refuse names a claim that the
+// derivation does not license, as [caller.unknownRefusals] reports it, and
+// where a builder does not fit its callable, as [caller.builders] reports it.
+func (k *caller) derivation(s *Suite, syms []symbol.Symbol) bool {
 	declaration := s.Declaration
 	if s.Func != nil {
 		declaration = ""
 	}
 	s.Facts, s.Derivation = k.derive(declaration, syms, s.Calls)
+	if known, built := k.unknownRefusals(s), k.builders(s); !known || !built {
+		return false
+	}
 	s.Sequences = k.sequencesOf(s)
 	k.derived(s)
 	s.Sequences = s.Sequences.used(s.Derived)
+	return true
 }
 
 // derive returns the facts of the callables syms of the declaration named
@@ -72,12 +79,17 @@ func (k *caller) derive(declaration string, syms []symbol.Symbol, calls []Call) 
 // factsOf returns the facts of the method or the function sym. Each input and
 // each result in the role value has the shape, the samples, the zero value
 // and the fields of its type at the witnesses of the declaration. The facts
-// have the classification that the shape catalog stamps on sym.
+// have the classification that the shape catalog stamps on sym, the claims
+// that its directives refuse name, and whether a builder that takes the
+// subject returns its inputs.
 func (k *caller) factsOf(sym symbol.Symbol) derive.Facts {
 	view, _ := k.b.CallableOf(sym)
 	decl, _ := sym.(node.Declaration)
 	id := decl.Identity()
-	f := derive.Facts{Callable: view.Name, ID: id, Class: shape.OfDeclaration(k.m, id), Signature: view}
+	f := derive.Facts{
+		Callable: view.Name, ID: id, Class: shape.OfDeclaration(k.m, id), Signature: view,
+		Refused: k.g.refusedOf(k.m, &id),
+	}
 	var params []*node.Param
 	switch d := sym.(type) {
 	case *node.Method:
@@ -103,7 +115,34 @@ func (k *caller) factsOf(sym symbol.Symbol) derive.Facts {
 			f.Results = append(f.Results, k.valueOf(&none, r.Name, r.Ref))
 		}
 	}
+	if derive.Begins(&f) && len(view.Returns) > 0 {
+		f.Handle = k.handleOf(view.Returns[0].Ref)
+	}
+	if b := k.builderOf(&id, f.Callable); b != nil {
+		f.SubjectBuilder = b.Subject
+	}
 	return f
+}
+
+// handleOf returns the facts of the exported methods of the handle ref that a
+// begin returns, where the handle is an interface of the package of the
+// declaration, and nil for any other handle. Each method has the name of the
+// interface as its declaration.
+func (k *caller) handleOf(ref *node.TypeRef) []derive.Facts {
+	decl, _ := k.m.Reader().Lookup(k.instance(ref).Target)
+	iface, isInterface := decl.(*node.Interface)
+	if !isInterface || iface.ID.Package != k.origin.Package {
+		return nil
+	}
+	b := k.b
+	methods := methodsOf(&b, iface)
+	out := make([]derive.Facts, 0, len(methods))
+	for _, m := range methods {
+		f := k.factsOf(m)
+		f.Declaration = iface.Name
+		out = append(out, f)
+	}
+	return out
 }
 
 // valueOf returns the value named name of the type ref, with what eidos

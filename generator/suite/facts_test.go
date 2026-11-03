@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
@@ -194,5 +195,45 @@ func TestFacts(t *testing.T) {
 			hold := factsOf(t, &got, "Hold")
 			assert.Equal(t, sampleTexts(inputNamed(t, hold, "score"))[0], "3", "the default of Score comes first")
 		})
+
+		isolated := generate(t, goTree, isolatedPackage)
+
+		t.Run("records each method of an interface of the package as the handle of a begin", func(t *testing.T) {
+			t.Parallel()
+
+			registers := isolated.suites["Registers"]
+			begin := factsOf(t, &registers, "Begin")
+			handle := make([]string, 0, len(begin.Handle))
+			for _, m := range begin.Handle {
+				handle = append(handle, m.Declaration+"."+m.Callable)
+			}
+			expect.Equal(t, handle, []string{"Txn.Commit", "Txn.Rollback", "Txn.Set", "Txn.Load"},
+				"the handle of Begin has the methods of Txn")
+		})
+
+		tests := []struct {
+			name         string
+			giveSuite    string
+			giveCallable string
+		}{
+			{
+				name:      "records no handle of a callable without the role begin",
+				giveSuite: "Registers", giveCallable: "Latest",
+			},
+			{name: "records no handle of a begin that returns a struct", giveSuite: "Lists", giveCallable: "Begin"},
+			{
+				name:      "records no handle of a begin that returns an interface of another package",
+				giveSuite: "Driver", giveCallable: "Begin",
+			},
+			{name: "records no handle of a begin without a result", giveSuite: "Latch", giveCallable: "Begin"},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				s := isolated.suites[tt.giveSuite]
+				expect.Nil(t, factsOf(t, &s, tt.giveCallable).Handle, "the callable has no methods of a handle")
+			})
+		}
 	})
 }

@@ -130,7 +130,8 @@ type Key struct {
 }
 
 // Projection is a function that returns the field Field of a value of the
-// type Type, which has the type Result.
+// type Type, which has the type Result. A projection without a field returns
+// the whole value, and its Result is Type.
 type Projection struct {
 	Type   *emit.TypeRef
 	Result *emit.TypeRef
@@ -147,12 +148,14 @@ type Projection struct {
 // handle and returns its zero results. Where Convert is set, the expression is
 // the conversion of the variable Name to the type Convert. Stream are the
 // types of the elements of an empty stream: the value of an iter.Seq, or the
-// two values of an iter.Seq2.
+// two values of an iter.Seq2. Built is a value that the builder of a callable
+// returns.
 type Expr struct {
 	Value   *emit.Value
 	Drawn   *Drawn
 	Of      *Expr
 	Pair    *PairExpr
+	Built   *Built
 	Hook    *emit.TypeRef
 	Compute *emit.Method
 	Convert *emit.TypeRef
@@ -169,8 +172,9 @@ type PairExpr struct {
 }
 
 // Closure is a function that a derived check passes to its probe. It takes
-// the context of the call and Param, declares Lets, and calls the callable
-// Method on Receiver, or the subject itself where Method is empty, with Args.
+// the context of the call and Param, calls each builder of Builds, declares
+// Lets, and calls the callable Method on Receiver, or the subject itself
+// where Method is empty, with Args.
 // It assigns the results of the call to Assign and returns Results. Without
 // Assign it returns the results of the call, and with Discard it makes the
 // call a statement of its own.
@@ -197,6 +201,7 @@ type Closure struct {
 	Stamps   string
 	Drain    string
 	Returns  []*emit.TypeRef
+	Builds   []Build
 	Lets     []Let
 	Later    []Let
 	Args     []Expr
@@ -361,6 +366,15 @@ const (
 	// formDurable is the write of the callable and the read of its partner
 	// for each sample, with the value and the key that each sample writes.
 	formDurable
+	// formRequestField is the field that a param names of the request of
+	// another input, the input that has such a field: its first sample in a
+	// sample binding, and the field of the drawn request in a generated
+	// binding.
+	formRequestField
+	// formFielded is formCall whose sample binding sets the field that the
+	// param of another input names in the request of the call to its first
+	// sample, so the field of the request is not its zero value.
+	formFielded
 )
 
 // concurrentClients is the number of the clients of a concurrent section
@@ -425,9 +439,14 @@ var (
 // of the parameters of its Go function after the handle. The probes of the
 // enumerations and the errors belong to the generators enum and sentinel.
 var probes = map[spec.ProbeID][]slot{
-	spec.Survives:              {act},
-	spec.UnderCancelled:        {act},
-	spec.ZeroBesideError:       {call, zero},
+	spec.Survives:        {act},
+	spec.UnderCancelled:  {act},
+	spec.ZeroBesideError: {call, zero},
+	spec.FieldBesideError: {
+		{name: inCall, of: "want", form: formFielded},
+		{name: "field", of: inCall, form: formProjection},
+		{name: "want", of: inCall, form: formRequestField, gate: spec.ClassificationParams},
+	},
 	spec.ZeroPairBesideError:   {call, zero},
 	spec.ZeroBesideFalse:       {{name: inCall, form: formLookup}, zero},
 	spec.ZeroPairBesideFalse:   {{name: inCall, form: formLookup}, zero},
@@ -543,6 +562,8 @@ var probes = map[spec.ProbeID][]slot{
 		clients,
 		{name: "budget", form: formBudget},
 	},
+	spec.SerializableHistory:          {actions, clients},
+	spec.SnapshotHistory:              {actions, clients},
 	spec.SurvivesEveryCrashPoint:      {durable},
 	spec.WholeAtEveryCrashPoint:       {durable},
 	spec.ReportsEachFlippedBit:        {durable, {name: "corrupt", form: formValue}},
@@ -928,7 +949,24 @@ func (b *binder) arg(sl *slot) Arg {
 		f, _ := b.facts(sl.of)
 		field := nameOf(b.param(b.binding(sl.name).Param))
 		ref := b.k.resultRef(f, 0)
-		return Arg{Projection: &Projection{Type: b.k.typeOf(ref), Result: b.k.fieldRef(ref, field), Field: field}}
+		p := &Projection{Type: b.k.typeOf(ref), Result: b.k.typeOf(ref), Field: field}
+		if field != "" {
+			p.Result = b.k.fieldRef(ref, field)
+		}
+		return Arg{Projection: p}
+	case formRequestField:
+		f, _ := b.facts(sl.of)
+		field := nameOf(b.param(b.binding(sl.name).Param))
+		at := requestAt(f, field)
+		if at < 0 {
+			return b.refuse(sl)
+		}
+		if b.drawn == nil {
+			first, _, _ := b.k.fieldSamples(f, at, field)
+			return Arg{Expr: &first}
+		}
+		request := b.k.argOf(b.drawn, f, at, 0)
+		return Arg{Expr: &Expr{Of: &request, Select: field}}
 	case formInput:
 		bound := b.binding(sl.name)
 		v := b.drawn.value(b.check.Facts, bound.Position, bound.Sample)
@@ -973,10 +1011,21 @@ func (b *binder) arg(sl *slot) Arg {
 		}
 	case formMatched, formMatch:
 		in.changed = nameOf(b.param(fieldParam))
+	case formFielded:
+		in.field = nameOf(b.param(b.binding(sl.of).Param))
 	default:
 	}
 	in.f, in.pair = b.facts(sl.name)
 	return Arg{Closure: b.k.closure(in)}
+}
+
+// requestAt returns the position of the request of the callable of f: the
+// first input whose type has the field name. It returns -1 where no input has
+// the field.
+func requestAt(f *derive.Facts, name string) int {
+	return slices.IndexFunc(f.Inputs, func(v derive.Value) bool {
+		return slices.ContainsFunc(v.Fields, func(fd derive.Field) bool { return fd.Name == name })
+	})
 }
 
 // sequenceArg returns the argument of a probe of generated sequences for the

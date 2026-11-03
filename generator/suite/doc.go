@@ -29,7 +29,35 @@
 // of the call generators. The calls of one case share the value of each
 // parameter with one name and one type, so a write and its read take one key.
 // The claims commutative and associative of a callable of two inputs of one
-// type bind as property checks alone.
+// type bind as property checks alone. The sample binding of the check of the
+// mixin returns-on-error sets the field of the mixin in the request of its
+// call to a sample that is not its zero value, so a failed call that returns
+// the zero value fails the check.
+//
+// # Builders and refusals
+//
+// A callable with the mixin sample takes the inputs of its derived calls from
+// the function of the param builder. The builder is a function of the package
+// of the declaration. It takes the subject or nothing, and returns one value
+// of each input of the callable but the context, in their order. Both bindings
+// of each check, the benchmarks and the budgets call the callable with the
+// values of the builder. A builder that takes the subject can call each
+// callable of the declaration, so each check whose calls take its values lists
+// the machinery inputs-built-from-the-subject. A method that an interface
+// promotes from an embed takes the mixin on a declaration of the method with
+// the same signature:
+//
+//	//dokimi:mixin sample builder=SealInputs
+//	Seal(dst, nonce, plaintext, additionalData []byte) []byte
+//
+// The directive refuse withdraws a derived claim of a method or a function
+// under the directive suite for every subject of the suite. Its positional
+// param is the claim, and its param reason states why the declaration does
+// not make the claim. The suite record lists the refusal with the reason, as
+// it lists the refusal of a gate:
+//
+//	//dokimi:refuse zero-on-error reason="Update fails only for an instant beyond the max offset"
+//	Update(observed Instant) (Instant, error)
 //
 // # Generated sequences
 //
@@ -43,6 +71,15 @@
 // takes its key from a pool of its type, which each case draws once, so a
 // read takes a key that a write stored. Each action records its call in the
 // history of the case through conform.Complete.
+//
+// A declaration with the contract tx and a callable with the mixin
+// serializable or snapshot-isolation gets the action txn. Its run begins a
+// transaction and calls the write of the mixin and its read with the handle of
+// the transaction. The run then commits the transaction or rolls it back, and
+// records it as one call of the operation txn, whose arguments are its
+// micro-operations.
+// The methods of the handle that the begin returns can write, read, commit
+// and roll back, as the methods of a *sql.Tx do.
 //
 // A declaration under the directive suite with machineries=[reference] gets
 // the check Store/agrees-with-the-reference of the whole declaration. The
@@ -280,8 +317,12 @@
 // at a budget that no check of a suite applies. It reports [UnknownMachinery]
 // at a value of the param machineries that names no machinery of a consumer,
 // and [BadNormalize] at a function of the param normalize of another type than
-// func(string, []any) []any. It reports [Ungenerated] at a declaration whose
-// calls take a type without a generator, as a Warning.
+// func(string, []any) []any. It reports [BadBuilder] at a declaration with a
+// callable whose builder has another signature than the builder of its
+// inputs. It reports [UnknownRefusal] at a declaration whose directive refuse
+// names a claim that the derivation does not license for its callable, and at
+// a second directive refuse of one claim. It reports [Ungenerated] at a
+// declaration whose calls take a type without a generator, as a Warning.
 //
 // # Dependency position
 //

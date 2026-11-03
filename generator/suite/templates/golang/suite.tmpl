@@ -391,6 +391,7 @@ var _ = {{$conform}}.CompatV1
 }
 {{- end}}
 {{- range $c.Calls}}
+{{- $call := .}}
 {{- $prop := import "go.dokimi.dev/assert/prop"}}
 {{- $name := $c.Declaration}}
 {{- with .Field}}{{$name = printf "%s.%s" $c.Declaration .}}{{end}}
@@ -398,14 +399,18 @@ var _ = {{$conform}}.CompatV1
 {{- $context := false}}
 {{- range .Params}}
 {{- if .Context}}{{$context = true}}
+{{- else if $call.Builder}}
 {{- else if .Sample}}
 {{- else if or .Funcs .Input}}{{range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}
 {{- else if not .Omitted}}{{$drawn = true}}
 {{- end}}
 {{- end}}
+{{- $doc := printf `%s generates the calls of %s with the inputs that each case draws.` (suiteCamel .Var) $name}}
+{{- with .Builder}}{{$doc = printf `%s generates the calls of %s with the inputs that its builder %s returns.` (suiteCamel $call.Var) $name .Func.Spelling}}{{end}}
 
-{{docs (wrapdocs (printf `%s generates the calls of %s with the inputs that each case draws.` (suiteCamel .Var) $name))}}
+{{docs (wrapdocs $doc)}}
 {{- ""}}var {{suiteCamel .Var}} = {{$prop}}.Composite(func({{if $drawn}}c {{end}}*{{$prop}}.Case) func({{import "context"}}.Context, {{$s}}) error {
+{{- if not .Builder}}
 {{- range .Params}}
 {{- if .Sample}}
 	{{.Name}} := {{if .Variadic}}[]{{spell .Type}}{ {{- value .Sample -}} }{{else}}{{value .Sample}}{{end}}
@@ -414,7 +419,11 @@ var _ = {{$conform}}.CompatV1
 	{{.Name}} := c.Draw({{if or .Variadic .Receive}}{{$prop}}.List({{$prop}}.Of[{{spell .Type}}]()){{else}}{{$prop}}.Of[{{spell .Type}}](){{end}}, {{printf "%q" .Label}})
 {{- end}}
 {{- end}}
+{{- end}}
 	return func({{if $context}}ctx{{else}}_{{end}} {{import "context"}}.Context, subject {{$s}}) error {
+{{- with .Builder}}
+		{{$first := true}}{{range $call.Params}}{{if not .Context}}{{if not $first}}, {{end}}{{$first = false}}{{.Name}}{{end}}{{end}} := {{spell .Func}}({{if .Subject}}subject{{end}})
+{{- end}}
 {{- if .Returns}}
 		{{with .Assign}}{{.}} {{end}}{{template "suite.call" .}}
 		return {{.Returns}}
@@ -546,11 +555,14 @@ arguments of a list, and the function of its reference.
 {{- range $q.Pools}}
 	{{.Name}} := c.Draw({{$prop}}.List({{$prop}}.Of[{{spell .Type}}](), {{$prop}}.Unique(), {{$prop}}.MinSize(1), {{$prop}}.MaxSize(3)), {{printf "%q" .Label}})
 {{- end}}
+{{- if $q.Txn}}
+	var counter {{import "sync/atomic"}}.Int64
+{{- end}}
 	return []{{import "go.dokimi.dev/assert/stateful"}}.Action[struct{}]{
 {{- range $q.Steps}}{{if .Action}}{{$st := .}}
 		{
 			Name: {{printf "%q" .Name}},
-{{- $inputs := false}}{{range .Params}}{{if ge .Arg 0}}{{$inputs = true}}{{end}}{{end}}
+{{- $inputs := false}}{{if not .Builder}}{{range .Params}}{{if ge .Arg 0}}{{$inputs = true}}{{end}}{{end}}{{end}}
 {{- if $inputs}}
 			Input: func(c *{{$prop}}.Case, _ struct{}) any {
 {{- range .Params}}{{if ge .Arg 0}}
@@ -580,16 +592,48 @@ arguments of a list, and the function of its reference.
 			},
 		},
 {{- end}}{{end}}
+{{- with $q.Txn}}{{template "suite.txn" .}}{{end}}
 	}
 }
-{{- $n := $q.Normalize}}
-{{- range $q.Steps}}{{$st := .}}
+{{- range $q.Steps}}{{template "suite.step" (suiteStep . $s $q.Normalize)}}{{end}}
+{{- with $q.Txn}}{{range .Steps}}{{template "suite.step" (suiteStep . $s $q.Normalize)}}{{end}}{{end}}
+{{- with $q.Reference}}
+
+{{docs (wrapdocs (printf `%s returns the function that applies an operation of a history to the reference r by the name of its callable.` (suiteCamel .)))}}
+{{- ""}}func {{suiteCamel .}}(r {{$s}}) func({{$context}}.Context, string, []any) {{$conform}}.Output {
+	return func(ctx {{$context}}.Context, operation string, args []any) {{$conform}}.Output {
+		var values []any
+		var err error
+		switch operation {
+{{- range $q.Steps}}
+		case {{printf "%q" .Name}}:
+			values, err = {{suiteCamel .Call}}(ctx, r, args)
+{{- end}}
+		}
+		return {{$conform}}.OutputOf(err, values...)
+	}
+}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.step writes the function of the step of a callable, which calls the
+callable on the subject, or on the handle of a transaction, with the
+arguments of a list.
+*/}}
+{{- define "suite.step"}}
+{{- $st := .Step}}{{$n := .Normalize}}{{$context := import "context"}}
+{{- with $st}}
 
 {{docs (wrapdocs (printf `%s calls %s on subject with the arguments args, and returns the values of the call beside its error.` (suiteCamel .Call) .Name))}}
-{{- ""}}func {{suiteCamel .Call}}(ctx {{$context}}.Context, subject {{$s}}, args []any) ([]any, error) {
+{{- ""}}func {{suiteCamel .Call}}(ctx {{$context}}.Context, subject {{with .Receiver}}{{spell .}}{{else}}{{$.Subject}}{{end}}, args []any) ([]any, error) {
+{{- with .Builder}}
+	{{$first := true}}{{range $st.Params}}{{if ge .Arg 0}}{{if not $first}}, {{end}}{{$first = false}}{{.Local}}{{end}}{{end}} := {{spell .Func}}({{if .Subject}}subject{{end}})
+{{- else}}
 {{- range .Params}}{{if ge .Arg 0}}
 	{{.Local}}, _ := args[{{.Arg}}].({{if or .Variadic .Receive}}[]{{else if .Address}}*{{end}}{{spell .Type}})
 {{- end}}{{end}}
+{{- end}}
 {{- if .Drain}}
 	{{suiteJoin .Assign}} := {{template "suite.sequence.call" .}}
 {{- if .Error}}
@@ -626,24 +670,105 @@ arguments of a list, and the function of its reference.
 {{- end}}
 }
 {{- end}}
-{{- with $q.Reference}}
+{{- end}}
 
-{{docs (wrapdocs (printf `%s returns the function that applies an operation of a history to the reference r by the name of its callable.` (suiteCamel .)))}}
-{{- ""}}func {{suiteCamel .}}(r {{$s}}) func({{$context}}.Context, string, []any) {{$conform}}.Output {
-	return func(ctx {{$context}}.Context, operation string, args []any) {{$conform}}.Output {
-		var values []any
-		var err error
-		switch operation {
-{{- range $q.Steps}}
-		case {{printf "%q" .Name}}:
-			values, err = {{suiteCamel .Call}}(ctx, r, args)
+{{- /*
+suite.txn writes the action of a transaction, which no probe but a probe of
+an isolation level runs. Its input draws the micro-operations of the
+transaction and whether it commits. Its run begins a transaction, calls the
+write or the read of each micro-operation with the handle, commits or rolls
+back, and records the transaction as one call of txn.
+*/}}
+{{- define "suite.txn"}}
+{{- $prop := import "go.dokimi.dev/assert/prop"}}{{$t := .}}
+		{
+			Name:    {{printf "%q" "txn"}},
+			Enabled: func(struct{}) bool { return false },
+			Input: func(c *{{$prop}}.Case, _ struct{}) any {
+				ops := make([]any, c.Draw({{$prop}}.Integer(1, 4), "txn.ops"))
+				for i := range ops {
+					key := c.Draw({{$prop}}.SampledFrom({{.Pool}}...), "txn.key")
+					if c.Draw({{$prop}}.Boolean(), "txn.read") {
+						ops[i] = []any{"read", key, nil}
+						continue
+					}
+					ops[i] = []any{ {{- printf "%q" .Function}}, key, {{spell .Value}}({{if .Text}}{{import "strconv"}}.FormatInt(counter.Add(1), 10){{else}}counter.Add(1){{end}})}
+				}
+				return []any{ops, c.Draw({{$prop}}.Integer(0, 9), "txn.commit") > 0}
+			},
+			Run: func(c *{{$prop}}.Case, client int, input any) {
+				in, _ := input.([]any)
+				ops, _ := in[0].([]any)
+				commit, _ := in[1].(bool)
+				call := c.History().Invoke(client, "txn", ops)
+				ctx, s := c.Context(), subject()
+				end := func(err error) {
+					if ctx.Err() != nil && {{import "errors"}}.Is(err, ctx.Err()) {
+						call.Unknown(err)
+						return
+					}
+					call.Fail(err)
+				}
+				begun, err := {{template "suite.txn.call" (suiteTxnCall .Begin "s")}}
+				if err != nil {
+					end(err)
+					return
+				}
+{{- if or .Write.Handled .Read.Handled .Commit.Handled .Rollback.Handled}}
+				tx, _ := begun[0].({{spell .Handle}})
+{{- else}}
+				tx := begun[0]
 {{- end}}
-		}
-		return {{$conform}}.OutputOf(err, values...)
-	}
-}
+				rollback := func() { _, _ = {{template "suite.txn.call" (suiteTxnCall .Rollback "s")}} }
+				out := make([]any, len(ops))
+				for i, op := range ops {
+					m, _ := op.([]any)
+					key, v := m[1], m[2]
+					if m[0] == "read" {
+						read, err := {{template "suite.txn.call" (suiteTxnCall .Read "s")}}
+						if err != nil {
+							rollback()
+							end(err)
+							return
+						}
+{{- if .Appends}}
+						out[i] = []any{"read", key, read[0]}
+{{- else}}
+						var value any
+						if r := read[0]; r != any(*new({{spell .Value}})) {
+							value = r
+						}
+						out[i] = []any{"read", key, value}
 {{- end}}
+						continue
+					}
+					if _, err := {{template "suite.txn.call" (suiteTxnCall .Write "s")}}; err != nil {
+						rollback()
+						end(err)
+						return
+					}
+					out[i] = m
+				}
+				if !commit {
+					rollback()
+					call.Fail({{import "go.dokimi.dev/conform"}}.ErrGenerated)
+					return
+				}
+				if _, err := {{template "suite.txn.call" (suiteTxnCall .Commit "s")}}; err != nil {
+					end(err)
+					return
+				}
+				call.OK(out)
+			},
+		},
 {{- end}}
+
+{{- /*
+suite.txn.call writes the call of the function of the step of one call of a
+transaction, on the subject or on the handle tx, with the context ctx and the
+arguments of the call.
+*/}}
+{{- define "suite.txn.call"}}{{suiteCamel .Call.Call}}(ctx, {{if .Call.Handled}}tx{{else}}{{.Subject}}{{end}}, []any{ {{- template "suite.exprs" .Call.Args -}} }){{end}}
 
 {{- /*
 suite.sequence.call writes the call of a step on the subject with the values
@@ -772,7 +897,7 @@ classification with its stance and its note.
 {{- if or (eq $d.Body "keep-first") (eq $d.Body "first-after")}}
 	first *{{spell (index $d.Method.Returns.Items 0).Type}}
 {{- end}}
-{{- if or $d.Overrides (eq $d.Body "check-then-grant")}}
+{{- if or (and $d.Overrides (not $d.Txn)) (eq $d.Body "check-then-grant")}}
 	marked {{import "sync/atomic"}}.Int32
 {{- end}}
 {{- if eq $d.Body "shared-result"}}
@@ -781,18 +906,26 @@ classification with its stance and its note.
 {{- if eq $d.Body "zero-first"}}
 	wrote bool
 {{- end}}
+{{- if $d.Txn}}
+	mu {{import "sync"}}.Mutex
+{{- if eq $d.Body "keep-open"}}
+	open map[any][2]any
+{{- else}}
+	staged map[any][][2]any
+{{- end}}
+{{- end}}
 }
 {{- range $o := $d.Overrides}}
 
 {{docs (wrapdocs (printf `%s is the override of the planted defect.` $o.Method.Name))}}
 {{- ""}}func (d *{{$type}}) {{$o.Method.Name}}({{params $o.Method.Params}}){{results $o.Method.Returns}} {
-{{- template "suite.defect.body" (suiteBody $o (printf "d.%s.%s" $.Embedded $o.Method.Name) "d.")}}
+{{- template "suite.defect.body" (suiteBody $o (printf "d.%s.%s" $.Embedded $o.Method.Name) "d." (printf "d.%s" $.Embedded))}}
 }
 {{- else}}
 
 {{docs (wrapdocs (printf `%s is the override of the planted defect.` $d.Method.Name))}}
 {{- ""}}func ({{if or $d.Delegates $d.Counts $d.Keeps}}d {{end}}*{{$type}}) {{$d.Method.Name}}({{params $d.Method.Params}}){{results $d.Method.Returns}} {
-{{- template "suite.defect.body" (suiteBody $d (printf "d.%s.%s" .Embedded $d.Method.Name) "d.")}}
+{{- template "suite.defect.body" (suiteBody $d (printf "d.%s.%s" .Embedded $d.Method.Name) "d." (printf "d.%s" .Embedded))}}
 }
 {{- end}}
 {{- with $d.Handle}}
@@ -808,6 +941,22 @@ classification with its stance and its note.
 	return
 }
 {{- end}}
+{{- with $d.Wrapper}}
+{{- $wrapper := suiteCamel .Name}}{{$w := .}}
+
+{{docs (wrapdocs (printf `%s wraps a handle of a transaction of the planted defect of %s.` $wrapper $d.Doc))}}
+{{- ""}}type {{$wrapper}} struct {
+	{{spell .Handled}}
+	d *{{$type}}
+}
+{{- range $o := .Overrides}}
+
+{{docs (wrapdocs (printf `%s is the override of the planted defect.` $o.Method.Name))}}
+{{- ""}}func (t *{{$wrapper}}) {{$o.Method.Name}}({{params $o.Method.Params}}){{results $o.Method.Returns}} {
+{{- template "suite.defect.body" (suiteBody $o (printf "t.%s.%s" $w.EmbeddedField $o.Method.Name) "t.d." (printf "t.d.%s" $.Embedded))}}
+}
+{{- end}}
+{{- end}}
 
 {{- if $d.Door}}
 {{- template "suite.defect.opened" .}}
@@ -820,7 +969,7 @@ classification with its stance and its note.
 
 {{docs (wrapdocs (printf `%s returns the planted defect of %s over a fresh subject.` $new $d.Doc))}}
 {{- ""}}func {{$new}}(h *{{.Handle}}) {{.Subject}} {
-	return &{{$type}}{ {{- .Embedded}}: h.Fresh(){{if $d.Keeps}}, h: h{{end}}{{if $d.Acquire}}, leak: h.Injector().Dependency(){{end}}{{if eq $d.Body "slow"}}, clock: h.Clock(){{end -}} }
+	return &{{$type}}{ {{- .Embedded}}: h.Fresh(){{if $d.Keeps}}, h: h{{end}}{{if $d.Acquire}}, leak: h.Injector().Dependency(){{end}}{{if eq $d.Body "slow"}}, clock: h.Clock(){{end}}{{if $d.Txn}}{{if eq $d.Body "keep-open"}}, open: map[any][2]any{}{{else}}, staged: map[any][][2]any{}{{end}}{{end -}} }
 }
 {{- end}}
 {{- else}}
@@ -849,7 +998,7 @@ classification with its stance and its note.
 	var marked {{import "sync/atomic"}}.Int32
 {{- end}}
 	return func({{params $d.Method.Params}}){{results $d.Method.Returns}} {
-{{- template "suite.defect.body" (suiteBody $d "fresh" "")}}
+{{- template "suite.defect.body" (suiteBody $d "fresh" "" "fresh")}}
 	}
 }
 {{- end}}
@@ -1181,6 +1330,129 @@ builds a fresh subject of the handle for each call.
 		}
 	}
 	return {{$call}}
+{{- else if eq $d.Body "zero-beside-error"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
+	{{$all}} = {{$call}}
+	if {{$err}} != nil {
+{{- range $d.Method.Returns.Items}}{{if ne .Name $err}}
+		{{.Name}} = *new({{spell .Type}})
+{{- end}}{{end}}
+	}
+	return
+{{- else if eq $d.Body "keep-open"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}{{$t := $d.Txn}}
+	{{if $d.Results}}{{$all}} = {{end}}{{$call}}
+	{{with $err}}if {{.}} == nil {{end}}{
+		{{$.State}}mu.Lock()
+		{{$.State}}open[{{$t.Key}}] = [2]any{ {{- $t.Handle}}, {{$t.Value -}} }
+		{{$.State}}mu.Unlock()
+	}
+	{{.State}}h.Yield()
+	return
+{{- else if eq $d.Body "read-open"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}{{$t := $d.Txn}}
+	{{$all}} = {{$call}}
+	{{.State}}mu.Lock()
+	kept, found := {{.State}}open[{{$t.Key}}]
+	{{.State}}mu.Unlock()
+	if found && kept[0] != any({{$t.Handle}}){{with $err}} && {{.}} == nil{{end}} {
+		v, _ := kept[1].({{spell $t.Txn.Value}})
+{{- if $t.Txn.Appends}}
+		r0 = append(r0[:len(r0):len(r0)], v)
+{{- else}}
+		r0 = v
+{{- end}}
+	}
+	{{.State}}h.Yield()
+	return
+{{- else if eq $d.Body "drop-open"}}{{$t := $d.Txn}}
+	{{if $d.Results}}{{$all}} = {{end}}{{$call}}
+	{{.State}}mu.Lock()
+	for key, kept := range {{.State}}open {
+		if kept[0] == any({{$t.Handle}}) {
+			delete({{.State}}open, key)
+		}
+	}
+	{{.State}}mu.Unlock()
+	{{.State}}h.Yield()
+	return
+{{- else if eq $d.Body "stage"}}{{$t := $d.Txn}}
+	{{.State}}mu.Lock()
+	{{.State}}staged[{{$t.Handle}}] = append({{.State}}staged[{{$t.Handle}}], [2]any{ {{- $t.Key}}, {{$t.Value -}} })
+	{{.State}}mu.Unlock()
+	{{.State}}h.Yield()
+	return
+{{- else if eq $d.Body "read-staged"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}{{$t := $d.Txn}}
+	{{$all}} = {{$call}}
+	{{with $err}}if {{.}} == nil {{end}}{
+		{{$.State}}mu.Lock()
+		for _, w := range {{$.State}}staged[{{$t.Handle}}] {
+			if w[0] == any({{$t.Key}}) {
+				v, _ := w[1].({{spell $t.Txn.Value}})
+{{- if $t.Txn.Appends}}
+				r0 = append(r0[:len(r0):len(r0)], v)
+{{- else}}
+				r0 = v
+{{- end}}
+			}
+		}
+		{{$.State}}mu.Unlock()
+	}
+	{{.State}}h.Yield()
+	return
+{{- else if eq $d.Body "apply-late"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}{{$t := $d.Txn}}{{$x := $t.Txn}}
+	{{.State}}mu.Lock()
+	staged := {{.State}}staged[{{$t.Handle}}]
+	delete({{.State}}staged, {{$t.Handle}})
+	{{.State}}mu.Unlock()
+	{{if $d.Results}}{{$all}} = {{end}}{{$call}}
+	if {{with $err}}{{.}} != nil || {{end}}len(staged) == 0 {
+		{{.State}}h.Yield()
+		return
+	}
+	ctx := {{with $t.Context}}{{.}}{{else}}{{import "context"}}.Background(){{end}}
+	begun, err := {{template "suite.txn.call" (suiteTxnCall $x.Begin .Subject)}}
+	if err != nil {
+{{- with $err}}
+		{{.}} = err
+{{- end}}
+		return
+	}
+{{- if or $x.Write.Handled $x.Commit.Handled $x.Rollback.Handled}}
+	tx, _ := begun[0].({{spell $x.Handle}})
+{{- else}}
+	tx := begun[0]
+{{- end}}
+	for _, w := range staged {
+		key, v := w[0], w[1]
+		if _, err := {{template "suite.txn.call" (suiteTxnCall $x.Write .Subject)}}; err != nil {
+			_, _ = {{template "suite.txn.call" (suiteTxnCall $x.Rollback .Subject)}}
+{{- with $err}}
+			{{.}} = err
+{{- end}}
+			return
+		}
+	}
+	_, {{with $err}}{{.}}{{else}}_{{end}} = {{template "suite.txn.call" (suiteTxnCall $x.Commit .Subject)}}
+	{{.State}}h.Yield()
+	return
+{{- else if eq $d.Body "drop-staged"}}{{$t := $d.Txn}}
+	{{.State}}mu.Lock()
+	delete({{.State}}staged, {{$t.Handle}})
+	{{.State}}mu.Unlock()
+	{{if $d.Results}}{{$all}} = {{end}}{{$call}}
+	{{.State}}h.Yield()
+	return
+{{- else if eq $d.Body "wrap-handle"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}{{$t := $d.Txn}}
+	{{$all}} = {{$call}}
+	{{with $err}}if {{.}} == nil {{end}}{
+		r0 = &{{suiteCamel $t.Wrapper.Name}}{ {{- $t.Wrapper.EmbeddedField}}: r0, d: d}
+	}
+	{{.State}}h.Yield()
+	return
 {{- else if eq $d.Body "zero-on-sentinel"}}
 {{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
 	{{$all}} = {{$call}}
@@ -1263,7 +1535,7 @@ suite.arg writes one argument of the probe of a derived check.
 {{- define "suite.arg"}}
 {{- if .Closure}}{{template "suite.closure" .Closure}}
 {{- else if .Expr}}{{template "suite.expr" .Expr}}
-{{- else if .Projection}}func(v {{spell .Projection.Type}}) {{spell .Projection.Result}} { return v.{{.Projection.Field}} }
+{{- else if .Projection}}func(v {{spell .Projection.Type}}) {{spell .Projection.Result}} { return v{{with .Projection.Field}}.{{.}}{{end}} }
 {{- else if .Ref}}{{suiteCamel .Ref}}
 {{- else if .Apply}}{{template "suite.apply" .Apply}}
 {{- else if .Written}}func(args []any) {{spell .Written.Type}} {
@@ -1286,6 +1558,10 @@ suite.expr writes one expression of a derived check.
 {{- define "suite.expr"}}
 {{- if .Value}}{{value .Value}}
 {{- else if .Drawn}}{{if .Drawn.Address}}&{{end}}{{.Drawn.Draw.Name}}{{if or .Drawn.Draw.Funcs .Drawn.Draw.Input}}(){{else if .Drawn.Draw.Pair}}[{{if .Drawn.Second}}1{{else}}0{{end}}]{{end}}
+{{- else if .Built}}{{with .Built.Name}}{{.}}{{else}}func() {{spell .Built.Type}} {
+	{{.Built.Values}} := {{spell .Built.Builder.Func}}({{if .Built.Builder.Subject}}h.Subject(){{end}})
+	return v
+}(){{end}}
 {{- else if .Of}}({{template "suite.expr" .Of}}).{{.Select}}
 {{- else if .Hook}}func({{range $i, $p := slice .Hook.Elems 0 .Hook.Split}}{{if $i}}, {{end}}_ {{spell $p}}{{end}}) { {{- .Name}}() }
 {{- else if .Compute}}func({{params .Compute.Params}}){{results .Compute.Returns}} {
@@ -1328,6 +1604,9 @@ value where the flag reports no value.
 {{- define "suite.closure.body"}}
 {{- if .Later}}
 	calls++
+{{- end}}
+{{- range .Builds}}
+	{{suiteJoin .Names}} := {{spell .Builder.Func}}({{if .Builder.Subject}}{{with $.Receiver}}{{template "suite.expr" .}}{{else}}h.Subject(){{end}}{{end}})
 {{- end}}
 {{- range .Lets}}
 	{{.Name}}{{if .Select}}.{{.Select}} ={{else}} :={{end}} {{template "suite.expr" .Value}}

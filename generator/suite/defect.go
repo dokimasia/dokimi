@@ -69,11 +69,18 @@ import (
 // package probe that wraps the medium of a defect that changes the medium,
 // such as Unsynced, and empty for a defect that changes a callable. Sentinel
 // is the declared error that a body of the form ignores-checksum swallows.
+//
+// Txn is what an override of a planted defect of transactions writes, and nil
+// for any other override. Wrapper is the type that wraps the handle of a
+// transaction whose methods write, read, commit and roll back, with the
+// override of each, and nil for a defect without one.
 type Defect struct {
 	Method    *emit.Method
 	Handle    *Defect
 	Handled   *emit.TypeRef
 	Sentinel  *Expr
+	Txn       *TxnPlant
+	Wrapper   *Defect
 	Overrides []*Defect
 	Name      string
 	Type      string
@@ -171,6 +178,7 @@ const (
 	bodyCheckThenGrant = "check-then-grant"
 	bodyZeroFirst      = "zero-first"
 	bodyZeroOnSentinel = "zero-on-sentinel"
+	bodyZeroBeside     = "zero-beside-error"
 )
 
 // media are the functions of the package probe that wrap the medium of each
@@ -297,6 +305,7 @@ var bodies = map[spec.DefectFormID]string{
 	spec.CheckThenGrant:                bodyCheckThenGrant,
 	spec.TrustsAPartialRecord:          bodyZeroFirst,
 	spec.IgnoresChecksum:               bodyZeroOnSentinel,
+	spec.DropsTheField:                 bodyZeroBeside,
 }
 
 // partnerOf returns the pair of the partner name of the check c: the partner
@@ -319,7 +328,7 @@ var (
 		bodySampleSuccess, bodyUncancelled, bodyVersionZero, bodyDrainTwice, bodyReorder, bodyReverse, bodySlow,
 		bodyFirstPage, bodyLiveHandle, bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyOpenOnFailure,
 		bodyZeroSecond, bodyKeepFirst, bodyDropLast, bodyLeak, bodyCopy, bodySharedResult, bodyCheckThenGrant,
-		bodyZeroFirst, bodyZeroOnSentinel,
+		bodyZeroFirst, bodyZeroOnSentinel, bodyZeroBeside,
 	}, afterBodies)
 	counting = slices.Concat([]string{
 		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyDrift, bodyDescend, bodyVersionDescend, bodyReorder, bodyLeak,
@@ -358,7 +367,7 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	}
 	racy := form.ID == spec.RacyReadWrite
 	words := []string{s.Declaration}
-	if f.Declaration != "" && !racy {
+	if f.Declaration != "" && !racy && c.Transaction == nil {
 		words = append(words, f.Callable)
 	}
 	name := k.e.JoinName(naming.Pascal(string(form.ID)), strings.Join(words, ""))
@@ -437,6 +446,9 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	}
 	if racy {
 		d.Keeps, d.Overrides = true, k.racy(s)
+	}
+	if c.Transaction != nil {
+		k.txnDefect(s, d, form.ID, c.Transaction)
 	}
 	return d, false
 }

@@ -13,6 +13,7 @@ import (
 	golang "go.dokimi.dev/eidos/lang/go"
 	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/sdk"
+	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/symbol"
 )
@@ -34,7 +35,9 @@ var golangTemplates embed.FS
 // names of the results of a planted defect, and identityHelper writes the
 // identity of a check of a suite. lockHelper returns the lines of the lock of
 // a plan, sequencesHelper the view of the generated sequences of a
-// declaration, and durableHelper the view of the calls of a durable probe.
+// declaration, durableHelper the view of the calls of a durable probe,
+// stepHelper the view of the step of a callable, and txnCallHelper the view
+// of one call of a transaction.
 const (
 	pascalHelper    = "suitePascal"
 	camelHelper     = "suiteCamel"
@@ -48,6 +51,8 @@ const (
 	lockHelper      = "suiteLock"
 	sequencesHelper = "suiteSequences"
 	durableHelper   = "suiteDurable"
+	stepHelper      = "suiteStep"
+	txnCallHelper   = "suiteTxnCall"
 )
 
 // durableView is the calls of a durable probe with the subject type of the
@@ -110,16 +115,45 @@ func viewOfDefect(d *Defect, embedded, handle, subject string) defectView {
 
 // bodyView is the body of the override of the planted defect Defect: Call is
 // the callable of the fresh subject, and State the prefix of the counter, the
-// clock, the handle and the dependency of the defect.
+// clock, the handle and the dependency of the defect. Subject is the fresh
+// subject that the defect wraps, on which the commit of a planted defect of
+// transactions begins a late transaction.
 type bodyView struct {
-	Defect *Defect
-	Call   string
-	State  string
+	Defect  *Defect
+	Call    string
+	State   string
+	Subject string
 }
 
 // viewOfBody returns the view of the body of the planted defect d.
-func viewOfBody(d *Defect, call, state string) bodyView {
-	return bodyView{Defect: d, Call: call, State: state}
+func viewOfBody(d *Defect, call, state, subject string) bodyView {
+	return bodyView{Defect: d, Call: call, State: state, Subject: subject}
+}
+
+// stepView is the step of a callable with the names of the suite that its
+// template writes: the subject type, and the function of the param normalize
+// of the directive suite, which is nil without the param.
+type stepView struct {
+	Step      *Step
+	Normalize *emit.TypeRef
+	Subject   string
+}
+
+// viewOfStep returns the view of the step st.
+func viewOfStep(st *Step, subject string, normalize *emit.TypeRef) stepView {
+	return stepView{Step: st, Subject: subject, Normalize: normalize}
+}
+
+// txnCallView is one call of a transaction with the expression of the subject
+// on which a call that is no method of the handle calls its callable.
+type txnCallView struct {
+	Subject string
+	Call    TxnCall
+}
+
+// viewOfTxnCall returns the view of the call c of a transaction.
+func viewOfTxnCall(c TxnCall, subject string) txnCallView {
+	return txnCallView{Call: c, Subject: subject}
 }
 
 // namesOfOutcomes returns the names of the results outcomes, joined by
@@ -182,7 +216,8 @@ func (golangPart) Options() []sdk.TargetOption {
 			pascalHelper: naming.Pascal, camelHelper: naming.Camel, ceilingsHelper: Budget.segments,
 			durationHelper: golangDuration, defectHelper: viewOfDefect, bodyHelper: viewOfBody, joinHelper: joined,
 			namesHelper: namesOfOutcomes, identityHelper: identityIn, lockHelper: lockLines,
-			sequencesHelper: viewOfSequences, durableHelper: viewOfDurable,
+			sequencesHelper: viewOfSequences, durableHelper: viewOfDurable, stepHelper: viewOfStep,
+			txnCallHelper: viewOfTxnCall,
 		}),
 	}
 }

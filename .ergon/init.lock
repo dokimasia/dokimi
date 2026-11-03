@@ -74,7 +74,7 @@
     {
       "path": ".github/workflows/nightly.yml",
       "producer": "github",
-      "sha256": "aa27282a8853966dc5393d2b46901bc2250129cf1a743f20324539bbaf027349"
+      "sha256": "ad6403201e331cfcd653b7f127b9a8afc17b391e1da2b6359ec4dddc6979ea90"
     },
     {
       "path": ".github/workflows/release.yml",
@@ -138,7 +138,7 @@
       "path": "Makefile",
       "producer": "common",
       "local": "fc90edeef39a86711dace5886e33327c4b276c87e293645d6fd9be17ef8c6e35",
-      "sha256": "260375ca654ed0a07f551ed4555f408b02f2243d23277cae00dc0b9379696b4e"
+      "sha256": "853d211f880766021f0eb70ec1d41e062214d7f26b42a719afa95a77358fb3cf"
     },
     {
       "path": "NOTICE",

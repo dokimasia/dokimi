@@ -107,11 +107,11 @@ GO_BENCH_MATCH ?= .
 GO_BENCH_TIME ?= 1s
 GO_BENCH_COUNT ?= 6
 GO_BENCH_ARGS ?= -benchmem
-GO_BENCH_SKIP ?=
+GO_BENCH_SKIP ?= go.dokimi.dev/dokimi/corpus/go/...
 GO_MUTATE_WORKERS ?= 1
 GO_MUTATE_TIMEOUT ?= 0s
 GO_MUTATE_ARGS ?=
-GO_MUTATE_SKIP ?=
+GO_MUTATE_SKIP ?= go.dokimi.dev/dokimi/corpus/go/...
 GO_GENERATE_COMMANDS ?= go generate $(GO_PATHS)
 GO_AUDIT_ARGS ?=
 

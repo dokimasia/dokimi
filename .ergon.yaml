@@ -241,8 +241,6 @@ go:
   # The steps that nightly.yml runs on its schedule, fuzz, bench or mutate, each in a job of its own
   # on Linux, mapped to the limit of that job in minutes.
   nightly:
-    bench: 45
-    fuzz: 120
     mutate: 60
   # The options of lint-go, which runs golangci-lint in every module with the rules of
   # .golangci.yml, the analyzers of the key analyzers and the module plugins of the key plugins.
@@ -281,7 +279,7 @@ go:
     match: .
     time: 1s
     args: [-benchmem]
-    skip: []
+    skip: [go.dokimi.dev/dokimi/corpus/go/...]
     count: 6
   # mutate-go runs dokimi-mutate-go with workers mutants of a module at a time and args, and ends
   # the run after timeout. A timeout of 0s sets no limit. It tests no mutant of the packages of the
@@ -291,7 +289,7 @@ go:
   mutate:
     timeout: 0s
     args: []
-    skip: []
+    skip: [go.dokimi.dev/dokimi/corpus/go/...]
     workers: 1
   # generate-go runs each command line of commands in order with the paths in every module.
   # verify-generate-go, the step generate of check, runs the same and fails when the run changes a

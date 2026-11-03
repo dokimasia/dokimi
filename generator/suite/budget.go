@@ -123,7 +123,7 @@ func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) 
 	name := method.ID.Owner + "." + method.Name
 	why := unrepeatable(m, &method.ID)
 	switch {
-	case !suited(m, &method.Host):
+	case !Suited(m, &method.Host):
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s has no directive suite, so the budget of %s has no check",
 			method.ID.Owner, name)
 	case method.Visibility != symbol.VisibilityPublic:
@@ -144,7 +144,7 @@ func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, _ part, st *sdk.Stamp
 	fn := m.Function
 	why := unrepeatable(m, &fn.ID)
 	switch {
-	case !suited(m, &fn.ID):
+	case !Suited(m, &fn.ID):
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s has no directive suite, so the budget of %s has no check",
 			fn.Name, fn.Name)
 	case why != "":

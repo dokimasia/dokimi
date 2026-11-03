@@ -61,10 +61,19 @@ import (
 // Overrides are the overrides of a planted defect that changes every callable
 // of its declaration, each with the signature and the body of one callable.
 // The template writes them in place of the one override of Method.
+//
+// Door is the name of the function that opens the planted defect over a
+// medium, for a defect of a durable claim, and empty for any other defect.
+// The defect then wraps a subject that the door Open of the application opens
+// over the medium, through Handle.FreshOpen. Medium is the function of the
+// package probe that wraps the medium of a defect that changes the medium,
+// such as Unsynced, and empty for a defect that changes a callable. Sentinel
+// is the declared error that a body of the form ignores-checksum swallows.
 type Defect struct {
 	Method    *emit.Method
 	Handle    *Defect
 	Handled   *emit.TypeRef
+	Sentinel  *Expr
 	Overrides []*Defect
 	Name      string
 	Type      string
@@ -76,6 +85,8 @@ type Defect struct {
 	Limit     string
 	Grow      string
 	Stream    string
+	Door      string
+	Medium    string
 	Args      []string
 	Results   []Outcome
 	Elems     []*emit.TypeRef
@@ -158,6 +169,23 @@ const (
 	bodyMarkedSample   = "marked-sample"
 	bodySharedResult   = "shared-result"
 	bodyCheckThenGrant = "check-then-grant"
+	bodyZeroFirst      = "zero-first"
+	bodyZeroOnSentinel = "zero-on-sentinel"
+)
+
+// media are the functions of the package probe that wrap the medium of each
+// defect form that changes the medium.
+var media = map[spec.DefectFormID]string{
+	spec.AcknowledgesBeforeSync: "Unsynced",
+	spec.HidesAFullMedium:       "Unfilled",
+}
+
+// The word that the name of the door of a planted defect adds to the name of
+// its function, and the param of the mixin durable that refers to the error of
+// a corrupted record.
+const (
+	openWord     = "Open"
+	corruptParam = "corrupt"
 )
 
 // afterBodies are the bodies of the defect forms of generated sequences,
@@ -267,6 +295,8 @@ var bodies = map[spec.DefectFormID]string{
 	spec.RacyCausalRead:                bodySharedResult,
 	spec.ComputesPerCall:               bodyFreshEachCall,
 	spec.CheckThenGrant:                bodyCheckThenGrant,
+	spec.TrustsAPartialRecord:          bodyZeroFirst,
+	spec.IgnoresChecksum:               bodyZeroOnSentinel,
 }
 
 // partnerOf returns the pair of the partner name of the check c: the partner
@@ -289,6 +319,7 @@ var (
 		bodySampleSuccess, bodyUncancelled, bodyVersionZero, bodyDrainTwice, bodyReorder, bodyReverse, bodySlow,
 		bodyFirstPage, bodyLiveHandle, bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyOpenOnFailure,
 		bodyZeroSecond, bodyKeepFirst, bodyDropLast, bodyLeak, bodyCopy, bodySharedResult, bodyCheckThenGrant,
+		bodyZeroFirst, bodyZeroOnSentinel,
 	}, afterBodies)
 	counting = slices.Concat([]string{
 		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyDrift, bodyDescend, bodyVersionDescend, bodyReorder, bodyLeak,
@@ -336,7 +367,10 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 			return d, true
 		}
 	}
-	d := &Defect{Name: name, Doc: c.Clause, Body: bodies[form.ID]}
+	d := &Defect{Name: name, Doc: c.Clause, Body: bodies[form.ID], Medium: media[form.ID]}
+	if slices.ContainsFunc(probes[c.Claim.Probe], func(sl slot) bool { return sl.form == formDurable }) {
+		d.Door = k.e.JoinName(openWord, name)
+	}
 	switch {
 	case form.ID == spec.IgnoresTheSecondInput && !reflect.DeepEqual(f.Results[0].Shape, f.Inputs[0].Shape):
 		// A callable whose result has another type cannot return its first
@@ -371,6 +405,11 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 				d.Grow = growText
 			}
 		}
+	case bodyZeroFirst:
+		_, pair := b.facts(durable.name)
+		d.Input = inputAt(f, pair.Written)
+	case bodyZeroOnSentinel:
+		d.Sentinel = k.valueOfParam(b.param(corruptParam))
 	default:
 	}
 	if slices.Contains(afterBodies, d.Body) {
@@ -382,7 +421,7 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	if d.Body == bodyOpenOnFailure {
 		d.Acquire = nameOf(b.param(openParam))
 	}
-	if f.Declaration != "" {
+	if f.Declaration != "" && d.Medium == "" {
 		d.Type = k.e.JoinName(defectWord, name)
 	}
 	d.Version = nameOf(b.param(stampParam))

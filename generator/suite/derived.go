@@ -51,6 +51,10 @@ import (
 // without generated sequences, such as a probe whose clients the scheduler of
 // the case runs. The template writes it as a property check that passes the
 // case to its probe.
+//
+// Door is the name of the function that opens the planted defect over a
+// medium, which the check passes as the door Open of its defect, and empty
+// for a defect without one.
 type Derived struct {
 	Field       string
 	Type        string
@@ -62,6 +66,7 @@ type Derived struct {
 	Reason      string
 	Law         string
 	Defect      string
+	Door        string
 	Whole       string
 	Machineries []string
 	Entails     []Identity
@@ -76,12 +81,13 @@ type Derived struct {
 }
 
 // Arg is one argument of a probe: a closure that calls the subject, an
-// expression, a projection of a field, a duration, a method of a handle, or a
-// part of the generated sequences, such as the key of a call. Ref is the name
-// of a function of the suite, such as the actions of the declaration, which
-// the template writes as a name that is not exported. Budget is the most
-// steps of the check of a history, which the template writes as the option
-// Budget of the package history of the assert library.
+// expression, a projection of a field, a duration, a method of a handle, the
+// calls of a durable writer, or a part of the generated sequences, such as
+// the key of a call. Ref is the name of a function of the suite, such as the
+// actions of the declaration, which the template writes as a name that is not
+// exported. Budget is the most steps of the check of a history, which the
+// template writes as the option Budget of the package history of the assert
+// library.
 type Arg struct {
 	Closure    *Closure
 	Expr       *Expr
@@ -91,9 +97,23 @@ type Arg struct {
 	Countable  *Countable
 	Method     *HandleMethod
 	Key        *Key
+	Durable    *Durable
 	Ref        string
 	Duration   time.Duration
 	Budget     int
+}
+
+// Durable is the probe.Durable of a callable that writes and its paired read.
+// For each sample, Writes and Reads are the write and the read as closures on
+// the subject that they take, Wants is the value that the sample writes, and
+// Keys are the arguments of the read after its context, which are the key of
+// the sample. Value is the type of the value of the read.
+type Durable struct {
+	Value  *emit.TypeRef
+	Writes [2]*Closure
+	Reads  [2]*Closure
+	Wants  [2]Expr
+	Keys   [2][]Expr
 }
 
 // HandleMethod is the method Name of the handle of the type Type, as a method
@@ -167,7 +187,9 @@ type PairExpr struct {
 // closure that returns a pull iteration of the stream in place of its drain,
 // which yields the first value of each element of the stream. Channel reports
 // a closure that returns the channel Results[0] of the call as a channel of
-// the values Returns that the closure receives from.
+// the values Returns that the closure receives from. Absent reports a closure
+// of a read with a presence flag, which returns fs.ErrNotExist beside its
+// value where the flag reports no value.
 type Closure struct {
 	Param    *ClosureParam
 	Receiver *Expr
@@ -186,6 +208,7 @@ type Closure struct {
 	Pair     bool
 	Pull     bool
 	Channel  bool
+	Absent   bool
 }
 
 // ClosureParam is the parameter of a closure after the context. Hook and
@@ -335,6 +358,9 @@ const (
 	// formComputing is formCall with a computation for each input of a
 	// function type, which records a call on a dependency of the injector.
 	formComputing
+	// formDurable is the write of the callable and the read of its partner
+	// for each sample, with the value and the key that each sample writes.
+	formDurable
 )
 
 // concurrentClients is the number of the clients of a concurrent section
@@ -381,6 +407,7 @@ const (
 
 // The inputs that many probes share.
 var (
+	durable  = slot{name: "durable", form: formDurable}
 	act      = slot{name: inCall, form: formAct}
 	call     = slot{name: inCall, form: formCall}
 	zero     = slot{name: inZero, of: inCall, form: formZero}
@@ -516,6 +543,10 @@ var probes = map[spec.ProbeID][]slot{
 		clients,
 		{name: "budget", form: formBudget},
 	},
+	spec.SurvivesEveryCrashPoint:      {durable},
+	spec.WholeAtEveryCrashPoint:       {durable},
+	spec.ReportsEachFlippedBit:        {durable, {name: "corrupt", form: formValue}},
+	spec.RefusesOnAFullMedium:         {durable},
 	spec.ConcurrentReadsAgree:         {actions, readOp, {name: "again", of: inRead, form: formApply}, clients},
 	spec.SharesOneComputation:         {{name: inCall, form: formComputing}, clients},
 	spec.ExclusiveUnderConcurrency:    {act, sentinel, clients},
@@ -694,7 +725,7 @@ func (k *caller) derived(s *Suite) {
 		if !known {
 			s.Defects = append(s.Defects, defect)
 		}
-		d.Defect = defect.Name
+		d.Defect, d.Door = defect.Name, defect.Door
 		s.Derived = append(s.Derived, d)
 	}
 }
@@ -905,6 +936,9 @@ func (b *binder) arg(sl *slot) Arg {
 	case formActions, formOperation, formApply, formReference, formWrittenArg, formStamp, formCountable, formCount,
 		formNext, formStop, formElementArg, formKey:
 		return b.sequenceArg(sl)
+	case formDurable:
+		_, pair := b.facts(sl.name)
+		return Arg{Durable: b.k.durableOf(b.drawn, pair)}
 	case formTotal:
 		// Only a number has a scalar class.
 		if f, _ := b.facts(sl.name); len(f.Results) == 0 || f.Results[0].Shape.Class == 0 {

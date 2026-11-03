@@ -11,6 +11,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/eidos/sdk/emit"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 )
@@ -392,6 +393,72 @@ func TestDefect(t *testing.T) {
 			expect.Equal(t, live.Handle.Method.Name, "Next", "the handle overrides the method that next-method names")
 			expect.Length(t, live.Handle.Results, 3, "the handle returns the value, the flag and the error of Next")
 			expect.Equal(t, live.Handle.Body, "zero", "the method of the handle returns its zero results")
+		})
+
+		vault := generate(t, goTree, vaultPackage).suites["Vault"]
+		durables := []struct {
+			name       string
+			give       string
+			wantType   string
+			wantBody   string
+			wantMedium string
+		}{
+			{
+				name: "opens the defect of acknowledges-before-sync over an unsynced medium",
+				give: "VaultPutAcknowledgesBeforeSync", wantMedium: "Unsynced",
+			},
+			{
+				name: "opens the defect of hides-a-full-medium over an unfilled medium",
+				give: "VaultPutHidesAFullMedium", wantMedium: "Unfilled",
+			},
+			{
+				name:     "writes the zero value before the first value of trusts-a-partial-record",
+				give:     "VaultPutTrustsAPartialRecord",
+				wantType: "VaultPutTrustsAPartialRecordDefect",
+				wantBody: "zero-first",
+			},
+			{
+				name:     "swallows the declared error of a corrupted record in ignores-checksum",
+				give:     "VaultGetIgnoresChecksum",
+				wantType: "VaultGetIgnoresChecksumDefect",
+				wantBody: "zero-on-sentinel",
+			},
+		}
+		for _, tt := range durables {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				d := defectNamed(t, &vault, tt.give)
+				expect.Equal(
+					t,
+					[]any{d.Type, d.Body, d.Medium, d.Door},
+					[]any{tt.wantType, tt.wantBody, tt.wantMedium, tt.give + "Open"},
+					"the defect of a durable claim opens over a medium through its door",
+				)
+			})
+		}
+
+		t.Run("replaces the written value of the first write with its zero value", func(t *testing.T) {
+			t.Parallel()
+
+			d := defectNamed(t, &vault, "VaultPutTrustsAPartialRecord")
+			expect.Equal(t, []any{d.Input, d.Delegates}, []any{2, true},
+				"the defect calls Put with the zero value of its third parameter first")
+		})
+
+		t.Run("swallows the error that the param corrupt of the mixin durable refers to", func(t *testing.T) {
+			t.Parallel()
+
+			d := defectNamed(t, &vault, "VaultGetIgnoresChecksum")
+			assert.NotNil(t, d.Sentinel, "the defect has the declared error of a corrupted record")
+			assert.NotNil(t, d.Sentinel.Value, "the declared error is a value")
+			expect.Equal(
+				t,
+				[]any{d.Sentinel.Value.Kind, d.Sentinel.Value.Callee.Name},
+				[]any{emit.ValueName, "ErrCorrupt"},
+				"the declared error is the name ErrCorrupt",
+			)
+			expect.True(t, d.Delegates, "the defect calls Get of the subject")
 		})
 	})
 }

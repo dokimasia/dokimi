@@ -1446,7 +1446,7 @@ func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ part, e *sdk.Emitt
 	if unimportable(m, &b, e.File(), i.Name, methods) {
 		return nil
 	}
-	s := Suite{Subject: subject, Declaration: i.Name, Names: namesOf(e, i.Name)}
+	s := Suite{Subject: subject, Declaration: i.Name, Names: NamesOf(e, i.Name)}
 	g.callsOf(&k, &s, methods)
 	write(e, &i.ID, &s)
 	return nil
@@ -1465,7 +1465,7 @@ func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	if unimportable(m, &b, e.File(), st.Name, callables) {
 		return nil
 	}
-	names := namesOf(e, st.Name)
+	names := NamesOf(e, st.Name)
 	names.Methods = e.JoinName(methodsWord, st.Name)
 	methods := &emit.Interface{Origin: st.ID, Name: names.Methods, Visibility: symbol.VisibilityPublic}
 	s := Suite{
@@ -1515,7 +1515,7 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 	if unreferable(m, &b, e.File(), f.Name, []*node.Method{signature}) {
 		return nil
 	}
-	names := namesOf(e, f.Name)
+	names := NamesOf(e, f.Name)
 	names.Func = e.JoinName(funcWord, f.Name)
 	names.NewOver = e.JoinName(e.JoinName(overWord, f.Name), newWord)
 	callables := []Callable{{Name: f.Name, Type: e.JoinName(callableWord, f.Name)}}
@@ -1776,7 +1776,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	st := m.Struct
 	d := m.Directive()
 	declared := d.Args[0].Target
-	if !suited(m, &declared) {
+	if !Suited(m, &declared) {
 		m.Errorf(NoSuite, "%s has no directive suite, so %s has no conformance test", declared.Name, st.Name)
 		return nil
 	}
@@ -1794,7 +1794,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 			factory.Name, len(view.Params), st.Name)
 		return nil
 	}
-	names := namesOf(e, declared.Name)
+	names := NamesOf(e, declared.Name)
 	run := names.Run
 	if len(view.Params) == 1 {
 		run = names.RunFromHandle
@@ -1975,8 +1975,10 @@ func (*generator) subjectOf(
 	return subject
 }
 
-// suited reports whether the declaration id has the directive suite.
-func suited(m sdk.SubjectMatch, id *symbol.Identity) bool {
+// Suited reports whether the declaration id has the directive suite, in
+// either spelling. A generator that writes a test of the suite of a
+// declaration, such as the test of a fake, reads it.
+func Suited(m sdk.SubjectMatch, id *symbol.Identity) bool {
 	return slices.ContainsFunc(suites(m), func(decl node.Declaration) bool { return decl.Identity() == *id })
 }
 
@@ -2075,11 +2077,13 @@ func unreferable(m sdk.SubjectMatch, b *rules.Bound, out *sdk.Out, decl string, 
 	return false
 }
 
-// namesOf returns the names of the declarations of the suite of the
+// NamesOf returns the names of the declarations of the suite of the
 // declaration named decl, without the interface of the methods and the
 // function type. Each name is in the neutral convention of an emitted name,
-// and the backend of the plan writes it in the case of its target.
-func namesOf(e *sdk.Emitter, decl string) Names {
+// and the backend of the plan writes it in the case of its target. A
+// generator that writes a test of the suite of a declaration, such as the
+// test of a fake, refers to the function Run through it.
+func NamesOf(e *sdk.Emitter, decl string) Names {
 	suite := e.JoinName(suiteWord, decl)
 	run := e.JoinName(suite, runWord)
 	bench := e.JoinName(suite, benchWord)

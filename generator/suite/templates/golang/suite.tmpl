@@ -142,10 +142,13 @@ var _ = {{$conform}}.CompatV1
 				},
 {{- else}}
 				Apply: func(h *{{$handle}}) {
-					{{$probe}}.{{.Probe}}(h{{range .Args}}, {{template "suite.arg" .}}{{end}})
+					{{$probe}}.{{.Probe}}(h{{range .Args}}, {{if .Durable}}{{template "suite.durable" (suiteDurable .Durable $s)}}{{else}}{{template "suite.arg" .}}{{end}}{{end}})
 				},
 {{- end}}
 				Defect: {{suiteCamel .Defect}},
+{{- with .Door}}
+				Doors:  {{$conform}}.Doors[{{$s}}]{Open: {{suiteCamel .}}},
+{{- end}}
 {{- if .Bubble}}
 				Around: {{import "testing/synctest"}}.Test,
 {{- end}}
@@ -741,7 +744,14 @@ classification with its stance and its note.
 {{- define "suite.defect"}}
 {{- $d := .Defect}}
 {{- $new := suiteCamel $d.Name}}
-{{- if $d.Type}}
+{{- if $d.Medium}}
+{{- template "suite.defect.opened" .}}
+
+{{docs (wrapdocs (printf `%s opens a subject of the application over the medium m that probe.%s wraps, as the planted defect of %s.` (suiteCamel $d.Door) $d.Medium $d.Doc))}}
+{{- ""}}func {{suiteCamel $d.Door}}(h *{{.Handle}}, m {{import "go.dokimi.dev/medium"}}.FS) {{.Subject}} {
+	return h.FreshOpen({{import "go.dokimi.dev/conform/probe"}}.{{$d.Medium}}(m))
+}
+{{- else if $d.Type}}
 {{- $type := suiteCamel $d.Type}}
 
 {{docs (wrapdocs (printf `%s is the planted defect of %s.` $type $d.Doc))}}
@@ -767,6 +777,9 @@ classification with its stance and its note.
 {{- end}}
 {{- if eq $d.Body "shared-result"}}
 	last {{import "sync/atomic"}}.Value
+{{- end}}
+{{- if eq $d.Body "zero-first"}}
+	wrote bool
 {{- end}}
 }
 {{- range $o := $d.Overrides}}
@@ -796,10 +809,20 @@ classification with its stance and its note.
 }
 {{- end}}
 
+{{- if $d.Door}}
+{{- template "suite.defect.opened" .}}
+
+{{docs (wrapdocs (printf `%s opens the planted defect of %s over a subject that the application opens over the medium m.` (suiteCamel $d.Door) $d.Doc))}}
+{{- ""}}func {{suiteCamel $d.Door}}(h *{{.Handle}}, m {{import "go.dokimi.dev/medium"}}.FS) {{.Subject}} {
+	return &{{$type}}{ {{- .Embedded}}: h.FreshOpen(m)}
+}
+{{- else}}
+
 {{docs (wrapdocs (printf `%s returns the planted defect of %s over a fresh subject.` $new $d.Doc))}}
 {{- ""}}func {{$new}}(h *{{.Handle}}) {{.Subject}} {
 	return &{{$type}}{ {{- .Embedded}}: h.Fresh(){{if $d.Keeps}}, h: h{{end}}{{if $d.Acquire}}, leak: h.Injector().Dependency(){{end}}{{if eq $d.Body "slow"}}, clock: h.Clock(){{end -}} }
 }
+{{- end}}
 {{- else}}
 
 {{docs (wrapdocs (printf `%s returns the planted defect of %s over the fresh function.` $new $d.Doc))}}
@@ -830,6 +853,19 @@ classification with its stance and its note.
 	}
 }
 {{- end}}
+{{- end}}
+
+{{- /*
+suite.defect.opened writes the function of a planted defect of a durable
+claim, which opens the defect through its door Open over a new medium in
+memory.
+*/}}
+{{- define "suite.defect.opened"}}
+
+{{docs (wrapdocs (printf `%s returns the planted defect of %s over a new medium in memory.` (suiteCamel .Defect.Name) .Defect.Doc))}}
+{{- ""}}func {{suiteCamel .Defect.Name}}(h *{{.Handle}}) {{.Subject}} {
+	return h.Open({{import "go.dokimi.dev/medium"}}.NewMemory())
+}
 {{- end}}
 
 {{- /*
@@ -1135,6 +1171,26 @@ builds a fresh subject of the handle for each call.
 		return
 	}
 	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "zero-first"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
+	if !{{.State}}wrote {
+		{{.State}}wrote = true
+		{{$all}} = {{.Call}}({{range $i, $a := $d.Args}}{{if $i}}, {{end}}{{if eq $i $d.Input}}*new({{spell (index $d.Method.Params.Items $i).Type}}){{else}}{{$a}}{{end}}{{end}})
+		if {{$err}} != nil {
+			return
+		}
+	}
+	return {{$call}}
+{{- else if eq $d.Body "zero-on-sentinel"}}
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
+	{{$all}} = {{$call}}
+	if {{import "errors"}}.Is({{$err}}, {{template "suite.expr" $d.Sentinel}}) {
+{{- range $d.Method.Returns.Items}}{{if ne .Name $err}}
+		{{.Name}} = *new({{spell .Type}})
+{{- end}}{{end}}
+		{{$err}} = nil
+	}
+	return
 {{- else if eq $d.Body "shared-result"}}
 	{{$all}} = {{$call}}
 	{{.State}}last.Store([]any{ {{- $all -}} })
@@ -1259,6 +1315,17 @@ error of the stream.
 {{- if .Later}}func() {{template "suite.closure.signature" .}} {
 	calls := 0
 	return {{end}}{{template "suite.closure.signature" .}} {
+{{- template "suite.closure.body" .}}
+}{{if .Later}}
+}(){{end}}
+{{- end}}
+
+{{- /*
+suite.closure.body writes the statements of a closure, from its count of calls
+to its return. A read with a presence flag returns fs.ErrNotExist beside its
+value where the flag reports no value.
+*/}}
+{{- define "suite.closure.body"}}
 {{- if .Later}}
 	calls++
 {{- end}}
@@ -1325,6 +1392,11 @@ error of the stream.
 {{- end}}
 {{- else if .Assign}}
 	{{suiteJoin .Assign}} := {{template "suite.invoke" .}}
+{{- if .Absent}}
+	if !ok {
+		return {{template "suite.expr" (index .Results 0)}}, {{import "io/fs"}}.ErrNotExist
+	}
+{{- end}}
 	return {{template "suite.exprs" .Results}}
 {{- else if .Discard}}
 	{{template "suite.invoke" .}}
@@ -1332,8 +1404,41 @@ error of the stream.
 {{- else}}
 	return {{template "suite.invoke" .}}
 {{- end}}
-}{{if .Later}}
-}(){{end}}
+{{- end}}
+
+{{- /*
+suite.durable writes the probe.Durable of a callable that writes and its
+paired read. Each function takes the sample i, 0 or 1, and calls the subject s
+with the values of that sample.
+*/}}
+{{- define "suite.durable"}}
+{{- $d := .Durable}}{{$ctx := import "context"}}{{$value := spell $d.Value}}
+{{- import "go.dokimi.dev/conform/probe"}}.Durable[{{.Subject}}, {{$value}}]{
+	Write: func(ctx {{$ctx}}.Context, s {{.Subject}}, i int) error {
+		if i == 0 {
+{{- template "suite.closure.body" (index $d.Writes 0)}}
+		}
+{{- template "suite.closure.body" (index $d.Writes 1)}}
+	},
+	Read: func(ctx {{$ctx}}.Context, s {{.Subject}}, i int) ({{$value}}, error) {
+		if i == 0 {
+{{- template "suite.closure.body" (index $d.Reads 0)}}
+		}
+{{- template "suite.closure.body" (index $d.Reads 1)}}
+	},
+	Want: func(i int) {{$value}} {
+		if i == 0 {
+			return {{template "suite.expr" (index $d.Wants 0)}}
+		}
+		return {{template "suite.expr" (index $d.Wants 1)}}
+	},
+	Key: func(i int) any {
+		if i == 0 {
+			return []any{ {{- template "suite.exprs" (index $d.Keys 0) -}} }
+		}
+		return []any{ {{- template "suite.exprs" (index $d.Keys 1) -}} }
+	},
+}
 {{- end}}
 
 {{- /*

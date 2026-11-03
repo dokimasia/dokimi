@@ -78,6 +78,63 @@ func TestDerived(t *testing.T) {
 			)
 		})
 
+		vaults := generate(t, goTree, vaultPackage).suites
+
+		t.Run("passes the write and the read of each sample to a durable probe", func(t *testing.T) {
+			t.Parallel()
+
+			v := vaults["Vault"]
+			d := derivedNamed(t, &v, "Put", "synced-writes-survive")
+			assert.Length(t, d.Args, 1, "the probe takes the calls of the durable writer")
+			durable := d.Args[0].Durable
+			assert.NotNil(t, durable, "the argument is the calls of a durable writer")
+			for i := range 2 {
+				write, read := durable.Writes[i], durable.Reads[i]
+				expect.Equal(t, []any{write.Receiver.Name, write.Method, read.Receiver.Name, read.Method},
+					[]any{"s", "Put", "s", "Get"}, "the write and the read call the subject that they take")
+				expect.Equal(t, durable.Wants[i], write.Args[2], "the value of a sample is the value of its write")
+				expect.Equal(t, durable.Keys[i], []suite.Expr{write.Args[1]},
+					"the key of a sample is the argument of its read after the context")
+				expect.Equal(t, read.Args[1], write.Args[1], "the read of a sample reads the key of its write")
+			}
+			expect.NotEqual(t, durable.Wants[0], durable.Wants[1], "the two samples write two values")
+			expect.Equal(t, d.Door, "VaultPutAcknowledgesBeforeSyncOpen",
+				"the check passes the door of its planted defect")
+		})
+
+		t.Run("passes the declared error of a corrupted record to the probe of corruption", func(t *testing.T) {
+			t.Parallel()
+
+			v := vaults["Vault"]
+			d := derivedNamed(t, &v, "Put", "corruption-is-reported")
+			assert.Length(t, d.Args, 2, "the probe takes the calls of the durable writer and the error")
+			assert.NotNil(t, d.Args[1].Expr, "the error is an expression")
+			assert.NotNil(t, d.Args[1].Expr.Value, "the error is a value")
+			expect.Equal(t, d.Args[1].Expr.Value.Callee.Name, "ErrCorrupt", "the error is the name that corrupt sets")
+		})
+
+		t.Run("returns the error of a write that also returns a value", func(t *testing.T) {
+			t.Parallel()
+
+			j := vaults["Journal"]
+			write := derivedNamed(t, &j, "Append", "synced-writes-survive").Args[0].Durable.Writes[0]
+			expect.Equal(t, write.Assign, []string{"_", "err"}, "the write keeps the error of Append alone")
+			expect.Equal(t, write.Results, []suite.Expr{{Name: "err"}}, "the write returns the error of Append")
+		})
+
+		t.Run("reads a key without a value as an error through a read with a presence flag", func(t *testing.T) {
+			t.Parallel()
+
+			l := vaults["Ledger"]
+			d := derivedNamed(t, &l, "Record", "no-torn-record")
+			read := d.Args[0].Durable.Reads[0]
+			expect.True(t, read.Absent, "the read returns an error for a key without a value")
+			expect.Equal(t, read.Assign, []string{"r0", "ok"}, "the read keeps the value and the presence flag")
+			corruption := func(d suite.Derived) bool { return d.Claim == "CorruptionIsReported" }
+			expect.False(t, slices.ContainsFunc(l.Derived, corruption),
+				"a writer without the param corrupt has no check of corruption")
+		})
+
 		tallies := generate(t, goTree, drawnPackage).suites["Tallies"]
 		lacks := func(s *suite.Suite, field, segment string) bool {
 			return !slices.ContainsFunc(s.Derived, func(d suite.Derived) bool {

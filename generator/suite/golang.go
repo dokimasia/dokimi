@@ -33,8 +33,8 @@ var golangTemplates embed.FS
 // templates read, joinHelper joins words with commas, namesHelper joins the
 // names of the results of a planted defect, and identityHelper writes the
 // identity of a check of a suite. lockHelper returns the lines of the lock of
-// a plan, and sequencesHelper the view of the generated sequences of a
-// declaration.
+// a plan, sequencesHelper the view of the generated sequences of a
+// declaration, and durableHelper the view of the calls of a durable probe.
 const (
 	pascalHelper    = "suitePascal"
 	camelHelper     = "suiteCamel"
@@ -47,7 +47,21 @@ const (
 	identityHelper  = "suiteIdentity"
 	lockHelper      = "suiteLock"
 	sequencesHelper = "suiteSequences"
+	durableHelper   = "suiteDurable"
 )
+
+// durableView is the calls of a durable probe with the subject type of the
+// suite, which the template writes as the type argument of probe.Durable and
+// as the type of the subject that each call takes.
+type durableView struct {
+	Durable *Durable
+	Subject string
+}
+
+// viewOfDurable returns the view of the calls d of a durable probe.
+func viewOfDurable(d *Durable, subject string) durableView {
+	return durableView{Durable: d, Subject: subject}
+}
 
 // sequencesView is the parts of the generated sequences of a declaration with
 // the names of the suite that their template writes: the subject type and the
@@ -168,7 +182,7 @@ func (golangPart) Options() []sdk.TargetOption {
 			pascalHelper: naming.Pascal, camelHelper: naming.Camel, ceilingsHelper: Budget.segments,
 			durationHelper: golangDuration, defectHelper: viewOfDefect, bodyHelper: viewOfBody, joinHelper: joined,
 			namesHelper: namesOfOutcomes, identityHelper: identityIn, lockHelper: lockLines,
-			sequencesHelper: viewOfSequences,
+			sequencesHelper: viewOfSequences, durableHelper: viewOfDurable,
 		}),
 	}
 }

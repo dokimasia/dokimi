@@ -20,8 +20,8 @@ import (
 // value of a round trip and the delay of a registration, the parameter of a
 // closure that takes a value, the two parameters of a closure that combines
 // two values, the handle of a call, the hook of a registrar, the body of a
-// scope, the position of an indexed call, the error of a call and the context
-// of a call.
+// scope, the position of an indexed call, the error of a call, the context of
+// a call, the subject of a durable call and the presence flag of a read.
 const (
 	writtenName  = "w"
 	inName       = "in"
@@ -35,6 +35,8 @@ const (
 	positionName = "position"
 	errName      = "err"
 	ctxName      = "ctx"
+	subjectName  = "s"
+	flagName     = "ok"
 )
 
 // nilWord is the word of Go for the nil value, and newSubject the expression
@@ -95,7 +97,7 @@ func (k *caller) closure(in *input) *Closure {
 	if sl.fresh {
 		c.Receiver = &Expr{Word: newSubject}
 	}
-	c.Args = k.argsOf(d, f, pair)
+	c.Args = k.argsOf(d, f, pair, 0)
 	// The forms that write take the write of the pair as f.
 	written := pair != nil && pair.Written >= 0
 	switch sl.form {
@@ -269,6 +271,37 @@ func (k *caller) closure(in *input) *Closure {
 	return c
 }
 
+// durableOf returns the calls of a durable probe over the write and the read
+// of pair. For each sample, the write and the read call the subject that the
+// closures take, with the values of the sample. The read of a callable with a
+// presence flag returns fs.ErrNotExist for a key without a value, because the
+// probe reads an error where no write made a value durable. d are the draws
+// of a generated binding, and nil for a sample binding.
+func (k *caller) durableOf(d *draws, pair *derive.Pair) *Durable {
+	out := &Durable{Value: k.typeOf(k.resultRef(pair.Read, 0))}
+	for which := range out.Writes {
+		write := &Closure{
+			Receiver: &Expr{Name: subjectName}, Method: pair.Write.Callable,
+			Args: k.argsOf(d, pair.Write, pair, which),
+		}
+		k.act(write, pair.Write)
+		read := &Closure{
+			Receiver: &Expr{Name: subjectName}, Method: pair.Read.Callable,
+			Args: k.argsOf(d, pair.Read, pair, which),
+		}
+		k.values(read, pair.Read)
+		for i, r := range pair.Read.Signature.Returns {
+			if r.Role == rules.ReturnOkBool {
+				read.Absent, read.Assign[i] = true, flagName
+			}
+		}
+		out.Writes[which], out.Reads[which] = write, read
+		out.Wants[which] = k.argOf(d, pair.Write, pair.Written, which)
+		out.Keys[which] = slices.DeleteFunc(slices.Clone(read.Args), func(e Expr) bool { return e.Word == ctxName })
+	}
+	return out
+}
+
 // compute makes c pass a computation to each input of a function type of the
 // callable of f, in place of its value. The computation records a call of the
 // callable on a new dependency of the injector of the handle and returns its
@@ -367,7 +400,7 @@ func (k *caller) method(c *Closure, ref *node.TypeRef, name string) {
 	methods := methodsOf(&b, decl)
 	f := k.factsOf(methods[slices.IndexFunc(methods, func(m *node.Method) bool { return m.Name == name })])
 	c.Receiver, c.Method = &Expr{Name: handleName}, name
-	c.Args = k.argsOf(nil, &f, nil)
+	c.Args = k.argsOf(nil, &f, nil, 0)
 	k.act(c, &f)
 }
 
@@ -427,13 +460,13 @@ func (k *caller) repartition(c *Closure, d *draws, f *derive.Facts, pair *derive
 const selectorName = "s"
 
 // argsOf returns the arguments of a call of the callable of f: the context of
-// the closure for a parameter in the role context, and the first value of
+// the closure for a parameter in the role context, and the value which of
 // each input. The read of pair takes the arguments that the pair binds, and
-// the write of pair the first value of the written input. A parameter that
+// the write of pair the value which of the written input. A parameter that
 // the pair leaves to its own value takes it, and a closure of the probe
 // replaces the value of a function that the probe supplies. d are the draws
 // of a generated binding, and nil for a sample binding.
-func (k *caller) argsOf(d *draws, f *derive.Facts, pair *derive.Pair) []Expr {
+func (k *caller) argsOf(d *draws, f *derive.Facts, pair *derive.Pair, which int) []Expr {
 	out := make([]Expr, 0, len(f.Signature.Params))
 	if pair != nil && same(pair.Read, f) {
 		for _, a := range pair.Arguments {
@@ -442,13 +475,13 @@ func (k *caller) argsOf(d *draws, f *derive.Facts, pair *derive.Pair) []Expr {
 				out = append(out, Expr{Word: ctxName})
 			case derive.ArgShared:
 				i := slices.IndexFunc(pair.Write.Inputs, func(v derive.Value) bool { return v.Name == a.Param })
-				out = append(out, k.argOf(d, pair.Write, i, 0))
+				out = append(out, k.argOf(d, pair.Write, i, which))
 			case derive.ArgField:
-				written := k.argOf(d, pair.Write, pair.Written, 0)
+				written := k.argOf(d, pair.Write, pair.Written, which)
 				out = append(out, Expr{Of: &written, Select: a.Field})
 			case derive.ArgOwn:
 				i := slices.IndexFunc(f.Inputs, func(v derive.Value) bool { return v.Name == a.Name })
-				out = append(out, k.argOf(d, f, i, 0))
+				out = append(out, k.argOf(d, f, i, which))
 			}
 		}
 		return out
@@ -459,7 +492,7 @@ func (k *caller) argsOf(d *draws, f *derive.Facts, pair *derive.Pair) []Expr {
 			out = append(out, Expr{Word: ctxName})
 			continue
 		}
-		out = append(out, k.argOf(d, f, i, 0))
+		out = append(out, k.argOf(d, f, i, which))
 		i++
 	}
 	return out

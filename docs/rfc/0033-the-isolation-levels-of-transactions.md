@@ -2,7 +2,7 @@
 rfc: 0033
 title: The isolation levels of transactions
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-11-02
 updated: 2026-11-03
 discussion: none
@@ -115,7 +115,7 @@ transactions:
   passes: The roles begin, commit and rollback of one instance of the contract tx are in the package of the declaration, the write takes the handle that begin returns or is a method of it, the write takes a key and a value of an integer or a string type, and the read takes the handle or is a method of it and takes the key.
   why: "{callable} and the read of its mixin do not run in the scope of a transaction of {declaration}"
   remedy: "give {callable} and its read the handle that begin returns, or declare them on an interface of the package that the handle implements, with a key and a value of an integer or a string type"
-  since: 1.1.0
+  since: 1.2.0
 ```
 
 ### The probes

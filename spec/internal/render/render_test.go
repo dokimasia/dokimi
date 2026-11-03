@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io/fs"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -85,6 +86,15 @@ func minimal() files.Tree {
     min-steps: 1
     since: 1.0.0
 `),
+		"references.yaml": files.Text(`references:
+  persister:
+    contract: persister
+    state: map
+    roles:
+      writer: store
+      reader: load
+    since: 1.0.0
+`),
 		"machineries.yaml": files.Text(`machineries:
   nothing-beyond-a-caller:
     supplies: A fixed sequence of calls on one subject, with derived inputs.
@@ -117,8 +127,8 @@ func TestRender(t *testing.T) {
 			t.Parallel()
 
 			assert.Equal(t, render.Files(), []string{
-				"laws", "claims", "gates", "probes", "reasons", "defects", "machineries", "stances",
-			}, "the spec has eight files")
+				"laws", "claims", "gates", "probes", "reasons", "defects", "references", "machineries", "stances",
+			}, "the spec has nine files")
 		})
 	})
 
@@ -398,6 +408,50 @@ func TestRender(t *testing.T) {
 				"NoValueBesideAnError", "ZeroOnError", "Failure", "ReturnsBesideError", "ZeroBesideError",
 				"ValueBesideError", "ValueBeside", "NothingBeyondACaller", "Silent",
 			}, "names.gen.go declares the entries in the order of the files")
+		})
+
+		t.Run("writes no constant of a reference form, which can have the identifier of a claim", func(t *testing.T) {
+			t.Parallel()
+			tree := minimal()
+			tree["references.yaml"] = files.Text(`references:
+  zero-on-error:
+    contract: persister
+    state: map
+    roles:
+      writer: store
+      reader: load
+    since: 1.0.0
+`)
+			dir := files.Workspace(t, tree)
+
+			assert.NoError(t, render.Render(dir), "the spec renders a form with the identifier of a claim")
+
+			assert.Equal(t, strings.Count(files.Read(t, filepath.Join(dir, "names.gen.go")), `"zero-on-error"`), 1,
+				"names.gen.go declares the identifier once, as the constant of the claim")
+		})
+
+		t.Run("writes a schema of the reference forms with the states and the effects of the spec", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, minimal())
+
+			assert.NoError(t, render.Render(dir), "the spec renders")
+
+			var schema jsonschema.Schema
+			text := files.Read(t, filepath.Join(dir, "schemas", "references.schema.json"))
+			assert.NoError(t, json.Unmarshal([]byte(text), &schema), "the schema decodes")
+			resolved, err := schema.Resolve(nil)
+			assert.NoError(t, err, "the schema resolves")
+			form := func(state, effect string) map[string]any {
+				return map[string]any{"references": []any{map[string]any{
+					"id": "persister", "contract": "persister", "state": state,
+					"roles": map[string]any{"writer": effect}, "since": "1.0.0",
+				}}}
+			}
+			assert.NoError(t, resolved.Validate(form("list", "append")),
+				"the schema accepts a state and an effect of the spec")
+			assert.HasError(t, resolved.Validate(form("tree", "store")), "the schema refuses a state outside the spec")
+			assert.HasError(t, resolved.Validate(form("map", "delete")),
+				"the schema refuses an effect outside the spec")
 		})
 
 		t.Run("writes the spelling of each identifier in each language by its section", func(t *testing.T) {

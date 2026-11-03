@@ -79,6 +79,11 @@ const (
 	// KindHandleMethod is a method of the handle that a callable returns,
 	// such as the read of the next update of a subscription.
 	KindHandleMethod InputKind = "handle-method"
+
+	// KindDurable are the writes of the licensed callable and the reads of
+	// its partner over a subject that the probe opens, by the index of a
+	// sample, with the value and the key that each sample writes.
+	KindDurable InputKind = "durable"
 )
 
 // Input is one input of a probe.

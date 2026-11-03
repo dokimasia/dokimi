@@ -42,6 +42,9 @@ type (
 	defectsDoc struct {
 		Forms []spec.DefectForm `json:"forms"`
 	}
+	referencesDoc struct {
+		References []spec.ReferenceForm `json:"references"`
+	}
 	machineriesDoc struct {
 		Machineries []spec.Machinery `json:"machineries"`
 	}
@@ -67,6 +70,7 @@ var documents = []document{
 	{name: "probes", typ: reflect.TypeFor[probesDoc]()},
 	{name: "reasons", typ: reflect.TypeFor[reasonsDoc]()},
 	{name: "defects", typ: reflect.TypeFor[defectsDoc]()},
+	{name: "references", typ: reflect.TypeFor[referencesDoc]()},
 	{name: "machineries", typ: reflect.TypeFor[machineriesDoc]()},
 	{name: "stances", typ: reflect.TypeFor[stancesDoc]()},
 }
@@ -102,7 +106,9 @@ func Files() []string {
 // kind is the Go type of the identifiers of one section, which names.gen.go
 // declares its constants with, and the word that an error uses for an entry
 // of the section. A section without a kind, such as unclaimed, declares no
-// constants.
+// constants. The reference forms declare none, because only the generator fake
+// reads them, so a form has the identifier of its contract beside the claim of
+// that contract.
 type kind struct {
 	goType, word string
 }
@@ -150,29 +156,38 @@ const seed = `^0x[0-9a-f]{16}$`
 const text = "string"
 
 // schemaOptions are the options of the inference of each schema. Each
-// identifier type has the pattern of an identifier, a seed has the pattern
-// of a seed, and an application and a result have the values of the spec.
+// identifier type has the pattern of an identifier, and a seed has the pattern
+// of a seed. An application, a result, a state and an effect have the values
+// of the spec.
 func schemaOptions() *jsonschema.ForOptions {
 	id := &jsonschema.Schema{Type: text, Pattern: identifier}
-	results := make([]any, len(spec.Results))
-	for i, r := range spec.Results {
-		results[i] = string(r)
-	}
 	types := map[reflect.Type]*jsonschema.Schema{
 		reflect.TypeFor[spec.Seed](): {Type: text, Pattern: seed},
 		reflect.TypeFor[spec.Application](): {
 			Type: text, Enum: []any{string(spec.Falsification), string(spec.OnSubject)},
 		},
-		reflect.TypeFor[spec.Result](): {Type: text, Enum: results},
+		reflect.TypeFor[spec.Result](): {Type: text, Enum: values(spec.Results)},
+		reflect.TypeFor[spec.State]():  {Type: text, Enum: values(spec.States)},
+		reflect.TypeFor[spec.Effect](): {Type: text, Enum: values(spec.Effects)},
 	}
 	for _, t := range []reflect.Type{
 		reflect.TypeFor[spec.LawID](), reflect.TypeFor[spec.ClaimID](), reflect.TypeFor[spec.GateID](),
 		reflect.TypeFor[spec.ProbeID](), reflect.TypeFor[spec.ReasonID](), reflect.TypeFor[spec.DefectFormID](),
-		reflect.TypeFor[spec.MachineryID](), reflect.TypeFor[spec.StanceID](),
+		reflect.TypeFor[spec.ReferenceFormID](), reflect.TypeFor[spec.MachineryID](), reflect.TypeFor[spec.StanceID](),
 	} {
 		types[t] = id
 	}
 	return &jsonschema.ForOptions{TypeSchemas: types}
+}
+
+// values returns the values of an enumeration of the spec as the values of an
+// enum of a schema.
+func values[T ~string](enum []T) []any {
+	out := make([]any, len(enum))
+	for i, v := range enum {
+		out[i] = string(v)
+	}
+	return out
 }
 
 // Render renders the YAML file of each name of Files in dir into its JSON

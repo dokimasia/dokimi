@@ -1,0 +1,29 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The reference forms of the verified fakes: the state of a contract of the shape catalog, and the
+# effect of each role on that state. A form of a contract whose claims establish their state through
+# a writer without a role also has the effect of that writer. The generator fake writes a fake of a
+# declaration whose callables the forms cover.
+references:
+  persister:
+    contract: persister
+    state: map
+    roles:
+      writer: store
+      reader: load
+    since: 1.1.0
+  cache:
+    contract: cache
+    state: map
+    roles:
+      cache: load
+      backing: load
+    writers: store
+    since: 1.1.0
+  appender:
+    contract: appender
+    state: list
+    roles:
+      fn: append
+    since: 1.1.0

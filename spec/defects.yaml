@@ -531,3 +531,23 @@ forms:
     does: Each call of the callable marks itself and yields. A call that finds another call marked returns the zero value of each result and no error without the subject. Any other call calls the subject.
     min-steps: 2
     since: 1.1.0
+  acknowledges-before-sync:
+    changes: medium
+    does: The defect opens the subject over a medium whose Sync and SyncDir return nil and do not persist anything.
+    min-steps: 1
+    since: 1.1.0
+  trusts-a-partial-record:
+    changes: callable
+    does: The first call of the callable writes the zero value under the key of its value and then its value. A crash between the two writes leaves a value that the caller never wrote under a key without an acknowledged write. Each later call writes its value once.
+    min-steps: 1
+    since: 1.1.0
+  ignores-checksum:
+    changes: partner:read
+    does: The read returns the zero value and no error where the read of the subject fails with the declared error of a corrupted record.
+    min-steps: 1
+    since: 1.1.0
+  hides-a-full-medium:
+    changes: medium
+    does: The defect opens the subject over a medium whose writes report every byte as written where the medium is full, so a write that the medium cannot hold succeeds.
+    min-steps: 1
+    since: 1.1.0

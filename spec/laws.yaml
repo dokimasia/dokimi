@@ -567,3 +567,23 @@ laws:
     depth: concurrent-callers
     distinct-from: []
     since: 1.1.0
+  acknowledged-write-survives-a-crash:
+    statement: A write that returned success is readable after a crash.
+    depth: killable-process-or-breakable-medium
+    distinct-from: []
+    since: 1.1.0
+  recovery-returns-whole-records:
+    statement: Recovery after a crash during a write returns each record whole or not at all.
+    depth: killable-process-or-breakable-medium
+    distinct-from: []
+    since: 1.1.0
+  corrupted-read-is-reported:
+    statement: A read of a corrupted record fails with the declared error and returns no value.
+    depth: killable-process-or-breakable-medium
+    distinct-from: []
+    since: 1.1.0
+  refused-write-leaves-the-state:
+    statement: A write that the medium cannot hold fails, and the state is as before the write.
+    depth: killable-process-or-breakable-medium
+    distinct-from: []
+    since: 1.1.0

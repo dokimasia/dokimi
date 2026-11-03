@@ -174,6 +174,10 @@ type CheckRecord struct {
 	// Cases is the number of valid cases of a property check.
 	Cases int `json:"cases,omitempty"`
 
+	// Points is the number of the points of a medium that a check enumerated,
+	// such as the crash points of a durable probe.
+	Points int `json:"points,omitempty"`
+
 	Shallow bool `json:"shallow,omitempty"`
 
 	// Authored is true for a check of the directive check.

@@ -158,6 +158,11 @@ const (
 	// the classification of the partner that takes every input of the
 	// licensed callable.
 	ModeEstablishing PartnerMode = "establishing"
+
+	// ModePaired is the one other callable of the declaration whose read
+	// pairs with the licensed callable by the rule that pairs a read with a
+	// write: the licensed callable writes, and the partner reads.
+	ModePaired PartnerMode = "paired"
 )
 
 // Partner is another callable that the probe of a claim calls.

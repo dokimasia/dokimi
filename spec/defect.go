@@ -13,9 +13,9 @@ type DefectForm struct {
 	ID DefectFormID `json:"id"`
 
 	// Changes is the callable that the form overrides: callable for the
-	// callable of the check, partner:<name> for a partner of its claim, or
+	// callable of the check, partner:<name> for a partner of its claim,
 	// declaration for the first callable of the declaration with a value
-	// result.
+	// result, or medium for the medium that the form opens the subject over.
 	Changes string `json:"changes"`
 
 	// Does is what the override does, as one sentence.

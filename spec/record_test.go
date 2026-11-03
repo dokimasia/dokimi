@@ -122,6 +122,11 @@ func TestRecord(t *testing.T) {
 				giveRecord: strings.Replace(example, `"gate": "input-samples",`, "", 1),
 				want:       "gate",
 			},
+			{
+				name:       "refuses points that are no integer",
+				giveRecord: strings.Replace(example, `"shallow": false,`, `"shallow": false, "points": "82",`, 1),
+				want:       "points",
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

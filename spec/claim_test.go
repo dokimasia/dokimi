@@ -280,6 +280,9 @@ func TestClaim(t *testing.T) {
 							ok,
 							"the shape catalog has the classification of partner "+p.Name+" of claim "+id,
 						)
+					case spec.ModePaired:
+						expect.Equal(t, p, spec.Partner{Name: p.Name, Mode: spec.ModePaired},
+							"partner "+p.Name+" of claim "+id+" reads no param and no classification")
 					default:
 						expect.True(t, false, "partner "+p.Name+" of claim "+id+" has a mode of the spec")
 					}

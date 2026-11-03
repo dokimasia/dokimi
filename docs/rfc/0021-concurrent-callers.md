@@ -39,7 +39,7 @@ Porcupine checks linearizability for Go programs in the same way, and partitions
 | `linearizable` | The mixin `concurrent` | `concurrent-callers`, `generated-sequences`, `reference-implementation` | `linearizable-history` | `not-linearizable` | `racy-read-write` |
 | `reads-agree-under-concurrency` | The mixin `concurrent-readers` | `concurrent-callers`, `generated-sequences` | `concurrent-reads-agree` | `inconsistent-concurrent-read` | `racy-read` |
 | `computes-once` | The contract `single-flight`, role `fn` | `concurrent-callers`, `call-that-fails-on-demand` | `shares-one-computation` | `repeated-computation` | `computes-per-call` |
-| `causal-history` | The mixin `causal` with its param `version` | `concurrent-callers`, `generated-sequences` | `causal-history` | `unobserved-write` | `racy-causal-read` |
+| `causal-history` | The mixin `causal` with its param `version` | `concurrent-callers`, `generated-sequences` | `versions-follow-the-causal-order` | `unobserved-write` | `racy-causal-read` |
 | `pins-the-snapshot-under-writes` | The mixin `point-in-time` with its param `write` | `concurrent-callers`, `generated-sequences` | `pinned-under-concurrent-writes` | `unpinned-read` | `racy-pin` |
 | `one-holder-at-a-time` | The contract `lease`, role `acquire`, with its param `taken` | `concurrent-callers` | `exclusive-under-concurrency` | `unguarded-write` | `check-then-grant` |
 
@@ -53,8 +53,10 @@ The other five claims bind to the callable that their mixin or contract classifi
 
 - `reads-agree-under-concurrency` runs the generated sequences of the declaration on client 0, so the subject has state, and then a concurrent section of the read alone on three clients. Each read of the section on a client other than 0 must return what the read returns with the same arguments on client 0 after the section. A fresh subject returns one result for every input of a read, so reads without the sequences cannot tell a defect from the subject. `racy-read` keeps the results of a read in a field of its own, yields to the scheduler and returns the field, so a read that overlaps another returns the results of the other.
 - `computes-once` calls `Hold` of the injector of RFC-0019 and makes three clients call the callable with one key. It fails when the dependencies record more than one computation. The check runs inside a `testing/synctest` bubble through the field `Around` of the check, so the probe waits until every client blocks before it counts the calls of the dependencies and calls `Release`. A call after the computation finished starts another computation by design, so the dependencies wait until every client has called. The generated call passes each parameter of a function type a computation that calls a dependency of the injector, so `Hold` keeps the computation waiting and `Calls` counts it. A subject that computes through its own dependencies records its computations through the door `Faults`. `computes-per-call` calls a fresh subject for each call, so each call computes.
+- `pins-the-snapshot-under-writes` runs the generated sequences of the declaration with a concurrent section of the read and its `write` on three clients. Each other callable runs on client 0 alone. Each read that succeeds must return the output of the first read with the same arguments that succeeded.
 - `causal-history`, `pins-the-snapshot-under-writes` and `one-holder-at-a-time` are the deeper claims of the laws of `causal`, `point-in-time` and `lease`, whose depth is `concurrent-callers`. Each entails the claim of a single caller and reports its reason code. Each defect is correct when called one at a time and races through a yield of the scheduler between a check and its effect, as `racy-read-write` does.
 - `causal-history` judges the history of RFC-0020 with the judge `ordered` over the stamps that `version` reads. A write that a client issued after another write of the same client, or after a read that observed the other write, has a higher stamp, and each read observes the stamps of the writes before it in that order.
+- A read of `causal-history` observed the write with its keys and the stamp that it returns, where that write started before the read returned. A stamp that two writes with the same keys share names neither write. Each later call of a client follows the stamp of each read of that client, so a client does not read a lower stamp of a key than it read before. A read that follows a write of its keys returns the stamp of a write of those keys. The claim takes the gate `write-returns-the-value`, because the probe reads the stamp of each write from the value that the write returns.
 
 ### The generated check
 
@@ -127,6 +129,35 @@ Each probe of generated sequences runs its clients through `stateful.Steps` with
 // without a completed read on a client other than 0 does not engage h.
 func ConcurrentReadsAgree[S any](
 	h *conform.Handle[S], c *prop.Case, actions Actions[S], read string, again Apply, clients int,
+)
+
+// PinnedUnderConcurrentWrites runs generated sequences of the actions on the
+// subject of h, with a concurrent section of the actions read and write on
+// the clients 0 to clients, which the schedule of h runs. Each other action
+// runs on client 0 alone. After the last step it compares each read that
+// succeeds with the first read that succeeded with the same arguments, and
+// fails when the outputs differ. A case without a read that succeeds after
+// another read with the same arguments does not engage h.
+func PinnedUnderConcurrentWrites[S any](
+	h *conform.Handle[S], c *prop.Case, actions Actions[S], read, write string, clients int,
+)
+
+// VersionsFollowTheCausalOrder runs generated sequences of the actions on the
+// subject of h, with a concurrent section of the actions read and write on
+// the clients 0 to clients, which the schedule of h runs. Each other action
+// runs on client 0 alone. After the last step it orders the calls of read and
+// write that succeed. A call follows each call of its client before it. A
+// read follows the write with the same keys and the version that the read
+// returns, where that write started before the read returned and no other
+// write with the same keys has that version. The probe fails when a write
+// returns a version that is not above the version of a call with the same
+// keys that it follows, and when a read returns a version below it. It also
+// fails when a read that follows a write with the same keys returns a version
+// that no write with those keys returned. Each call of write returns the value
+// that it wrote. A case without a call that follows a call with the same keys
+// does not engage h.
+func VersionsFollowTheCausalOrder[S, V any, O cmp.Ordered](
+	h *conform.Handle[S], c *prop.Case, actions Actions[S], read, write string, version func(v V) O, clients int,
 )
 
 // SharesOneComputation holds the dependencies of h, and the clients 0 to

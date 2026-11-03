@@ -182,7 +182,7 @@ go:
     # The comparison of two runs of bench-go in benchstat-go.
     benchstat: golang.org/x/perf/cmd/benchstat@v0.0.0-20261009192801-be2c69fb417e
     # The mutation engine of mutate-go.
-    dokimi-mutate-go: go.dokimi.dev/mutate/cmd/dokimi-mutate-go@v0.2.0
+    dokimi-mutate-go: go.dokimi.dev/mutate/cmd/dokimi-mutate-go@v0.3.0
     # The release of GoReleaser, which builds, packs and signs the commands of binaries in the job
     # pack of release.yml.
     goreleaser:

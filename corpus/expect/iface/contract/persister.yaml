@@ -6,6 +6,8 @@ level: 3
 subjects:
   - type: iface/contract/persister/persistertest.InMemory
 controls: []
+fakes:
+  - iface/contract/persister/persistertest.ContractFake
 declarations:
   contract:
     checks:

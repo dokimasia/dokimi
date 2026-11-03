@@ -6,6 +6,8 @@ level: 3
 subjects:
   - type: iface/contract/appender/appendertest.InMemory
 controls: []
+fakes:
+  - iface/contract/appender/appendertest.ContractFake
 declarations:
   contract:
     checks:

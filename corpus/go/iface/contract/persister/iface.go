@@ -50,10 +50,12 @@ type Value struct {
 	Body string `default:"test-body"`
 }
 
-// Contract is the fixture interface.
+// Contract is the fixture interface. Its generated fake ContractFake
+// passes the suite beside the hand-written InMemory.
 //
 //dokimi:stub
 //dokimi:suite
+//dokimi:fake
 //dokimi:out path=persistertest/
 type Contract interface {
 	// Put is the persister contract's writer role.

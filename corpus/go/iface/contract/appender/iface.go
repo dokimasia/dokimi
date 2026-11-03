@@ -16,10 +16,12 @@ import (
 // Value is the payload the contract's roles carry.
 type Value struct{ Key, Body string }
 
-// Contract is the fixture interface.
+// Contract is the fixture interface. Its generated fake ContractFake
+// passes the suite beside the hand-written InMemory.
 //
 //dokimi:stub
 //dokimi:suite
+//dokimi:fake
 //dokimi:out path=appendertest/
 type Contract interface {
 	// Run is the appender contract's fn role, and hosts the directive

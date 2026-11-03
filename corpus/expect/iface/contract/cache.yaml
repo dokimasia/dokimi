@@ -7,6 +7,8 @@ subjects:
   - type: iface/contract/cache/cachetest.InMemory
 controls:
   - iface/contract/cache/oneentry.Cache
+fakes:
+  - iface/contract/cache/cachetest.ContractFake
 declarations:
   contract:
     checks:

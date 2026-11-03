@@ -301,6 +301,7 @@ directives.
 | `dokimi doctor` | Checks the config, the sealed state and the directives |
 | `dokimi prune` | Removes the generated files that no plan produces |
 | `dokimi plan` | Prints the composition of each workspace without running it |
+| `dokimi report FILES...` | Prints what each suite of a run of `go test -json` claimed, proved, refused and found vacuous |
 | `dokimi schema` | Prints the JSON Schema of `.dokimi.yaml` |
 | `dokimi version` | Prints the versions of the binary, of eidos and of the plugins |
 | `dokimi completion SHELL` | Writes the completion script of bash, zsh, fish or PowerShell |
@@ -365,6 +366,12 @@ A mutation tool such as [dokimi-mutate-go](https://github.com/dokimasia/mutate-g
 expression of your code and reports whether any test failed. The planted defect of a check breaks
 the one rule that the check verifies. Its run shows that this check fails for the reason that it
 states, and it costs one run of that check.
+
+`dokimi report run.json --mutation mutation.json` reads the record of a mutation run beside the
+suite records. It reports each check that covered mutants and killed none, and each check whose
+every kill another check of the suite also made. The record needs the
+modes of dokimi-mutate-go that name every test that killed a mutant and the coverage of each
+subtest.
 
 ### What if an implementation does not pass a check?
 

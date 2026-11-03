@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strconv"
 	"strings"
 
 	"go.dokimi.dev/dokimi/spec"
@@ -174,6 +175,10 @@ func Failed(r io.Reader) ([]Failure, error) {
 
 // Suite contains the records of one declaration.
 type Suite struct {
+	// Mutation is the attribution of the mutants of mutation records to the
+	// checks of the suite, and nil for a report without such records.
+	Mutation *Attribution `json:"mutation,omitempty"`
+
 	// Package is the package of the declaration.
 	Package string `json:"package"`
 
@@ -225,7 +230,22 @@ func (s *Suite) Failures() []string {
 	for _, e := range endings(s.Records) {
 		found = append(found, "the application in "+e.test+" ended before its checks: "+e.problem)
 	}
+	if s.Mutation != nil {
+		for _, d := range s.Mutation.Dead {
+			found = append(found, fmt.Sprintf("%s is dead: it covered %s and killed none", d.Identity,
+				plural(d.Covered, "mutant")))
+		}
+	}
 	return found
+}
+
+// plural returns the number n and the noun, with an s after the noun for a
+// number other than 1, such as 4 mutants.
+func plural(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }
 
 // ending is a problem that ended an application before its checks, with the
@@ -322,7 +342,39 @@ func Print(w io.Writer, suites []Suite) {
 		for _, e := range endings(s.Records) {
 			fmt.Fprintf(w, "  %-10s       %s: %s\n", "ended", e.test, e.problem)
 		}
+		if s.Mutation != nil {
+			attribution(w, s.Mutation)
+		}
 		fmt.Fprintf(w, "seed %s   spec %s   %s %s\n", first.Seed, first.Spec, first.Runtime.Name, first.Runtime.Version)
+	}
+}
+
+// attribution writes the lines of the attribution a. They state the mutants
+// that the checks covered and the dead and the subsumed checks. They also state
+// the survivors that the checks did not cover, and the targets whose records
+// lack a mode of dead and subsumed checks.
+func attribution(w io.Writer, a *Attribution) {
+	fmt.Fprintf(w, "  %-10s %3d   covered by checks   %d killed   %d survived\n", "mutants", a.Covered, a.Killed,
+		a.Survived)
+	dead := make([]string, len(a.Dead))
+	for i, d := range a.Dead {
+		dead[i] = fmt.Sprintf("%s: covered %s, killed none", d.Identity, plural(d.Covered, "mutant"))
+	}
+	entries(w, "dead", dead)
+	subsumed := make([]string, len(a.Subsumed))
+	for i, s := range a.Subsumed {
+		subsumed[i] = fmt.Sprintf("%s: every kill also by %s", s.Identity, s.By)
+	}
+	entries(w, "subsumed", subsumed)
+	for _, s := range a.Unattributed {
+		lines := fmt.Sprintf("%d-%d", s.First, s.Last)
+		if s.First == s.Last {
+			lines = strconv.Itoa(s.First)
+		}
+		fmt.Fprintf(w, "  unattributed %s in %s:%s, covered by no check\n", plural(s.Count, "survivor"), s.File, lines)
+	}
+	for _, l := range a.Lacking {
+		fmt.Fprintf(w, "  %-10s       %s lacks %s\n", "record", l.Target, strings.Join(l.Modes, " and "))
 	}
 }
 

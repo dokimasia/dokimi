@@ -18,13 +18,17 @@ import (
 // The name and the help text of the command report.
 const (
 	reportName = "report"
-	reportHelp = "Prints what each suite of a run of go test -json claimed, proved, refused and found vacuous."
+	reportHelp = "Prints what each suite of a run of go test -json claimed, proved, refused and found vacuous, " +
+		"and the dead and the subsumed checks of mutation records."
 )
 
 // reportOptions are the options of the command report.
 type reportOptions struct {
 	// Files are the files of go test -json.
 	Files []gocli.InputFile `arg:"" help:"The files of go test -json, or - for the standard input."`
+
+	// Mutation are the files of the records of mutation runs of mutate-spec.
+	Mutation []gocli.InputFile `help:"The records of mutation runs whose mutants the report attributes to the checks."`
 
 	// JSON writes one JSON document of every suite in place of the text.
 	JSON bool `help:"Write one JSON document of every suite."`
@@ -35,11 +39,12 @@ type reportDocument struct {
 	Suites []report.Suite `json:"suites"`
 }
 
-// reportRun reads the suite records of each file, and writes the report of
-// every suite to the standard output. It writes each record that does not
-// validate, each check whose falsification result is not proven and each
-// problem that ended an application to the standard error. It exits with the
-// status 1 for any of them.
+// reportRun reads the suite records of each file and the records of the
+// mutation runs. It attributes the mutants to the checks and writes the report
+// of every suite to the standard output. It writes each record that does not
+// validate, each check whose falsification result is not proven, each problem
+// that ended an application and each dead check to the standard error. It
+// exits with the status 1 for any of them.
 func reportRun(_ context.Context, run *gocli.Run[cli.Global, reportOptions]) error {
 	var records []report.Record
 	var errs []error
@@ -56,7 +61,23 @@ func reportRun(_ context.Context, run *gocli.Run[cli.Global, reportOptions]) err
 		}
 		records = append(records, read...)
 	}
+	var mutations []report.Mutation
+	for _, f := range run.Config().Mutation {
+		r, err := run.Open(f)
+		if err != nil {
+			return fmt.Errorf("read the mutation record: %w", err)
+		}
+		read, err := report.ReadMutations(r)
+		_ = r.Close()
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", f, err))
+		}
+		mutations = append(mutations, read...)
+	}
 	suites := report.Suites(records)
+	if len(run.Config().Mutation) > 0 {
+		report.Attribute(suites, mutations)
+	}
 	if run.Config().JSON {
 		if err := json.NewEncoder(run.Stdout()).Encode(reportDocument{Suites: suites}); err != nil {
 			return fmt.Errorf("write the report: %w", err)

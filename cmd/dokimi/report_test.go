@@ -18,9 +18,25 @@ import (
 	"go.dokimi.dev/dokimi/spec"
 )
 
-// runFile is the name of the file of go test -json in the workspace of a
-// case.
-const runFile = "run.json"
+// The names of the file of go test -json and of the file of a mutation record
+// in the workspace of a case.
+const (
+	runFile      = "run.json"
+	mutationFile = "mutation.json"
+)
+
+// deadCheckReport are the lines of the attribution of the corpus fixture
+// iface/mutation/deadcheck, from the run in run.jsonl and the mutation record
+// that make report-golden writes into testdata/report. Close/smoke kills no mutant that
+// it covers. The checks of smoke of Get and Put kill the constructor that
+// returns nil, which Get/cancel kills too. The spec of Len alone covers Len.
+const deadCheckReport = "  mutants     25   covered by checks   15 killed   10 survived\n" +
+	"  dead         1   Store.Close/smoke: covered 5 mutants, killed none\n" +
+	"  subsumed     4   Store.Get/smoke: every kill also by Store.Get/cancel\n" +
+	"                   Store.Get/smoke#generated: every kill also by Store.Get/cancel\n" +
+	"                   Store.Put/smoke: every kill also by Store.Get/cancel\n" +
+	"                   Store.Put/smoke#generated: every kill also by Store.Get/cancel\n" +
+	"  unattributed 2 survivors in iface/mutation/deadcheck/deadchecktest/inmemory.go:76-77, covered by no check\n"
 
 // eventsOf returns the events of go test -json that write the suite record of
 // the declaration Store in the application with one check of the result.
@@ -89,6 +105,7 @@ func TestReport(t *testing.T) {
 				"example.com/store  Store\n  claims       1   proven 1",
 				"the report has the suite",
 			)
+			assert.NotContains(t, stdout, "  mutants", "a run without --mutation has no line of mutants")
 		})
 
 		t.Run("writes one JSON document of every suite under --json", func(t *testing.T) {
@@ -164,5 +181,82 @@ func TestReport(t *testing.T) {
 			assert.NotEqual(t, status, 0, "the run fails")
 			assert.Contains(t, stderr, "read the run: open "+path+": ", "the error names the file once")
 		})
+
+		t.Run("attributes the mutants of each record of --mutation to the checks", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, files.Tree{
+				runFile: files.Text(eventsOf(spec.OnSubject, spec.Pass)),
+				mutationFile: files.Text(`{"record": "dokimi-mutate", "version": 2, "target": {"language": "go", ` +
+					`"name": "example.com/store/storetest"}, "killers": "all", "coverage": "leaves", "mutants": [` +
+					`{"key": "0000000000000001", "file": "store.go", "start": {"line": 4, "column": 2}, ` +
+					`"end": {"line": 4, "column": 9}, "verdict": "survived", "coveredBy": ["TestStore/Read/keeps"]}]}`),
+			})
+
+			stdout, stderr, status := runReport(t, dir, "--mutation", mutationFile, runFile)
+
+			assert.Equal(t, status, 1, "a dead check fails the run")
+			assert.Contains(t, stdout, "  mutants      1   covered by checks   0 killed   1 survived\n"+
+				"  dead         1   Store.Read/keeps: covered 1 mutant, killed none\n",
+				"the report attributes the survivor to the check")
+			assert.Contains(t, stderr, "Store.Read/keeps is dead: it covered 1 mutant and killed none",
+				"the error names the dead check")
+		})
+
+		t.Run("exits 0 for a mutation record whose checks killed each mutant that they covered", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, files.Tree{
+				runFile: files.Text(eventsOf(spec.OnSubject, spec.Pass)),
+				mutationFile: files.Text(`{"record": "dokimi-mutate", "version": 2, "target": {"language": "go", ` +
+					`"name": "example.com/store/storetest"}, "killers": "all", "coverage": "leaves", "mutants": [` +
+					`{"key": "0000000000000001", "file": "store.go", "start": {"line": 4, "column": 2}, ` +
+					`"end": {"line": 4, "column": 9}, "verdict": "killed", "tests": ["TestStore/Read/keeps"], ` +
+					`"allKillers": true, "coveredBy": ["TestStore/Read/keeps"]}]}`),
+			})
+
+			stdout, stderr, status := runReport(t, dir, "--mutation", mutationFile, runFile)
+
+			assert.Equal(t, status, 0, "a run without a dead check exits 0")
+			assert.Empty(t, stderr, "the binary writes no error")
+			assert.Contains(t, stdout, "  mutants      1   covered by checks   1 killed   0 survived\n",
+				"the report attributes the kill to the check")
+		})
+
+		t.Run("exits 1 for a mutation record of another kind", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, files.Tree{
+				runFile:      files.Text(eventsOf(spec.OnSubject, spec.Pass)),
+				mutationFile: files.Text(`{"record": "stryker", "version": 2}`),
+			})
+
+			_, stderr, status := runReport(t, dir, "--mutation", mutationFile, runFile)
+
+			assert.Equal(t, status, 1, "the run exits 1")
+			assert.Contains(t, stderr, `mutation.json: record 1: the record "stryker" of version 2 is no record `+
+				`dokimi-mutate of version 2`, "the error names the file and the record")
+		})
+
+		t.Run("fails for a mutation record that does not exist", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, files.Tree{runFile: files.Text(eventsOf(spec.OnSubject, spec.Pass))})
+
+			_, stderr, status := runReport(t, dir, "--mutation", mutationFile, runFile)
+
+			assert.NotEqual(t, status, 0, "the run fails")
+			assert.Contains(t, stderr, "read the mutation record: open "+mutationFile+": ", "the error names the file")
+		})
+
+		t.Run("reports the dead, the subsumed and the unattributed of the corpus fixture of a dead check",
+			func(t *testing.T) {
+				t.Parallel()
+				golden, err := filepath.Abs(filepath.Join("testdata", "report"))
+				assert.NoError(t, err, "the directory of the golden files has an absolute path")
+
+				stdout, stderr, status := runReport(t, golden, "--mutation", mutationFile, "run.jsonl")
+
+				assert.Equal(t, status, 1, "the dead check of the fixture fails the run")
+				assert.Contains(t, stdout, deadCheckReport, "the report has the findings of the fixture")
+				assert.Contains(t, stderr, "Store.Close/smoke is dead: it covered 5 mutants and killed none",
+					"the error names the dead check")
+			})
 	})
 }

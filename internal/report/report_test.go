@@ -4,7 +4,6 @@
 package report_test
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -13,60 +12,6 @@ import (
 	"go.dokimi.dev/dokimi/internal/report"
 	"go.dokimi.dev/dokimi/spec"
 )
-
-// record returns the JSON of a suite record of the declaration Store in the
-// application, with the checks.
-func record(application spec.Application, checks ...spec.CheckRecord) string {
-	r := spec.SuiteRecord{
-		Spec:        "1.0.0",
-		Suite:       spec.RecordSuite{Language: "go", Package: "example.com/store", Declaration: "Store"},
-		Generator:   spec.RecordTool{Name: "dokimi", Version: "0.1.0"},
-		Runtime:     spec.RecordTool{Name: "go.dokimi.dev/conform", Version: "v0.9.0"},
-		Seed:        "0x5f3a1c9e27d4b860",
-		Application: application,
-		Checks:      checks,
-		Refusals: []spec.RefusalRecord{{
-			Claim: spec.ZeroOnError, Callable: "Store.Scan", Gate: spec.Failure, Why: "Scan cannot fail",
-			Remedy: "return an error",
-		}},
-		Unclaimed: []spec.UnclaimedRecord{{
-			Classification: "mixin:concurrent", Callable: "Store.Put", Stance: spec.Needs,
-			Note: "needs concurrent callers",
-		}},
-	}
-	data, _ := json.Marshal(r)
-	return string(data)
-}
-
-// check returns the record of the check of the identity with the result.
-func check(identity string, result spec.Result) spec.CheckRecord {
-	return spec.CheckRecord{Identity: identity, Key: strings.ToLower(identity), Result: result}
-}
-
-// events returns the events of go test -json that write each record under the
-// test TestStore, one attribute event for each record, split into parts of at
-// most size bytes.
-func events(size int, records ...string) string {
-	var b strings.Builder
-	b.WriteString(`{"Action":"start","Package":"example.com/store/storetest"}` + "\n")
-	b.WriteString("a line that is no event\n")
-	for i, r := range records {
-		key := "dokimi.suite." + string(rune('1'+i))
-		for len(r) > 0 {
-			part := r[:min(size, len(r))]
-			r = r[len(part):]
-			line, _ := json.Marshal(map[string]string{
-				"Action": "attr", "Package": "example.com/store/storetest", "Test": "TestStore", "Key": key,
-				"Value": part,
-			})
-			b.Write(line)
-			b.WriteByte('\n')
-		}
-	}
-	b.WriteString(`{"Action":"attr","Package":"example.com/store/storetest","Test":"TestStore",` +
-		`"Key":"dokimi.assert.1","Value":"{}"}` + "\n")
-	return b.String()
-}
 
 func TestReport(t *testing.T) {
 	t.Parallel()
@@ -304,6 +249,21 @@ func TestReport(t *testing.T) {
 				assert.Equal(t, report.Suites(records)[0].Failures(), tt.want, "the failures are the failed verdicts")
 			})
 		}
+
+		t.Run("returns each dead check of the mutation records", func(t *testing.T) {
+			t.Parallel()
+			records, err := report.Read(strings.NewReader(events(4096, judged)))
+			assert.NoError(t, err, "the events read")
+			suites := report.Suites(records)
+			suites[0].Mutation = &report.Attribution{Dead: []report.DeadCheck{
+				{Identity: "Store.Close/smoke", Covered: 4}, {Identity: "Store.Put/smoke", Covered: 1},
+			}}
+
+			assert.Equal(t, suites[0].Failures(), []string{
+				"Store.Close/smoke is dead: it covered 4 mutants and killed none",
+				"Store.Put/smoke is dead: it covered 1 mutant and killed none",
+			}, "a dead check fails the report")
+		})
 	})
 
 	t.Run("Print", func(t *testing.T) {
@@ -370,6 +330,55 @@ func TestReport(t *testing.T) {
 			assert.Contains(t, b.String(), "  ended            TestStore: the option Cases asks for 0 cases\n"+
 				"  ended            TestStore: the excusal of Store.Get/x has no reason\n"+
 				"seed ", "each problem has a line of its own before the seed")
+		})
+
+		t.Run("writes the mutants, the dead, the subsumed and the unattributed of the mutation records",
+			func(t *testing.T) {
+				t.Parallel()
+				records, err := report.Read(strings.NewReader(events(4096, judged)))
+				assert.NoError(t, err, "the events read")
+				suites := report.Suites(records)
+				suites[0].Mutation = &report.Attribution{
+					Covered:  41,
+					Killed:   38,
+					Survived: 3,
+					Dead: []report.DeadCheck{
+						{Identity: "Store.Close/smoke", Covered: 4}, {Identity: "Store.Put/smoke", Covered: 1},
+					},
+					Subsumed: []report.SubsumedCheck{
+						{Identity: "Store.Read/zero-on-error", By: "Store.Read/keeps-the-item"},
+					},
+					Unattributed: []report.Survivors{
+						{Target: "example.com/store", File: "store.go", First: 88, Last: 94, Count: 3},
+						{Target: "example.com/store", File: "scan.go", First: 7, Last: 7, Count: 1},
+					},
+					Lacking: []report.Lack{
+						{Target: "example.com/log", Modes: []string{"killers all", "coverage leaves"}},
+					},
+				}
+				var b strings.Builder
+
+				report.Print(&b, suites)
+
+				assert.Contains(t, b.String(), "  mutants     41   covered by checks   38 killed   3 survived\n"+
+					"  dead         2   Store.Close/smoke: covered 4 mutants, killed none\n"+
+					"                   Store.Put/smoke: covered 1 mutant, killed none\n"+
+					"  subsumed     1   Store.Read/zero-on-error: every kill also by Store.Read/keeps-the-item\n"+
+					"  unattributed 3 survivors in store.go:88-94, covered by no check\n"+
+					"  unattributed 1 survivor in scan.go:7, covered by no check\n"+
+					"  record           example.com/log lacks killers all and coverage leaves\n"+
+					"seed ", "the attribution has its lines before the seed")
+			})
+
+		t.Run("writes no line of mutation records without them", func(t *testing.T) {
+			t.Parallel()
+			records, err := report.Read(strings.NewReader(events(4096, judged)))
+			assert.NoError(t, err, "the events read")
+			var b strings.Builder
+
+			report.Print(&b, report.Suites(records))
+
+			assert.NotContains(t, b.String(), "mutants", "a report without mutation records has no line of mutants")
 		})
 	})
 }

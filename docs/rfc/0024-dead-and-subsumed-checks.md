@@ -47,6 +47,8 @@ For each mutant of the record whose `coveredBy` names a check of a suite record:
 | `survived` | Each check in `coveredBy` covered it and killed nothing |
 | Other verdicts | No attribution |
 
+The subject records join alone. A check of falsification runs on its planted defect and does not execute the code of the subject. mutate-spec writes the name of a test of another package as the package, a colon, a space and the name, such as `example.com/shop/catalog/catalogtest: TestInMemoryStore/Get/zero-on-error`, so the join adds the package of a suite record that differs from the target of the mutation record.
+
 ### The findings
 
 | Finding | Severity | Condition |
@@ -57,7 +59,9 @@ For each mutant of the record whose `coveredBy` names a check of a suite record:
 
 A dead check is an error, because a law that no change of the code it covers can break is either stated wrongly or covers code that does not implement it. A subsumed check is a warning, because a check can state a law that the deeper check witnesses only indirectly.
 
-`DeadCheck` and `SubsumedCheck` need both modes of the requests. With the first killer alone, a check that runs after another killer of each of its mutants looks dead and subsumed. With the coverage of the test of an application, each check of the application looks as if it covered every mutant that the application covered. A record without both modes does not give dead or subsumed checks, and `dokimi report` prints the mode that the record lacks. `UnattributedMutant` works without the modes, because a survivor that the test of no application covered is covered by no check.
+`DeadCheck` and `SubsumedCheck` need both modes of the requests. With the first killer alone, a check that runs after another killer of each of its mutants looks dead and subsumed. With the coverage of the test of an application, each check of the application looks as if it covered every mutant that the application covered. A record without both modes does not give dead or subsumed checks, and `dokimi report` prints the mode that the record lacks. `UnattributedMutant` works without the modes, because a survivor that the test of no application covered is covered by no check. A kill whose record does not state `allKillers` counts as killed. It does not make a check dead or subsumed, because its run ended before each killer failed.
+
+conform recovers the panic of a check on a subject or on its planted defect, and fails the test of that check alone with the value and the stack of the panic. A property run first shrinks the case that panics. The run of a mutant that panics then ends on its own, and its record lists each killer, such as each `smoke` check that the mutant fails. A fatal error of the runtime, such as the unlock of a mutex that is not locked, still ends the test binary, so the record of such a kill lists the killers before the end.
 
 ### The requests to mutate-spec
 
@@ -75,18 +79,21 @@ A mode of the run that runs each subtest alone, as the run runs each top-level t
 { "verdict": "survived", "coveredBy": ["TestInMemoryStore/Get/zero-on-error", "TestInMemoryStore/Get/cancel"] }
 ```
 
-The record states the mode, so that a reader can tell the test of a check from the test of an application. A subtest that runs alone also runs the code of its parent test before the subtest starts, so the coverage of a check contains the code of its application that runs before the check.
+The record states the mode, so that a reader can tell the test of a check from the test of an application. mutate-spec states the modes in the fields `killers` and `coverage` of a record, as `all` and `leaves`. A subtest that runs alone also runs the code of its parent test before the subtest starts, so the coverage of a check contains the code of its application that runs before the check.
 
 ### The command
 
 ```text
 $ dokimi report run.json --mutation mutation.json
 example.com/shop/catalog  Store
-  mutants     41 covered by checks   38 killed   3 survived
-  dead        Store.Close/smoke: covered 4 mutants, killed none
-  subsumed    Store.Get/smoke: every kill also by Store.Get/read-after-write
+  ...
+  mutants     41   covered by checks   38 killed   3 survived
+  dead         1   Store.Close/smoke: covered 4 mutants, killed none
+  subsumed     1   Store.Get/smoke: every kill also by Store.Get/read-after-write
   unattributed 3 survivors in store.go:88-94, covered by no check
 ```
+
+A target whose record lacks a mode has a line such as `record  example.com/shop/catalog lacks killers all and coverage leaves`. Each dead check also fails the command.
 
 ## Alternatives considered
 

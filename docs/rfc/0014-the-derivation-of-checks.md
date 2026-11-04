@@ -7,7 +7,7 @@ created: 2026-10-28
 updated: 2026-10-28
 discussion: none
 supersedes: RFC-0003 in part
-superseded-by: none
+superseded-by: RFC-0035 in part
 produces-adr: ADR-0015, ADR-0017
 ---
 

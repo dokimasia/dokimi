@@ -15,42 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Contract.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Contract.Put/cancel: Put returns an error for a cancelled context.
-//
-// Contract.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Contract.Put/cas: a second Put with the same version fails with the
-// declared mismatch.
-//
-// Contract.Put/cas#generated: a second Put with the same version fails
-// with the declared mismatch.
-//
-// Contract.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Contract.Get/cancel: Get returns an error for a cancelled context.
-//
-// Contract.Get/zero-on-error: Get returns the zero value beside an error.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Put/smoke
-//
-// Contract.Get/smoke
-
-// The unclaimed classifications of Contract:
-//
-// The shape:writer of Contract.Put has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -83,34 +47,16 @@ func (c contractPut) Smoke() conform.ID[cas.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c contractPut) SmokeGenerated() conform.ID[cas.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c contractPut) Cancel() conform.ID[cas.Contract] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c contractPut) CancelGenerated() conform.ID[cas.Contract] {
-	return c.Check("cancel#generated")
-}
-
 // Cas returns the identity of the check that a second Put with the same
 // version fails with the declared mismatch.
 func (c contractPut) Cas() conform.ID[cas.Contract] {
 	return c.Check("cas")
-}
-
-// CasGenerated returns the identity of the check that a second Put with
-// the same version fails with the declared mismatch.
-func (c contractPut) CasGenerated() conform.ID[cas.Contract] {
-	return c.Check("cas#generated")
 }
 
 // contractGet is the name of Contract.Get, with the identities of its
@@ -149,9 +95,6 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				ID:          ContractChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -162,12 +105,9 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				Defect: contractPutPanics,
 			},
 			{
-				ID:          ContractChecks.Put.SmokeGenerated(),
+				ID:          ContractChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[cas.Value](), "v")
@@ -181,9 +121,6 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				ID:          ContractChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -193,12 +130,9 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				Defect: contractPutIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Put.CancelGenerated(),
+				ID:          ContractChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[cas.Value](), "v")
@@ -212,9 +146,6 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				ID:          ContractChecks.Put.Cas(),
 				Statement:   "a second Put with the same version fails with the declared mismatch",
 				Claim:       spec.Cas,
-				Probe:       spec.RefusesTheSecondWrite,
-				Reason:      spec.UnguardedWrite,
-				Law:         spec.WriteIsRefusedOnAStaleVersion,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
@@ -224,12 +155,9 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				Defect: contractPutSucceedsAlways,
 			},
 			{
-				ID:          ContractChecks.Put.CasGenerated(),
+				ID:          ContractChecks.Put.Cas().Generated(),
 				Statement:   "a second Put with the same version fails with the declared mismatch",
 				Claim:       spec.Cas,
-				Probe:       spec.RefusesTheSecondWrite,
-				Reason:      spec.UnguardedWrite,
-				Law:         spec.WriteIsRefusedOnAStaleVersion,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[cas.Value](), "v")
@@ -243,9 +171,6 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				ID:          ContractChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -260,9 +185,6 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				ID:          ContractChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -276,9 +198,6 @@ func ContractSuite() conform.Suite[cas.Contract] {
 				ID:          ContractChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (cas.Value, error) {
@@ -533,4 +452,4 @@ func contractGetValueBeside(h *ContractHandle) cas.Contract {
 	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6dead7f8881510fea4c1f9d1e725b35c84432c68efcf66748844114107ac28e4
+// dokimi:provenance sha256:a0df49c35b5ecdb15e61b3afa8b5fc55c36b2133bd69264939fb53d2d39107be

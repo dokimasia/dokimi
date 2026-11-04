@@ -15,54 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of TxWithRetry:
-//
-// TxWithRetry.Begin/smoke: Begin returns without a panic for derived
-// inputs.
-//
-// TxWithRetry.Begin/cancel: Begin returns an error for a cancelled
-// context.
-//
-// TxWithRetry.Commit/smoke: Commit returns without a panic for derived
-// inputs.
-//
-// TxWithRetry.Commit/cancel: Commit returns an error for a cancelled
-// context.
-//
-// TxWithRetry.Commit/retry-succeeds-tx: Commit succeeds within the
-// declared attempts once Begin has opened its transaction.
-//
-// TxWithRetry.Rollback/smoke: Rollback returns without a panic for derived
-// inputs.
-//
-// TxWithRetry.Rollback/cancel: Rollback returns an error for a cancelled
-// context.
-
-// The derived checks of TxWithRetry that witness their laws at the shallow
-// end:
-//
-// TxWithRetry.Begin/smoke
-//
-// TxWithRetry.Commit/smoke
-//
-// TxWithRetry.Rollback/smoke
-
-// The refused claims of TxWithRetry:
-//
-// TxWithRetry.Begin/tx: Begin does not return exactly one value. The
-// remedy is to return one value from Begin.
-
-// The unclaimed classifications of TxWithRetry:
-//
-// The shape:lifecycle of TxWithRetry.Begin has the stance silent. A
-// lifecycle call returns nothing that a check could compare.
-//
-// The shape:lifecycle of TxWithRetry.Commit has the stance silent. A
-// lifecycle call returns nothing that a check could compare.
-//
-// The shape:lifecycle of TxWithRetry.Rollback has the stance silent. A
-// lifecycle call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -157,9 +109,6 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 				ID:          TxWithRetryChecks.Begin.Smoke(),
 				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *TxWithRetryHandle) {
@@ -173,9 +122,6 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 				ID:          TxWithRetryChecks.Begin.Cancel(),
 				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *TxWithRetryHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -188,9 +134,6 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 				ID:          TxWithRetryChecks.Commit.Smoke(),
 				Statement:   "Commit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *TxWithRetryHandle) {
@@ -204,9 +147,6 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 				ID:          TxWithRetryChecks.Commit.Cancel(),
 				Statement:   "Commit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *TxWithRetryHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -219,9 +159,6 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 				ID:          TxWithRetryChecks.Commit.RetrySucceedsTx(),
 				Statement:   "Commit succeeds within the declared attempts once Begin has opened its transaction",
 				Claim:       spec.RetrySucceedsTx,
-				Probe:       spec.ConvergesAfter,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesOnceItsScopeIsOpen,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *TxWithRetryHandle) {
 					probe.ConvergesAfter(h, func(ctx context.Context) error {
@@ -236,9 +173,6 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 				ID:          TxWithRetryChecks.Rollback.Smoke(),
 				Statement:   "Rollback returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *TxWithRetryHandle) {
@@ -252,9 +186,6 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 				ID:          TxWithRetryChecks.Rollback.Cancel(),
 				Statement:   "Rollback returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *TxWithRetryHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -572,4 +503,4 @@ func txWithRetryRollbackIgnoresCancel(h *TxWithRetryHandle) txwithretry.TxWithRe
 	return &txWithRetryRollbackIgnoresCancelDefect{txWithRetryOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6fd8eaca81ddbffc0488313224e79e794c438b18be3d8f57f7c4ae36bf282ebb
+// dokimi:provenance sha256:c8f1af5a7a638b6da4d5e892d78c21356483158e5706f59656590ff548fbc682

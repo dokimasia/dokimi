@@ -15,51 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Store/smoke: Store returns without a panic for derived inputs.
-//
-// Mixed.Store/smoke#generated: Store returns without a panic for derived
-// inputs.
-//
-// Mixed.Store/cancel: Store returns an error for a cancelled context.
-//
-// Mixed.Store/cancel#generated: Store returns an error for a cancelled
-// context.
-//
-// Mixed.Store/tamper-evident: Verify fails for a value of Store after
-// Corrupt.
-//
-// Mixed.Store/tamper-evident#generated: Verify fails for a value of Store
-// after Corrupt.
-//
-// Mixed.Corrupt/smoke: Corrupt returns without a panic for derived inputs.
-//
-// Mixed.Corrupt/cancel: Corrupt returns an error for a cancelled context.
-//
-// Mixed.Verify/smoke: Verify returns without a panic for derived inputs.
-//
-// Mixed.Verify/cancel: Verify returns an error for a cancelled context.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Store/smoke
-//
-// Mixed.Corrupt/smoke
-//
-// Mixed.Verify/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Store has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:lifecycle of Mixed.Corrupt has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The shape:lifecycle of Mixed.Verify has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,34 +49,16 @@ func (c mixedStore) Smoke() conform.ID[tamperevident.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Store returns
-// without a panic for derived inputs.
-func (c mixedStore) SmokeGenerated() conform.ID[tamperevident.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Store returns an error for
 // a cancelled context.
 func (c mixedStore) Cancel() conform.ID[tamperevident.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Store returns an
-// error for a cancelled context.
-func (c mixedStore) CancelGenerated() conform.ID[tamperevident.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // TamperEvident returns the identity of the check that Verify fails for a
 // value of Store after Corrupt.
 func (c mixedStore) TamperEvident() conform.ID[tamperevident.Mixed] {
 	return c.Check("tamper-evident")
-}
-
-// TamperEvidentGenerated returns the identity of the check that Verify
-// fails for a value of Store after Corrupt.
-func (c mixedStore) TamperEvidentGenerated() conform.ID[tamperevident.Mixed] {
-	return c.Check("tamper-evident#generated")
 }
 
 // mixedCorrupt is the name of Mixed.Corrupt, with the identities of its
@@ -172,9 +109,6 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				ID:          MixedChecks.Store.Smoke(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -185,12 +119,9 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				Defect: mixedStorePanics,
 			},
 			{
-				ID:          MixedChecks.Store.SmokeGenerated(),
+				ID:          MixedChecks.Store.Smoke().Generated(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnBody := c.Draw(prop.Of[string](), "body")
@@ -204,9 +135,6 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				ID:          MixedChecks.Store.Cancel(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -216,12 +144,9 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				Defect: mixedStoreIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Store.CancelGenerated(),
+				ID:          MixedChecks.Store.Cancel().Generated(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnBody := c.Draw(prop.Of[string](), "body")
@@ -235,9 +160,6 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				ID:          MixedChecks.Store.TamperEvident(),
 				Statement:   "Verify fails for a value of Store after Corrupt",
 				Claim:       spec.TamperEvident,
-				Probe:       spec.DetectsTamper,
-				Reason:      spec.SilentTamper,
-				Law:         spec.TamperIsDetected,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.DetectsTamper(h, func(ctx context.Context) error {
@@ -251,12 +173,9 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				Defect: mixedVerifyVerifySilent,
 			},
 			{
-				ID:          MixedChecks.Store.TamperEvidentGenerated(),
+				ID:          MixedChecks.Store.TamperEvident().Generated(),
 				Statement:   "Verify fails for a value of Store after Corrupt",
 				Claim:       spec.TamperEvident,
-				Probe:       spec.DetectsTamper,
-				Reason:      spec.SilentTamper,
-				Law:         spec.TamperIsDetected,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnBody := c.Draw(prop.Of[string](), "body")
@@ -274,9 +193,6 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				ID:          MixedChecks.Corrupt.Smoke(),
 				Statement:   "Corrupt returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -290,9 +206,6 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				ID:          MixedChecks.Corrupt.Cancel(),
 				Statement:   "Corrupt returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -305,9 +218,6 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				ID:          MixedChecks.Verify.Smoke(),
 				Statement:   "Verify returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -321,9 +231,6 @@ func MixedSuite() conform.Suite[tamperevident.Mixed] {
 				ID:          MixedChecks.Verify.Cancel(),
 				Statement:   "Verify returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -623,4 +530,4 @@ func mixedVerifyIgnoresCancel(h *MixedHandle) tamperevident.Mixed {
 	return &mixedVerifyIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:122e722a5ff97a3ea39309ffbd0aa2ecb04cdb3d187ff391653d01d8a248df3d
+// dokimi:provenance sha256:efcb6cbfe6ec8aa49c97f66536e7468d5b229fde370838ef80f9aafddcb0671d

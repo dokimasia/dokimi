@@ -15,46 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Applier:
-//
-// Applier.Apply/smoke: Apply returns without a panic for derived inputs.
-//
-// Applier.Apply/smoke#generated: Apply returns without a panic for derived
-// inputs.
-//
-// Applier.Apply/cancel: Apply returns an error for a cancelled context.
-//
-// Applier.Apply/cancel#generated: Apply returns an error for a cancelled
-// context.
-//
-// Applier.Limit/smoke: Limit returns without a panic for derived inputs.
-//
-// Applier.Limit/smoke#generated: Limit returns without a panic for derived
-// inputs.
-//
-// Applier.Limit/cancel: Limit returns an error for a cancelled context.
-//
-// Applier.Limit/cancel#generated: Limit returns an error for a cancelled
-// context.
-//
-// Applier.Limit/zero-on-error: Limit returns the zero value beside an
-// error.
-//
-// Applier.Limit/zero-on-error#generated: Limit returns the zero value
-// beside an error.
-
-// The derived checks of Applier that witness their laws at the shallow
-// end:
-//
-// Applier.Apply/smoke
-//
-// Applier.Limit/smoke
-
-// The unclaimed classifications of Applier:
-//
-// The shape:writer of Applier.Apply has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -87,22 +47,10 @@ func (c applierApply) Smoke() conform.ID[resolved.Applier] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Apply returns
-// without a panic for derived inputs.
-func (c applierApply) SmokeGenerated() conform.ID[resolved.Applier] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Apply returns an error for
 // a cancelled context.
 func (c applierApply) Cancel() conform.ID[resolved.Applier] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Apply returns an
-// error for a cancelled context.
-func (c applierApply) CancelGenerated() conform.ID[resolved.Applier] {
-	return c.Check("cancel#generated")
 }
 
 // applierLimit is the name of Applier.Limit, with the identities of its
@@ -117,34 +65,16 @@ func (c applierLimit) Smoke() conform.ID[resolved.Applier] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Limit returns
-// without a panic for derived inputs.
-func (c applierLimit) SmokeGenerated() conform.ID[resolved.Applier] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Limit returns an error for
 // a cancelled context.
 func (c applierLimit) Cancel() conform.ID[resolved.Applier] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Limit returns an
-// error for a cancelled context.
-func (c applierLimit) CancelGenerated() conform.ID[resolved.Applier] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Limit returns the
 // zero value beside an error.
 func (c applierLimit) ZeroOnError() conform.ID[resolved.Applier] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Limit
-// returns the zero value beside an error.
-func (c applierLimit) ZeroOnErrorGenerated() conform.ID[resolved.Applier] {
-	return c.Check("zero-on-error#generated")
 }
 
 // ApplierSuite returns the checks of Applier, and the calls and the
@@ -159,9 +89,6 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				ID:          ApplierChecks.Apply.Smoke(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ApplierHandle) {
@@ -172,12 +99,9 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				Defect: applierApplyPanics,
 			},
 			{
-				ID:          ApplierChecks.Apply.SmokeGenerated(),
+				ID:          ApplierChecks.Apply.Smoke().Generated(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ApplierHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[resolved.ApplyRequest](), "req")
@@ -191,9 +115,6 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				ID:          ApplierChecks.Apply.Cancel(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ApplierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -203,12 +124,9 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				Defect: applierApplyIgnoresCancel,
 			},
 			{
-				ID:          ApplierChecks.Apply.CancelGenerated(),
+				ID:          ApplierChecks.Apply.Cancel().Generated(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ApplierHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[resolved.ApplyRequest](), "req")
@@ -222,9 +140,6 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				ID:          ApplierChecks.Limit.Smoke(),
 				Statement:   "Limit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ApplierHandle) {
@@ -236,12 +151,9 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				Defect: applierLimitPanics,
 			},
 			{
-				ID:          ApplierChecks.Limit.SmokeGenerated(),
+				ID:          ApplierChecks.Limit.Smoke().Generated(),
 				Statement:   "Limit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ApplierHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -256,9 +168,6 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				ID:          ApplierChecks.Limit.Cancel(),
 				Statement:   "Limit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ApplierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -269,12 +178,9 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				Defect: applierLimitIgnoresCancel,
 			},
 			{
-				ID:          ApplierChecks.Limit.CancelGenerated(),
+				ID:          ApplierChecks.Limit.Cancel().Generated(),
 				Statement:   "Limit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ApplierHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -289,9 +195,6 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				ID:          ApplierChecks.Limit.ZeroOnError(),
 				Statement:   "Limit returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ApplierHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -301,12 +204,9 @@ func ApplierSuite() conform.Suite[resolved.Applier] {
 				Defect: applierLimitValueBeside,
 			},
 			{
-				ID:          ApplierChecks.Limit.ZeroOnErrorGenerated(),
+				ID:          ApplierChecks.Limit.ZeroOnError().Generated(),
 				Statement:   "Limit returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ApplierHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -550,4 +450,4 @@ func applierLimitValueBeside(h *ApplierHandle) resolved.Applier {
 	return &applierLimitValueBesideDefect{applierOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fe6e6de91eb000b6a1948303998e6292b1f321827f28375dd0375749c444fe5b
+// dokimi:provenance sha256:ff3e9a1dae4f2163265ddb96bcf1dbb17891d97c23eefa5b33069ff9ba3c1af1

@@ -15,19 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of PoisonAccessor:
-//
-// PoisonAccessor.Err/smoke: Err returns without a panic for derived
-// inputs.
-//
-// PoisonAccessor.Err/fresh-reports-no-poison: Err reports no error for a
-// fresh receiver.
-
-// The derived checks of PoisonAccessor that witness their laws at the
-// shallow end:
-//
-// PoisonAccessor.Err/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -76,9 +63,6 @@ func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
 				ID:          PoisonAccessorChecks.Err.Smoke(),
 				Statement:   "Err returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PoisonAccessorHandle) {
@@ -92,9 +76,6 @@ func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
 				ID:          PoisonAccessorChecks.Err.FreshReportsNoPoison(),
 				Statement:   "Err reports no error for a fresh receiver",
 				Claim:       spec.FreshReportsNoPoison,
-				Probe:       spec.ReportsNoError,
-				Reason:      spec.FalsePoison,
-				Law:         spec.FreshReceiverIsHealthy,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *PoisonAccessorHandle) {
 					probe.ReportsNoError(h, func(ctx context.Context) error {
@@ -252,4 +233,4 @@ func poisonAccessorErrReportsPoison(h *PoisonAccessorHandle) poisonaccessor.Pois
 	return &poisonAccessorErrReportsPoisonDefect{poisonAccessorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d5db564843256ca1c4aaa06f1c7eddffce16f75832ff558317317bca98003d2c
+// dokimi:provenance sha256:d471f1f27e9cbc837b6b3b38306ca564f922b739e7c143f9948c23a3febe693d

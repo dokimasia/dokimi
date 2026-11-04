@@ -146,21 +146,6 @@ func NewReplicaStub(tb assert.TB, opts ...ReplicaStubOption) *ReplicaStub {
 	return s
 }
 
-// NewReplicaStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewReplicaStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ReplicaStubOption) *ReplicaStub {
-	return NewReplicaStub(tb, append([]ReplicaStubOption{
-		ReplicaStubWithClock(clk),
-		ReplicaStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewReplicaStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewReplicaStubFailing(tb assert.TB, err error, opts ...ReplicaStubOption) *ReplicaStub {
-	return NewReplicaStub(tb, append([]ReplicaStubOption{ReplicaStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ReplicaStub) ResetCalls() {
@@ -417,21 +402,6 @@ func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	return s
 }
 
-// NewMixedStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MixedStubOption) *MixedStub {
-	return NewMixedStub(tb, append([]MixedStubOption{
-		MixedStubWithClock(clk),
-		MixedStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewMixedStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewMixedStubFailing(tb assert.TB, err error, opts ...MixedStubOption) *MixedStub {
-	return NewMixedStub(tb, append([]MixedStubOption{MixedStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MixedStub) ResetCalls() {
@@ -523,4 +493,4 @@ func (s *MixedStub) Items(ctx context.Context) ([]string, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:ee899ed1f7c1b53bc9d5c4f3aeec861e6438480e1f5667b9a7f8ebca64aaa116
+// dokimi:provenance sha256:5951ebc8c0e1352b3472e53c4d82cb0373a8880dd53208f2aa3fc611528252b9

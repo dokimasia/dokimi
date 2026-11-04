@@ -49,66 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*persistertest.ContractHandle) persister.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.Persister(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.PersisterGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.PersistsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[persister.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -130,74 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*persistertest.ContractHandle) persister.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.Persister(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.PersisterGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Put.PersistsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				persistertest.ContractChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[persister.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = persistertest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *persistertest.ContractHandle) persister.Contract {
-	return persistertest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -210,65 +97,8 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(persistertest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(persistertest.ContractChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Persister(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.PersisterGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.PersistsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[persister.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -280,65 +110,8 @@ func FuzzContractSuitePut(f *testing.F) {
 		f,
 		persistertest.ContractChecks.Put.Callable,
 		contractIdle,
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Persister(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.PersisterGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.PersistsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[persister.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -350,65 +123,8 @@ func FuzzContractSuiteGet(f *testing.F) {
 		f,
 		persistertest.ContractChecks.Get.Callable,
 		contractIdle,
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.Persister(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.PersisterGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Put.PersistsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			persistertest.ContractChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[persister.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -424,4 +140,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6643c0ba3aa50c6b9b61948e48b1b47af5f2ebae41256466f56203109fdaea4f
+// dokimi:provenance sha256:70558197a0f335f695422f89454c3214422311f713af29a64fc42a50af1059e9

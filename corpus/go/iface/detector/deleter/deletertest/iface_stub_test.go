@@ -40,25 +40,38 @@ func deleterStubDeletePins() error {
 	return want0
 }
 
-// deleterStubDeleteSubject returns the subject of [stub.Behaviour] for
-// Delete. The subject calls a new double that reports to tb.
+// deleterStubDeleteSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Delete. The subject calls a new double that
+// reports to tb.
 func deleterStubDeleteSubject(
 	tb assert.TB,
 ) stub.Subject[deletertest.DeleterDeleteCall, deletertest.DeleterDeleteReturn] {
 	tb.Helper()
 	s := deletertest.NewDeleterStub(tb)
 	return stub.Subject[deletertest.DeleterDeleteCall, deletertest.DeleterDeleteReturn]{
-		Stub: s.OnDelete.MethodStub,
+		Stub:  s.OnDelete.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = deleterStubDelete(tb, s)
+		},
+		Arguments: func(tb assert.TB, c deletertest.DeleterDeleteCall) {
+			tb.Helper()
+			a0, a1 := deleterStubDeleteArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() deletertest.DeleterDeleteReturn {
 			got0 := deleterStubDelete(tb, s)
 			return deletertest.DeleterDeleteReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnDelete.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() deletertest.DeleterDeleteReturn {
+			want0 := deleterStubDeletePins()
+			s.OnDelete.Returns(want0)
+			return deletertest.DeleterDeleteReturn{Err: want0}
+		},
+		Override: func(seen func(deletertest.DeleterDeleteCall)) {
+			s.OnDelete.Func(func(p0 context.Context, p1 string) error {
+				seen(deletertest.DeleterDeleteCall{Ctx: p0, Key: p1})
 				var z0 error
 				return z0
 			})
@@ -83,7 +96,6 @@ func deleterStubInstanceOf(tb assert.TB, s *deletertest.DeleterStub) deleterStub
 		Call: func() {
 			_ = deleterStubDelete(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -95,69 +107,14 @@ func TestDeleterStub(t *testing.T) {
 	t.Run("Delete", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Delete", deleterStubDeleteSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := deletertest.NewDeleterStub(t)
-			_ = deleterStubDelete(t, s)
-			got := s.OnDelete.AssertCalledOnce(t, "Delete records the call")
-			a0, a1 := deleterStubDeleteArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := deletertest.NewDeleterStub(t)
-			var seen []deletertest.DeleterDeleteCall
-			s.OnDelete.OnRecord(func(c deletertest.DeleterDeleteCall) { seen = append(seen, c) })
-			_ = deleterStubDelete(t, s)
-			_ = deleterStubDelete(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Delete")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) deleterStubInstance {
-			return deleterStubInstanceOf(tb, deletertest.NewDeleterStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Delete", func(t *testing.T) {
+		t.Run("Delete", func(t *testing.T) {
 			t.Parallel()
-			s := deletertest.NewDeleterStub(t)
-			_ = deleterStubDelete(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnDelete.CallCount(), 0, "ResetCalls clears the calls of Delete")
-		})
-
-		t.Run("keeps the results of Returns of Delete", func(t *testing.T) {
-			t.Parallel()
-			s := deletertest.NewDeleterStub(t)
-			want0 := deleterStubDeletePins()
-			s.OnDelete.Returns(want0)
-			s.ResetCalls()
-			got0 := deleterStubDelete(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Delete")
-		})
-	})
-
-	t.Run("NewDeleterStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) deleterStubInstance {
-			return deleterStubInstanceOf(tb, deletertest.NewDeleterStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewDeleterStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Delete with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Delete-failing")
-			s := deletertest.NewDeleterStubFailing(t, want)
-			r0 := deleterStubDelete(t, s)
-			assert.ErrorIs(t, r0, want, "Delete fails with the error of NewDeleterStubFailing")
+			stub.ResetBehaviour(t, "Delete", deleterStubDeleteSubject)
 		})
 	})
 
@@ -254,54 +211,4 @@ func TestDeleterStub(t *testing.T) {
 	})
 }
 
-// TestDeleterDeleteStub checks the methods of DeleterDeleteStub, which
-// configures Delete.
-func TestDeleterDeleteStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Delete", func(t *testing.T) {
-			t.Parallel()
-			s := deletertest.NewDeleterStub(t)
-			want0 := deleterStubDeletePins()
-			s.OnDelete.Returns(want0)
-			got0 := deleterStubDelete(t, s)
-			assert.ErrorIs(t, got0, want0, "Delete returns the error that Returns sets")
-		})
-
-		t.Run("configures Delete for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := deletertest.NewDeleterStub(r)
-			s.OnDelete.Strict()
-			var want0 error
-			s.OnDelete.Returns(want0)
-			_ = deleterStubDelete(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Delete")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Delete to the function", func(t *testing.T) {
-			t.Parallel()
-			s := deletertest.NewDeleterStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnDelete.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = deleterStubDelete(t, s)
-			a0, a1 := deleterStubDeleteArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:bd5381073dd83ac9c11bec2bfc59867a2fb97a7912972d76b4f95dab3ee89e2b
+// dokimi:provenance sha256:95984c52252a8449a5b48723e5f940683e86bd75b8556cb035fbd638558952cb

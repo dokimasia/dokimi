@@ -51,14 +51,7 @@ func TestPoisonAccessorSuite(t *testing.T) {
 					return &poisonAccessorSubject{}
 				},
 			}),
-			conform.Excuse(
-				poisonaccessortest.PoisonAccessorChecks.Err.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonaccessortest.PoisonAccessorChecks.Err.FreshReportsNoPoison(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[poisonaccessor.PoisonAccessor]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -82,23 +75,20 @@ func TestPoisonAccessorSuite(t *testing.T) {
 					return &poisonAccessorSubject{}
 				},
 			}),
-			conform.Excuse(
-				poisonaccessortest.PoisonAccessorChecks.Err.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonaccessortest.PoisonAccessorChecks.Err.FreshReportsNoPoison(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[poisonaccessor.PoisonAccessor]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// poisonAccessorSuite is the suite of PoisonAccessor that the tests of the
+// planted defect of a ceiling apply.
+var poisonAccessorSuite = poisonaccessortest.PoisonAccessorSuite()
+
 // poisonAccessorIdle returns the planted defect of a ceiling of
-// PoisonAccessor with a spend of nothing, a subject that answers each call
-// at once.
+// PoisonAccessor with a spend of nothing. Each call of the defect returns
+// its zero results at once.
 func poisonAccessorIdle(h *poisonaccessortest.PoisonAccessorHandle) poisonaccessor.PoisonAccessor {
-	return poisonaccessortest.PoisonAccessorSuite().Calls[0].Over(h, func() {})
+	return poisonAccessorSuite.Calls[0].Over(h, func() {})
 }
 
 // TestPoisonAccessorSuiteBudgets applies the allocation ceilings of the
@@ -110,13 +100,8 @@ func TestPoisonAccessorSuiteBudgets(t *testing.T) {
 		t,
 		poisonAccessorIdle,
 		conform.Ceilings(poisonaccessortest.PoisonAccessorChecks.Err.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			poisonaccessortest.PoisonAccessorChecks.Err.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonaccessortest.PoisonAccessorChecks.Err.FreshReportsNoPoison(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[poisonaccessor.PoisonAccessor](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -129,13 +114,8 @@ func FuzzPoisonAccessorSuiteErr(f *testing.F) {
 		f,
 		poisonaccessortest.PoisonAccessorChecks.Err.Callable,
 		poisonAccessorIdle,
-		conform.Excuse(
-			poisonaccessortest.PoisonAccessorChecks.Err.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonaccessortest.PoisonAccessorChecks.Err.FreshReportsNoPoison(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[poisonaccessor.PoisonAccessor](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -152,4 +132,4 @@ func BenchmarkPoisonAccessorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:fc426b62cda90dcfe213846342facaae543d582049782a668cbff698b5cdcd74
+// dokimi:provenance sha256:635000aeffc2aebc74ab9e1eabb22c1a8881c6eb117f7f5db5923592354837ad

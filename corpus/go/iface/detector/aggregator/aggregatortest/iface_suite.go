@@ -15,21 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Aggregator:
-//
-// Aggregator.Count/smoke: Count returns without a panic for derived
-// inputs.
-//
-// Aggregator.Count/cancel: Count returns an error for a cancelled context.
-//
-// Aggregator.Count/zero-on-error: Count returns the zero value beside an
-// error.
-
-// The derived checks of Aggregator that witness their laws at the shallow
-// end:
-//
-// Aggregator.Count/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -84,9 +69,6 @@ func AggregatorSuite() conform.Suite[aggregator.Aggregator] {
 				ID:          AggregatorChecks.Count.Smoke(),
 				Statement:   "Count returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *AggregatorHandle) {
@@ -101,9 +83,6 @@ func AggregatorSuite() conform.Suite[aggregator.Aggregator] {
 				ID:          AggregatorChecks.Count.Cancel(),
 				Statement:   "Count returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AggregatorHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -117,9 +96,6 @@ func AggregatorSuite() conform.Suite[aggregator.Aggregator] {
 				ID:          AggregatorChecks.Count.ZeroOnError(),
 				Statement:   "Count returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AggregatorHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -293,4 +269,4 @@ func aggregatorCountValueBeside(h *AggregatorHandle) aggregator.Aggregator {
 	return &aggregatorCountValueBesideDefect{aggregatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8e93a169c876c36955713430dacf1699c91e2802d33580c6ce4cb74f6671f589
+// dokimi:provenance sha256:aef09cd70319f450748f06190a1379183fc8aeb9091d3a47eb051ce5da4276f2

@@ -73,25 +73,38 @@ func calculatorStubReset(tb assert.TB, s *nocontexttest.CalculatorStub) {
 	s.Reset()
 }
 
-// calculatorStubAddSubject returns the subject of [stub.Behaviour] for
-// Add. The subject calls a new double that reports to tb.
+// calculatorStubAddSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Add. The subject calls a new double that
+// reports to tb.
 func calculatorStubAddSubject(
 	tb assert.TB,
 ) stub.Subject[nocontexttest.CalculatorAddCall, nocontexttest.CalculatorAddReturn] {
 	tb.Helper()
 	s := nocontexttest.NewCalculatorStub(tb)
 	return stub.Subject[nocontexttest.CalculatorAddCall, nocontexttest.CalculatorAddReturn]{
-		Stub: s.OnAdd.MethodStub,
+		Stub:  s.OnAdd.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = calculatorStubAdd(tb, s)
+		},
+		Arguments: func(tb assert.TB, c nocontexttest.CalculatorAddCall) {
+			tb.Helper()
+			a0, a1 := calculatorStubAddArgs(tb)
+			expect.Equal(tb, c.A, a0, "the call records A")
+			expect.Equal(tb, c.B, a1, "the call records B")
 		},
 		Result: func() nocontexttest.CalculatorAddReturn {
 			got0 := calculatorStubAdd(tb, s)
 			return nocontexttest.CalculatorAddReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnAdd.Func(func(_, _ int) int {
-				mark()
+		Returns: func() nocontexttest.CalculatorAddReturn {
+			want0 := calculatorStubAddPins()
+			s.OnAdd.Returns(want0)
+			return nocontexttest.CalculatorAddReturn{Result: want0}
+		},
+		Override: func(seen func(nocontexttest.CalculatorAddCall)) {
+			s.OnAdd.Func(func(p0, p1 int) int {
+				seen(nocontexttest.CalculatorAddCall{A: p0, B: p1})
 				var z0 int
 				return z0
 			})
@@ -99,25 +112,38 @@ func calculatorStubAddSubject(
 	}
 }
 
-// calculatorStubDivideSubject returns the subject of [stub.Behaviour] for
-// Divide. The subject calls a new double that reports to tb.
+// calculatorStubDivideSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Divide. The subject calls a new double that
+// reports to tb.
 func calculatorStubDivideSubject(
 	tb assert.TB,
 ) stub.Subject[nocontexttest.CalculatorDivideCall, nocontexttest.CalculatorDivideReturn] {
 	tb.Helper()
 	s := nocontexttest.NewCalculatorStub(tb)
 	return stub.Subject[nocontexttest.CalculatorDivideCall, nocontexttest.CalculatorDivideReturn]{
-		Stub: s.OnDivide.MethodStub,
+		Stub:  s.OnDivide.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = calculatorStubDivide(tb, s)
+		},
+		Arguments: func(tb assert.TB, c nocontexttest.CalculatorDivideCall) {
+			tb.Helper()
+			a0, a1 := calculatorStubDivideArgs(tb)
+			expect.Equal(tb, c.A, a0, "the call records A")
+			expect.Equal(tb, c.B, a1, "the call records B")
 		},
 		Result: func() nocontexttest.CalculatorDivideReturn {
 			got0, got1 := calculatorStubDivide(tb, s)
 			return nocontexttest.CalculatorDivideReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnDivide.Func(func(_, _ int) (int, error) {
-				mark()
+		Returns: func() nocontexttest.CalculatorDivideReturn {
+			want0, want1 := calculatorStubDividePins()
+			s.OnDivide.Returns(want0, want1)
+			return nocontexttest.CalculatorDivideReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(nocontexttest.CalculatorDivideCall)) {
+			s.OnDivide.Func(func(p0, p1 int) (int, error) {
+				seen(nocontexttest.CalculatorDivideCall{A: p0, B: p1})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -130,19 +156,21 @@ func calculatorStubDivideSubject(
 	}
 }
 
-// calculatorStubResetSubject returns the subject of [stub.Behaviour] for
-// Reset. The subject calls a new double that reports to tb.
+// calculatorStubResetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Reset. The subject calls a new double that
+// reports to tb.
 func calculatorStubResetSubject(tb assert.TB) stub.Subject[nocontexttest.CalculatorResetCall, struct{}] {
 	tb.Helper()
 	s := nocontexttest.NewCalculatorStub(tb)
 	return stub.Subject[nocontexttest.CalculatorResetCall, struct{}]{
-		Stub: s.OnReset.MethodStub,
+		Stub:  s.OnReset.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			calculatorStubReset(tb, s)
 		},
-		Override: func(mark func()) {
+		Override: func(seen func(nocontexttest.CalculatorResetCall)) {
 			s.OnReset.Func(func() {
-				mark()
+				seen(nocontexttest.CalculatorResetCall{})
 			})
 		},
 	}
@@ -161,7 +189,6 @@ func calculatorStubInstanceOf(tb assert.TB, s *nocontexttest.CalculatorStub) cal
 		Call: func() {
 			_ = calculatorStubAdd(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -173,136 +200,34 @@ func TestCalculatorStub(t *testing.T) {
 	t.Run("Add", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Add", calculatorStubAddSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			_ = calculatorStubAdd(t, s)
-			got := s.OnAdd.AssertCalledOnce(t, "Add records the call")
-			a0, a1 := calculatorStubAddArgs(t)
-			expect.Equal(t, got.A, a0, "the call records A")
-			expect.Equal(t, got.B, a1, "the call records B")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			var seen []nocontexttest.CalculatorAddCall
-			s.OnAdd.OnRecord(func(c nocontexttest.CalculatorAddCall) { seen = append(seen, c) })
-			_ = calculatorStubAdd(t, s)
-			_ = calculatorStubAdd(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Add")
-		})
 	})
 
 	t.Run("Divide", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Divide", calculatorStubDivideSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			_, _ = calculatorStubDivide(t, s)
-			got := s.OnDivide.AssertCalledOnce(t, "Divide records the call")
-			a0, a1 := calculatorStubDivideArgs(t)
-			expect.Equal(t, got.A, a0, "the call records A")
-			expect.Equal(t, got.B, a1, "the call records B")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			var seen []nocontexttest.CalculatorDivideCall
-			s.OnDivide.OnRecord(func(c nocontexttest.CalculatorDivideCall) { seen = append(seen, c) })
-			_, _ = calculatorStubDivide(t, s)
-			_, _ = calculatorStubDivide(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Divide")
-		})
 	})
 
 	t.Run("Reset", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Reset", calculatorStubResetSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			var seen []nocontexttest.CalculatorResetCall
-			s.OnReset.OnRecord(func(c nocontexttest.CalculatorResetCall) { seen = append(seen, c) })
-			calculatorStubReset(t, s)
-			calculatorStubReset(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Reset")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) calculatorStubInstance {
-			return calculatorStubInstanceOf(tb, nocontexttest.NewCalculatorStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Add", func(t *testing.T) {
+		t.Run("Add", func(t *testing.T) {
 			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			_ = calculatorStubAdd(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnAdd.CallCount(), 0, "ResetCalls clears the calls of Add")
+			stub.ResetBehaviour(t, "Add", calculatorStubAddSubject)
 		})
 
-		t.Run("keeps the results of Returns of Add", func(t *testing.T) {
+		t.Run("Divide", func(t *testing.T) {
 			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			want0 := calculatorStubAddPins()
-			s.OnAdd.Returns(want0)
-			s.ResetCalls()
-			got0 := calculatorStubAdd(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Add")
+			stub.ResetBehaviour(t, "Divide", calculatorStubDivideSubject)
 		})
 
-		t.Run("clears the recorded calls of Divide", func(t *testing.T) {
+		t.Run("Reset", func(t *testing.T) {
 			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			_, _ = calculatorStubDivide(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnDivide.CallCount(), 0, "ResetCalls clears the calls of Divide")
-		})
-
-		t.Run("keeps the results of Returns of Divide", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			want0, want1 := calculatorStubDividePins()
-			s.OnDivide.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := calculatorStubDivide(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Divide")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Divide")
-		})
-
-		t.Run("clears the recorded calls of Reset", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			calculatorStubReset(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnReset.CallCount(), 0, "ResetCalls clears the calls of Reset")
-		})
-	})
-
-	t.Run("NewCalculatorStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) calculatorStubInstance {
-			return calculatorStubInstanceOf(tb, nocontexttest.NewCalculatorStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewCalculatorStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Divide with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Divide-failing")
-			s := nocontexttest.NewCalculatorStubFailing(t, want)
-			_, r1 := calculatorStubDivide(t, s)
-			assert.ErrorIs(t, r1, want, "Divide fails with the error of NewCalculatorStubFailing")
+			stub.ResetBehaviour(t, "Reset", calculatorStubResetSubject)
 		})
 	})
 
@@ -458,107 +383,4 @@ func TestCalculatorStub(t *testing.T) {
 	})
 }
 
-// TestCalculatorAddStub checks the methods of CalculatorAddStub, which
-// configures Add.
-func TestCalculatorAddStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Add", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			want0 := calculatorStubAddPins()
-			s.OnAdd.Returns(want0)
-			got0 := calculatorStubAdd(t, s)
-			assert.Equal(t, got0, want0, "Add returns the Result that Returns sets")
-		})
-
-		t.Run("configures Add for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := nocontexttest.NewCalculatorStub(r)
-			s.OnAdd.Strict()
-			var want0 int
-			s.OnAdd.Returns(want0)
-			_ = calculatorStubAdd(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Add")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Add to the function", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			var got0 int
-			var got1 int
-			s.OnAdd.Func(func(p0, p1 int) int {
-				got0, got1 = p0, p1
-				var z0 int
-				return z0
-			})
-			_ = calculatorStubAdd(t, s)
-			a0, a1 := calculatorStubAddArgs(t)
-			expect.Equal(t, got0, a0, "the function receives A")
-			expect.Equal(t, got1, a1, "the function receives B")
-		})
-	})
-}
-
-// TestCalculatorDivideStub checks the methods of CalculatorDivideStub,
-// which configures Divide.
-func TestCalculatorDivideStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Divide", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			want0, want1 := calculatorStubDividePins()
-			s.OnDivide.Returns(want0, want1)
-			got0, got1 := calculatorStubDivide(t, s)
-			expect.Equal(t, got0, want0, "Divide returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Divide returns the error that Returns sets")
-		})
-
-		t.Run("configures Divide for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := nocontexttest.NewCalculatorStub(r)
-			s.OnDivide.Strict()
-			var want0 int
-			var want1 error
-			s.OnDivide.Returns(want0, want1)
-			_, _ = calculatorStubDivide(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Divide")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Divide to the function", func(t *testing.T) {
-			t.Parallel()
-			s := nocontexttest.NewCalculatorStub(t)
-			var got0 int
-			var got1 int
-			s.OnDivide.Func(func(p0, p1 int) (int, error) {
-				got0, got1 = p0, p1
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = calculatorStubDivide(t, s)
-			a0, a1 := calculatorStubDivideArgs(t)
-			expect.Equal(t, got0, a0, "the function receives A")
-			expect.Equal(t, got1, a1, "the function receives B")
-		})
-	})
-}
-
-// dokimi:provenance sha256:dddff983267331e8a9865c7439ff27900f63189ad69d7d910547b8604e14fca9
+// dokimi:provenance sha256:35f6463e21874585ef44259926fcb0913d881c31124783cdd30eb5879fbb2ad0

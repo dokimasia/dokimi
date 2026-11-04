@@ -48,58 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*accumulatestest.MixedHandle) accumulates.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.Accumulates(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.AccumulatesGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.CompoundsOverSequences(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[accumulates.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -121,66 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*accumulatestest.MixedHandle) accumulates.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.Accumulates(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.AccumulatesGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Add.CompoundsOverSequences(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				accumulatestest.MixedChecks.Total.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[accumulates.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = accumulatestest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *accumulatestest.MixedHandle) accumulates.Mixed {
-	return accumulatestest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -193,58 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(accumulatestest.MixedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(accumulatestest.MixedChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Accumulates(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.AccumulatesGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.CompoundsOverSequences(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[accumulates.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -255,58 +106,7 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 		f,
 		accumulatestest.MixedChecks.Add.Callable,
 		mixedIdle,
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Accumulates(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.AccumulatesGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.CompoundsOverSequences(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[accumulates.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -317,58 +117,7 @@ func FuzzMixedSuiteTotal(f *testing.F) {
 		f,
 		accumulatestest.MixedChecks.Total.Callable,
 		mixedIdle,
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.Accumulates(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.AccumulatesGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Add.CompoundsOverSequences(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			accumulatestest.MixedChecks.Total.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[accumulates.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -383,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:85b50040c98201dce0d08fecf9cd9a1f5d292bde4c161e17373aeb826841c39a
+// dokimi:provenance sha256:acbe654ee1b04a78aa9cbd0be9284b7fed8840213edb18ec0bfda50dd3da947b

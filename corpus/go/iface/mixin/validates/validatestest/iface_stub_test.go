@@ -88,23 +88,36 @@ func mixedStubReadPins() (validates.Payload, error) {
 	return want0, want1
 }
 
-// mixedStubStoreSubject returns the subject of [stub.Behaviour] for Store.
-// The subject calls a new double that reports to tb.
+// mixedStubStoreSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Store. The subject calls a new double that
+// reports to tb.
 func mixedStubStoreSubject(tb assert.TB) stub.Subject[validatestest.MixedStoreCall, validatestest.MixedStoreReturn] {
 	tb.Helper()
 	s := validatestest.NewMixedStub(tb)
 	return stub.Subject[validatestest.MixedStoreCall, validatestest.MixedStoreReturn]{
-		Stub: s.OnStore.MethodStub,
+		Stub:  s.OnStore.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubStore(tb, s)
+		},
+		Arguments: func(tb assert.TB, c validatestest.MixedStoreCall) {
+			tb.Helper()
+			a0, a1 := mixedStubStoreArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() validatestest.MixedStoreReturn {
 			got0 := mixedStubStore(tb, s)
 			return validatestest.MixedStoreReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnStore.Func(func(_ context.Context, _ validates.Payload) error {
-				mark()
+		Returns: func() validatestest.MixedStoreReturn {
+			want0 := mixedStubStorePins()
+			s.OnStore.Returns(want0)
+			return validatestest.MixedStoreReturn{Err: want0}
+		},
+		Override: func(seen func(validatestest.MixedStoreCall)) {
+			s.OnStore.Func(func(p0 context.Context, p1 validates.Payload) error {
+				seen(validatestest.MixedStoreCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -116,25 +129,37 @@ func mixedStubStoreSubject(tb assert.TB) stub.Subject[validatestest.MixedStoreCa
 	}
 }
 
-// mixedStubValidateSubject returns the subject of [stub.Behaviour] for
-// Validate. The subject calls a new double that reports to tb.
+// mixedStubValidateSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Validate. The subject calls a new double that
+// reports to tb.
 func mixedStubValidateSubject(
 	tb assert.TB,
 ) stub.Subject[validatestest.MixedValidateCall, validatestest.MixedValidateReturn] {
 	tb.Helper()
 	s := validatestest.NewMixedStub(tb)
 	return stub.Subject[validatestest.MixedValidateCall, validatestest.MixedValidateReturn]{
-		Stub: s.OnValidate.MethodStub,
+		Stub:  s.OnValidate.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubValidate(tb, s)
+		},
+		Arguments: func(tb assert.TB, c validatestest.MixedValidateCall) {
+			tb.Helper()
+			a0 := mixedStubValidateArgs(tb)
+			assert.Equal(tb, c.V, a0, "the call records V")
 		},
 		Result: func() validatestest.MixedValidateReturn {
 			got0 := mixedStubValidate(tb, s)
 			return validatestest.MixedValidateReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnValidate.Func(func(_ validates.Payload) error {
-				mark()
+		Returns: func() validatestest.MixedValidateReturn {
+			want0 := mixedStubValidatePins()
+			s.OnValidate.Returns(want0)
+			return validatestest.MixedValidateReturn{Err: want0}
+		},
+		Override: func(seen func(validatestest.MixedValidateCall)) {
+			s.OnValidate.Func(func(p0 validates.Payload) error {
+				seen(validatestest.MixedValidateCall{V: p0})
 				var z0 error
 				return z0
 			})
@@ -146,23 +171,36 @@ func mixedStubValidateSubject(
 	}
 }
 
-// mixedStubReadSubject returns the subject of [stub.Behaviour] for Read.
-// The subject calls a new double that reports to tb.
+// mixedStubReadSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Read. The subject calls a new double that
+// reports to tb.
 func mixedStubReadSubject(tb assert.TB) stub.Subject[validatestest.MixedReadCall, validatestest.MixedReadReturn] {
 	tb.Helper()
 	s := validatestest.NewMixedStub(tb)
 	return stub.Subject[validatestest.MixedReadCall, validatestest.MixedReadReturn]{
-		Stub: s.OnRead.MethodStub,
+		Stub:  s.OnRead.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubRead(tb, s)
+		},
+		Arguments: func(tb assert.TB, c validatestest.MixedReadCall) {
+			tb.Helper()
+			a0, a1 := mixedStubReadArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() validatestest.MixedReadReturn {
 			got0, got1 := mixedStubRead(tb, s)
 			return validatestest.MixedReadReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnRead.Func(func(_ context.Context, _ string) (validates.Payload, error) {
-				mark()
+		Returns: func() validatestest.MixedReadReturn {
+			want0, want1 := mixedStubReadPins()
+			s.OnRead.Returns(want0, want1)
+			return validatestest.MixedReadReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(validatestest.MixedReadCall)) {
+			s.OnRead.Func(func(p0 context.Context, p1 string) (validates.Payload, error) {
+				seen(validatestest.MixedReadCall{Ctx: p0, Key: p1})
 				var z0 validates.Payload
 				var z1 error
 				return z0, z1
@@ -188,7 +226,6 @@ func mixedStubInstanceOf(tb assert.TB, s *validatestest.MixedStub) mixedStubInst
 		Call: func() {
 			_ = mixedStubStore(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -200,171 +237,34 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Store", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Store", mixedStubStoreSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			_ = mixedStubStore(t, s)
-			got := s.OnStore.AssertCalledOnce(t, "Store records the call")
-			a0, a1 := mixedStubStoreArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			var seen []validatestest.MixedStoreCall
-			s.OnStore.OnRecord(func(c validatestest.MixedStoreCall) { seen = append(seen, c) })
-			_ = mixedStubStore(t, s)
-			_ = mixedStubStore(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Store")
-		})
 	})
 
 	t.Run("Validate", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Validate", mixedStubValidateSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			_ = mixedStubValidate(t, s)
-			got := s.OnValidate.AssertCalledOnce(t, "Validate records the call")
-			a0 := mixedStubValidateArgs(t)
-			assert.Equal(t, got.V, a0, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			var seen []validatestest.MixedValidateCall
-			s.OnValidate.OnRecord(func(c validatestest.MixedValidateCall) { seen = append(seen, c) })
-			_ = mixedStubValidate(t, s)
-			_ = mixedStubValidate(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Validate")
-		})
 	})
 
 	t.Run("Read", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Read", mixedStubReadSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			_, _ = mixedStubRead(t, s)
-			got := s.OnRead.AssertCalledOnce(t, "Read records the call")
-			a0, a1 := mixedStubReadArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			var seen []validatestest.MixedReadCall
-			s.OnRead.OnRecord(func(c validatestest.MixedReadCall) { seen = append(seen, c) })
-			_, _ = mixedStubRead(t, s)
-			_, _ = mixedStubRead(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Read")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, validatestest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Store", func(t *testing.T) {
+		t.Run("Store", func(t *testing.T) {
 			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			_ = mixedStubStore(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStore.CallCount(), 0, "ResetCalls clears the calls of Store")
+			stub.ResetBehaviour(t, "Store", mixedStubStoreSubject)
 		})
 
-		t.Run("keeps the results of Returns of Store", func(t *testing.T) {
+		t.Run("Validate", func(t *testing.T) {
 			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			want0 := mixedStubStorePins()
-			s.OnStore.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Store")
+			stub.ResetBehaviour(t, "Validate", mixedStubValidateSubject)
 		})
 
-		t.Run("clears the recorded calls of Validate", func(t *testing.T) {
+		t.Run("Read", func(t *testing.T) {
 			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			_ = mixedStubValidate(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnValidate.CallCount(), 0, "ResetCalls clears the calls of Validate")
-		})
-
-		t.Run("keeps the results of Returns of Validate", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			want0 := mixedStubValidatePins()
-			s.OnValidate.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubValidate(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Validate")
-		})
-
-		t.Run("clears the recorded calls of Read", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			_, _ = mixedStubRead(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRead.CallCount(), 0, "ResetCalls clears the calls of Read")
-		})
-
-		t.Run("keeps the results of Returns of Read", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			want0, want1 := mixedStubReadPins()
-			s.OnRead.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubRead(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Read")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Read")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, validatestest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Store with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Store-failing")
-			s := validatestest.NewMixedStubFailing(t, want)
-			r0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, r0, want, "Store fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Validate with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Validate-failing")
-			s := validatestest.NewMixedStubFailing(t, want)
-			r0 := mixedStubValidate(t, s)
-			assert.ErrorIs(t, r0, want, "Validate fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Read with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Read-failing")
-			s := validatestest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubRead(t, s)
-			assert.ErrorIs(t, r1, want, "Read fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Read", mixedStubReadSubject)
 		})
 	})
 
@@ -552,155 +452,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedStoreStub checks the methods of MixedStoreStub, which
-// configures Store.
-func TestMixedStoreStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Store", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			want0 := mixedStubStorePins()
-			s.OnStore.Returns(want0)
-			got0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, got0, want0, "Store returns the error that Returns sets")
-		})
-
-		t.Run("configures Store for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := validatestest.NewMixedStub(r)
-			s.OnStore.Strict()
-			var want0 error
-			s.OnStore.Returns(want0)
-			_ = mixedStubStore(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Store")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Store to the function", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 validates.Payload
-			s.OnStore.Func(func(p0 context.Context, p1 validates.Payload) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubStore(t, s)
-			a0, a1 := mixedStubStoreArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// TestMixedValidateStub checks the methods of MixedValidateStub, which
-// configures Validate.
-func TestMixedValidateStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Validate", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			want0 := mixedStubValidatePins()
-			s.OnValidate.Returns(want0)
-			got0 := mixedStubValidate(t, s)
-			assert.ErrorIs(t, got0, want0, "Validate returns the error that Returns sets")
-		})
-
-		t.Run("configures Validate for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := validatestest.NewMixedStub(r)
-			s.OnValidate.Strict()
-			var want0 error
-			s.OnValidate.Returns(want0)
-			_ = mixedStubValidate(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Validate")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Validate to the function", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			var got0 validates.Payload
-			s.OnValidate.Func(func(p0 validates.Payload) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = mixedStubValidate(t, s)
-			a0 := mixedStubValidateArgs(t)
-			assert.Equal(t, got0, a0, "the function receives V")
-		})
-	})
-}
-
-// TestMixedReadStub checks the methods of MixedReadStub, which configures
-// Read.
-func TestMixedReadStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Read", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			want0, want1 := mixedStubReadPins()
-			s.OnRead.Returns(want0, want1)
-			got0, got1 := mixedStubRead(t, s)
-			expect.Equal(t, got0, want0, "Read returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Read returns the error that Returns sets")
-		})
-
-		t.Run("configures Read for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := validatestest.NewMixedStub(r)
-			s.OnRead.Strict()
-			var want0 validates.Payload
-			var want1 error
-			s.OnRead.Returns(want0, want1)
-			_, _ = mixedStubRead(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Read")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Read to the function", func(t *testing.T) {
-			t.Parallel()
-			s := validatestest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnRead.Func(func(p0 context.Context, p1 string) (validates.Payload, error) {
-				got0, got1 = p0, p1
-				var z0 validates.Payload
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubRead(t, s)
-			a0, a1 := mixedStubReadArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:86dab8460eedc00b247b90ad04b7a6ab71a6e804c9a100c7fba022123066592c
+// dokimi:provenance sha256:aa9837d2d1274b89c48b7e19a3cda35f592872ea914c3666c68e825e65b0ce4f

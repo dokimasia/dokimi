@@ -15,23 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Clock:
-//
-// Clock.Update/smoke: Update returns without a panic for derived inputs.
-//
-// Clock.Update/smoke#generated: Update returns without a panic for derived
-// inputs.
-
-// The derived checks of Clock that witness their laws at the shallow end:
-//
-// Clock.Update/smoke
-
-// The refused claims of Clock:
-//
-// Clock.Update/zero-on-error: Update fails only for an instant beyond the
-// max offset of the clock. The remedy is to remove the directive refuse of
-// the claim where Update makes it.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -62,12 +45,6 @@ func (c clockUpdate) Smoke() conform.ID[refused.Clock] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Update returns
-// without a panic for derived inputs.
-func (c clockUpdate) SmokeGenerated() conform.ID[refused.Clock] {
-	return c.Check("smoke#generated")
-}
-
 // ClockSuite returns the checks of Clock, and the calls and the budgets of
 // its callables.
 func ClockSuite() conform.Suite[refused.Clock] {
@@ -80,9 +57,6 @@ func ClockSuite() conform.Suite[refused.Clock] {
 				ID:          ClockChecks.Update.Smoke(),
 				Statement:   "Update returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ClockHandle) {
@@ -94,12 +68,9 @@ func ClockSuite() conform.Suite[refused.Clock] {
 				Defect: clockUpdatePanics,
 			},
 			{
-				ID:          ClockChecks.Update.SmokeGenerated(),
+				ID:          ClockChecks.Update.Smoke().Generated(),
 				Statement:   "Update returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ClockHandle, c *prop.Case) {
 					drawnObserved := c.Draw(prop.Of[refused.Instant](), "observed")
@@ -234,4 +205,4 @@ func clockUpdatePanics(h *ClockHandle) refused.Clock {
 	return &clockUpdatePanicsDefect{clockOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9af580d59cf7ba9518e9e910bda8a82fceafcf4aff88801278f4ccc2b5c6fe41
+// dokimi:provenance sha256:790e61fc1c3d466b4c761527db2526e59682f94cfa22436c77b0767c7150d280

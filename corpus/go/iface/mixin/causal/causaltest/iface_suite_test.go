@@ -48,66 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*causaltest.MixedHandle) causal.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.Causal(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.CausalGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.CausalHistory(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[causal.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -129,74 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*causaltest.MixedHandle) causal.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Store.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.Causal(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.CausalGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				causaltest.MixedChecks.Get.CausalHistory(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[causal.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = causaltest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *causaltest.MixedHandle) causal.Mixed {
-	return causaltest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -209,66 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(causaltest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(causaltest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Causal(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CausalGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CausalHistory(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[causal.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -279,66 +106,7 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		f,
 		causaltest.MixedChecks.Store.Callable,
 		mixedIdle,
-		conform.Excuse(
-			causaltest.MixedChecks.Store.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Causal(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CausalGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CausalHistory(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[causal.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -349,66 +117,7 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		causaltest.MixedChecks.Get.Callable,
 		mixedIdle,
-		conform.Excuse(
-			causaltest.MixedChecks.Store.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Store.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.Causal(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CausalGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			causaltest.MixedChecks.Get.CausalHistory(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[causal.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -423,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5d049df4b0ce34073a6a90ce24479825f91b8a031625d0164035a649d1e8832c
+// dokimi:provenance sha256:a3925645ab4ee63fe649350a72fb44694b91f0c938a2e4873b40c26c1d159f04

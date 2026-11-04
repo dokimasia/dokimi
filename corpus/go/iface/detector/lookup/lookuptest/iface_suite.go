@@ -15,23 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Lookup:
-//
-// Lookup.Inspect/smoke: Inspect returns without a panic for derived
-// inputs.
-//
-// Lookup.Inspect/smoke#generated: Inspect returns without a panic for
-// derived inputs.
-
-// The derived checks of Lookup that witness their laws at the shallow end:
-//
-// Lookup.Inspect/smoke
-
-// The refused claims of Lookup:
-//
-// Lookup.Inspect/zeroes-on-miss: Inspect returns no presence flag. The
-// remedy is to return a presence flag beside the value of Inspect.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -62,12 +45,6 @@ func (c lookupInspect) Smoke() conform.ID[lookup.Lookup] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Inspect returns
-// without a panic for derived inputs.
-func (c lookupInspect) SmokeGenerated() conform.ID[lookup.Lookup] {
-	return c.Check("smoke#generated")
-}
-
 // LookupSuite returns the checks of Lookup, and the calls and the budgets
 // of its callables.
 func LookupSuite() conform.Suite[lookup.Lookup] {
@@ -80,9 +57,6 @@ func LookupSuite() conform.Suite[lookup.Lookup] {
 				ID:          LookupChecks.Inspect.Smoke(),
 				Statement:   "Inspect returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LookupHandle) {
@@ -94,12 +68,9 @@ func LookupSuite() conform.Suite[lookup.Lookup] {
 				Defect: lookupInspectPanics,
 			},
 			{
-				ID:          LookupChecks.Inspect.SmokeGenerated(),
+				ID:          LookupChecks.Inspect.Smoke().Generated(),
 				Statement:   "Inspect returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LookupHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -234,4 +205,4 @@ func lookupInspectPanics(h *LookupHandle) lookup.Lookup {
 	return &lookupInspectPanicsDefect{lookupOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6c250bf327b63d8f513e10c1c290336fec481cc50f241c7b35143f8621aa8b30
+// dokimi:provenance sha256:137639afb635844fc296e6745853ee77bb067fbbc3b6eb64a2f331816fd120ad

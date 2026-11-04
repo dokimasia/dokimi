@@ -90,25 +90,39 @@ func batchedStubListPins() ([]string, error) {
 	return want0, want1
 }
 
-// batchedStubPutSubject returns the subject of [stub.Behaviour] for Put.
-// The subject calls a new double that reports to tb.
+// batchedStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func batchedStubPutSubject(
 	tb assert.TB,
 ) stub.Subject[batchedmixinstest.BatchedPutCall, batchedmixinstest.BatchedPutReturn] {
 	tb.Helper()
 	s := batchedmixinstest.NewBatchedStub(tb)
 	return stub.Subject[batchedmixinstest.BatchedPutCall, batchedmixinstest.BatchedPutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = batchedStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c batchedmixinstest.BatchedPutCall) {
+			tb.Helper()
+			a0, a1, a2 := batchedStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.Value, a2, "the call records Value")
 		},
 		Result: func() batchedmixinstest.BatchedPutReturn {
 			got0 := batchedStubPut(tb, s)
 			return batchedmixinstest.BatchedPutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _, _ string) error {
-				mark()
+		Returns: func() batchedmixinstest.BatchedPutReturn {
+			want0 := batchedStubPutPins()
+			s.OnPut.Returns(want0)
+			return batchedmixinstest.BatchedPutReturn{Err: want0}
+		},
+		Override: func(seen func(batchedmixinstest.BatchedPutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1, p2 string) error {
+				seen(batchedmixinstest.BatchedPutCall{Ctx: p0, Key: p1, Value: p2})
 				var z0 error
 				return z0
 			})
@@ -120,25 +134,38 @@ func batchedStubPutSubject(
 	}
 }
 
-// batchedStubReadSubject returns the subject of [stub.Behaviour] for Read.
-// The subject calls a new double that reports to tb.
+// batchedStubReadSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Read. The subject calls a new double that
+// reports to tb.
 func batchedStubReadSubject(
 	tb assert.TB,
 ) stub.Subject[batchedmixinstest.BatchedReadCall, batchedmixinstest.BatchedReadReturn] {
 	tb.Helper()
 	s := batchedmixinstest.NewBatchedStub(tb)
 	return stub.Subject[batchedmixinstest.BatchedReadCall, batchedmixinstest.BatchedReadReturn]{
-		Stub: s.OnRead.MethodStub,
+		Stub:  s.OnRead.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = batchedStubRead(tb, s)
+		},
+		Arguments: func(tb assert.TB, c batchedmixinstest.BatchedReadCall) {
+			tb.Helper()
+			a0, a1 := batchedStubReadArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() batchedmixinstest.BatchedReadReturn {
 			got0, got1 := batchedStubRead(tb, s)
 			return batchedmixinstest.BatchedReadReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnRead.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() batchedmixinstest.BatchedReadReturn {
+			want0, want1 := batchedStubReadPins()
+			s.OnRead.Returns(want0, want1)
+			return batchedmixinstest.BatchedReadReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(batchedmixinstest.BatchedReadCall)) {
+			s.OnRead.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(batchedmixinstest.BatchedReadCall{Ctx: p0, Key: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -151,25 +178,37 @@ func batchedStubReadSubject(
 	}
 }
 
-// batchedStubListSubject returns the subject of [stub.Behaviour] for List.
-// The subject calls a new double that reports to tb.
+// batchedStubListSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for List. The subject calls a new double that
+// reports to tb.
 func batchedStubListSubject(
 	tb assert.TB,
 ) stub.Subject[batchedmixinstest.BatchedListCall, batchedmixinstest.BatchedListReturn] {
 	tb.Helper()
 	s := batchedmixinstest.NewBatchedStub(tb)
 	return stub.Subject[batchedmixinstest.BatchedListCall, batchedmixinstest.BatchedListReturn]{
-		Stub: s.OnList.MethodStub,
+		Stub:  s.OnList.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = batchedStubList(tb, s)
+		},
+		Arguments: func(tb assert.TB, c batchedmixinstest.BatchedListCall) {
+			tb.Helper()
+			a0 := batchedStubListArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() batchedmixinstest.BatchedListReturn {
 			got0, got1 := batchedStubList(tb, s)
 			return batchedmixinstest.BatchedListReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnList.Func(func(_ context.Context) ([]string, error) {
-				mark()
+		Returns: func() batchedmixinstest.BatchedListReturn {
+			want0, want1 := batchedStubListPins()
+			s.OnList.Returns(want0, want1)
+			return batchedmixinstest.BatchedListReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(batchedmixinstest.BatchedListCall)) {
+			s.OnList.Func(func(p0 context.Context) ([]string, error) {
+				seen(batchedmixinstest.BatchedListCall{Ctx: p0})
 				var z0 []string
 				var z1 error
 				return z0, z1
@@ -195,7 +234,6 @@ func batchedStubInstanceOf(tb assert.TB, s *batchedmixinstest.BatchedStub) batch
 		Call: func() {
 			_ = batchedStubPut(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -207,173 +245,34 @@ func TestBatchedStub(t *testing.T) {
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", batchedStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			_ = batchedStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1, a2 := batchedStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.Value, a2, "the call records Value")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			var seen []batchedmixinstest.BatchedPutCall
-			s.OnPut.OnRecord(func(c batchedmixinstest.BatchedPutCall) { seen = append(seen, c) })
-			_ = batchedStubPut(t, s)
-			_ = batchedStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("Read", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Read", batchedStubReadSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			_, _ = batchedStubRead(t, s)
-			got := s.OnRead.AssertCalledOnce(t, "Read records the call")
-			a0, a1 := batchedStubReadArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			var seen []batchedmixinstest.BatchedReadCall
-			s.OnRead.OnRecord(func(c batchedmixinstest.BatchedReadCall) { seen = append(seen, c) })
-			_, _ = batchedStubRead(t, s)
-			_, _ = batchedStubRead(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Read")
-		})
 	})
 
 	t.Run("List", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "List", batchedStubListSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			_, _ = batchedStubList(t, s)
-			got := s.OnList.AssertCalledOnce(t, "List records the call")
-			a0 := batchedStubListArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			var seen []batchedmixinstest.BatchedListCall
-			s.OnList.OnRecord(func(c batchedmixinstest.BatchedListCall) { seen = append(seen, c) })
-			_, _ = batchedStubList(t, s)
-			_, _ = batchedStubList(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of List")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) batchedStubInstance {
-			return batchedStubInstanceOf(tb, batchedmixinstest.NewBatchedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			_ = batchedStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+			stub.ResetBehaviour(t, "Put", batchedStubPutSubject)
 		})
 
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+		t.Run("Read", func(t *testing.T) {
 			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			want0 := batchedStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := batchedStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+			stub.ResetBehaviour(t, "Read", batchedStubReadSubject)
 		})
 
-		t.Run("clears the recorded calls of Read", func(t *testing.T) {
+		t.Run("List", func(t *testing.T) {
 			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			_, _ = batchedStubRead(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRead.CallCount(), 0, "ResetCalls clears the calls of Read")
-		})
-
-		t.Run("keeps the results of Returns of Read", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			want0, want1 := batchedStubReadPins()
-			s.OnRead.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := batchedStubRead(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Read")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Read")
-		})
-
-		t.Run("clears the recorded calls of List", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			_, _ = batchedStubList(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnList.CallCount(), 0, "ResetCalls clears the calls of List")
-		})
-
-		t.Run("keeps the results of Returns of List", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			want0, want1 := batchedStubListPins()
-			s.OnList.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := batchedStubList(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of List")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of List")
-		})
-	})
-
-	t.Run("NewBatchedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) batchedStubInstance {
-			return batchedStubInstanceOf(tb, batchedmixinstest.NewBatchedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewBatchedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := batchedmixinstest.NewBatchedStubFailing(t, want)
-			r0 := batchedStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewBatchedStubFailing")
-		})
-
-		t.Run("fails Read with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Read-failing")
-			s := batchedmixinstest.NewBatchedStubFailing(t, want)
-			_, r1 := batchedStubRead(t, s)
-			assert.ErrorIs(t, r1, want, "Read fails with the error of NewBatchedStubFailing")
-		})
-
-		t.Run("fails List with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("List-failing")
-			s := batchedmixinstest.NewBatchedStubFailing(t, want)
-			_, r1 := batchedStubList(t, s)
-			assert.ErrorIs(t, r1, want, "List fails with the error of NewBatchedStubFailing")
+			stub.ResetBehaviour(t, "List", batchedStubListSubject)
 		})
 	})
 
@@ -577,160 +476,4 @@ func TestBatchedStub(t *testing.T) {
 	})
 }
 
-// TestBatchedPutStub checks the methods of BatchedPutStub, which
-// configures Put.
-func TestBatchedPutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			want0 := batchedStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := batchedStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := batchedmixinstest.NewBatchedStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = batchedStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 string
-			s.OnPut.Func(func(p0 context.Context, p1, p2 string) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = batchedStubPut(t, s)
-			a0, a1, a2 := batchedStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives Value")
-		})
-	})
-}
-
-// TestBatchedReadStub checks the methods of BatchedReadStub, which
-// configures Read.
-func TestBatchedReadStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Read", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			want0, want1 := batchedStubReadPins()
-			s.OnRead.Returns(want0, want1)
-			got0, got1 := batchedStubRead(t, s)
-			expect.Equal(t, got0, want0, "Read returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Read returns the error that Returns sets")
-		})
-
-		t.Run("configures Read for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := batchedmixinstest.NewBatchedStub(r)
-			s.OnRead.Strict()
-			var want0 string
-			var want1 error
-			s.OnRead.Returns(want0, want1)
-			_, _ = batchedStubRead(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Read")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Read to the function", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnRead.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = batchedStubRead(t, s)
-			a0, a1 := batchedStubReadArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestBatchedListStub checks the methods of BatchedListStub, which
-// configures List.
-func TestBatchedListStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of List", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			want0, want1 := batchedStubListPins()
-			s.OnList.Returns(want0, want1)
-			got0, got1 := batchedStubList(t, s)
-			expect.Equal(t, got0, want0, "List returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "List returns the error that Returns sets")
-		})
-
-		t.Run("configures List for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := batchedmixinstest.NewBatchedStub(r)
-			s.OnList.Strict()
-			var want0 []string
-			var want1 error
-			s.OnList.Returns(want0, want1)
-			_, _ = batchedStubList(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of List")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of List to the function", func(t *testing.T) {
-			t.Parallel()
-			s := batchedmixinstest.NewBatchedStub(t)
-			var got0 context.Context
-			s.OnList.Func(func(p0 context.Context) ([]string, error) {
-				got0 = p0
-				var z0 []string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = batchedStubList(t, s)
-			a0 := batchedStubListArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:55d975ce28864804164b4b18a6570037bbe063b807d7c9f17502e28439be1ae2
+// dokimi:provenance sha256:51dbdff533ed10d4e0225ba6176cb16f6b3404586c88f82be6126abdac6ef9fc

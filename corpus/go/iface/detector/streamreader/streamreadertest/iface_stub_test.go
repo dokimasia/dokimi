@@ -63,25 +63,38 @@ func streamReaderStubListPins() iter.Seq2[streamreader.Value, error] {
 	return want0
 }
 
-// streamReaderStubAddSubject returns the subject of [stub.Behaviour] for
-// Add. The subject calls a new double that reports to tb.
+// streamReaderStubAddSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Add. The subject calls a new double that
+// reports to tb.
 func streamReaderStubAddSubject(
 	tb assert.TB,
 ) stub.Subject[streamreadertest.StreamReaderAddCall, streamreadertest.StreamReaderAddReturn] {
 	tb.Helper()
 	s := streamreadertest.NewStreamReaderStub(tb)
 	return stub.Subject[streamreadertest.StreamReaderAddCall, streamreadertest.StreamReaderAddReturn]{
-		Stub: s.OnAdd.MethodStub,
+		Stub:  s.OnAdd.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = streamReaderStubAdd(tb, s)
+		},
+		Arguments: func(tb assert.TB, c streamreadertest.StreamReaderAddCall) {
+			tb.Helper()
+			a0, a1 := streamReaderStubAddArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() streamreadertest.StreamReaderAddReturn {
 			got0 := streamReaderStubAdd(tb, s)
 			return streamreadertest.StreamReaderAddReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnAdd.Func(func(_ context.Context, _ streamreader.Value) error {
-				mark()
+		Returns: func() streamreadertest.StreamReaderAddReturn {
+			want0 := streamReaderStubAddPins()
+			s.OnAdd.Returns(want0)
+			return streamreadertest.StreamReaderAddReturn{Err: want0}
+		},
+		Override: func(seen func(streamreadertest.StreamReaderAddCall)) {
+			s.OnAdd.Func(func(p0 context.Context, p1 streamreader.Value) error {
+				seen(streamreadertest.StreamReaderAddCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -93,25 +106,37 @@ func streamReaderStubAddSubject(
 	}
 }
 
-// streamReaderStubListSubject returns the subject of [stub.Behaviour] for
-// List. The subject calls a new double that reports to tb.
+// streamReaderStubListSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for List. The subject calls a new double that
+// reports to tb.
 func streamReaderStubListSubject(
 	tb assert.TB,
 ) stub.Subject[streamreadertest.StreamReaderListCall, streamreadertest.StreamReaderListReturn] {
 	tb.Helper()
 	s := streamreadertest.NewStreamReaderStub(tb)
 	return stub.Subject[streamreadertest.StreamReaderListCall, streamreadertest.StreamReaderListReturn]{
-		Stub: s.OnList.MethodStub,
+		Stub:  s.OnList.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = streamReaderStubList(tb, s)
+		},
+		Arguments: func(tb assert.TB, c streamreadertest.StreamReaderListCall) {
+			tb.Helper()
+			a0 := streamReaderStubListArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() streamreadertest.StreamReaderListReturn {
 			got0 := streamReaderStubList(tb, s)
 			return streamreadertest.StreamReaderListReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnList.Func(func(_ context.Context) iter.Seq2[streamreader.Value, error] {
-				mark()
+		Returns: func() streamreadertest.StreamReaderListReturn {
+			want0 := streamReaderStubListPins()
+			s.OnList.Returns(want0)
+			return streamreadertest.StreamReaderListReturn{Result: want0}
+		},
+		Override: func(seen func(streamreadertest.StreamReaderListCall)) {
+			s.OnList.Func(func(p0 context.Context) iter.Seq2[streamreader.Value, error] {
+				seen(streamreadertest.StreamReaderListCall{Ctx: p0})
 				var z0 iter.Seq2[streamreader.Value, error]
 				return z0
 			})
@@ -133,7 +158,6 @@ func streamReaderStubInstanceOf(tb assert.TB, s *streamreadertest.StreamReaderSt
 		Call: func() {
 			_ = streamReaderStubAdd(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -145,111 +169,24 @@ func TestStreamReaderStub(t *testing.T) {
 	t.Run("Add", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Add", streamReaderStubAddSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			_ = streamReaderStubAdd(t, s)
-			got := s.OnAdd.AssertCalledOnce(t, "Add records the call")
-			a0, a1 := streamReaderStubAddArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			var seen []streamreadertest.StreamReaderAddCall
-			s.OnAdd.OnRecord(func(c streamreadertest.StreamReaderAddCall) { seen = append(seen, c) })
-			_ = streamReaderStubAdd(t, s)
-			_ = streamReaderStubAdd(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Add")
-		})
 	})
 
 	t.Run("List", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "List", streamReaderStubListSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			_ = streamReaderStubList(t, s)
-			got := s.OnList.AssertCalledOnce(t, "List records the call")
-			a0 := streamReaderStubListArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			var seen []streamreadertest.StreamReaderListCall
-			s.OnList.OnRecord(func(c streamreadertest.StreamReaderListCall) { seen = append(seen, c) })
-			_ = streamReaderStubList(t, s)
-			_ = streamReaderStubList(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of List")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) streamReaderStubInstance {
-			return streamReaderStubInstanceOf(tb, streamreadertest.NewStreamReaderStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Add", func(t *testing.T) {
+		t.Run("Add", func(t *testing.T) {
 			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			_ = streamReaderStubAdd(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnAdd.CallCount(), 0, "ResetCalls clears the calls of Add")
+			stub.ResetBehaviour(t, "Add", streamReaderStubAddSubject)
 		})
 
-		t.Run("keeps the results of Returns of Add", func(t *testing.T) {
+		t.Run("List", func(t *testing.T) {
 			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			want0 := streamReaderStubAddPins()
-			s.OnAdd.Returns(want0)
-			s.ResetCalls()
-			got0 := streamReaderStubAdd(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Add")
-		})
-
-		t.Run("clears the recorded calls of List", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			_ = streamReaderStubList(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnList.CallCount(), 0, "ResetCalls clears the calls of List")
-		})
-
-		t.Run("keeps the results of Returns of List", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			want0 := streamReaderStubListPins()
-			s.OnList.Returns(want0)
-			s.ResetCalls()
-			got0 := streamReaderStubList(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of List")
-		})
-	})
-
-	t.Run("NewStreamReaderStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) streamReaderStubInstance {
-			return streamReaderStubInstanceOf(tb, streamreadertest.NewStreamReaderStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewStreamReaderStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Add with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Add-failing")
-			s := streamreadertest.NewStreamReaderStubFailing(t, want)
-			r0 := streamReaderStubAdd(t, s)
-			assert.ErrorIs(t, r0, want, "Add fails with the error of NewStreamReaderStubFailing")
+			stub.ResetBehaviour(t, "List", streamReaderStubListSubject)
 		})
 	})
 
@@ -388,102 +325,10 @@ func TestStreamReaderStub(t *testing.T) {
 	})
 }
 
-// TestStreamReaderAddStub checks the methods of StreamReaderAddStub, which
-// configures Add.
-func TestStreamReaderAddStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Add", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			want0 := streamReaderStubAddPins()
-			s.OnAdd.Returns(want0)
-			got0 := streamReaderStubAdd(t, s)
-			assert.ErrorIs(t, got0, want0, "Add returns the error that Returns sets")
-		})
-
-		t.Run("configures Add for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := streamreadertest.NewStreamReaderStub(r)
-			s.OnAdd.Strict()
-			var want0 error
-			s.OnAdd.Returns(want0)
-			_ = streamReaderStubAdd(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Add")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Add to the function", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			var got0 context.Context
-			var got1 streamreader.Value
-			s.OnAdd.Func(func(p0 context.Context, p1 streamreader.Value) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = streamReaderStubAdd(t, s)
-			a0, a1 := streamReaderStubAddArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
 // TestStreamReaderListStub checks the methods of StreamReaderListStub,
 // which configures List.
 func TestStreamReaderListStub(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of List", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			want0 := streamReaderStubListPins()
-			s.OnList.Returns(want0)
-			got0 := streamReaderStubList(t, s)
-			assert.Equal(t, got0, want0, "List returns the Result that Returns sets")
-		})
-
-		t.Run("configures List for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := streamreadertest.NewStreamReaderStub(r)
-			s.OnList.Strict()
-			var want0 iter.Seq2[streamreader.Value, error]
-			s.OnList.Returns(want0)
-			_ = streamReaderStubList(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of List")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of List to the function", func(t *testing.T) {
-			t.Parallel()
-			s := streamreadertest.NewStreamReaderStub(t)
-			var got0 context.Context
-			s.OnList.Func(func(p0 context.Context) iter.Seq2[streamreader.Value, error] {
-				got0 = p0
-				var z0 iter.Seq2[streamreader.Value, error]
-				return z0
-			})
-			_ = streamReaderStubList(t, s)
-			a0 := streamReaderStubListArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
 
 	t.Run("Yields", func(t *testing.T) {
 		t.Parallel()
@@ -555,4 +400,4 @@ func TestStreamReaderListStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:3a8ade9e38793ba5c12f7bd6ec8166b89ab1038bd48b8a0a007153bfdaa81752
+// dokimi:provenance sha256:b99dcfd2e2257b0e1694a8ec641e6185c3ba7903a807c1c1c3d0386154054f59

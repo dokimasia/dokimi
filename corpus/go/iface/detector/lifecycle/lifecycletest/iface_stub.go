@@ -144,26 +144,6 @@ func NewLifecycleStub(tb assert.TB, opts ...LifecycleStubOption) *LifecycleStub 
 	return s
 }
 
-// NewLifecycleStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewLifecycleStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...LifecycleStubOption,
-) *LifecycleStub {
-	return NewLifecycleStub(tb, append([]LifecycleStubOption{
-		LifecycleStubWithClock(clk),
-		LifecycleStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewLifecycleStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewLifecycleStubFailing(tb assert.TB, err error, opts ...LifecycleStubOption) *LifecycleStub {
-	return NewLifecycleStub(tb, append([]LifecycleStubOption{LifecycleStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LifecycleStub) ResetCalls() {
@@ -198,4 +178,4 @@ func (s *LifecycleStub) Close(ctx context.Context) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:7071dfb4818cd39960c512b35ecf08254ba3f0159541055064e8e9a372a6d38d
+// dokimi:provenance sha256:94ef7930b724017b6a0a12bbf75b66b1e614575707feb78ffbc1937edeb5caed

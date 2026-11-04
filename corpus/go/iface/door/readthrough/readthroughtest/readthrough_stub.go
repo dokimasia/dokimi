@@ -191,21 +191,6 @@ func NewStoreStub(tb assert.TB, opts ...StoreStubOption) *StoreStub {
 	return s
 }
 
-// NewStoreStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewStoreStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...StoreStubOption) *StoreStub {
-	return NewStoreStub(tb, append([]StoreStubOption{
-		StoreStubWithClock(clk),
-		StoreStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewStoreStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewStoreStubFailing(tb assert.TB, err error, opts ...StoreStubOption) *StoreStub {
-	return NewStoreStub(tb, append([]StoreStubOption{StoreStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *StoreStub) ResetCalls() {
@@ -269,4 +254,4 @@ func (s *StoreStub) Put(ctx context.Context, v readthrough.Value) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:690db5d18b23be1525aa0143a78954db3229a264955234eddcbe000d2ec99ef8
+// dokimi:provenance sha256:78e60886cf9dcc6f949a1d700d44d443c8e0bb745a6bcaf5723a181a9021b338

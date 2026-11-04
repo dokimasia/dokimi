@@ -49,50 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*workflowtest.ContractHandle) workflow.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.FollowsItsGraph(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[workflow.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -114,58 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*workflowtest.ContractHandle) workflow.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.Run.FollowsItsGraph(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				workflowtest.ContractChecks.State.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[workflow.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = workflowtest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *workflowtest.ContractHandle) workflow.Contract {
-	return workflowtest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -178,50 +97,7 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(workflowtest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(workflowtest.ContractChecks.State.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.FollowsItsGraph(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[workflow.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -232,50 +108,7 @@ func FuzzContractSuiteRun(f *testing.F) {
 		f,
 		workflowtest.ContractChecks.Run.Callable,
 		contractIdle,
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.FollowsItsGraph(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[workflow.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -286,50 +119,7 @@ func FuzzContractSuiteState(f *testing.F) {
 		f,
 		workflowtest.ContractChecks.State.Callable,
 		contractIdle,
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.Run.FollowsItsGraph(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			workflowtest.ContractChecks.State.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[workflow.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -344,4 +134,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:638721123288ec4044bb99a1ea221db90a5081ca4d7c7e5b44042e13a1eb91ff
+// dokimi:provenance sha256:44ef7e3558e62be2cde99d36f41c1db8090758f1754fc005fc5241076a41013e

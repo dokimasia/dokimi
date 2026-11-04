@@ -48,22 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*integrationonlytest.MixedHandle) integrationonly.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				integrationonlytest.MixedChecks.Connect.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				integrationonlytest.MixedChecks.Connect.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				integrationonlytest.MixedChecks.Connect.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				integrationonlytest.MixedChecks.Connect.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[integrationonly.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -85,30 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*integrationonlytest.MixedHandle) integrationonly.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				integrationonlytest.MixedChecks.Connect.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				integrationonlytest.MixedChecks.Connect.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				integrationonlytest.MixedChecks.Connect.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				integrationonlytest.MixedChecks.Connect.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[integrationonly.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = integrationonlytest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *integrationonlytest.MixedHandle) integrationonly.Mixed {
-	return integrationonlytest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -120,21 +94,8 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(integrationonlytest.MixedChecks.Connect.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			integrationonlytest.MixedChecks.Connect.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			integrationonlytest.MixedChecks.Connect.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			integrationonlytest.MixedChecks.Connect.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			integrationonlytest.MixedChecks.Connect.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[integrationonly.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -146,21 +107,8 @@ func FuzzMixedSuiteConnect(f *testing.F) {
 		f,
 		integrationonlytest.MixedChecks.Connect.Callable,
 		mixedIdle,
-		conform.Excuse(
-			integrationonlytest.MixedChecks.Connect.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			integrationonlytest.MixedChecks.Connect.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			integrationonlytest.MixedChecks.Connect.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			integrationonlytest.MixedChecks.Connect.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[integrationonly.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -173,4 +121,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:485ecc0fc496a8ed2ae10ec07109df8bbc416300c4d9f1b0c1f782923797f3ef
+// dokimi:provenance sha256:9130d888d283e0525cff455fa794f5026b2b367f4ce901cb805eb2ee15ede261

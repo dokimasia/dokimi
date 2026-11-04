@@ -192,21 +192,6 @@ func NewApplierStub(tb assert.TB, opts ...ApplierStubOption) *ApplierStub {
 	return s
 }
 
-// NewApplierStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewApplierStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ApplierStubOption) *ApplierStub {
-	return NewApplierStub(tb, append([]ApplierStubOption{
-		ApplierStubWithClock(clk),
-		ApplierStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewApplierStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewApplierStubFailing(tb assert.TB, err error, opts ...ApplierStubOption) *ApplierStub {
-	return NewApplierStub(tb, append([]ApplierStubOption{ApplierStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ApplierStub) ResetCalls() {
@@ -270,4 +255,4 @@ func (s *ApplierStub) Limit(ctx context.Context, key string) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:aaed643382de6a70b39f7edb7d709acff2d33dc529f90b63a64d6aa3eddfb946
+// dokimi:provenance sha256:917425b3765044327b15bfc96bc5b35165818473b15755c5d1f77d81f27bc09f

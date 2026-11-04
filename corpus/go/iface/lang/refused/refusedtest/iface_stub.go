@@ -144,21 +144,6 @@ func NewClockStub(tb assert.TB, opts ...ClockStubOption) *ClockStub {
 	return s
 }
 
-// NewClockStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewClockStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ClockStubOption) *ClockStub {
-	return NewClockStub(tb, append([]ClockStubOption{
-		ClockStubWithClock(clk),
-		ClockStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewClockStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewClockStubFailing(tb assert.TB, err error, opts ...ClockStubOption) *ClockStub {
-	return NewClockStub(tb, append([]ClockStubOption{ClockStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ClockStub) ResetCalls() {
@@ -194,4 +179,4 @@ func (s *ClockStub) Update(observed refused.Instant) (refused.Instant, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:703d2952c012d48981c703769d01274df7d63b36e21ba589cc35cc2ca91dc659
+// dokimi:provenance sha256:d0cbce7795ecc37386250c2c09d0ec7bd43c2dc22ee7dc225b443f440088d408

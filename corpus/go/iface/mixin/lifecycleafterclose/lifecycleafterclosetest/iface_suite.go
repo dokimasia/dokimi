@@ -15,33 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Close/smoke: Close returns without a panic for derived inputs.
-//
-// Mixed.Close/cancel: Close returns an error for a cancelled context.
-//
-// Mixed.Work/smoke: Work returns without a panic for derived inputs.
-//
-// Mixed.Work/cancel: Work returns an error for a cancelled context.
-//
-// Mixed.Work/lifecycle-after-close: Work fails with the declared sentinel
-// after Close.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Close/smoke
-//
-// Mixed.Work/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:lifecycle of Mixed.Close has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The shape:lifecycle of Mixed.Work has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -115,9 +88,6 @@ func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 				ID:          MixedChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -131,9 +101,6 @@ func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 				ID:          MixedChecks.Close.Cancel(),
 				Statement:   "Close returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -146,9 +113,6 @@ func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 				ID:          MixedChecks.Work.Smoke(),
 				Statement:   "Work returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -162,9 +126,6 @@ func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 				ID:          MixedChecks.Work.Cancel(),
 				Statement:   "Work returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -177,9 +138,6 @@ func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 				ID:          MixedChecks.Work.LifecycleAfterClose(),
 				Statement:   "Work fails with the declared sentinel after Close",
 				Claim:       spec.LifecycleAfterClose,
-				Probe:       spec.ReportsSealed,
-				Reason:      spec.AliveAfterClose,
-				Law:         spec.WorkAfterCloseIsRefused,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ReportsSealed(h, func(ctx context.Context) error {
@@ -424,4 +382,4 @@ func mixedWorkSucceedsAlways(h *MixedHandle) lifecycleafterclose.Mixed {
 	return &mixedWorkSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:237026456368d3b530171eda7847cc828f01acce201920f36897ca8c6be1835c
+// dokimi:provenance sha256:be776987596b3e050823d8087247e0b8c32c9b1dfa164b4555e5eb7a17c59aff

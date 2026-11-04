@@ -190,21 +190,6 @@ func NewStreamStub(tb assert.TB, opts ...StreamStubOption) *StreamStub {
 	return s
 }
 
-// NewStreamStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewStreamStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...StreamStubOption) *StreamStub {
-	return NewStreamStub(tb, append([]StreamStubOption{
-		StreamStubWithClock(clk),
-		StreamStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewStreamStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewStreamStubFailing(tb assert.TB, err error, opts ...StreamStubOption) *StreamStub {
-	return NewStreamStub(tb, append([]StreamStubOption{StreamStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *StreamStub) ResetCalls() {
@@ -268,4 +253,4 @@ func (s *StreamStub) Close() error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:4717bf01bf80db662460c4f6c3020ff3bb067558c25ebc75f8cdd9fa77b7b569
+// dokimi:provenance sha256:1fb64c1a4fbca1c9b1bcc73e06836a770447fb724c310f68f16c0579070261d5

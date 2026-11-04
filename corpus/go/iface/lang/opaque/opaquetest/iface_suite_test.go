@@ -48,22 +48,7 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*opaquetest.StoreHandle) opaque.Store { return &storeSubject{} },
 			}),
-			conform.Excuse(
-				opaquetest.StoreChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				opaquetest.StoreChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				opaquetest.StoreChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				opaquetest.StoreChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[opaque.Store]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -85,22 +70,7 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*opaquetest.StoreHandle) opaque.Store { return &storeSubject{} },
 			}),
-			conform.Excuse(
-				opaquetest.StoreChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				opaquetest.StoreChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				opaquetest.StoreChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				opaquetest.StoreChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[opaque.Store]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -123,10 +93,14 @@ func TestStoreSuiteAllocs(t *testing.T) {
 	})
 }
 
+// storeSuite is the suite of Store that the tests of the planted defect of
+// a ceiling apply.
+var storeSuite = opaquetest.StoreSuite()
+
 // storeIdle returns the planted defect of a ceiling of Store with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func storeIdle(h *opaquetest.StoreHandle) opaque.Store {
-	return opaquetest.StoreSuite().Calls[0].Over(h, func() {})
+	return storeSuite.Calls[0].Over(h, func() {})
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
@@ -137,22 +111,7 @@ func TestStoreSuiteBudgets(t *testing.T) {
 	opaquetest.RunStoreBudgets(
 		t,
 		storeIdle,
-		conform.Excuse(
-			opaquetest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			opaquetest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			opaquetest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			opaquetest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[opaque.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -163,22 +122,7 @@ func FuzzStoreSuitePut(f *testing.F) {
 		f,
 		opaquetest.StoreChecks.Put.Callable,
 		storeIdle,
-		conform.Excuse(
-			opaquetest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			opaquetest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			opaquetest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			opaquetest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[opaque.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -190,4 +134,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:42fb47de3a38362b9f933973b234defe0a92683f7488c0feb5bc8853e016b8a3
+// dokimi:provenance sha256:c734b7cf85525af8b030203d0195533e88af7eb2eb9894b3e7ac86f74a69b8a1

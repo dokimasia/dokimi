@@ -48,46 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*permutationtest.MixedHandle) permutation.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				permutationtest.MixedChecks.Add.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Add.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Add.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Add.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.Permutation(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.PermutationGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[permutation.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -109,54 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*permutationtest.MixedHandle) permutation.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				permutationtest.MixedChecks.Add.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Add.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Add.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Add.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.Permutation(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.PermutationGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[permutation.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = permutationtest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *permutationtest.MixedHandle) permutation.Mixed {
-	return permutationtest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -169,46 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(permutationtest.MixedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(permutationtest.MixedChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Permutation(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.PermutationGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[permutation.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -219,46 +106,7 @@ func FuzzMixedSuiteAdd(f *testing.F) {
 		f,
 		permutationtest.MixedChecks.Add.Callable,
 		mixedIdle,
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Permutation(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.PermutationGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[permutation.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -269,46 +117,7 @@ func FuzzMixedSuiteItems(f *testing.F) {
 		f,
 		permutationtest.MixedChecks.Items.Callable,
 		mixedIdle,
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Add.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.Permutation(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.PermutationGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			permutationtest.MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[permutation.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -323,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7b328d2302ef1ee416ea3a2fe13dec480f297eadb029d8eded351adf3f3fee32
+// dokimi:provenance sha256:a7d9c751f30092ecec9897c88ed5ab3e563dfa12bd3734347c30889f651328b4

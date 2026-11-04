@@ -15,31 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Derive/smoke: Derive returns without a panic for derived inputs.
-//
-// Mixed.Derive/smoke#generated: Derive returns without a panic for derived
-// inputs.
-//
-// Mixed.Derive/deterministic: Derive returns the same value for the same
-// inputs.
-//
-// Mixed.Derive/deterministic#generated: Derive returns the same value for
-// the same inputs.
-//
-// Mixed.Derive/pure: Derive returns the same value on a repeat.
-//
-// Mixed.Derive/pure#generated: Derive returns the same value on a repeat.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Derive/smoke
-//
-// Mixed.Derive/deterministic
-//
-// Mixed.Derive/pure
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -70,34 +45,16 @@ func (c mixedDerive) Smoke() conform.ID[pure.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Derive returns
-// without a panic for derived inputs.
-func (c mixedDerive) SmokeGenerated() conform.ID[pure.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Derive returns the
 // same value for the same inputs.
 func (c mixedDerive) Deterministic() conform.ID[pure.Mixed] {
 	return c.Check("deterministic")
 }
 
-// DeterministicGenerated returns the identity of the check that Derive
-// returns the same value for the same inputs.
-func (c mixedDerive) DeterministicGenerated() conform.ID[pure.Mixed] {
-	return c.Check("deterministic#generated")
-}
-
 // Pure returns the identity of the check that Derive returns the same
 // value on a repeat.
 func (c mixedDerive) Pure() conform.ID[pure.Mixed] {
 	return c.Check("pure")
-}
-
-// PureGenerated returns the identity of the check that Derive returns the
-// same value on a repeat.
-func (c mixedDerive) PureGenerated() conform.ID[pure.Mixed] {
-	return c.Check("pure#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -112,9 +69,6 @@ func MixedSuite() conform.Suite[pure.Mixed] {
 				ID:          MixedChecks.Derive.Smoke(),
 				Statement:   "Derive returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -126,12 +80,9 @@ func MixedSuite() conform.Suite[pure.Mixed] {
 				Defect: mixedDerivePanics,
 			},
 			{
-				ID:          MixedChecks.Derive.SmokeGenerated(),
+				ID:          MixedChecks.Derive.Smoke().Generated(),
 				Statement:   "Derive returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnInput := c.Draw(prop.Of[string](), "input")
@@ -146,9 +97,6 @@ func MixedSuite() conform.Suite[pure.Mixed] {
 				ID:          MixedChecks.Derive.Deterministic(),
 				Statement:   "Derive returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[pure.Mixed]{MixedChecks.Derive.Smoke()},
@@ -161,14 +109,11 @@ func MixedSuite() conform.Suite[pure.Mixed] {
 				Defect: mixedDeriveDrifts,
 			},
 			{
-				ID:          MixedChecks.Derive.DeterministicGenerated(),
+				ID:          MixedChecks.Derive.Deterministic().Generated(),
 				Statement:   "Derive returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[pure.Mixed]{MixedChecks.Derive.SmokeGenerated()},
+				Entails:     []conform.ID[pure.Mixed]{MixedChecks.Derive.Smoke().Generated()},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnInput := c.Draw(prop.Of[string](), "input")
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
@@ -182,9 +127,6 @@ func MixedSuite() conform.Suite[pure.Mixed] {
 				ID:          MixedChecks.Derive.Pure(),
 				Statement:   "Derive returns the same value on a repeat",
 				Claim:       spec.Pure,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -196,12 +138,9 @@ func MixedSuite() conform.Suite[pure.Mixed] {
 				Defect: mixedDeriveDrifts,
 			},
 			{
-				ID:          MixedChecks.Derive.PureGenerated(),
+				ID:          MixedChecks.Derive.Pure().Generated(),
 				Statement:   "Derive returns the same value on a repeat",
 				Claim:       spec.Pure,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnInput := c.Draw(prop.Of[string](), "input")
@@ -349,4 +288,4 @@ func mixedDeriveDrifts(h *MixedHandle) pure.Mixed {
 	return &mixedDeriveDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a2b8b2d3c85a4f63a2d662ebe892711881e52d8c2a30deeddaea7ff0bd58c546
+// dokimi:provenance sha256:abc6cc9455f9542283c5b20b534d3b6db999fec3d31a8caee8e475283db41925

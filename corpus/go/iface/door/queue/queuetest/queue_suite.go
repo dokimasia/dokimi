@@ -15,41 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Queue:
-//
-// Queue.Write/cancel: Write returns an error for a cancelled context.
-//
-// Queue.Write/cancel#generated: Write returns an error for a cancelled
-// context.
-//
-// Queue.Read/cancel: Read returns an error for a cancelled context.
-//
-// Queue.Close/smoke: Close returns without a panic for derived inputs.
-
-// The derived checks of Queue that witness their laws at the shallow end:
-//
-// Queue.Close/smoke
-
-// The refused claims of Queue:
-//
-// Queue.Read/zero-on-error: Read waits for the call of another callable on
-// a fresh subject. The remedy is to remove the mixin waits where Read
-// returns on a fresh subject.
-
-// The unclaimed classifications of Queue:
-//
-// The shape:writer of Queue.Write has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The mixin:waits of Queue.Write has the stance silent. The mixin
-// documents that the callable can wait for another call.
-//
-// The mixin:waits of Queue.Read has the stance silent. The mixin documents
-// that the callable can wait for another call.
-//
-// The shape:closer of Queue.Close has the stance silent. A close returns
-// nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -82,12 +47,6 @@ type queueWrite struct {
 // a cancelled context.
 func (c queueWrite) Cancel() conform.ID[queue.Queue] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Write returns an
-// error for a cancelled context.
-func (c queueWrite) CancelGenerated() conform.ID[queue.Queue] {
-	return c.Check("cancel#generated")
 }
 
 // queueRead is the name of Queue.Read, with the identities of its checks.
@@ -131,9 +90,6 @@ func QueueSuite() conform.Suite[queue.Queue] {
 				ID:          QueueChecks.Write.Cancel(),
 				Statement:   "Write returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *QueueHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -143,12 +99,9 @@ func QueueSuite() conform.Suite[queue.Queue] {
 				Defect: queueWriteIgnoresCancel,
 			},
 			{
-				ID:          QueueChecks.Write.CancelGenerated(),
+				ID:          QueueChecks.Write.Cancel().Generated(),
 				Statement:   "Write returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *QueueHandle, c *prop.Case) {
 					drawnItem := c.Draw(prop.Of[string](), "item")
@@ -162,9 +115,6 @@ func QueueSuite() conform.Suite[queue.Queue] {
 				ID:          QueueChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *QueueHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -178,9 +128,6 @@ func QueueSuite() conform.Suite[queue.Queue] {
 				ID:          QueueChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *QueueHandle) {
@@ -427,4 +374,4 @@ func queueClosePanics(h *QueueHandle) queue.Queue {
 	return &queueClosePanicsDefect{queueOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5271861da1e6f05666e2172bd9aca9bd64dff7762639f718295b944a6f3a5e5a
+// dokimi:provenance sha256:0a1f942a3c6259283e76c06669b74fde31f6506b62c98f575554c457deba4908

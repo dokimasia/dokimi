@@ -195,21 +195,6 @@ func NewCatalogStub(tb assert.TB, opts ...CatalogStubOption) *CatalogStub {
 	return s
 }
 
-// NewCatalogStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewCatalogStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...CatalogStubOption) *CatalogStub {
-	return NewCatalogStub(tb, append([]CatalogStubOption{
-		CatalogStubWithClock(clk),
-		CatalogStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewCatalogStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewCatalogStubFailing(tb assert.TB, err error, opts ...CatalogStubOption) *CatalogStub {
-	return NewCatalogStub(tb, append([]CatalogStubOption{CatalogStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *CatalogStub) ResetCalls() {
@@ -274,4 +259,4 @@ func (s *CatalogStub) Len(ctx context.Context) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:2c9157cfea10e2f7f95ba018a9787f825aba6db581b5f7234bc00dcee83ba79a
+// dokimi:provenance sha256:7bc99cf42f0483c5f483802bb355ac3020fdec191a4c0bf48a744ec85c8c72f7

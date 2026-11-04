@@ -189,21 +189,6 @@ func NewCloserStub(tb assert.TB, opts ...CloserStubOption) *CloserStub {
 	return s
 }
 
-// NewCloserStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewCloserStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...CloserStubOption) *CloserStub {
-	return NewCloserStub(tb, append([]CloserStubOption{
-		CloserStubWithClock(clk),
-		CloserStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewCloserStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewCloserStubFailing(tb assert.TB, err error, opts ...CloserStubOption) *CloserStub {
-	return NewCloserStub(tb, append([]CloserStubOption{CloserStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *CloserStub) ResetCalls() {
@@ -267,4 +252,4 @@ func (s *CloserStub) Stats(ctx context.Context) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:0bfdfd7abf4f230dacf34705f02c97cd84511fc6da273b4a3ca85ea732b60e64
+// dokimi:provenance sha256:3e808d3c7c651a77a245b5684480510eb8e6e6d92f3b01778e0ac9f9dd8275ee

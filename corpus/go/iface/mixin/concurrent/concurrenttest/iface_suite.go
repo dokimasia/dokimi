@@ -18,62 +18,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Mixed.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Mixed.Put/cancel: Put returns an error for a cancelled context.
-//
-// Mixed.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Mixed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mixed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mixed.Get/cancel: Get returns an error for a cancelled context.
-//
-// Mixed.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Mixed.Get/read-after-write: Get returns what Put stored before it.
-//
-// Mixed.Get/read-after-write#generated: Get returns what Put stored before
-// it.
-//
-// Mixed.Get/reads-each-last-write: Get returns what Put wrote right before
-// it, over any sequence of calls.
-//
-// Mixed.Get/agrees-with-the-reference: every sequence of calls returns on
-// Mixed what it returns on the reference.
-//
-// Mixed.Get/linearizable: every concurrent history of Mixed has an order
-// in which the reference returns the same results.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Put/smoke
-//
-// Mixed.Get/smoke
-//
-// Mixed.Get/read-after-write
-//
-// Mixed.Get/read-after-write#generated
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:composite-writer of Mixed.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -105,22 +49,10 @@ func (c mixedPut) Smoke() conform.ID[concurrent.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c mixedPut) SmokeGenerated() conform.ID[concurrent.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c mixedPut) Cancel() conform.ID[concurrent.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c mixedPut) CancelGenerated() conform.ID[concurrent.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
@@ -134,22 +66,10 @@ func (c mixedGet) Smoke() conform.ID[concurrent.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mixedGet) SmokeGenerated() conform.ID[concurrent.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[concurrent.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c mixedGet) CancelGenerated() conform.ID[concurrent.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Get returns the zero
@@ -158,22 +78,10 @@ func (c mixedGet) ZeroOnError() conform.ID[concurrent.Mixed] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c mixedGet) ZeroOnErrorGenerated() conform.ID[concurrent.Mixed] {
-	return c.Check("zero-on-error#generated")
-}
-
 // ReadAfterWrite returns the identity of the check that Get returns what
 // Put stored before it.
 func (c mixedGet) ReadAfterWrite() conform.ID[concurrent.Mixed] {
 	return c.Check("read-after-write")
-}
-
-// ReadAfterWriteGenerated returns the identity of the check that Get
-// returns what Put stored before it.
-func (c mixedGet) ReadAfterWriteGenerated() conform.ID[concurrent.Mixed] {
-	return c.Check("read-after-write#generated")
 }
 
 // ReadsEachLastWrite returns the identity of the check that Get returns
@@ -207,9 +115,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:          MixedChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -220,12 +125,9 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Defect: mixedPutPanics,
 			},
 			{
-				ID:          MixedChecks.Put.SmokeGenerated(),
+				ID:          MixedChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -240,9 +142,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:          MixedChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -252,12 +151,9 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Defect: mixedPutIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Put.CancelGenerated(),
+				ID:          MixedChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -272,9 +168,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:          MixedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -286,12 +179,9 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Get.SmokeGenerated(),
+				ID:          MixedChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -306,9 +196,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -319,12 +206,9 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Get.CancelGenerated(),
+				ID:          MixedChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -339,9 +223,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:          MixedChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -351,12 +232,9 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Defect: mixedGetValueBeside,
 			},
 			{
-				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -370,9 +248,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:          MixedChecks.Get.ReadAfterWrite(),
 				Statement:   "Get returns what Put stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -387,12 +262,9 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				Defect: mixedGetReadsAnotherValue,
 			},
 			{
-				ID:          MixedChecks.Get.ReadAfterWriteGenerated(),
+				ID:          MixedChecks.Get.ReadAfterWrite().Generated(),
 				Statement:   "Get returns what Put stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -412,9 +284,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:          MixedChecks.Get.ReadsEachLastWrite(),
 				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
 				Claim:       spec.ReadsEachLastWrite,
-				Probe:       spec.ReadsReturnTheLastWrite,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[concurrent.Mixed]{MixedChecks.Get.ReadAfterWrite()},
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -439,9 +308,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:          MixedChecks.Get.AgreesWithTheReference(),
 				Statement:   "every sequence of calls returns on Mixed what it returns on the reference",
 				Claim:       spec.AgreesWithTheReference,
-				Probe:       spec.SequencesAgreeWithTheReference,
-				Reason:      spec.DivergesFromTheReference,
-				Law:         spec.EverySequenceAgreesWithTheReference,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences, spec.ReferenceImplementation},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					probe.SequencesAgreeWithTheReference(h, c, mixedActions, mixedReference)
@@ -452,9 +318,6 @@ func MixedSuite() conform.Suite[concurrent.Mixed] {
 				ID:        MixedChecks.Get.Linearizable(),
 				Statement: "every concurrent history of Mixed has an order in which the reference returns the same results",
 				Claim:     spec.Linearizable,
-				Probe:     spec.LinearizableHistory,
-				Reason:    spec.NotLinearizable,
-				Law:       spec.ConcurrentHistoryIsLinearizable,
 				Machineries: []spec.MachineryID{
 					spec.ConcurrentCallers,
 					spec.GeneratedSequences,
@@ -895,4 +758,4 @@ func mixedReference(r concurrent.Mixed) func(context.Context, string, []any) con
 	}
 }
 
-// dokimi:provenance sha256:da53e039ffdac57657d93018697833db43d3ef018022a5d255a945e49fb81634
+// dokimi:provenance sha256:93d8550dc08464f1da1f203de886737d1f08c661ae67250177d604d1570ef3ca

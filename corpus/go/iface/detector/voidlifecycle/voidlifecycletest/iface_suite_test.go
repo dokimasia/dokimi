@@ -51,14 +51,7 @@ func TestVoidLifecycleSuite(t *testing.T) {
 					return &voidLifecycleSubject{}
 				},
 			}),
-			conform.Excuse(
-				voidlifecycletest.VoidLifecycleChecks.Stop.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				voidlifecycletest.VoidLifecycleChecks.Stop.RepeatSurvives(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[voidlifecycle.VoidLifecycle]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -82,23 +75,20 @@ func TestVoidLifecycleSuite(t *testing.T) {
 					return &voidLifecycleSubject{}
 				},
 			}),
-			conform.Excuse(
-				voidlifecycletest.VoidLifecycleChecks.Stop.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				voidlifecycletest.VoidLifecycleChecks.Stop.RepeatSurvives(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[voidlifecycle.VoidLifecycle]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// voidLifecycleSuite is the suite of VoidLifecycle that the tests of the
+// planted defect of a ceiling apply.
+var voidLifecycleSuite = voidlifecycletest.VoidLifecycleSuite()
+
 // voidLifecycleIdle returns the planted defect of a ceiling of
-// VoidLifecycle with a spend of nothing, a subject that answers each call
-// at once.
+// VoidLifecycle with a spend of nothing. Each call of the defect returns
+// its zero results at once.
 func voidLifecycleIdle(h *voidlifecycletest.VoidLifecycleHandle) voidlifecycle.VoidLifecycle {
-	return voidlifecycletest.VoidLifecycleSuite().Calls[0].Over(h, func() {})
+	return voidLifecycleSuite.Calls[0].Over(h, func() {})
 }
 
 // TestVoidLifecycleSuiteBudgets applies the allocation ceilings of the
@@ -110,13 +100,8 @@ func TestVoidLifecycleSuiteBudgets(t *testing.T) {
 		t,
 		voidLifecycleIdle,
 		conform.Ceilings(voidlifecycletest.VoidLifecycleChecks.Stop.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			voidlifecycletest.VoidLifecycleChecks.Stop.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			voidlifecycletest.VoidLifecycleChecks.Stop.RepeatSurvives(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[voidlifecycle.VoidLifecycle](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -129,13 +114,8 @@ func FuzzVoidLifecycleSuiteStop(f *testing.F) {
 		f,
 		voidlifecycletest.VoidLifecycleChecks.Stop.Callable,
 		voidLifecycleIdle,
-		conform.Excuse(
-			voidlifecycletest.VoidLifecycleChecks.Stop.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			voidlifecycletest.VoidLifecycleChecks.Stop.RepeatSurvives(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[voidlifecycle.VoidLifecycle](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -152,4 +132,4 @@ func BenchmarkVoidLifecycleSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c831e53bd18614cef150a9f8d35880d4fcf7f2582c3098796436bece25455d26
+// dokimi:provenance sha256:389bf75e4f4b83057ab201edc5e39139ffe19545cd7ce0b91f01b71d30845560

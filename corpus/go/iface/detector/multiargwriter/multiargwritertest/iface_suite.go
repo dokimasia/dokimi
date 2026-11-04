@@ -15,49 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of MultiArgWriter:
-//
-// MultiArgWriter.Set/smoke: Set returns without a panic for derived
-// inputs.
-//
-// MultiArgWriter.Set/smoke#generated: Set returns without a panic for
-// derived inputs.
-//
-// MultiArgWriter.Set/cancel: Set returns an error for a cancelled context.
-//
-// MultiArgWriter.Set/cancel#generated: Set returns an error for a
-// cancelled context.
-//
-// MultiArgWriter.Get/smoke: Get returns without a panic for derived
-// inputs.
-//
-// MultiArgWriter.Get/smoke#generated: Get returns without a panic for
-// derived inputs.
-//
-// MultiArgWriter.Get/cancel: Get returns an error for a cancelled context.
-//
-// MultiArgWriter.Get/cancel#generated: Get returns an error for a
-// cancelled context.
-//
-// MultiArgWriter.Get/zero-on-error: Get returns the zero value beside an
-// error.
-//
-// MultiArgWriter.Get/zero-on-error#generated: Get returns the zero value
-// beside an error.
-
-// The derived checks of MultiArgWriter that witness their laws at the
-// shallow end:
-//
-// MultiArgWriter.Set/smoke
-//
-// MultiArgWriter.Get/smoke
-
-// The unclaimed classifications of MultiArgWriter:
-//
-// The shape:multi-arg-writer of MultiArgWriter.Set has the stance silent.
-// A write is an input of the other checks, and its result is an error
-// alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -90,22 +47,10 @@ func (c multiArgWriterSet) Smoke() conform.ID[multiargwriter.MultiArgWriter] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Set returns
-// without a panic for derived inputs.
-func (c multiArgWriterSet) SmokeGenerated() conform.ID[multiargwriter.MultiArgWriter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Set returns an error for a
 // cancelled context.
 func (c multiArgWriterSet) Cancel() conform.ID[multiargwriter.MultiArgWriter] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Set returns an
-// error for a cancelled context.
-func (c multiArgWriterSet) CancelGenerated() conform.ID[multiargwriter.MultiArgWriter] {
-	return c.Check("cancel#generated")
 }
 
 // multiArgWriterGet is the name of MultiArgWriter.Get, with the identities
@@ -120,34 +65,16 @@ func (c multiArgWriterGet) Smoke() conform.ID[multiargwriter.MultiArgWriter] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c multiArgWriterGet) SmokeGenerated() conform.ID[multiargwriter.MultiArgWriter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c multiArgWriterGet) Cancel() conform.ID[multiargwriter.MultiArgWriter] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c multiArgWriterGet) CancelGenerated() conform.ID[multiargwriter.MultiArgWriter] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c multiArgWriterGet) ZeroOnError() conform.ID[multiargwriter.MultiArgWriter] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c multiArgWriterGet) ZeroOnErrorGenerated() conform.ID[multiargwriter.MultiArgWriter] {
-	return c.Check("zero-on-error#generated")
 }
 
 // MultiArgWriterSuite returns the checks of MultiArgWriter, and the calls
@@ -162,9 +89,6 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				ID:          MultiArgWriterChecks.Set.Smoke(),
 				Statement:   "Set returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MultiArgWriterHandle) {
@@ -175,12 +99,9 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				Defect: multiArgWriterSetPanics,
 			},
 			{
-				ID:          MultiArgWriterChecks.Set.SmokeGenerated(),
+				ID:          MultiArgWriterChecks.Set.Smoke().Generated(),
 				Statement:   "Set returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MultiArgWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -196,9 +117,6 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				ID:          MultiArgWriterChecks.Set.Cancel(),
 				Statement:   "Set returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MultiArgWriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -208,12 +126,9 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				Defect: multiArgWriterSetIgnoresCancel,
 			},
 			{
-				ID:          MultiArgWriterChecks.Set.CancelGenerated(),
+				ID:          MultiArgWriterChecks.Set.Cancel().Generated(),
 				Statement:   "Set returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MultiArgWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -229,9 +144,6 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				ID:          MultiArgWriterChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MultiArgWriterHandle) {
@@ -243,12 +155,9 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				Defect: multiArgWriterGetPanics,
 			},
 			{
-				ID:          MultiArgWriterChecks.Get.SmokeGenerated(),
+				ID:          MultiArgWriterChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MultiArgWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -263,9 +172,6 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				ID:          MultiArgWriterChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MultiArgWriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -276,12 +182,9 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				Defect: multiArgWriterGetIgnoresCancel,
 			},
 			{
-				ID:          MultiArgWriterChecks.Get.CancelGenerated(),
+				ID:          MultiArgWriterChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MultiArgWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -296,9 +199,6 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				ID:          MultiArgWriterChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MultiArgWriterHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -308,12 +208,9 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 				Defect: multiArgWriterGetValueBeside,
 			},
 			{
-				ID:          MultiArgWriterChecks.Get.ZeroOnErrorGenerated(),
+				ID:          MultiArgWriterChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MultiArgWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -566,4 +463,4 @@ func multiArgWriterGetValueBeside(h *MultiArgWriterHandle) multiargwriter.MultiA
 	return &multiArgWriterGetValueBesideDefect{multiArgWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:45e1118acd9ac6e1da436478f9401cb16d405ced14967ce86a7fe3d0858341d7
+// dokimi:provenance sha256:281c9d7530cc1d9aced9ca7394c719149370e630f13d64b3de689eb1c2603daf

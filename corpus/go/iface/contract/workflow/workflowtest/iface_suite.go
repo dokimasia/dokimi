@@ -16,50 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Run/smoke: Run returns without a panic for derived inputs.
-//
-// Contract.Run/smoke#generated: Run returns without a panic for derived
-// inputs.
-//
-// Contract.Run/cancel: Run returns an error for a cancelled context.
-//
-// Contract.Run/cancel#generated: Run returns an error for a cancelled
-// context.
-//
-// Contract.Run/follows-its-graph: each call of Run leaves the state that
-// State reads at the state before it or at one of its successors, over any
-// sequence of calls.
-//
-// Contract.State/smoke: State returns without a panic for derived inputs.
-//
-// Contract.State/smoke#generated: State returns without a panic for
-// derived inputs.
-//
-// Contract.State/cancel: State returns an error for a cancelled context.
-//
-// Contract.State/cancel#generated: State returns an error for a cancelled
-// context.
-//
-// Contract.State/zero-on-error: State returns the zero value beside an
-// error.
-//
-// Contract.State/zero-on-error#generated: State returns the zero value
-// beside an error.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Run/smoke
-//
-// Contract.State/smoke
-
-// The unclaimed classifications of Contract:
-//
-// The shape:writer of Contract.Run has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,22 +48,10 @@ func (c contractRun) Smoke() conform.ID[workflow.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Run returns
-// without a panic for derived inputs.
-func (c contractRun) SmokeGenerated() conform.ID[workflow.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c contractRun) Cancel() conform.ID[workflow.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Run returns an
-// error for a cancelled context.
-func (c contractRun) CancelGenerated() conform.ID[workflow.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // FollowsItsGraph returns the identity of the check that each call of Run
@@ -129,34 +73,16 @@ func (c contractState) Smoke() conform.ID[workflow.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that State returns
-// without a panic for derived inputs.
-func (c contractState) SmokeGenerated() conform.ID[workflow.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that State returns an error for
 // a cancelled context.
 func (c contractState) Cancel() conform.ID[workflow.Contract] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that State returns an
-// error for a cancelled context.
-func (c contractState) CancelGenerated() conform.ID[workflow.Contract] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that State returns the
 // zero value beside an error.
 func (c contractState) ZeroOnError() conform.ID[workflow.Contract] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that State
-// returns the zero value beside an error.
-func (c contractState) ZeroOnErrorGenerated() conform.ID[workflow.Contract] {
-	return c.Check("zero-on-error#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -171,9 +97,6 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				ID:          ContractChecks.Run.Smoke(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -184,12 +107,9 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractRunPanics,
 			},
 			{
-				ID:          ContractChecks.Run.SmokeGenerated(),
+				ID:          ContractChecks.Run.Smoke().Generated(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -203,9 +123,6 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				ID:          ContractChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -215,12 +132,9 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractRunIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Run.CancelGenerated(),
+				ID:          ContractChecks.Run.Cancel().Generated(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -234,9 +148,6 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				ID:          ContractChecks.Run.FollowsItsGraph(),
 				Statement:   "each call of Run leaves the state that State reads at the state before it or at one of its successors, over any sequence of calls",
 				Claim:       spec.FollowsItsGraph,
-				Probe:       spec.StatesMoveAlongTheGraph,
-				Reason:      spec.ForbiddenTransition,
-				Law:         spec.StatesFollowTheGraph,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					probe.StatesMoveAlongTheGraph(
@@ -257,9 +168,6 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				ID:          ContractChecks.State.Smoke(),
 				Statement:   "State returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -271,12 +179,9 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractStatePanics,
 			},
 			{
-				ID:          ContractChecks.State.SmokeGenerated(),
+				ID:          ContractChecks.State.Smoke().Generated(),
 				Statement:   "State returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -291,9 +196,6 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				ID:          ContractChecks.State.Cancel(),
 				Statement:   "State returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -304,12 +206,9 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractStateIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.State.CancelGenerated(),
+				ID:          ContractChecks.State.Cancel().Generated(),
 				Statement:   "State returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -324,9 +223,6 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				ID:          ContractChecks.State.ZeroOnError(),
 				Statement:   "State returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -336,12 +232,9 @@ func ContractSuite() conform.Suite[workflow.Contract] {
 				Defect: contractStateValueBeside,
 			},
 			{
-				ID:          ContractChecks.State.ZeroOnErrorGenerated(),
+				ID:          ContractChecks.State.ZeroOnError().Generated(),
 				Statement:   "State returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -659,4 +552,4 @@ func contractStateCall(ctx context.Context, subject workflow.Contract, args []an
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:f8b6631c155f1e900d826a17151f86f2854cd72737ed4607618cf734aa6e024f
+// dokimi:provenance sha256:128f54c08a2d4ef83582b73426b85772445e88a031f8e28be2066588460e0966

@@ -16,63 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Store:
-//
-// Store.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Store.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Store.Get/cancel: Get returns an error for a cancelled context.
-//
-// Store.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Store.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Store.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Store.Get/read-after-write: Get returns what Put stored before it.
-//
-// Store.Get/read-after-write#generated: Get returns what Put stored before
-// it.
-//
-// Store.Get/reads-each-last-write: Get returns what Put wrote right before
-// it, over any sequence of calls.
-//
-// Store.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Store.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Store.Put/cancel: Put returns an error for a cancelled context.
-//
-// Store.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Store.Close/smoke: Close returns without a panic for derived inputs.
-
-// The derived checks of Store that witness their laws at the shallow end:
-//
-// Store.Get/smoke
-//
-// Store.Get/read-after-write
-//
-// Store.Get/read-after-write#generated
-//
-// Store.Put/smoke
-//
-// Store.Close/smoke
-
-// The unclaimed classifications of Store:
-//
-// The shape:composite-writer of Store.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The shape:closer of Store.Close has the stance silent. A close returns
-// nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -106,22 +49,10 @@ func (c storeGet) Smoke() conform.ID[deadcheck.Store] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c storeGet) SmokeGenerated() conform.ID[deadcheck.Store] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c storeGet) Cancel() conform.ID[deadcheck.Store] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c storeGet) CancelGenerated() conform.ID[deadcheck.Store] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Get returns the zero
@@ -130,22 +61,10 @@ func (c storeGet) ZeroOnError() conform.ID[deadcheck.Store] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c storeGet) ZeroOnErrorGenerated() conform.ID[deadcheck.Store] {
-	return c.Check("zero-on-error#generated")
-}
-
 // ReadAfterWrite returns the identity of the check that Get returns what
 // Put stored before it.
 func (c storeGet) ReadAfterWrite() conform.ID[deadcheck.Store] {
 	return c.Check("read-after-write")
-}
-
-// ReadAfterWriteGenerated returns the identity of the check that Get
-// returns what Put stored before it.
-func (c storeGet) ReadAfterWriteGenerated() conform.ID[deadcheck.Store] {
-	return c.Check("read-after-write#generated")
 }
 
 // ReadsEachLastWrite returns the identity of the check that Get returns
@@ -165,22 +84,10 @@ func (c storePut) Smoke() conform.ID[deadcheck.Store] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c storePut) SmokeGenerated() conform.ID[deadcheck.Store] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c storePut) Cancel() conform.ID[deadcheck.Store] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c storePut) CancelGenerated() conform.ID[deadcheck.Store] {
-	return c.Check("cancel#generated")
 }
 
 // storeClose is the name of Store.Close, with the identities of its
@@ -207,9 +114,6 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				ID:          StoreChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -221,12 +125,9 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				Defect: storeGetPanics,
 			},
 			{
-				ID:          StoreChecks.Get.SmokeGenerated(),
+				ID:          StoreChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -241,9 +142,6 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				ID:          StoreChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -254,12 +152,9 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				Defect: storeGetIgnoresCancel,
 			},
 			{
-				ID:          StoreChecks.Get.CancelGenerated(),
+				ID:          StoreChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -274,9 +169,6 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				ID:          StoreChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -286,12 +178,9 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				Defect: storeGetValueBeside,
 			},
 			{
-				ID:          StoreChecks.Get.ZeroOnErrorGenerated(),
+				ID:          StoreChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -305,9 +194,6 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				ID:          StoreChecks.Get.ReadAfterWrite(),
 				Statement:   "Get returns what Put stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -322,12 +208,9 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				Defect: storeGetReadsAnotherValue,
 			},
 			{
-				ID:          StoreChecks.Get.ReadAfterWriteGenerated(),
+				ID:          StoreChecks.Get.ReadAfterWrite().Generated(),
 				Statement:   "Get returns what Put stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *StoreHandle, c *prop.Case) {
@@ -347,9 +230,6 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				ID:          StoreChecks.Get.ReadsEachLastWrite(),
 				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
 				Claim:       spec.ReadsEachLastWrite,
-				Probe:       spec.ReadsReturnTheLastWrite,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[deadcheck.Store]{StoreChecks.Get.ReadAfterWrite()},
 				Property: func(h *StoreHandle, c *prop.Case) {
@@ -374,9 +254,6 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				ID:          StoreChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -387,12 +264,9 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				Defect: storePutPanics,
 			},
 			{
-				ID:          StoreChecks.Put.SmokeGenerated(),
+				ID:          StoreChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -407,9 +281,6 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				ID:          StoreChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -419,12 +290,9 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				Defect: storePutIgnoresCancel,
 			},
 			{
-				ID:          StoreChecks.Put.CancelGenerated(),
+				ID:          StoreChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -439,9 +307,6 @@ func StoreSuite() conform.Suite[deadcheck.Store] {
 				ID:          StoreChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -838,4 +703,4 @@ func storeCloseCall(ctx context.Context, subject deadcheck.Store, args []any) ([
 	return nil, subject.Close()
 }
 
-// dokimi:provenance sha256:0032770ef8c72175a729027add7ca6ee09de3d9faa2947c5feba10c35b6c17d2
+// dokimi:provenance sha256:418e1e8bc1919faaf7db3906c879f773ef5827c549b874c60fb7835476b782c2

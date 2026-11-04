@@ -43,25 +43,39 @@ func labellerStubApplyPins() error {
 	return want0
 }
 
-// labellerStubApplySubject returns the subject of [stub.Behaviour] for
-// Apply. The subject calls a new double that reports to tb.
+// labellerStubApplySubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Apply. The subject calls a new double that
+// reports to tb.
 func labellerStubApplySubject(
 	tb assert.TB,
 ) stub.Subject[sampledtest.LabellerApplyCall, sampledtest.LabellerApplyReturn] {
 	tb.Helper()
 	s := sampledtest.NewLabellerStub(tb)
 	return stub.Subject[sampledtest.LabellerApplyCall, sampledtest.LabellerApplyReturn]{
-		Stub: s.OnApply.MethodStub,
+		Stub:  s.OnApply.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = labellerStubApply(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sampledtest.LabellerApplyCall) {
+			tb.Helper()
+			a0, a1, a2 := labellerStubApplyArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Tag, a1, "the call records Tag")
+			expect.Equal(tb, c.Level, a2, "the call records Level")
 		},
 		Result: func() sampledtest.LabellerApplyReturn {
 			got0 := labellerStubApply(tb, s)
 			return sampledtest.LabellerApplyReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnApply.Func(func(_ context.Context, _ sampled.Tag, _ sampled.Level) error {
-				mark()
+		Returns: func() sampledtest.LabellerApplyReturn {
+			want0 := labellerStubApplyPins()
+			s.OnApply.Returns(want0)
+			return sampledtest.LabellerApplyReturn{Err: want0}
+		},
+		Override: func(seen func(sampledtest.LabellerApplyCall)) {
+			s.OnApply.Func(func(p0 context.Context, p1 sampled.Tag, p2 sampled.Level) error {
+				seen(sampledtest.LabellerApplyCall{Ctx: p0, Tag: p1, Level: p2})
 				var z0 error
 				return z0
 			})
@@ -86,7 +100,6 @@ func labellerStubInstanceOf(tb assert.TB, s *sampledtest.LabellerStub) labellerS
 		Call: func() {
 			_ = labellerStubApply(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -98,70 +111,14 @@ func TestLabellerStub(t *testing.T) {
 	t.Run("Apply", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Apply", labellerStubApplySubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sampledtest.NewLabellerStub(t)
-			_ = labellerStubApply(t, s)
-			got := s.OnApply.AssertCalledOnce(t, "Apply records the call")
-			a0, a1, a2 := labellerStubApplyArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Tag, a1, "the call records Tag")
-			expect.Equal(t, got.Level, a2, "the call records Level")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sampledtest.NewLabellerStub(t)
-			var seen []sampledtest.LabellerApplyCall
-			s.OnApply.OnRecord(func(c sampledtest.LabellerApplyCall) { seen = append(seen, c) })
-			_ = labellerStubApply(t, s)
-			_ = labellerStubApply(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Apply")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) labellerStubInstance {
-			return labellerStubInstanceOf(tb, sampledtest.NewLabellerStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Apply", func(t *testing.T) {
+		t.Run("Apply", func(t *testing.T) {
 			t.Parallel()
-			s := sampledtest.NewLabellerStub(t)
-			_ = labellerStubApply(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnApply.CallCount(), 0, "ResetCalls clears the calls of Apply")
-		})
-
-		t.Run("keeps the results of Returns of Apply", func(t *testing.T) {
-			t.Parallel()
-			s := sampledtest.NewLabellerStub(t)
-			want0 := labellerStubApplyPins()
-			s.OnApply.Returns(want0)
-			s.ResetCalls()
-			got0 := labellerStubApply(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Apply")
-		})
-	})
-
-	t.Run("NewLabellerStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) labellerStubInstance {
-			return labellerStubInstanceOf(tb, sampledtest.NewLabellerStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewLabellerStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Apply with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Apply-failing")
-			s := sampledtest.NewLabellerStubFailing(t, want)
-			r0 := labellerStubApply(t, s)
-			assert.ErrorIs(t, r0, want, "Apply fails with the error of NewLabellerStubFailing")
+			stub.ResetBehaviour(t, "Apply", labellerStubApplySubject)
 		})
 	})
 
@@ -264,56 +221,4 @@ func TestLabellerStub(t *testing.T) {
 	})
 }
 
-// TestLabellerApplyStub checks the methods of LabellerApplyStub, which
-// configures Apply.
-func TestLabellerApplyStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Apply", func(t *testing.T) {
-			t.Parallel()
-			s := sampledtest.NewLabellerStub(t)
-			want0 := labellerStubApplyPins()
-			s.OnApply.Returns(want0)
-			got0 := labellerStubApply(t, s)
-			assert.ErrorIs(t, got0, want0, "Apply returns the error that Returns sets")
-		})
-
-		t.Run("configures Apply for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sampledtest.NewLabellerStub(r)
-			s.OnApply.Strict()
-			var want0 error
-			s.OnApply.Returns(want0)
-			_ = labellerStubApply(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Apply")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Apply to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sampledtest.NewLabellerStub(t)
-			var got0 context.Context
-			var got1 sampled.Tag
-			var got2 sampled.Level
-			s.OnApply.Func(func(p0 context.Context, p1 sampled.Tag, p2 sampled.Level) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = labellerStubApply(t, s)
-			a0, a1, a2 := labellerStubApplyArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Tag")
-			expect.Equal(t, got2, a2, "the function receives Level")
-		})
-	})
-}
-
-// dokimi:provenance sha256:f85df41734d536666cf950d23ff1abccc9641cf850a954b70c27f4c5bc262d78
+// dokimi:provenance sha256:e6c3e17137465d3469e51439debcbf6f608d591ec4098b26723ad1ab23e41421

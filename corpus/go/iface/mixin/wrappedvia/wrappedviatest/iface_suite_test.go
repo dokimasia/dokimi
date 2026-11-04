@@ -48,62 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*wrappedviatest.MixedHandle) wrappedvia.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSibling(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSiblingGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[wrappedvia.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -125,70 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*wrappedviatest.MixedHandle) wrappedvia.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSibling(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSiblingGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[wrappedvia.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = wrappedviatest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *wrappedviatest.MixedHandle) wrappedvia.Mixed {
-	return wrappedviatest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -201,62 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(wrappedviatest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(wrappedviatest.MixedChecks.TracedGet.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSibling(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSiblingGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[wrappedvia.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -267,62 +106,7 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		wrappedviatest.MixedChecks.Get.Callable,
 		mixedIdle,
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSibling(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSiblingGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[wrappedvia.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -333,62 +117,7 @@ func FuzzMixedSuiteTracedGet(f *testing.F) {
 		f,
 		wrappedviatest.MixedChecks.TracedGet.Callable,
 		mixedIdle,
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSibling(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			wrappedviatest.MixedChecks.TracedGet.AgreesWithItsSiblingGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[wrappedvia.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -403,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:feaac77248c62deeb3e2aae1e4d16f6030aafcfed2f5d7ba82deac8077f03f7c
+// dokimi:provenance sha256:4188cfc8676dcd17a487f87999918c28e671a11e4e8ebcee6c4f65eaf0977251

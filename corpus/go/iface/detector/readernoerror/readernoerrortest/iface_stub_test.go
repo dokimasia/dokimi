@@ -44,24 +44,37 @@ func readerNoErrorStubLookupPins() readernoerror.Value {
 }
 
 // readerNoErrorStubLookupSubject returns the subject of [stub.Behaviour]
-// for Lookup. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for Lookup. The subject calls a new double
+// that reports to tb.
 func readerNoErrorStubLookupSubject(
 	tb assert.TB,
 ) stub.Subject[readernoerrortest.ReaderNoErrorLookupCall, readernoerrortest.ReaderNoErrorLookupReturn] {
 	tb.Helper()
 	s := readernoerrortest.NewReaderNoErrorStub(tb)
 	return stub.Subject[readernoerrortest.ReaderNoErrorLookupCall, readernoerrortest.ReaderNoErrorLookupReturn]{
-		Stub: s.OnLookup.MethodStub,
+		Stub:  s.OnLookup.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = readerNoErrorStubLookup(tb, s)
+		},
+		Arguments: func(tb assert.TB, c readernoerrortest.ReaderNoErrorLookupCall) {
+			tb.Helper()
+			a0, a1 := readerNoErrorStubLookupArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() readernoerrortest.ReaderNoErrorLookupReturn {
 			got0 := readerNoErrorStubLookup(tb, s)
 			return readernoerrortest.ReaderNoErrorLookupReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnLookup.Func(func(_ context.Context, _ string) readernoerror.Value {
-				mark()
+		Returns: func() readernoerrortest.ReaderNoErrorLookupReturn {
+			want0 := readerNoErrorStubLookupPins()
+			s.OnLookup.Returns(want0)
+			return readernoerrortest.ReaderNoErrorLookupReturn{Result: want0}
+		},
+		Override: func(seen func(readernoerrortest.ReaderNoErrorLookupCall)) {
+			s.OnLookup.Func(func(p0 context.Context, p1 string) readernoerror.Value {
+				seen(readernoerrortest.ReaderNoErrorLookupCall{Ctx: p0, Key: p1})
 				var z0 readernoerror.Value
 				return z0
 			})
@@ -83,7 +96,6 @@ func readerNoErrorStubInstanceOf(tb assert.TB, s *readernoerrortest.ReaderNoErro
 		Call: func() {
 			_ = readerNoErrorStubLookup(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -95,57 +107,14 @@ func TestReaderNoErrorStub(t *testing.T) {
 	t.Run("Lookup", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Lookup", readerNoErrorStubLookupSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := readernoerrortest.NewReaderNoErrorStub(t)
-			_ = readerNoErrorStubLookup(t, s)
-			got := s.OnLookup.AssertCalledOnce(t, "Lookup records the call")
-			a0, a1 := readerNoErrorStubLookupArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := readernoerrortest.NewReaderNoErrorStub(t)
-			var seen []readernoerrortest.ReaderNoErrorLookupCall
-			s.OnLookup.OnRecord(func(c readernoerrortest.ReaderNoErrorLookupCall) { seen = append(seen, c) })
-			_ = readerNoErrorStubLookup(t, s)
-			_ = readerNoErrorStubLookup(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Lookup")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) readerNoErrorStubInstance {
-			return readerNoErrorStubInstanceOf(tb, readernoerrortest.NewReaderNoErrorStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Lookup", func(t *testing.T) {
+		t.Run("Lookup", func(t *testing.T) {
 			t.Parallel()
-			s := readernoerrortest.NewReaderNoErrorStub(t)
-			_ = readerNoErrorStubLookup(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLookup.CallCount(), 0, "ResetCalls clears the calls of Lookup")
-		})
-
-		t.Run("keeps the results of Returns of Lookup", func(t *testing.T) {
-			t.Parallel()
-			s := readernoerrortest.NewReaderNoErrorStub(t)
-			want0 := readerNoErrorStubLookupPins()
-			s.OnLookup.Returns(want0)
-			s.ResetCalls()
-			got0 := readerNoErrorStubLookup(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Lookup")
-		})
-	})
-
-	t.Run("NewReaderNoErrorStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) readerNoErrorStubInstance {
-			return readerNoErrorStubInstanceOf(tb, readernoerrortest.NewReaderNoErrorStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Lookup", readerNoErrorStubLookupSubject)
 		})
 	})
 
@@ -235,54 +204,4 @@ func TestReaderNoErrorStub(t *testing.T) {
 	})
 }
 
-// TestReaderNoErrorLookupStub checks the methods of
-// ReaderNoErrorLookupStub, which configures Lookup.
-func TestReaderNoErrorLookupStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Lookup", func(t *testing.T) {
-			t.Parallel()
-			s := readernoerrortest.NewReaderNoErrorStub(t)
-			want0 := readerNoErrorStubLookupPins()
-			s.OnLookup.Returns(want0)
-			got0 := readerNoErrorStubLookup(t, s)
-			assert.Equal(t, got0, want0, "Lookup returns the Result that Returns sets")
-		})
-
-		t.Run("configures Lookup for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := readernoerrortest.NewReaderNoErrorStub(r)
-			s.OnLookup.Strict()
-			var want0 readernoerror.Value
-			s.OnLookup.Returns(want0)
-			_ = readerNoErrorStubLookup(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Lookup")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Lookup to the function", func(t *testing.T) {
-			t.Parallel()
-			s := readernoerrortest.NewReaderNoErrorStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnLookup.Func(func(p0 context.Context, p1 string) readernoerror.Value {
-				got0, got1 = p0, p1
-				var z0 readernoerror.Value
-				return z0
-			})
-			_ = readerNoErrorStubLookup(t, s)
-			a0, a1 := readerNoErrorStubLookupArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:f87c336d2824f34d82ad2db84b0f5239fb154e55454a92a05cff7527694ab2af
+// dokimi:provenance sha256:4dd10c6ae2c805e6daeaab455969e7c7dabe211cec0261c1904ff89d0f1a0de9

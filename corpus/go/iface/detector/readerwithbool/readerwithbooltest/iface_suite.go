@@ -15,30 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of ReaderWithBool:
-//
-// ReaderWithBool.Load/smoke: Load returns without a panic for derived
-// inputs.
-//
-// ReaderWithBool.Load/smoke#generated: Load returns without a panic for
-// derived inputs.
-//
-// ReaderWithBool.Load/zero-on-miss: Load returns the zero value beside a
-// false presence flag.
-//
-// ReaderWithBool.Load/zero-on-miss#generated: Load returns the zero value
-// beside a false presence flag.
-
-// The derived checks of ReaderWithBool that witness their laws at the
-// shallow end:
-//
-// ReaderWithBool.Load/smoke
-
-// The refused claims of ReaderWithBool:
-//
-// ReaderWithBool.Load/cancel: Load cannot fail. The remedy is to give Load
-// an error result.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -69,22 +45,10 @@ func (c readerWithBoolLoad) Smoke() conform.ID[readerwithbool.ReaderWithBool] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Load returns
-// without a panic for derived inputs.
-func (c readerWithBoolLoad) SmokeGenerated() conform.ID[readerwithbool.ReaderWithBool] {
-	return c.Check("smoke#generated")
-}
-
 // ZeroOnMiss returns the identity of the check that Load returns the zero
 // value beside a false presence flag.
 func (c readerWithBoolLoad) ZeroOnMiss() conform.ID[readerwithbool.ReaderWithBool] {
 	return c.Check("zero-on-miss")
-}
-
-// ZeroOnMissGenerated returns the identity of the check that Load returns
-// the zero value beside a false presence flag.
-func (c readerWithBoolLoad) ZeroOnMissGenerated() conform.ID[readerwithbool.ReaderWithBool] {
-	return c.Check("zero-on-miss#generated")
 }
 
 // ReaderWithBoolSuite returns the checks of ReaderWithBool, and the calls
@@ -99,9 +63,6 @@ func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 				ID:          ReaderWithBoolChecks.Load.Smoke(),
 				Statement:   "Load returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ReaderWithBoolHandle) {
@@ -113,12 +74,9 @@ func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 				Defect: readerWithBoolLoadPanics,
 			},
 			{
-				ID:          ReaderWithBoolChecks.Load.SmokeGenerated(),
+				ID:          ReaderWithBoolChecks.Load.Smoke().Generated(),
 				Statement:   "Load returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ReaderWithBoolHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -133,9 +91,6 @@ func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 				ID:          ReaderWithBoolChecks.Load.ZeroOnMiss(),
 				Statement:   "Load returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
-				Probe:       spec.ZeroBesideFalse,
-				Reason:      spec.ValueBesideFalse,
-				Law:         spec.NoValueBesideAFalseFlag,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ReaderWithBoolHandle) {
 					probe.ZeroBesideFalse(h, func(ctx context.Context) (readerwithbool.Value, bool) {
@@ -145,12 +100,9 @@ func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 				Defect: readerWithBoolLoadValueBesideAFalseFlag,
 			},
 			{
-				ID:          ReaderWithBoolChecks.Load.ZeroOnMissGenerated(),
+				ID:          ReaderWithBoolChecks.Load.ZeroOnMiss().Generated(),
 				Statement:   "Load returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
-				Probe:       spec.ZeroBesideFalse,
-				Reason:      spec.ValueBesideFalse,
-				Law:         spec.NoValueBesideAFalseFlag,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ReaderWithBoolHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -326,4 +278,4 @@ func readerWithBoolLoadValueBesideAFalseFlag(h *ReaderWithBoolHandle) readerwith
 	return &readerWithBoolLoadValueBesideAFalseFlagDefect{readerWithBoolOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:80138219ce8b41e28c0857f1d4ea4c87b606420962edde03b6cd92739c32f9ea
+// dokimi:provenance sha256:d5c761a3eb60b6765329660575acf741fc8b87d8c41fe391e9026db2482aa69d

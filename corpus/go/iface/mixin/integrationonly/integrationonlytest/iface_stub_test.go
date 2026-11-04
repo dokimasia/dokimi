@@ -40,25 +40,38 @@ func mixedStubConnectPins() error {
 	return want0
 }
 
-// mixedStubConnectSubject returns the subject of [stub.Behaviour] for
-// Connect. The subject calls a new double that reports to tb.
+// mixedStubConnectSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Connect. The subject calls a new double that
+// reports to tb.
 func mixedStubConnectSubject(
 	tb assert.TB,
 ) stub.Subject[integrationonlytest.MixedConnectCall, integrationonlytest.MixedConnectReturn] {
 	tb.Helper()
 	s := integrationonlytest.NewMixedStub(tb)
 	return stub.Subject[integrationonlytest.MixedConnectCall, integrationonlytest.MixedConnectReturn]{
-		Stub: s.OnConnect.MethodStub,
+		Stub:  s.OnConnect.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubConnect(tb, s)
+		},
+		Arguments: func(tb assert.TB, c integrationonlytest.MixedConnectCall) {
+			tb.Helper()
+			a0, a1 := mixedStubConnectArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Dsn, a1, "the call records Dsn")
 		},
 		Result: func() integrationonlytest.MixedConnectReturn {
 			got0 := mixedStubConnect(tb, s)
 			return integrationonlytest.MixedConnectReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnConnect.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() integrationonlytest.MixedConnectReturn {
+			want0 := mixedStubConnectPins()
+			s.OnConnect.Returns(want0)
+			return integrationonlytest.MixedConnectReturn{Err: want0}
+		},
+		Override: func(seen func(integrationonlytest.MixedConnectCall)) {
+			s.OnConnect.Func(func(p0 context.Context, p1 string) error {
+				seen(integrationonlytest.MixedConnectCall{Ctx: p0, Dsn: p1})
 				var z0 error
 				return z0
 			})
@@ -83,7 +96,6 @@ func mixedStubInstanceOf(tb assert.TB, s *integrationonlytest.MixedStub) mixedSt
 		Call: func() {
 			_ = mixedStubConnect(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -95,69 +107,14 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Connect", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Connect", mixedStubConnectSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := integrationonlytest.NewMixedStub(t)
-			_ = mixedStubConnect(t, s)
-			got := s.OnConnect.AssertCalledOnce(t, "Connect records the call")
-			a0, a1 := mixedStubConnectArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Dsn, a1, "the call records Dsn")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := integrationonlytest.NewMixedStub(t)
-			var seen []integrationonlytest.MixedConnectCall
-			s.OnConnect.OnRecord(func(c integrationonlytest.MixedConnectCall) { seen = append(seen, c) })
-			_ = mixedStubConnect(t, s)
-			_ = mixedStubConnect(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Connect")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, integrationonlytest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Connect", func(t *testing.T) {
+		t.Run("Connect", func(t *testing.T) {
 			t.Parallel()
-			s := integrationonlytest.NewMixedStub(t)
-			_ = mixedStubConnect(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnConnect.CallCount(), 0, "ResetCalls clears the calls of Connect")
-		})
-
-		t.Run("keeps the results of Returns of Connect", func(t *testing.T) {
-			t.Parallel()
-			s := integrationonlytest.NewMixedStub(t)
-			want0 := mixedStubConnectPins()
-			s.OnConnect.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubConnect(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Connect")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, integrationonlytest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Connect with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Connect-failing")
-			s := integrationonlytest.NewMixedStubFailing(t, want)
-			r0 := mixedStubConnect(t, s)
-			assert.ErrorIs(t, r0, want, "Connect fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Connect", mixedStubConnectSubject)
 		})
 	})
 
@@ -266,54 +223,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedConnectStub checks the methods of MixedConnectStub, which
-// configures Connect.
-func TestMixedConnectStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Connect", func(t *testing.T) {
-			t.Parallel()
-			s := integrationonlytest.NewMixedStub(t)
-			want0 := mixedStubConnectPins()
-			s.OnConnect.Returns(want0)
-			got0 := mixedStubConnect(t, s)
-			assert.ErrorIs(t, got0, want0, "Connect returns the error that Returns sets")
-		})
-
-		t.Run("configures Connect for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := integrationonlytest.NewMixedStub(r)
-			s.OnConnect.Strict()
-			var want0 error
-			s.OnConnect.Returns(want0)
-			_ = mixedStubConnect(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Connect")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Connect to the function", func(t *testing.T) {
-			t.Parallel()
-			s := integrationonlytest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnConnect.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubConnect(t, s)
-			a0, a1 := mixedStubConnectArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Dsn")
-		})
-	})
-}
-
-// dokimi:provenance sha256:73440144993e6a1563d1ec13d2f8346b05d63ce3a066d833fd0f01a4247238af
+// dokimi:provenance sha256:1360bdb5e7c77dec236ffe9a80dcbaaf1dbc1cabfd1aefe2bdaabc104c550ca5

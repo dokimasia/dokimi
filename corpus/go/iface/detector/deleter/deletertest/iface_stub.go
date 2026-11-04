@@ -145,21 +145,6 @@ func NewDeleterStub(tb assert.TB, opts ...DeleterStubOption) *DeleterStub {
 	return s
 }
 
-// NewDeleterStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewDeleterStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...DeleterStubOption) *DeleterStub {
-	return NewDeleterStub(tb, append([]DeleterStubOption{
-		DeleterStubWithClock(clk),
-		DeleterStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewDeleterStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewDeleterStubFailing(tb assert.TB, err error, opts ...DeleterStubOption) *DeleterStub {
-	return NewDeleterStub(tb, append([]DeleterStubOption{DeleterStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *DeleterStub) ResetCalls() {
@@ -194,4 +179,4 @@ func (s *DeleterStub) Delete(ctx context.Context, key string) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:7154035e892589846b73274ddc6ec2b15d65ba43f079953e1b603ab69e2fd295
+// dokimi:provenance sha256:293360a1d5fbea6a99435f68c7ab6636515b8ae9bf10d66a8254834e7640948f

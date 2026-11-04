@@ -15,30 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of PointerReader:
-//
-// PointerReader.Find/smoke: Find returns without a panic for derived
-// inputs.
-//
-// PointerReader.Find/smoke#generated: Find returns without a panic for
-// derived inputs.
-//
-// PointerReader.Find/nil-on-miss: Find returns nil for an input that
-// nothing stored.
-//
-// PointerReader.Find/nil-on-miss#generated: Find returns nil for an input
-// that nothing stored.
-
-// The derived checks of PointerReader that witness their laws at the
-// shallow end:
-//
-// PointerReader.Find/smoke
-
-// The refused claims of PointerReader:
-//
-// PointerReader.Find/cancel: Find cannot fail. The remedy is to give Find
-// an error result.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -69,22 +45,10 @@ func (c pointerReaderFind) Smoke() conform.ID[pointerreader.PointerReader] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Find returns
-// without a panic for derived inputs.
-func (c pointerReaderFind) SmokeGenerated() conform.ID[pointerreader.PointerReader] {
-	return c.Check("smoke#generated")
-}
-
 // NilOnMiss returns the identity of the check that Find returns nil for an
 // input that nothing stored.
 func (c pointerReaderFind) NilOnMiss() conform.ID[pointerreader.PointerReader] {
 	return c.Check("nil-on-miss")
-}
-
-// NilOnMissGenerated returns the identity of the check that Find returns
-// nil for an input that nothing stored.
-func (c pointerReaderFind) NilOnMissGenerated() conform.ID[pointerreader.PointerReader] {
-	return c.Check("nil-on-miss#generated")
 }
 
 // PointerReaderSuite returns the checks of PointerReader, and the calls
@@ -99,9 +63,6 @@ func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
 				ID:          PointerReaderChecks.Find.Smoke(),
 				Statement:   "Find returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PointerReaderHandle) {
@@ -113,12 +74,9 @@ func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
 				Defect: pointerReaderFindPanics,
 			},
 			{
-				ID:          PointerReaderChecks.Find.SmokeGenerated(),
+				ID:          PointerReaderChecks.Find.Smoke().Generated(),
 				Statement:   "Find returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PointerReaderHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -133,9 +91,6 @@ func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
 				ID:          PointerReaderChecks.Find.NilOnMiss(),
 				Statement:   "Find returns nil for an input that nothing stored",
 				Claim:       spec.NilOnMiss,
-				Probe:       spec.NilBesideAMiss,
-				Reason:      spec.NonNilMiss,
-				Law:         spec.MissReturnsTheZero,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *PointerReaderHandle) {
 					probe.NilBesideAMiss(h, func(ctx context.Context) (*pointerreader.Value, error) {
@@ -146,12 +101,9 @@ func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
 				Defect: pointerReaderFindInventsAPointer,
 			},
 			{
-				ID:          PointerReaderChecks.Find.NilOnMissGenerated(),
+				ID:          PointerReaderChecks.Find.NilOnMiss().Generated(),
 				Statement:   "Find returns nil for an input that nothing stored",
 				Claim:       spec.NilOnMiss,
-				Probe:       spec.NilBesideAMiss,
-				Reason:      spec.NonNilMiss,
-				Law:         spec.MissReturnsTheZero,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PointerReaderHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -322,4 +274,4 @@ func pointerReaderFindInventsAPointer(h *PointerReaderHandle) pointerreader.Poin
 	return &pointerReaderFindInventsAPointerDefect{pointerReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:23a0ceede735869d1c7c9293da8297809cfcf7e5a0f776ca62763fa5fe04d958
+// dokimi:provenance sha256:b3a48fc38c6d9f80380da38e6461cc5be882e567e1c17c26792be6d72fb03c9c

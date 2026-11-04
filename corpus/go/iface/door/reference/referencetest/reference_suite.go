@@ -16,59 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Store:
-//
-// Store.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Store.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Store.Get/cancel: Get returns an error for a cancelled context.
-//
-// Store.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Store.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Store.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Store.Get/agrees-with-the-reference: every sequence of calls returns on
-// Store what it returns on the reference.
-//
-// Store.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Store.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Store.Put/cancel: Put returns an error for a cancelled context.
-//
-// Store.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Store.Delete/smoke: Delete returns without a panic for derived inputs.
-//
-// Store.Delete/smoke#generated: Delete returns without a panic for derived
-// inputs.
-//
-// Store.Delete/cancel: Delete returns an error for a cancelled context.
-//
-// Store.Delete/cancel#generated: Delete returns an error for a cancelled
-// context.
-
-// The derived checks of Store that witness their laws at the shallow end:
-//
-// Store.Get/smoke
-//
-// Store.Put/smoke
-//
-// Store.Delete/smoke
-
-// The unclaimed classifications of Store:
-//
-// The shape:deleter of Store.Delete has the stance silent. A delete is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -102,34 +49,16 @@ func (c storeGet) Smoke() conform.ID[reference.Store] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c storeGet) SmokeGenerated() conform.ID[reference.Store] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c storeGet) Cancel() conform.ID[reference.Store] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c storeGet) CancelGenerated() conform.ID[reference.Store] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c storeGet) ZeroOnError() conform.ID[reference.Store] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c storeGet) ZeroOnErrorGenerated() conform.ID[reference.Store] {
-	return c.Check("zero-on-error#generated")
 }
 
 // AgreesWithTheReference returns the identity of the check that every
@@ -149,22 +78,10 @@ func (c storePut) Smoke() conform.ID[reference.Store] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c storePut) SmokeGenerated() conform.ID[reference.Store] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c storePut) Cancel() conform.ID[reference.Store] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c storePut) CancelGenerated() conform.ID[reference.Store] {
-	return c.Check("cancel#generated")
 }
 
 // storeDelete is the name of Store.Delete, with the identities of its
@@ -179,22 +96,10 @@ func (c storeDelete) Smoke() conform.ID[reference.Store] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Delete returns
-// without a panic for derived inputs.
-func (c storeDelete) SmokeGenerated() conform.ID[reference.Store] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Delete returns an error
 // for a cancelled context.
 func (c storeDelete) Cancel() conform.ID[reference.Store] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Delete returns an
-// error for a cancelled context.
-func (c storeDelete) CancelGenerated() conform.ID[reference.Store] {
-	return c.Check("cancel#generated")
 }
 
 // StoreSuite returns the checks of Store, and the calls and the budgets of
@@ -209,9 +114,6 @@ func StoreSuite() conform.Suite[reference.Store] {
 				ID:          StoreChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -223,12 +125,9 @@ func StoreSuite() conform.Suite[reference.Store] {
 				Defect: storeGetPanics,
 			},
 			{
-				ID:          StoreChecks.Get.SmokeGenerated(),
+				ID:          StoreChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -243,9 +142,6 @@ func StoreSuite() conform.Suite[reference.Store] {
 				ID:          StoreChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -256,12 +152,9 @@ func StoreSuite() conform.Suite[reference.Store] {
 				Defect: storeGetIgnoresCancel,
 			},
 			{
-				ID:          StoreChecks.Get.CancelGenerated(),
+				ID:          StoreChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -276,9 +169,6 @@ func StoreSuite() conform.Suite[reference.Store] {
 				ID:          StoreChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -288,12 +178,9 @@ func StoreSuite() conform.Suite[reference.Store] {
 				Defect: storeGetValueBeside,
 			},
 			{
-				ID:          StoreChecks.Get.ZeroOnErrorGenerated(),
+				ID:          StoreChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -307,9 +194,6 @@ func StoreSuite() conform.Suite[reference.Store] {
 				ID:          StoreChecks.Get.AgreesWithTheReference(),
 				Statement:   "every sequence of calls returns on Store what it returns on the reference",
 				Claim:       spec.AgreesWithTheReference,
-				Probe:       spec.SequencesAgreeWithTheReference,
-				Reason:      spec.DivergesFromTheReference,
-				Law:         spec.EverySequenceAgreesWithTheReference,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences, spec.ReferenceImplementation},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					probe.SequencesAgreeWithTheReference(h, c, storeActions, storeReference)
@@ -320,9 +204,6 @@ func StoreSuite() conform.Suite[reference.Store] {
 				ID:          StoreChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -334,12 +215,9 @@ func StoreSuite() conform.Suite[reference.Store] {
 				Defect: storePutPanics,
 			},
 			{
-				ID:          StoreChecks.Put.SmokeGenerated(),
+				ID:          StoreChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -355,9 +233,6 @@ func StoreSuite() conform.Suite[reference.Store] {
 				ID:          StoreChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -368,12 +243,9 @@ func StoreSuite() conform.Suite[reference.Store] {
 				Defect: storePutIgnoresCancel,
 			},
 			{
-				ID:          StoreChecks.Put.CancelGenerated(),
+				ID:          StoreChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -389,9 +261,6 @@ func StoreSuite() conform.Suite[reference.Store] {
 				ID:          StoreChecks.Delete.Smoke(),
 				Statement:   "Delete returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -402,12 +271,9 @@ func StoreSuite() conform.Suite[reference.Store] {
 				Defect: storeDeletePanics,
 			},
 			{
-				ID:          StoreChecks.Delete.SmokeGenerated(),
+				ID:          StoreChecks.Delete.Smoke().Generated(),
 				Statement:   "Delete returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -421,9 +287,6 @@ func StoreSuite() conform.Suite[reference.Store] {
 				ID:          StoreChecks.Delete.Cancel(),
 				Statement:   "Delete returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -433,12 +296,9 @@ func StoreSuite() conform.Suite[reference.Store] {
 				Defect: storeDeleteIgnoresCancel,
 			},
 			{
-				ID:          StoreChecks.Delete.CancelGenerated(),
+				ID:          StoreChecks.Delete.Cancel().Generated(),
 				Statement:   "Delete returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -846,57 +706,6 @@ func storeReference(r reference.Store) func(context.Context, string, []any) conf
 	}
 }
 
-// The derived checks of Journal:
-//
-// Journal.Append/smoke: Append returns without a panic for derived inputs.
-//
-// Journal.Append/smoke#generated: Append returns without a panic for
-// derived inputs.
-//
-// Journal.Append/cancel: Append returns an error for a cancelled context.
-//
-// Journal.Append/cancel#generated: Append returns an error for a cancelled
-// context.
-//
-// Journal.Append/zero-on-error: Append returns the zero value beside an
-// error.
-//
-// Journal.Append/zero-on-error#generated: Append returns the zero value
-// beside an error.
-//
-// Journal.Append/agrees-with-the-reference: every sequence of calls
-// returns on Journal what it returns on the reference.
-//
-// Journal.At/smoke: At returns without a panic for derived inputs.
-//
-// Journal.At/smoke#generated: At returns without a panic for derived
-// inputs.
-//
-// Journal.At/cancel: At returns an error for a cancelled context.
-//
-// Journal.At/cancel#generated: At returns an error for a cancelled
-// context.
-//
-// Journal.At/zero-on-error: At returns the zero value beside an error.
-//
-// Journal.At/zero-on-error#generated: At returns the zero value beside an
-// error.
-//
-// Journal.Len/smoke: Len returns without a panic for derived inputs.
-//
-// Journal.Len/cancel: Len returns an error for a cancelled context.
-//
-// Journal.Len/zero-on-error: Len returns the zero value beside an error.
-
-// The derived checks of Journal that witness their laws at the shallow
-// end:
-//
-// Journal.Append/smoke
-//
-// Journal.At/smoke
-//
-// Journal.Len/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -931,34 +740,16 @@ func (c journalAppend) Smoke() conform.ID[reference.Journal] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Append returns
-// without a panic for derived inputs.
-func (c journalAppend) SmokeGenerated() conform.ID[reference.Journal] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c journalAppend) Cancel() conform.ID[reference.Journal] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Append returns an
-// error for a cancelled context.
-func (c journalAppend) CancelGenerated() conform.ID[reference.Journal] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Append returns the
 // zero value beside an error.
 func (c journalAppend) ZeroOnError() conform.ID[reference.Journal] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Append
-// returns the zero value beside an error.
-func (c journalAppend) ZeroOnErrorGenerated() conform.ID[reference.Journal] {
-	return c.Check("zero-on-error#generated")
 }
 
 // AgreesWithTheReference returns the identity of the check that every
@@ -978,34 +769,16 @@ func (c journalAt) Smoke() conform.ID[reference.Journal] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that At returns without
-// a panic for derived inputs.
-func (c journalAt) SmokeGenerated() conform.ID[reference.Journal] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that At returns an error for a
 // cancelled context.
 func (c journalAt) Cancel() conform.ID[reference.Journal] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that At returns an
-// error for a cancelled context.
-func (c journalAt) CancelGenerated() conform.ID[reference.Journal] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that At returns the zero
 // value beside an error.
 func (c journalAt) ZeroOnError() conform.ID[reference.Journal] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that At returns
-// the zero value beside an error.
-func (c journalAt) ZeroOnErrorGenerated() conform.ID[reference.Journal] {
-	return c.Check("zero-on-error#generated")
 }
 
 // journalLen is the name of Journal.Len, with the identities of its
@@ -1044,9 +817,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.Append.Smoke(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *JournalHandle) {
@@ -1058,12 +828,9 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				Defect: journalAppendPanics,
 			},
 			{
-				ID:          JournalChecks.Append.SmokeGenerated(),
+				ID:          JournalChecks.Append.Smoke().Generated(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnEntry := c.Draw(prop.Of[string](), "entry")
@@ -1078,9 +845,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1091,12 +855,9 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				Defect: journalAppendIgnoresCancel,
 			},
 			{
-				ID:          JournalChecks.Append.CancelGenerated(),
+				ID:          JournalChecks.Append.Cancel().Generated(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnEntry := c.Draw(prop.Of[string](), "entry")
@@ -1111,9 +872,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.Append.ZeroOnError(),
 				Statement:   "Append returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -1123,12 +881,9 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				Defect: journalAppendValueBeside,
 			},
 			{
-				ID:          JournalChecks.Append.ZeroOnErrorGenerated(),
+				ID:          JournalChecks.Append.ZeroOnError().Generated(),
 				Statement:   "Append returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnEntry := c.Draw(prop.Of[string](), "entry")
@@ -1142,9 +897,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.Append.AgreesWithTheReference(),
 				Statement:   "every sequence of calls returns on Journal what it returns on the reference",
 				Claim:       spec.AgreesWithTheReference,
-				Probe:       spec.SequencesAgreeWithTheReference,
-				Reason:      spec.DivergesFromTheReference,
-				Law:         spec.EverySequenceAgreesWithTheReference,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences, spec.ReferenceImplementation},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					probe.SequencesAgreeWithTheReference(h, c, journalActions, journalReference)
@@ -1155,9 +907,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.At.Smoke(),
 				Statement:   "At returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *JournalHandle) {
@@ -1169,12 +918,9 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				Defect: journalAtPanics,
 			},
 			{
-				ID:          JournalChecks.At.SmokeGenerated(),
+				ID:          JournalChecks.At.Smoke().Generated(),
 				Statement:   "At returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnPosition := c.Draw(prop.Of[int](), "position")
@@ -1189,9 +935,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.At.Cancel(),
 				Statement:   "At returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1202,12 +945,9 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				Defect: journalAtIgnoresCancel,
 			},
 			{
-				ID:          JournalChecks.At.CancelGenerated(),
+				ID:          JournalChecks.At.Cancel().Generated(),
 				Statement:   "At returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnPosition := c.Draw(prop.Of[int](), "position")
@@ -1222,9 +962,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.At.ZeroOnError(),
 				Statement:   "At returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -1234,12 +971,9 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				Defect: journalAtValueBeside,
 			},
 			{
-				ID:          JournalChecks.At.ZeroOnErrorGenerated(),
+				ID:          JournalChecks.At.ZeroOnError().Generated(),
 				Statement:   "At returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnPosition := c.Draw(prop.Of[int](), "position")
@@ -1253,9 +987,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.Len.Smoke(),
 				Statement:   "Len returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *JournalHandle) {
@@ -1270,9 +1001,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.Len.Cancel(),
 				Statement:   "Len returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1286,9 +1014,6 @@ func JournalSuite() conform.Suite[reference.Journal] {
 				ID:          JournalChecks.Len.ZeroOnError(),
 				Statement:   "Len returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -1731,46 +1456,6 @@ func journalReference(r reference.Journal) func(context.Context, string, []any) 
 	}
 }
 
-// The derived checks of Fifo:
-//
-// Fifo.Push/smoke: Push returns without a panic for derived inputs.
-//
-// Fifo.Push/smoke#generated: Push returns without a panic for derived
-// inputs.
-//
-// Fifo.Push/cancel: Push returns an error for a cancelled context.
-//
-// Fifo.Push/cancel#generated: Push returns an error for a cancelled
-// context.
-//
-// Fifo.Pop/smoke: Pop returns without a panic for derived inputs.
-//
-// Fifo.Pop/cancel: Pop returns an error for a cancelled context.
-//
-// Fifo.Pop/zero-on-error: Pop returns the zero value beside an error.
-//
-// Fifo.Pop/agrees-with-the-reference: every sequence of calls returns on
-// Fifo what it returns on the reference.
-//
-// Fifo.Len/smoke: Len returns without a panic for derived inputs.
-//
-// Fifo.Len/cancel: Len returns an error for a cancelled context.
-//
-// Fifo.Len/zero-on-error: Len returns the zero value beside an error.
-
-// The derived checks of Fifo that witness their laws at the shallow end:
-//
-// Fifo.Push/smoke
-//
-// Fifo.Pop/smoke
-//
-// Fifo.Len/smoke
-
-// The unclaimed classifications of Fifo:
-//
-// The shape:writer of Fifo.Push has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1804,22 +1489,10 @@ func (c fifoPush) Smoke() conform.ID[reference.Fifo] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Push returns
-// without a panic for derived inputs.
-func (c fifoPush) SmokeGenerated() conform.ID[reference.Fifo] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Push returns an error for
 // a cancelled context.
 func (c fifoPush) Cancel() conform.ID[reference.Fifo] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Push returns an
-// error for a cancelled context.
-func (c fifoPush) CancelGenerated() conform.ID[reference.Fifo] {
-	return c.Check("cancel#generated")
 }
 
 // fifoPop is the name of Fifo.Pop, with the identities of its checks.
@@ -1886,9 +1559,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Push.Smoke(),
 				Statement:   "Push returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FifoHandle) {
@@ -1899,12 +1569,9 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				Defect: fifoPushPanics,
 			},
 			{
-				ID:          FifoChecks.Push.SmokeGenerated(),
+				ID:          FifoChecks.Push.Smoke().Generated(),
 				Statement:   "Push returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FifoHandle, c *prop.Case) {
 					drawnItem := c.Draw(prop.Of[string](), "item")
@@ -1918,9 +1585,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Push.Cancel(),
 				Statement:   "Push returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FifoHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1930,12 +1594,9 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				Defect: fifoPushIgnoresCancel,
 			},
 			{
-				ID:          FifoChecks.Push.CancelGenerated(),
+				ID:          FifoChecks.Push.Cancel().Generated(),
 				Statement:   "Push returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FifoHandle, c *prop.Case) {
 					drawnItem := c.Draw(prop.Of[string](), "item")
@@ -1949,9 +1610,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Pop.Smoke(),
 				Statement:   "Pop returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FifoHandle) {
@@ -1966,9 +1624,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Pop.Cancel(),
 				Statement:   "Pop returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FifoHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1982,9 +1637,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Pop.ZeroOnError(),
 				Statement:   "Pop returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FifoHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -1997,9 +1649,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Pop.AgreesWithTheReference(),
 				Statement:   "every sequence of calls returns on Fifo what it returns on the reference",
 				Claim:       spec.AgreesWithTheReference,
-				Probe:       spec.SequencesAgreeWithTheReference,
-				Reason:      spec.DivergesFromTheReference,
-				Law:         spec.EverySequenceAgreesWithTheReference,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences, spec.ReferenceImplementation},
 				Property: func(h *FifoHandle, c *prop.Case) {
 					probe.SequencesAgreeWithTheReference(h, c, fifoActions, fifoReference)
@@ -2010,9 +1659,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Len.Smoke(),
 				Statement:   "Len returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FifoHandle) {
@@ -2027,9 +1673,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Len.Cancel(),
 				Statement:   "Len returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FifoHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2043,9 +1686,6 @@ func FifoSuite() conform.Suite[reference.Fifo] {
 				ID:          FifoChecks.Len.ZeroOnError(),
 				Statement:   "Len returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FifoHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -2456,4 +2096,4 @@ func fifoReference(r reference.Fifo) func(context.Context, string, []any) confor
 	}
 }
 
-// dokimi:provenance sha256:5faff6245022d141c72f607b36292fb72d2fa88375a754152f51072ee4e42543
+// dokimi:provenance sha256:dae6107fa460855b31d6aade49745f1e187a3dc486d191fa4b487f99eed18115

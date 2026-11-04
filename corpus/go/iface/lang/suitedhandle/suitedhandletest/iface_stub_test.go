@@ -39,23 +39,35 @@ func fsStubOpenPins() (suitedhandle.File, error) {
 	return want0, want1
 }
 
-// fsStubOpenSubject returns the subject of [stub.Behaviour] for Open. The
-// subject calls a new double that reports to tb.
+// fsStubOpenSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Open. The subject calls a new double that
+// reports to tb.
 func fsStubOpenSubject(tb assert.TB) stub.Subject[suitedhandletest.FSOpenCall, suitedhandletest.FSOpenReturn] {
 	tb.Helper()
 	s := suitedhandletest.NewFSStub(tb)
 	return stub.Subject[suitedhandletest.FSOpenCall, suitedhandletest.FSOpenReturn]{
-		Stub: s.OnOpen.MethodStub,
+		Stub:  s.OnOpen.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = fsStubOpen(tb, s)
+		},
+		Arguments: func(tb assert.TB, c suitedhandletest.FSOpenCall) {
+			tb.Helper()
+			a0 := fsStubOpenArgs(tb)
+			assert.Equal(tb, c.Name, a0, "the call records Name")
 		},
 		Result: func() suitedhandletest.FSOpenReturn {
 			got0, got1 := fsStubOpen(tb, s)
 			return suitedhandletest.FSOpenReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnOpen.Func(func(_ string) (suitedhandle.File, error) {
-				mark()
+		Returns: func() suitedhandletest.FSOpenReturn {
+			want0, want1 := fsStubOpenPins()
+			s.OnOpen.Returns(want0, want1)
+			return suitedhandletest.FSOpenReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(suitedhandletest.FSOpenCall)) {
+			s.OnOpen.Func(func(p0 string) (suitedhandle.File, error) {
+				seen(suitedhandletest.FSOpenCall{Name: p0})
 				var z0 suitedhandle.File
 				var z1 error
 				return z0, z1
@@ -81,7 +93,6 @@ func fsStubInstanceOf(tb assert.TB, s *suitedhandletest.FSStub) fsStubInstance {
 		Call: func() {
 			_, _ = fsStubOpen(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -93,68 +104,14 @@ func TestFSStub(t *testing.T) {
 	t.Run("Open", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Open", fsStubOpenSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			_, _ = fsStubOpen(t, s)
-			got := s.OnOpen.AssertCalledOnce(t, "Open records the call")
-			a0 := fsStubOpenArgs(t)
-			assert.Equal(t, got.Name, a0, "the call records Name")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			var seen []suitedhandletest.FSOpenCall
-			s.OnOpen.OnRecord(func(c suitedhandletest.FSOpenCall) { seen = append(seen, c) })
-			_, _ = fsStubOpen(t, s)
-			_, _ = fsStubOpen(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Open")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) fsStubInstance {
-			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Open", func(t *testing.T) {
+		t.Run("Open", func(t *testing.T) {
 			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			_, _ = fsStubOpen(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnOpen.CallCount(), 0, "ResetCalls clears the calls of Open")
-		})
-
-		t.Run("keeps the results of Returns of Open", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			want0, want1 := fsStubOpenPins()
-			s.OnOpen.Returns(want0, want1)
-			s.ResetCalls()
-			_, got1 := fsStubOpen(t, s)
-			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Open")
-		})
-	})
-
-	t.Run("NewFSStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) fsStubInstance {
-			return fsStubInstanceOf(tb, suitedhandletest.NewFSStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewFSStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Open with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Open-failing")
-			s := suitedhandletest.NewFSStubFailing(t, want)
-			_, r1 := fsStubOpen(t, s)
-			assert.ErrorIs(t, r1, want, "Open fails with the error of NewFSStubFailing")
+			stub.ResetBehaviour(t, "Open", fsStubOpenSubject)
 		})
 	})
 
@@ -252,55 +209,6 @@ func TestFSStub(t *testing.T) {
 	})
 }
 
-// TestFSOpenStub checks the methods of FSOpenStub, which configures Open.
-func TestFSOpenStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Open", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			want0, want1 := fsStubOpenPins()
-			s.OnOpen.Returns(want0, want1)
-			_, got1 := fsStubOpen(t, s)
-			assert.ErrorIs(t, got1, want1, "Open returns the error that Returns sets")
-		})
-
-		t.Run("configures Open for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := suitedhandletest.NewFSStub(r)
-			s.OnOpen.Strict()
-			var want0 suitedhandle.File
-			var want1 error
-			s.OnOpen.Returns(want0, want1)
-			_, _ = fsStubOpen(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Open")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Open to the function", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			var got0 string
-			s.OnOpen.Func(func(p0 string) (suitedhandle.File, error) {
-				got0 = p0
-				var z0 suitedhandle.File
-				var z1 error
-				return z0, z1
-			})
-			_, _ = fsStubOpen(t, s)
-			a0 := fsStubOpenArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Name")
-		})
-	})
-}
-
 // fileStubName calls Name of s with the samples of its arguments.
 func fileStubName(tb assert.TB, s *suitedhandletest.FileStub) string {
 	tb.Helper()
@@ -327,13 +235,15 @@ func fileStubClosePins() error {
 	return want0
 }
 
-// fileStubNameSubject returns the subject of [stub.Behaviour] for Name.
-// The subject calls a new double that reports to tb.
+// fileStubNameSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Name. The subject calls a new double that
+// reports to tb.
 func fileStubNameSubject(tb assert.TB) stub.Subject[suitedhandletest.FileNameCall, suitedhandletest.FileNameReturn] {
 	tb.Helper()
 	s := suitedhandletest.NewFileStub(tb)
 	return stub.Subject[suitedhandletest.FileNameCall, suitedhandletest.FileNameReturn]{
-		Stub: s.OnName.MethodStub,
+		Stub:  s.OnName.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = fileStubName(tb, s)
 		},
@@ -341,9 +251,14 @@ func fileStubNameSubject(tb assert.TB) stub.Subject[suitedhandletest.FileNameCal
 			got0 := fileStubName(tb, s)
 			return suitedhandletest.FileNameReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() suitedhandletest.FileNameReturn {
+			want0 := fileStubNamePins()
+			s.OnName.Returns(want0)
+			return suitedhandletest.FileNameReturn{Result: want0}
+		},
+		Override: func(seen func(suitedhandletest.FileNameCall)) {
 			s.OnName.Func(func() string {
-				mark()
+				seen(suitedhandletest.FileNameCall{})
 				var z0 string
 				return z0
 			})
@@ -351,13 +266,15 @@ func fileStubNameSubject(tb assert.TB) stub.Subject[suitedhandletest.FileNameCal
 	}
 }
 
-// fileStubCloseSubject returns the subject of [stub.Behaviour] for Close.
-// The subject calls a new double that reports to tb.
+// fileStubCloseSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Close. The subject calls a new double that
+// reports to tb.
 func fileStubCloseSubject(tb assert.TB) stub.Subject[suitedhandletest.FileCloseCall, suitedhandletest.FileCloseReturn] {
 	tb.Helper()
 	s := suitedhandletest.NewFileStub(tb)
 	return stub.Subject[suitedhandletest.FileCloseCall, suitedhandletest.FileCloseReturn]{
-		Stub: s.OnClose.MethodStub,
+		Stub:  s.OnClose.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = fileStubClose(tb, s)
 		},
@@ -365,9 +282,14 @@ func fileStubCloseSubject(tb assert.TB) stub.Subject[suitedhandletest.FileCloseC
 			got0 := fileStubClose(tb, s)
 			return suitedhandletest.FileCloseReturn{Err: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() suitedhandletest.FileCloseReturn {
+			want0 := fileStubClosePins()
+			s.OnClose.Returns(want0)
+			return suitedhandletest.FileCloseReturn{Err: want0}
+		},
+		Override: func(seen func(suitedhandletest.FileCloseCall)) {
 			s.OnClose.Func(func() error {
-				mark()
+				seen(suitedhandletest.FileCloseCall{})
 				var z0 error
 				return z0
 			})
@@ -392,7 +314,6 @@ func fileStubInstanceOf(tb assert.TB, s *suitedhandletest.FileStub) fileStubInst
 		Call: func() {
 			_ = fileStubName(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -404,92 +325,24 @@ func TestFileStub(t *testing.T) {
 	t.Run("Name", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Name", fileStubNameSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFileStub(t)
-			var seen []suitedhandletest.FileNameCall
-			s.OnName.OnRecord(func(c suitedhandletest.FileNameCall) { seen = append(seen, c) })
-			_ = fileStubName(t, s)
-			_ = fileStubName(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Name")
-		})
 	})
 
 	t.Run("Close", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Close", fileStubCloseSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFileStub(t)
-			var seen []suitedhandletest.FileCloseCall
-			s.OnClose.OnRecord(func(c suitedhandletest.FileCloseCall) { seen = append(seen, c) })
-			_ = fileStubClose(t, s)
-			_ = fileStubClose(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) fileStubInstance {
-			return fileStubInstanceOf(tb, suitedhandletest.NewFileStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Name", func(t *testing.T) {
+		t.Run("Name", func(t *testing.T) {
 			t.Parallel()
-			s := suitedhandletest.NewFileStub(t)
-			_ = fileStubName(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnName.CallCount(), 0, "ResetCalls clears the calls of Name")
+			stub.ResetBehaviour(t, "Name", fileStubNameSubject)
 		})
 
-		t.Run("keeps the results of Returns of Name", func(t *testing.T) {
+		t.Run("Close", func(t *testing.T) {
 			t.Parallel()
-			s := suitedhandletest.NewFileStub(t)
-			want0 := fileStubNamePins()
-			s.OnName.Returns(want0)
-			s.ResetCalls()
-			got0 := fileStubName(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Name")
-		})
-
-		t.Run("clears the recorded calls of Close", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFileStub(t)
-			_ = fileStubClose(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
-		})
-
-		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFileStub(t)
-			want0 := fileStubClosePins()
-			s.OnClose.Returns(want0)
-			s.ResetCalls()
-			got0 := fileStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
-		})
-	})
-
-	t.Run("NewFileStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) fileStubInstance {
-			return fileStubInstanceOf(tb, suitedhandletest.NewFileStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewFileStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Close with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Close-failing")
-			s := suitedhandletest.NewFileStubFailing(t, want)
-			r0 := fileStubClose(t, s)
-			assert.ErrorIs(t, r0, want, "Close fails with the error of NewFileStubFailing")
+			stub.ResetBehaviour(t, "Close", fileStubCloseSubject)
 		})
 	})
 
@@ -613,64 +466,4 @@ func TestFileStub(t *testing.T) {
 	})
 }
 
-// TestFileNameStub checks the methods of FileNameStub, which configures
-// Name.
-func TestFileNameStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Name", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFileStub(t)
-			want0 := fileStubNamePins()
-			s.OnName.Returns(want0)
-			got0 := fileStubName(t, s)
-			assert.Equal(t, got0, want0, "Name returns the Result that Returns sets")
-		})
-
-		t.Run("configures Name for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := suitedhandletest.NewFileStub(r)
-			s.OnName.Strict()
-			var want0 string
-			s.OnName.Returns(want0)
-			_ = fileStubName(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Name")
-		})
-	})
-}
-
-// TestFileCloseStub checks the methods of FileCloseStub, which configures
-// Close.
-func TestFileCloseStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Close", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFileStub(t)
-			want0 := fileStubClosePins()
-			s.OnClose.Returns(want0)
-			got0 := fileStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
-		})
-
-		t.Run("configures Close for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := suitedhandletest.NewFileStub(r)
-			s.OnClose.Strict()
-			var want0 error
-			s.OnClose.Returns(want0)
-			_ = fileStubClose(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
-		})
-	})
-}
-
-// dokimi:provenance sha256:01b85000ecb1631b15b9e5e6e81b3ccec997c3ab7bbee14a302c040d0787f3d3
+// dokimi:provenance sha256:b8c646754ba1c5a102e6a9d77edc0b648ea8e48f359517e7933aaf055b6e63e9

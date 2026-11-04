@@ -48,58 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*readafterwritetest.MixedHandle) readafterwrite.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ReadAfterWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ReadAfterWriteGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Write.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Write.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Write.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Write.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[readafterwrite.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -121,66 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*readafterwritetest.MixedHandle) readafterwrite.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ReadAfterWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ReadAfterWriteGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Write.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Write.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Write.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readafterwritetest.MixedChecks.Write.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[readafterwrite.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = readafterwritetest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *readafterwritetest.MixedHandle) readafterwrite.Mixed {
-	return readafterwritetest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -193,57 +95,8 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(readafterwritetest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(readafterwritetest.MixedChecks.Write.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadAfterWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[readafterwrite.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -255,57 +108,8 @@ func FuzzMixedSuiteRead(f *testing.F) {
 		f,
 		readafterwritetest.MixedChecks.Read.Callable,
 		mixedIdle,
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadAfterWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[readafterwrite.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -317,57 +121,8 @@ func FuzzMixedSuiteWrite(f *testing.F) {
 		f,
 		readafterwritetest.MixedChecks.Write.Callable,
 		mixedIdle,
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadAfterWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Read.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readafterwritetest.MixedChecks.Write.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[readafterwrite.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -383,4 +138,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:eb40fa903c6e934206f4364186a7d4871e2862486194cffe18e6f18633bfd9e1
+// dokimi:provenance sha256:8ce3e0e0e2ff7bd1e2f7ffa3f24d66fb4d65e25279fec1f64575caa3ae5e37f8

@@ -48,34 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*leakfreetest.MixedHandle) leakfree.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Acquire.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Acquire.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Release.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Release.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Outstanding.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Outstanding.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Outstanding.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[leakfree.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -97,42 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*leakfreetest.MixedHandle) leakfree.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Acquire.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Acquire.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Release.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Release.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Outstanding.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Outstanding.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leakfreetest.MixedChecks.Outstanding.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[leakfree.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = leakfreetest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *leakfreetest.MixedHandle) leakfree.Mixed {
-	return leakfreetest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -146,34 +96,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(leakfreetest.MixedChecks.Acquire.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(leakfreetest.MixedChecks.Release.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(leakfreetest.MixedChecks.Outstanding.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Acquire.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Acquire.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Release.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Release.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[leakfree.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -184,34 +107,7 @@ func FuzzMixedSuiteAcquire(f *testing.F) {
 		f,
 		leakfreetest.MixedChecks.Acquire.Callable,
 		mixedIdle,
-		conform.Excuse(
-			leakfreetest.MixedChecks.Acquire.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Acquire.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Release.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Release.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[leakfree.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -222,34 +118,7 @@ func FuzzMixedSuiteRelease(f *testing.F) {
 		f,
 		leakfreetest.MixedChecks.Release.Callable,
 		mixedIdle,
-		conform.Excuse(
-			leakfreetest.MixedChecks.Acquire.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Acquire.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Release.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Release.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[leakfree.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -260,34 +129,7 @@ func FuzzMixedSuiteOutstanding(f *testing.F) {
 		f,
 		leakfreetest.MixedChecks.Outstanding.Callable,
 		mixedIdle,
-		conform.Excuse(
-			leakfreetest.MixedChecks.Acquire.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Acquire.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Release.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Release.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leakfreetest.MixedChecks.Outstanding.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[leakfree.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -305,4 +147,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b29afc5b676eef9763aaba1e2b2d879fc296c7d44d9d66abda2bb58ad0cd46b6
+// dokimi:provenance sha256:2b6a9b7620e7956e5ddf18e0e03a5fb9dec273ba512987c5515337056d22059a

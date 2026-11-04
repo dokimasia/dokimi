@@ -225,26 +225,6 @@ func NewStreamReaderStub(tb assert.TB, opts ...StreamReaderStubOption) *StreamRe
 	return s
 }
 
-// NewStreamReaderStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewStreamReaderStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...StreamReaderStubOption,
-) *StreamReaderStub {
-	return NewStreamReaderStub(tb, append([]StreamReaderStubOption{
-		StreamReaderStubWithClock(clk),
-		StreamReaderStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewStreamReaderStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewStreamReaderStubFailing(tb assert.TB, err error, opts ...StreamReaderStubOption) *StreamReaderStub {
-	return NewStreamReaderStub(tb, append([]StreamReaderStubOption{StreamReaderStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *StreamReaderStub) ResetCalls() {
@@ -306,4 +286,4 @@ func (s *StreamReaderStub) List(ctx context.Context) iter.Seq2[streamreader.Valu
 	return r.Result
 }
 
-// dokimi:provenance sha256:149b0f76f6d3037936d19824ea32d445a06155494c7a4511fe6cad317ad0bc07
+// dokimi:provenance sha256:0eab852fd4a34d6a22ecd679ac337c1fe97fdc730091d8b8015288586840773f

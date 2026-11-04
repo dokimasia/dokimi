@@ -15,27 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Store:
-//
-// Store.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Store.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Store.Put/cancel: Put returns an error for a cancelled context.
-//
-// Store.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-
-// The derived checks of Store that witness their laws at the shallow end:
-//
-// Store.Put/smoke
-
-// The unclaimed classifications of Store:
-//
-// The shape:writer of Store.Put has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -65,22 +44,10 @@ func (c storePut) Smoke() conform.ID[opaque.Store] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c storePut) SmokeGenerated() conform.ID[opaque.Store] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c storePut) Cancel() conform.ID[opaque.Store] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c storePut) CancelGenerated() conform.ID[opaque.Store] {
-	return c.Check("cancel#generated")
 }
 
 // AllocationBudget returns the identity of the check
@@ -101,9 +68,6 @@ func StoreSuite() conform.Suite[opaque.Store] {
 				ID:          StoreChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -114,12 +78,9 @@ func StoreSuite() conform.Suite[opaque.Store] {
 				Defect: storePutPanics,
 			},
 			{
-				ID:          StoreChecks.Put.SmokeGenerated(),
+				ID:          StoreChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[opaque.PutRequest](), "req")
@@ -133,9 +94,6 @@ func StoreSuite() conform.Suite[opaque.Store] {
 				ID:          StoreChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -145,12 +103,9 @@ func StoreSuite() conform.Suite[opaque.Store] {
 				Defect: storePutIgnoresCancel,
 			},
 			{
-				ID:          StoreChecks.Put.CancelGenerated(),
+				ID:          StoreChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[opaque.PutRequest](), "req")
@@ -313,4 +268,4 @@ func storePutIgnoresCancel(h *StoreHandle) opaque.Store {
 	return &storePutIgnoresCancelDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:53435ee4283715db1edbffa745ddbeff8a347ddbbc0c9d92a354e34ba89a5342
+// dokimi:provenance sha256:09fd6796f70b34b0f2288e0fdcb097326aa66e7181d3f4f64a73405ef2c4fde2

@@ -15,22 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of MultiAggregator:
-//
-// MultiAggregator.Stats/smoke: Stats returns without a panic for derived
-// inputs.
-//
-// MultiAggregator.Stats/cancel: Stats returns an error for a cancelled
-// context.
-//
-// MultiAggregator.Stats/zeroes-on-error: Stats returns the zero values
-// beside an error.
-
-// The derived checks of MultiAggregator that witness their laws at the
-// shallow end:
-//
-// MultiAggregator.Stats/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -85,9 +69,6 @@ func MultiAggregatorSuite() conform.Suite[multiaggregator.MultiAggregator] {
 				ID:          MultiAggregatorChecks.Stats.Smoke(),
 				Statement:   "Stats returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MultiAggregatorHandle) {
@@ -102,9 +83,6 @@ func MultiAggregatorSuite() conform.Suite[multiaggregator.MultiAggregator] {
 				ID:          MultiAggregatorChecks.Stats.Cancel(),
 				Statement:   "Stats returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MultiAggregatorHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -118,9 +96,6 @@ func MultiAggregatorSuite() conform.Suite[multiaggregator.MultiAggregator] {
 				ID:          MultiAggregatorChecks.Stats.ZeroesOnError(),
 				Statement:   "Stats returns the zero values beside an error",
 				Claim:       spec.ZeroesOnError,
-				Probe:       spec.ZeroPairBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MultiAggregatorHandle) {
 					probe.ZeroPairBesideError(h, func(ctx context.Context) (probe.Pair[int, int], error) {
@@ -304,4 +279,4 @@ func multiAggregatorStatsValuesBeside(h *MultiAggregatorHandle) multiaggregator.
 	return &multiAggregatorStatsValuesBesideDefect{multiAggregatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0e154aae6933b6efb0895f8b8d1e316f11de40d9a9d860f19e5ec80fd3f31193
+// dokimi:provenance sha256:e8e8dc97ee6243e360eb4863f168804cc98733b9b37ed0b540d2336cd417b4cf

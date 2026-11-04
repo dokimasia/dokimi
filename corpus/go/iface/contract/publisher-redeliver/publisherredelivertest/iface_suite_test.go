@@ -49,54 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*publisherredelivertest.ContractHandle) publisherredeliver.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.DeliversByItsMode(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.RedeliversOnDemand(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Subscribe.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Subscribe.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[publisherredeliver.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -118,62 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*publisherredelivertest.ContractHandle) publisherredeliver.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Publish.DeliversByItsMode(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Republish.RedeliversOnDemand(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Subscribe.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				publisherredelivertest.ContractChecks.Subscribe.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[publisherredeliver.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = publisherredelivertest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *publisherredelivertest.ContractHandle) publisherredeliver.Contract {
-	return publisherredelivertest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -196,53 +107,8 @@ func TestContractSuiteBudgets(t *testing.T) {
 			publisherredelivertest.ContractChecks.Subscribe.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.DeliversByItsMode(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.RedeliversOnDemand(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Subscribe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Subscribe.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[publisherredeliver.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -254,53 +120,8 @@ func FuzzContractSuitePublish(f *testing.F) {
 		f,
 		publisherredelivertest.ContractChecks.Publish.Callable,
 		contractIdle,
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.DeliversByItsMode(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.RedeliversOnDemand(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Subscribe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Subscribe.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[publisherredeliver.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -313,53 +134,8 @@ func FuzzContractSuiteRepublish(f *testing.F) {
 		f,
 		publisherredelivertest.ContractChecks.Republish.Callable,
 		contractIdle,
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.DeliversByItsMode(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.RedeliversOnDemand(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Subscribe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Subscribe.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[publisherredeliver.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -372,53 +148,8 @@ func FuzzContractSuiteSubscribe(f *testing.F) {
 		f,
 		publisherredelivertest.ContractChecks.Subscribe.Callable,
 		contractIdle,
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Publish.DeliversByItsMode(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Republish.RedeliversOnDemand(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Subscribe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			publisherredelivertest.ContractChecks.Subscribe.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[publisherredeliver.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -449,4 +180,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:45d146d49047324a6bc8bbe5833c724853bb68670ba096c52afee06d8ae1c330
+// dokimi:provenance sha256:bb084442077e1b541650611bd58a9c4d2a778eb26e108ba6ecea05d9bb69d3f6

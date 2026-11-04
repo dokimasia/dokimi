@@ -15,81 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Copier:
-//
-// Copier.Copy/smoke: Copy returns without a panic for derived inputs.
-//
-// Copier.Copy/smoke#generated: Copy returns without a panic for derived
-// inputs.
-//
-// Copier.Copy/cancel: Copy returns an error for a cancelled context.
-//
-// Copier.Copy/cancel#generated: Copy returns an error for a cancelled
-// context.
-//
-// Copier.Copy/failure-is-reported: Copy returns an error when a call of
-// its dependency fails.
-//
-// Copier.Copy/failure-is-reported#generated: Copy returns an error when a
-// call of its dependency fails.
-//
-// Copier.Copy/releases-on-every-path: Copy releases each resource that it
-// acquired when a call of its dependency fails.
-//
-// Copier.Copy/releases-on-every-path#generated: Copy releases each
-// resource that it acquired when a call of its dependency fails.
-//
-// Copier.Open/smoke: Open returns without a panic for derived inputs.
-//
-// Copier.Open/smoke#generated: Open returns without a panic for derived
-// inputs.
-//
-// Copier.Open/cancel: Open returns an error for a cancelled context.
-//
-// Copier.Open/cancel#generated: Open returns an error for a cancelled
-// context.
-//
-// Copier.Open/failure-is-reported: Open returns an error when a call of
-// its dependency fails.
-//
-// Copier.Open/failure-is-reported#generated: Open returns an error when a
-// call of its dependency fails.
-//
-// Copier.Close/smoke: Close returns without a panic for derived inputs.
-//
-// Copier.Close/smoke#generated: Close returns without a panic for derived
-// inputs.
-//
-// Copier.Close/cancel: Close returns an error for a cancelled context.
-//
-// Copier.Close/cancel#generated: Close returns an error for a cancelled
-// context.
-//
-// Copier.Close/failure-is-reported: Close returns an error when a call of
-// its dependency fails.
-//
-// Copier.Close/failure-is-reported#generated: Close returns an error when
-// a call of its dependency fails.
-
-// The derived checks of Copier that witness their laws at the shallow end:
-//
-// Copier.Copy/smoke
-//
-// Copier.Open/smoke
-//
-// Copier.Close/smoke
-
-// The unclaimed classifications of Copier:
-//
-// The shape:composite-writer of Copier.Copy has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Copier.Open has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Copier.Close has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -124,22 +49,10 @@ func (c copierCopy) Smoke() conform.ID[copier.Copier] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Copy returns
-// without a panic for derived inputs.
-func (c copierCopy) SmokeGenerated() conform.ID[copier.Copier] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Copy returns an error for
 // a cancelled context.
 func (c copierCopy) Cancel() conform.ID[copier.Copier] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Copy returns an
-// error for a cancelled context.
-func (c copierCopy) CancelGenerated() conform.ID[copier.Copier] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Copy returns an
@@ -148,23 +61,10 @@ func (c copierCopy) FailureIsReported() conform.ID[copier.Copier] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Copy
-// returns an error when a call of its dependency fails.
-func (c copierCopy) FailureIsReportedGenerated() conform.ID[copier.Copier] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ReleasesOnEveryPath returns the identity of the check that Copy releases
 // each resource that it acquired when a call of its dependency fails.
 func (c copierCopy) ReleasesOnEveryPath() conform.ID[copier.Copier] {
 	return c.Check("releases-on-every-path")
-}
-
-// ReleasesOnEveryPathGenerated returns the identity of the check that Copy
-// releases each resource that it acquired when a call of its dependency
-// fails.
-func (c copierCopy) ReleasesOnEveryPathGenerated() conform.ID[copier.Copier] {
-	return c.Check("releases-on-every-path#generated")
 }
 
 // copierOpen is the name of Copier.Open, with the identities of its
@@ -179,34 +79,16 @@ func (c copierOpen) Smoke() conform.ID[copier.Copier] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Open returns
-// without a panic for derived inputs.
-func (c copierOpen) SmokeGenerated() conform.ID[copier.Copier] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Open returns an error for
 // a cancelled context.
 func (c copierOpen) Cancel() conform.ID[copier.Copier] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Open returns an
-// error for a cancelled context.
-func (c copierOpen) CancelGenerated() conform.ID[copier.Copier] {
-	return c.Check("cancel#generated")
-}
-
 // FailureIsReported returns the identity of the check that Open returns an
 // error when a call of its dependency fails.
 func (c copierOpen) FailureIsReported() conform.ID[copier.Copier] {
 	return c.Check("failure-is-reported")
-}
-
-// FailureIsReportedGenerated returns the identity of the check that Open
-// returns an error when a call of its dependency fails.
-func (c copierOpen) FailureIsReportedGenerated() conform.ID[copier.Copier] {
-	return c.Check("failure-is-reported#generated")
 }
 
 // copierClose is the name of Copier.Close, with the identities of its
@@ -221,34 +103,16 @@ func (c copierClose) Smoke() conform.ID[copier.Copier] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Close returns
-// without a panic for derived inputs.
-func (c copierClose) SmokeGenerated() conform.ID[copier.Copier] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Close returns an error for
 // a cancelled context.
 func (c copierClose) Cancel() conform.ID[copier.Copier] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Close returns an
-// error for a cancelled context.
-func (c copierClose) CancelGenerated() conform.ID[copier.Copier] {
-	return c.Check("cancel#generated")
-}
-
 // FailureIsReported returns the identity of the check that Close returns
 // an error when a call of its dependency fails.
 func (c copierClose) FailureIsReported() conform.ID[copier.Copier] {
 	return c.Check("failure-is-reported")
-}
-
-// FailureIsReportedGenerated returns the identity of the check that Close
-// returns an error when a call of its dependency fails.
-func (c copierClose) FailureIsReportedGenerated() conform.ID[copier.Copier] {
-	return c.Check("failure-is-reported#generated")
 }
 
 // CopierSuite returns the checks of Copier, and the calls and the budgets
@@ -263,9 +127,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Copy.Smoke(),
 				Statement:   "Copy returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CopierHandle) {
@@ -276,12 +137,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierCopyPanics,
 			},
 			{
-				ID:          CopierChecks.Copy.SmokeGenerated(),
+				ID:          CopierChecks.Copy.Smoke().Generated(),
 				Statement:   "Copy returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CopierHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -296,9 +154,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Copy.Cancel(),
 				Statement:   "Copy returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -308,12 +163,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierCopyIgnoresCancel,
 			},
 			{
-				ID:          CopierChecks.Copy.CancelGenerated(),
+				ID:          CopierChecks.Copy.Cancel().Generated(),
 				Statement:   "Copy returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CopierHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -328,9 +180,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Copy.FailureIsReported(),
 				Statement:   "Copy returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -340,12 +189,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierCopySwallowsFailure,
 			},
 			{
-				ID:        CopierChecks.Copy.FailureIsReportedGenerated(),
+				ID:        CopierChecks.Copy.FailureIsReported().Generated(),
 				Statement: "Copy returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -364,9 +210,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Copy.ReleasesOnEveryPath(),
 				Statement:   "Copy releases each resource that it acquired when a call of its dependency fails",
 				Claim:       spec.ReleasesOnEveryPath,
-				Probe:       spec.ReleasesWhatItAcquires,
-				Reason:      spec.LeakedResource,
-				Law:         spec.FailurePathReleases,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.ReleasesWhatItAcquires(h, func(ctx context.Context) error {
@@ -376,12 +219,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierCopyOpensWithoutClosing,
 			},
 			{
-				ID:        CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
+				ID:        CopierChecks.Copy.ReleasesOnEveryPath().Generated(),
 				Statement: "Copy releases each resource that it acquired when a call of its dependency fails",
 				Claim:     spec.ReleasesOnEveryPath,
-				Probe:     spec.ReleasesWhatItAcquires,
-				Reason:    spec.LeakedResource,
-				Law:       spec.FailurePathReleases,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -400,9 +240,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Open.Smoke(),
 				Statement:   "Open returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CopierHandle) {
@@ -413,12 +250,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierOpenPanics,
 			},
 			{
-				ID:          CopierChecks.Open.SmokeGenerated(),
+				ID:          CopierChecks.Open.Smoke().Generated(),
 				Statement:   "Open returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CopierHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -432,9 +266,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Open.Cancel(),
 				Statement:   "Open returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -444,12 +275,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierOpenIgnoresCancel,
 			},
 			{
-				ID:          CopierChecks.Open.CancelGenerated(),
+				ID:          CopierChecks.Open.Cancel().Generated(),
 				Statement:   "Open returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CopierHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -463,9 +291,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Open.FailureIsReported(),
 				Statement:   "Open returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -475,12 +300,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierOpenSwallowsFailure,
 			},
 			{
-				ID:        CopierChecks.Open.FailureIsReportedGenerated(),
+				ID:        CopierChecks.Open.FailureIsReported().Generated(),
 				Statement: "Open returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -498,9 +320,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CopierHandle) {
@@ -511,12 +330,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierClosePanics,
 			},
 			{
-				ID:          CopierChecks.Close.SmokeGenerated(),
+				ID:          CopierChecks.Close.Smoke().Generated(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CopierHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -530,9 +346,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Close.Cancel(),
 				Statement:   "Close returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -542,12 +355,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierCloseIgnoresCancel,
 			},
 			{
-				ID:          CopierChecks.Close.CancelGenerated(),
+				ID:          CopierChecks.Close.Cancel().Generated(),
 				Statement:   "Close returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CopierHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -561,9 +371,6 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				ID:          CopierChecks.Close.FailureIsReported(),
 				Statement:   "Close returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -573,12 +380,9 @@ func CopierSuite() conform.Suite[copier.Copier] {
 				Defect: copierCloseSwallowsFailure,
 			},
 			{
-				ID:        CopierChecks.Close.FailureIsReportedGenerated(),
+				ID:        CopierChecks.Close.FailureIsReported().Generated(),
 				Statement: "Close returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -969,4 +773,4 @@ func copierCloseSwallowsFailure(h *CopierHandle) copier.Copier {
 	return &copierCloseSwallowsFailureDefect{copierOverEmbedded: h.Fresh(), h: h}
 }
 
-// dokimi:provenance sha256:da009ecf694d271b55f3ba12bcc128447e3e7b743c34edbdcd6aa75c46999584
+// dokimi:provenance sha256:9b68d1ce44533363f9667e8209fbad595620912ba4d0ff52a90eaf252f24a57c

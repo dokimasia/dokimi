@@ -17,62 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Log:
-//
-// Log.Append/smoke: Append returns without a panic for derived inputs.
-//
-// Log.Append/smoke#generated: Append returns without a panic for derived
-// inputs.
-//
-// Log.Append/cancel: Append returns an error for a cancelled context.
-//
-// Log.Append/cancel#generated: Append returns an error for a cancelled
-// context.
-//
-// Log.Append/chain-causal: Replay returns the entries of Append in the
-// order of their stamps.
-//
-// Log.Append/chain-causal#generated: Replay returns the entries of Append
-// in the order of their stamps.
-//
-// Log.Append/chain: Append grows Replay by the entry that it admits.
-//
-// Log.Append/chain#generated: Append grows Replay by the entry that it
-// admits.
-//
-// Log.Append/replays-in-order-over-sequences: Replay returns the entries
-// that Append appended in the order of their stamps, over any sequence of
-// calls.
-//
-// Log.Replay/smoke: Replay returns without a panic for derived inputs.
-//
-// Log.Replay/cancel: Replay returns an error for a cancelled context.
-//
-// Log.Replay/zero-on-error: Replay returns the zero value beside an error.
-
-// The derived checks of Log that witness their laws at the shallow end:
-//
-// Log.Append/smoke
-//
-// Log.Append/chain-causal
-//
-// Log.Append/chain-causal#generated
-//
-// Log.Replay/smoke
-
-// The refused claims of Log:
-//
-// Log.Append/causal: Append does not return exactly one value. The remedy
-// is to return one value from Append.
-//
-// Log.Append/causal-history: Append does not return exactly one value. The
-// remedy is to return one value from Append.
-
-// The unclaimed classifications of Log:
-//
-// The shape:writer of Log.Append has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -104,22 +48,10 @@ func (c logAppend) Smoke() conform.ID[causalchain.Log] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Append returns
-// without a panic for derived inputs.
-func (c logAppend) SmokeGenerated() conform.ID[causalchain.Log] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c logAppend) Cancel() conform.ID[causalchain.Log] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Append returns an
-// error for a cancelled context.
-func (c logAppend) CancelGenerated() conform.ID[causalchain.Log] {
-	return c.Check("cancel#generated")
 }
 
 // ChainCausal returns the identity of the check that Replay returns the
@@ -128,22 +60,10 @@ func (c logAppend) ChainCausal() conform.ID[causalchain.Log] {
 	return c.Check("chain-causal")
 }
 
-// ChainCausalGenerated returns the identity of the check that Replay
-// returns the entries of Append in the order of their stamps.
-func (c logAppend) ChainCausalGenerated() conform.ID[causalchain.Log] {
-	return c.Check("chain-causal#generated")
-}
-
 // Chain returns the identity of the check that Append grows Replay by the
 // entry that it admits.
 func (c logAppend) Chain() conform.ID[causalchain.Log] {
 	return c.Check("chain")
-}
-
-// ChainGenerated returns the identity of the check that Append grows
-// Replay by the entry that it admits.
-func (c logAppend) ChainGenerated() conform.ID[causalchain.Log] {
-	return c.Check("chain#generated")
 }
 
 // ReplaysInOrderOverSequences returns the identity of the check that
@@ -200,9 +120,6 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				ID:          LogChecks.Append.Smoke(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LogHandle) {
@@ -213,12 +130,9 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				Defect: logAppendPanics,
 			},
 			{
-				ID:          LogChecks.Append.SmokeGenerated(),
+				ID:          LogChecks.Append.Smoke().Generated(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LogHandle, c *prop.Case) {
 					drawnE := c.Draw(prop.Of[causalchain.Entry](), "e")
@@ -232,9 +146,6 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				ID:          LogChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LogHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -244,12 +155,9 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				Defect: logAppendIgnoresCancel,
 			},
 			{
-				ID:          LogChecks.Append.CancelGenerated(),
+				ID:          LogChecks.Append.Cancel().Generated(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LogHandle, c *prop.Case) {
 					drawnE := c.Draw(prop.Of[causalchain.Entry](), "e")
@@ -263,9 +171,6 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				ID:          LogChecks.Append.ChainCausal(),
 				Statement:   "Replay returns the entries of Append in the order of their stamps",
 				Claim:       spec.ChainCausal,
-				Probe:       spec.ReplaysInStampOrder,
-				Reason:      spec.UnorderedHistory,
-				Law:         spec.HistoryReplaysInItsStampedOrder,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LogHandle) {
@@ -291,12 +196,9 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				Defect: logReplayReplaysReversed,
 			},
 			{
-				ID:          LogChecks.Append.ChainCausalGenerated(),
+				ID:          LogChecks.Append.ChainCausal().Generated(),
 				Statement:   "Replay returns the entries of Append in the order of their stamps",
 				Claim:       spec.ChainCausal,
-				Probe:       spec.ReplaysInStampOrder,
-				Reason:      spec.UnorderedHistory,
-				Law:         spec.HistoryReplaysInItsStampedOrder,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *LogHandle, c *prop.Case) {
@@ -329,9 +231,6 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				ID:          LogChecks.Append.Chain(),
 				Statement:   "Append grows Replay by the entry that it admits",
 				Claim:       spec.Chain,
-				Probe:       spec.ReplayGrows,
-				Reason:      spec.ReplayNotGrown,
-				Law:         spec.AdmittedEntryGrowsTheReplay,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LogHandle) {
 					probe.ReplayGrows(h, func(ctx context.Context) error {
@@ -343,12 +242,9 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				Defect: logAppendSucceedsAlways,
 			},
 			{
-				ID:          LogChecks.Append.ChainGenerated(),
+				ID:          LogChecks.Append.Chain().Generated(),
 				Statement:   "Append grows Replay by the entry that it admits",
 				Claim:       spec.Chain,
-				Probe:       spec.ReplayGrows,
-				Reason:      spec.ReplayNotGrown,
-				Law:         spec.AdmittedEntryGrowsTheReplay,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LogHandle, c *prop.Case) {
 					drawnE := c.Draw(prop.Of[causalchain.Entry](), "e")
@@ -364,9 +260,6 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				ID:          LogChecks.Append.ReplaysInOrderOverSequences(),
 				Statement:   "Replay returns the entries that Append appended in the order of their stamps, over any sequence of calls",
 				Claim:       spec.ReplaysInOrderOverSequences,
-				Probe:       spec.ReplaysFollowTheStamps,
-				Reason:      spec.UnorderedHistory,
-				Law:         spec.HistoryReplaysInItsStampedOrder,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[causalchain.Log]{LogChecks.Append.ChainCausal()},
 				Property: func(h *LogHandle, c *prop.Case) {
@@ -384,9 +277,6 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				ID:          LogChecks.Replay.Smoke(),
 				Statement:   "Replay returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LogHandle) {
@@ -401,9 +291,6 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				ID:          LogChecks.Replay.Cancel(),
 				Statement:   "Replay returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LogHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -417,9 +304,6 @@ func LogSuite() conform.Suite[causalchain.Log] {
 				ID:          LogChecks.Replay.ZeroOnError(),
 				Statement:   "Replay returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LogHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) ([]causalchain.Entry, error) {
@@ -815,4 +699,4 @@ func logReplayCall(ctx context.Context, subject causalchain.Log, args []any) ([]
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:97c8c5a5a2f450d629c745a8c89b89dc7dcbc8c071cacb7bab95fe4086e23acb
+// dokimi:provenance sha256:819e460ac50366e5f9b11bbc93d92222002aa4c60c862818e7e46a1418c31c14

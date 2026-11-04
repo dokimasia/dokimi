@@ -48,14 +48,7 @@ func TestLookupSuite(t *testing.T) {
 				},
 				Defect: func(*lookuptest.LookupHandle) lookup.Lookup { return &lookupSubject{} },
 			}),
-			conform.Excuse(
-				lookuptest.LookupChecks.Inspect.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lookuptest.LookupChecks.Inspect.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[lookup.Lookup]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -77,22 +70,20 @@ func TestLookupSuite(t *testing.T) {
 				},
 				Defect: func(*lookuptest.LookupHandle) lookup.Lookup { return &lookupSubject{} },
 			}),
-			conform.Excuse(
-				lookuptest.LookupChecks.Inspect.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lookuptest.LookupChecks.Inspect.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[lookup.Lookup]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// lookupSuite is the suite of Lookup that the tests of the planted defect
+// of a ceiling apply.
+var lookupSuite = lookuptest.LookupSuite()
+
 // lookupIdle returns the planted defect of a ceiling of Lookup with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func lookupIdle(h *lookuptest.LookupHandle) lookup.Lookup {
-	return lookuptest.LookupSuite().Calls[0].Over(h, func() {})
+	return lookupSuite.Calls[0].Over(h, func() {})
 }
 
 // TestLookupSuiteBudgets applies the allocation ceilings of the suite of
@@ -104,14 +95,7 @@ func TestLookupSuiteBudgets(t *testing.T) {
 		t,
 		lookupIdle,
 		conform.Ceilings(lookuptest.LookupChecks.Inspect.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			lookuptest.LookupChecks.Inspect.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lookuptest.LookupChecks.Inspect.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[lookup.Lookup]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -122,14 +106,7 @@ func FuzzLookupSuiteInspect(f *testing.F) {
 		f,
 		lookuptest.LookupChecks.Inspect.Callable,
 		lookupIdle,
-		conform.Excuse(
-			lookuptest.LookupChecks.Inspect.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lookuptest.LookupChecks.Inspect.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[lookup.Lookup]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -141,4 +118,4 @@ func BenchmarkLookupSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e3e57a58775bac14860fdc2a01774e4b3aed0848de11c4b269102dde96a9329c
+// dokimi:provenance sha256:c1a1ad7fd44424f2565af471f3a4a4ba7b6f8281229d31c44b6e449fe39480be

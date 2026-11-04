@@ -15,40 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Balancer:
-//
-// Balancer.Send/smoke: Send returns without a panic for derived inputs.
-//
-// Balancer.Send/smoke#generated: Send returns without a panic for derived
-// inputs.
-//
-// Balancer.Send/cancel: Send returns an error for a cancelled context.
-//
-// Balancer.Send/cancel#generated: Send returns an error for a cancelled
-// context.
-//
-// Balancer.Send/failure-is-reported: Send returns an error when a call of
-// its dependency fails.
-//
-// Balancer.Send/failure-is-reported#generated: Send returns an error when
-// a call of its dependency fails.
-//
-// Balancer.Send/keeps-its-instance: Send sends each call with one key to
-// one instance.
-//
-// Balancer.Send/keeps-its-instance#generated: Send sends each call with
-// one key to one instance.
-
-// The derived checks of Balancer that witness their laws at the shallow
-// end:
-//
-// Balancer.Send/smoke
-
-// The unclaimed classifications of Balancer:
-//
-// The shape:writer of Balancer.Send has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -79,22 +45,10 @@ func (c balancerSend) Smoke() conform.ID[balancer.Balancer] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Send returns
-// without a panic for derived inputs.
-func (c balancerSend) SmokeGenerated() conform.ID[balancer.Balancer] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Send returns an error for
 // a cancelled context.
 func (c balancerSend) Cancel() conform.ID[balancer.Balancer] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Send returns an
-// error for a cancelled context.
-func (c balancerSend) CancelGenerated() conform.ID[balancer.Balancer] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Send returns an
@@ -103,22 +57,10 @@ func (c balancerSend) FailureIsReported() conform.ID[balancer.Balancer] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Send
-// returns an error when a call of its dependency fails.
-func (c balancerSend) FailureIsReportedGenerated() conform.ID[balancer.Balancer] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // KeepsItsInstance returns the identity of the check that Send sends each
 // call with one key to one instance.
 func (c balancerSend) KeepsItsInstance() conform.ID[balancer.Balancer] {
 	return c.Check("keeps-its-instance")
-}
-
-// KeepsItsInstanceGenerated returns the identity of the check that Send
-// sends each call with one key to one instance.
-func (c balancerSend) KeepsItsInstanceGenerated() conform.ID[balancer.Balancer] {
-	return c.Check("keeps-its-instance#generated")
 }
 
 // BalancerSuite returns the checks of Balancer, and the calls and the
@@ -133,9 +75,6 @@ func BalancerSuite() conform.Suite[balancer.Balancer] {
 				ID:          BalancerChecks.Send.Smoke(),
 				Statement:   "Send returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BalancerHandle) {
@@ -146,12 +85,9 @@ func BalancerSuite() conform.Suite[balancer.Balancer] {
 				Defect: balancerSendPanics,
 			},
 			{
-				ID:          BalancerChecks.Send.SmokeGenerated(),
+				ID:          BalancerChecks.Send.Smoke().Generated(),
 				Statement:   "Send returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BalancerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -165,9 +101,6 @@ func BalancerSuite() conform.Suite[balancer.Balancer] {
 				ID:          BalancerChecks.Send.Cancel(),
 				Statement:   "Send returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BalancerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -177,12 +110,9 @@ func BalancerSuite() conform.Suite[balancer.Balancer] {
 				Defect: balancerSendIgnoresCancel,
 			},
 			{
-				ID:          BalancerChecks.Send.CancelGenerated(),
+				ID:          BalancerChecks.Send.Cancel().Generated(),
 				Statement:   "Send returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BalancerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -196,9 +126,6 @@ func BalancerSuite() conform.Suite[balancer.Balancer] {
 				ID:          BalancerChecks.Send.FailureIsReported(),
 				Statement:   "Send returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *BalancerHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -208,12 +135,9 @@ func BalancerSuite() conform.Suite[balancer.Balancer] {
 				Defect: balancerSendSwallowsFailure,
 			},
 			{
-				ID:        BalancerChecks.Send.FailureIsReportedGenerated(),
+				ID:        BalancerChecks.Send.FailureIsReported().Generated(),
 				Statement: "Send returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -231,9 +155,6 @@ func BalancerSuite() conform.Suite[balancer.Balancer] {
 				ID:          BalancerChecks.Send.KeepsItsInstance(),
 				Statement:   "Send sends each call with one key to one instance",
 				Claim:       spec.KeepsItsInstance,
-				Probe:       spec.UsesOneInstance,
-				Reason:      spec.MovedInstance,
-				Law:         spec.OneKeyOneInstance,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *BalancerHandle) {
 					probe.UsesOneInstance(h, func(ctx context.Context) error {
@@ -243,12 +164,9 @@ func BalancerSuite() conform.Suite[balancer.Balancer] {
 				Defect: balancerSendBalancesEachCall,
 			},
 			{
-				ID:        BalancerChecks.Send.KeepsItsInstanceGenerated(),
+				ID:        BalancerChecks.Send.KeepsItsInstance().Generated(),
 				Statement: "Send sends each call with one key to one instance",
 				Claim:     spec.KeepsItsInstance,
-				Probe:     spec.UsesOneInstance,
-				Reason:    spec.MovedInstance,
-				Law:       spec.OneKeyOneInstance,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -464,4 +382,4 @@ func balancerSendBalancesEachCall(h *BalancerHandle) balancer.Balancer {
 	return &balancerSendBalancesEachCallDefect{balancerOverEmbedded: h.Fresh(), h: h}
 }
 
-// dokimi:provenance sha256:8eb20a444157a652803d72a630acf84ebbd9dfd9d86616c6181bce07beaf6433
+// dokimi:provenance sha256:b1711f710e6bed68168115301053bc04d9c9faadc22479c76e68788fc07d817e

@@ -43,23 +43,36 @@ func readerStubGetPins() (reader.Value, error) {
 	return want0, want1
 }
 
-// readerStubGetSubject returns the subject of [stub.Behaviour] for Get.
-// The subject calls a new double that reports to tb.
+// readerStubGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func readerStubGetSubject(tb assert.TB) stub.Subject[readertest.ReaderGetCall, readertest.ReaderGetReturn] {
 	tb.Helper()
 	s := readertest.NewReaderStub(tb)
 	return stub.Subject[readertest.ReaderGetCall, readertest.ReaderGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = readerStubGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c readertest.ReaderGetCall) {
+			tb.Helper()
+			a0, a1 := readerStubGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() readertest.ReaderGetReturn {
 			got0, got1 := readerStubGet(tb, s)
 			return readertest.ReaderGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (reader.Value, error) {
-				mark()
+		Returns: func() readertest.ReaderGetReturn {
+			want0, want1 := readerStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return readertest.ReaderGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(readertest.ReaderGetCall)) {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (reader.Value, error) {
+				seen(readertest.ReaderGetCall{Ctx: p0, Key: p1})
 				var z0 reader.Value
 				var z1 error
 				return z0, z1
@@ -85,7 +98,6 @@ func readerStubInstanceOf(tb assert.TB, s *readertest.ReaderStub) readerStubInst
 		Call: func() {
 			_, _ = readerStubGet(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -97,70 +109,14 @@ func TestReaderStub(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Get", readerStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := readertest.NewReaderStub(t)
-			_, _ = readerStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := readerStubGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := readertest.NewReaderStub(t)
-			var seen []readertest.ReaderGetCall
-			s.OnGet.OnRecord(func(c readertest.ReaderGetCall) { seen = append(seen, c) })
-			_, _ = readerStubGet(t, s)
-			_, _ = readerStubGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) readerStubInstance {
-			return readerStubInstanceOf(tb, readertest.NewReaderStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
-			s := readertest.NewReaderStub(t)
-			_, _ = readerStubGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
-		})
-
-		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
-			t.Parallel()
-			s := readertest.NewReaderStub(t)
-			want0, want1 := readerStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := readerStubGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
-		})
-	})
-
-	t.Run("NewReaderStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) readerStubInstance {
-			return readerStubInstanceOf(tb, readertest.NewReaderStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewReaderStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Get with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Get-failing")
-			s := readertest.NewReaderStubFailing(t, want)
-			_, r1 := readerStubGet(t, s)
-			assert.ErrorIs(t, r1, want, "Get fails with the error of NewReaderStubFailing")
+			stub.ResetBehaviour(t, "Get", readerStubGetSubject)
 		})
 	})
 
@@ -262,53 +218,6 @@ func TestReaderStub(t *testing.T) {
 func TestReaderGetStub(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing.T) {
-			t.Parallel()
-			s := readertest.NewReaderStub(t)
-			want0, want1 := readerStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := readerStubGet(t, s)
-			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := readertest.NewReaderStub(r)
-			s.OnGet.Strict()
-			var want0 reader.Value
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = readerStubGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
-			t.Parallel()
-			s := readertest.NewReaderStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (reader.Value, error) {
-				got0, got1 = p0, p1
-				var z0 reader.Value
-				var z1 error
-				return z0, z1
-			})
-			_, _ = readerStubGet(t, s)
-			a0, a1 := readerStubGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-
 	t.Run("FaultNotFound", func(t *testing.T) {
 		t.Parallel()
 
@@ -384,4 +293,4 @@ func TestReaderGetStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:8d7846712a70da4dd59b463e6a804cc81612a472edb3286813256de1352e4c8e
+// dokimi:provenance sha256:eccaa4e31b64fc194eb1458eadff4af6eb17bae75e1344922ee704616a20bb56

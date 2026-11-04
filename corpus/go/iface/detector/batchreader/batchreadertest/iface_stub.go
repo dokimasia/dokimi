@@ -200,26 +200,6 @@ func NewBatchReaderStub(tb assert.TB, opts ...BatchReaderStubOption) *BatchReade
 	return s
 }
 
-// NewBatchReaderStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewBatchReaderStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...BatchReaderStubOption,
-) *BatchReaderStub {
-	return NewBatchReaderStub(tb, append([]BatchReaderStubOption{
-		BatchReaderStubWithClock(clk),
-		BatchReaderStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewBatchReaderStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewBatchReaderStubFailing(tb assert.TB, err error, opts ...BatchReaderStubOption) *BatchReaderStub {
-	return NewBatchReaderStub(tb, append([]BatchReaderStubOption{BatchReaderStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *BatchReaderStub) ResetCalls() {
@@ -283,4 +263,4 @@ func (s *BatchReaderStub) Put(ctx context.Context, v batchreader.Value) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:9a5ac59e3af31fe29131d6191ebfb24ad88866916a9d26668b2dc31115e39bdd
+// dokimi:provenance sha256:2f24fd27fbe805f3e7c288957753cc50ed9bcf642cfa9b8501f9b163527e4eaa

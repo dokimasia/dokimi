@@ -91,25 +91,38 @@ func contractStubGetPins() (transaction.Value, error) {
 	return want0, want1
 }
 
-// contractStubRunSubject returns the subject of [stub.Behaviour] for Run.
-// The subject calls a new double that reports to tb.
+// contractStubRunSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Run. The subject calls a new double that
+// reports to tb.
 func contractStubRunSubject(
 	tb assert.TB,
 ) stub.Subject[transactiontest.ContractRunCall, transactiontest.ContractRunReturn] {
 	tb.Helper()
 	s := transactiontest.NewContractStub(tb)
 	return stub.Subject[transactiontest.ContractRunCall, transactiontest.ContractRunReturn]{
-		Stub: s.OnRun.MethodStub,
+		Stub:  s.OnRun.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubRun(tb, s)
+		},
+		Arguments: func(tb assert.TB, c transactiontest.ContractRunCall) {
+			tb.Helper()
+			a0, a1 := contractStubRunArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Body, a1, "the call records Body")
 		},
 		Result: func() transactiontest.ContractRunReturn {
 			got0 := contractStubRun(tb, s)
 			return transactiontest.ContractRunReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnRun.Func(func(_ context.Context, _ func(ctx context.Context) error) error {
-				mark()
+		Returns: func() transactiontest.ContractRunReturn {
+			want0 := contractStubRunPins()
+			s.OnRun.Returns(want0)
+			return transactiontest.ContractRunReturn{Err: want0}
+		},
+		Override: func(seen func(transactiontest.ContractRunCall)) {
+			s.OnRun.Func(func(p0 context.Context, p1 func(ctx context.Context) error) error {
+				seen(transactiontest.ContractRunCall{Ctx: p0, Body: p1})
 				var z0 error
 				return z0
 			})
@@ -121,25 +134,39 @@ func contractStubRunSubject(
 	}
 }
 
-// contractStubPutSubject returns the subject of [stub.Behaviour] for Put.
-// The subject calls a new double that reports to tb.
+// contractStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func contractStubPutSubject(
 	tb assert.TB,
 ) stub.Subject[transactiontest.ContractPutCall, transactiontest.ContractPutReturn] {
 	tb.Helper()
 	s := transactiontest.NewContractStub(tb)
 	return stub.Subject[transactiontest.ContractPutCall, transactiontest.ContractPutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c transactiontest.ContractPutCall) {
+			tb.Helper()
+			a0, a1, a2 := contractStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.V, a2, "the call records V")
 		},
 		Result: func() transactiontest.ContractPutReturn {
 			got0 := contractStubPut(tb, s)
 			return transactiontest.ContractPutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ string, _ transaction.Value) error {
-				mark()
+		Returns: func() transactiontest.ContractPutReturn {
+			want0 := contractStubPutPins()
+			s.OnPut.Returns(want0)
+			return transactiontest.ContractPutReturn{Err: want0}
+		},
+		Override: func(seen func(transactiontest.ContractPutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1 string, p2 transaction.Value) error {
+				seen(transactiontest.ContractPutCall{Ctx: p0, Key: p1, V: p2})
 				var z0 error
 				return z0
 			})
@@ -151,25 +178,38 @@ func contractStubPutSubject(
 	}
 }
 
-// contractStubGetSubject returns the subject of [stub.Behaviour] for Get.
-// The subject calls a new double that reports to tb.
+// contractStubGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func contractStubGetSubject(
 	tb assert.TB,
 ) stub.Subject[transactiontest.ContractGetCall, transactiontest.ContractGetReturn] {
 	tb.Helper()
 	s := transactiontest.NewContractStub(tb)
 	return stub.Subject[transactiontest.ContractGetCall, transactiontest.ContractGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c transactiontest.ContractGetCall) {
+			tb.Helper()
+			a0, a1 := contractStubGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() transactiontest.ContractGetReturn {
 			got0, got1 := contractStubGet(tb, s)
 			return transactiontest.ContractGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (transaction.Value, error) {
-				mark()
+		Returns: func() transactiontest.ContractGetReturn {
+			want0, want1 := contractStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return transactiontest.ContractGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(transactiontest.ContractGetCall)) {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (transaction.Value, error) {
+				seen(transactiontest.ContractGetCall{Ctx: p0, Key: p1})
 				var z0 transaction.Value
 				var z1 error
 				return z0, z1
@@ -195,7 +235,6 @@ func contractStubInstanceOf(tb assert.TB, s *transactiontest.ContractStub) contr
 		Call: func() {
 			_ = contractStubRun(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -207,173 +246,34 @@ func TestContractStub(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Run", contractStubRunSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			_ = contractStubRun(t, s)
-			got := s.OnRun.AssertCalledOnce(t, "Run records the call")
-			a0, a1 := contractStubRunArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Body, a1, "the call records Body")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			var seen []transactiontest.ContractRunCall
-			s.OnRun.OnRecord(func(c transactiontest.ContractRunCall) { seen = append(seen, c) })
-			_ = contractStubRun(t, s)
-			_ = contractStubRun(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Run")
-		})
 	})
 
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", contractStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			_ = contractStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1, a2 := contractStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.V, a2, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			var seen []transactiontest.ContractPutCall
-			s.OnPut.OnRecord(func(c transactiontest.ContractPutCall) { seen = append(seen, c) })
-			_ = contractStubPut(t, s)
-			_ = contractStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Get", contractStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			_, _ = contractStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := contractStubGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			var seen []transactiontest.ContractGetCall
-			s.OnGet.OnRecord(func(c transactiontest.ContractGetCall) { seen = append(seen, c) })
-			_, _ = contractStubGet(t, s)
-			_, _ = contractStubGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
-			return contractStubInstanceOf(tb, transactiontest.NewContractStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Run", func(t *testing.T) {
+		t.Run("Run", func(t *testing.T) {
 			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			_ = contractStubRun(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRun.CallCount(), 0, "ResetCalls clears the calls of Run")
+			stub.ResetBehaviour(t, "Run", contractStubRunSubject)
 		})
 
-		t.Run("keeps the results of Returns of Run", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			want0 := contractStubRunPins()
-			s.OnRun.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubRun(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Run")
+			stub.ResetBehaviour(t, "Put", contractStubPutSubject)
 		})
 
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			_ = contractStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
-		})
-
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			want0 := contractStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
-		})
-
-		t.Run("clears the recorded calls of Get", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			_, _ = contractStubGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
-		})
-
-		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			want0, want1 := contractStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
-		})
-	})
-
-	t.Run("NewContractStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
-			return contractStubInstanceOf(tb, transactiontest.NewContractStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewContractStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Run with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Run-failing")
-			s := transactiontest.NewContractStubFailing(t, want)
-			r0 := contractStubRun(t, s)
-			assert.ErrorIs(t, r0, want, "Run fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := transactiontest.NewContractStubFailing(t, want)
-			r0 := contractStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Get with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Get-failing")
-			s := transactiontest.NewContractStubFailing(t, want)
-			_, r1 := contractStubGet(t, s)
-			assert.ErrorIs(t, r1, want, "Get fails with the error of NewContractStubFailing")
+			stub.ResetBehaviour(t, "Get", contractStubGetSubject)
 		})
 	})
 
@@ -573,159 +473,4 @@ func TestContractStub(t *testing.T) {
 	})
 }
 
-// TestContractRunStub checks the methods of ContractRunStub, which
-// configures Run.
-func TestContractRunStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Run", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			want0 := contractStubRunPins()
-			s.OnRun.Returns(want0)
-			got0 := contractStubRun(t, s)
-			assert.ErrorIs(t, got0, want0, "Run returns the error that Returns sets")
-		})
-
-		t.Run("configures Run for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := transactiontest.NewContractStub(r)
-			s.OnRun.Strict()
-			var want0 error
-			s.OnRun.Returns(want0)
-			_ = contractStubRun(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Run")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Run to the function", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			var got0 context.Context
-			var got1 func(ctx context.Context) error
-			s.OnRun.Func(func(p0 context.Context, p1 func(ctx context.Context) error) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = contractStubRun(t, s)
-			a0, a1 := contractStubRunArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Body")
-		})
-	})
-}
-
-// TestContractPutStub checks the methods of ContractPutStub, which
-// configures Put.
-func TestContractPutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			want0 := contractStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := contractStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := transactiontest.NewContractStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = contractStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 transaction.Value
-			s.OnPut.Func(func(p0 context.Context, p1 string, p2 transaction.Value) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = contractStubPut(t, s)
-			a0, a1, a2 := contractStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives V")
-		})
-	})
-}
-
-// TestContractGetStub checks the methods of ContractGetStub, which
-// configures Get.
-func TestContractGetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			want0, want1 := contractStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := contractStubGet(t, s)
-			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := transactiontest.NewContractStub(r)
-			s.OnGet.Strict()
-			var want0 transaction.Value
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = contractStubGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
-			t.Parallel()
-			s := transactiontest.NewContractStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (transaction.Value, error) {
-				got0, got1 = p0, p1
-				var z0 transaction.Value
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubGet(t, s)
-			a0, a1 := contractStubGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:8dffb55059a19eb562b767a825ffe884dab8588b7e27f530959f6178b8abc81e
+// dokimi:provenance sha256:fa3b65edbceeac3c2de63a0e5f07e7d52b7ce1354853b7f60c9bca637c7b3a0c

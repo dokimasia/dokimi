@@ -48,54 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*deprecatedtest.MixedHandle) deprecated.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[deprecated.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -117,62 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*deprecatedtest.MixedHandle) deprecated.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.Old.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deprecatedtest.MixedChecks.New.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[deprecated.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = deprecatedtest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *deprecatedtest.MixedHandle) deprecated.Mixed {
-	return deprecatedtest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -185,54 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(deprecatedtest.MixedChecks.Old.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(deprecatedtest.MixedChecks.New.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deprecated.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -243,54 +106,7 @@ func FuzzMixedSuiteOld(f *testing.F) {
 		f,
 		deprecatedtest.MixedChecks.Old.Callable,
 		mixedIdle,
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deprecated.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -301,54 +117,7 @@ func FuzzMixedSuiteNew(f *testing.F) {
 		f,
 		deprecatedtest.MixedChecks.New.Callable,
 		mixedIdle,
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.Old.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deprecatedtest.MixedChecks.New.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deprecated.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -363,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:27c8ec6c7b13c2a0c9e699f7081e1aaa24a6cb1749bf464f5f10d04934f684cf
+// dokimi:provenance sha256:1707511d04418af3493929d34f4bd646040287a4f5fc357666f9f267cc6594e3

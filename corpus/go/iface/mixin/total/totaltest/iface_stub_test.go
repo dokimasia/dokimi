@@ -66,23 +66,36 @@ func mixedStubNormalizePins() string {
 	return want0
 }
 
-// mixedStubClassifySubject returns the subject of [stub.Behaviour] for
-// Classify. The subject calls a new double that reports to tb.
+// mixedStubClassifySubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Classify. The subject calls a new double that
+// reports to tb.
 func mixedStubClassifySubject(tb assert.TB) stub.Subject[totaltest.MixedClassifyCall, totaltest.MixedClassifyReturn] {
 	tb.Helper()
 	s := totaltest.NewMixedStub(tb)
 	return stub.Subject[totaltest.MixedClassifyCall, totaltest.MixedClassifyReturn]{
-		Stub: s.OnClassify.MethodStub,
+		Stub:  s.OnClassify.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubClassify(tb, s)
+		},
+		Arguments: func(tb assert.TB, c totaltest.MixedClassifyCall) {
+			tb.Helper()
+			a0, a1 := mixedStubClassifyArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.In, a1, "the call records In")
 		},
 		Result: func() totaltest.MixedClassifyReturn {
 			got0, got1 := mixedStubClassify(tb, s)
 			return totaltest.MixedClassifyReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnClassify.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() totaltest.MixedClassifyReturn {
+			want0, want1 := mixedStubClassifyPins()
+			s.OnClassify.Returns(want0, want1)
+			return totaltest.MixedClassifyReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(totaltest.MixedClassifyCall)) {
+			s.OnClassify.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(totaltest.MixedClassifyCall{Ctx: p0, In: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -95,25 +108,37 @@ func mixedStubClassifySubject(tb assert.TB) stub.Subject[totaltest.MixedClassify
 	}
 }
 
-// mixedStubNormalizeSubject returns the subject of [stub.Behaviour] for
-// Normalize. The subject calls a new double that reports to tb.
+// mixedStubNormalizeSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Normalize. The subject calls a new double that
+// reports to tb.
 func mixedStubNormalizeSubject(
 	tb assert.TB,
 ) stub.Subject[totaltest.MixedNormalizeCall, totaltest.MixedNormalizeReturn] {
 	tb.Helper()
 	s := totaltest.NewMixedStub(tb)
 	return stub.Subject[totaltest.MixedNormalizeCall, totaltest.MixedNormalizeReturn]{
-		Stub: s.OnNormalize.MethodStub,
+		Stub:  s.OnNormalize.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubNormalize(tb, s)
+		},
+		Arguments: func(tb assert.TB, c totaltest.MixedNormalizeCall) {
+			tb.Helper()
+			a0 := mixedStubNormalizeArgs(tb)
+			assert.Equal(tb, c.In, a0, "the call records In")
 		},
 		Result: func() totaltest.MixedNormalizeReturn {
 			got0 := mixedStubNormalize(tb, s)
 			return totaltest.MixedNormalizeReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnNormalize.Func(func(_ string) string {
-				mark()
+		Returns: func() totaltest.MixedNormalizeReturn {
+			want0 := mixedStubNormalizePins()
+			s.OnNormalize.Returns(want0)
+			return totaltest.MixedNormalizeReturn{Result: want0}
+		},
+		Override: func(seen func(totaltest.MixedNormalizeCall)) {
+			s.OnNormalize.Func(func(p0 string) string {
+				seen(totaltest.MixedNormalizeCall{In: p0})
 				var z0 string
 				return z0
 			})
@@ -134,7 +159,6 @@ func mixedStubInstanceOf(tb assert.TB, s *totaltest.MixedStub) mixedStubInstance
 		Call: func() {
 			_, _ = mixedStubClassify(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -146,112 +170,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Classify", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Classify", mixedStubClassifySubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			_, _ = mixedStubClassify(t, s)
-			got := s.OnClassify.AssertCalledOnce(t, "Classify records the call")
-			a0, a1 := mixedStubClassifyArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.In, a1, "the call records In")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			var seen []totaltest.MixedClassifyCall
-			s.OnClassify.OnRecord(func(c totaltest.MixedClassifyCall) { seen = append(seen, c) })
-			_, _ = mixedStubClassify(t, s)
-			_, _ = mixedStubClassify(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Classify")
-		})
 	})
 
 	t.Run("Normalize", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Normalize", mixedStubNormalizeSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			_ = mixedStubNormalize(t, s)
-			got := s.OnNormalize.AssertCalledOnce(t, "Normalize records the call")
-			a0 := mixedStubNormalizeArgs(t)
-			assert.Equal(t, got.In, a0, "the call records In")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			var seen []totaltest.MixedNormalizeCall
-			s.OnNormalize.OnRecord(func(c totaltest.MixedNormalizeCall) { seen = append(seen, c) })
-			_ = mixedStubNormalize(t, s)
-			_ = mixedStubNormalize(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Normalize")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, totaltest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Classify", func(t *testing.T) {
+		t.Run("Classify", func(t *testing.T) {
 			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			_, _ = mixedStubClassify(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnClassify.CallCount(), 0, "ResetCalls clears the calls of Classify")
+			stub.ResetBehaviour(t, "Classify", mixedStubClassifySubject)
 		})
 
-		t.Run("keeps the results of Returns of Classify", func(t *testing.T) {
+		t.Run("Normalize", func(t *testing.T) {
 			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			want0, want1 := mixedStubClassifyPins()
-			s.OnClassify.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubClassify(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Classify")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Classify")
-		})
-
-		t.Run("clears the recorded calls of Normalize", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			_ = mixedStubNormalize(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNormalize.CallCount(), 0, "ResetCalls clears the calls of Normalize")
-		})
-
-		t.Run("keeps the results of Returns of Normalize", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			want0 := mixedStubNormalizePins()
-			s.OnNormalize.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubNormalize(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Normalize")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, totaltest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Classify with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Classify-failing")
-			s := totaltest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubClassify(t, s)
-			assert.ErrorIs(t, r1, want, "Classify fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Normalize", mixedStubNormalizeSubject)
 		})
 	})
 
@@ -372,105 +308,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedClassifyStub checks the methods of MixedClassifyStub, which
-// configures Classify.
-func TestMixedClassifyStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Classify", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			want0, want1 := mixedStubClassifyPins()
-			s.OnClassify.Returns(want0, want1)
-			got0, got1 := mixedStubClassify(t, s)
-			expect.Equal(t, got0, want0, "Classify returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Classify returns the error that Returns sets")
-		})
-
-		t.Run("configures Classify for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := totaltest.NewMixedStub(r)
-			s.OnClassify.Strict()
-			var want0 string
-			var want1 error
-			s.OnClassify.Returns(want0, want1)
-			_, _ = mixedStubClassify(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Classify")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Classify to the function", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnClassify.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubClassify(t, s)
-			a0, a1 := mixedStubClassifyArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives In")
-		})
-	})
-}
-
-// TestMixedNormalizeStub checks the methods of MixedNormalizeStub, which
-// configures Normalize.
-func TestMixedNormalizeStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Normalize", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			want0 := mixedStubNormalizePins()
-			s.OnNormalize.Returns(want0)
-			got0 := mixedStubNormalize(t, s)
-			assert.Equal(t, got0, want0, "Normalize returns the Result that Returns sets")
-		})
-
-		t.Run("configures Normalize for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := totaltest.NewMixedStub(r)
-			s.OnNormalize.Strict()
-			var want0 string
-			s.OnNormalize.Returns(want0)
-			_ = mixedStubNormalize(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Normalize")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Normalize to the function", func(t *testing.T) {
-			t.Parallel()
-			s := totaltest.NewMixedStub(t)
-			var got0 string
-			s.OnNormalize.Func(func(p0 string) string {
-				got0 = p0
-				var z0 string
-				return z0
-			})
-			_ = mixedStubNormalize(t, s)
-			a0 := mixedStubNormalizeArgs(t)
-			assert.Equal(t, got0, a0, "the function receives In")
-		})
-	})
-}
-
-// dokimi:provenance sha256:702a49b790fc7d2f111ad0778d44177c3e9f26eeb71d3b725deb49fadeb39aec
+// dokimi:provenance sha256:fab13b08cfa4117a43dfe1d5673e5390c7a6a0db085a6d261bceba3962835a47

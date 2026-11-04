@@ -190,21 +190,6 @@ func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	return s
 }
 
-// NewMixedStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MixedStubOption) *MixedStub {
-	return NewMixedStub(tb, append([]MixedStubOption{
-		MixedStubWithClock(clk),
-		MixedStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewMixedStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewMixedStubFailing(tb assert.TB, err error, opts ...MixedStubOption) *MixedStub {
-	return NewMixedStub(tb, append([]MixedStubOption{MixedStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MixedStub) ResetCalls() {
@@ -268,4 +253,4 @@ func (s *MixedStub) Items(ctx context.Context) ([]stableorder.Value, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:fb1c1eee83958ae93d05c90e090439c7cce3d521434fa5d5cfc48faba5e78d68
+// dokimi:provenance sha256:a10fb013f25dfb6dff056e7babd6ee9c42e2cdd91feb9f4250f1e874c478ce86

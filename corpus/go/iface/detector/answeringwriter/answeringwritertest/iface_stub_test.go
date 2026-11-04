@@ -44,24 +44,37 @@ func answeringWriterStubPutPins() (answeringwriter.Value, error) {
 }
 
 // answeringWriterStubPutSubject returns the subject of [stub.Behaviour]
-// for Put. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func answeringWriterStubPutSubject(
 	tb assert.TB,
 ) stub.Subject[answeringwritertest.AnsweringWriterPutCall, answeringwritertest.AnsweringWriterPutReturn] {
 	tb.Helper()
 	s := answeringwritertest.NewAnsweringWriterStub(tb)
 	return stub.Subject[answeringwritertest.AnsweringWriterPutCall, answeringwritertest.AnsweringWriterPutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = answeringWriterStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c answeringwritertest.AnsweringWriterPutCall) {
+			tb.Helper()
+			a0, a1 := answeringWriterStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() answeringwritertest.AnsweringWriterPutReturn {
 			got0, got1 := answeringWriterStubPut(tb, s)
 			return answeringwritertest.AnsweringWriterPutReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ answeringwriter.Value) (answeringwriter.Value, error) {
-				mark()
+		Returns: func() answeringwritertest.AnsweringWriterPutReturn {
+			want0, want1 := answeringWriterStubPutPins()
+			s.OnPut.Returns(want0, want1)
+			return answeringwritertest.AnsweringWriterPutReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(answeringwritertest.AnsweringWriterPutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1 answeringwriter.Value) (answeringwriter.Value, error) {
+				seen(answeringwritertest.AnsweringWriterPutCall{Ctx: p0, V: p1})
 				var z0 answeringwriter.Value
 				var z1 error
 				return z0, z1
@@ -91,7 +104,6 @@ func answeringWriterStubInstanceOf(
 		Call: func() {
 			_, _ = answeringWriterStubPut(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -103,70 +115,14 @@ func TestAnsweringWriterStub(t *testing.T) {
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", answeringWriterStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := answeringwritertest.NewAnsweringWriterStub(t)
-			_, _ = answeringWriterStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1 := answeringWriterStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := answeringwritertest.NewAnsweringWriterStub(t)
-			var seen []answeringwritertest.AnsweringWriterPutCall
-			s.OnPut.OnRecord(func(c answeringwritertest.AnsweringWriterPutCall) { seen = append(seen, c) })
-			_, _ = answeringWriterStubPut(t, s)
-			_, _ = answeringWriterStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) answeringWriterStubInstance {
-			return answeringWriterStubInstanceOf(tb, answeringwritertest.NewAnsweringWriterStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := answeringwritertest.NewAnsweringWriterStub(t)
-			_, _ = answeringWriterStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
-		})
-
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
-			t.Parallel()
-			s := answeringwritertest.NewAnsweringWriterStub(t)
-			want0, want1 := answeringWriterStubPutPins()
-			s.OnPut.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := answeringWriterStubPut(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Put")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Put")
-		})
-	})
-
-	t.Run("NewAnsweringWriterStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) answeringWriterStubInstance {
-			return answeringWriterStubInstanceOf(tb, answeringwritertest.NewAnsweringWriterStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewAnsweringWriterStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := answeringwritertest.NewAnsweringWriterStubFailing(t, want)
-			_, r1 := answeringWriterStubPut(t, s)
-			assert.ErrorIs(t, r1, want, "Put fails with the error of NewAnsweringWriterStubFailing")
+			stub.ResetBehaviour(t, "Put", answeringWriterStubPutSubject)
 		})
 	})
 
@@ -284,57 +240,4 @@ func TestAnsweringWriterStub(t *testing.T) {
 	})
 }
 
-// TestAnsweringWriterPutStub checks the methods of AnsweringWriterPutStub,
-// which configures Put.
-func TestAnsweringWriterPutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := answeringwritertest.NewAnsweringWriterStub(t)
-			want0, want1 := answeringWriterStubPutPins()
-			s.OnPut.Returns(want0, want1)
-			got0, got1 := answeringWriterStubPut(t, s)
-			expect.Equal(t, got0, want0, "Put returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := answeringwritertest.NewAnsweringWriterStub(r)
-			s.OnPut.Strict()
-			var want0 answeringwriter.Value
-			var want1 error
-			s.OnPut.Returns(want0, want1)
-			_, _ = answeringWriterStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := answeringwritertest.NewAnsweringWriterStub(t)
-			var got0 context.Context
-			var got1 answeringwriter.Value
-			s.OnPut.Func(func(p0 context.Context, p1 answeringwriter.Value) (answeringwriter.Value, error) {
-				got0, got1 = p0, p1
-				var z0 answeringwriter.Value
-				var z1 error
-				return z0, z1
-			})
-			_, _ = answeringWriterStubPut(t, s)
-			a0, a1 := answeringWriterStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// dokimi:provenance sha256:6da8045ca06fd8f0ba0d4c9203bb939f5b97504764aadb0ce24630c85dc6d1c1
+// dokimi:provenance sha256:e2bd5279a28dd7828005be332851b3a3f5a7bf4222a01ae8081d93a9398a1ab4

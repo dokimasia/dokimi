@@ -148,26 +148,6 @@ func NewAggregatorStub(tb assert.TB, opts ...AggregatorStubOption) *AggregatorSt
 	return s
 }
 
-// NewAggregatorStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewAggregatorStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...AggregatorStubOption,
-) *AggregatorStub {
-	return NewAggregatorStub(tb, append([]AggregatorStubOption{
-		AggregatorStubWithClock(clk),
-		AggregatorStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewAggregatorStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewAggregatorStubFailing(tb assert.TB, err error, opts ...AggregatorStubOption) *AggregatorStub {
-	return NewAggregatorStub(tb, append([]AggregatorStubOption{AggregatorStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *AggregatorStub) ResetCalls() {
@@ -203,4 +183,4 @@ func (s *AggregatorStub) Count(ctx context.Context) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:38deade5e6b025068a924dd7c720f01c0db777bcd29d3dbaf6f4a1fffc4bcb33
+// dokimi:provenance sha256:2de46692e800f704d62a77846d5d6bb1596c48e70494c22fcb1b12fd2726851c

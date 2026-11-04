@@ -68,25 +68,39 @@ func contractStubFlightsPins() (int, error) {
 	return want0, want1
 }
 
-// contractStubRunSubject returns the subject of [stub.Behaviour] for Run.
-// The subject calls a new double that reports to tb.
+// contractStubRunSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Run. The subject calls a new double that
+// reports to tb.
 func contractStubRunSubject(
 	tb assert.TB,
 ) stub.Subject[singleflighttest.ContractRunCall, singleflighttest.ContractRunReturn] {
 	tb.Helper()
 	s := singleflighttest.NewContractStub(tb)
 	return stub.Subject[singleflighttest.ContractRunCall, singleflighttest.ContractRunReturn]{
-		Stub: s.OnRun.MethodStub,
+		Stub:  s.OnRun.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubRun(tb, s)
+		},
+		Arguments: func(tb assert.TB, c singleflighttest.ContractRunCall) {
+			tb.Helper()
+			a0, a1, a2 := contractStubRunArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.Compute, a2, "the call records Compute")
 		},
 		Result: func() singleflighttest.ContractRunReturn {
 			got0, got1 := contractStubRun(tb, s)
 			return singleflighttest.ContractRunReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnRun.Func(func(_ context.Context, _ string, _ func() string) (string, error) {
-				mark()
+		Returns: func() singleflighttest.ContractRunReturn {
+			want0, want1 := contractStubRunPins()
+			s.OnRun.Returns(want0, want1)
+			return singleflighttest.ContractRunReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(singleflighttest.ContractRunCall)) {
+			s.OnRun.Func(func(p0 context.Context, p1 string, p2 func() string) (string, error) {
+				seen(singleflighttest.ContractRunCall{Ctx: p0, Key: p1, Compute: p2})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -99,25 +113,37 @@ func contractStubRunSubject(
 	}
 }
 
-// contractStubFlightsSubject returns the subject of [stub.Behaviour] for
-// Flights. The subject calls a new double that reports to tb.
+// contractStubFlightsSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Flights. The subject calls a new double that
+// reports to tb.
 func contractStubFlightsSubject(
 	tb assert.TB,
 ) stub.Subject[singleflighttest.ContractFlightsCall, singleflighttest.ContractFlightsReturn] {
 	tb.Helper()
 	s := singleflighttest.NewContractStub(tb)
 	return stub.Subject[singleflighttest.ContractFlightsCall, singleflighttest.ContractFlightsReturn]{
-		Stub: s.OnFlights.MethodStub,
+		Stub:  s.OnFlights.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubFlights(tb, s)
+		},
+		Arguments: func(tb assert.TB, c singleflighttest.ContractFlightsCall) {
+			tb.Helper()
+			a0 := contractStubFlightsArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() singleflighttest.ContractFlightsReturn {
 			got0, got1 := contractStubFlights(tb, s)
 			return singleflighttest.ContractFlightsReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnFlights.Func(func(_ context.Context) (int, error) {
-				mark()
+		Returns: func() singleflighttest.ContractFlightsReturn {
+			want0, want1 := contractStubFlightsPins()
+			s.OnFlights.Returns(want0, want1)
+			return singleflighttest.ContractFlightsReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(singleflighttest.ContractFlightsCall)) {
+			s.OnFlights.Func(func(p0 context.Context) (int, error) {
+				seen(singleflighttest.ContractFlightsCall{Ctx: p0})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -143,7 +169,6 @@ func contractStubInstanceOf(tb assert.TB, s *singleflighttest.ContractStub) cont
 		Call: func() {
 			_, _ = contractStubRun(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -155,122 +180,24 @@ func TestContractStub(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Run", contractStubRunSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			_, _ = contractStubRun(t, s)
-			got := s.OnRun.AssertCalledOnce(t, "Run records the call")
-			a0, a1, a2 := contractStubRunArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.Compute, a2, "the call records Compute")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			var seen []singleflighttest.ContractRunCall
-			s.OnRun.OnRecord(func(c singleflighttest.ContractRunCall) { seen = append(seen, c) })
-			_, _ = contractStubRun(t, s)
-			_, _ = contractStubRun(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Run")
-		})
 	})
 
 	t.Run("Flights", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Flights", contractStubFlightsSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			_, _ = contractStubFlights(t, s)
-			got := s.OnFlights.AssertCalledOnce(t, "Flights records the call")
-			a0 := contractStubFlightsArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			var seen []singleflighttest.ContractFlightsCall
-			s.OnFlights.OnRecord(func(c singleflighttest.ContractFlightsCall) { seen = append(seen, c) })
-			_, _ = contractStubFlights(t, s)
-			_, _ = contractStubFlights(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Flights")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
-			return contractStubInstanceOf(tb, singleflighttest.NewContractStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Run", func(t *testing.T) {
+		t.Run("Run", func(t *testing.T) {
 			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			_, _ = contractStubRun(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRun.CallCount(), 0, "ResetCalls clears the calls of Run")
+			stub.ResetBehaviour(t, "Run", contractStubRunSubject)
 		})
 
-		t.Run("keeps the results of Returns of Run", func(t *testing.T) {
+		t.Run("Flights", func(t *testing.T) {
 			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			want0, want1 := contractStubRunPins()
-			s.OnRun.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubRun(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Run")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Run")
-		})
-
-		t.Run("clears the recorded calls of Flights", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			_, _ = contractStubFlights(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFlights.CallCount(), 0, "ResetCalls clears the calls of Flights")
-		})
-
-		t.Run("keeps the results of Returns of Flights", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			want0, want1 := contractStubFlightsPins()
-			s.OnFlights.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubFlights(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Flights")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Flights")
-		})
-	})
-
-	t.Run("NewContractStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
-			return contractStubInstanceOf(tb, singleflighttest.NewContractStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewContractStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Run with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Run-failing")
-			s := singleflighttest.NewContractStubFailing(t, want)
-			_, r1 := contractStubRun(t, s)
-			assert.ErrorIs(t, r1, want, "Run fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Flights with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Flights-failing")
-			s := singleflighttest.NewContractStubFailing(t, want)
-			_, r1 := contractStubFlights(t, s)
-			assert.ErrorIs(t, r1, want, "Flights fails with the error of NewContractStubFailing")
+			stub.ResetBehaviour(t, "Flights", contractStubFlightsSubject)
 		})
 	})
 
@@ -429,110 +356,4 @@ func TestContractStub(t *testing.T) {
 	})
 }
 
-// TestContractRunStub checks the methods of ContractRunStub, which
-// configures Run.
-func TestContractRunStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Run", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			want0, want1 := contractStubRunPins()
-			s.OnRun.Returns(want0, want1)
-			got0, got1 := contractStubRun(t, s)
-			expect.Equal(t, got0, want0, "Run returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Run returns the error that Returns sets")
-		})
-
-		t.Run("configures Run for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := singleflighttest.NewContractStub(r)
-			s.OnRun.Strict()
-			var want0 string
-			var want1 error
-			s.OnRun.Returns(want0, want1)
-			_, _ = contractStubRun(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Run")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Run to the function", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 func() string
-			s.OnRun.Func(func(p0 context.Context, p1 string, p2 func() string) (string, error) {
-				got0, got1, got2 = p0, p1, p2
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubRun(t, s)
-			a0, a1, a2 := contractStubRunArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives Compute")
-		})
-	})
-}
-
-// TestContractFlightsStub checks the methods of ContractFlightsStub, which
-// configures Flights.
-func TestContractFlightsStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Flights", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			want0, want1 := contractStubFlightsPins()
-			s.OnFlights.Returns(want0, want1)
-			got0, got1 := contractStubFlights(t, s)
-			expect.Equal(t, got0, want0, "Flights returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Flights returns the error that Returns sets")
-		})
-
-		t.Run("configures Flights for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := singleflighttest.NewContractStub(r)
-			s.OnFlights.Strict()
-			var want0 int
-			var want1 error
-			s.OnFlights.Returns(want0, want1)
-			_, _ = contractStubFlights(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Flights")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Flights to the function", func(t *testing.T) {
-			t.Parallel()
-			s := singleflighttest.NewContractStub(t)
-			var got0 context.Context
-			s.OnFlights.Func(func(p0 context.Context) (int, error) {
-				got0 = p0
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubFlights(t, s)
-			a0 := contractStubFlightsArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:4d3928c350dfdfd31453d7cc416a630c2c93c96ab5435f0ad43e7afb22a922af
+// dokimi:provenance sha256:73cca160e1a5f11f38a7d192b1d54808a94c10324851ddd9ff7d06d4c1a2c774

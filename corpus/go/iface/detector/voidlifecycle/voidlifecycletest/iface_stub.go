@@ -121,20 +121,6 @@ func NewVoidLifecycleStub(tb assert.TB, opts ...VoidLifecycleStubOption) *VoidLi
 	return s
 }
 
-// NewVoidLifecycleStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewVoidLifecycleStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...VoidLifecycleStubOption,
-) *VoidLifecycleStub {
-	return NewVoidLifecycleStub(tb, append([]VoidLifecycleStubOption{
-		VoidLifecycleStubWithClock(clk),
-		VoidLifecycleStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *VoidLifecycleStub) ResetCalls() {
@@ -163,4 +149,4 @@ func (s *VoidLifecycleStub) Stop() {
 	})
 }
 
-// dokimi:provenance sha256:853713259d912ad2fc945b7db912b21cad6d2838e7328129636e1a32cee195cb
+// dokimi:provenance sha256:540ac2c89bae85b2df03417c3da2e272d5bc09d7cfd1faffb32fd31bc7e94baf

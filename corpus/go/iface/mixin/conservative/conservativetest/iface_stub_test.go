@@ -64,25 +64,38 @@ func mixedStubTotalPins() (int, error) {
 	return want0, want1
 }
 
-// mixedStubApplySubject returns the subject of [stub.Behaviour] for Apply.
-// The subject calls a new double that reports to tb.
+// mixedStubApplySubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Apply. The subject calls a new double that
+// reports to tb.
 func mixedStubApplySubject(
 	tb assert.TB,
 ) stub.Subject[conservativetest.MixedApplyCall, conservativetest.MixedApplyReturn] {
 	tb.Helper()
 	s := conservativetest.NewMixedStub(tb)
 	return stub.Subject[conservativetest.MixedApplyCall, conservativetest.MixedApplyReturn]{
-		Stub: s.OnApply.MethodStub,
+		Stub:  s.OnApply.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubApply(tb, s)
+		},
+		Arguments: func(tb assert.TB, c conservativetest.MixedApplyCall) {
+			tb.Helper()
+			a0, a1 := mixedStubApplyArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.D, a1, "the call records D")
 		},
 		Result: func() conservativetest.MixedApplyReturn {
 			got0 := mixedStubApply(tb, s)
 			return conservativetest.MixedApplyReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnApply.Func(func(_ context.Context, _ conservative.Delta) error {
-				mark()
+		Returns: func() conservativetest.MixedApplyReturn {
+			want0 := mixedStubApplyPins()
+			s.OnApply.Returns(want0)
+			return conservativetest.MixedApplyReturn{Err: want0}
+		},
+		Override: func(seen func(conservativetest.MixedApplyCall)) {
+			s.OnApply.Func(func(p0 context.Context, p1 conservative.Delta) error {
+				seen(conservativetest.MixedApplyCall{Ctx: p0, D: p1})
 				var z0 error
 				return z0
 			})
@@ -94,25 +107,37 @@ func mixedStubApplySubject(
 	}
 }
 
-// mixedStubTotalSubject returns the subject of [stub.Behaviour] for Total.
-// The subject calls a new double that reports to tb.
+// mixedStubTotalSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Total. The subject calls a new double that
+// reports to tb.
 func mixedStubTotalSubject(
 	tb assert.TB,
 ) stub.Subject[conservativetest.MixedTotalCall, conservativetest.MixedTotalReturn] {
 	tb.Helper()
 	s := conservativetest.NewMixedStub(tb)
 	return stub.Subject[conservativetest.MixedTotalCall, conservativetest.MixedTotalReturn]{
-		Stub: s.OnTotal.MethodStub,
+		Stub:  s.OnTotal.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubTotal(tb, s)
+		},
+		Arguments: func(tb assert.TB, c conservativetest.MixedTotalCall) {
+			tb.Helper()
+			a0 := mixedStubTotalArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() conservativetest.MixedTotalReturn {
 			got0, got1 := mixedStubTotal(tb, s)
 			return conservativetest.MixedTotalReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnTotal.Func(func(_ context.Context) (int, error) {
-				mark()
+		Returns: func() conservativetest.MixedTotalReturn {
+			want0, want1 := mixedStubTotalPins()
+			s.OnTotal.Returns(want0, want1)
+			return conservativetest.MixedTotalReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(conservativetest.MixedTotalCall)) {
+			s.OnTotal.Func(func(p0 context.Context) (int, error) {
+				seen(conservativetest.MixedTotalCall{Ctx: p0})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -138,7 +163,6 @@ func mixedStubInstanceOf(tb assert.TB, s *conservativetest.MixedStub) mixedStubI
 		Call: func() {
 			_ = mixedStubApply(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -150,120 +174,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Apply", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Apply", mixedStubApplySubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			_ = mixedStubApply(t, s)
-			got := s.OnApply.AssertCalledOnce(t, "Apply records the call")
-			a0, a1 := mixedStubApplyArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.D, a1, "the call records D")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			var seen []conservativetest.MixedApplyCall
-			s.OnApply.OnRecord(func(c conservativetest.MixedApplyCall) { seen = append(seen, c) })
-			_ = mixedStubApply(t, s)
-			_ = mixedStubApply(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Apply")
-		})
 	})
 
 	t.Run("Total", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Total", mixedStubTotalSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			_, _ = mixedStubTotal(t, s)
-			got := s.OnTotal.AssertCalledOnce(t, "Total records the call")
-			a0 := mixedStubTotalArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			var seen []conservativetest.MixedTotalCall
-			s.OnTotal.OnRecord(func(c conservativetest.MixedTotalCall) { seen = append(seen, c) })
-			_, _ = mixedStubTotal(t, s)
-			_, _ = mixedStubTotal(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Total")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, conservativetest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Apply", func(t *testing.T) {
+		t.Run("Apply", func(t *testing.T) {
 			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			_ = mixedStubApply(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnApply.CallCount(), 0, "ResetCalls clears the calls of Apply")
+			stub.ResetBehaviour(t, "Apply", mixedStubApplySubject)
 		})
 
-		t.Run("keeps the results of Returns of Apply", func(t *testing.T) {
+		t.Run("Total", func(t *testing.T) {
 			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			want0 := mixedStubApplyPins()
-			s.OnApply.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubApply(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Apply")
-		})
-
-		t.Run("clears the recorded calls of Total", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			_, _ = mixedStubTotal(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnTotal.CallCount(), 0, "ResetCalls clears the calls of Total")
-		})
-
-		t.Run("keeps the results of Returns of Total", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			want0, want1 := mixedStubTotalPins()
-			s.OnTotal.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubTotal(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Total")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Total")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, conservativetest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Apply with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Apply-failing")
-			s := conservativetest.NewMixedStubFailing(t, want)
-			r0 := mixedStubApply(t, s)
-			assert.ErrorIs(t, r0, want, "Apply fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Total with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Total-failing")
-			s := conservativetest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubTotal(t, s)
-			assert.ErrorIs(t, r1, want, "Total fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Total", mixedStubTotalSubject)
 		})
 	})
 
@@ -409,105 +337,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedApplyStub checks the methods of MixedApplyStub, which
-// configures Apply.
-func TestMixedApplyStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Apply", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			want0 := mixedStubApplyPins()
-			s.OnApply.Returns(want0)
-			got0 := mixedStubApply(t, s)
-			assert.ErrorIs(t, got0, want0, "Apply returns the error that Returns sets")
-		})
-
-		t.Run("configures Apply for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := conservativetest.NewMixedStub(r)
-			s.OnApply.Strict()
-			var want0 error
-			s.OnApply.Returns(want0)
-			_ = mixedStubApply(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Apply")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Apply to the function", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 conservative.Delta
-			s.OnApply.Func(func(p0 context.Context, p1 conservative.Delta) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubApply(t, s)
-			a0, a1 := mixedStubApplyArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives D")
-		})
-	})
-}
-
-// TestMixedTotalStub checks the methods of MixedTotalStub, which
-// configures Total.
-func TestMixedTotalStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Total", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			want0, want1 := mixedStubTotalPins()
-			s.OnTotal.Returns(want0, want1)
-			got0, got1 := mixedStubTotal(t, s)
-			expect.Equal(t, got0, want0, "Total returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Total returns the error that Returns sets")
-		})
-
-		t.Run("configures Total for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := conservativetest.NewMixedStub(r)
-			s.OnTotal.Strict()
-			var want0 int
-			var want1 error
-			s.OnTotal.Returns(want0, want1)
-			_, _ = mixedStubTotal(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Total")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Total to the function", func(t *testing.T) {
-			t.Parallel()
-			s := conservativetest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnTotal.Func(func(p0 context.Context) (int, error) {
-				got0 = p0
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubTotal(t, s)
-			a0 := mixedStubTotalArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:bb5a0a2720865de62fe6d0b2d192c64777525ee4ef88b734b644b1574d5441b2
+// dokimi:provenance sha256:e4c0d4bac3594f60510a35382734b46c01e1445eb50f45250f3561c1e5341a3a

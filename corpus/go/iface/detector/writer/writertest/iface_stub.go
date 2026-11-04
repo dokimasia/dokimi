@@ -144,21 +144,6 @@ func NewWriterStub(tb assert.TB, opts ...WriterStubOption) *WriterStub {
 	return s
 }
 
-// NewWriterStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewWriterStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...WriterStubOption) *WriterStub {
-	return NewWriterStub(tb, append([]WriterStubOption{
-		WriterStubWithClock(clk),
-		WriterStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewWriterStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewWriterStubFailing(tb assert.TB, err error, opts ...WriterStubOption) *WriterStub {
-	return NewWriterStub(tb, append([]WriterStubOption{WriterStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *WriterStub) ResetCalls() {
@@ -193,4 +178,4 @@ func (s *WriterStub) Put(ctx context.Context, v writer.Value) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:5432e086b928ca0343ea8a8068d2e843507f02ee1d0dfcdfa9ad81ceb3ff6c90
+// dokimi:provenance sha256:975763a1f9bf3106036cbb0ec94cc0a9f5df810c8986b9967ab96322a53684ae

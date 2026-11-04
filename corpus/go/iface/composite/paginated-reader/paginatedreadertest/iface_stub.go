@@ -203,26 +203,6 @@ func NewPaginatedReaderStub(tb assert.TB, opts ...PaginatedReaderStubOption) *Pa
 	return s
 }
 
-// NewPaginatedReaderStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewPaginatedReaderStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...PaginatedReaderStubOption,
-) *PaginatedReaderStub {
-	return NewPaginatedReaderStub(tb, append([]PaginatedReaderStubOption{
-		PaginatedReaderStubWithClock(clk),
-		PaginatedReaderStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewPaginatedReaderStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewPaginatedReaderStubFailing(tb assert.TB, err error, opts ...PaginatedReaderStubOption) *PaginatedReaderStub {
-	return NewPaginatedReaderStub(tb, append([]PaginatedReaderStubOption{PaginatedReaderStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *PaginatedReaderStub) ResetCalls() {
@@ -286,4 +266,4 @@ func (s *PaginatedReaderStub) Add(ctx context.Context, v paginatedreader.Value) 
 	return r.Err
 }
 
-// dokimi:provenance sha256:8d3ad0da535b115cf3a5be64717422694a6f4e108cff029f40c4da301050dfe1
+// dokimi:provenance sha256:a1dca13341561047a5b62c447a73c014b3226fe6f60b0dc2ab0dfa4384eeed18

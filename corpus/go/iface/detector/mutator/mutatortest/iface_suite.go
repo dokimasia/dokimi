@@ -15,28 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mutator:
-//
-// Mutator.Touch/smoke: Touch returns without a panic for derived inputs.
-//
-// Mutator.Touch/smoke#generated: Touch returns without a panic for derived
-// inputs.
-
-// The derived checks of Mutator that witness their laws at the shallow
-// end:
-//
-// Mutator.Touch/smoke
-
-// The refused claims of Mutator:
-//
-// Mutator.Touch/cancel: Touch cannot fail. The remedy is to give Touch an
-// error result.
-
-// The unclaimed classifications of Mutator:
-//
-// The shape:mutator of Mutator.Touch has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -67,12 +45,6 @@ func (c mutatorTouch) Smoke() conform.ID[mutator.Mutator] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Touch returns
-// without a panic for derived inputs.
-func (c mutatorTouch) SmokeGenerated() conform.ID[mutator.Mutator] {
-	return c.Check("smoke#generated")
-}
-
 // MutatorSuite returns the checks of Mutator, and the calls and the
 // budgets of its callables.
 func MutatorSuite() conform.Suite[mutator.Mutator] {
@@ -85,9 +57,6 @@ func MutatorSuite() conform.Suite[mutator.Mutator] {
 				ID:          MutatorChecks.Touch.Smoke(),
 				Statement:   "Touch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MutatorHandle) {
@@ -99,12 +68,9 @@ func MutatorSuite() conform.Suite[mutator.Mutator] {
 				Defect: mutatorTouchPanics,
 			},
 			{
-				ID:          MutatorChecks.Touch.SmokeGenerated(),
+				ID:          MutatorChecks.Touch.Smoke().Generated(),
 				Statement:   "Touch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MutatorHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -250,4 +216,4 @@ func mutatorTouchPanics(h *MutatorHandle) mutator.Mutator {
 	return &mutatorTouchPanicsDefect{mutatorOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:12a9496e33ca19d21e514848c8f4d52e6b69e7254c66abaffde6e71426a7e7be
+// dokimi:provenance sha256:8f2709f4d07855389c85a0dac7889e2fb50c13ad8f0849cd3d25d1e891bd2b51

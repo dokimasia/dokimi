@@ -66,25 +66,38 @@ func applierStubLimitPins() (int, error) {
 	return want0, want1
 }
 
-// applierStubApplySubject returns the subject of [stub.Behaviour] for
-// Apply. The subject calls a new double that reports to tb.
+// applierStubApplySubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Apply. The subject calls a new double that
+// reports to tb.
 func applierStubApplySubject(
 	tb assert.TB,
 ) stub.Subject[resolvedtest.ApplierApplyCall, resolvedtest.ApplierApplyReturn] {
 	tb.Helper()
 	s := resolvedtest.NewApplierStub(tb)
 	return stub.Subject[resolvedtest.ApplierApplyCall, resolvedtest.ApplierApplyReturn]{
-		Stub: s.OnApply.MethodStub,
+		Stub:  s.OnApply.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = applierStubApply(tb, s)
+		},
+		Arguments: func(tb assert.TB, c resolvedtest.ApplierApplyCall) {
+			tb.Helper()
+			a0, a1 := applierStubApplyArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Req, a1, "the call records Req")
 		},
 		Result: func() resolvedtest.ApplierApplyReturn {
 			got0 := applierStubApply(tb, s)
 			return resolvedtest.ApplierApplyReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnApply.Func(func(_ context.Context, _ resolved.ApplyRequest) error {
-				mark()
+		Returns: func() resolvedtest.ApplierApplyReturn {
+			want0 := applierStubApplyPins()
+			s.OnApply.Returns(want0)
+			return resolvedtest.ApplierApplyReturn{Err: want0}
+		},
+		Override: func(seen func(resolvedtest.ApplierApplyCall)) {
+			s.OnApply.Func(func(p0 context.Context, p1 resolved.ApplyRequest) error {
+				seen(resolvedtest.ApplierApplyCall{Ctx: p0, Req: p1})
 				var z0 error
 				return z0
 			})
@@ -96,25 +109,38 @@ func applierStubApplySubject(
 	}
 }
 
-// applierStubLimitSubject returns the subject of [stub.Behaviour] for
-// Limit. The subject calls a new double that reports to tb.
+// applierStubLimitSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Limit. The subject calls a new double that
+// reports to tb.
 func applierStubLimitSubject(
 	tb assert.TB,
 ) stub.Subject[resolvedtest.ApplierLimitCall, resolvedtest.ApplierLimitReturn] {
 	tb.Helper()
 	s := resolvedtest.NewApplierStub(tb)
 	return stub.Subject[resolvedtest.ApplierLimitCall, resolvedtest.ApplierLimitReturn]{
-		Stub: s.OnLimit.MethodStub,
+		Stub:  s.OnLimit.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = applierStubLimit(tb, s)
+		},
+		Arguments: func(tb assert.TB, c resolvedtest.ApplierLimitCall) {
+			tb.Helper()
+			a0, a1 := applierStubLimitArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() resolvedtest.ApplierLimitReturn {
 			got0, got1 := applierStubLimit(tb, s)
 			return resolvedtest.ApplierLimitReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnLimit.Func(func(_ context.Context, _ string) (int, error) {
-				mark()
+		Returns: func() resolvedtest.ApplierLimitReturn {
+			want0, want1 := applierStubLimitPins()
+			s.OnLimit.Returns(want0, want1)
+			return resolvedtest.ApplierLimitReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(resolvedtest.ApplierLimitCall)) {
+			s.OnLimit.Func(func(p0 context.Context, p1 string) (int, error) {
+				seen(resolvedtest.ApplierLimitCall{Ctx: p0, Key: p1})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -140,7 +166,6 @@ func applierStubInstanceOf(tb assert.TB, s *resolvedtest.ApplierStub) applierStu
 		Call: func() {
 			_ = applierStubApply(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -152,121 +177,24 @@ func TestApplierStub(t *testing.T) {
 	t.Run("Apply", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Apply", applierStubApplySubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			_ = applierStubApply(t, s)
-			got := s.OnApply.AssertCalledOnce(t, "Apply records the call")
-			a0, a1 := applierStubApplyArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Req, a1, "the call records Req")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			var seen []resolvedtest.ApplierApplyCall
-			s.OnApply.OnRecord(func(c resolvedtest.ApplierApplyCall) { seen = append(seen, c) })
-			_ = applierStubApply(t, s)
-			_ = applierStubApply(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Apply")
-		})
 	})
 
 	t.Run("Limit", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Limit", applierStubLimitSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			_, _ = applierStubLimit(t, s)
-			got := s.OnLimit.AssertCalledOnce(t, "Limit records the call")
-			a0, a1 := applierStubLimitArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			var seen []resolvedtest.ApplierLimitCall
-			s.OnLimit.OnRecord(func(c resolvedtest.ApplierLimitCall) { seen = append(seen, c) })
-			_, _ = applierStubLimit(t, s)
-			_, _ = applierStubLimit(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Limit")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) applierStubInstance {
-			return applierStubInstanceOf(tb, resolvedtest.NewApplierStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Apply", func(t *testing.T) {
+		t.Run("Apply", func(t *testing.T) {
 			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			_ = applierStubApply(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnApply.CallCount(), 0, "ResetCalls clears the calls of Apply")
+			stub.ResetBehaviour(t, "Apply", applierStubApplySubject)
 		})
 
-		t.Run("keeps the results of Returns of Apply", func(t *testing.T) {
+		t.Run("Limit", func(t *testing.T) {
 			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			want0 := applierStubApplyPins()
-			s.OnApply.Returns(want0)
-			s.ResetCalls()
-			got0 := applierStubApply(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Apply")
-		})
-
-		t.Run("clears the recorded calls of Limit", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			_, _ = applierStubLimit(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLimit.CallCount(), 0, "ResetCalls clears the calls of Limit")
-		})
-
-		t.Run("keeps the results of Returns of Limit", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			want0, want1 := applierStubLimitPins()
-			s.OnLimit.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := applierStubLimit(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Limit")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Limit")
-		})
-	})
-
-	t.Run("NewApplierStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) applierStubInstance {
-			return applierStubInstanceOf(tb, resolvedtest.NewApplierStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewApplierStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Apply with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Apply-failing")
-			s := resolvedtest.NewApplierStubFailing(t, want)
-			r0 := applierStubApply(t, s)
-			assert.ErrorIs(t, r0, want, "Apply fails with the error of NewApplierStubFailing")
-		})
-
-		t.Run("fails Limit with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Limit-failing")
-			s := resolvedtest.NewApplierStubFailing(t, want)
-			_, r1 := applierStubLimit(t, s)
-			assert.ErrorIs(t, r1, want, "Limit fails with the error of NewApplierStubFailing")
+			stub.ResetBehaviour(t, "Limit", applierStubLimitSubject)
 		})
 	})
 
@@ -415,107 +343,4 @@ func TestApplierStub(t *testing.T) {
 	})
 }
 
-// TestApplierApplyStub checks the methods of ApplierApplyStub, which
-// configures Apply.
-func TestApplierApplyStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Apply", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			want0 := applierStubApplyPins()
-			s.OnApply.Returns(want0)
-			got0 := applierStubApply(t, s)
-			assert.ErrorIs(t, got0, want0, "Apply returns the error that Returns sets")
-		})
-
-		t.Run("configures Apply for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := resolvedtest.NewApplierStub(r)
-			s.OnApply.Strict()
-			var want0 error
-			s.OnApply.Returns(want0)
-			_ = applierStubApply(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Apply")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Apply to the function", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			var got0 context.Context
-			var got1 resolved.ApplyRequest
-			s.OnApply.Func(func(p0 context.Context, p1 resolved.ApplyRequest) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = applierStubApply(t, s)
-			a0, a1 := applierStubApplyArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Req")
-		})
-	})
-}
-
-// TestApplierLimitStub checks the methods of ApplierLimitStub, which
-// configures Limit.
-func TestApplierLimitStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Limit", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			want0, want1 := applierStubLimitPins()
-			s.OnLimit.Returns(want0, want1)
-			got0, got1 := applierStubLimit(t, s)
-			expect.Equal(t, got0, want0, "Limit returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Limit returns the error that Returns sets")
-		})
-
-		t.Run("configures Limit for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := resolvedtest.NewApplierStub(r)
-			s.OnLimit.Strict()
-			var want0 int
-			var want1 error
-			s.OnLimit.Returns(want0, want1)
-			_, _ = applierStubLimit(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Limit")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Limit to the function", func(t *testing.T) {
-			t.Parallel()
-			s := resolvedtest.NewApplierStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnLimit.Func(func(p0 context.Context, p1 string) (int, error) {
-				got0, got1 = p0, p1
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = applierStubLimit(t, s)
-			a0, a1 := applierStubLimitArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:091ef6b3660f68f7ce070f09a95acd646716d797afd56e17a2378e484a558177
+// dokimi:provenance sha256:e0858a2cd3c91e685af7c7ef9ed7a19849dd6e56ef6db418a55797fce378f1ea

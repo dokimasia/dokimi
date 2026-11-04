@@ -48,34 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*xsssafetest.MixedHandle) xsssafe.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.XSSSafe(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[xsssafe.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -97,42 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*xsssafetest.MixedHandle) xsssafe.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				xsssafetest.MixedChecks.Render.XSSSafe(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[xsssafe.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = xsssafetest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *xsssafetest.MixedHandle) xsssafe.Mixed {
-	return xsssafetest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -144,34 +94,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(xsssafetest.MixedChecks.Render.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.XSSSafe(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[xsssafe.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -182,34 +105,7 @@ func FuzzMixedSuiteRender(f *testing.F) {
 		f,
 		xsssafetest.MixedChecks.Render.Callable,
 		mixedIdle,
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			xsssafetest.MixedChecks.Render.XSSSafe(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[xsssafe.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -221,4 +117,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ca534aae20a57a0affe6a656d3052f63904bcaffa4a486ccd2c65ded829cdaf3
+// dokimi:provenance sha256:aac9f68ec8e26637568f602d67c634e674bb557c9e6848b70790ca0481a1ef5d

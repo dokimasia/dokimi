@@ -78,11 +78,15 @@ func TestStreamConsumerSuite(t *testing.T) {
 	})
 }
 
+// streamConsumerSuite is the suite of StreamConsumer that the tests of the
+// planted defect of a ceiling apply.
+var streamConsumerSuite = streamconsumertest.StreamConsumerSuite()
+
 // streamConsumerIdle returns the planted defect of a ceiling of
-// StreamConsumer with a spend of nothing, a subject that answers each call
-// at once.
+// StreamConsumer with a spend of nothing. Each call of the defect returns
+// its zero results at once.
 func streamConsumerIdle(h *streamconsumertest.StreamConsumerHandle) streamconsumer.StreamConsumer {
-	return streamconsumertest.StreamConsumerSuite().Calls[0].Over(h, func() {})
+	return streamConsumerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestStreamConsumerSuiteBudgets applies the allocation ceilings of the
@@ -119,4 +123,4 @@ func BenchmarkStreamConsumerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:bbcf7a62f8854c5e48131d0fd6ab013f5fa910f093fc4c4a8df881413fa2c949
+// dokimi:provenance sha256:62beffbb13bbe2f62560720c37e310ad91086e009a691e87fdb1d6dc1e2e09fd

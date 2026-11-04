@@ -49,54 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*singleflighttest.ContractHandle) singleflight.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.ComputesOnce(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.ComputesOnceGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Flights.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Flights.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Flights.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Flights.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[singleflight.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -118,62 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*singleflighttest.ContractHandle) singleflight.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.ComputesOnce(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Run.ComputesOnceGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Flights.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Flights.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Flights.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				singleflighttest.ContractChecks.Flights.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[singleflight.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = singleflighttest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *singleflighttest.ContractHandle) singleflight.Contract {
-	return singleflighttest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -186,53 +97,8 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(singleflighttest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(singleflighttest.ContractChecks.Flights.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.ComputesOnce(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.ComputesOnceGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[singleflight.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -244,53 +110,8 @@ func FuzzContractSuiteRun(f *testing.F) {
 		f,
 		singleflighttest.ContractChecks.Run.Callable,
 		contractIdle,
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.ComputesOnce(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.ComputesOnceGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[singleflight.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -302,53 +123,8 @@ func FuzzContractSuiteFlights(f *testing.F) {
 		f,
 		singleflighttest.ContractChecks.Flights.Callable,
 		contractIdle,
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.ComputesOnce(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Run.ComputesOnceGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			singleflighttest.ContractChecks.Flights.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[singleflight.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -364,4 +140,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:aacb299cd2f93cf4aae78b17fc3814b498621b38f6faea0bd45933ca23e2a8fc
+// dokimi:provenance sha256:436860caafca65e354894d5d7beeff56506b0f5bdf89460780d64fa2ecde33df

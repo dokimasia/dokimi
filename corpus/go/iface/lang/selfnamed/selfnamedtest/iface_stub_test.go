@@ -58,25 +58,37 @@ func filterStubDrainPins() int {
 	return want0
 }
 
-// filterStubFilterSubject returns the subject of [stub.Behaviour] for
-// Filter. The subject calls a new double that reports to tb.
+// filterStubFilterSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Filter. The subject calls a new double that
+// reports to tb.
 func filterStubFilterSubject(
 	tb assert.TB,
 ) stub.Subject[selfnamedtest.FilterFilterCall, selfnamedtest.FilterFilterReturn] {
 	tb.Helper()
 	s := selfnamedtest.NewFilterStub(tb)
 	return stub.Subject[selfnamedtest.FilterFilterCall, selfnamedtest.FilterFilterReturn]{
-		Stub: s.OnFilter.MethodStub,
+		Stub:  s.OnFilter.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = filterStubFilter(tb, s)
+		},
+		Arguments: func(tb assert.TB, c selfnamedtest.FilterFilterCall) {
+			tb.Helper()
+			a0 := filterStubFilterArgs(tb)
+			assert.Equal(tb, c.Item, a0, "the call records Item")
 		},
 		Result: func() selfnamedtest.FilterFilterReturn {
 			got0 := filterStubFilter(tb, s)
 			return selfnamedtest.FilterFilterReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnFilter.Func(func(_ string) bool {
-				mark()
+		Returns: func() selfnamedtest.FilterFilterReturn {
+			want0 := filterStubFilterPins()
+			s.OnFilter.Returns(want0)
+			return selfnamedtest.FilterFilterReturn{Result: want0}
+		},
+		Override: func(seen func(selfnamedtest.FilterFilterCall)) {
+			s.OnFilter.Func(func(p0 string) bool {
+				seen(selfnamedtest.FilterFilterCall{Item: p0})
 				var z0 bool
 				return z0
 			})
@@ -84,23 +96,35 @@ func filterStubFilterSubject(
 	}
 }
 
-// filterStubDrainSubject returns the subject of [stub.Behaviour] for
-// Drain. The subject calls a new double that reports to tb.
+// filterStubDrainSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Drain. The subject calls a new double that
+// reports to tb.
 func filterStubDrainSubject(tb assert.TB) stub.Subject[selfnamedtest.FilterDrainCall, selfnamedtest.FilterDrainReturn] {
 	tb.Helper()
 	s := selfnamedtest.NewFilterStub(tb)
 	return stub.Subject[selfnamedtest.FilterDrainCall, selfnamedtest.FilterDrainReturn]{
-		Stub: s.OnDrain.MethodStub,
+		Stub:  s.OnDrain.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = filterStubDrain(tb, s)
+		},
+		Arguments: func(tb assert.TB, c selfnamedtest.FilterDrainCall) {
+			tb.Helper()
+			a0 := filterStubDrainArgs(tb)
+			assert.Equal(tb, c.Src, a0, "the call records Src")
 		},
 		Result: func() selfnamedtest.FilterDrainReturn {
 			got0 := filterStubDrain(tb, s)
 			return selfnamedtest.FilterDrainReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnDrain.Func(func(_ selfnamed.Source) int {
-				mark()
+		Returns: func() selfnamedtest.FilterDrainReturn {
+			want0 := filterStubDrainPins()
+			s.OnDrain.Returns(want0)
+			return selfnamedtest.FilterDrainReturn{Result: want0}
+		},
+		Override: func(seen func(selfnamedtest.FilterDrainCall)) {
+			s.OnDrain.Func(func(p0 selfnamed.Source) int {
+				seen(selfnamedtest.FilterDrainCall{Src: p0})
 				var z0 int
 				return z0
 			})
@@ -121,7 +145,6 @@ func filterStubInstanceOf(tb assert.TB, s *selfnamedtest.FilterStub) filterStubI
 		Call: func() {
 			_ = filterStubFilter(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -133,98 +156,24 @@ func TestFilterStub(t *testing.T) {
 	t.Run("Filter", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Filter", filterStubFilterSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			_ = filterStubFilter(t, s)
-			got := s.OnFilter.AssertCalledOnce(t, "Filter records the call")
-			a0 := filterStubFilterArgs(t)
-			assert.Equal(t, got.Item, a0, "the call records Item")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			var seen []selfnamedtest.FilterFilterCall
-			s.OnFilter.OnRecord(func(c selfnamedtest.FilterFilterCall) { seen = append(seen, c) })
-			_ = filterStubFilter(t, s)
-			_ = filterStubFilter(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Filter")
-		})
 	})
 
 	t.Run("Drain", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Drain", filterStubDrainSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			_ = filterStubDrain(t, s)
-			got := s.OnDrain.AssertCalledOnce(t, "Drain records the call")
-			a0 := filterStubDrainArgs(t)
-			assert.Equal(t, got.Src, a0, "the call records Src")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			var seen []selfnamedtest.FilterDrainCall
-			s.OnDrain.OnRecord(func(c selfnamedtest.FilterDrainCall) { seen = append(seen, c) })
-			_ = filterStubDrain(t, s)
-			_ = filterStubDrain(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Drain")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) filterStubInstance {
-			return filterStubInstanceOf(tb, selfnamedtest.NewFilterStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Filter", func(t *testing.T) {
+		t.Run("Filter", func(t *testing.T) {
 			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			_ = filterStubFilter(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFilter.CallCount(), 0, "ResetCalls clears the calls of Filter")
+			stub.ResetBehaviour(t, "Filter", filterStubFilterSubject)
 		})
 
-		t.Run("keeps the results of Returns of Filter", func(t *testing.T) {
+		t.Run("Drain", func(t *testing.T) {
 			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			want0 := filterStubFilterPins()
-			s.OnFilter.Returns(want0)
-			s.ResetCalls()
-			got0 := filterStubFilter(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Filter")
-		})
-
-		t.Run("clears the recorded calls of Drain", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			_ = filterStubDrain(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnDrain.CallCount(), 0, "ResetCalls clears the calls of Drain")
-		})
-
-		t.Run("keeps the results of Returns of Drain", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			want0 := filterStubDrainPins()
-			s.OnDrain.Returns(want0)
-			s.ResetCalls()
-			got0 := filterStubDrain(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Drain")
-		})
-	})
-
-	t.Run("NewFilterStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) filterStubInstance {
-			return filterStubInstanceOf(tb, selfnamedtest.NewFilterStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Drain", filterStubDrainSubject)
 		})
 	})
 
@@ -326,100 +275,4 @@ func TestFilterStub(t *testing.T) {
 	})
 }
 
-// TestFilterFilterStub checks the methods of FilterFilterStub, which
-// configures Filter.
-func TestFilterFilterStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Filter", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			want0 := filterStubFilterPins()
-			s.OnFilter.Returns(want0)
-			got0 := filterStubFilter(t, s)
-			assert.Equal(t, got0, want0, "Filter returns the Result that Returns sets")
-		})
-
-		t.Run("configures Filter for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := selfnamedtest.NewFilterStub(r)
-			s.OnFilter.Strict()
-			var want0 bool
-			s.OnFilter.Returns(want0)
-			_ = filterStubFilter(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Filter")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Filter to the function", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			var got0 string
-			s.OnFilter.Func(func(p0 string) bool {
-				got0 = p0
-				var z0 bool
-				return z0
-			})
-			_ = filterStubFilter(t, s)
-			a0 := filterStubFilterArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Item")
-		})
-	})
-}
-
-// TestFilterDrainStub checks the methods of FilterDrainStub, which
-// configures Drain.
-func TestFilterDrainStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Drain", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			want0 := filterStubDrainPins()
-			s.OnDrain.Returns(want0)
-			got0 := filterStubDrain(t, s)
-			assert.Equal(t, got0, want0, "Drain returns the Result that Returns sets")
-		})
-
-		t.Run("configures Drain for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := selfnamedtest.NewFilterStub(r)
-			s.OnDrain.Strict()
-			var want0 int
-			s.OnDrain.Returns(want0)
-			_ = filterStubDrain(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Drain")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Drain to the function", func(t *testing.T) {
-			t.Parallel()
-			s := selfnamedtest.NewFilterStub(t)
-			var got0 selfnamed.Source
-			s.OnDrain.Func(func(p0 selfnamed.Source) int {
-				got0 = p0
-				var z0 int
-				return z0
-			})
-			_ = filterStubDrain(t, s)
-			a0 := filterStubDrainArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Src")
-		})
-	})
-}
-
-// dokimi:provenance sha256:b6a60aeef4e2dae24b0e3736151104eda9229cb19bf06bb8cc0065d0a19f591f
+// dokimi:provenance sha256:4937343482fe4027406940b2d6bc9a6751e6bcbe6e70b16c6ab055adf217775c

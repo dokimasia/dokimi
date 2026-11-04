@@ -20,19 +20,21 @@ func voidLifecycleStubStop(tb assert.TB, s *voidlifecycletest.VoidLifecycleStub)
 	s.Stop()
 }
 
-// voidLifecycleStubStopSubject returns the subject of [stub.Behaviour] for
-// Stop. The subject calls a new double that reports to tb.
+// voidLifecycleStubStopSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Stop. The subject calls a new double that
+// reports to tb.
 func voidLifecycleStubStopSubject(tb assert.TB) stub.Subject[voidlifecycletest.VoidLifecycleStopCall, struct{}] {
 	tb.Helper()
 	s := voidlifecycletest.NewVoidLifecycleStub(tb)
 	return stub.Subject[voidlifecycletest.VoidLifecycleStopCall, struct{}]{
-		Stub: s.OnStop.MethodStub,
+		Stub:  s.OnStop.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			voidLifecycleStubStop(tb, s)
 		},
-		Override: func(mark func()) {
+		Override: func(seen func(voidlifecycletest.VoidLifecycleStopCall)) {
 			s.OnStop.Func(func() {
-				mark()
+				seen(voidlifecycletest.VoidLifecycleStopCall{})
 			})
 		},
 	}
@@ -52,7 +54,6 @@ func voidLifecycleStubInstanceOf(tb assert.TB, s *voidlifecycletest.VoidLifecycl
 		Call: func() {
 			voidLifecycleStubStop(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -64,37 +65,14 @@ func TestVoidLifecycleStub(t *testing.T) {
 	t.Run("Stop", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Stop", voidLifecycleStubStopSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := voidlifecycletest.NewVoidLifecycleStub(t)
-			var seen []voidlifecycletest.VoidLifecycleStopCall
-			s.OnStop.OnRecord(func(c voidlifecycletest.VoidLifecycleStopCall) { seen = append(seen, c) })
-			voidLifecycleStubStop(t, s)
-			voidLifecycleStubStop(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Stop")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) voidLifecycleStubInstance {
-			return voidLifecycleStubInstanceOf(tb, voidlifecycletest.NewVoidLifecycleStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Stop", func(t *testing.T) {
+		t.Run("Stop", func(t *testing.T) {
 			t.Parallel()
-			s := voidlifecycletest.NewVoidLifecycleStub(t)
-			voidLifecycleStubStop(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStop.CallCount(), 0, "ResetCalls clears the calls of Stop")
-		})
-	})
-
-	t.Run("NewVoidLifecycleStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) voidLifecycleStubInstance {
-			return voidLifecycleStubInstanceOf(tb, voidlifecycletest.NewVoidLifecycleStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Stop", voidLifecycleStubStopSubject)
 		})
 	})
 
@@ -179,4 +157,4 @@ func TestVoidLifecycleStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:46732ae879345e4c6c42479fe580c817e69b8cec56b0c0030d37eecf5d2f08bd
+// dokimi:provenance sha256:4ffcf50a4e6ba566007f08ab63823530bbe812dd6cafd811f61d9f78482dcfd9

@@ -48,102 +48,7 @@ func TestLedgerSuite(t *testing.T) {
 				},
 				Defect: func(*ledgertest.LedgerHandle) ledger.Ledger { return &ledgerSubject{} },
 			}),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.Transaction(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.TransactionGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.TransactionUnderFaults(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.TransactionUnderFaultsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[ledger.Ledger]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -165,110 +70,20 @@ func TestLedgerSuite(t *testing.T) {
 				},
 				Defect: func(*ledgertest.LedgerHandle) ledger.Ledger { return &ledgerSubject{} },
 			}),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.Transaction(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.TransactionGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.TransactionUnderFaults(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Run.TransactionUnderFaultsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Put.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledgertest.LedgerChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[ledger.Ledger]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// ledgerSuite is the suite of Ledger that the tests of the planted defect
+// of a ceiling apply.
+var ledgerSuite = ledgertest.LedgerSuite()
+
 // ledgerIdle returns the planted defect of a ceiling of Ledger with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func ledgerIdle(h *ledgertest.LedgerHandle) ledger.Ledger {
-	return ledgertest.LedgerSuite().Calls[0].Over(h, func() {})
+	return ledgerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestLedgerSuiteBudgets applies the allocation ceilings of the suite of
@@ -282,102 +97,7 @@ func TestLedgerSuiteBudgets(t *testing.T) {
 		conform.Ceilings(ledgertest.LedgerChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(ledgertest.LedgerChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(ledgertest.LedgerChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Transaction(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[ledger.Ledger]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -388,102 +108,7 @@ func FuzzLedgerSuiteRun(f *testing.F) {
 		f,
 		ledgertest.LedgerChecks.Run.Callable,
 		ledgerIdle,
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Transaction(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[ledger.Ledger]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -494,102 +119,7 @@ func FuzzLedgerSuitePut(f *testing.F) {
 		f,
 		ledgertest.LedgerChecks.Put.Callable,
 		ledgerIdle,
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Transaction(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[ledger.Ledger]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -600,102 +130,7 @@ func FuzzLedgerSuiteGet(f *testing.F) {
 		f,
 		ledgertest.LedgerChecks.Get.Callable,
 		ledgerIdle,
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.Transaction(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Run.TransactionUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledgertest.LedgerChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[ledger.Ledger]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -713,4 +148,4 @@ func BenchmarkLedgerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:43921be4b2a13ca24e070c679e38123f3e3c97b14ab63e9a428bf159652becd0
+// dokimi:provenance sha256:85f11d0a703eae4154c66032b1ec75b544b4116f33100d2a7b1ef09f16a34d4a

@@ -82,25 +82,38 @@ func mixedStubVerifyPins() error {
 	return want0
 }
 
-// mixedStubStoreSubject returns the subject of [stub.Behaviour] for Store.
-// The subject calls a new double that reports to tb.
+// mixedStubStoreSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Store. The subject calls a new double that
+// reports to tb.
 func mixedStubStoreSubject(
 	tb assert.TB,
 ) stub.Subject[tamperevidenttest.MixedStoreCall, tamperevidenttest.MixedStoreReturn] {
 	tb.Helper()
 	s := tamperevidenttest.NewMixedStub(tb)
 	return stub.Subject[tamperevidenttest.MixedStoreCall, tamperevidenttest.MixedStoreReturn]{
-		Stub: s.OnStore.MethodStub,
+		Stub:  s.OnStore.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubStore(tb, s)
+		},
+		Arguments: func(tb assert.TB, c tamperevidenttest.MixedStoreCall) {
+			tb.Helper()
+			a0, a1 := mixedStubStoreArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Body, a1, "the call records Body")
 		},
 		Result: func() tamperevidenttest.MixedStoreReturn {
 			got0 := mixedStubStore(tb, s)
 			return tamperevidenttest.MixedStoreReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnStore.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() tamperevidenttest.MixedStoreReturn {
+			want0 := mixedStubStorePins()
+			s.OnStore.Returns(want0)
+			return tamperevidenttest.MixedStoreReturn{Err: want0}
+		},
+		Override: func(seen func(tamperevidenttest.MixedStoreCall)) {
+			s.OnStore.Func(func(p0 context.Context, p1 string) error {
+				seen(tamperevidenttest.MixedStoreCall{Ctx: p0, Body: p1})
 				var z0 error
 				return z0
 			})
@@ -112,25 +125,37 @@ func mixedStubStoreSubject(
 	}
 }
 
-// mixedStubCorruptSubject returns the subject of [stub.Behaviour] for
-// Corrupt. The subject calls a new double that reports to tb.
+// mixedStubCorruptSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Corrupt. The subject calls a new double that
+// reports to tb.
 func mixedStubCorruptSubject(
 	tb assert.TB,
 ) stub.Subject[tamperevidenttest.MixedCorruptCall, tamperevidenttest.MixedCorruptReturn] {
 	tb.Helper()
 	s := tamperevidenttest.NewMixedStub(tb)
 	return stub.Subject[tamperevidenttest.MixedCorruptCall, tamperevidenttest.MixedCorruptReturn]{
-		Stub: s.OnCorrupt.MethodStub,
+		Stub:  s.OnCorrupt.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubCorrupt(tb, s)
+		},
+		Arguments: func(tb assert.TB, c tamperevidenttest.MixedCorruptCall) {
+			tb.Helper()
+			a0 := mixedStubCorruptArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() tamperevidenttest.MixedCorruptReturn {
 			got0 := mixedStubCorrupt(tb, s)
 			return tamperevidenttest.MixedCorruptReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnCorrupt.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() tamperevidenttest.MixedCorruptReturn {
+			want0 := mixedStubCorruptPins()
+			s.OnCorrupt.Returns(want0)
+			return tamperevidenttest.MixedCorruptReturn{Err: want0}
+		},
+		Override: func(seen func(tamperevidenttest.MixedCorruptCall)) {
+			s.OnCorrupt.Func(func(p0 context.Context) error {
+				seen(tamperevidenttest.MixedCorruptCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -142,25 +167,37 @@ func mixedStubCorruptSubject(
 	}
 }
 
-// mixedStubVerifySubject returns the subject of [stub.Behaviour] for
-// Verify. The subject calls a new double that reports to tb.
+// mixedStubVerifySubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Verify. The subject calls a new double that
+// reports to tb.
 func mixedStubVerifySubject(
 	tb assert.TB,
 ) stub.Subject[tamperevidenttest.MixedVerifyCall, tamperevidenttest.MixedVerifyReturn] {
 	tb.Helper()
 	s := tamperevidenttest.NewMixedStub(tb)
 	return stub.Subject[tamperevidenttest.MixedVerifyCall, tamperevidenttest.MixedVerifyReturn]{
-		Stub: s.OnVerify.MethodStub,
+		Stub:  s.OnVerify.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubVerify(tb, s)
+		},
+		Arguments: func(tb assert.TB, c tamperevidenttest.MixedVerifyCall) {
+			tb.Helper()
+			a0 := mixedStubVerifyArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() tamperevidenttest.MixedVerifyReturn {
 			got0 := mixedStubVerify(tb, s)
 			return tamperevidenttest.MixedVerifyReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnVerify.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() tamperevidenttest.MixedVerifyReturn {
+			want0 := mixedStubVerifyPins()
+			s.OnVerify.Returns(want0)
+			return tamperevidenttest.MixedVerifyReturn{Err: want0}
+		},
+		Override: func(seen func(tamperevidenttest.MixedVerifyCall)) {
+			s.OnVerify.Func(func(p0 context.Context) error {
+				seen(tamperevidenttest.MixedVerifyCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -185,7 +222,6 @@ func mixedStubInstanceOf(tb assert.TB, s *tamperevidenttest.MixedStub) mixedStub
 		Call: func() {
 			_ = mixedStubStore(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -197,169 +233,34 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Store", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Store", mixedStubStoreSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			_ = mixedStubStore(t, s)
-			got := s.OnStore.AssertCalledOnce(t, "Store records the call")
-			a0, a1 := mixedStubStoreArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Body, a1, "the call records Body")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			var seen []tamperevidenttest.MixedStoreCall
-			s.OnStore.OnRecord(func(c tamperevidenttest.MixedStoreCall) { seen = append(seen, c) })
-			_ = mixedStubStore(t, s)
-			_ = mixedStubStore(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Store")
-		})
 	})
 
 	t.Run("Corrupt", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Corrupt", mixedStubCorruptSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			_ = mixedStubCorrupt(t, s)
-			got := s.OnCorrupt.AssertCalledOnce(t, "Corrupt records the call")
-			a0 := mixedStubCorruptArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			var seen []tamperevidenttest.MixedCorruptCall
-			s.OnCorrupt.OnRecord(func(c tamperevidenttest.MixedCorruptCall) { seen = append(seen, c) })
-			_ = mixedStubCorrupt(t, s)
-			_ = mixedStubCorrupt(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Corrupt")
-		})
 	})
 
 	t.Run("Verify", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Verify", mixedStubVerifySubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			_ = mixedStubVerify(t, s)
-			got := s.OnVerify.AssertCalledOnce(t, "Verify records the call")
-			a0 := mixedStubVerifyArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			var seen []tamperevidenttest.MixedVerifyCall
-			s.OnVerify.OnRecord(func(c tamperevidenttest.MixedVerifyCall) { seen = append(seen, c) })
-			_ = mixedStubVerify(t, s)
-			_ = mixedStubVerify(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Verify")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, tamperevidenttest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Store", func(t *testing.T) {
+		t.Run("Store", func(t *testing.T) {
 			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			_ = mixedStubStore(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStore.CallCount(), 0, "ResetCalls clears the calls of Store")
+			stub.ResetBehaviour(t, "Store", mixedStubStoreSubject)
 		})
 
-		t.Run("keeps the results of Returns of Store", func(t *testing.T) {
+		t.Run("Corrupt", func(t *testing.T) {
 			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			want0 := mixedStubStorePins()
-			s.OnStore.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Store")
+			stub.ResetBehaviour(t, "Corrupt", mixedStubCorruptSubject)
 		})
 
-		t.Run("clears the recorded calls of Corrupt", func(t *testing.T) {
+		t.Run("Verify", func(t *testing.T) {
 			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			_ = mixedStubCorrupt(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnCorrupt.CallCount(), 0, "ResetCalls clears the calls of Corrupt")
-		})
-
-		t.Run("keeps the results of Returns of Corrupt", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			want0 := mixedStubCorruptPins()
-			s.OnCorrupt.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubCorrupt(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Corrupt")
-		})
-
-		t.Run("clears the recorded calls of Verify", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			_ = mixedStubVerify(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnVerify.CallCount(), 0, "ResetCalls clears the calls of Verify")
-		})
-
-		t.Run("keeps the results of Returns of Verify", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			want0 := mixedStubVerifyPins()
-			s.OnVerify.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubVerify(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Verify")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, tamperevidenttest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Store with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Store-failing")
-			s := tamperevidenttest.NewMixedStubFailing(t, want)
-			r0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, r0, want, "Store fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Corrupt with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Corrupt-failing")
-			s := tamperevidenttest.NewMixedStubFailing(t, want)
-			r0 := mixedStubCorrupt(t, s)
-			assert.ErrorIs(t, r0, want, "Corrupt fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Verify with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Verify-failing")
-			s := tamperevidenttest.NewMixedStubFailing(t, want)
-			r0 := mixedStubVerify(t, s)
-			assert.ErrorIs(t, r0, want, "Verify fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Verify", mixedStubVerifySubject)
 		})
 	})
 
@@ -549,150 +450,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedStoreStub checks the methods of MixedStoreStub, which
-// configures Store.
-func TestMixedStoreStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Store", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			want0 := mixedStubStorePins()
-			s.OnStore.Returns(want0)
-			got0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, got0, want0, "Store returns the error that Returns sets")
-		})
-
-		t.Run("configures Store for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := tamperevidenttest.NewMixedStub(r)
-			s.OnStore.Strict()
-			var want0 error
-			s.OnStore.Returns(want0)
-			_ = mixedStubStore(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Store")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Store to the function", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnStore.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubStore(t, s)
-			a0, a1 := mixedStubStoreArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Body")
-		})
-	})
-}
-
-// TestMixedCorruptStub checks the methods of MixedCorruptStub, which
-// configures Corrupt.
-func TestMixedCorruptStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Corrupt", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			want0 := mixedStubCorruptPins()
-			s.OnCorrupt.Returns(want0)
-			got0 := mixedStubCorrupt(t, s)
-			assert.ErrorIs(t, got0, want0, "Corrupt returns the error that Returns sets")
-		})
-
-		t.Run("configures Corrupt for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := tamperevidenttest.NewMixedStub(r)
-			s.OnCorrupt.Strict()
-			var want0 error
-			s.OnCorrupt.Returns(want0)
-			_ = mixedStubCorrupt(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Corrupt")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Corrupt to the function", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnCorrupt.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = mixedStubCorrupt(t, s)
-			a0 := mixedStubCorruptArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// TestMixedVerifyStub checks the methods of MixedVerifyStub, which
-// configures Verify.
-func TestMixedVerifyStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Verify", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			want0 := mixedStubVerifyPins()
-			s.OnVerify.Returns(want0)
-			got0 := mixedStubVerify(t, s)
-			assert.ErrorIs(t, got0, want0, "Verify returns the error that Returns sets")
-		})
-
-		t.Run("configures Verify for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := tamperevidenttest.NewMixedStub(r)
-			s.OnVerify.Strict()
-			var want0 error
-			s.OnVerify.Returns(want0)
-			_ = mixedStubVerify(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Verify")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Verify to the function", func(t *testing.T) {
-			t.Parallel()
-			s := tamperevidenttest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnVerify.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = mixedStubVerify(t, s)
-			a0 := mixedStubVerifyArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:f16e0701cd88055b5f8bd5e5ad127e6d6868ed50b75f0d71a68d7b5468a03b95
+// dokimi:provenance sha256:d717fa7e0fa10af61bd4bac6689eb6f4c8fcfac17e4c58946511bc9887f0626d

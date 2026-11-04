@@ -82,25 +82,38 @@ func storeStubTouch(tb assert.TB, s *receivercollisiontest.StoreStub) {
 	s.Touch(a0, a1)
 }
 
-// storeStubPutSubject returns the subject of [stub.Behaviour] for Put. The
-// subject calls a new double that reports to tb.
+// storeStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func storeStubPutSubject(
 	tb assert.TB,
 ) stub.Subject[receivercollisiontest.StorePutCall, receivercollisiontest.StorePutReturn] {
 	tb.Helper()
 	s := receivercollisiontest.NewStoreStub(tb)
 	return stub.Subject[receivercollisiontest.StorePutCall, receivercollisiontest.StorePutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = storeStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c receivercollisiontest.StorePutCall) {
+			tb.Helper()
+			a0, a1 := storeStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.S, a1, "the call records S")
 		},
 		Result: func() receivercollisiontest.StorePutReturn {
 			got0 := storeStubPut(tb, s)
 			return receivercollisiontest.StorePutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ receivercollision.Session) error {
-				mark()
+		Returns: func() receivercollisiontest.StorePutReturn {
+			want0 := storeStubPutPins()
+			s.OnPut.Returns(want0)
+			return receivercollisiontest.StorePutReturn{Err: want0}
+		},
+		Override: func(seen func(receivercollisiontest.StorePutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1 receivercollision.Session) error {
+				seen(receivercollisiontest.StorePutCall{Ctx: p0, S: p1})
 				var z0 error
 				return z0
 			})
@@ -112,25 +125,38 @@ func storeStubPutSubject(
 	}
 }
 
-// storeStubGetSubject returns the subject of [stub.Behaviour] for Get. The
-// subject calls a new double that reports to tb.
+// storeStubGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func storeStubGetSubject(
 	tb assert.TB,
 ) stub.Subject[receivercollisiontest.StoreGetCall, receivercollisiontest.StoreGetReturn] {
 	tb.Helper()
 	s := receivercollisiontest.NewStoreStub(tb)
 	return stub.Subject[receivercollisiontest.StoreGetCall, receivercollisiontest.StoreGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = storeStubGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c receivercollisiontest.StoreGetCall) {
+			tb.Helper()
+			a0, a1 := storeStubGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.S, a1, "the call records S")
 		},
 		Result: func() receivercollisiontest.StoreGetReturn {
 			got0, got1 := storeStubGet(tb, s)
 			return receivercollisiontest.StoreGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (receivercollision.Session, error) {
-				mark()
+		Returns: func() receivercollisiontest.StoreGetReturn {
+			want0, want1 := storeStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return receivercollisiontest.StoreGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(receivercollisiontest.StoreGetCall)) {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (receivercollision.Session, error) {
+				seen(receivercollisiontest.StoreGetCall{Ctx: p0, S: p1})
 				var z0 receivercollision.Session
 				var z1 error
 				return z0, z1
@@ -143,19 +169,27 @@ func storeStubGetSubject(
 	}
 }
 
-// storeStubTouchSubject returns the subject of [stub.Behaviour] for Touch.
-// The subject calls a new double that reports to tb.
+// storeStubTouchSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Touch. The subject calls a new double that
+// reports to tb.
 func storeStubTouchSubject(tb assert.TB) stub.Subject[receivercollisiontest.StoreTouchCall, struct{}] {
 	tb.Helper()
 	s := receivercollisiontest.NewStoreStub(tb)
 	return stub.Subject[receivercollisiontest.StoreTouchCall, struct{}]{
-		Stub: s.OnTouch.MethodStub,
+		Stub:  s.OnTouch.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			storeStubTouch(tb, s)
 		},
-		Override: func(mark func()) {
-			s.OnTouch.Func(func(_ context.Context, _ receivercollision.Session) {
-				mark()
+		Arguments: func(tb assert.TB, c receivercollisiontest.StoreTouchCall) {
+			tb.Helper()
+			a0, a1 := storeStubTouchArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.S, a1, "the call records S")
+		},
+		Override: func(seen func(receivercollisiontest.StoreTouchCall)) {
+			s.OnTouch.Func(func(p0 context.Context, p1 receivercollision.Session) {
+				seen(receivercollisiontest.StoreTouchCall{Ctx: p0, S: p1})
 			})
 		},
 	}
@@ -174,7 +208,6 @@ func storeStubInstanceOf(tb assert.TB, s *receivercollisiontest.StoreStub) store
 		Call: func() {
 			_ = storeStubPut(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -186,154 +219,34 @@ func TestStoreStub(t *testing.T) {
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", storeStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			_ = storeStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1 := storeStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.S, a1, "the call records S")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			var seen []receivercollisiontest.StorePutCall
-			s.OnPut.OnRecord(func(c receivercollisiontest.StorePutCall) { seen = append(seen, c) })
-			_ = storeStubPut(t, s)
-			_ = storeStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Get", storeStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			_, _ = storeStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := storeStubGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.S, a1, "the call records S")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			var seen []receivercollisiontest.StoreGetCall
-			s.OnGet.OnRecord(func(c receivercollisiontest.StoreGetCall) { seen = append(seen, c) })
-			_, _ = storeStubGet(t, s)
-			_, _ = storeStubGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("Touch", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Touch", storeStubTouchSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			storeStubTouch(t, s)
-			got := s.OnTouch.AssertCalledOnce(t, "Touch records the call")
-			a0, a1 := storeStubTouchArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.S, a1, "the call records S")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			var seen []receivercollisiontest.StoreTouchCall
-			s.OnTouch.OnRecord(func(c receivercollisiontest.StoreTouchCall) { seen = append(seen, c) })
-			storeStubTouch(t, s)
-			storeStubTouch(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Touch")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) storeStubInstance {
-			return storeStubInstanceOf(tb, receivercollisiontest.NewStoreStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			_ = storeStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+			stub.ResetBehaviour(t, "Put", storeStubPutSubject)
 		})
 
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			want0 := storeStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := storeStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+			stub.ResetBehaviour(t, "Get", storeStubGetSubject)
 		})
 
-		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+		t.Run("Touch", func(t *testing.T) {
 			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			_, _ = storeStubGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
-		})
-
-		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			want0, want1 := storeStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := storeStubGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
-		})
-
-		t.Run("clears the recorded calls of Touch", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			storeStubTouch(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnTouch.CallCount(), 0, "ResetCalls clears the calls of Touch")
-		})
-	})
-
-	t.Run("NewStoreStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
-			return storeStubInstanceOf(tb, receivercollisiontest.NewStoreStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewStoreStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := receivercollisiontest.NewStoreStubFailing(t, want)
-			r0 := storeStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Get with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Get-failing")
-			s := receivercollisiontest.NewStoreStubFailing(t, want)
-			_, r1 := storeStubGet(t, s)
-			assert.ErrorIs(t, r1, want, "Get fails with the error of NewStoreStubFailing")
+			stub.ResetBehaviour(t, "Touch", storeStubTouchSubject)
 		})
 	})
 
@@ -518,131 +431,4 @@ func TestStoreStub(t *testing.T) {
 	})
 }
 
-// TestStorePutStub checks the methods of StorePutStub, which configures
-// Put.
-func TestStorePutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			want0 := storeStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := storeStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := receivercollisiontest.NewStoreStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = storeStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 receivercollision.Session
-			s.OnPut.Func(func(p0 context.Context, p1 receivercollision.Session) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = storeStubPut(t, s)
-			a0, a1 := storeStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives S")
-		})
-	})
-}
-
-// TestStoreGetStub checks the methods of StoreGetStub, which configures
-// Get.
-func TestStoreGetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			want0, want1 := storeStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := storeStubGet(t, s)
-			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := receivercollisiontest.NewStoreStub(r)
-			s.OnGet.Strict()
-			var want0 receivercollision.Session
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = storeStubGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (receivercollision.Session, error) {
-				got0, got1 = p0, p1
-				var z0 receivercollision.Session
-				var z1 error
-				return z0, z1
-			})
-			_, _ = storeStubGet(t, s)
-			a0, a1 := storeStubGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives S")
-		})
-	})
-}
-
-// TestStoreTouchStub checks the methods of StoreTouchStub, which
-// configures Touch.
-func TestStoreTouchStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Touch to the function", func(t *testing.T) {
-			t.Parallel()
-			s := receivercollisiontest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 receivercollision.Session
-			s.OnTouch.Func(func(p0 context.Context, p1 receivercollision.Session) {
-				got0, got1 = p0, p1
-			})
-			storeStubTouch(t, s)
-			a0, a1 := storeStubTouchArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives S")
-		})
-	})
-}
-
-// dokimi:provenance sha256:9fd4b606407515c34d983f89f2ffff9d9123f8fac1939241d63c38ca4b3b5552
+// dokimi:provenance sha256:f2c13dfba325c267e0fe6927151d371cee7bf35f363252ae1df1048e6fe6cbd9

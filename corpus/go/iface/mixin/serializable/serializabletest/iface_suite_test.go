@@ -48,90 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*serializabletest.MixedHandle) serializable.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				serializabletest.MixedChecks.Begin.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Begin.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Begin.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Begin.Tx(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Commit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Commit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Commit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Commit.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Rollback.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Rollback.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Rollback.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Rollback.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.Serializable(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[serializable.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -153,98 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*serializabletest.MixedHandle) serializable.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				serializabletest.MixedChecks.Begin.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Begin.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Begin.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Begin.Tx(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Commit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Commit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Commit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Commit.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Rollback.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Rollback.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Rollback.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Rollback.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Append.Serializable(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				serializabletest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[serializable.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = serializabletest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *serializabletest.MixedHandle) serializable.Mixed {
-	return serializabletest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -260,89 +98,8 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(serializabletest.MixedChecks.Rollback.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(serializabletest.MixedChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(serializabletest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Tx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Serializable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[serializable.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -354,89 +111,8 @@ func FuzzMixedSuiteBegin(f *testing.F) {
 		f,
 		serializabletest.MixedChecks.Begin.Callable,
 		mixedIdle,
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Tx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Serializable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[serializable.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -448,89 +124,8 @@ func FuzzMixedSuiteCommit(f *testing.F) {
 		f,
 		serializabletest.MixedChecks.Commit.Callable,
 		mixedIdle,
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Tx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Serializable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[serializable.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -542,89 +137,8 @@ func FuzzMixedSuiteRollback(f *testing.F) {
 		f,
 		serializabletest.MixedChecks.Rollback.Callable,
 		mixedIdle,
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Tx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Serializable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[serializable.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -636,89 +150,8 @@ func FuzzMixedSuiteAppend(f *testing.F) {
 		f,
 		serializabletest.MixedChecks.Append.Callable,
 		mixedIdle,
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Tx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Serializable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[serializable.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -730,89 +163,8 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		serializabletest.MixedChecks.Get.Callable,
 		mixedIdle,
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Begin.Tx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Commit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Rollback.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Append.Serializable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			serializabletest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[serializable.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -837,4 +189,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3fc1adcac6072be6c7a6c50347e25480ab0200e8462465538fd76458b79242c7
+// dokimi:provenance sha256:2a4c6f1d3a09bb4f65c433459f7aa370c6fe891375e2d1eaf57856c3b851e02d

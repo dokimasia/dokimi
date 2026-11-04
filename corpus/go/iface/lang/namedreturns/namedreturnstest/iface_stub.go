@@ -249,21 +249,6 @@ func NewServiceStub(tb assert.TB, opts ...ServiceStubOption) *ServiceStub {
 	return s
 }
 
-// NewServiceStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewServiceStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ServiceStubOption) *ServiceStub {
-	return NewServiceStub(tb, append([]ServiceStubOption{
-		ServiceStubWithClock(clk),
-		ServiceStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewServiceStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewServiceStubFailing(tb assert.TB, err error, opts ...ServiceStubOption) *ServiceStub {
-	return NewServiceStub(tb, append([]ServiceStubOption{ServiceStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ServiceStub) ResetCalls() {
@@ -361,4 +346,4 @@ func (s *ServiceStub) PartiallyNamed(ctx context.Context, id string) (string, er
 	return r.Item, r.Err
 }
 
-// dokimi:provenance sha256:4a8f6429b05da313e1b4cfeef2c2e8b267c9f97cfeda8707d5bb389d0ff6ae9e
+// dokimi:provenance sha256:6e0bc8abc648a57aad40adba5278ee81daeb1766e13bad3be812e3fed446b59f

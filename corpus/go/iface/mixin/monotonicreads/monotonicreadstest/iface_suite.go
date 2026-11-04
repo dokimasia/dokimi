@@ -16,57 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Store/smoke: Store returns without a panic for derived inputs.
-//
-// Mixed.Store/smoke#generated: Store returns without a panic for derived
-// inputs.
-//
-// Mixed.Store/cancel: Store returns an error for a cancelled context.
-//
-// Mixed.Store/cancel#generated: Store returns an error for a cancelled
-// context.
-//
-// Mixed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mixed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mixed.Get/cancel: Get returns an error for a cancelled context.
-//
-// Mixed.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Mixed.Get/monotonic-reads: Get never returns an older version than one
-// that it returned before.
-//
-// Mixed.Get/monotonic-reads#generated: Get never returns an older version
-// than one that it returned before.
-//
-// Mixed.Get/reads-never-go-back: Get never returns a version below one
-// that it returned before, over any sequence of calls.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Store/smoke
-//
-// Mixed.Get/smoke
-//
-// Mixed.Get/monotonic-reads
-//
-// Mixed.Get/monotonic-reads#generated
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Store has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -99,22 +48,10 @@ func (c mixedStore) Smoke() conform.ID[monotonicreads.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Store returns
-// without a panic for derived inputs.
-func (c mixedStore) SmokeGenerated() conform.ID[monotonicreads.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Store returns an error for
 // a cancelled context.
 func (c mixedStore) Cancel() conform.ID[monotonicreads.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Store returns an
-// error for a cancelled context.
-func (c mixedStore) CancelGenerated() conform.ID[monotonicreads.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
@@ -128,22 +65,10 @@ func (c mixedGet) Smoke() conform.ID[monotonicreads.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mixedGet) SmokeGenerated() conform.ID[monotonicreads.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[monotonicreads.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c mixedGet) CancelGenerated() conform.ID[monotonicreads.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Get returns the zero
@@ -152,22 +77,10 @@ func (c mixedGet) ZeroOnError() conform.ID[monotonicreads.Mixed] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c mixedGet) ZeroOnErrorGenerated() conform.ID[monotonicreads.Mixed] {
-	return c.Check("zero-on-error#generated")
-}
-
 // MonotonicReads returns the identity of the check that Get never returns
 // an older version than one that it returned before.
 func (c mixedGet) MonotonicReads() conform.ID[monotonicreads.Mixed] {
 	return c.Check("monotonic-reads")
-}
-
-// MonotonicReadsGenerated returns the identity of the check that Get never
-// returns an older version than one that it returned before.
-func (c mixedGet) MonotonicReadsGenerated() conform.ID[monotonicreads.Mixed] {
-	return c.Check("monotonic-reads#generated")
 }
 
 // ReadsNeverGoBack returns the identity of the check that Get never
@@ -189,9 +102,6 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				ID:          MixedChecks.Store.Smoke(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -202,12 +112,9 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				Defect: mixedStorePanics,
 			},
 			{
-				ID:          MixedChecks.Store.SmokeGenerated(),
+				ID:          MixedChecks.Store.Smoke().Generated(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[monotonicreads.Value](), "v")
@@ -221,9 +128,6 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				ID:          MixedChecks.Store.Cancel(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -233,12 +137,9 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				Defect: mixedStoreIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Store.CancelGenerated(),
+				ID:          MixedChecks.Store.Cancel().Generated(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[monotonicreads.Value](), "v")
@@ -252,9 +153,6 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				ID:          MixedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -266,12 +164,9 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Get.SmokeGenerated(),
+				ID:          MixedChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -286,9 +181,6 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -299,12 +191,9 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Get.CancelGenerated(),
+				ID:          MixedChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -319,9 +208,6 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				ID:          MixedChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (monotonicreads.Value, error) {
@@ -331,12 +217,9 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				Defect: mixedGetValueBeside,
 			},
 			{
-				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -350,9 +233,6 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				ID:          MixedChecks.Get.MonotonicReads(),
 				Statement:   "Get never returns an older version than one that it returned before",
 				Claim:       spec.MonotonicReads,
-				Probe:       spec.ReadsNeverRegress,
-				Reason:      spec.Regressed,
-				Law:         spec.ReadsNeverGoBackwards,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -365,12 +245,9 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				Defect: mixedGetVersionDescends,
 			},
 			{
-				ID:          MixedChecks.Get.MonotonicReadsGenerated(),
+				ID:          MixedChecks.Get.MonotonicReads().Generated(),
 				Statement:   "Get never returns an older version than one that it returned before",
 				Claim:       spec.MonotonicReads,
-				Probe:       spec.ReadsNeverRegress,
-				Reason:      spec.Regressed,
-				Law:         spec.ReadsNeverGoBackwards,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -387,9 +264,6 @@ func MixedSuite() conform.Suite[monotonicreads.Mixed] {
 				ID:          MixedChecks.Get.ReadsNeverGoBack(),
 				Statement:   "Get never returns a version below one that it returned before, over any sequence of calls",
 				Claim:       spec.ReadsNeverGoBack,
-				Probe:       spec.ReadVersionsNeverFall,
-				Reason:      spec.Regressed,
-				Law:         spec.ReadsNeverGoBackwards,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[monotonicreads.Mixed]{MixedChecks.Get.MonotonicReads()},
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -743,4 +617,4 @@ func mixedGetCall(ctx context.Context, subject monotonicreads.Mixed, args []any)
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:ed787da9c2b0cb6fb9944880a0226b6ff4d72978f191674da49f716bac2172bd
+// dokimi:provenance sha256:93e31ddbb3b80846c5d2971a35c3f9a338fe9203914b61607952b31763eef4d4

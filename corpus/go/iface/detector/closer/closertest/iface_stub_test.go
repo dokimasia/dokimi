@@ -28,13 +28,15 @@ func closerStubClosePins() error {
 	return want0
 }
 
-// closerStubCloseSubject returns the subject of [stub.Behaviour] for
-// Close. The subject calls a new double that reports to tb.
+// closerStubCloseSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Close. The subject calls a new double that
+// reports to tb.
 func closerStubCloseSubject(tb assert.TB) stub.Subject[closertest.CloserCloseCall, closertest.CloserCloseReturn] {
 	tb.Helper()
 	s := closertest.NewCloserStub(tb)
 	return stub.Subject[closertest.CloserCloseCall, closertest.CloserCloseReturn]{
-		Stub: s.OnClose.MethodStub,
+		Stub:  s.OnClose.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = closerStubClose(tb, s)
 		},
@@ -42,9 +44,14 @@ func closerStubCloseSubject(tb assert.TB) stub.Subject[closertest.CloserCloseCal
 			got0 := closerStubClose(tb, s)
 			return closertest.CloserCloseReturn{Err: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() closertest.CloserCloseReturn {
+			want0 := closerStubClosePins()
+			s.OnClose.Returns(want0)
+			return closertest.CloserCloseReturn{Err: want0}
+		},
+		Override: func(seen func(closertest.CloserCloseCall)) {
 			s.OnClose.Func(func() error {
-				mark()
+				seen(closertest.CloserCloseCall{})
 				var z0 error
 				return z0
 			})
@@ -69,7 +76,6 @@ func closerStubInstanceOf(tb assert.TB, s *closertest.CloserStub) closerStubInst
 		Call: func() {
 			_ = closerStubClose(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -81,59 +87,14 @@ func TestCloserStub(t *testing.T) {
 	t.Run("Close", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Close", closerStubCloseSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := closertest.NewCloserStub(t)
-			var seen []closertest.CloserCloseCall
-			s.OnClose.OnRecord(func(c closertest.CloserCloseCall) { seen = append(seen, c) })
-			_ = closerStubClose(t, s)
-			_ = closerStubClose(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) closerStubInstance {
-			return closerStubInstanceOf(tb, closertest.NewCloserStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+		t.Run("Close", func(t *testing.T) {
 			t.Parallel()
-			s := closertest.NewCloserStub(t)
-			_ = closerStubClose(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
-		})
-
-		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
-			t.Parallel()
-			s := closertest.NewCloserStub(t)
-			want0 := closerStubClosePins()
-			s.OnClose.Returns(want0)
-			s.ResetCalls()
-			got0 := closerStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
-		})
-	})
-
-	t.Run("NewCloserStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) closerStubInstance {
-			return closerStubInstanceOf(tb, closertest.NewCloserStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewCloserStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Close with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Close-failing")
-			s := closertest.NewCloserStubFailing(t, want)
-			r0 := closerStubClose(t, s)
-			assert.ErrorIs(t, r0, want, "Close fails with the error of NewCloserStubFailing")
+			stub.ResetBehaviour(t, "Close", closerStubCloseSubject)
 		})
 	})
 
@@ -226,34 +187,4 @@ func TestCloserStub(t *testing.T) {
 	})
 }
 
-// TestCloserCloseStub checks the methods of CloserCloseStub, which
-// configures Close.
-func TestCloserCloseStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Close", func(t *testing.T) {
-			t.Parallel()
-			s := closertest.NewCloserStub(t)
-			want0 := closerStubClosePins()
-			s.OnClose.Returns(want0)
-			got0 := closerStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
-		})
-
-		t.Run("configures Close for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := closertest.NewCloserStub(r)
-			s.OnClose.Strict()
-			var want0 error
-			s.OnClose.Returns(want0)
-			_ = closerStubClose(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
-		})
-	})
-}
-
-// dokimi:provenance sha256:7e057d412cfe2a2c31f1078193c71e975962bfa0b34e4c1981573fa2cab53f32
+// dokimi:provenance sha256:177da07421c9896bdc25b38b242ad52a262d08c1cb73839d8f48e90ab816cf41

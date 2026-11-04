@@ -192,30 +192,6 @@ func NewRankedStub[K genericbound.Ordered, V any](tb assert.TB, opts ...RankedSt
 	return s
 }
 
-// NewRankedStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewRankedStubDelayed[K genericbound.Ordered, V any](
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...RankedStubOption[K, V],
-) *RankedStub[K, V] {
-	return NewRankedStub[K, V](tb, append([]RankedStubOption[K, V]{
-		RankedStubWithClock[K, V](clk),
-		RankedStubWithLatency[K, V](d),
-	}, opts...)...)
-}
-
-// NewRankedStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewRankedStubFailing[K genericbound.Ordered, V any](
-	tb assert.TB,
-	err error,
-	opts ...RankedStubOption[K, V],
-) *RankedStub[K, V] {
-	return NewRankedStub[K, V](tb, append([]RankedStubOption[K, V]{RankedStubFailing[K, V](err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *RankedStub[K, V]) ResetCalls() {
@@ -279,4 +255,4 @@ func (s *RankedStub[K, V]) Reset(ctx context.Context) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:7dcc24a462ac548ffa45ba10959cdfe063b7719682f802403ec40fbc87592236
+// dokimi:provenance sha256:9adacc23b77a2627c5b607a582375e874eeced5d970571aeee78961452b261e0

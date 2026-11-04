@@ -49,18 +49,7 @@ func TestLifecycleSuite(t *testing.T) {
 				},
 				Defect: func(*lifecycletest.LifecycleHandle) lifecycle.Lifecycle { return &lifecycleSubject{} },
 			}),
-			conform.Excuse(
-				lifecycletest.LifecycleChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycletest.LifecycleChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycletest.LifecycleChecks.Close.Idempotent(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[lifecycle.Lifecycle]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -82,26 +71,20 @@ func TestLifecycleSuite(t *testing.T) {
 				},
 				Defect: func(*lifecycletest.LifecycleHandle) lifecycle.Lifecycle { return &lifecycleSubject{} },
 			}),
-			conform.Excuse(
-				lifecycletest.LifecycleChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycletest.LifecycleChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycletest.LifecycleChecks.Close.Idempotent(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[lifecycle.Lifecycle]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// lifecycleSuite is the suite of Lifecycle that the tests of the planted
+// defect of a ceiling apply.
+var lifecycleSuite = lifecycletest.LifecycleSuite()
+
 // lifecycleIdle returns the planted defect of a ceiling of Lifecycle with
-// a spend of nothing, a subject that answers each call at once.
+// a spend of nothing. Each call of the defect returns its zero results at
+// once.
 func lifecycleIdle(h *lifecycletest.LifecycleHandle) lifecycle.Lifecycle {
-	return lifecycletest.LifecycleSuite().Calls[0].Over(h, func() {})
+	return lifecycleSuite.Calls[0].Over(h, func() {})
 }
 
 // TestLifecycleSuiteBudgets applies the allocation ceilings of the suite
@@ -113,17 +96,8 @@ func TestLifecycleSuiteBudgets(t *testing.T) {
 		t,
 		lifecycleIdle,
 		conform.Ceilings(lifecycletest.LifecycleChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			lifecycletest.LifecycleChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycletest.LifecycleChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycletest.LifecycleChecks.Close.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[lifecycle.Lifecycle](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -135,17 +109,8 @@ func FuzzLifecycleSuiteClose(f *testing.F) {
 		f,
 		lifecycletest.LifecycleChecks.Close.Callable,
 		lifecycleIdle,
-		conform.Excuse(
-			lifecycletest.LifecycleChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycletest.LifecycleChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycletest.LifecycleChecks.Close.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[lifecycle.Lifecycle](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -158,4 +123,4 @@ func BenchmarkLifecycleSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:06680444ccdb89ba43129a9b41a56478cecf858c619bf983c661002307bc745c
+// dokimi:provenance sha256:8ff072669db3dbbfac5a52c0adf8d89837b5f5528608b801cfa29642dbd610dc

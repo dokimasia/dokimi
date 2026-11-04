@@ -38,23 +38,35 @@ func baseStubPingPins() error {
 	return want0
 }
 
-// baseStubPingSubject returns the subject of [stub.Behaviour] for Ping.
-// The subject calls a new double that reports to tb.
+// baseStubPingSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Ping. The subject calls a new double that
+// reports to tb.
 func baseStubPingSubject(tb assert.TB) stub.Subject[embeddedtest.BasePingCall, embeddedtest.BasePingReturn] {
 	tb.Helper()
 	s := embeddedtest.NewBaseStub(tb)
 	return stub.Subject[embeddedtest.BasePingCall, embeddedtest.BasePingReturn]{
-		Stub: s.OnPing.MethodStub,
+		Stub:  s.OnPing.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = baseStubPing(tb, s)
+		},
+		Arguments: func(tb assert.TB, c embeddedtest.BasePingCall) {
+			tb.Helper()
+			a0 := baseStubPingArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() embeddedtest.BasePingReturn {
 			got0 := baseStubPing(tb, s)
 			return embeddedtest.BasePingReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPing.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() embeddedtest.BasePingReturn {
+			want0 := baseStubPingPins()
+			s.OnPing.Returns(want0)
+			return embeddedtest.BasePingReturn{Err: want0}
+		},
+		Override: func(seen func(embeddedtest.BasePingCall)) {
+			s.OnPing.Func(func(p0 context.Context) error {
+				seen(embeddedtest.BasePingCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -79,7 +91,6 @@ func baseStubInstanceOf(tb assert.TB, s *embeddedtest.BaseStub) baseStubInstance
 		Call: func() {
 			_ = baseStubPing(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -91,68 +102,14 @@ func TestBaseStub(t *testing.T) {
 	t.Run("Ping", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Ping", baseStubPingSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewBaseStub(t)
-			_ = baseStubPing(t, s)
-			got := s.OnPing.AssertCalledOnce(t, "Ping records the call")
-			a0 := baseStubPingArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewBaseStub(t)
-			var seen []embeddedtest.BasePingCall
-			s.OnPing.OnRecord(func(c embeddedtest.BasePingCall) { seen = append(seen, c) })
-			_ = baseStubPing(t, s)
-			_ = baseStubPing(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Ping")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) baseStubInstance {
-			return baseStubInstanceOf(tb, embeddedtest.NewBaseStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Ping", func(t *testing.T) {
+		t.Run("Ping", func(t *testing.T) {
 			t.Parallel()
-			s := embeddedtest.NewBaseStub(t)
-			_ = baseStubPing(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPing.CallCount(), 0, "ResetCalls clears the calls of Ping")
-		})
-
-		t.Run("keeps the results of Returns of Ping", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewBaseStub(t)
-			want0 := baseStubPingPins()
-			s.OnPing.Returns(want0)
-			s.ResetCalls()
-			got0 := baseStubPing(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Ping")
-		})
-	})
-
-	t.Run("NewBaseStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) baseStubInstance {
-			return baseStubInstanceOf(tb, embeddedtest.NewBaseStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewBaseStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Ping with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Ping-failing")
-			s := embeddedtest.NewBaseStubFailing(t, want)
-			r0 := baseStubPing(t, s)
-			assert.ErrorIs(t, r0, want, "Ping fails with the error of NewBaseStubFailing")
+			stub.ResetBehaviour(t, "Ping", baseStubPingSubject)
 		})
 	})
 
@@ -245,54 +202,6 @@ func TestBaseStub(t *testing.T) {
 	})
 }
 
-// TestBasePingStub checks the methods of BasePingStub, which configures
-// Ping.
-func TestBasePingStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Ping", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewBaseStub(t)
-			want0 := baseStubPingPins()
-			s.OnPing.Returns(want0)
-			got0 := baseStubPing(t, s)
-			assert.ErrorIs(t, got0, want0, "Ping returns the error that Returns sets")
-		})
-
-		t.Run("configures Ping for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := embeddedtest.NewBaseStub(r)
-			s.OnPing.Strict()
-			var want0 error
-			s.OnPing.Returns(want0)
-			_ = baseStubPing(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Ping")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Ping to the function", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewBaseStub(t)
-			var got0 context.Context
-			s.OnPing.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = baseStubPing(t, s)
-			a0 := baseStubPingArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
 // closerStubCloseArgs returns the samples of the arguments of Close.
 func closerStubCloseArgs(tb assert.TB) context.Context {
 	tb.Helper()
@@ -314,23 +223,35 @@ func closerStubClosePins() error {
 	return want0
 }
 
-// closerStubCloseSubject returns the subject of [stub.Behaviour] for
-// Close. The subject calls a new double that reports to tb.
+// closerStubCloseSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Close. The subject calls a new double that
+// reports to tb.
 func closerStubCloseSubject(tb assert.TB) stub.Subject[embeddedtest.CloserCloseCall, embeddedtest.CloserCloseReturn] {
 	tb.Helper()
 	s := embeddedtest.NewCloserStub(tb)
 	return stub.Subject[embeddedtest.CloserCloseCall, embeddedtest.CloserCloseReturn]{
-		Stub: s.OnClose.MethodStub,
+		Stub:  s.OnClose.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = closerStubClose(tb, s)
+		},
+		Arguments: func(tb assert.TB, c embeddedtest.CloserCloseCall) {
+			tb.Helper()
+			a0 := closerStubCloseArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() embeddedtest.CloserCloseReturn {
 			got0 := closerStubClose(tb, s)
 			return embeddedtest.CloserCloseReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnClose.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() embeddedtest.CloserCloseReturn {
+			want0 := closerStubClosePins()
+			s.OnClose.Returns(want0)
+			return embeddedtest.CloserCloseReturn{Err: want0}
+		},
+		Override: func(seen func(embeddedtest.CloserCloseCall)) {
+			s.OnClose.Func(func(p0 context.Context) error {
+				seen(embeddedtest.CloserCloseCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -355,7 +276,6 @@ func closerStubInstanceOf(tb assert.TB, s *embeddedtest.CloserStub) closerStubIn
 		Call: func() {
 			_ = closerStubClose(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -367,68 +287,14 @@ func TestCloserStub(t *testing.T) {
 	t.Run("Close", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Close", closerStubCloseSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewCloserStub(t)
-			_ = closerStubClose(t, s)
-			got := s.OnClose.AssertCalledOnce(t, "Close records the call")
-			a0 := closerStubCloseArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewCloserStub(t)
-			var seen []embeddedtest.CloserCloseCall
-			s.OnClose.OnRecord(func(c embeddedtest.CloserCloseCall) { seen = append(seen, c) })
-			_ = closerStubClose(t, s)
-			_ = closerStubClose(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) closerStubInstance {
-			return closerStubInstanceOf(tb, embeddedtest.NewCloserStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+		t.Run("Close", func(t *testing.T) {
 			t.Parallel()
-			s := embeddedtest.NewCloserStub(t)
-			_ = closerStubClose(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
-		})
-
-		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewCloserStub(t)
-			want0 := closerStubClosePins()
-			s.OnClose.Returns(want0)
-			s.ResetCalls()
-			got0 := closerStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
-		})
-	})
-
-	t.Run("NewCloserStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) closerStubInstance {
-			return closerStubInstanceOf(tb, embeddedtest.NewCloserStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewCloserStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Close with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Close-failing")
-			s := embeddedtest.NewCloserStubFailing(t, want)
-			r0 := closerStubClose(t, s)
-			assert.ErrorIs(t, r0, want, "Close fails with the error of NewCloserStubFailing")
+			stub.ResetBehaviour(t, "Close", closerStubCloseSubject)
 		})
 	})
 
@@ -525,54 +391,6 @@ func TestCloserStub(t *testing.T) {
 	})
 }
 
-// TestCloserCloseStub checks the methods of CloserCloseStub, which
-// configures Close.
-func TestCloserCloseStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Close", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewCloserStub(t)
-			want0 := closerStubClosePins()
-			s.OnClose.Returns(want0)
-			got0 := closerStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
-		})
-
-		t.Run("configures Close for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := embeddedtest.NewCloserStub(r)
-			s.OnClose.Strict()
-			var want0 error
-			s.OnClose.Returns(want0)
-			_ = closerStubClose(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Close to the function", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewCloserStub(t)
-			var got0 context.Context
-			s.OnClose.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = closerStubClose(t, s)
-			a0 := closerStubCloseArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
 // composedStubGetArgs returns the samples of the arguments of Get.
 func composedStubGetArgs(tb assert.TB) (context.Context, string) {
 	tb.Helper()
@@ -640,23 +458,36 @@ func composedStubClosePins() error {
 	return want0
 }
 
-// composedStubGetSubject returns the subject of [stub.Behaviour] for Get.
-// The subject calls a new double that reports to tb.
+// composedStubGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func composedStubGetSubject(tb assert.TB) stub.Subject[embeddedtest.ComposedGetCall, embeddedtest.ComposedGetReturn] {
 	tb.Helper()
 	s := embeddedtest.NewComposedStub(tb)
 	return stub.Subject[embeddedtest.ComposedGetCall, embeddedtest.ComposedGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = composedStubGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c embeddedtest.ComposedGetCall) {
+			tb.Helper()
+			a0, a1 := composedStubGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() embeddedtest.ComposedGetReturn {
 			got0, got1 := composedStubGet(tb, s)
 			return embeddedtest.ComposedGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() embeddedtest.ComposedGetReturn {
+			want0, want1 := composedStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return embeddedtest.ComposedGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(embeddedtest.ComposedGetCall)) {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(embeddedtest.ComposedGetCall{Ctx: p0, Key: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -669,25 +500,37 @@ func composedStubGetSubject(tb assert.TB) stub.Subject[embeddedtest.ComposedGetC
 	}
 }
 
-// composedStubPingSubject returns the subject of [stub.Behaviour] for
-// Ping. The subject calls a new double that reports to tb.
+// composedStubPingSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Ping. The subject calls a new double that
+// reports to tb.
 func composedStubPingSubject(
 	tb assert.TB,
 ) stub.Subject[embeddedtest.ComposedPingCall, embeddedtest.ComposedPingReturn] {
 	tb.Helper()
 	s := embeddedtest.NewComposedStub(tb)
 	return stub.Subject[embeddedtest.ComposedPingCall, embeddedtest.ComposedPingReturn]{
-		Stub: s.OnPing.MethodStub,
+		Stub:  s.OnPing.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = composedStubPing(tb, s)
+		},
+		Arguments: func(tb assert.TB, c embeddedtest.ComposedPingCall) {
+			tb.Helper()
+			a0 := composedStubPingArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() embeddedtest.ComposedPingReturn {
 			got0 := composedStubPing(tb, s)
 			return embeddedtest.ComposedPingReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPing.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() embeddedtest.ComposedPingReturn {
+			want0 := composedStubPingPins()
+			s.OnPing.Returns(want0)
+			return embeddedtest.ComposedPingReturn{Err: want0}
+		},
+		Override: func(seen func(embeddedtest.ComposedPingCall)) {
+			s.OnPing.Func(func(p0 context.Context) error {
+				seen(embeddedtest.ComposedPingCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -699,25 +542,37 @@ func composedStubPingSubject(
 	}
 }
 
-// composedStubCloseSubject returns the subject of [stub.Behaviour] for
-// Close. The subject calls a new double that reports to tb.
+// composedStubCloseSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Close. The subject calls a new double that
+// reports to tb.
 func composedStubCloseSubject(
 	tb assert.TB,
 ) stub.Subject[embeddedtest.ComposedCloseCall, embeddedtest.ComposedCloseReturn] {
 	tb.Helper()
 	s := embeddedtest.NewComposedStub(tb)
 	return stub.Subject[embeddedtest.ComposedCloseCall, embeddedtest.ComposedCloseReturn]{
-		Stub: s.OnClose.MethodStub,
+		Stub:  s.OnClose.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = composedStubClose(tb, s)
+		},
+		Arguments: func(tb assert.TB, c embeddedtest.ComposedCloseCall) {
+			tb.Helper()
+			a0 := composedStubCloseArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() embeddedtest.ComposedCloseReturn {
 			got0 := composedStubClose(tb, s)
 			return embeddedtest.ComposedCloseReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnClose.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() embeddedtest.ComposedCloseReturn {
+			want0 := composedStubClosePins()
+			s.OnClose.Returns(want0)
+			return embeddedtest.ComposedCloseReturn{Err: want0}
+		},
+		Override: func(seen func(embeddedtest.ComposedCloseCall)) {
+			s.OnClose.Func(func(p0 context.Context) error {
+				seen(embeddedtest.ComposedCloseCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -742,7 +597,6 @@ func composedStubInstanceOf(tb assert.TB, s *embeddedtest.ComposedStub) composed
 		Call: func() {
 			_, _ = composedStubGet(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -754,170 +608,34 @@ func TestComposedStub(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Get", composedStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			_, _ = composedStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := composedStubGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			var seen []embeddedtest.ComposedGetCall
-			s.OnGet.OnRecord(func(c embeddedtest.ComposedGetCall) { seen = append(seen, c) })
-			_, _ = composedStubGet(t, s)
-			_, _ = composedStubGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("Ping", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Ping", composedStubPingSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			_ = composedStubPing(t, s)
-			got := s.OnPing.AssertCalledOnce(t, "Ping records the call")
-			a0 := composedStubPingArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			var seen []embeddedtest.ComposedPingCall
-			s.OnPing.OnRecord(func(c embeddedtest.ComposedPingCall) { seen = append(seen, c) })
-			_ = composedStubPing(t, s)
-			_ = composedStubPing(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Ping")
-		})
 	})
 
 	t.Run("Close", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Close", composedStubCloseSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			_ = composedStubClose(t, s)
-			got := s.OnClose.AssertCalledOnce(t, "Close records the call")
-			a0 := composedStubCloseArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			var seen []embeddedtest.ComposedCloseCall
-			s.OnClose.OnRecord(func(c embeddedtest.ComposedCloseCall) { seen = append(seen, c) })
-			_ = composedStubClose(t, s)
-			_ = composedStubClose(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) composedStubInstance {
-			return composedStubInstanceOf(tb, embeddedtest.NewComposedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			_, _ = composedStubGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+			stub.ResetBehaviour(t, "Get", composedStubGetSubject)
 		})
 
-		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+		t.Run("Ping", func(t *testing.T) {
 			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			want0, want1 := composedStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := composedStubGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
+			stub.ResetBehaviour(t, "Ping", composedStubPingSubject)
 		})
 
-		t.Run("clears the recorded calls of Ping", func(t *testing.T) {
+		t.Run("Close", func(t *testing.T) {
 			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			_ = composedStubPing(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPing.CallCount(), 0, "ResetCalls clears the calls of Ping")
-		})
-
-		t.Run("keeps the results of Returns of Ping", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			want0 := composedStubPingPins()
-			s.OnPing.Returns(want0)
-			s.ResetCalls()
-			got0 := composedStubPing(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Ping")
-		})
-
-		t.Run("clears the recorded calls of Close", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			_ = composedStubClose(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
-		})
-
-		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			want0 := composedStubClosePins()
-			s.OnClose.Returns(want0)
-			s.ResetCalls()
-			got0 := composedStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
-		})
-	})
-
-	t.Run("NewComposedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) composedStubInstance {
-			return composedStubInstanceOf(tb, embeddedtest.NewComposedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewComposedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Get with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Get-failing")
-			s := embeddedtest.NewComposedStubFailing(t, want)
-			_, r1 := composedStubGet(t, s)
-			assert.ErrorIs(t, r1, want, "Get fails with the error of NewComposedStubFailing")
-		})
-
-		t.Run("fails Ping with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Ping-failing")
-			s := embeddedtest.NewComposedStubFailing(t, want)
-			r0 := composedStubPing(t, s)
-			assert.ErrorIs(t, r0, want, "Ping fails with the error of NewComposedStubFailing")
-		})
-
-		t.Run("fails Close with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Close-failing")
-			s := embeddedtest.NewComposedStubFailing(t, want)
-			r0 := composedStubClose(t, s)
-			assert.ErrorIs(t, r0, want, "Close fails with the error of NewComposedStubFailing")
+			stub.ResetBehaviour(t, "Close", composedStubCloseSubject)
 		})
 	})
 
@@ -1105,153 +823,4 @@ func TestComposedStub(t *testing.T) {
 	})
 }
 
-// TestComposedGetStub checks the methods of ComposedGetStub, which
-// configures Get.
-func TestComposedGetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			want0, want1 := composedStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := composedStubGet(t, s)
-			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := embeddedtest.NewComposedStub(r)
-			s.OnGet.Strict()
-			var want0 string
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = composedStubGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = composedStubGet(t, s)
-			a0, a1 := composedStubGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestComposedPingStub checks the methods of ComposedPingStub, which
-// configures Ping.
-func TestComposedPingStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Ping", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			want0 := composedStubPingPins()
-			s.OnPing.Returns(want0)
-			got0 := composedStubPing(t, s)
-			assert.ErrorIs(t, got0, want0, "Ping returns the error that Returns sets")
-		})
-
-		t.Run("configures Ping for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := embeddedtest.NewComposedStub(r)
-			s.OnPing.Strict()
-			var want0 error
-			s.OnPing.Returns(want0)
-			_ = composedStubPing(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Ping")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Ping to the function", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			var got0 context.Context
-			s.OnPing.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = composedStubPing(t, s)
-			a0 := composedStubPingArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// TestComposedCloseStub checks the methods of ComposedCloseStub, which
-// configures Close.
-func TestComposedCloseStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Close", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			want0 := composedStubClosePins()
-			s.OnClose.Returns(want0)
-			got0 := composedStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
-		})
-
-		t.Run("configures Close for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := embeddedtest.NewComposedStub(r)
-			s.OnClose.Strict()
-			var want0 error
-			s.OnClose.Returns(want0)
-			_ = composedStubClose(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Close to the function", func(t *testing.T) {
-			t.Parallel()
-			s := embeddedtest.NewComposedStub(t)
-			var got0 context.Context
-			s.OnClose.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = composedStubClose(t, s)
-			a0 := composedStubCloseArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:ec987f11f9aa9f225b1c9c1492a6e8eced7e601b4a0c15095d0a128e94469aca
+// dokimi:provenance sha256:4ee87f668db7b89ed307bacda306fcaa4b0e2b8a51931aacd4e76fd2c7a598d4

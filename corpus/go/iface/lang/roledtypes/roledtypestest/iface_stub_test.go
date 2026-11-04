@@ -68,23 +68,37 @@ func storeStubGetPins() (roledtypes.Payload, error) {
 	return want0, want1
 }
 
-// storeStubPutSubject returns the subject of [stub.Behaviour] for Put. The
-// subject calls a new double that reports to tb.
+// storeStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func storeStubPutSubject(tb assert.TB) stub.Subject[roledtypestest.StorePutCall, roledtypestest.StorePutReturn] {
 	tb.Helper()
 	s := roledtypestest.NewStoreStub(tb)
 	return stub.Subject[roledtypestest.StorePutCall, roledtypestest.StorePutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = storeStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c roledtypestest.StorePutCall) {
+			tb.Helper()
+			a0, a1, a2 := storeStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.Payload, a2, "the call records Payload")
 		},
 		Result: func() roledtypestest.StorePutReturn {
 			got0 := storeStubPut(tb, s)
 			return roledtypestest.StorePutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ roledtypes.Key, _ roledtypes.Payload) error {
-				mark()
+		Returns: func() roledtypestest.StorePutReturn {
+			want0 := storeStubPutPins()
+			s.OnPut.Returns(want0)
+			return roledtypestest.StorePutReturn{Err: want0}
+		},
+		Override: func(seen func(roledtypestest.StorePutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1 roledtypes.Key, p2 roledtypes.Payload) error {
+				seen(roledtypestest.StorePutCall{Ctx: p0, Key: p1, Payload: p2})
 				var z0 error
 				return z0
 			})
@@ -96,23 +110,36 @@ func storeStubPutSubject(tb assert.TB) stub.Subject[roledtypestest.StorePutCall,
 	}
 }
 
-// storeStubGetSubject returns the subject of [stub.Behaviour] for Get. The
-// subject calls a new double that reports to tb.
+// storeStubGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func storeStubGetSubject(tb assert.TB) stub.Subject[roledtypestest.StoreGetCall, roledtypestest.StoreGetReturn] {
 	tb.Helper()
 	s := roledtypestest.NewStoreStub(tb)
 	return stub.Subject[roledtypestest.StoreGetCall, roledtypestest.StoreGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = storeStubGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c roledtypestest.StoreGetCall) {
+			tb.Helper()
+			a0, a1 := storeStubGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() roledtypestest.StoreGetReturn {
 			got0, got1 := storeStubGet(tb, s)
 			return roledtypestest.StoreGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ roledtypes.Key) (roledtypes.Payload, error) {
-				mark()
+		Returns: func() roledtypestest.StoreGetReturn {
+			want0, want1 := storeStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return roledtypestest.StoreGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(roledtypestest.StoreGetCall)) {
+			s.OnGet.Func(func(p0 context.Context, p1 roledtypes.Key) (roledtypes.Payload, error) {
+				seen(roledtypestest.StoreGetCall{Ctx: p0, Key: p1})
 				var z0 roledtypes.Payload
 				var z1 error
 				return z0, z1
@@ -138,7 +165,6 @@ func storeStubInstanceOf(tb assert.TB, s *roledtypestest.StoreStub) storeStubIns
 		Call: func() {
 			_ = storeStubPut(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -150,122 +176,24 @@ func TestStoreStub(t *testing.T) {
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", storeStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			_ = storeStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1, a2 := storeStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.Payload, a2, "the call records Payload")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			var seen []roledtypestest.StorePutCall
-			s.OnPut.OnRecord(func(c roledtypestest.StorePutCall) { seen = append(seen, c) })
-			_ = storeStubPut(t, s)
-			_ = storeStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Get", storeStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			_, _ = storeStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := storeStubGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			var seen []roledtypestest.StoreGetCall
-			s.OnGet.OnRecord(func(c roledtypestest.StoreGetCall) { seen = append(seen, c) })
-			_, _ = storeStubGet(t, s)
-			_, _ = storeStubGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) storeStubInstance {
-			return storeStubInstanceOf(tb, roledtypestest.NewStoreStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			_ = storeStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+			stub.ResetBehaviour(t, "Put", storeStubPutSubject)
 		})
 
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			want0 := storeStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := storeStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
-		})
-
-		t.Run("clears the recorded calls of Get", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			_, _ = storeStubGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
-		})
-
-		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			want0, want1 := storeStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := storeStubGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
-		})
-	})
-
-	t.Run("NewStoreStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
-			return storeStubInstanceOf(tb, roledtypestest.NewStoreStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewStoreStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := roledtypestest.NewStoreStubFailing(t, want)
-			r0 := storeStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Get with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Get-failing")
-			s := roledtypestest.NewStoreStubFailing(t, want)
-			_, r1 := storeStubGet(t, s)
-			assert.ErrorIs(t, r1, want, "Get fails with the error of NewStoreStubFailing")
+			stub.ResetBehaviour(t, "Get", storeStubGetSubject)
 		})
 	})
 
@@ -411,109 +339,4 @@ func TestStoreStub(t *testing.T) {
 	})
 }
 
-// TestStorePutStub checks the methods of StorePutStub, which configures
-// Put.
-func TestStorePutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			want0 := storeStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := storeStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := roledtypestest.NewStoreStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = storeStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 roledtypes.Key
-			var got2 roledtypes.Payload
-			s.OnPut.Func(func(p0 context.Context, p1 roledtypes.Key, p2 roledtypes.Payload) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = storeStubPut(t, s)
-			a0, a1, a2 := storeStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives Payload")
-		})
-	})
-}
-
-// TestStoreGetStub checks the methods of StoreGetStub, which configures
-// Get.
-func TestStoreGetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			want0, want1 := storeStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := storeStubGet(t, s)
-			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := roledtypestest.NewStoreStub(r)
-			s.OnGet.Strict()
-			var want0 roledtypes.Payload
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = storeStubGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
-			t.Parallel()
-			s := roledtypestest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 roledtypes.Key
-			s.OnGet.Func(func(p0 context.Context, p1 roledtypes.Key) (roledtypes.Payload, error) {
-				got0, got1 = p0, p1
-				var z0 roledtypes.Payload
-				var z1 error
-				return z0, z1
-			})
-			_, _ = storeStubGet(t, s)
-			a0, a1 := storeStubGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:a73c1ebbb03697e0867744d7632a4c0a417737aa8ce653817b5d5da5388a13ac
+// dokimi:provenance sha256:d83b6c856da0834ac128b89264ebed66a393061ba797b85010925c8dfe989367

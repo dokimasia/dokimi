@@ -245,26 +245,6 @@ func NewTxWithRetryStub(tb assert.TB, opts ...TxWithRetryStubOption) *TxWithRetr
 	return s
 }
 
-// NewTxWithRetryStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewTxWithRetryStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...TxWithRetryStubOption,
-) *TxWithRetryStub {
-	return NewTxWithRetryStub(tb, append([]TxWithRetryStubOption{
-		TxWithRetryStubWithClock(clk),
-		TxWithRetryStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewTxWithRetryStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewTxWithRetryStubFailing(tb assert.TB, err error, opts ...TxWithRetryStubOption) *TxWithRetryStub {
-	return NewTxWithRetryStub(tb, append([]TxWithRetryStubOption{TxWithRetryStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *TxWithRetryStub) ResetCalls() {
@@ -355,4 +335,4 @@ func (s *TxWithRetryStub) Rollback(ctx context.Context) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:e8afaf1452b43409994520173dc2f41ba54671686d9620fd68a9e70aef9ad898
+// dokimi:provenance sha256:0656a200120a4e10365c9e0d3f618a1e5fecaae0ea6dfe6ed4f34cb22d398cd6

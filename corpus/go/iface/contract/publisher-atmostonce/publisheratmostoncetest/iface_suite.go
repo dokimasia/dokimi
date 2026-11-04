@@ -17,47 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Publish/smoke: Publish returns without a panic for derived
-// inputs.
-//
-// Contract.Publish/smoke#generated: Publish returns without a panic for
-// derived inputs.
-//
-// Contract.Publish/cancel: Publish returns an error for a cancelled
-// context.
-//
-// Contract.Publish/cancel#generated: Publish returns an error for a
-// cancelled context.
-//
-// Contract.Publish/delivers-by-its-mode: each event that Publish publishes
-// arrives on the channel of Subscribe as its delivery mode states.
-//
-// Contract.Subscribe/smoke: Subscribe returns without a panic for derived
-// inputs.
-//
-// Contract.Subscribe/cancel: Subscribe returns an error for a cancelled
-// context.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Publish/smoke
-//
-// Contract.Subscribe/smoke
-
-// The refused claims of Contract:
-//
-// Contract.Subscribe/zero-on-error: eidos derives no sample of a result of
-// Subscribe. The remedy is to author a sample of the result type with the
-// directive sample.
-
-// The unclaimed classifications of Contract:
-//
-// The shape:writer of Contract.Publish has the stance silent. A write is
-// an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -90,22 +49,10 @@ func (c contractPublish) Smoke() conform.ID[publisheratmostonce.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Publish returns
-// without a panic for derived inputs.
-func (c contractPublish) SmokeGenerated() conform.ID[publisheratmostonce.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Publish returns an error
 // for a cancelled context.
 func (c contractPublish) Cancel() conform.ID[publisheratmostonce.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Publish returns
-// an error for a cancelled context.
-func (c contractPublish) CancelGenerated() conform.ID[publisheratmostonce.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // DeliversByItsMode returns the identity of the check that each event that
@@ -145,9 +92,6 @@ func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 				ID:          ContractChecks.Publish.Smoke(),
 				Statement:   "Publish returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -158,12 +102,9 @@ func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 				Defect: contractPublishPanics,
 			},
 			{
-				ID:          ContractChecks.Publish.SmokeGenerated(),
+				ID:          ContractChecks.Publish.Smoke().Generated(),
 				Statement:   "Publish returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[publisheratmostonce.Value](), "v")
@@ -177,9 +118,6 @@ func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 				ID:          ContractChecks.Publish.Cancel(),
 				Statement:   "Publish returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -189,12 +127,9 @@ func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 				Defect: contractPublishIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Publish.CancelGenerated(),
+				ID:          ContractChecks.Publish.Cancel().Generated(),
 				Statement:   "Publish returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[publisheratmostonce.Value](), "v")
@@ -208,9 +143,6 @@ func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 				ID:          ContractChecks.Publish.DeliversByItsMode(),
 				Statement:   "each event that Publish publishes arrives on the channel of Subscribe as its delivery mode states",
 				Claim:       spec.DeliversByItsMode,
-				Probe:       spec.DeliveriesMatchTheMode,
-				Reason:      spec.WrongDeliveryCount,
-				Law:         spec.DeliveriesFollowTheMode,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					probe.DeliveriesMatchTheMode(
@@ -236,9 +168,6 @@ func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 				ID:          ContractChecks.Subscribe.Smoke(),
 				Statement:   "Subscribe returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -253,9 +182,6 @@ func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
 				ID:          ContractChecks.Subscribe.Cancel(),
 				Statement:   "Subscribe returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -559,4 +485,4 @@ func contractSubscribeCall(ctx context.Context, subject publisheratmostonce.Cont
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:aba6f59162bc4fd5a206e42acec310a102169901041ebc0d76e4be7a53926756
+// dokimi:provenance sha256:8bdca67f5584ef8c8c88635dcfedcd70e99e69885ca89f91d4aadca09b3599ae

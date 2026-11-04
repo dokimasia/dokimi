@@ -15,69 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Service:
-//
-// Service.Named/smoke: Named returns without a panic for derived inputs.
-//
-// Service.Named/smoke#generated: Named returns without a panic for derived
-// inputs.
-//
-// Service.Named/cancel: Named returns an error for a cancelled context.
-//
-// Service.Named/cancel#generated: Named returns an error for a cancelled
-// context.
-//
-// Service.Named/zero-on-error: Named returns the zero value beside an
-// error.
-//
-// Service.Named/zero-on-error#generated: Named returns the zero value
-// beside an error.
-//
-// Service.Unnamed/smoke: Unnamed returns without a panic for derived
-// inputs.
-//
-// Service.Unnamed/smoke#generated: Unnamed returns without a panic for
-// derived inputs.
-//
-// Service.Unnamed/cancel: Unnamed returns an error for a cancelled
-// context.
-//
-// Service.Unnamed/cancel#generated: Unnamed returns an error for a
-// cancelled context.
-//
-// Service.Unnamed/zero-on-error: Unnamed returns the zero value beside an
-// error.
-//
-// Service.Unnamed/zero-on-error#generated: Unnamed returns the zero value
-// beside an error.
-//
-// Service.PartiallyNamed/smoke: PartiallyNamed returns without a panic for
-// derived inputs.
-//
-// Service.PartiallyNamed/smoke#generated: PartiallyNamed returns without a
-// panic for derived inputs.
-//
-// Service.PartiallyNamed/cancel: PartiallyNamed returns an error for a
-// cancelled context.
-//
-// Service.PartiallyNamed/cancel#generated: PartiallyNamed returns an error
-// for a cancelled context.
-//
-// Service.PartiallyNamed/zero-on-error: PartiallyNamed returns the zero
-// value beside an error.
-//
-// Service.PartiallyNamed/zero-on-error#generated: PartiallyNamed returns
-// the zero value beside an error.
-
-// The derived checks of Service that witness their laws at the shallow
-// end:
-//
-// Service.Named/smoke
-//
-// Service.Unnamed/smoke
-//
-// Service.PartiallyNamed/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,34 +49,16 @@ func (c serviceNamed) Smoke() conform.ID[namedreturns.Service] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Named returns
-// without a panic for derived inputs.
-func (c serviceNamed) SmokeGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Named returns an error for
 // a cancelled context.
 func (c serviceNamed) Cancel() conform.ID[namedreturns.Service] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Named returns an
-// error for a cancelled context.
-func (c serviceNamed) CancelGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Named returns the
 // zero value beside an error.
 func (c serviceNamed) ZeroOnError() conform.ID[namedreturns.Service] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Named
-// returns the zero value beside an error.
-func (c serviceNamed) ZeroOnErrorGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("zero-on-error#generated")
 }
 
 // serviceUnnamed is the name of Service.Unnamed, with the identities of
@@ -154,34 +73,16 @@ func (c serviceUnnamed) Smoke() conform.ID[namedreturns.Service] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Unnamed returns
-// without a panic for derived inputs.
-func (c serviceUnnamed) SmokeGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Unnamed returns an error
 // for a cancelled context.
 func (c serviceUnnamed) Cancel() conform.ID[namedreturns.Service] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Unnamed returns
-// an error for a cancelled context.
-func (c serviceUnnamed) CancelGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Unnamed returns the
 // zero value beside an error.
 func (c serviceUnnamed) ZeroOnError() conform.ID[namedreturns.Service] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Unnamed
-// returns the zero value beside an error.
-func (c serviceUnnamed) ZeroOnErrorGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("zero-on-error#generated")
 }
 
 // servicePartiallyNamed is the name of Service.PartiallyNamed, with the
@@ -196,34 +97,16 @@ func (c servicePartiallyNamed) Smoke() conform.ID[namedreturns.Service] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that PartiallyNamed
-// returns without a panic for derived inputs.
-func (c servicePartiallyNamed) SmokeGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that PartiallyNamed returns an
 // error for a cancelled context.
 func (c servicePartiallyNamed) Cancel() conform.ID[namedreturns.Service] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that PartiallyNamed
-// returns an error for a cancelled context.
-func (c servicePartiallyNamed) CancelGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that PartiallyNamed
 // returns the zero value beside an error.
 func (c servicePartiallyNamed) ZeroOnError() conform.ID[namedreturns.Service] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that
-// PartiallyNamed returns the zero value beside an error.
-func (c servicePartiallyNamed) ZeroOnErrorGenerated() conform.ID[namedreturns.Service] {
-	return c.Check("zero-on-error#generated")
 }
 
 // ServiceSuite returns the checks of Service, and the calls and the
@@ -238,9 +121,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.Named.Smoke(),
 				Statement:   "Named returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ServiceHandle) {
@@ -252,12 +132,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: serviceNamedPanics,
 			},
 			{
-				ID:          ServiceChecks.Named.SmokeGenerated(),
+				ID:          ServiceChecks.Named.Smoke().Generated(),
 				Statement:   "Named returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -272,9 +149,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.Named.Cancel(),
 				Statement:   "Named returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ServiceHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -285,12 +159,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: serviceNamedIgnoresCancel,
 			},
 			{
-				ID:          ServiceChecks.Named.CancelGenerated(),
+				ID:          ServiceChecks.Named.Cancel().Generated(),
 				Statement:   "Named returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -305,9 +176,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.Named.ZeroOnError(),
 				Statement:   "Named returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ServiceHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -317,12 +185,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: serviceNamedValueBeside,
 			},
 			{
-				ID:          ServiceChecks.Named.ZeroOnErrorGenerated(),
+				ID:          ServiceChecks.Named.ZeroOnError().Generated(),
 				Statement:   "Named returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -336,9 +201,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.Unnamed.Smoke(),
 				Statement:   "Unnamed returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ServiceHandle) {
@@ -350,12 +212,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: serviceUnnamedPanics,
 			},
 			{
-				ID:          ServiceChecks.Unnamed.SmokeGenerated(),
+				ID:          ServiceChecks.Unnamed.Smoke().Generated(),
 				Statement:   "Unnamed returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -370,9 +229,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.Unnamed.Cancel(),
 				Statement:   "Unnamed returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ServiceHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -383,12 +239,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: serviceUnnamedIgnoresCancel,
 			},
 			{
-				ID:          ServiceChecks.Unnamed.CancelGenerated(),
+				ID:          ServiceChecks.Unnamed.Cancel().Generated(),
 				Statement:   "Unnamed returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -403,9 +256,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.Unnamed.ZeroOnError(),
 				Statement:   "Unnamed returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ServiceHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -415,12 +265,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: serviceUnnamedValueBeside,
 			},
 			{
-				ID:          ServiceChecks.Unnamed.ZeroOnErrorGenerated(),
+				ID:          ServiceChecks.Unnamed.ZeroOnError().Generated(),
 				Statement:   "Unnamed returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -434,9 +281,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.PartiallyNamed.Smoke(),
 				Statement:   "PartiallyNamed returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ServiceHandle) {
@@ -448,12 +292,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: servicePartiallyNamedPanics,
 			},
 			{
-				ID:          ServiceChecks.PartiallyNamed.SmokeGenerated(),
+				ID:          ServiceChecks.PartiallyNamed.Smoke().Generated(),
 				Statement:   "PartiallyNamed returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -468,9 +309,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.PartiallyNamed.Cancel(),
 				Statement:   "PartiallyNamed returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ServiceHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -481,12 +319,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: servicePartiallyNamedIgnoresCancel,
 			},
 			{
-				ID:          ServiceChecks.PartiallyNamed.CancelGenerated(),
+				ID:          ServiceChecks.PartiallyNamed.Cancel().Generated(),
 				Statement:   "PartiallyNamed returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -501,9 +336,6 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				ID:          ServiceChecks.PartiallyNamed.ZeroOnError(),
 				Statement:   "PartiallyNamed returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ServiceHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -513,12 +345,9 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 				Defect: servicePartiallyNamedValueBeside,
 			},
 			{
-				ID:          ServiceChecks.PartiallyNamed.ZeroOnErrorGenerated(),
+				ID:          ServiceChecks.PartiallyNamed.ZeroOnError().Generated(),
 				Statement:   "PartiallyNamed returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ServiceHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -853,4 +682,4 @@ func servicePartiallyNamedValueBeside(h *ServiceHandle) namedreturns.Service {
 	return &servicePartiallyNamedValueBesideDefect{serviceOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5ae794dfa426dda78c04c3b97aeb5216d010e5774395767c85d6e194005001e9
+// dokimi:provenance sha256:dc18dea1ba57f64a84d1a30fd54fe893d014b959f7244d3a3578a01982720301

@@ -16,57 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Store/smoke: Store returns without a panic for derived inputs.
-//
-// Mixed.Store/smoke#generated: Store returns without a panic for derived
-// inputs.
-//
-// Mixed.Store/cancel: Store returns an error for a cancelled context.
-//
-// Mixed.Store/cancel#generated: Store returns an error for a cancelled
-// context.
-//
-// Mixed.Store/zero-on-error: Store returns the zero value beside an error.
-//
-// Mixed.Store/zero-on-error#generated: Store returns the zero value beside
-// an error.
-//
-// Mixed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mixed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mixed.Get/cancel: Get returns an error for a cancelled context.
-//
-// Mixed.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Mixed.Get/read-your-writes: Get observes the preceding Store of the same
-// client.
-//
-// Mixed.Get/read-your-writes#generated: Get observes the preceding Store
-// of the same client.
-//
-// Mixed.Get/reads-follow-own-writes: Get never returns a version below the
-// last write of Store to its key, over any sequence of calls.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Store/smoke
-//
-// Mixed.Get/smoke
-//
-// Mixed.Get/read-your-writes
-//
-// Mixed.Get/read-your-writes#generated
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -99,34 +48,16 @@ func (c mixedStore) Smoke() conform.ID[readyourwrites.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Store returns
-// without a panic for derived inputs.
-func (c mixedStore) SmokeGenerated() conform.ID[readyourwrites.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Store returns an error for
 // a cancelled context.
 func (c mixedStore) Cancel() conform.ID[readyourwrites.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Store returns an
-// error for a cancelled context.
-func (c mixedStore) CancelGenerated() conform.ID[readyourwrites.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Store returns the
 // zero value beside an error.
 func (c mixedStore) ZeroOnError() conform.ID[readyourwrites.Mixed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Store
-// returns the zero value beside an error.
-func (c mixedStore) ZeroOnErrorGenerated() conform.ID[readyourwrites.Mixed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
@@ -140,22 +71,10 @@ func (c mixedGet) Smoke() conform.ID[readyourwrites.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mixedGet) SmokeGenerated() conform.ID[readyourwrites.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[readyourwrites.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c mixedGet) CancelGenerated() conform.ID[readyourwrites.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Get returns the zero
@@ -164,22 +83,10 @@ func (c mixedGet) ZeroOnError() conform.ID[readyourwrites.Mixed] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c mixedGet) ZeroOnErrorGenerated() conform.ID[readyourwrites.Mixed] {
-	return c.Check("zero-on-error#generated")
-}
-
 // ReadYourWrites returns the identity of the check that Get observes the
 // preceding Store of the same client.
 func (c mixedGet) ReadYourWrites() conform.ID[readyourwrites.Mixed] {
 	return c.Check("read-your-writes")
-}
-
-// ReadYourWritesGenerated returns the identity of the check that Get
-// observes the preceding Store of the same client.
-func (c mixedGet) ReadYourWritesGenerated() conform.ID[readyourwrites.Mixed] {
-	return c.Check("read-your-writes#generated")
 }
 
 // ReadsFollowOwnWrites returns the identity of the check that Get never
@@ -201,9 +108,6 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				ID:          MixedChecks.Store.Smoke(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -215,12 +119,9 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				Defect: mixedStorePanics,
 			},
 			{
-				ID:          MixedChecks.Store.SmokeGenerated(),
+				ID:          MixedChecks.Store.Smoke().Generated(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[readyourwrites.Value](), "v")
@@ -235,9 +136,6 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				ID:          MixedChecks.Store.Cancel(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -248,12 +146,9 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				Defect: mixedStoreIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Store.CancelGenerated(),
+				ID:          MixedChecks.Store.Cancel().Generated(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[readyourwrites.Value](), "v")
@@ -268,9 +163,6 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				ID:          MixedChecks.Store.ZeroOnError(),
 				Statement:   "Store returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (readyourwrites.Value, error) {
@@ -280,12 +172,9 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				Defect: mixedStoreValueBeside,
 			},
 			{
-				ID:          MixedChecks.Store.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Store.ZeroOnError().Generated(),
 				Statement:   "Store returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[readyourwrites.Value](), "v")
@@ -299,9 +188,6 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				ID:          MixedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -313,12 +199,9 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Get.SmokeGenerated(),
+				ID:          MixedChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -333,9 +216,6 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -346,12 +226,9 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Get.CancelGenerated(),
+				ID:          MixedChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -366,9 +243,6 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				ID:          MixedChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (readyourwrites.Value, error) {
@@ -378,12 +252,9 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				Defect: mixedGetValueBeside,
 			},
 			{
-				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -397,9 +268,6 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				ID:          MixedChecks.Get.ReadYourWrites(),
 				Statement:   "Get observes the preceding Store of the same client",
 				Claim:       spec.ReadYourWrites,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadObservesItsOwnWrites,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -413,12 +281,9 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				Defect: mixedGetReadsAnotherValue,
 			},
 			{
-				ID:          MixedChecks.Get.ReadYourWritesGenerated(),
+				ID:          MixedChecks.Get.ReadYourWrites().Generated(),
 				Statement:   "Get observes the preceding Store of the same client",
 				Claim:       spec.ReadYourWrites,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadObservesItsOwnWrites,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -436,9 +301,6 @@ func MixedSuite() conform.Suite[readyourwrites.Mixed] {
 				ID:          MixedChecks.Get.ReadsFollowOwnWrites(),
 				Statement:   "Get never returns a version below the last write of Store to its key, over any sequence of calls",
 				Claim:       spec.ReadsFollowOwnWrites,
-				Probe:       spec.ReadsSeeTheLastWrite,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadObservesItsOwnWrites,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[readyourwrites.Mixed]{MixedChecks.Get.ReadYourWrites()},
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -818,4 +680,4 @@ func mixedGetCall(ctx context.Context, subject readyourwrites.Mixed, args []any)
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:2bc49fe18a11cd1693fe8555f709ac51a7c2167fac0bc704ac9e83356140c3e2
+// dokimi:provenance sha256:764c2f8fea5faddab53ad6358be448f17944466efc644cc225db3b5efaa74ce0

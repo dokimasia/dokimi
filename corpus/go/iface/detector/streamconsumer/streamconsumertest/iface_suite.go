@@ -15,16 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The refused claims of StreamConsumer:
-//
-// StreamConsumer.Ingest/cancel: eidos derives no sample of the parameter
-// src of Ingest. The remedy is to author a sample of the parameter src
-// with the directive sample.
-//
-// StreamConsumer.Ingest/zero-on-error: eidos derives no sample of the
-// parameter src of Ingest. The remedy is to author a sample of the
-// parameter src with the directive sample.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -228,4 +218,4 @@ func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer
 	return streamConsumerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:fecb345048837d2b2ac5cf9c7c504419bfc0b9f8a8d7e72d9d29e5b2d7a21d1c
+// dokimi:provenance sha256:47210b64330f2a3decfd94454151ec3c479fd162d0f374e2867fd983503e5d61

@@ -16,26 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Counter:
-//
-// Counter.Steps/smoke: Steps returns without a panic for derived inputs.
-//
-// Counter.Steps/deterministic: Steps returns the same value for the same
-// inputs.
-
-// The derived checks of Counter that witness their laws at the shallow
-// end:
-//
-// Counter.Steps/smoke
-//
-// Counter.Steps/deterministic
-
-// The refused claims of Counter:
-//
-// Counter.Nodes/deterministic: eidos derives no sample of the parameter
-// root of Nodes. The remedy is to author a sample of the parameter root
-// with the directive sample.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -104,9 +84,6 @@ func CounterSuite() conform.Suite[recursive.Counter] {
 				ID:          CounterChecks.Steps.Smoke(),
 				Statement:   "Steps returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CounterHandle) {
@@ -121,9 +98,6 @@ func CounterSuite() conform.Suite[recursive.Counter] {
 				ID:          CounterChecks.Steps.Deterministic(),
 				Statement:   "Steps returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[recursive.Counter]{CounterChecks.Steps.Smoke()},
@@ -420,4 +394,4 @@ func counterStepsDrifts(h *CounterHandle) recursive.Counter {
 	return &counterStepsDriftsDefect{counterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:a628ee92624231970a6c032dce22592cc7667d39bf1c67ed178f883fdf358e76
+// dokimi:provenance sha256:e6aa4e0a1778d943754df934871ab3b072742397de1f9a91346c9512351de732

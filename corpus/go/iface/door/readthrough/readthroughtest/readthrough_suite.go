@@ -16,84 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Cache:
-//
-// Cache.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Cache.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Cache.Get/cancel: Get returns an error for a cancelled context.
-//
-// Cache.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Cache.Get/failure-is-reported: Get returns an error when a call of its
-// dependency fails.
-//
-// Cache.Get/failure-is-reported#generated: Get returns an error when a
-// call of its dependency fails.
-//
-// Cache.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Cache.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Cache.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Cache.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Cache.Put/cancel: Put returns an error for a cancelled context.
-//
-// Cache.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Cache.Put/failure-is-reported: Put returns an error when a call of its
-// dependency fails.
-//
-// Cache.Put/failure-is-reported#generated: Put returns an error when a
-// call of its dependency fails.
-//
-// Cache.Put/retry-succeeds: Put succeeds within the declared attempts.
-//
-// Cache.Put/retry-succeeds#generated: Put succeeds within the declared
-// attempts.
-//
-// Cache.Put/retry-succeeds-under-faults: Put succeeds within the declared
-// attempts after a call of its dependency fails.
-//
-// Cache.Put/retry-succeeds-under-faults#generated: Put succeeds within the
-// declared attempts after a call of its dependency fails.
-//
-// Cache.Put/no-partial-write: Get finds no effect of a Put that failed
-// with its dependency.
-//
-// Cache.Put/no-partial-write#generated: Get finds no effect of a Put that
-// failed with its dependency.
-//
-// Cache.Put/no-trace-of-a-failed-call: Get finds no effect of a Put that
-// failed with its dependencies, over any sequence of calls.
-
-// The derived checks of Cache that witness their laws at the shallow end:
-//
-// Cache.Get/smoke
-//
-// Cache.Put/smoke
-//
-// Cache.Put/retry-succeeds
-//
-// Cache.Put/retry-succeeds#generated
-//
-// Cache.Put/no-partial-write
-//
-// Cache.Put/no-partial-write#generated
-
-// The unclaimed classifications of Cache:
-//
-// The shape:writer of Cache.Put has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -125,22 +47,10 @@ func (c cacheGet) Smoke() conform.ID[readthrough.Cache] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c cacheGet) SmokeGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c cacheGet) Cancel() conform.ID[readthrough.Cache] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c cacheGet) CancelGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Get returns an
@@ -149,22 +59,10 @@ func (c cacheGet) FailureIsReported() conform.ID[readthrough.Cache] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Get
-// returns an error when a call of its dependency fails.
-func (c cacheGet) FailureIsReportedGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c cacheGet) ZeroOnError() conform.ID[readthrough.Cache] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c cacheGet) ZeroOnErrorGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("zero-on-error#generated")
 }
 
 // cachePut is the name of Cache.Put, with the identities of its checks.
@@ -178,22 +76,10 @@ func (c cachePut) Smoke() conform.ID[readthrough.Cache] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c cachePut) SmokeGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c cachePut) Cancel() conform.ID[readthrough.Cache] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c cachePut) CancelGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Put returns an
@@ -202,22 +88,10 @@ func (c cachePut) FailureIsReported() conform.ID[readthrough.Cache] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Put
-// returns an error when a call of its dependency fails.
-func (c cachePut) FailureIsReportedGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // RetrySucceeds returns the identity of the check that Put succeeds within
 // the declared attempts.
 func (c cachePut) RetrySucceeds() conform.ID[readthrough.Cache] {
 	return c.Check("retry-succeeds")
-}
-
-// RetrySucceedsGenerated returns the identity of the check that Put
-// succeeds within the declared attempts.
-func (c cachePut) RetrySucceedsGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("retry-succeeds#generated")
 }
 
 // RetrySucceedsUnderFaults returns the identity of the check that Put
@@ -227,23 +101,10 @@ func (c cachePut) RetrySucceedsUnderFaults() conform.ID[readthrough.Cache] {
 	return c.Check("retry-succeeds-under-faults")
 }
 
-// RetrySucceedsUnderFaultsGenerated returns the identity of the check that
-// Put succeeds within the declared attempts after a call of its dependency
-// fails.
-func (c cachePut) RetrySucceedsUnderFaultsGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("retry-succeeds-under-faults#generated")
-}
-
 // NoPartialWrite returns the identity of the check that Get finds no
 // effect of a Put that failed with its dependency.
 func (c cachePut) NoPartialWrite() conform.ID[readthrough.Cache] {
 	return c.Check("no-partial-write")
-}
-
-// NoPartialWriteGenerated returns the identity of the check that Get finds
-// no effect of a Put that failed with its dependency.
-func (c cachePut) NoPartialWriteGenerated() conform.ID[readthrough.Cache] {
-	return c.Check("no-partial-write#generated")
 }
 
 // NoTraceOfAFailedCall returns the identity of the check that Get finds no
@@ -265,9 +126,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CacheHandle) {
@@ -279,12 +137,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cacheGetPanics,
 			},
 			{
-				ID:          CacheChecks.Get.SmokeGenerated(),
+				ID:          CacheChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -299,9 +154,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CacheHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -312,12 +164,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cacheGetIgnoresCancel,
 			},
 			{
-				ID:          CacheChecks.Get.CancelGenerated(),
+				ID:          CacheChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -332,9 +181,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Get.FailureIsReported(),
 				Statement:   "Get returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *CacheHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -345,12 +191,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cacheGetSwallowsFailure,
 			},
 			{
-				ID:        CacheChecks.Get.FailureIsReportedGenerated(),
+				ID:        CacheChecks.Get.FailureIsReported().Generated(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -369,9 +212,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CacheHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (readthrough.Value, error) {
@@ -381,12 +221,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cacheGetValueBeside,
 			},
 			{
-				ID:          CacheChecks.Get.ZeroOnErrorGenerated(),
+				ID:          CacheChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -400,9 +237,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CacheHandle) {
@@ -413,12 +247,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cachePutPanics,
 			},
 			{
-				ID:          CacheChecks.Put.SmokeGenerated(),
+				ID:          CacheChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[readthrough.Value](), "v")
@@ -432,9 +263,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CacheHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -444,12 +272,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cachePutIgnoresCancel,
 			},
 			{
-				ID:          CacheChecks.Put.CancelGenerated(),
+				ID:          CacheChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[readthrough.Value](), "v")
@@ -463,9 +288,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Put.FailureIsReported(),
 				Statement:   "Put returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *CacheHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -475,12 +297,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cachePutSwallowsFailure,
 			},
 			{
-				ID:        CacheChecks.Put.FailureIsReportedGenerated(),
+				ID:        CacheChecks.Put.FailureIsReported().Generated(),
 				Statement: "Put returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -498,9 +317,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Put.RetrySucceeds(),
 				Statement:   "Put succeeds within the declared attempts",
 				Claim:       spec.RetrySucceeds,
-				Probe:       spec.SucceedsWithin,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CacheHandle) {
@@ -511,12 +327,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cachePutFailsAlways,
 			},
 			{
-				ID:          CacheChecks.Put.RetrySucceedsGenerated(),
+				ID:          CacheChecks.Put.RetrySucceeds().Generated(),
 				Statement:   "Put succeeds within the declared attempts",
 				Claim:       spec.RetrySucceeds,
-				Probe:       spec.SucceedsWithin,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *CacheHandle, c *prop.Case) {
@@ -531,9 +344,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Put.RetrySucceedsUnderFaults(),
 				Statement:   "Put succeeds within the declared attempts after a call of its dependency fails",
 				Claim:       spec.RetrySucceedsUnderFaults,
-				Probe:       spec.SucceedsAfterAFailure,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Entails:     []conform.ID[readthrough.Cache]{CacheChecks.Put.RetrySucceeds()},
 				Apply: func(h *CacheHandle) {
@@ -544,18 +354,15 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cachePutGivesUpEarly,
 			},
 			{
-				ID:        CacheChecks.Put.RetrySucceedsUnderFaultsGenerated(),
+				ID:        CacheChecks.Put.RetrySucceedsUnderFaults().Generated(),
 				Statement: "Put succeeds within the declared attempts after a call of its dependency fails",
 				Claim:     spec.RetrySucceedsUnderFaults,
-				Probe:     spec.SucceedsAfterAFailure,
-				Reason:    spec.NeverConverged,
-				Law:       spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
 					spec.NothingBeyondACaller,
 				},
-				Entails: []conform.ID[readthrough.Cache]{CacheChecks.Put.RetrySucceedsGenerated()},
+				Entails: []conform.ID[readthrough.Cache]{CacheChecks.Put.RetrySucceeds().Generated()},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[readthrough.Value](), "v")
 					probe.SucceedsAfterAFailure(h, func(ctx context.Context) error {
@@ -568,9 +375,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Put.NoPartialWrite(),
 				Statement:   "Get finds no effect of a Put that failed with its dependency",
 				Claim:       spec.NoPartialWrite,
-				Probe:       spec.FailsWithoutEffect,
-				Reason:      spec.PartialWrite,
-				Law:         spec.FailedCallLeavesNoEffect,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CacheHandle) {
@@ -583,12 +387,9 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				Defect: cacheGetHalfApplied,
 			},
 			{
-				ID:        CacheChecks.Put.NoPartialWriteGenerated(),
+				ID:        CacheChecks.Put.NoPartialWrite().Generated(),
 				Statement: "Get finds no effect of a Put that failed with its dependency",
 				Claim:     spec.NoPartialWrite,
-				Probe:     spec.FailsWithoutEffect,
-				Reason:    spec.PartialWrite,
-				Law:       spec.FailedCallLeavesNoEffect,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -609,9 +410,6 @@ func CacheSuite() conform.Suite[readthrough.Cache] {
 				ID:          CacheChecks.Put.NoTraceOfAFailedCall(),
 				Statement:   "Get finds no effect of a Put that failed with its dependencies, over any sequence of calls",
 				Claim:       spec.NoTraceOfAFailedCall,
-				Probe:       spec.FailedCallsLeaveNoTrace,
-				Reason:      spec.PartialWrite,
-				Law:         spec.FailedCallLeavesNoEffect,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences, spec.CallThatFailsOnDemand},
 				Entails:     []conform.ID[readthrough.Cache]{CacheChecks.Put.NoPartialWrite()},
 				Property: func(h *CacheHandle, c *prop.Case) {
@@ -1069,4 +867,4 @@ func cachePutCall(ctx context.Context, subject readthrough.Cache, args []any) ([
 	return nil, subject.Put(ctx, a0)
 }
 
-// dokimi:provenance sha256:4d715c62e847db667862c24ca744087ec57ffa556eb5ecbe86dec626ca465ac7
+// dokimi:provenance sha256:2b9c040b9980391454d937f1beecc82c2b5d446dd0d449e622485beadd8f75b0

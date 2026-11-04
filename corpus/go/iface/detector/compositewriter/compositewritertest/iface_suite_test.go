@@ -51,22 +51,7 @@ func TestCompositeWriterSuite(t *testing.T) {
 					return &compositeWriterSubject{}
 				},
 			}),
-			conform.Excuse(
-				compositewritertest.CompositeWriterChecks.Set.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				compositewritertest.CompositeWriterChecks.Set.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				compositewritertest.CompositeWriterChecks.Set.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				compositewritertest.CompositeWriterChecks.Set.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[compositewriter.CompositeWriter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -90,31 +75,20 @@ func TestCompositeWriterSuite(t *testing.T) {
 					return &compositeWriterSubject{}
 				},
 			}),
-			conform.Excuse(
-				compositewritertest.CompositeWriterChecks.Set.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				compositewritertest.CompositeWriterChecks.Set.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				compositewritertest.CompositeWriterChecks.Set.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				compositewritertest.CompositeWriterChecks.Set.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[compositewriter.CompositeWriter]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// compositeWriterSuite is the suite of CompositeWriter that the tests of
+// the planted defect of a ceiling apply.
+var compositeWriterSuite = compositewritertest.CompositeWriterSuite()
+
 // compositeWriterIdle returns the planted defect of a ceiling of
-// CompositeWriter with a spend of nothing, a subject that answers each
-// call at once.
+// CompositeWriter with a spend of nothing. Each call of the defect returns
+// its zero results at once.
 func compositeWriterIdle(h *compositewritertest.CompositeWriterHandle) compositewriter.CompositeWriter {
-	return compositewritertest.CompositeWriterSuite().Calls[0].Over(h, func() {})
+	return compositeWriterSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCompositeWriterSuiteBudgets applies the allocation ceilings of the
@@ -129,21 +103,8 @@ func TestCompositeWriterSuiteBudgets(t *testing.T) {
 			compositewritertest.CompositeWriterChecks.Set.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			compositewritertest.CompositeWriterChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			compositewritertest.CompositeWriterChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			compositewritertest.CompositeWriterChecks.Set.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			compositewritertest.CompositeWriterChecks.Set.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[compositewriter.CompositeWriter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -156,21 +117,8 @@ func FuzzCompositeWriterSuiteSet(f *testing.F) {
 		f,
 		compositewritertest.CompositeWriterChecks.Set.Callable,
 		compositeWriterIdle,
-		conform.Excuse(
-			compositewritertest.CompositeWriterChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			compositewritertest.CompositeWriterChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			compositewritertest.CompositeWriterChecks.Set.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			compositewritertest.CompositeWriterChecks.Set.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[compositewriter.CompositeWriter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -187,4 +135,4 @@ func BenchmarkCompositeWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6ca5e4e0d40d0f7c50c6c15f2f7f0a105ef20807aeb5a2738a3a3437e5cb4183
+// dokimi:provenance sha256:336cd57c2cde52403c1ab3558c574c4a7848bd7fd7ec02a1d26d6d93d30c5c86

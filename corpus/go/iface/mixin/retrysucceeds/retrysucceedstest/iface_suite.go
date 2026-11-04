@@ -15,47 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Call/smoke: Call returns without a panic for derived inputs.
-//
-// Mixed.Call/smoke#generated: Call returns without a panic for derived
-// inputs.
-//
-// Mixed.Call/cancel: Call returns an error for a cancelled context.
-//
-// Mixed.Call/cancel#generated: Call returns an error for a cancelled
-// context.
-//
-// Mixed.Call/retry-succeeds: Call succeeds within the declared attempts.
-//
-// Mixed.Call/retry-succeeds#generated: Call succeeds within the declared
-// attempts.
-//
-// Mixed.Attempts/smoke: Attempts returns without a panic for derived
-// inputs.
-//
-// Mixed.Attempts/cancel: Attempts returns an error for a cancelled
-// context.
-//
-// Mixed.Attempts/zero-on-error: Attempts returns the zero value beside an
-// error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Call/smoke
-//
-// Mixed.Call/retry-succeeds
-//
-// Mixed.Call/retry-succeeds#generated
-//
-// Mixed.Attempts/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Call has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -87,34 +46,16 @@ func (c mixedCall) Smoke() conform.ID[retrysucceeds.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Call returns
-// without a panic for derived inputs.
-func (c mixedCall) SmokeGenerated() conform.ID[retrysucceeds.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Call returns an error for
 // a cancelled context.
 func (c mixedCall) Cancel() conform.ID[retrysucceeds.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Call returns an
-// error for a cancelled context.
-func (c mixedCall) CancelGenerated() conform.ID[retrysucceeds.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // RetrySucceeds returns the identity of the check that Call succeeds
 // within the declared attempts.
 func (c mixedCall) RetrySucceeds() conform.ID[retrysucceeds.Mixed] {
 	return c.Check("retry-succeeds")
-}
-
-// RetrySucceedsGenerated returns the identity of the check that Call
-// succeeds within the declared attempts.
-func (c mixedCall) RetrySucceedsGenerated() conform.ID[retrysucceeds.Mixed] {
-	return c.Check("retry-succeeds#generated")
 }
 
 // mixedAttempts is the name of Mixed.Attempts, with the identities of its
@@ -153,9 +94,6 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				ID:          MixedChecks.Call.Smoke(),
 				Statement:   "Call returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -166,12 +104,9 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				Defect: mixedCallPanics,
 			},
 			{
-				ID:          MixedChecks.Call.SmokeGenerated(),
+				ID:          MixedChecks.Call.Smoke().Generated(),
 				Statement:   "Call returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -185,9 +120,6 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				ID:          MixedChecks.Call.Cancel(),
 				Statement:   "Call returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -197,12 +129,9 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				Defect: mixedCallIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Call.CancelGenerated(),
+				ID:          MixedChecks.Call.Cancel().Generated(),
 				Statement:   "Call returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -216,9 +145,6 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				ID:          MixedChecks.Call.RetrySucceeds(),
 				Statement:   "Call succeeds within the declared attempts",
 				Claim:       spec.RetrySucceeds,
-				Probe:       spec.SucceedsWithin,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -229,12 +155,9 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				Defect: mixedCallFailsAlways,
 			},
 			{
-				ID:          MixedChecks.Call.RetrySucceedsGenerated(),
+				ID:          MixedChecks.Call.RetrySucceeds().Generated(),
 				Statement:   "Call succeeds within the declared attempts",
 				Claim:       spec.RetrySucceeds,
-				Probe:       spec.SucceedsWithin,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -249,9 +172,6 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				ID:          MixedChecks.Attempts.Smoke(),
 				Statement:   "Attempts returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -266,9 +186,6 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				ID:          MixedChecks.Attempts.Cancel(),
 				Statement:   "Attempts returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -282,9 +199,6 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 				ID:          MixedChecks.Attempts.ZeroOnError(),
 				Statement:   "Attempts returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -542,4 +456,4 @@ func mixedAttemptsValueBeside(h *MixedHandle) retrysucceeds.Mixed {
 	return &mixedAttemptsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:936e4018b7b70a946730a7c276546ce944d86d4517c26a1da0e3642a45f67859
+// dokimi:provenance sha256:c4d882c9a9ba12ac66ff3317ff31654fc4827447659b2466a160b91ec91979f6

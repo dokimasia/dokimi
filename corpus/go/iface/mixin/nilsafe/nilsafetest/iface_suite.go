@@ -15,32 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Store/smoke: Store returns without a panic for derived inputs.
-//
-// Mixed.Store/smoke#generated: Store returns without a panic for derived
-// inputs.
-//
-// Mixed.Store/cancel: Store returns an error for a cancelled context.
-//
-// Mixed.Store/cancel#generated: Store returns an error for a cancelled
-// context.
-//
-// Mixed.Store/nil-safe: Store returns without a panic for a nil argument.
-//
-// Mixed.Store/nil-safe#generated: Store returns without a panic for a nil
-// argument.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Store/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Store has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -71,34 +45,16 @@ func (c mixedStore) Smoke() conform.ID[nilsafe.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Store returns
-// without a panic for derived inputs.
-func (c mixedStore) SmokeGenerated() conform.ID[nilsafe.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Store returns an error for
 // a cancelled context.
 func (c mixedStore) Cancel() conform.ID[nilsafe.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Store returns an
-// error for a cancelled context.
-func (c mixedStore) CancelGenerated() conform.ID[nilsafe.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // NilSafe returns the identity of the check that Store returns without a
 // panic for a nil argument.
 func (c mixedStore) NilSafe() conform.ID[nilsafe.Mixed] {
 	return c.Check("nil-safe")
-}
-
-// NilSafeGenerated returns the identity of the check that Store returns
-// without a panic for a nil argument.
-func (c mixedStore) NilSafeGenerated() conform.ID[nilsafe.Mixed] {
-	return c.Check("nil-safe#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -113,9 +69,6 @@ func MixedSuite() conform.Suite[nilsafe.Mixed] {
 				ID:          MixedChecks.Store.Smoke(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -126,12 +79,9 @@ func MixedSuite() conform.Suite[nilsafe.Mixed] {
 				Defect: mixedStorePanics,
 			},
 			{
-				ID:          MixedChecks.Store.SmokeGenerated(),
+				ID:          MixedChecks.Store.Smoke().Generated(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[*nilsafe.Payload](), "v")
@@ -145,9 +95,6 @@ func MixedSuite() conform.Suite[nilsafe.Mixed] {
 				ID:          MixedChecks.Store.Cancel(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -157,12 +104,9 @@ func MixedSuite() conform.Suite[nilsafe.Mixed] {
 				Defect: mixedStoreIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Store.CancelGenerated(),
+				ID:          MixedChecks.Store.Cancel().Generated(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[*nilsafe.Payload](), "v")
@@ -176,9 +120,6 @@ func MixedSuite() conform.Suite[nilsafe.Mixed] {
 				ID:          MixedChecks.Store.NilSafe(),
 				Statement:   "Store returns without a panic for a nil argument",
 				Claim:       spec.NilSafe,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NilArgumentIsAccepted,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
@@ -188,12 +129,9 @@ func MixedSuite() conform.Suite[nilsafe.Mixed] {
 				Defect: mixedStorePanics,
 			},
 			{
-				ID:          MixedChecks.Store.NilSafeGenerated(),
+				ID:          MixedChecks.Store.NilSafe().Generated(),
 				Statement:   "Store returns without a panic for a nil argument",
 				Claim:       spec.NilSafe,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NilArgumentIsAccepted,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[*nilsafe.Payload](), "v")
@@ -345,4 +283,4 @@ func mixedStoreIgnoresCancel(h *MixedHandle) nilsafe.Mixed {
 	return &mixedStoreIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:8fbbb0b7cb529d8e9fa19278be5cf96da13d7415d40c8651676d6f8581e9ade4
+// dokimi:provenance sha256:7d4ad92fb5e7203c35e80c040175dad52fe876c16d49fae9fe153283eae3090e

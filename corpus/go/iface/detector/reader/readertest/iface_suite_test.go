@@ -48,38 +48,7 @@ func TestReaderSuite(t *testing.T) {
 				},
 				Defect: func(*readertest.ReaderHandle) reader.Reader { return &readerSubject{} },
 			}),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.Miss(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.MissGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[reader.Reader]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -101,46 +70,20 @@ func TestReaderSuite(t *testing.T) {
 				},
 				Defect: func(*readertest.ReaderHandle) reader.Reader { return &readerSubject{} },
 			}),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.Miss(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readertest.ReaderChecks.Get.MissGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[reader.Reader]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// readerSuite is the suite of Reader that the tests of the planted defect
+// of a ceiling apply.
+var readerSuite = readertest.ReaderSuite()
+
 // readerIdle returns the planted defect of a ceiling of Reader with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func readerIdle(h *readertest.ReaderHandle) reader.Reader {
-	return readertest.ReaderSuite().Calls[0].Over(h, func() {})
+	return readerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestReaderSuiteBudgets applies the allocation ceilings of the suite of
@@ -152,38 +95,7 @@ func TestReaderSuiteBudgets(t *testing.T) {
 		t,
 		readerIdle,
 		conform.Ceilings(readertest.ReaderChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.Miss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.MissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reader.Reader]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -194,38 +106,7 @@ func FuzzReaderSuiteGet(f *testing.F) {
 		f,
 		readertest.ReaderChecks.Get.Callable,
 		readerIdle,
-		conform.Excuse(
-			readertest.ReaderChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.Miss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readertest.ReaderChecks.Get.MissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reader.Reader]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -237,4 +118,4 @@ func BenchmarkReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1711cb24b52348b7e3c27c936bede6bc3406d3fb4d5467e462dc775f3cb74e28
+// dokimi:provenance sha256:32b98ea7b324b079ead9a915da90695d03f46fb026b1a27ccf153c13887cabf4

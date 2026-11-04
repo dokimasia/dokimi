@@ -15,53 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mixed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mixed.Get/cancel: Get returns an error for a cancelled context.
-//
-// Mixed.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Mixed.TracedGet/smoke: TracedGet returns without a panic for derived
-// inputs.
-//
-// Mixed.TracedGet/smoke#generated: TracedGet returns without a panic for
-// derived inputs.
-//
-// Mixed.TracedGet/cancel: TracedGet returns an error for a cancelled
-// context.
-//
-// Mixed.TracedGet/cancel#generated: TracedGet returns an error for a
-// cancelled context.
-//
-// Mixed.TracedGet/zero-on-error: TracedGet returns the zero value beside
-// an error.
-//
-// Mixed.TracedGet/zero-on-error#generated: TracedGet returns the zero
-// value beside an error.
-//
-// Mixed.TracedGet/agrees-with-its-sibling: TracedGet returns what Get
-// returns for one input.
-//
-// Mixed.TracedGet/agrees-with-its-sibling#generated: TracedGet returns
-// what Get returns for one input.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Get/smoke
-//
-// Mixed.TracedGet/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -93,34 +46,16 @@ func (c mixedGet) Smoke() conform.ID[wrappedvia.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mixedGet) SmokeGenerated() conform.ID[wrappedvia.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[wrappedvia.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c mixedGet) CancelGenerated() conform.ID[wrappedvia.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c mixedGet) ZeroOnError() conform.ID[wrappedvia.Mixed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c mixedGet) ZeroOnErrorGenerated() conform.ID[wrappedvia.Mixed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // mixedTracedGet is the name of Mixed.TracedGet, with the identities of
@@ -135,22 +70,10 @@ func (c mixedTracedGet) Smoke() conform.ID[wrappedvia.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that TracedGet returns
-// without a panic for derived inputs.
-func (c mixedTracedGet) SmokeGenerated() conform.ID[wrappedvia.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that TracedGet returns an error
 // for a cancelled context.
 func (c mixedTracedGet) Cancel() conform.ID[wrappedvia.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that TracedGet returns
-// an error for a cancelled context.
-func (c mixedTracedGet) CancelGenerated() conform.ID[wrappedvia.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that TracedGet returns the
@@ -159,22 +82,10 @@ func (c mixedTracedGet) ZeroOnError() conform.ID[wrappedvia.Mixed] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that TracedGet
-// returns the zero value beside an error.
-func (c mixedTracedGet) ZeroOnErrorGenerated() conform.ID[wrappedvia.Mixed] {
-	return c.Check("zero-on-error#generated")
-}
-
 // AgreesWithItsSibling returns the identity of the check that TracedGet
 // returns what Get returns for one input.
 func (c mixedTracedGet) AgreesWithItsSibling() conform.ID[wrappedvia.Mixed] {
 	return c.Check("agrees-with-its-sibling")
-}
-
-// AgreesWithItsSiblingGenerated returns the identity of the check that
-// TracedGet returns what Get returns for one input.
-func (c mixedTracedGet) AgreesWithItsSiblingGenerated() conform.ID[wrappedvia.Mixed] {
-	return c.Check("agrees-with-its-sibling#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -189,9 +100,6 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				ID:          MixedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -203,12 +111,9 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Get.SmokeGenerated(),
+				ID:          MixedChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -223,9 +128,6 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -236,12 +138,9 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Get.CancelGenerated(),
+				ID:          MixedChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -256,9 +155,6 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				ID:          MixedChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (wrappedvia.Value, error) {
@@ -268,12 +164,9 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Defect: mixedGetValueBeside,
 			},
 			{
-				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -287,9 +180,6 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				ID:          MixedChecks.TracedGet.Smoke(),
 				Statement:   "TracedGet returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -301,12 +191,9 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Defect: mixedTracedGetPanics,
 			},
 			{
-				ID:          MixedChecks.TracedGet.SmokeGenerated(),
+				ID:          MixedChecks.TracedGet.Smoke().Generated(),
 				Statement:   "TracedGet returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -321,9 +208,6 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				ID:          MixedChecks.TracedGet.Cancel(),
 				Statement:   "TracedGet returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -334,12 +218,9 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Defect: mixedTracedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.TracedGet.CancelGenerated(),
+				ID:          MixedChecks.TracedGet.Cancel().Generated(),
 				Statement:   "TracedGet returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -354,9 +235,6 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				ID:          MixedChecks.TracedGet.ZeroOnError(),
 				Statement:   "TracedGet returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (wrappedvia.Value, error) {
@@ -366,12 +244,9 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Defect: mixedTracedGetValueBeside,
 			},
 			{
-				ID:          MixedChecks.TracedGet.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.TracedGet.ZeroOnError().Generated(),
 				Statement:   "TracedGet returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -385,9 +260,6 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				ID:          MixedChecks.TracedGet.AgreesWithItsSibling(),
 				Statement:   "TracedGet returns what Get returns for one input",
 				Claim:       spec.AgreesWithItsSibling,
-				Probe:       spec.AgreesWithTheSibling,
-				Reason:      spec.DivergedFromTheSibling,
-				Law:         spec.WrapperReturnsWhatItsSiblingReturns,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.AgreesWithTheSibling(h, func(ctx context.Context) (wrappedvia.Value, error) {
@@ -399,12 +271,9 @@ func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 				Defect: mixedTracedGetStopsDelegating,
 			},
 			{
-				ID:          MixedChecks.TracedGet.AgreesWithItsSiblingGenerated(),
+				ID:          MixedChecks.TracedGet.AgreesWithItsSibling().Generated(),
 				Statement:   "TracedGet returns what Get returns for one input",
 				Claim:       spec.AgreesWithItsSibling,
-				Probe:       spec.AgreesWithTheSibling,
-				Reason:      spec.DivergedFromTheSibling,
-				Law:         spec.WrapperReturnsWhatItsSiblingReturns,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -672,4 +541,4 @@ func mixedTracedGetStopsDelegating(h *MixedHandle) wrappedvia.Mixed {
 	return &mixedTracedGetStopsDelegatingDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:d5634ba2644a2506e9dbd78a82801fbec2f9c0ef90f2e134dc52858d4a3f9b7c
+// dokimi:provenance sha256:6d9f70bb7dd61b351169da126f920c814edcc8a040e09ceff71c852a2676fbd6

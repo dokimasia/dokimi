@@ -27,13 +27,15 @@ func mixedStubUint64Pins() uint64 {
 	return want0
 }
 
-// mixedStubUint64Subject returns the subject of [stub.Behaviour] for
-// Uint64. The subject calls a new double that reports to tb.
+// mixedStubUint64Subject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Uint64. The subject calls a new double that
+// reports to tb.
 func mixedStubUint64Subject(tb assert.TB) stub.Subject[sourcetest.MixedUint64Call, sourcetest.MixedUint64Return] {
 	tb.Helper()
 	s := sourcetest.NewMixedStub(tb)
 	return stub.Subject[sourcetest.MixedUint64Call, sourcetest.MixedUint64Return]{
-		Stub: s.OnUint64.MethodStub,
+		Stub:  s.OnUint64.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubUint64(tb, s)
 		},
@@ -41,9 +43,14 @@ func mixedStubUint64Subject(tb assert.TB) stub.Subject[sourcetest.MixedUint64Cal
 			got0 := mixedStubUint64(tb, s)
 			return sourcetest.MixedUint64Return{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() sourcetest.MixedUint64Return {
+			want0 := mixedStubUint64Pins()
+			s.OnUint64.Returns(want0)
+			return sourcetest.MixedUint64Return{Result: want0}
+		},
+		Override: func(seen func(sourcetest.MixedUint64Call)) {
 			s.OnUint64.Func(func() uint64 {
-				mark()
+				seen(sourcetest.MixedUint64Call{})
 				var z0 uint64
 				return z0
 			})
@@ -64,7 +71,6 @@ func mixedStubInstanceOf(tb assert.TB, s *sourcetest.MixedStub) mixedStubInstanc
 		Call: func() {
 			_ = mixedStubUint64(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -76,47 +82,14 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Uint64", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Uint64", mixedStubUint64Subject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sourcetest.NewMixedStub(t)
-			var seen []sourcetest.MixedUint64Call
-			s.OnUint64.OnRecord(func(c sourcetest.MixedUint64Call) { seen = append(seen, c) })
-			_ = mixedStubUint64(t, s)
-			_ = mixedStubUint64(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Uint64")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, sourcetest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Uint64", func(t *testing.T) {
+		t.Run("Uint64", func(t *testing.T) {
 			t.Parallel()
-			s := sourcetest.NewMixedStub(t)
-			_ = mixedStubUint64(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnUint64.CallCount(), 0, "ResetCalls clears the calls of Uint64")
-		})
-
-		t.Run("keeps the results of Returns of Uint64", func(t *testing.T) {
-			t.Parallel()
-			s := sourcetest.NewMixedStub(t)
-			want0 := mixedStubUint64Pins()
-			s.OnUint64.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubUint64(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Uint64")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, sourcetest.NewMixedStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Uint64", mixedStubUint64Subject)
 		})
 	})
 
@@ -187,34 +160,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedUint64Stub checks the methods of MixedUint64Stub, which
-// configures Uint64.
-func TestMixedUint64Stub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Uint64", func(t *testing.T) {
-			t.Parallel()
-			s := sourcetest.NewMixedStub(t)
-			want0 := mixedStubUint64Pins()
-			s.OnUint64.Returns(want0)
-			got0 := mixedStubUint64(t, s)
-			assert.Equal(t, got0, want0, "Uint64 returns the Result that Returns sets")
-		})
-
-		t.Run("configures Uint64 for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sourcetest.NewMixedStub(r)
-			s.OnUint64.Strict()
-			var want0 uint64
-			s.OnUint64.Returns(want0)
-			_ = mixedStubUint64(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Uint64")
-		})
-	})
-}
-
-// dokimi:provenance sha256:23e501050e3aa1b9a49cb3d7c26e07a869cd5313a0ce4757e717416a964480aa
+// dokimi:provenance sha256:f5943a841a13deccdce242aeb7802b47b6ce94fc01eb82ff14feed70a3907995

@@ -16,89 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Ledger:
-//
-// Ledger.Run/smoke: Run returns without a panic for derived inputs.
-//
-// Ledger.Run/smoke#generated: Run returns without a panic for derived
-// inputs.
-//
-// Ledger.Run/cancel: Run returns an error for a cancelled context.
-//
-// Ledger.Run/cancel#generated: Run returns an error for a cancelled
-// context.
-//
-// Ledger.Run/failure-is-reported: Run returns an error when a call of its
-// dependency fails.
-//
-// Ledger.Run/failure-is-reported#generated: Run returns an error when a
-// call of its dependency fails.
-//
-// Ledger.Run/transaction: Get finds nothing that a failed Run wrote
-// through Put.
-//
-// Ledger.Run/transaction#generated: Get finds nothing that a failed Run
-// wrote through Put.
-//
-// Ledger.Run/transaction-under-faults: Get finds nothing that Run wrote
-// through Put before its commit failed.
-//
-// Ledger.Run/transaction-under-faults#generated: Get finds nothing that
-// Run wrote through Put before its commit failed.
-//
-// Ledger.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Ledger.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Ledger.Put/cancel: Put returns an error for a cancelled context.
-//
-// Ledger.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Ledger.Put/failure-is-reported: Put returns an error when a call of its
-// dependency fails.
-//
-// Ledger.Put/failure-is-reported#generated: Put returns an error when a
-// call of its dependency fails.
-//
-// Ledger.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Ledger.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Ledger.Get/cancel: Get returns an error for a cancelled context.
-//
-// Ledger.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Ledger.Get/failure-is-reported: Get returns an error when a call of its
-// dependency fails.
-//
-// Ledger.Get/failure-is-reported#generated: Get returns an error when a
-// call of its dependency fails.
-//
-// Ledger.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Ledger.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-
-// The derived checks of Ledger that witness their laws at the shallow end:
-//
-// Ledger.Run/smoke
-//
-// Ledger.Put/smoke
-//
-// Ledger.Get/smoke
-
-// The unclaimed classifications of Ledger:
-//
-// The shape:writer of Ledger.Run has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:composite-writer of Ledger.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -132,22 +49,10 @@ func (c ledgerRun) Smoke() conform.ID[ledger.Ledger] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Run returns
-// without a panic for derived inputs.
-func (c ledgerRun) SmokeGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c ledgerRun) Cancel() conform.ID[ledger.Ledger] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Run returns an
-// error for a cancelled context.
-func (c ledgerRun) CancelGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Run returns an
@@ -156,34 +61,16 @@ func (c ledgerRun) FailureIsReported() conform.ID[ledger.Ledger] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Run
-// returns an error when a call of its dependency fails.
-func (c ledgerRun) FailureIsReportedGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // Transaction returns the identity of the check that Get finds nothing
 // that a failed Run wrote through Put.
 func (c ledgerRun) Transaction() conform.ID[ledger.Ledger] {
 	return c.Check("transaction")
 }
 
-// TransactionGenerated returns the identity of the check that Get finds
-// nothing that a failed Run wrote through Put.
-func (c ledgerRun) TransactionGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("transaction#generated")
-}
-
 // TransactionUnderFaults returns the identity of the check that Get finds
 // nothing that Run wrote through Put before its commit failed.
 func (c ledgerRun) TransactionUnderFaults() conform.ID[ledger.Ledger] {
 	return c.Check("transaction-under-faults")
-}
-
-// TransactionUnderFaultsGenerated returns the identity of the check that
-// Get finds nothing that Run wrote through Put before its commit failed.
-func (c ledgerRun) TransactionUnderFaultsGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("transaction-under-faults#generated")
 }
 
 // ledgerPut is the name of Ledger.Put, with the identities of its checks.
@@ -197,34 +84,16 @@ func (c ledgerPut) Smoke() conform.ID[ledger.Ledger] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c ledgerPut) SmokeGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c ledgerPut) Cancel() conform.ID[ledger.Ledger] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c ledgerPut) CancelGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("cancel#generated")
-}
-
 // FailureIsReported returns the identity of the check that Put returns an
 // error when a call of its dependency fails.
 func (c ledgerPut) FailureIsReported() conform.ID[ledger.Ledger] {
 	return c.Check("failure-is-reported")
-}
-
-// FailureIsReportedGenerated returns the identity of the check that Put
-// returns an error when a call of its dependency fails.
-func (c ledgerPut) FailureIsReportedGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("failure-is-reported#generated")
 }
 
 // ledgerGet is the name of Ledger.Get, with the identities of its checks.
@@ -238,22 +107,10 @@ func (c ledgerGet) Smoke() conform.ID[ledger.Ledger] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c ledgerGet) SmokeGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c ledgerGet) Cancel() conform.ID[ledger.Ledger] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c ledgerGet) CancelGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Get returns an
@@ -262,22 +119,10 @@ func (c ledgerGet) FailureIsReported() conform.ID[ledger.Ledger] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Get
-// returns an error when a call of its dependency fails.
-func (c ledgerGet) FailureIsReportedGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c ledgerGet) ZeroOnError() conform.ID[ledger.Ledger] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c ledgerGet) ZeroOnErrorGenerated() conform.ID[ledger.Ledger] {
-	return c.Check("zero-on-error#generated")
 }
 
 // LedgerSuite returns the checks of Ledger, and the calls and the budgets
@@ -292,9 +137,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Run.Smoke(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LedgerHandle) {
@@ -305,12 +147,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerRunPanics,
 			},
 			{
-				ID:          LedgerChecks.Run.SmokeGenerated(),
+				ID:          LedgerChecks.Run.Smoke().Generated(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					bodyResults := c.Draw(prop.List(prop.SampledFrom[error](nil, conform.ErrGenerated)), "body")
@@ -335,9 +174,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -347,12 +183,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerRunIgnoresCancel,
 			},
 			{
-				ID:          LedgerChecks.Run.CancelGenerated(),
+				ID:          LedgerChecks.Run.Cancel().Generated(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					bodyResults := c.Draw(prop.List(prop.SampledFrom[error](nil, conform.ErrGenerated)), "body")
@@ -377,9 +210,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Run.FailureIsReported(),
 				Statement:   "Run returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -389,12 +219,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerRunSwallowsFailure,
 			},
 			{
-				ID:        LedgerChecks.Run.FailureIsReportedGenerated(),
+				ID:        LedgerChecks.Run.FailureIsReported().Generated(),
 				Statement: "Run returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -423,9 +250,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Run.Transaction(),
 				Statement:   "Get finds nothing that a failed Run wrote through Put",
 				Claim:       spec.Transaction,
-				Probe:       spec.RollsBackOnFailure,
-				Reason:      spec.NotRolledBack,
-				Law:         spec.FailedScopeLeavesNothing,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.RollsBackOnFailure(h, func(ctx context.Context, body probe.Act) error {
@@ -440,12 +264,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerGetKeepsFailedWrites,
 			},
 			{
-				ID:          LedgerChecks.Run.TransactionGenerated(),
+				ID:          LedgerChecks.Run.Transaction().Generated(),
 				Statement:   "Get finds nothing that a failed Run wrote through Put",
 				Claim:       spec.Transaction,
-				Probe:       spec.RollsBackOnFailure,
-				Reason:      spec.NotRolledBack,
-				Law:         spec.FailedScopeLeavesNothing,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -465,9 +286,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Run.TransactionUnderFaults(),
 				Statement:   "Get finds nothing that Run wrote through Put before its commit failed",
 				Claim:       spec.TransactionUnderFaults,
-				Probe:       spec.RollsBackUnderFaults,
-				Reason:      spec.NotRolledBack,
-				Law:         spec.FailedCommitLeavesNothing,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.RollsBackUnderFaults(h, func(ctx context.Context, body probe.Act) error {
@@ -482,12 +300,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerGetCommitsOnFailure,
 			},
 			{
-				ID:        LedgerChecks.Run.TransactionUnderFaultsGenerated(),
+				ID:        LedgerChecks.Run.TransactionUnderFaults().Generated(),
 				Statement: "Get finds nothing that Run wrote through Put before its commit failed",
 				Claim:     spec.TransactionUnderFaults,
-				Probe:     spec.RollsBackUnderFaults,
-				Reason:    spec.NotRolledBack,
-				Law:       spec.FailedCommitLeavesNothing,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -511,9 +326,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LedgerHandle) {
@@ -524,12 +336,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerPutPanics,
 			},
 			{
-				ID:          LedgerChecks.Put.SmokeGenerated(),
+				ID:          LedgerChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -544,9 +353,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -556,12 +362,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerPutIgnoresCancel,
 			},
 			{
-				ID:          LedgerChecks.Put.CancelGenerated(),
+				ID:          LedgerChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -576,9 +379,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Put.FailureIsReported(),
 				Statement:   "Put returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -588,12 +388,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerPutSwallowsFailure,
 			},
 			{
-				ID:        LedgerChecks.Put.FailureIsReportedGenerated(),
+				ID:        LedgerChecks.Put.FailureIsReported().Generated(),
 				Statement: "Put returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -612,9 +409,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LedgerHandle) {
@@ -626,12 +420,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerGetPanics,
 			},
 			{
-				ID:          LedgerChecks.Get.SmokeGenerated(),
+				ID:          LedgerChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -646,9 +437,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -659,12 +447,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerGetIgnoresCancel,
 			},
 			{
-				ID:          LedgerChecks.Get.CancelGenerated(),
+				ID:          LedgerChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -679,9 +464,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Get.FailureIsReported(),
 				Statement:   "Get returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -692,12 +474,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerGetSwallowsFailure,
 			},
 			{
-				ID:        LedgerChecks.Get.FailureIsReportedGenerated(),
+				ID:        LedgerChecks.Get.FailureIsReported().Generated(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -716,9 +495,6 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				ID:          LedgerChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -728,12 +504,9 @@ func LedgerSuite() conform.Suite[ledger.Ledger] {
 				Defect: ledgerGetValueBeside,
 			},
 			{
-				ID:          LedgerChecks.Get.ZeroOnErrorGenerated(),
+				ID:          LedgerChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1172,4 +945,4 @@ func ledgerGetValueBeside(h *LedgerHandle) ledger.Ledger {
 	return &ledgerGetValueBesideDefect{ledgerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:4ac2ba33c9f3c8b2a291e18e4f3be989ead144a163c0e92afd90e0e81a347c1e
+// dokimi:provenance sha256:88e24a613f504cefa52711c481f47fe3b5d4d482671adfa424fdbff9fdec0daf

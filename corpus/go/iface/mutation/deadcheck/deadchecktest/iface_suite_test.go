@@ -48,62 +48,7 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*deadchecktest.StoreHandle) deadcheck.Store { return &storeSubject{} },
 			}),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ReadAfterWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ReadAfterWriteGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ReadsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[deadcheck.Store]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -125,70 +70,19 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*deadchecktest.StoreHandle) deadcheck.Store { return &storeSubject{} },
 			}),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ReadAfterWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ReadAfterWriteGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Get.ReadsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deadchecktest.StoreChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[deadcheck.Store]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// storeSuite is the suite of Store that the tests of the planted defect of
+// a ceiling apply.
+var storeSuite = deadchecktest.StoreSuite()
+
 // storeIdle returns the planted defect of a ceiling of Store with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func storeIdle(h *deadchecktest.StoreHandle) deadcheck.Store {
-	return deadchecktest.StoreSuite().Calls[0].Over(h, func() {})
+	return storeSuite.Calls[0].Over(h, func() {})
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
@@ -202,62 +96,7 @@ func TestStoreSuiteBudgets(t *testing.T) {
 		conform.Ceilings(deadchecktest.StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(deadchecktest.StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(deadchecktest.StoreChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadAfterWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deadcheck.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -268,62 +107,7 @@ func FuzzStoreSuiteGet(f *testing.F) {
 		f,
 		deadchecktest.StoreChecks.Get.Callable,
 		storeIdle,
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadAfterWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deadcheck.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -334,62 +118,7 @@ func FuzzStoreSuitePut(f *testing.F) {
 		f,
 		deadchecktest.StoreChecks.Put.Callable,
 		storeIdle,
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadAfterWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deadcheck.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -400,62 +129,7 @@ func FuzzStoreSuiteClose(f *testing.F) {
 		f,
 		deadchecktest.StoreChecks.Close.Callable,
 		storeIdle,
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadAfterWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Get.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deadchecktest.StoreChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deadcheck.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -473,4 +147,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:fe72af1eba84366c0515f367b76c5862b93b000d147e58d8e295aa6976721306
+// dokimi:provenance sha256:7773b3fac46828dad2b0c6a245392c31de48baaae291e5c904dc7e973721367c

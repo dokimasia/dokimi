@@ -195,21 +195,6 @@ func NewContractStub(tb assert.TB, opts ...ContractStubOption) *ContractStub {
 	return s
 }
 
-// NewContractStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewContractStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ContractStubOption) *ContractStub {
-	return NewContractStub(tb, append([]ContractStubOption{
-		ContractStubWithClock(clk),
-		ContractStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewContractStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewContractStubFailing(tb assert.TB, err error, opts ...ContractStubOption) *ContractStub {
-	return NewContractStub(tb, append([]ContractStubOption{ContractStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ContractStub) ResetCalls() {
@@ -428,20 +413,6 @@ func NewSubscriptionStub(tb assert.TB, opts ...SubscriptionStubOption) *Subscrip
 	return s
 }
 
-// NewSubscriptionStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewSubscriptionStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...SubscriptionStubOption,
-) *SubscriptionStub {
-	return NewSubscriptionStub(tb, append([]SubscriptionStubOption{
-		SubscriptionStubWithClock(clk),
-		SubscriptionStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *SubscriptionStub) ResetCalls() {
@@ -498,4 +469,4 @@ func (s *SubscriptionStub) Stop() {
 	})
 }
 
-// dokimi:provenance sha256:39e6100ad2666dded0d2924eac664ad5cc91e338cedccecf6e26f2fcdc94645a
+// dokimi:provenance sha256:78390e3fb25876253588c91f688ca60b68bdd666a6923334123d513ccff6697c

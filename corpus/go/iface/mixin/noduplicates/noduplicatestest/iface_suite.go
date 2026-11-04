@@ -16,47 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Add/smoke: Add returns without a panic for derived inputs.
-//
-// Mixed.Add/smoke#generated: Add returns without a panic for derived
-// inputs.
-//
-// Mixed.Add/cancel: Add returns an error for a cancelled context.
-//
-// Mixed.Add/cancel#generated: Add returns an error for a cancelled
-// context.
-//
-// Mixed.Items/smoke: Items returns without a panic for derived inputs.
-//
-// Mixed.Items/cancel: Items returns an error for a cancelled context.
-//
-// Mixed.Items/zero-on-error: Items returns the zero value beside an error.
-//
-// Mixed.Items/no-duplicates: no element appears twice in one Items.
-//
-// Mixed.Items/no-duplicates#generated: no element appears twice in one
-// Items.
-//
-// Mixed.Items/yields-each-once: Items never yields an element twice, over
-// any sequence of calls.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Add/smoke
-//
-// Mixed.Items/smoke
-//
-// Mixed.Items/no-duplicates
-//
-// Mixed.Items/no-duplicates#generated
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Add has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -88,22 +47,10 @@ func (c mixedAdd) Smoke() conform.ID[noduplicates.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Add returns
-// without a panic for derived inputs.
-func (c mixedAdd) SmokeGenerated() conform.ID[noduplicates.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c mixedAdd) Cancel() conform.ID[noduplicates.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Add returns an
-// error for a cancelled context.
-func (c mixedAdd) CancelGenerated() conform.ID[noduplicates.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedItems is the name of Mixed.Items, with the identities of its
@@ -136,12 +83,6 @@ func (c mixedItems) NoDuplicates() conform.ID[noduplicates.Mixed] {
 	return c.Check("no-duplicates")
 }
 
-// NoDuplicatesGenerated returns the identity of the check that no element
-// appears twice in one Items.
-func (c mixedItems) NoDuplicatesGenerated() conform.ID[noduplicates.Mixed] {
-	return c.Check("no-duplicates#generated")
-}
-
 // YieldsEachOnce returns the identity of the check that Items never yields
 // an element twice, over any sequence of calls.
 func (c mixedItems) YieldsEachOnce() conform.ID[noduplicates.Mixed] {
@@ -160,9 +101,6 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				ID:          MixedChecks.Add.Smoke(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -173,12 +111,9 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				Defect: mixedAddPanics,
 			},
 			{
-				ID:          MixedChecks.Add.SmokeGenerated(),
+				ID:          MixedChecks.Add.Smoke().Generated(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[noduplicates.Value](), "v")
@@ -192,9 +127,6 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				ID:          MixedChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -204,12 +136,9 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				Defect: mixedAddIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Add.CancelGenerated(),
+				ID:          MixedChecks.Add.Cancel().Generated(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[noduplicates.Value](), "v")
@@ -223,9 +152,6 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				ID:          MixedChecks.Items.Smoke(),
 				Statement:   "Items returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -240,9 +166,6 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				ID:          MixedChecks.Items.Cancel(),
 				Statement:   "Items returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -256,9 +179,6 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				ID:          MixedChecks.Items.ZeroOnError(),
 				Statement:   "Items returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) ([]noduplicates.Value, error) {
@@ -271,9 +191,6 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				ID:          MixedChecks.Items.NoDuplicates(),
 				Statement:   "no element appears twice in one Items",
 				Claim:       spec.NoDuplicates,
-				Probe:       spec.NoElementTwice,
-				Reason:      spec.RepeatedElement,
-				Law:         spec.NoElementIsDrainedTwice,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -294,12 +211,9 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				Defect: mixedItemsDrainsTwice,
 			},
 			{
-				ID:          MixedChecks.Items.NoDuplicatesGenerated(),
+				ID:          MixedChecks.Items.NoDuplicates().Generated(),
 				Statement:   "no element appears twice in one Items",
 				Claim:       spec.NoDuplicates,
-				Probe:       spec.NoElementTwice,
-				Reason:      spec.RepeatedElement,
-				Law:         spec.NoElementIsDrainedTwice,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -327,9 +241,6 @@ func MixedSuite() conform.Suite[noduplicates.Mixed] {
 				ID:          MixedChecks.Items.YieldsEachOnce(),
 				Statement:   "Items never yields an element twice, over any sequence of calls",
 				Claim:       spec.YieldsEachOnce,
-				Probe:       spec.DrainsWithoutRepeats,
-				Reason:      spec.RepeatedElement,
-				Law:         spec.NoElementIsDrainedTwice,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[noduplicates.Mixed]{MixedChecks.Items.NoDuplicates()},
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -657,4 +568,4 @@ func mixedItemsCall(ctx context.Context, subject noduplicates.Mixed, args []any)
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:237a40fc402dce7f62e0981b8e85d1a980224ecdb8310955f17a61d975b5b9c7
+// dokimi:provenance sha256:903bc4588f166da8e90c4d18bbbc322f17a07a4fe604aa0738d4d8a85c8ec4a7

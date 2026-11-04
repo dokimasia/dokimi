@@ -16,92 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Batched:
-//
-// Batched.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Batched.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Batched.Put/cancel: Put returns an error for a cancelled context.
-//
-// Batched.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Batched.Put/idempotent: a second identical Put succeeds after the first.
-//
-// Batched.Put/idempotent#generated: a second identical Put succeeds after
-// the first.
-//
-// Batched.Put/side-effect: Put changes what List returns.
-//
-// Batched.Put/side-effect#generated: Put changes what List returns.
-//
-// Batched.Read/smoke: Read returns without a panic for derived inputs.
-//
-// Batched.Read/smoke#generated: Read returns without a panic for derived
-// inputs.
-//
-// Batched.Read/cancel: Read returns an error for a cancelled context.
-//
-// Batched.Read/cancel#generated: Read returns an error for a cancelled
-// context.
-//
-// Batched.Read/zero-on-error: Read returns the zero value beside an error.
-//
-// Batched.Read/zero-on-error#generated: Read returns the zero value beside
-// an error.
-//
-// Batched.Read/read-after-write: Read returns what Put stored before it.
-//
-// Batched.Read/read-after-write#generated: Read returns what Put stored
-// before it.
-//
-// Batched.Read/reads-each-last-write: Read returns what Put wrote right
-// before it, over any sequence of calls.
-//
-// Batched.List/smoke: List returns without a panic for derived inputs.
-//
-// Batched.List/cancel: List returns an error for a cancelled context.
-//
-// Batched.List/zero-on-error: List returns the zero value beside an error.
-//
-// Batched.List/cacheable: List returns the same value on a repeat.
-//
-// Batched.List/pure: List returns the same value on a repeat.
-
-// The derived checks of Batched that witness their laws at the shallow
-// end:
-//
-// Batched.Put/smoke
-//
-// Batched.Read/smoke
-//
-// Batched.Read/read-after-write
-//
-// Batched.Read/read-after-write#generated
-//
-// Batched.List/smoke
-//
-// Batched.List/cacheable
-//
-// Batched.List/pure
-
-// The refused claims of Batched:
-//
-// Batched.List/keeps-within-its-bounds: no callable of the declaration is
-// the partner observe of List. The remedy is to name the partner of List
-// with the param of the classification.
-
-// The unclaimed classifications of Batched:
-//
-// The shape:composite-writer of Batched.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The mixin:concurrent of Batched.Put has the stance needs. The claim
-// linearizable needs the param machineries=[reference] of the directive
-// suite.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -136,22 +50,10 @@ func (c batchedPut) Smoke() conform.ID[batchedmixins.Batched] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c batchedPut) SmokeGenerated() conform.ID[batchedmixins.Batched] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c batchedPut) Cancel() conform.ID[batchedmixins.Batched] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c batchedPut) CancelGenerated() conform.ID[batchedmixins.Batched] {
-	return c.Check("cancel#generated")
 }
 
 // Idempotent returns the identity of the check that a second identical Put
@@ -160,22 +62,10 @@ func (c batchedPut) Idempotent() conform.ID[batchedmixins.Batched] {
 	return c.Check("idempotent")
 }
 
-// IdempotentGenerated returns the identity of the check that a second
-// identical Put succeeds after the first.
-func (c batchedPut) IdempotentGenerated() conform.ID[batchedmixins.Batched] {
-	return c.Check("idempotent#generated")
-}
-
 // SideEffect returns the identity of the check that Put changes what List
 // returns.
 func (c batchedPut) SideEffect() conform.ID[batchedmixins.Batched] {
 	return c.Check("side-effect")
-}
-
-// SideEffectGenerated returns the identity of the check that Put changes
-// what List returns.
-func (c batchedPut) SideEffectGenerated() conform.ID[batchedmixins.Batched] {
-	return c.Check("side-effect#generated")
 }
 
 // batchedRead is the name of Batched.Read, with the identities of its
@@ -190,22 +80,10 @@ func (c batchedRead) Smoke() conform.ID[batchedmixins.Batched] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Read returns
-// without a panic for derived inputs.
-func (c batchedRead) SmokeGenerated() conform.ID[batchedmixins.Batched] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c batchedRead) Cancel() conform.ID[batchedmixins.Batched] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Read returns an
-// error for a cancelled context.
-func (c batchedRead) CancelGenerated() conform.ID[batchedmixins.Batched] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Read returns the zero
@@ -214,22 +92,10 @@ func (c batchedRead) ZeroOnError() conform.ID[batchedmixins.Batched] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Read returns
-// the zero value beside an error.
-func (c batchedRead) ZeroOnErrorGenerated() conform.ID[batchedmixins.Batched] {
-	return c.Check("zero-on-error#generated")
-}
-
 // ReadAfterWrite returns the identity of the check that Read returns what
 // Put stored before it.
 func (c batchedRead) ReadAfterWrite() conform.ID[batchedmixins.Batched] {
 	return c.Check("read-after-write")
-}
-
-// ReadAfterWriteGenerated returns the identity of the check that Read
-// returns what Put stored before it.
-func (c batchedRead) ReadAfterWriteGenerated() conform.ID[batchedmixins.Batched] {
-	return c.Check("read-after-write#generated")
 }
 
 // ReadsEachLastWrite returns the identity of the check that Read returns
@@ -292,9 +158,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BatchedHandle) {
@@ -305,12 +168,9 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedPutPanics,
 			},
 			{
-				ID:          BatchedChecks.Put.SmokeGenerated(),
+				ID:          BatchedChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BatchedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -325,9 +185,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BatchedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -337,12 +194,9 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedPutIgnoresCancel,
 			},
 			{
-				ID:          BatchedChecks.Put.CancelGenerated(),
+				ID:          BatchedChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BatchedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -357,9 +211,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Put.Idempotent(),
 				Statement:   "a second identical Put succeeds after the first",
 				Claim:       spec.Idempotent,
-				Probe:       spec.RepeatIsQuiet,
-				Reason:      spec.RefusedRepeat,
-				Law:         spec.RepeatIsAccepted,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BatchedHandle) {
 					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
@@ -369,12 +220,9 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedPutRefusesRepeat,
 			},
 			{
-				ID:          BatchedChecks.Put.IdempotentGenerated(),
+				ID:          BatchedChecks.Put.Idempotent().Generated(),
 				Statement:   "a second identical Put succeeds after the first",
 				Claim:       spec.Idempotent,
-				Probe:       spec.RepeatIsQuiet,
-				Reason:      spec.RefusedRepeat,
-				Law:         spec.RepeatIsAccepted,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BatchedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -389,9 +237,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Put.SideEffect(),
 				Statement:   "Put changes what List returns",
 				Claim:       spec.SideEffect,
-				Probe:       spec.MovesObservation,
-				Reason:      spec.UnmovedObservation,
-				Law:         spec.CallMovesTheNamedObservation,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BatchedHandle) {
 					probe.MovesObservation(h, func(ctx context.Context) error {
@@ -403,12 +248,9 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedListObservationUnmoved,
 			},
 			{
-				ID:          BatchedChecks.Put.SideEffectGenerated(),
+				ID:          BatchedChecks.Put.SideEffect().Generated(),
 				Statement:   "Put changes what List returns",
 				Claim:       spec.SideEffect,
-				Probe:       spec.MovesObservation,
-				Reason:      spec.UnmovedObservation,
-				Law:         spec.CallMovesTheNamedObservation,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BatchedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -425,9 +267,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Read.Smoke(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BatchedHandle) {
@@ -439,12 +278,9 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedReadPanics,
 			},
 			{
-				ID:          BatchedChecks.Read.SmokeGenerated(),
+				ID:          BatchedChecks.Read.Smoke().Generated(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BatchedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -459,9 +295,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BatchedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -472,12 +305,9 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedReadIgnoresCancel,
 			},
 			{
-				ID:          BatchedChecks.Read.CancelGenerated(),
+				ID:          BatchedChecks.Read.Cancel().Generated(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BatchedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -492,9 +322,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Read.ZeroOnError(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BatchedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -504,12 +331,9 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedReadValueBeside,
 			},
 			{
-				ID:          BatchedChecks.Read.ZeroOnErrorGenerated(),
+				ID:          BatchedChecks.Read.ZeroOnError().Generated(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BatchedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -523,9 +347,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Read.ReadAfterWrite(),
 				Statement:   "Read returns what Put stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BatchedHandle) {
@@ -540,12 +361,9 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				Defect: batchedReadReadsAnotherValue,
 			},
 			{
-				ID:          BatchedChecks.Read.ReadAfterWriteGenerated(),
+				ID:          BatchedChecks.Read.ReadAfterWrite().Generated(),
 				Statement:   "Read returns what Put stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *BatchedHandle, c *prop.Case) {
@@ -565,9 +383,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.Read.ReadsEachLastWrite(),
 				Statement:   "Read returns what Put wrote right before it, over any sequence of calls",
 				Claim:       spec.ReadsEachLastWrite,
-				Probe:       spec.ReadsReturnTheLastWrite,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[batchedmixins.Batched]{BatchedChecks.Read.ReadAfterWrite()},
 				Property: func(h *BatchedHandle, c *prop.Case) {
@@ -592,9 +407,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.List.Smoke(),
 				Statement:   "List returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BatchedHandle) {
@@ -609,9 +421,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.List.Cancel(),
 				Statement:   "List returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BatchedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -625,9 +434,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.List.ZeroOnError(),
 				Statement:   "List returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BatchedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) ([]string, error) {
@@ -640,9 +446,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.List.Cacheable(),
 				Statement:   "List returns the same value on a repeat",
 				Claim:       spec.Cacheable,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BatchedHandle) {
@@ -656,9 +459,6 @@ func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 				ID:          BatchedChecks.List.Pure(),
 				Statement:   "List returns the same value on a repeat",
 				Claim:       spec.Pure,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BatchedHandle) {
@@ -1213,4 +1013,4 @@ func batchedListCall(ctx context.Context, subject batchedmixins.Batched, args []
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:e89fdd8769517de1c6a2e1f1257a88a51895afa14b1d99265f39d5eec073e02e
+// dokimi:provenance sha256:8c2dd64de24f522ec120ec98a114fd9de6c7468fb4874167c9ac380f170c47d7

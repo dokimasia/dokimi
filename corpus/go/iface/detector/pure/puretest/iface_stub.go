@@ -133,15 +133,6 @@ func NewPureStub(tb assert.TB, opts ...PureStubOption) *PureStub {
 	return s
 }
 
-// NewPureStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewPureStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...PureStubOption) *PureStub {
-	return NewPureStub(tb, append([]PureStubOption{
-		PureStubWithClock(clk),
-		PureStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *PureStub) ResetCalls() {
@@ -175,4 +166,4 @@ func (s *PureStub) Describe() string {
 	return r.Result
 }
 
-// dokimi:provenance sha256:9292dd3ac4d6d4de10edbadb1e865d316bc246b4925e85db0d3c77546ed29a7d
+// dokimi:provenance sha256:c5f4f7807d5e83af2e26a9e50f46073a95e23836c014d9975a1a10153cb30975

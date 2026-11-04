@@ -153,26 +153,6 @@ func NewCompositeWriterStub(tb assert.TB, opts ...CompositeWriterStubOption) *Co
 	return s
 }
 
-// NewCompositeWriterStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewCompositeWriterStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...CompositeWriterStubOption,
-) *CompositeWriterStub {
-	return NewCompositeWriterStub(tb, append([]CompositeWriterStubOption{
-		CompositeWriterStubWithClock(clk),
-		CompositeWriterStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewCompositeWriterStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewCompositeWriterStubFailing(tb assert.TB, err error, opts ...CompositeWriterStubOption) *CompositeWriterStub {
-	return NewCompositeWriterStub(tb, append([]CompositeWriterStubOption{CompositeWriterStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *CompositeWriterStub) ResetCalls() {
@@ -211,4 +191,4 @@ func (s *CompositeWriterStub) Set(ctx context.Context, key string, v compositewr
 	return r.Err
 }
 
-// dokimi:provenance sha256:8772b0d7d546300b44cf703a3a3e4917dcfb6f0c0b4819fca2a5eb6232a9153e
+// dokimi:provenance sha256:7e88ba4074bbe35d67afa0078b19f395390e037bebfdc33cc6dd014669e15862

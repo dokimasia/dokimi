@@ -48,78 +48,7 @@ func TestServiceSuite(t *testing.T) {
 				},
 				Defect: func(*namedreturnstest.ServiceHandle) namedreturns.Service { return &serviceSubject{} },
 			}),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[namedreturns.Service]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -141,86 +70,20 @@ func TestServiceSuite(t *testing.T) {
 				},
 				Defect: func(*namedreturnstest.ServiceHandle) namedreturns.Service { return &serviceSubject{} },
 			}),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Named.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.Unnamed.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[namedreturns.Service]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// serviceSuite is the suite of Service that the tests of the planted
+// defect of a ceiling apply.
+var serviceSuite = namedreturnstest.ServiceSuite()
+
 // serviceIdle returns the planted defect of a ceiling of Service with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func serviceIdle(h *namedreturnstest.ServiceHandle) namedreturns.Service {
-	return namedreturnstest.ServiceSuite().Calls[0].Over(h, func() {})
+	return serviceSuite.Calls[0].Over(h, func() {})
 }
 
 // TestServiceSuiteBudgets applies the allocation ceilings of the suite of
@@ -237,77 +100,8 @@ func TestServiceSuiteBudgets(t *testing.T) {
 			namedreturnstest.ServiceChecks.PartiallyNamed.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[namedreturns.Service](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -319,77 +113,8 @@ func FuzzServiceSuiteNamed(f *testing.F) {
 		f,
 		namedreturnstest.ServiceChecks.Named.Callable,
 		serviceIdle,
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[namedreturns.Service](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -401,77 +126,8 @@ func FuzzServiceSuiteUnnamed(f *testing.F) {
 		f,
 		namedreturnstest.ServiceChecks.Unnamed.Callable,
 		serviceIdle,
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[namedreturns.Service](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -484,77 +140,8 @@ func FuzzServiceSuitePartiallyNamed(f *testing.F) {
 		f,
 		namedreturnstest.ServiceChecks.PartiallyNamed.Callable,
 		serviceIdle,
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Named.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.Unnamed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[namedreturns.Service](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -573,4 +160,4 @@ func BenchmarkServiceSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:bcaa4bc5f3e4c1adc1580fd6c4c828ae8ac9fd398dce6f1f1633ec243890c8cf
+// dokimi:provenance sha256:81b533230d7ae64e14e816fc44d18c0732d9552e7c7e5ab7d78a2197979de47d

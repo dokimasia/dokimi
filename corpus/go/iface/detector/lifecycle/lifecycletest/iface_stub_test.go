@@ -37,25 +37,37 @@ func lifecycleStubClosePins() error {
 	return want0
 }
 
-// lifecycleStubCloseSubject returns the subject of [stub.Behaviour] for
-// Close. The subject calls a new double that reports to tb.
+// lifecycleStubCloseSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Close. The subject calls a new double that
+// reports to tb.
 func lifecycleStubCloseSubject(
 	tb assert.TB,
 ) stub.Subject[lifecycletest.LifecycleCloseCall, lifecycletest.LifecycleCloseReturn] {
 	tb.Helper()
 	s := lifecycletest.NewLifecycleStub(tb)
 	return stub.Subject[lifecycletest.LifecycleCloseCall, lifecycletest.LifecycleCloseReturn]{
-		Stub: s.OnClose.MethodStub,
+		Stub:  s.OnClose.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = lifecycleStubClose(tb, s)
+		},
+		Arguments: func(tb assert.TB, c lifecycletest.LifecycleCloseCall) {
+			tb.Helper()
+			a0 := lifecycleStubCloseArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() lifecycletest.LifecycleCloseReturn {
 			got0 := lifecycleStubClose(tb, s)
 			return lifecycletest.LifecycleCloseReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnClose.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() lifecycletest.LifecycleCloseReturn {
+			want0 := lifecycleStubClosePins()
+			s.OnClose.Returns(want0)
+			return lifecycletest.LifecycleCloseReturn{Err: want0}
+		},
+		Override: func(seen func(lifecycletest.LifecycleCloseCall)) {
+			s.OnClose.Func(func(p0 context.Context) error {
+				seen(lifecycletest.LifecycleCloseCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -80,7 +92,6 @@ func lifecycleStubInstanceOf(tb assert.TB, s *lifecycletest.LifecycleStub) lifec
 		Call: func() {
 			_ = lifecycleStubClose(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -92,68 +103,14 @@ func TestLifecycleStub(t *testing.T) {
 	t.Run("Close", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Close", lifecycleStubCloseSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := lifecycletest.NewLifecycleStub(t)
-			_ = lifecycleStubClose(t, s)
-			got := s.OnClose.AssertCalledOnce(t, "Close records the call")
-			a0 := lifecycleStubCloseArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := lifecycletest.NewLifecycleStub(t)
-			var seen []lifecycletest.LifecycleCloseCall
-			s.OnClose.OnRecord(func(c lifecycletest.LifecycleCloseCall) { seen = append(seen, c) })
-			_ = lifecycleStubClose(t, s)
-			_ = lifecycleStubClose(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) lifecycleStubInstance {
-			return lifecycleStubInstanceOf(tb, lifecycletest.NewLifecycleStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+		t.Run("Close", func(t *testing.T) {
 			t.Parallel()
-			s := lifecycletest.NewLifecycleStub(t)
-			_ = lifecycleStubClose(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
-		})
-
-		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
-			t.Parallel()
-			s := lifecycletest.NewLifecycleStub(t)
-			want0 := lifecycleStubClosePins()
-			s.OnClose.Returns(want0)
-			s.ResetCalls()
-			got0 := lifecycleStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
-		})
-	})
-
-	t.Run("NewLifecycleStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) lifecycleStubInstance {
-			return lifecycleStubInstanceOf(tb, lifecycletest.NewLifecycleStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewLifecycleStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Close with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Close-failing")
-			s := lifecycletest.NewLifecycleStubFailing(t, want)
-			r0 := lifecycleStubClose(t, s)
-			assert.ErrorIs(t, r0, want, "Close fails with the error of NewLifecycleStubFailing")
+			stub.ResetBehaviour(t, "Close", lifecycleStubCloseSubject)
 		})
 	})
 
@@ -259,52 +216,4 @@ func TestLifecycleStub(t *testing.T) {
 	})
 }
 
-// TestLifecycleCloseStub checks the methods of LifecycleCloseStub, which
-// configures Close.
-func TestLifecycleCloseStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Close", func(t *testing.T) {
-			t.Parallel()
-			s := lifecycletest.NewLifecycleStub(t)
-			want0 := lifecycleStubClosePins()
-			s.OnClose.Returns(want0)
-			got0 := lifecycleStubClose(t, s)
-			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
-		})
-
-		t.Run("configures Close for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := lifecycletest.NewLifecycleStub(r)
-			s.OnClose.Strict()
-			var want0 error
-			s.OnClose.Returns(want0)
-			_ = lifecycleStubClose(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Close to the function", func(t *testing.T) {
-			t.Parallel()
-			s := lifecycletest.NewLifecycleStub(t)
-			var got0 context.Context
-			s.OnClose.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = lifecycleStubClose(t, s)
-			a0 := lifecycleStubCloseArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:3575fd03bae7b4b8a779d8cf5eaa6198da360a334e157d17bd35bdcc415772b0
+// dokimi:provenance sha256:c44feed05886af3cd5999f3b110feac9d8a9a7c81743d66bcb3f63f07a2a6ffb

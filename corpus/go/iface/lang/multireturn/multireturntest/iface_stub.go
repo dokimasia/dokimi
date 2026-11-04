@@ -244,21 +244,6 @@ func NewWideStub(tb assert.TB, opts ...WideStubOption) *WideStub {
 	return s
 }
 
-// NewWideStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewWideStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...WideStubOption) *WideStub {
-	return NewWideStub(tb, append([]WideStubOption{
-		WideStubWithClock(clk),
-		WideStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewWideStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewWideStubFailing(tb assert.TB, err error, opts ...WideStubOption) *WideStub {
-	return NewWideStub(tb, append([]WideStubOption{WideStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *WideStub) ResetCalls() {
@@ -353,4 +338,4 @@ func (s *WideStub) NoError(ctx context.Context, id string) (string, int) {
 	return r.Result0, r.Result1
 }
 
-// dokimi:provenance sha256:3e6c152580d25a44049172a64e9d1471509a1ffa0c965196987f5c5e4efee575
+// dokimi:provenance sha256:01d98eb73f9da48202fa8f7ba37619f3cd8c3d9fdef12386d83c7b51a55985c8

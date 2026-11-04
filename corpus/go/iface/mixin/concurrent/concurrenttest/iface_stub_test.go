@@ -67,23 +67,37 @@ func mixedStubGetPins() (string, error) {
 	return want0, want1
 }
 
-// mixedStubPutSubject returns the subject of [stub.Behaviour] for Put. The
-// subject calls a new double that reports to tb.
+// mixedStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func mixedStubPutSubject(tb assert.TB) stub.Subject[concurrenttest.MixedPutCall, concurrenttest.MixedPutReturn] {
 	tb.Helper()
 	s := concurrenttest.NewMixedStub(tb)
 	return stub.Subject[concurrenttest.MixedPutCall, concurrenttest.MixedPutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c concurrenttest.MixedPutCall) {
+			tb.Helper()
+			a0, a1, a2 := mixedStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.Value, a2, "the call records Value")
 		},
 		Result: func() concurrenttest.MixedPutReturn {
 			got0 := mixedStubPut(tb, s)
 			return concurrenttest.MixedPutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _, _ string) error {
-				mark()
+		Returns: func() concurrenttest.MixedPutReturn {
+			want0 := mixedStubPutPins()
+			s.OnPut.Returns(want0)
+			return concurrenttest.MixedPutReturn{Err: want0}
+		},
+		Override: func(seen func(concurrenttest.MixedPutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1, p2 string) error {
+				seen(concurrenttest.MixedPutCall{Ctx: p0, Key: p1, Value: p2})
 				var z0 error
 				return z0
 			})
@@ -95,23 +109,36 @@ func mixedStubPutSubject(tb assert.TB) stub.Subject[concurrenttest.MixedPutCall,
 	}
 }
 
-// mixedStubGetSubject returns the subject of [stub.Behaviour] for Get. The
-// subject calls a new double that reports to tb.
+// mixedStubGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func mixedStubGetSubject(tb assert.TB) stub.Subject[concurrenttest.MixedGetCall, concurrenttest.MixedGetReturn] {
 	tb.Helper()
 	s := concurrenttest.NewMixedStub(tb)
 	return stub.Subject[concurrenttest.MixedGetCall, concurrenttest.MixedGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c concurrenttest.MixedGetCall) {
+			tb.Helper()
+			a0, a1 := mixedStubGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() concurrenttest.MixedGetReturn {
 			got0, got1 := mixedStubGet(tb, s)
 			return concurrenttest.MixedGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() concurrenttest.MixedGetReturn {
+			want0, want1 := mixedStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return concurrenttest.MixedGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(concurrenttest.MixedGetCall)) {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(concurrenttest.MixedGetCall{Ctx: p0, Key: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -137,7 +164,6 @@ func mixedStubInstanceOf(tb assert.TB, s *concurrenttest.MixedStub) mixedStubIns
 		Call: func() {
 			_ = mixedStubPut(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -149,122 +175,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", mixedStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			_ = mixedStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1, a2 := mixedStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.Value, a2, "the call records Value")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			var seen []concurrenttest.MixedPutCall
-			s.OnPut.OnRecord(func(c concurrenttest.MixedPutCall) { seen = append(seen, c) })
-			_ = mixedStubPut(t, s)
-			_ = mixedStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Get", mixedStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			_, _ = mixedStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := mixedStubGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			var seen []concurrenttest.MixedGetCall
-			s.OnGet.OnRecord(func(c concurrenttest.MixedGetCall) { seen = append(seen, c) })
-			_, _ = mixedStubGet(t, s)
-			_, _ = mixedStubGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, concurrenttest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			_ = mixedStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+			stub.ResetBehaviour(t, "Put", mixedStubPutSubject)
 		})
 
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			want0 := mixedStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
-		})
-
-		t.Run("clears the recorded calls of Get", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			_, _ = mixedStubGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
-		})
-
-		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			want0, want1 := mixedStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, concurrenttest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := concurrenttest.NewMixedStubFailing(t, want)
-			r0 := mixedStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Get with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Get-failing")
-			s := concurrenttest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubGet(t, s)
-			assert.ErrorIs(t, r1, want, "Get fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Get", mixedStubGetSubject)
 		})
 	})
 
@@ -407,109 +335,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedPutStub checks the methods of MixedPutStub, which configures
-// Put.
-func TestMixedPutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			want0 := mixedStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := mixedStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := concurrenttest.NewMixedStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = mixedStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 string
-			s.OnPut.Func(func(p0 context.Context, p1, p2 string) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = mixedStubPut(t, s)
-			a0, a1, a2 := mixedStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives Value")
-		})
-	})
-}
-
-// TestMixedGetStub checks the methods of MixedGetStub, which configures
-// Get.
-func TestMixedGetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			want0, want1 := mixedStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := mixedStubGet(t, s)
-			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := concurrenttest.NewMixedStub(r)
-			s.OnGet.Strict()
-			var want0 string
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = mixedStubGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
-			t.Parallel()
-			s := concurrenttest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubGet(t, s)
-			a0, a1 := mixedStubGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:095410e4ea0bb198d62c9feb27c57932477d6465edd3f00146be405b1801f03d
+// dokimi:provenance sha256:f80b347a93d222c201e33a14cb20ce9a21e605383bb899076820a536616d0f27

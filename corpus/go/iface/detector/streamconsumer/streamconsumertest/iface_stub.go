@@ -147,21 +147,6 @@ func NewSourceStub(tb assert.TB, opts ...SourceStubOption) *SourceStub {
 	return s
 }
 
-// NewSourceStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewSourceStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...SourceStubOption) *SourceStub {
-	return NewSourceStub(tb, append([]SourceStubOption{
-		SourceStubWithClock(clk),
-		SourceStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewSourceStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewSourceStubFailing(tb assert.TB, err error, opts ...SourceStubOption) *SourceStub {
-	return NewSourceStub(tb, append([]SourceStubOption{SourceStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *SourceStub) ResetCalls() {
@@ -339,26 +324,6 @@ func NewStreamConsumerStub(tb assert.TB, opts ...StreamConsumerStubOption) *Stre
 	return s
 }
 
-// NewStreamConsumerStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewStreamConsumerStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...StreamConsumerStubOption,
-) *StreamConsumerStub {
-	return NewStreamConsumerStub(tb, append([]StreamConsumerStubOption{
-		StreamConsumerStubWithClock(clk),
-		StreamConsumerStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewStreamConsumerStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewStreamConsumerStubFailing(tb assert.TB, err error, opts ...StreamConsumerStubOption) *StreamConsumerStub {
-	return NewStreamConsumerStub(tb, append([]StreamConsumerStubOption{StreamConsumerStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *StreamConsumerStub) ResetCalls() {
@@ -397,4 +362,4 @@ func (s *StreamConsumerStub) Ingest(ctx context.Context, src streamconsumer.Sour
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:d43438cda8b465ad830ddb538bcabbf0990c7d9732f92ff94733eb3b56d55062
+// dokimi:provenance sha256:94662e272c094dfb43b95519e5a781aa26f82aa9693fd1771083ac78a12a1dc3

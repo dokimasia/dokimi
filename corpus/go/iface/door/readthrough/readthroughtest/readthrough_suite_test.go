@@ -48,90 +48,7 @@ func TestCacheSuite(t *testing.T) {
 				},
 				Defect: func(*readthroughtest.CacheHandle) readthrough.Cache { return &cacheSubject{} },
 			}),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.RetrySucceeds(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.RetrySucceedsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaults(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaultsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.NoPartialWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[readthrough.Cache]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -153,98 +70,19 @@ func TestCacheSuite(t *testing.T) {
 				},
 				Defect: func(*readthroughtest.CacheHandle) readthrough.Cache { return &cacheSubject{} },
 			}),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.RetrySucceeds(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.RetrySucceedsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaults(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaultsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.NoPartialWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[readthrough.Cache]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// cacheSuite is the suite of Cache that the tests of the planted defect of
+// a ceiling apply.
+var cacheSuite = readthroughtest.CacheSuite()
+
 // cacheIdle returns the planted defect of a ceiling of Cache with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func cacheIdle(h *readthroughtest.CacheHandle) readthrough.Cache {
-	return readthroughtest.CacheSuite().Calls[0].Over(h, func() {})
+	return cacheSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCacheSuiteBudgets applies the allocation ceilings of the suite of
@@ -257,90 +95,7 @@ func TestCacheSuiteBudgets(t *testing.T) {
 		cacheIdle,
 		conform.Ceilings(readthroughtest.CacheChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(readthroughtest.CacheChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceeds(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoPartialWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[readthrough.Cache]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -351,90 +106,7 @@ func FuzzCacheSuiteGet(f *testing.F) {
 		f,
 		readthroughtest.CacheChecks.Get.Callable,
 		cacheIdle,
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceeds(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoPartialWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[readthrough.Cache]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -445,90 +117,7 @@ func FuzzCacheSuitePut(f *testing.F) {
 		f,
 		readthroughtest.CacheChecks.Put.Callable,
 		cacheIdle,
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceeds(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.RetrySucceedsUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoPartialWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoPartialWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readthroughtest.CacheChecks.Put.NoTraceOfAFailedCall(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[readthrough.Cache]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -543,4 +132,4 @@ func BenchmarkCacheSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:95a6fb3cbb713ce3b8d2f2abda394b354df35d6a21eb8e1ab1129d5342ba450d
+// dokimi:provenance sha256:2cb6d4830bf593ba182443888fbca133dc78134413eb8b66e613c6c1309b0ace

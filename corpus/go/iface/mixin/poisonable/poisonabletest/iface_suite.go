@@ -15,30 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Fail/smoke: Fail returns without a panic for derived inputs.
-//
-// Mixed.Fail/cancel: Fail returns an error for a cancelled context.
-//
-// Mixed.Probe/smoke: Probe returns without a panic for derived inputs.
-//
-// Mixed.Probe/poisonable: Probe fails after Fail, and keeps failing.
-//
-// Mixed.Probe/fresh-reports-no-poison: Probe reports no error for a fresh
-// receiver.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Fail/smoke
-//
-// Mixed.Probe/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:lifecycle of Mixed.Fail has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -112,9 +88,6 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 				ID:          MixedChecks.Fail.Smoke(),
 				Statement:   "Fail returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -128,9 +101,6 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 				ID:          MixedChecks.Fail.Cancel(),
 				Statement:   "Fail returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -143,9 +113,6 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 				ID:          MixedChecks.Probe.Smoke(),
 				Statement:   "Probe returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -159,9 +126,6 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 				ID:          MixedChecks.Probe.Poisonable(),
 				Statement:   "Probe fails after Fail, and keeps failing",
 				Claim:       spec.Poisonable,
-				Probe:       spec.RemainsPoisoned,
-				Reason:      spec.HealthyAfterInduce,
-				Law:         spec.InducedFailureLatches,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.RemainsPoisoned(h, func(ctx context.Context) error {
@@ -176,9 +140,6 @@ func MixedSuite() conform.Suite[poisonable.Mixed] {
 				ID:          MixedChecks.Probe.FreshReportsNoPoison(),
 				Statement:   "Probe reports no error for a fresh receiver",
 				Claim:       spec.FreshReportsNoPoison,
-				Probe:       spec.ReportsNoError,
-				Reason:      spec.FalsePoison,
-				Law:         spec.FreshReceiverIsHealthy,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ReportsNoError(h, func(ctx context.Context) error {
@@ -399,4 +360,4 @@ func mixedProbeReportsPoison(h *MixedHandle) poisonable.Mixed {
 	return &mixedProbeReportsPoisonDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:09c6a318209f712dea7ddbe5d387eb27b2bfebcabed32524625b53f5612045fc
+// dokimi:provenance sha256:bad9c57b07dea14001ca44a9a379c68c144d08b4cb9293bab5ced3f5573be7a7

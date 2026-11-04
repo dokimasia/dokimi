@@ -65,23 +65,36 @@ func mixedStubCountInPins() (int, error) {
 	return want0, want1
 }
 
-// mixedStubRecordSubject returns the subject of [stub.Behaviour] for
-// Record. The subject calls a new double that reports to tb.
+// mixedStubRecordSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Record. The subject calls a new double that
+// reports to tb.
 func mixedStubRecordSubject(tb assert.TB) stub.Subject[windowedtest.MixedRecordCall, windowedtest.MixedRecordReturn] {
 	tb.Helper()
 	s := windowedtest.NewMixedStub(tb)
 	return stub.Subject[windowedtest.MixedRecordCall, windowedtest.MixedRecordReturn]{
-		Stub: s.OnRecord.MethodStub,
+		Stub:  s.OnRecord.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubRecord(tb, s)
+		},
+		Arguments: func(tb assert.TB, c windowedtest.MixedRecordCall) {
+			tb.Helper()
+			a0, a1 := mixedStubRecordArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() windowedtest.MixedRecordReturn {
 			got0 := mixedStubRecord(tb, s)
 			return windowedtest.MixedRecordReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnRecord.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() windowedtest.MixedRecordReturn {
+			want0 := mixedStubRecordPins()
+			s.OnRecord.Returns(want0)
+			return windowedtest.MixedRecordReturn{Err: want0}
+		},
+		Override: func(seen func(windowedtest.MixedRecordCall)) {
+			s.OnRecord.Func(func(p0 context.Context, p1 string) error {
+				seen(windowedtest.MixedRecordCall{Ctx: p0, Key: p1})
 				var z0 error
 				return z0
 			})
@@ -93,25 +106,38 @@ func mixedStubRecordSubject(tb assert.TB) stub.Subject[windowedtest.MixedRecordC
 	}
 }
 
-// mixedStubCountInSubject returns the subject of [stub.Behaviour] for
-// CountIn. The subject calls a new double that reports to tb.
+// mixedStubCountInSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for CountIn. The subject calls a new double that
+// reports to tb.
 func mixedStubCountInSubject(
 	tb assert.TB,
 ) stub.Subject[windowedtest.MixedCountInCall, windowedtest.MixedCountInReturn] {
 	tb.Helper()
 	s := windowedtest.NewMixedStub(tb)
 	return stub.Subject[windowedtest.MixedCountInCall, windowedtest.MixedCountInReturn]{
-		Stub: s.OnCountIn.MethodStub,
+		Stub:  s.OnCountIn.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubCountIn(tb, s)
+		},
+		Arguments: func(tb assert.TB, c windowedtest.MixedCountInCall) {
+			tb.Helper()
+			a0, a1 := mixedStubCountInArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() windowedtest.MixedCountInReturn {
 			got0, got1 := mixedStubCountIn(tb, s)
 			return windowedtest.MixedCountInReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnCountIn.Func(func(_ context.Context, _ string) (int, error) {
-				mark()
+		Returns: func() windowedtest.MixedCountInReturn {
+			want0, want1 := mixedStubCountInPins()
+			s.OnCountIn.Returns(want0, want1)
+			return windowedtest.MixedCountInReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(windowedtest.MixedCountInCall)) {
+			s.OnCountIn.Func(func(p0 context.Context, p1 string) (int, error) {
+				seen(windowedtest.MixedCountInCall{Ctx: p0, Key: p1})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -137,7 +163,6 @@ func mixedStubInstanceOf(tb assert.TB, s *windowedtest.MixedStub) mixedStubInsta
 		Call: func() {
 			_ = mixedStubRecord(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -149,121 +174,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Record", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Record", mixedStubRecordSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			_ = mixedStubRecord(t, s)
-			got := s.OnRecord.AssertCalledOnce(t, "Record records the call")
-			a0, a1 := mixedStubRecordArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			var seen []windowedtest.MixedRecordCall
-			s.OnRecord.OnRecord(func(c windowedtest.MixedRecordCall) { seen = append(seen, c) })
-			_ = mixedStubRecord(t, s)
-			_ = mixedStubRecord(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Record")
-		})
 	})
 
 	t.Run("CountIn", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "CountIn", mixedStubCountInSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			_, _ = mixedStubCountIn(t, s)
-			got := s.OnCountIn.AssertCalledOnce(t, "CountIn records the call")
-			a0, a1 := mixedStubCountInArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			var seen []windowedtest.MixedCountInCall
-			s.OnCountIn.OnRecord(func(c windowedtest.MixedCountInCall) { seen = append(seen, c) })
-			_, _ = mixedStubCountIn(t, s)
-			_, _ = mixedStubCountIn(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of CountIn")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, windowedtest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Record", func(t *testing.T) {
+		t.Run("Record", func(t *testing.T) {
 			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			_ = mixedStubRecord(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRecord.CallCount(), 0, "ResetCalls clears the calls of Record")
+			stub.ResetBehaviour(t, "Record", mixedStubRecordSubject)
 		})
 
-		t.Run("keeps the results of Returns of Record", func(t *testing.T) {
+		t.Run("CountIn", func(t *testing.T) {
 			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			want0 := mixedStubRecordPins()
-			s.OnRecord.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubRecord(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Record")
-		})
-
-		t.Run("clears the recorded calls of CountIn", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			_, _ = mixedStubCountIn(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnCountIn.CallCount(), 0, "ResetCalls clears the calls of CountIn")
-		})
-
-		t.Run("keeps the results of Returns of CountIn", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			want0, want1 := mixedStubCountInPins()
-			s.OnCountIn.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubCountIn(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of CountIn")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of CountIn")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, windowedtest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Record with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Record-failing")
-			s := windowedtest.NewMixedStubFailing(t, want)
-			r0 := mixedStubRecord(t, s)
-			assert.ErrorIs(t, r0, want, "Record fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails CountIn with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("CountIn-failing")
-			s := windowedtest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubCountIn(t, s)
-			assert.ErrorIs(t, r1, want, "CountIn fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "CountIn", mixedStubCountInSubject)
 		})
 	})
 
@@ -406,107 +334,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedRecordStub checks the methods of MixedRecordStub, which
-// configures Record.
-func TestMixedRecordStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Record", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			want0 := mixedStubRecordPins()
-			s.OnRecord.Returns(want0)
-			got0 := mixedStubRecord(t, s)
-			assert.ErrorIs(t, got0, want0, "Record returns the error that Returns sets")
-		})
-
-		t.Run("configures Record for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := windowedtest.NewMixedStub(r)
-			s.OnRecord.Strict()
-			var want0 error
-			s.OnRecord.Returns(want0)
-			_ = mixedStubRecord(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Record")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Record to the function", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnRecord.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubRecord(t, s)
-			a0, a1 := mixedStubRecordArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestMixedCountInStub checks the methods of MixedCountInStub, which
-// configures CountIn.
-func TestMixedCountInStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of CountIn", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			want0, want1 := mixedStubCountInPins()
-			s.OnCountIn.Returns(want0, want1)
-			got0, got1 := mixedStubCountIn(t, s)
-			expect.Equal(t, got0, want0, "CountIn returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "CountIn returns the error that Returns sets")
-		})
-
-		t.Run("configures CountIn for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := windowedtest.NewMixedStub(r)
-			s.OnCountIn.Strict()
-			var want0 int
-			var want1 error
-			s.OnCountIn.Returns(want0, want1)
-			_, _ = mixedStubCountIn(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of CountIn")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of CountIn to the function", func(t *testing.T) {
-			t.Parallel()
-			s := windowedtest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnCountIn.Func(func(p0 context.Context, p1 string) (int, error) {
-				got0, got1 = p0, p1
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubCountIn(t, s)
-			a0, a1 := mixedStubCountInArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:a0580dbdb032bc9abe5a448cfa40ca24e162217fafd085fa22b23bb50a2d9fc0
+// dokimi:provenance sha256:6800ad43dcfa3e1f6b3fe1f8b32e38edb30cbb998d649b4f4e37153979203e2b

@@ -15,27 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Writer:
-//
-// Writer.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Writer.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Writer.Put/cancel: Put returns an error for a cancelled context.
-//
-// Writer.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-
-// The derived checks of Writer that witness their laws at the shallow end:
-//
-// Writer.Put/smoke
-
-// The unclaimed classifications of Writer:
-//
-// The shape:writer of Writer.Put has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -65,22 +44,10 @@ func (c writerPut) Smoke() conform.ID[writer.Writer] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c writerPut) SmokeGenerated() conform.ID[writer.Writer] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c writerPut) Cancel() conform.ID[writer.Writer] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c writerPut) CancelGenerated() conform.ID[writer.Writer] {
-	return c.Check("cancel#generated")
 }
 
 // WriterSuite returns the checks of Writer, and the calls and the budgets
@@ -95,9 +62,6 @@ func WriterSuite() conform.Suite[writer.Writer] {
 				ID:          WriterChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *WriterHandle) {
@@ -108,12 +72,9 @@ func WriterSuite() conform.Suite[writer.Writer] {
 				Defect: writerPutPanics,
 			},
 			{
-				ID:          WriterChecks.Put.SmokeGenerated(),
+				ID:          WriterChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *WriterHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[writer.Value](), "v")
@@ -127,9 +88,6 @@ func WriterSuite() conform.Suite[writer.Writer] {
 				ID:          WriterChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *WriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -139,12 +97,9 @@ func WriterSuite() conform.Suite[writer.Writer] {
 				Defect: writerPutIgnoresCancel,
 			},
 			{
-				ID:          WriterChecks.Put.CancelGenerated(),
+				ID:          WriterChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *WriterHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[writer.Value](), "v")
@@ -296,4 +251,4 @@ func writerPutIgnoresCancel(h *WriterHandle) writer.Writer {
 	return &writerPutIgnoresCancelDefect{writerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7c01d8d90c5a61c41820170c9c35640ef183f8cc47a9892bb1d8cc0a5dd1b208
+// dokimi:provenance sha256:2bbd12043175aed135bbe332973942bd41d127b216636f7d9b5796f9fb5efe76

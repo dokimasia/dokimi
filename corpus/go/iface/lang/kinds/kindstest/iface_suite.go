@@ -25,71 +25,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Every:
-//
-// Every.Fields/smoke: Fields returns without a panic for derived inputs.
-//
-// Every.Fields/deterministic: Fields returns the same value for the same
-// inputs.
-//
-// Every.Elements/smoke: Elements returns without a panic for derived
-// inputs.
-//
-// Every.Elements/deterministic: Elements returns the same value for the
-// same inputs.
-
-// The derived checks of Every that witness their laws at the shallow end:
-//
-// Every.Fields/smoke
-//
-// Every.Fields/deterministic
-//
-// Every.Elements/smoke
-//
-// Every.Elements/deterministic
-
-// The refused claims of Every:
-//
-// Every.Params/deterministic: eidos derives no sample of the parameter ch
-// of Params. The remedy is to author a sample of the parameter ch with the
-// directive sample.
-//
-// Every.Results/deterministic: eidos derives no sample of the parameter r
-// of Results. The remedy is to author a sample of the parameter r with the
-// directive sample.
-//
-// Every.Place/deterministic: eidos derives no sample of the parameter
-// clock of Place. The remedy is to author a sample of the parameter clock
-// with the directive sample.
-//
-// Every.Route/deterministic: eidos derives no sample of the parameter in
-// of Route. The remedy is to author a sample of the parameter in with the
-// directive sample.
-//
-// Every.Drain/deterministic: eidos derives no sample of the parameter f of
-// Drain. The remedy is to author a sample of the parameter f with the
-// directive sample.
-//
-// Every.Watch/deterministic: eidos derives no sample of the parameter s of
-// Watch. The remedy is to author a sample of the parameter s with the
-// directive sample.
-//
-// Every.Measure/deterministic: eidos derives no sample of the parameter s
-// of Measure. The remedy is to author a sample of the parameter s with the
-// directive sample.
-//
-// Every.Index/deterministic: eidos derives no sample of the parameter
-// names of Index. The remedy is to author a sample of the parameter names
-// with the directive sample.
-//
-// Every.Count/deterministic: eidos derives no sample of the parameter
-// shapes of Count. The remedy is to author a sample of the parameter
-// shapes with the directive sample.
-//
-// Every.Use/deterministic: eidos derives no sample of the parameter r of
-// Use. The remedy is to author a sample of the parameter r with the
-// directive sample.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -255,9 +190,6 @@ func EverySuite() conform.Suite[kinds.Every] {
 				ID:          EveryChecks.Fields.Smoke(),
 				Statement:   "Fields returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *EveryHandle) {
@@ -272,9 +204,6 @@ func EverySuite() conform.Suite[kinds.Every] {
 				ID:          EveryChecks.Fields.Deterministic(),
 				Statement:   "Fields returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[kinds.Every]{EveryChecks.Fields.Smoke()},
@@ -290,9 +219,6 @@ func EverySuite() conform.Suite[kinds.Every] {
 				ID:          EveryChecks.Elements.Smoke(),
 				Statement:   "Elements returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *EveryHandle) {
@@ -307,9 +233,6 @@ func EverySuite() conform.Suite[kinds.Every] {
 				ID:          EveryChecks.Elements.Deterministic(),
 				Statement:   "Elements returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[kinds.Every]{EveryChecks.Elements.Smoke()},
@@ -1606,4 +1529,4 @@ func everyElementsDrifts(h *EveryHandle) kinds.Every {
 	return &everyElementsDriftsDefect{everyOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ec69bd835c8fcd8d81f2284bccb74bf330abf6adbbeeb3314e5a24a7dfc8b22d
+// dokimi:provenance sha256:4d335d4aba8dc8e13d8b956e2b8d21e0f19c97e99930bb4dd318f01bcbcf7ffe

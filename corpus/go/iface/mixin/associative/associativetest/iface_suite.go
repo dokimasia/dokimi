@@ -16,62 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Apply/smoke: Apply returns without a panic for derived inputs.
-//
-// Mixed.Apply/smoke#generated: Apply returns without a panic for derived
-// inputs.
-//
-// Mixed.Apply/cancel: Apply returns an error for a cancelled context.
-//
-// Mixed.Apply/cancel#generated: Apply returns an error for a cancelled
-// context.
-//
-// Mixed.Total/smoke: Total returns without a panic for derived inputs.
-//
-// Mixed.Total/cancel: Total returns an error for a cancelled context.
-//
-// Mixed.Total/zero-on-error: Total returns the zero value beside an error.
-//
-// Mixed.Merge/smoke: Merge returns without a panic for derived inputs.
-//
-// Mixed.Merge/smoke#generated: Merge returns without a panic for derived
-// inputs.
-//
-// Mixed.Merge/deterministic: Merge returns the same value for the same
-// inputs.
-//
-// Mixed.Merge/deterministic#generated: Merge returns the same value for
-// the same inputs.
-//
-// Mixed.Merge/commutative: Merge returns one value for two inputs in
-// either order.
-//
-// Mixed.Merge/associative: Merge returns one value for three inputs in
-// either grouping.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Apply/smoke
-//
-// Mixed.Total/smoke
-//
-// Mixed.Merge/smoke
-//
-// Mixed.Merge/deterministic
-
-// The refused claims of Mixed:
-//
-// Mixed.Apply/associative: Apply does not take two inputs of one type. The
-// remedy is to remove the classification, or give Apply two inputs of one
-// type.
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Apply has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -106,22 +50,10 @@ func (c mixedApply) Smoke() conform.ID[associative.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Apply returns
-// without a panic for derived inputs.
-func (c mixedApply) SmokeGenerated() conform.ID[associative.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Apply returns an error for
 // a cancelled context.
 func (c mixedApply) Cancel() conform.ID[associative.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Apply returns an
-// error for a cancelled context.
-func (c mixedApply) CancelGenerated() conform.ID[associative.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedTotal is the name of Mixed.Total, with the identities of its
@@ -160,22 +92,10 @@ func (c mixedMerge) Smoke() conform.ID[associative.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Merge returns
-// without a panic for derived inputs.
-func (c mixedMerge) SmokeGenerated() conform.ID[associative.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Merge returns the
 // same value for the same inputs.
 func (c mixedMerge) Deterministic() conform.ID[associative.Mixed] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Merge
-// returns the same value for the same inputs.
-func (c mixedMerge) DeterministicGenerated() conform.ID[associative.Mixed] {
-	return c.Check("deterministic#generated")
 }
 
 // Commutative returns the identity of the check that Merge returns one
@@ -202,9 +122,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Apply.Smoke(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -215,12 +132,9 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				Defect: mixedApplyPanics,
 			},
 			{
-				ID:          MixedChecks.Apply.SmokeGenerated(),
+				ID:          MixedChecks.Apply.Smoke().Generated(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnDs := c.Draw(prop.Of[[]associative.Delta](), "ds")
@@ -234,9 +148,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Apply.Cancel(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -246,12 +157,9 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				Defect: mixedApplyIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Apply.CancelGenerated(),
+				ID:          MixedChecks.Apply.Cancel().Generated(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnDs := c.Draw(prop.Of[[]associative.Delta](), "ds")
@@ -265,9 +173,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Total.Smoke(),
 				Statement:   "Total returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -282,9 +187,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Total.Cancel(),
 				Statement:   "Total returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -298,9 +200,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Total.ZeroOnError(),
 				Statement:   "Total returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -313,9 +212,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Merge.Smoke(),
 				Statement:   "Merge returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -327,12 +223,9 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				Defect: mixedMergePanics,
 			},
 			{
-				ID:          MixedChecks.Merge.SmokeGenerated(),
+				ID:          MixedChecks.Merge.Smoke().Generated(),
 				Statement:   "Merge returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnA := c.Draw(prop.Of[associative.Delta](), "a")
@@ -348,9 +241,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Merge.Deterministic(),
 				Statement:   "Merge returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[associative.Mixed]{MixedChecks.Merge.Smoke()},
@@ -363,14 +253,11 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				Defect: mixedMergeDrifts,
 			},
 			{
-				ID:          MixedChecks.Merge.DeterministicGenerated(),
+				ID:          MixedChecks.Merge.Deterministic().Generated(),
 				Statement:   "Merge returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[associative.Mixed]{MixedChecks.Merge.SmokeGenerated()},
+				Entails:     []conform.ID[associative.Mixed]{MixedChecks.Merge.Smoke().Generated()},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnA := c.Draw(prop.Of[associative.Delta](), "a")
 					drawnB := c.Draw(prop.Of[associative.Delta](), "b")
@@ -385,9 +272,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Merge.Commutative(),
 				Statement:   "Merge returns one value for two inputs in either order",
 				Claim:       spec.Commutative,
-				Probe:       spec.EitherOrderAgrees,
-				Reason:      spec.OrderDependent,
-				Law:         spec.CombiningIgnoresTheOrder,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnA := c.Draw(prop.Of[associative.Delta](), "a")
@@ -408,9 +292,6 @@ func MixedSuite() conform.Suite[associative.Mixed] {
 				ID:          MixedChecks.Merge.Associative(),
 				Statement:   "Merge returns one value for three inputs in either grouping",
 				Claim:       spec.Associative,
-				Probe:       spec.EitherGroupingAgrees,
-				Reason:      spec.GroupingDependent,
-				Law:         spec.CombiningIgnoresTheGrouping,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnA := c.Draw(prop.Of[associative.Delta](), "a")
@@ -769,4 +650,4 @@ func mixedMergeKeepsItsFirstResult(h *MixedHandle) associative.Mixed {
 	return &mixedMergeKeepsItsFirstResultDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b6d0d7f8d69e097b2c9664a9474d3f3f2d539dda69a493e263dff440bc843898
+// dokimi:provenance sha256:6f2f6836c0c391b26cf3fe5e7e9e244d688aa0278a4315bd6acba516f78d02fc

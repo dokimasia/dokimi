@@ -15,50 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Campaign/smoke: Campaign returns without a panic for derived
-// inputs.
-//
-// Contract.Campaign/cancel: Campaign returns an error for a cancelled
-// context.
-//
-// Contract.Campaign/leader-election: IsLeader reports no leadership that
-// Campaign took once Resign has run.
-//
-// Contract.Resign/smoke: Resign returns without a panic for derived
-// inputs.
-//
-// Contract.Resign/cancel: Resign returns an error for a cancelled context.
-//
-// Contract.IsLeader/smoke: IsLeader returns without a panic for derived
-// inputs.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Campaign/smoke
-//
-// Contract.Resign/smoke
-//
-// Contract.IsLeader/smoke
-
-// The refused claims of Contract:
-//
-// Contract.IsLeader/cancel: IsLeader cannot fail. The remedy is to give
-// IsLeader an error result.
-//
-// Contract.IsLeader/zero-on-error: IsLeader cannot fail. The remedy is to
-// give IsLeader an error result.
-
-// The unclaimed classifications of Contract:
-//
-// The shape:lifecycle of Contract.Campaign has the stance silent. A
-// lifecycle call returns nothing that a check could compare.
-//
-// The shape:lifecycle of Contract.Resign has the stance silent. A
-// lifecycle call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -147,9 +103,6 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 				ID:          ContractChecks.Campaign.Smoke(),
 				Statement:   "Campaign returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -163,9 +116,6 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 				ID:          ContractChecks.Campaign.Cancel(),
 				Statement:   "Campaign returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -178,9 +128,6 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 				ID:          ContractChecks.Campaign.LeaderElection(),
 				Statement:   "IsLeader reports no leadership that Campaign took once Resign has run",
 				Claim:       spec.LeaderElection,
-				Probe:       spec.ResignsLeadership,
-				Reason:      spec.StillLeading,
-				Law:         spec.ResignedLeadershipIsReleased,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ResignsLeadership(h, func(ctx context.Context) error {
@@ -198,9 +145,6 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 				ID:          ContractChecks.Resign.Smoke(),
 				Statement:   "Resign returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -214,9 +158,6 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 				ID:          ContractChecks.Resign.Cancel(),
 				Statement:   "Resign returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -229,9 +170,6 @@ func ContractSuite() conform.Suite[leaderelection.Contract] {
 				ID:          ContractChecks.IsLeader.Smoke(),
 				Statement:   "IsLeader returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -526,4 +464,4 @@ func contractIsLeaderPanics(h *ContractHandle) leaderelection.Contract {
 	return &contractIsLeaderPanicsDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:0d72bbe12888bc73ff4a3e053ee43cd8689226c1eb9c58f15306abeeeec93b8b
+// dokimi:provenance sha256:8166bf8956d0e7b73394829d7783ce64e344d6dbfd6a02c75ab781977ac10fea

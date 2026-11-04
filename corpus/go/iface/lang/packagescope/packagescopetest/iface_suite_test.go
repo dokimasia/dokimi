@@ -48,26 +48,7 @@ func TestSluggerSuite(t *testing.T) {
 				},
 				Defect: func(*packagescopetest.SluggerHandle) packagescope.Slugger { return &sluggerSubject{} },
 			}),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.FollowsTheSpecification(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[packagescope.Slugger]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -89,26 +70,7 @@ func TestSluggerSuite(t *testing.T) {
 				},
 				Defect: func(*packagescopetest.SluggerHandle) packagescope.Slugger { return &sluggerSubject{} },
 			}),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				packagescopetest.SluggerChecks.Slug.FollowsTheSpecification(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[packagescope.Slugger]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -123,10 +85,15 @@ func TestSluggerSuite(t *testing.T) {
 	})
 }
 
+// sluggerSuite is the suite of Slugger that the tests of the planted
+// defect of a ceiling apply.
+var sluggerSuite = packagescopetest.SluggerSuite()
+
 // sluggerIdle returns the planted defect of a ceiling of Slugger with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func sluggerIdle(h *packagescopetest.SluggerHandle) packagescope.Slugger {
-	return packagescopetest.SluggerSuite().Calls[0].Over(h, func() {})
+	return sluggerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestSluggerSuiteBudgets applies the allocation ceilings of the suite of
@@ -138,25 +105,8 @@ func TestSluggerSuiteBudgets(t *testing.T) {
 		t,
 		sluggerIdle,
 		conform.Ceilings(packagescopetest.SluggerChecks.Slug.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.FollowsTheSpecification(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[packagescope.Slugger](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -168,25 +118,8 @@ func FuzzSluggerSuiteSlug(f *testing.F) {
 		f,
 		packagescopetest.SluggerChecks.Slug.Callable,
 		sluggerIdle,
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			packagescopetest.SluggerChecks.Slug.FollowsTheSpecification(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[packagescope.Slugger](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -199,4 +132,4 @@ func BenchmarkSluggerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3fb04fc2c33e9e112e1db53293cb77d6f4667d2de058e4e7c47cafdd987842c9
+// dokimi:provenance sha256:c4ba57c0cb3b9f23b3426c813ec018fa8a952eca489ddb41dce6754160cbc858

@@ -16,41 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Run/smoke: Run returns without a panic for derived inputs.
-//
-// Contract.Run/smoke#generated: Run returns without a panic for derived
-// inputs.
-//
-// Contract.Run/cancel: Run returns an error for a cancelled context.
-//
-// Contract.Run/cancel#generated: Run returns an error for a cancelled
-// context.
-//
-// Contract.Run/zero-on-error: Run returns the zero value beside an error.
-//
-// Contract.Run/zero-on-error#generated: Run returns the zero value beside
-// an error.
-//
-// Contract.Run/appender: Run returns a position above the position of the
-// append before it.
-//
-// Contract.Run/appender#generated: Run returns a position above the
-// position of the append before it.
-//
-// Contract.Run/appends-keep-ascending: Run returns a position above the
-// one before it, over any sequence of calls.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Run/smoke
-//
-// Contract.Run/appender
-//
-// Contract.Run/appender#generated
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -81,22 +46,10 @@ func (c contractRun) Smoke() conform.ID[appender.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Run returns
-// without a panic for derived inputs.
-func (c contractRun) SmokeGenerated() conform.ID[appender.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c contractRun) Cancel() conform.ID[appender.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Run returns an
-// error for a cancelled context.
-func (c contractRun) CancelGenerated() conform.ID[appender.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Run returns the zero
@@ -105,22 +58,10 @@ func (c contractRun) ZeroOnError() conform.ID[appender.Contract] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Run returns
-// the zero value beside an error.
-func (c contractRun) ZeroOnErrorGenerated() conform.ID[appender.Contract] {
-	return c.Check("zero-on-error#generated")
-}
-
 // Appender returns the identity of the check that Run returns a position
 // above the position of the append before it.
 func (c contractRun) Appender() conform.ID[appender.Contract] {
 	return c.Check("appender")
-}
-
-// AppenderGenerated returns the identity of the check that Run returns a
-// position above the position of the append before it.
-func (c contractRun) AppenderGenerated() conform.ID[appender.Contract] {
-	return c.Check("appender#generated")
 }
 
 // AppendsKeepAscending returns the identity of the check that Run returns
@@ -141,9 +82,6 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				ID:          ContractChecks.Run.Smoke(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -155,12 +93,9 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				Defect: contractRunPanics,
 			},
 			{
-				ID:          ContractChecks.Run.SmokeGenerated(),
+				ID:          ContractChecks.Run.Smoke().Generated(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[appender.Value](), "v")
@@ -175,9 +110,6 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				ID:          ContractChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -188,12 +120,9 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				Defect: contractRunIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Run.CancelGenerated(),
+				ID:          ContractChecks.Run.Cancel().Generated(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[appender.Value](), "v")
@@ -208,9 +137,6 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				ID:          ContractChecks.Run.ZeroOnError(),
 				Statement:   "Run returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
@@ -220,12 +146,9 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				Defect: contractRunValueBeside,
 			},
 			{
-				ID:          ContractChecks.Run.ZeroOnErrorGenerated(),
+				ID:          ContractChecks.Run.ZeroOnError().Generated(),
 				Statement:   "Run returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[appender.Value](), "v")
@@ -239,9 +162,6 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				ID:          ContractChecks.Run.Appender(),
 				Statement:   "Run returns a position above the position of the append before it",
 				Claim:       spec.Appender,
-				Probe:       spec.RepeatAscends,
-				Reason:      spec.NotAscending,
-				Law:         spec.AppendReturnsAboveTheLast,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -252,12 +172,9 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				Defect: contractRunDescends,
 			},
 			{
-				ID:          ContractChecks.Run.AppenderGenerated(),
+				ID:          ContractChecks.Run.Appender().Generated(),
 				Statement:   "Run returns a position above the position of the append before it",
 				Claim:       spec.Appender,
-				Probe:       spec.RepeatAscends,
-				Reason:      spec.NotAscending,
-				Law:         spec.AppendReturnsAboveTheLast,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *ContractHandle, c *prop.Case) {
@@ -272,9 +189,6 @@ func ContractSuite() conform.Suite[appender.Contract] {
 				ID:          ContractChecks.Run.AppendsKeepAscending(),
 				Statement:   "Run returns a position above the one before it, over any sequence of calls",
 				Claim:       spec.AppendsKeepAscending,
-				Probe:       spec.PositionsRise,
-				Reason:      spec.NotAscending,
-				Law:         spec.AppendReturnsAboveTheLast,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[appender.Contract]{ContractChecks.Run.Appender()},
 				Property: func(h *ContractHandle, c *prop.Case) {
@@ -534,4 +448,4 @@ func contractRunCall(ctx context.Context, subject appender.Contract, args []any)
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:02118d426593f138030980b6a235286b5a2ea7058d97e7a75a56d83ac80f3462
+// dokimi:provenance sha256:58a2f3c0ff50f0611f9dda1800673ddc19c0135ad1deb8bd63f07c3a393547ae

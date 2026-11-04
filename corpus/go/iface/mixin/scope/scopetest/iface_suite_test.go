@@ -48,46 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*scopetest.MixedHandle) scope.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.Partition(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.PartitionGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[scope.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -109,54 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*scopetest.MixedHandle) scope.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.Partition(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Set.PartitionGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				scopetest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[scope.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = scopetest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *scopetest.MixedHandle) scope.Mixed {
-	return scopetest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -169,46 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(scopetest.MixedChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(scopetest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Partition(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.PartitionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[scope.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -219,46 +106,7 @@ func FuzzMixedSuiteSet(f *testing.F) {
 		f,
 		scopetest.MixedChecks.Set.Callable,
 		mixedIdle,
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Partition(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.PartitionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[scope.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -269,46 +117,7 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		scopetest.MixedChecks.Get.Callable,
 		mixedIdle,
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.Partition(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Set.PartitionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			scopetest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[scope.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -323,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b8df2d604be767e6fe535b2c4e1f5eab553f23b71fda996c0dd2b5b0e5365326
+// dokimi:provenance sha256:433ddf0ed867aeb9b28787ba851b5371afff27e1e72f34258c981e90824308a8

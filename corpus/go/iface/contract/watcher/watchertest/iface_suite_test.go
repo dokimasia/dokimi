@@ -49,42 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*watchertest.ContractHandle) watcher.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.WatchSeesEachTrigger(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Trigger.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Trigger.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Trigger.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Trigger.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[watcher.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -106,50 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*watchertest.ContractHandle) watcher.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Watch.WatchSeesEachTrigger(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Trigger.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Trigger.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Trigger.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				watchertest.ContractChecks.Trigger.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[watcher.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = watchertest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *watchertest.ContractHandle) watcher.Contract {
-	return watchertest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -162,42 +97,7 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(watchertest.ContractChecks.Watch.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(watchertest.ContractChecks.Trigger.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.WatchSeesEachTrigger(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[watcher.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -208,42 +108,7 @@ func FuzzContractSuiteWatch(f *testing.F) {
 		f,
 		watchertest.ContractChecks.Watch.Callable,
 		contractIdle,
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.WatchSeesEachTrigger(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[watcher.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -254,42 +119,7 @@ func FuzzContractSuiteTrigger(f *testing.F) {
 		f,
 		watchertest.ContractChecks.Trigger.Callable,
 		contractIdle,
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Watch.WatchSeesEachTrigger(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			watchertest.ContractChecks.Trigger.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[watcher.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -304,4 +134,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:514815274673c7ed6f29fac1df6d586999e64d9dd2cb9cc19c66600372b4b5c8
+// dokimi:provenance sha256:95e8575ccd96d9932f48f3d5f10069c69eb3f111255bffe406c522f8a3e69425

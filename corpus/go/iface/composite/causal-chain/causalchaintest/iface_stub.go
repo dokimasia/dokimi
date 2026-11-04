@@ -190,21 +190,6 @@ func NewLogStub(tb assert.TB, opts ...LogStubOption) *LogStub {
 	return s
 }
 
-// NewLogStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewLogStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...LogStubOption) *LogStub {
-	return NewLogStub(tb, append([]LogStubOption{
-		LogStubWithClock(clk),
-		LogStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewLogStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewLogStubFailing(tb assert.TB, err error, opts ...LogStubOption) *LogStub {
-	return NewLogStub(tb, append([]LogStubOption{LogStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LogStub) ResetCalls() {
@@ -268,4 +253,4 @@ func (s *LogStub) Replay(ctx context.Context) ([]causalchain.Entry, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:99a3d6f8946f433cce02c74c401c26f282e16c7ef9e4873fbbe2dacaf1dbdf2c
+// dokimi:provenance sha256:9e038bc7cc4f66c053ed2cc1660447f19f9bfbeaa5a5f7d6a311cb094f2fbff1

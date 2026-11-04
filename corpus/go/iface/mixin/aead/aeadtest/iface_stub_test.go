@@ -101,23 +101,38 @@ func mixedStubOverheadPins() int {
 	return want0
 }
 
-// mixedStubSealSubject returns the subject of [stub.Behaviour] for Seal.
-// The subject calls a new double that reports to tb.
+// mixedStubSealSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Seal. The subject calls a new double that
+// reports to tb.
 func mixedStubSealSubject(tb assert.TB) stub.Subject[aeadtest.MixedSealCall, aeadtest.MixedSealReturn] {
 	tb.Helper()
 	s := aeadtest.NewMixedStub(tb)
 	return stub.Subject[aeadtest.MixedSealCall, aeadtest.MixedSealReturn]{
-		Stub: s.OnSeal.MethodStub,
+		Stub:  s.OnSeal.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubSeal(tb, s)
+		},
+		Arguments: func(tb assert.TB, c aeadtest.MixedSealCall) {
+			tb.Helper()
+			a0, a1, a2, a3 := mixedStubSealArgs(tb)
+			expect.Equal(tb, c.Dst, a0, "the call records Dst")
+			expect.Equal(tb, c.Nonce, a1, "the call records Nonce")
+			expect.Equal(tb, c.Plaintext, a2, "the call records Plaintext")
+			expect.Equal(tb, c.AdditionalData, a3, "the call records AdditionalData")
 		},
 		Result: func() aeadtest.MixedSealReturn {
 			got0 := mixedStubSeal(tb, s)
 			return aeadtest.MixedSealReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnSeal.Func(func(_, _, _, _ []byte) []byte {
-				mark()
+		Returns: func() aeadtest.MixedSealReturn {
+			want0 := mixedStubSealPins()
+			s.OnSeal.Returns(want0)
+			return aeadtest.MixedSealReturn{Result: want0}
+		},
+		Override: func(seen func(aeadtest.MixedSealCall)) {
+			s.OnSeal.Func(func(p0, p1, p2, p3 []byte) []byte {
+				seen(aeadtest.MixedSealCall{Dst: p0, Nonce: p1, Plaintext: p2, AdditionalData: p3})
 				var z0 []byte
 				return z0
 			})
@@ -125,23 +140,38 @@ func mixedStubSealSubject(tb assert.TB) stub.Subject[aeadtest.MixedSealCall, aea
 	}
 }
 
-// mixedStubOpenSubject returns the subject of [stub.Behaviour] for Open.
-// The subject calls a new double that reports to tb.
+// mixedStubOpenSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Open. The subject calls a new double that
+// reports to tb.
 func mixedStubOpenSubject(tb assert.TB) stub.Subject[aeadtest.MixedOpenCall, aeadtest.MixedOpenReturn] {
 	tb.Helper()
 	s := aeadtest.NewMixedStub(tb)
 	return stub.Subject[aeadtest.MixedOpenCall, aeadtest.MixedOpenReturn]{
-		Stub: s.OnOpen.MethodStub,
+		Stub:  s.OnOpen.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubOpen(tb, s)
+		},
+		Arguments: func(tb assert.TB, c aeadtest.MixedOpenCall) {
+			tb.Helper()
+			a0, a1, a2, a3 := mixedStubOpenArgs(tb)
+			expect.Equal(tb, c.Dst, a0, "the call records Dst")
+			expect.Equal(tb, c.Nonce, a1, "the call records Nonce")
+			expect.Equal(tb, c.Ciphertext, a2, "the call records Ciphertext")
+			expect.Equal(tb, c.AdditionalData, a3, "the call records AdditionalData")
 		},
 		Result: func() aeadtest.MixedOpenReturn {
 			got0, got1 := mixedStubOpen(tb, s)
 			return aeadtest.MixedOpenReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnOpen.Func(func(_, _, _, _ []byte) ([]byte, error) {
-				mark()
+		Returns: func() aeadtest.MixedOpenReturn {
+			want0, want1 := mixedStubOpenPins()
+			s.OnOpen.Returns(want0, want1)
+			return aeadtest.MixedOpenReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(aeadtest.MixedOpenCall)) {
+			s.OnOpen.Func(func(p0, p1, p2, p3 []byte) ([]byte, error) {
+				seen(aeadtest.MixedOpenCall{Dst: p0, Nonce: p1, Ciphertext: p2, AdditionalData: p3})
 				var z0 []byte
 				var z1 error
 				return z0, z1
@@ -154,13 +184,15 @@ func mixedStubOpenSubject(tb assert.TB) stub.Subject[aeadtest.MixedOpenCall, aea
 	}
 }
 
-// mixedStubNonceSizeSubject returns the subject of [stub.Behaviour] for
-// NonceSize. The subject calls a new double that reports to tb.
+// mixedStubNonceSizeSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for NonceSize. The subject calls a new double that
+// reports to tb.
 func mixedStubNonceSizeSubject(tb assert.TB) stub.Subject[aeadtest.MixedNonceSizeCall, aeadtest.MixedNonceSizeReturn] {
 	tb.Helper()
 	s := aeadtest.NewMixedStub(tb)
 	return stub.Subject[aeadtest.MixedNonceSizeCall, aeadtest.MixedNonceSizeReturn]{
-		Stub: s.OnNonceSize.MethodStub,
+		Stub:  s.OnNonceSize.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubNonceSize(tb, s)
 		},
@@ -168,9 +200,14 @@ func mixedStubNonceSizeSubject(tb assert.TB) stub.Subject[aeadtest.MixedNonceSiz
 			got0 := mixedStubNonceSize(tb, s)
 			return aeadtest.MixedNonceSizeReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() aeadtest.MixedNonceSizeReturn {
+			want0 := mixedStubNonceSizePins()
+			s.OnNonceSize.Returns(want0)
+			return aeadtest.MixedNonceSizeReturn{Result: want0}
+		},
+		Override: func(seen func(aeadtest.MixedNonceSizeCall)) {
 			s.OnNonceSize.Func(func() int {
-				mark()
+				seen(aeadtest.MixedNonceSizeCall{})
 				var z0 int
 				return z0
 			})
@@ -178,13 +215,15 @@ func mixedStubNonceSizeSubject(tb assert.TB) stub.Subject[aeadtest.MixedNonceSiz
 	}
 }
 
-// mixedStubOverheadSubject returns the subject of [stub.Behaviour] for
-// Overhead. The subject calls a new double that reports to tb.
+// mixedStubOverheadSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Overhead. The subject calls a new double that
+// reports to tb.
 func mixedStubOverheadSubject(tb assert.TB) stub.Subject[aeadtest.MixedOverheadCall, aeadtest.MixedOverheadReturn] {
 	tb.Helper()
 	s := aeadtest.NewMixedStub(tb)
 	return stub.Subject[aeadtest.MixedOverheadCall, aeadtest.MixedOverheadReturn]{
-		Stub: s.OnOverhead.MethodStub,
+		Stub:  s.OnOverhead.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubOverhead(tb, s)
 		},
@@ -192,9 +231,14 @@ func mixedStubOverheadSubject(tb assert.TB) stub.Subject[aeadtest.MixedOverheadC
 			got0 := mixedStubOverhead(tb, s)
 			return aeadtest.MixedOverheadReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() aeadtest.MixedOverheadReturn {
+			want0 := mixedStubOverheadPins()
+			s.OnOverhead.Returns(want0)
+			return aeadtest.MixedOverheadReturn{Result: want0}
+		},
+		Override: func(seen func(aeadtest.MixedOverheadCall)) {
 			s.OnOverhead.Func(func() int {
-				mark()
+				seen(aeadtest.MixedOverheadCall{})
 				var z0 int
 				return z0
 			})
@@ -215,7 +259,6 @@ func mixedStubInstanceOf(tb assert.TB, s *aeadtest.MixedStub) mixedStubInstance 
 		Call: func() {
 			_ = mixedStubSeal(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -227,183 +270,44 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Seal", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Seal", mixedStubSealSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			_ = mixedStubSeal(t, s)
-			got := s.OnSeal.AssertCalledOnce(t, "Seal records the call")
-			a0, a1, a2, a3 := mixedStubSealArgs(t)
-			expect.Equal(t, got.Dst, a0, "the call records Dst")
-			expect.Equal(t, got.Nonce, a1, "the call records Nonce")
-			expect.Equal(t, got.Plaintext, a2, "the call records Plaintext")
-			expect.Equal(t, got.AdditionalData, a3, "the call records AdditionalData")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			var seen []aeadtest.MixedSealCall
-			s.OnSeal.OnRecord(func(c aeadtest.MixedSealCall) { seen = append(seen, c) })
-			_ = mixedStubSeal(t, s)
-			_ = mixedStubSeal(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Seal")
-		})
 	})
 
 	t.Run("Open", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Open", mixedStubOpenSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			_, _ = mixedStubOpen(t, s)
-			got := s.OnOpen.AssertCalledOnce(t, "Open records the call")
-			a0, a1, a2, a3 := mixedStubOpenArgs(t)
-			expect.Equal(t, got.Dst, a0, "the call records Dst")
-			expect.Equal(t, got.Nonce, a1, "the call records Nonce")
-			expect.Equal(t, got.Ciphertext, a2, "the call records Ciphertext")
-			expect.Equal(t, got.AdditionalData, a3, "the call records AdditionalData")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			var seen []aeadtest.MixedOpenCall
-			s.OnOpen.OnRecord(func(c aeadtest.MixedOpenCall) { seen = append(seen, c) })
-			_, _ = mixedStubOpen(t, s)
-			_, _ = mixedStubOpen(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Open")
-		})
 	})
 
 	t.Run("NonceSize", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "NonceSize", mixedStubNonceSizeSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			var seen []aeadtest.MixedNonceSizeCall
-			s.OnNonceSize.OnRecord(func(c aeadtest.MixedNonceSizeCall) { seen = append(seen, c) })
-			_ = mixedStubNonceSize(t, s)
-			_ = mixedStubNonceSize(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of NonceSize")
-		})
 	})
 
 	t.Run("Overhead", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Overhead", mixedStubOverheadSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			var seen []aeadtest.MixedOverheadCall
-			s.OnOverhead.OnRecord(func(c aeadtest.MixedOverheadCall) { seen = append(seen, c) })
-			_ = mixedStubOverhead(t, s)
-			_ = mixedStubOverhead(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Overhead")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, aeadtest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Seal", func(t *testing.T) {
+		t.Run("Seal", func(t *testing.T) {
 			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			_ = mixedStubSeal(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnSeal.CallCount(), 0, "ResetCalls clears the calls of Seal")
+			stub.ResetBehaviour(t, "Seal", mixedStubSealSubject)
 		})
 
-		t.Run("keeps the results of Returns of Seal", func(t *testing.T) {
+		t.Run("Open", func(t *testing.T) {
 			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			want0 := mixedStubSealPins()
-			s.OnSeal.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubSeal(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Seal")
+			stub.ResetBehaviour(t, "Open", mixedStubOpenSubject)
 		})
 
-		t.Run("clears the recorded calls of Open", func(t *testing.T) {
+		t.Run("NonceSize", func(t *testing.T) {
 			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			_, _ = mixedStubOpen(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnOpen.CallCount(), 0, "ResetCalls clears the calls of Open")
+			stub.ResetBehaviour(t, "NonceSize", mixedStubNonceSizeSubject)
 		})
 
-		t.Run("keeps the results of Returns of Open", func(t *testing.T) {
+		t.Run("Overhead", func(t *testing.T) {
 			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			want0, want1 := mixedStubOpenPins()
-			s.OnOpen.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubOpen(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Open")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Open")
-		})
-
-		t.Run("clears the recorded calls of NonceSize", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			_ = mixedStubNonceSize(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNonceSize.CallCount(), 0, "ResetCalls clears the calls of NonceSize")
-		})
-
-		t.Run("keeps the results of Returns of NonceSize", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			want0 := mixedStubNonceSizePins()
-			s.OnNonceSize.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubNonceSize(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of NonceSize")
-		})
-
-		t.Run("clears the recorded calls of Overhead", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			_ = mixedStubOverhead(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnOverhead.CallCount(), 0, "ResetCalls clears the calls of Overhead")
-		})
-
-		t.Run("keeps the results of Returns of Overhead", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			want0 := mixedStubOverheadPins()
-			s.OnOverhead.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubOverhead(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Overhead")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, aeadtest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Open with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Open-failing")
-			s := aeadtest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubOpen(t, s)
-			assert.ErrorIs(t, r1, want, "Open fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Overhead", mixedStubOverheadSubject)
 		})
 	})
 
@@ -569,175 +473,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedSealStub checks the methods of MixedSealStub, which configures
-// Seal.
-func TestMixedSealStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Seal", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			want0 := mixedStubSealPins()
-			s.OnSeal.Returns(want0)
-			got0 := mixedStubSeal(t, s)
-			assert.Equal(t, got0, want0, "Seal returns the Result that Returns sets")
-		})
-
-		t.Run("configures Seal for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := aeadtest.NewMixedStub(r)
-			s.OnSeal.Strict()
-			var want0 []byte
-			s.OnSeal.Returns(want0)
-			_ = mixedStubSeal(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Seal")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Seal to the function", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			var got0 []byte
-			var got1 []byte
-			var got2 []byte
-			var got3 []byte
-			s.OnSeal.Func(func(p0, p1, p2, p3 []byte) []byte {
-				got0, got1, got2, got3 = p0, p1, p2, p3
-				var z0 []byte
-				return z0
-			})
-			_ = mixedStubSeal(t, s)
-			a0, a1, a2, a3 := mixedStubSealArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Dst")
-			expect.Equal(t, got1, a1, "the function receives Nonce")
-			expect.Equal(t, got2, a2, "the function receives Plaintext")
-			expect.Equal(t, got3, a3, "the function receives AdditionalData")
-		})
-	})
-}
-
-// TestMixedOpenStub checks the methods of MixedOpenStub, which configures
-// Open.
-func TestMixedOpenStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Open", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			want0, want1 := mixedStubOpenPins()
-			s.OnOpen.Returns(want0, want1)
-			got0, got1 := mixedStubOpen(t, s)
-			expect.Equal(t, got0, want0, "Open returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Open returns the error that Returns sets")
-		})
-
-		t.Run("configures Open for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := aeadtest.NewMixedStub(r)
-			s.OnOpen.Strict()
-			var want0 []byte
-			var want1 error
-			s.OnOpen.Returns(want0, want1)
-			_, _ = mixedStubOpen(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Open")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Open to the function", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			var got0 []byte
-			var got1 []byte
-			var got2 []byte
-			var got3 []byte
-			s.OnOpen.Func(func(p0, p1, p2, p3 []byte) ([]byte, error) {
-				got0, got1, got2, got3 = p0, p1, p2, p3
-				var z0 []byte
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubOpen(t, s)
-			a0, a1, a2, a3 := mixedStubOpenArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Dst")
-			expect.Equal(t, got1, a1, "the function receives Nonce")
-			expect.Equal(t, got2, a2, "the function receives Ciphertext")
-			expect.Equal(t, got3, a3, "the function receives AdditionalData")
-		})
-	})
-}
-
-// TestMixedNonceSizeStub checks the methods of MixedNonceSizeStub, which
-// configures NonceSize.
-func TestMixedNonceSizeStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of NonceSize", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			want0 := mixedStubNonceSizePins()
-			s.OnNonceSize.Returns(want0)
-			got0 := mixedStubNonceSize(t, s)
-			assert.Equal(t, got0, want0, "NonceSize returns the Result that Returns sets")
-		})
-
-		t.Run("configures NonceSize for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := aeadtest.NewMixedStub(r)
-			s.OnNonceSize.Strict()
-			var want0 int
-			s.OnNonceSize.Returns(want0)
-			_ = mixedStubNonceSize(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of NonceSize")
-		})
-	})
-}
-
-// TestMixedOverheadStub checks the methods of MixedOverheadStub, which
-// configures Overhead.
-func TestMixedOverheadStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Overhead", func(t *testing.T) {
-			t.Parallel()
-			s := aeadtest.NewMixedStub(t)
-			want0 := mixedStubOverheadPins()
-			s.OnOverhead.Returns(want0)
-			got0 := mixedStubOverhead(t, s)
-			assert.Equal(t, got0, want0, "Overhead returns the Result that Returns sets")
-		})
-
-		t.Run("configures Overhead for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := aeadtest.NewMixedStub(r)
-			s.OnOverhead.Strict()
-			var want0 int
-			s.OnOverhead.Returns(want0)
-			_ = mixedStubOverhead(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Overhead")
-		})
-	})
-}
-
-// dokimi:provenance sha256:c2eefd0f9a943df07aa5c035a261e99020dceef90481031d0889b3444969e69e
+// dokimi:provenance sha256:a1389a5d86f52df5e839a8b77a22d71602a0b8ee14d97e220c46296b8e6234fc

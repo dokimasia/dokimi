@@ -49,30 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*ratelimittest.ContractHandle) ratelimit.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.RateLimit(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.RateLimitGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[ratelimit.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -94,38 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*ratelimittest.ContractHandle) ratelimit.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.RateLimit(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ratelimittest.ContractChecks.Run.RateLimitGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[ratelimit.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = ratelimittest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *ratelimittest.ContractHandle) ratelimit.Contract {
-	return ratelimittest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -137,29 +96,8 @@ func TestContractSuiteBudgets(t *testing.T) {
 		t,
 		contractIdle,
 		conform.Ceilings(ratelimittest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.RateLimit(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.RateLimitGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[ratelimit.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -171,29 +109,8 @@ func FuzzContractSuiteRun(f *testing.F) {
 		f,
 		ratelimittest.ContractChecks.Run.Callable,
 		contractIdle,
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.RateLimit(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ratelimittest.ContractChecks.Run.RateLimitGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[ratelimit.Contract](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -206,4 +123,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:649eacff25e30003411bec575ab5296e9931f4f2a7577d1ea88149a629735023
+// dokimi:provenance sha256:34da105d894d8db6888509f1699195a6c059e4094ac953a0c0441ae3ed2b7cec

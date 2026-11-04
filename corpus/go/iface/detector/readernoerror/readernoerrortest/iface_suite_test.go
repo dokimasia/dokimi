@@ -51,22 +51,7 @@ func TestReaderNoErrorSuite(t *testing.T) {
 					return &readerNoErrorSubject{}
 				},
 			}),
-			conform.Excuse(
-				readernoerrortest.ReaderNoErrorChecks.Lookup.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readernoerrortest.ReaderNoErrorChecks.Lookup.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[readernoerror.ReaderNoError]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -90,31 +75,20 @@ func TestReaderNoErrorSuite(t *testing.T) {
 					return &readerNoErrorSubject{}
 				},
 			}),
-			conform.Excuse(
-				readernoerrortest.ReaderNoErrorChecks.Lookup.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readernoerrortest.ReaderNoErrorChecks.Lookup.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[readernoerror.ReaderNoError]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// readerNoErrorSuite is the suite of ReaderNoError that the tests of the
+// planted defect of a ceiling apply.
+var readerNoErrorSuite = readernoerrortest.ReaderNoErrorSuite()
+
 // readerNoErrorIdle returns the planted defect of a ceiling of
-// ReaderNoError with a spend of nothing, a subject that answers each call
-// at once.
+// ReaderNoError with a spend of nothing. Each call of the defect returns
+// its zero results at once.
 func readerNoErrorIdle(h *readernoerrortest.ReaderNoErrorHandle) readernoerror.ReaderNoError {
-	return readernoerrortest.ReaderNoErrorSuite().Calls[0].Over(h, func() {})
+	return readerNoErrorSuite.Calls[0].Over(h, func() {})
 }
 
 // TestReaderNoErrorSuiteBudgets applies the allocation ceilings of the
@@ -126,21 +100,8 @@ func TestReaderNoErrorSuiteBudgets(t *testing.T) {
 		t,
 		readerNoErrorIdle,
 		conform.Ceilings(readernoerrortest.ReaderNoErrorChecks.Lookup.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			readernoerrortest.ReaderNoErrorChecks.Lookup.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readernoerrortest.ReaderNoErrorChecks.Lookup.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[readernoerror.ReaderNoError](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -153,21 +114,8 @@ func FuzzReaderNoErrorSuiteLookup(f *testing.F) {
 		f,
 		readernoerrortest.ReaderNoErrorChecks.Lookup.Callable,
 		readerNoErrorIdle,
-		conform.Excuse(
-			readernoerrortest.ReaderNoErrorChecks.Lookup.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readernoerrortest.ReaderNoErrorChecks.Lookup.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZeroGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[readernoerror.ReaderNoError](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -184,4 +132,4 @@ func BenchmarkReaderNoErrorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:12a3fdedf676021724c8dd71a113b77d1a74a02461aa49ff112c8d7355dbe000
+// dokimi:provenance sha256:d9638150c75b2464db03326101253096f3289739f088231592d07502ceb300e7

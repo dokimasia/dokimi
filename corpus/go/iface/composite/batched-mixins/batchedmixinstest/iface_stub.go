@@ -239,21 +239,6 @@ func NewBatchedStub(tb assert.TB, opts ...BatchedStubOption) *BatchedStub {
 	return s
 }
 
-// NewBatchedStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewBatchedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...BatchedStubOption) *BatchedStub {
-	return NewBatchedStub(tb, append([]BatchedStubOption{
-		BatchedStubWithClock(clk),
-		BatchedStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewBatchedStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewBatchedStubFailing(tb assert.TB, err error, opts ...BatchedStubOption) *BatchedStub {
-	return NewBatchedStub(tb, append([]BatchedStubOption{BatchedStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *BatchedStub) ResetCalls() {
@@ -346,4 +331,4 @@ func (s *BatchedStub) List(ctx context.Context) ([]string, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:3961e7a976abe39bb674b1fe5bc043f0054535280ed24d4a3b3c47016019829c
+// dokimi:provenance sha256:b2b90b11545b2ed839c5762626833e54427975eae9898c21a7ceb74ec3d17526

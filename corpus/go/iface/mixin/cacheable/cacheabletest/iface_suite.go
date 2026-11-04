@@ -15,33 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mixed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mixed.Get/cancel: Get returns an error for a cancelled context.
-//
-// Mixed.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Mixed.Get/cacheable: Get returns the same value on a repeat.
-//
-// Mixed.Get/cacheable#generated: Get returns the same value on a repeat.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Get/smoke
-//
-// Mixed.Get/cacheable
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -71,22 +44,10 @@ func (c mixedGet) Smoke() conform.ID[cacheable.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mixedGet) SmokeGenerated() conform.ID[cacheable.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[cacheable.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c mixedGet) CancelGenerated() conform.ID[cacheable.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Get returns the zero
@@ -95,22 +56,10 @@ func (c mixedGet) ZeroOnError() conform.ID[cacheable.Mixed] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c mixedGet) ZeroOnErrorGenerated() conform.ID[cacheable.Mixed] {
-	return c.Check("zero-on-error#generated")
-}
-
 // Cacheable returns the identity of the check that Get returns the same
 // value on a repeat.
 func (c mixedGet) Cacheable() conform.ID[cacheable.Mixed] {
 	return c.Check("cacheable")
-}
-
-// CacheableGenerated returns the identity of the check that Get returns
-// the same value on a repeat.
-func (c mixedGet) CacheableGenerated() conform.ID[cacheable.Mixed] {
-	return c.Check("cacheable#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -125,9 +74,6 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 				ID:          MixedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -139,12 +85,9 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Get.SmokeGenerated(),
+				ID:          MixedChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -159,9 +102,6 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -172,12 +112,9 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Get.CancelGenerated(),
+				ID:          MixedChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -192,9 +129,6 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 				ID:          MixedChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -204,12 +138,9 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 				Defect: mixedGetValueBeside,
 			},
 			{
-				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -223,9 +154,6 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 				ID:          MixedChecks.Get.Cacheable(),
 				Statement:   "Get returns the same value on a repeat",
 				Claim:       spec.Cacheable,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -236,12 +164,9 @@ func MixedSuite() conform.Suite[cacheable.Mixed] {
 				Defect: mixedGetDrifts,
 			},
 			{
-				ID:          MixedChecks.Get.CacheableGenerated(),
+				ID:          MixedChecks.Get.Cacheable().Generated(),
 				Statement:   "Get returns the same value on a repeat",
 				Claim:       spec.Cacheable,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -432,4 +357,4 @@ func mixedGetDrifts(h *MixedHandle) cacheable.Mixed {
 	return &mixedGetDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5dfa83a0674f88b71205c73fa962147bcf52be2e58614b245a02ce9ea47c7b7b
+// dokimi:provenance sha256:9411d940d992722419862629960dc93445322edc2b134e0b95ee0cba64f801e8

@@ -48,54 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*windowedtest.MixedHandle) windowed.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.Windowed(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.WindowedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[windowed.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -117,62 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*windowedtest.MixedHandle) windowed.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.Windowed(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.Record.WindowedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				windowedtest.MixedChecks.CountIn.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[windowed.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = windowedtest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *windowedtest.MixedHandle) windowed.Mixed {
-	return windowedtest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -185,54 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(windowedtest.MixedChecks.Record.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(windowedtest.MixedChecks.CountIn.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Windowed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.WindowedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[windowed.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -243,54 +106,7 @@ func FuzzMixedSuiteRecord(f *testing.F) {
 		f,
 		windowedtest.MixedChecks.Record.Callable,
 		mixedIdle,
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Windowed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.WindowedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[windowed.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -301,54 +117,7 @@ func FuzzMixedSuiteCountIn(f *testing.F) {
 		f,
 		windowedtest.MixedChecks.CountIn.Callable,
 		mixedIdle,
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.Windowed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.Record.WindowedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			windowedtest.MixedChecks.CountIn.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[windowed.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -363,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6a8604c66ddb78d6c225a8af4aa684a14748eecff1b41bf5f5b1f4ff0c5becca
+// dokimi:provenance sha256:6881deb978e402b8bcb259edf12b638cbe5c742b3df18ab0aaa28c8ee2386d54

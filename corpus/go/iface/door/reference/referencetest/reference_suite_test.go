@@ -48,66 +48,7 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*referencetest.StoreHandle) reference.Store { return &storeSubject{} },
 			}),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.AgreesWithTheReference(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Delete.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Delete.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Delete.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Delete.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[reference.Store]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -129,74 +70,19 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*referencetest.StoreHandle) reference.Store { return &storeSubject{} },
 			}),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Get.AgreesWithTheReference(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Delete.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Delete.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Delete.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.StoreChecks.Delete.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[reference.Store]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// storeSuite is the suite of Store that the tests of the planted defect of
+// a ceiling apply.
+var storeSuite = referencetest.StoreSuite()
+
 // storeIdle returns the planted defect of a ceiling of Store with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func storeIdle(h *referencetest.StoreHandle) reference.Store {
-	return referencetest.StoreSuite().Calls[0].Over(h, func() {})
+	return storeSuite.Calls[0].Over(h, func() {})
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
@@ -210,66 +96,7 @@ func TestStoreSuiteBudgets(t *testing.T) {
 		conform.Ceilings(referencetest.StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(referencetest.StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(referencetest.StoreChecks.Delete.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -280,66 +107,7 @@ func FuzzStoreSuiteGet(f *testing.F) {
 		f,
 		referencetest.StoreChecks.Get.Callable,
 		storeIdle,
-		conform.Excuse(
-			referencetest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -350,66 +118,7 @@ func FuzzStoreSuitePut(f *testing.F) {
 		f,
 		referencetest.StoreChecks.Put.Callable,
 		storeIdle,
-		conform.Excuse(
-			referencetest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -420,66 +129,7 @@ func FuzzStoreSuiteDelete(f *testing.F) {
 		f,
 		referencetest.StoreChecks.Delete.Callable,
 		storeIdle,
-		conform.Excuse(
-			referencetest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Get.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.StoreChecks.Delete.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -532,70 +182,7 @@ func TestJournalSuite(t *testing.T) {
 				},
 				Defect: func(*referencetest.JournalHandle) reference.Journal { return &journalSubject{} },
 			}),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.AgreesWithTheReference(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Len.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Len.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Len.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[reference.Journal]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -617,78 +204,20 @@ func TestJournalSuite(t *testing.T) {
 				},
 				Defect: func(*referencetest.JournalHandle) reference.Journal { return &journalSubject{} },
 			}),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Append.AgreesWithTheReference(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.At.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Len.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Len.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.JournalChecks.Len.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[reference.Journal]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// journalSuite is the suite of Journal that the tests of the planted
+// defect of a ceiling apply.
+var journalSuite = referencetest.JournalSuite()
+
 // journalIdle returns the planted defect of a ceiling of Journal with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func journalIdle(h *referencetest.JournalHandle) reference.Journal {
-	return referencetest.JournalSuite().Calls[0].Over(h, func() {})
+	return journalSuite.Calls[0].Over(h, func() {})
 }
 
 // TestJournalSuiteBudgets applies the allocation ceilings of the suite of
@@ -702,70 +231,7 @@ func TestJournalSuiteBudgets(t *testing.T) {
 		conform.Ceilings(referencetest.JournalChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(referencetest.JournalChecks.At.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(referencetest.JournalChecks.Len.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Journal]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -776,70 +242,7 @@ func FuzzJournalSuiteAppend(f *testing.F) {
 		f,
 		referencetest.JournalChecks.Append.Callable,
 		journalIdle,
-		conform.Excuse(
-			referencetest.JournalChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Journal]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -850,70 +253,7 @@ func FuzzJournalSuiteAt(f *testing.F) {
 		f,
 		referencetest.JournalChecks.At.Callable,
 		journalIdle,
-		conform.Excuse(
-			referencetest.JournalChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Journal]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -924,70 +264,7 @@ func FuzzJournalSuiteLen(f *testing.F) {
 		f,
 		referencetest.JournalChecks.Len.Callable,
 		journalIdle,
-		conform.Excuse(
-			referencetest.JournalChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Append.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.At.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.JournalChecks.Len.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Journal]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -1040,50 +317,7 @@ func TestFifoSuite(t *testing.T) {
 				},
 				Defect: func(*referencetest.FifoHandle) reference.Fifo { return &fifoSubject{} },
 			}),
-			conform.Excuse(
-				referencetest.FifoChecks.Push.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Push.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Push.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Push.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Pop.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Pop.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Pop.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Pop.AgreesWithTheReference(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Len.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Len.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Len.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[reference.Fifo]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -1105,58 +339,19 @@ func TestFifoSuite(t *testing.T) {
 				},
 				Defect: func(*referencetest.FifoHandle) reference.Fifo { return &fifoSubject{} },
 			}),
-			conform.Excuse(
-				referencetest.FifoChecks.Push.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Push.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Push.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Push.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Pop.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Pop.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Pop.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Pop.AgreesWithTheReference(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Len.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Len.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				referencetest.FifoChecks.Len.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[reference.Fifo]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// fifoSuite is the suite of Fifo that the tests of the planted defect of a
+// ceiling apply.
+var fifoSuite = referencetest.FifoSuite()
+
 // fifoIdle returns the planted defect of a ceiling of Fifo with a spend of
-// nothing, a subject that answers each call at once.
+// nothing. Each call of the defect returns its zero results at once.
 func fifoIdle(h *referencetest.FifoHandle) reference.Fifo {
-	return referencetest.FifoSuite().Calls[0].Over(h, func() {})
+	return fifoSuite.Calls[0].Over(h, func() {})
 }
 
 // TestFifoSuiteBudgets applies the allocation ceilings of the suite of
@@ -1170,50 +365,7 @@ func TestFifoSuiteBudgets(t *testing.T) {
 		conform.Ceilings(referencetest.FifoChecks.Push.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(referencetest.FifoChecks.Pop.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(referencetest.FifoChecks.Len.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Fifo]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -1224,50 +376,7 @@ func FuzzFifoSuitePush(f *testing.F) {
 		f,
 		referencetest.FifoChecks.Push.Callable,
 		fifoIdle,
-		conform.Excuse(
-			referencetest.FifoChecks.Push.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Fifo]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -1278,50 +387,7 @@ func FuzzFifoSuitePop(f *testing.F) {
 		f,
 		referencetest.FifoChecks.Pop.Callable,
 		fifoIdle,
-		conform.Excuse(
-			referencetest.FifoChecks.Push.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Fifo]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -1332,50 +398,7 @@ func FuzzFifoSuiteLen(f *testing.F) {
 		f,
 		referencetest.FifoChecks.Len.Callable,
 		fifoIdle,
-		conform.Excuse(
-			referencetest.FifoChecks.Push.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Push.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Pop.AgreesWithTheReference(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			referencetest.FifoChecks.Len.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[reference.Fifo]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -1393,4 +416,4 @@ func BenchmarkFifoSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:fee311b459c6797f9badfb776ed70d22c683c139dc4d637e66f79221f10126a4
+// dokimi:provenance sha256:3f16524c747446893cf65d3b70d57bdfd5e888f5b6efa7e9999ec623d5c96d1d

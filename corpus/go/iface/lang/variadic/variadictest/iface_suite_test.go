@@ -48,38 +48,7 @@ func TestFinderSuite(t *testing.T) {
 				},
 				Defect: func(*variadictest.FinderHandle) variadic.Finder { return &finderSubject{} },
 			}),
-			conform.Excuse(
-				variadictest.FinderChecks.Find.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.Find.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.Find.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.Find.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.FindWithLimit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.FindWithLimit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.FindWithLimit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.FindWithLimit.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[variadic.Finder]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -101,46 +70,20 @@ func TestFinderSuite(t *testing.T) {
 				},
 				Defect: func(*variadictest.FinderHandle) variadic.Finder { return &finderSubject{} },
 			}),
-			conform.Excuse(
-				variadictest.FinderChecks.Find.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.Find.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.Find.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.Find.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.FindWithLimit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.FindWithLimit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.FindWithLimit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				variadictest.FinderChecks.FindWithLimit.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[variadic.Finder]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// finderSuite is the suite of Finder that the tests of the planted defect
+// of a ceiling apply.
+var finderSuite = variadictest.FinderSuite()
+
 // finderIdle returns the planted defect of a ceiling of Finder with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func finderIdle(h *variadictest.FinderHandle) variadic.Finder {
-	return variadictest.FinderSuite().Calls[0].Over(h, func() {})
+	return finderSuite.Calls[0].Over(h, func() {})
 }
 
 // TestFinderSuiteBudgets applies the allocation ceilings of the suite of
@@ -153,38 +96,7 @@ func TestFinderSuiteBudgets(t *testing.T) {
 		finderIdle,
 		conform.Ceilings(variadictest.FinderChecks.Find.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(variadictest.FinderChecks.FindWithLimit.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[variadic.Finder]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -195,38 +107,7 @@ func FuzzFinderSuiteFind(f *testing.F) {
 		f,
 		variadictest.FinderChecks.Find.Callable,
 		finderIdle,
-		conform.Excuse(
-			variadictest.FinderChecks.Find.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[variadic.Finder]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -238,38 +119,7 @@ func FuzzFinderSuiteFindWithLimit(f *testing.F) {
 		f,
 		variadictest.FinderChecks.FindWithLimit.Callable,
 		finderIdle,
-		conform.Excuse(
-			variadictest.FinderChecks.Find.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.Find.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			variadictest.FinderChecks.FindWithLimit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[variadic.Finder]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -284,4 +134,4 @@ func BenchmarkFinderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:9b93a9c64e1c91d5f4129d0c8ba83d1219dffc83217216b66f7449d4ecf5f254
+// dokimi:provenance sha256:1ae560dff60bff2e9e3469e0b1afc0430483b5dfbe99987d59b5d47210eaaef8

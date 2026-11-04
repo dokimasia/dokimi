@@ -138,15 +138,6 @@ func NewLookupStub(tb assert.TB, opts ...LookupStubOption) *LookupStub {
 	return s
 }
 
-// NewLookupStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewLookupStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...LookupStubOption) *LookupStub {
-	return NewLookupStub(tb, append([]LookupStubOption{
-		LookupStubWithClock(clk),
-		LookupStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LookupStub) ResetCalls() {
@@ -182,4 +173,4 @@ func (s *LookupStub) Inspect(key string) (lookup.Value, lookup.Meta, bool) {
 	return r.Result0, r.Result1, r.Result2
 }
 
-// dokimi:provenance sha256:e1d2dd8632de51c5e496adf81d13dc9b24d21c20c769d9c949a6a481d275d07b
+// dokimi:provenance sha256:f4eb6601f5eabefe0c82dfbf4de731589fcf7e919f9f197a65b1c0c35ec75319

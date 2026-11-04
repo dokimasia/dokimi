@@ -49,54 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*pooltest.ContractHandle) pool.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				pooltest.ContractChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Get.Pool(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Stats.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Stats.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Stats.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Stats.CountsEachLoan(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[pool.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -118,62 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*pooltest.ContractHandle) pool.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				pooltest.ContractChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Get.Pool(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Stats.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Stats.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Stats.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				pooltest.ContractChecks.Stats.CountsEachLoan(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[pool.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = pooltest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *pooltest.ContractHandle) pool.Contract {
-	return pooltest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -187,54 +98,7 @@ func TestContractSuiteBudgets(t *testing.T) {
 		conform.Ceilings(pooltest.ContractChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(pooltest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(pooltest.ContractChecks.Stats.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Pool(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.CountsEachLoan(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[pool.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -245,54 +109,7 @@ func FuzzContractSuiteGet(f *testing.F) {
 		f,
 		pooltest.ContractChecks.Get.Callable,
 		contractIdle,
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Pool(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.CountsEachLoan(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[pool.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -303,54 +120,7 @@ func FuzzContractSuitePut(f *testing.F) {
 		f,
 		pooltest.ContractChecks.Put.Callable,
 		contractIdle,
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Pool(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.CountsEachLoan(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[pool.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -361,54 +131,7 @@ func FuzzContractSuiteStats(f *testing.F) {
 		f,
 		pooltest.ContractChecks.Stats.Callable,
 		contractIdle,
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Get.Pool(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			pooltest.ContractChecks.Stats.CountsEachLoan(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[pool.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -426,4 +149,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:8e7f77ee3953e40a64b381a1d6affd8095e18ac4f9de7243c5ea0a60ba16a988
+// dokimi:provenance sha256:b882979bff350da8202b6d22a02ec61fec554023f420fd806bd96550ddc5e876

@@ -15,49 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Old/smoke: Old returns without a panic for derived inputs.
-//
-// Mixed.Old/smoke#generated: Old returns without a panic for derived
-// inputs.
-//
-// Mixed.Old/cancel: Old returns an error for a cancelled context.
-//
-// Mixed.Old/cancel#generated: Old returns an error for a cancelled
-// context.
-//
-// Mixed.Old/zero-on-error: Old returns the zero value beside an error.
-//
-// Mixed.Old/zero-on-error#generated: Old returns the zero value beside an
-// error.
-//
-// Mixed.New/smoke: New returns without a panic for derived inputs.
-//
-// Mixed.New/smoke#generated: New returns without a panic for derived
-// inputs.
-//
-// Mixed.New/cancel: New returns an error for a cancelled context.
-//
-// Mixed.New/cancel#generated: New returns an error for a cancelled
-// context.
-//
-// Mixed.New/zero-on-error: New returns the zero value beside an error.
-//
-// Mixed.New/zero-on-error#generated: New returns the zero value beside an
-// error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Old/smoke
-//
-// Mixed.New/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The mixin:deprecated of Mixed.Old has the stance silent. The mixin
-// documents the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -89,34 +46,16 @@ func (c mixedOld) Smoke() conform.ID[deprecated.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Old returns
-// without a panic for derived inputs.
-func (c mixedOld) SmokeGenerated() conform.ID[deprecated.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Old returns an error for a
 // cancelled context.
 func (c mixedOld) Cancel() conform.ID[deprecated.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Old returns an
-// error for a cancelled context.
-func (c mixedOld) CancelGenerated() conform.ID[deprecated.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Old returns the zero
 // value beside an error.
 func (c mixedOld) ZeroOnError() conform.ID[deprecated.Mixed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Old returns
-// the zero value beside an error.
-func (c mixedOld) ZeroOnErrorGenerated() conform.ID[deprecated.Mixed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // mixedNew is the name of Mixed.New, with the identities of its checks.
@@ -130,34 +69,16 @@ func (c mixedNew) Smoke() conform.ID[deprecated.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that New returns
-// without a panic for derived inputs.
-func (c mixedNew) SmokeGenerated() conform.ID[deprecated.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that New returns an error for a
 // cancelled context.
 func (c mixedNew) Cancel() conform.ID[deprecated.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that New returns an
-// error for a cancelled context.
-func (c mixedNew) CancelGenerated() conform.ID[deprecated.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that New returns the zero
 // value beside an error.
 func (c mixedNew) ZeroOnError() conform.ID[deprecated.Mixed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that New returns
-// the zero value beside an error.
-func (c mixedNew) ZeroOnErrorGenerated() conform.ID[deprecated.Mixed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -172,9 +93,6 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				ID:          MixedChecks.Old.Smoke(),
 				Statement:   "Old returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -186,12 +104,9 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				Defect: mixedOldPanics,
 			},
 			{
-				ID:          MixedChecks.Old.SmokeGenerated(),
+				ID:          MixedChecks.Old.Smoke().Generated(),
 				Statement:   "Old returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -206,9 +121,6 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				ID:          MixedChecks.Old.Cancel(),
 				Statement:   "Old returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -219,12 +131,9 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				Defect: mixedOldIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Old.CancelGenerated(),
+				ID:          MixedChecks.Old.Cancel().Generated(),
 				Statement:   "Old returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -239,9 +148,6 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				ID:          MixedChecks.Old.ZeroOnError(),
 				Statement:   "Old returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -251,12 +157,9 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				Defect: mixedOldValueBeside,
 			},
 			{
-				ID:          MixedChecks.Old.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Old.ZeroOnError().Generated(),
 				Statement:   "Old returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -270,9 +173,6 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				ID:          MixedChecks.New.Smoke(),
 				Statement:   "New returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -284,12 +184,9 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				Defect: mixedNewPanics,
 			},
 			{
-				ID:          MixedChecks.New.SmokeGenerated(),
+				ID:          MixedChecks.New.Smoke().Generated(),
 				Statement:   "New returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -304,9 +201,6 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				ID:          MixedChecks.New.Cancel(),
 				Statement:   "New returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -317,12 +211,9 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				Defect: mixedNewIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.New.CancelGenerated(),
+				ID:          MixedChecks.New.Cancel().Generated(),
 				Statement:   "New returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -337,9 +228,6 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				ID:          MixedChecks.New.ZeroOnError(),
 				Statement:   "New returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -349,12 +237,9 @@ func MixedSuite() conform.Suite[deprecated.Mixed] {
 				Defect: mixedNewValueBeside,
 			},
 			{
-				ID:          MixedChecks.New.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.New.ZeroOnError().Generated(),
 				Statement:   "New returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -605,4 +490,4 @@ func mixedNewValueBeside(h *MixedHandle) deprecated.Mixed {
 	return &mixedNewValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ae5c329f9a8da01410c5d5eae7019482f4d7b4c602f43b13f3286dcdf041b942
+// dokimi:provenance sha256:4df333cd491d7fc00941212a12dbd15d60d42b32acb71c0cacd1891a57678bf4

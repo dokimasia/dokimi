@@ -51,22 +51,7 @@ func TestReaderWithBoolSuite(t *testing.T) {
 					return &readerWithBoolSubject{}
 				},
 			}),
-			conform.Excuse(
-				readerwithbooltest.ReaderWithBoolChecks.Load.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readerwithbooltest.ReaderWithBoolChecks.Load.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMiss(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMissGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[readerwithbool.ReaderWithBool]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -90,31 +75,20 @@ func TestReaderWithBoolSuite(t *testing.T) {
 					return &readerWithBoolSubject{}
 				},
 			}),
-			conform.Excuse(
-				readerwithbooltest.ReaderWithBoolChecks.Load.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readerwithbooltest.ReaderWithBoolChecks.Load.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMiss(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMissGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[readerwithbool.ReaderWithBool]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// readerWithBoolSuite is the suite of ReaderWithBool that the tests of the
+// planted defect of a ceiling apply.
+var readerWithBoolSuite = readerwithbooltest.ReaderWithBoolSuite()
+
 // readerWithBoolIdle returns the planted defect of a ceiling of
-// ReaderWithBool with a spend of nothing, a subject that answers each call
-// at once.
+// ReaderWithBool with a spend of nothing. Each call of the defect returns
+// its zero results at once.
 func readerWithBoolIdle(h *readerwithbooltest.ReaderWithBoolHandle) readerwithbool.ReaderWithBool {
-	return readerwithbooltest.ReaderWithBoolSuite().Calls[0].Over(h, func() {})
+	return readerWithBoolSuite.Calls[0].Over(h, func() {})
 }
 
 // TestReaderWithBoolSuiteBudgets applies the allocation ceilings of the
@@ -126,21 +100,8 @@ func TestReaderWithBoolSuiteBudgets(t *testing.T) {
 		t,
 		readerWithBoolIdle,
 		conform.Ceilings(readerwithbooltest.ReaderWithBoolChecks.Load.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			readerwithbooltest.ReaderWithBoolChecks.Load.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readerwithbooltest.ReaderWithBoolChecks.Load.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMiss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[readerwithbool.ReaderWithBool](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -153,21 +114,8 @@ func FuzzReaderWithBoolSuiteLoad(f *testing.F) {
 		f,
 		readerwithbooltest.ReaderWithBoolChecks.Load.Callable,
 		readerWithBoolIdle,
-		conform.Excuse(
-			readerwithbooltest.ReaderWithBoolChecks.Load.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readerwithbooltest.ReaderWithBoolChecks.Load.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMiss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[readerwithbool.ReaderWithBool](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -184,4 +132,4 @@ func BenchmarkReaderWithBoolSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:41a72486ed90b2d68f6514c2b4a4d7c9356c9b8592a6ca88e3d997d39d62d86c
+// dokimi:provenance sha256:a083591fa08ec667d671b8ff363004f6e99bf2d187f5ef087b73c0bbe94512fc

@@ -15,31 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of AnsweringWriter:
-//
-// AnsweringWriter.Put/smoke: Put returns without a panic for derived
-// inputs.
-//
-// AnsweringWriter.Put/smoke#generated: Put returns without a panic for
-// derived inputs.
-//
-// AnsweringWriter.Put/cancel: Put returns an error for a cancelled
-// context.
-//
-// AnsweringWriter.Put/cancel#generated: Put returns an error for a
-// cancelled context.
-//
-// AnsweringWriter.Put/zero-on-error: Put returns the zero value beside an
-// error.
-//
-// AnsweringWriter.Put/zero-on-error#generated: Put returns the zero value
-// beside an error.
-
-// The derived checks of AnsweringWriter that witness their laws at the
-// shallow end:
-//
-// AnsweringWriter.Put/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -70,34 +45,16 @@ func (c answeringWriterPut) Smoke() conform.ID[answeringwriter.AnsweringWriter] 
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c answeringWriterPut) SmokeGenerated() conform.ID[answeringwriter.AnsweringWriter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c answeringWriterPut) Cancel() conform.ID[answeringwriter.AnsweringWriter] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c answeringWriterPut) CancelGenerated() conform.ID[answeringwriter.AnsweringWriter] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Put returns the zero
 // value beside an error.
 func (c answeringWriterPut) ZeroOnError() conform.ID[answeringwriter.AnsweringWriter] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Put returns
-// the zero value beside an error.
-func (c answeringWriterPut) ZeroOnErrorGenerated() conform.ID[answeringwriter.AnsweringWriter] {
-	return c.Check("zero-on-error#generated")
 }
 
 // AnsweringWriterSuite returns the checks of AnsweringWriter, and the
@@ -112,9 +69,6 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				ID:          AnsweringWriterChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *AnsweringWriterHandle) {
@@ -126,12 +80,9 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				Defect: answeringWriterPutPanics,
 			},
 			{
-				ID:          AnsweringWriterChecks.Put.SmokeGenerated(),
+				ID:          AnsweringWriterChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AnsweringWriterHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[answeringwriter.Value](), "v")
@@ -146,9 +97,6 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				ID:          AnsweringWriterChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AnsweringWriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -159,12 +107,9 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				Defect: answeringWriterPutIgnoresCancel,
 			},
 			{
-				ID:          AnsweringWriterChecks.Put.CancelGenerated(),
+				ID:          AnsweringWriterChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AnsweringWriterHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[answeringwriter.Value](), "v")
@@ -179,9 +124,6 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				ID:          AnsweringWriterChecks.Put.ZeroOnError(),
 				Statement:   "Put returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AnsweringWriterHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (answeringwriter.Value, error) {
@@ -191,12 +133,9 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 				Defect: answeringWriterPutValueBeside,
 			},
 			{
-				ID:          AnsweringWriterChecks.Put.ZeroOnErrorGenerated(),
+				ID:          AnsweringWriterChecks.Put.ZeroOnError().Generated(),
 				Statement:   "Put returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AnsweringWriterHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[answeringwriter.Value](), "v")
@@ -389,4 +328,4 @@ func answeringWriterPutValueBeside(h *AnsweringWriterHandle) answeringwriter.Ans
 	return &answeringWriterPutValueBesideDefect{answeringWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:34970672b9d11da9aa6e0b2cbf2844883643c52a7b8b53acc37a3ac98d4cff37
+// dokimi:provenance sha256:97fd307f5a052137fba67e84ccd3bce9ff6319d5152f580961bc5efc3a32deb2

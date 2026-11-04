@@ -44,24 +44,38 @@ func compositeWriterStubSetPins() error {
 }
 
 // compositeWriterStubSetSubject returns the subject of [stub.Behaviour]
-// for Set. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for Set. The subject calls a new double that
+// reports to tb.
 func compositeWriterStubSetSubject(
 	tb assert.TB,
 ) stub.Subject[compositewritertest.CompositeWriterSetCall, compositewritertest.CompositeWriterSetReturn] {
 	tb.Helper()
 	s := compositewritertest.NewCompositeWriterStub(tb)
 	return stub.Subject[compositewritertest.CompositeWriterSetCall, compositewritertest.CompositeWriterSetReturn]{
-		Stub: s.OnSet.MethodStub,
+		Stub:  s.OnSet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = compositeWriterStubSet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c compositewritertest.CompositeWriterSetCall) {
+			tb.Helper()
+			a0, a1, a2 := compositeWriterStubSetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.V, a2, "the call records V")
 		},
 		Result: func() compositewritertest.CompositeWriterSetReturn {
 			got0 := compositeWriterStubSet(tb, s)
 			return compositewritertest.CompositeWriterSetReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnSet.Func(func(_ context.Context, _ string, _ compositewriter.Value) error {
-				mark()
+		Returns: func() compositewritertest.CompositeWriterSetReturn {
+			want0 := compositeWriterStubSetPins()
+			s.OnSet.Returns(want0)
+			return compositewritertest.CompositeWriterSetReturn{Err: want0}
+		},
+		Override: func(seen func(compositewritertest.CompositeWriterSetCall)) {
+			s.OnSet.Func(func(p0 context.Context, p1 string, p2 compositewriter.Value) error {
+				seen(compositewritertest.CompositeWriterSetCall{Ctx: p0, Key: p1, V: p2})
 				var z0 error
 				return z0
 			})
@@ -90,7 +104,6 @@ func compositeWriterStubInstanceOf(
 		Call: func() {
 			_ = compositeWriterStubSet(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -102,70 +115,14 @@ func TestCompositeWriterStub(t *testing.T) {
 	t.Run("Set", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Set", compositeWriterStubSetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := compositewritertest.NewCompositeWriterStub(t)
-			_ = compositeWriterStubSet(t, s)
-			got := s.OnSet.AssertCalledOnce(t, "Set records the call")
-			a0, a1, a2 := compositeWriterStubSetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.V, a2, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := compositewritertest.NewCompositeWriterStub(t)
-			var seen []compositewritertest.CompositeWriterSetCall
-			s.OnSet.OnRecord(func(c compositewritertest.CompositeWriterSetCall) { seen = append(seen, c) })
-			_ = compositeWriterStubSet(t, s)
-			_ = compositeWriterStubSet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Set")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) compositeWriterStubInstance {
-			return compositeWriterStubInstanceOf(tb, compositewritertest.NewCompositeWriterStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Set", func(t *testing.T) {
+		t.Run("Set", func(t *testing.T) {
 			t.Parallel()
-			s := compositewritertest.NewCompositeWriterStub(t)
-			_ = compositeWriterStubSet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnSet.CallCount(), 0, "ResetCalls clears the calls of Set")
-		})
-
-		t.Run("keeps the results of Returns of Set", func(t *testing.T) {
-			t.Parallel()
-			s := compositewritertest.NewCompositeWriterStub(t)
-			want0 := compositeWriterStubSetPins()
-			s.OnSet.Returns(want0)
-			s.ResetCalls()
-			got0 := compositeWriterStubSet(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Set")
-		})
-	})
-
-	t.Run("NewCompositeWriterStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) compositeWriterStubInstance {
-			return compositeWriterStubInstanceOf(tb, compositewritertest.NewCompositeWriterStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewCompositeWriterStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Set with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Set-failing")
-			s := compositewritertest.NewCompositeWriterStubFailing(t, want)
-			r0 := compositeWriterStubSet(t, s)
-			assert.ErrorIs(t, r0, want, "Set fails with the error of NewCompositeWriterStubFailing")
+			stub.ResetBehaviour(t, "Set", compositeWriterStubSetSubject)
 		})
 	})
 
@@ -282,56 +239,4 @@ func TestCompositeWriterStub(t *testing.T) {
 	})
 }
 
-// TestCompositeWriterSetStub checks the methods of CompositeWriterSetStub,
-// which configures Set.
-func TestCompositeWriterSetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Set", func(t *testing.T) {
-			t.Parallel()
-			s := compositewritertest.NewCompositeWriterStub(t)
-			want0 := compositeWriterStubSetPins()
-			s.OnSet.Returns(want0)
-			got0 := compositeWriterStubSet(t, s)
-			assert.ErrorIs(t, got0, want0, "Set returns the error that Returns sets")
-		})
-
-		t.Run("configures Set for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := compositewritertest.NewCompositeWriterStub(r)
-			s.OnSet.Strict()
-			var want0 error
-			s.OnSet.Returns(want0)
-			_ = compositeWriterStubSet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Set")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Set to the function", func(t *testing.T) {
-			t.Parallel()
-			s := compositewritertest.NewCompositeWriterStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 compositewriter.Value
-			s.OnSet.Func(func(p0 context.Context, p1 string, p2 compositewriter.Value) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = compositeWriterStubSet(t, s)
-			a0, a1, a2 := compositeWriterStubSetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives V")
-		})
-	})
-}
-
-// dokimi:provenance sha256:5e03fd850868aaad203b133da13e9392307c085d7ade5722d89e7067b11e5367
+// dokimi:provenance sha256:bcd6b2b356553907db3a468f8bdabaae8f13ca55b309cb679a2fa3145df0875b

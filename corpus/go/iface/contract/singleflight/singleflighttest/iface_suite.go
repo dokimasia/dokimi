@@ -17,49 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Run/smoke: Run returns without a panic for derived inputs.
-//
-// Contract.Run/smoke#generated: Run returns without a panic for derived
-// inputs.
-//
-// Contract.Run/cancel: Run returns an error for a cancelled context.
-//
-// Contract.Run/cancel#generated: Run returns an error for a cancelled
-// context.
-//
-// Contract.Run/failure-is-reported: Run returns an error when a call of
-// its dependency fails.
-//
-// Contract.Run/failure-is-reported#generated: Run returns an error when a
-// call of its dependency fails.
-//
-// Contract.Run/computes-once: calls of Run with one key at once share one
-// computation of their result.
-//
-// Contract.Run/computes-once#generated: calls of Run with one key at once
-// share one computation of their result.
-//
-// Contract.Flights/smoke: Flights returns without a panic for derived
-// inputs.
-//
-// Contract.Flights/cancel: Flights returns an error for a cancelled
-// context.
-//
-// Contract.Flights/failure-is-reported: Flights returns an error when a
-// call of its dependency fails.
-//
-// Contract.Flights/zero-on-error: Flights returns the zero value beside an
-// error.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Run/smoke
-//
-// Contract.Flights/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,22 +49,10 @@ func (c contractRun) Smoke() conform.ID[singleflight.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Run returns
-// without a panic for derived inputs.
-func (c contractRun) SmokeGenerated() conform.ID[singleflight.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c contractRun) Cancel() conform.ID[singleflight.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Run returns an
-// error for a cancelled context.
-func (c contractRun) CancelGenerated() conform.ID[singleflight.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Run returns an
@@ -116,22 +61,10 @@ func (c contractRun) FailureIsReported() conform.ID[singleflight.Contract] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Run
-// returns an error when a call of its dependency fails.
-func (c contractRun) FailureIsReportedGenerated() conform.ID[singleflight.Contract] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ComputesOnce returns the identity of the check that calls of Run with
 // one key at once share one computation of their result.
 func (c contractRun) ComputesOnce() conform.ID[singleflight.Contract] {
 	return c.Check("computes-once")
-}
-
-// ComputesOnceGenerated returns the identity of the check that calls of
-// Run with one key at once share one computation of their result.
-func (c contractRun) ComputesOnceGenerated() conform.ID[singleflight.Contract] {
-	return c.Check("computes-once#generated")
 }
 
 // contractFlights is the name of Contract.Flights, with the identities of
@@ -176,9 +109,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				ID:          ContractChecks.Run.Smoke(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -190,12 +120,9 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				Defect: contractRunPanics,
 			},
 			{
-				ID:          ContractChecks.Run.SmokeGenerated(),
+				ID:          ContractChecks.Run.Smoke().Generated(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -221,9 +148,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				ID:          ContractChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -234,12 +158,9 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				Defect: contractRunIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Run.CancelGenerated(),
+				ID:          ContractChecks.Run.Cancel().Generated(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -265,9 +186,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				ID:          ContractChecks.Run.FailureIsReported(),
 				Statement:   "Run returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -278,12 +196,9 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				Defect: contractRunSwallowsFailure,
 			},
 			{
-				ID:        ContractChecks.Run.FailureIsReportedGenerated(),
+				ID:        ContractChecks.Run.FailureIsReported().Generated(),
 				Statement: "Run returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -313,9 +228,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				ID:          ContractChecks.Run.ComputesOnce(),
 				Statement:   "calls of Run with one key at once share one computation of their result",
 				Claim:       spec.ComputesOnce,
-				Probe:       spec.SharesOneComputation,
-				Reason:      spec.RepeatedComputation,
-				Law:         spec.CallsAtOnceShareOneComputation,
 				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.CallThatFailsOnDemand},
 				Apply: func(h *ContractHandle) {
 					probe.SharesOneComputation(h, func(ctx context.Context) (string, error) {
@@ -329,12 +241,9 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				Around: synctest.Test,
 			},
 			{
-				ID:        ContractChecks.Run.ComputesOnceGenerated(),
+				ID:        ContractChecks.Run.ComputesOnce().Generated(),
 				Statement: "calls of Run with one key at once share one computation of their result",
 				Claim:     spec.ComputesOnce,
-				Probe:     spec.SharesOneComputation,
-				Reason:    spec.RepeatedComputation,
-				Law:       spec.CallsAtOnceShareOneComputation,
 				Machineries: []spec.MachineryID{
 					spec.ConcurrentCallers,
 					spec.CallThatFailsOnDemand,
@@ -356,9 +265,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				ID:          ContractChecks.Flights.Smoke(),
 				Statement:   "Flights returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -373,9 +279,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				ID:          ContractChecks.Flights.Cancel(),
 				Statement:   "Flights returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -389,9 +292,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				ID:          ContractChecks.Flights.FailureIsReported(),
 				Statement:   "Flights returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -405,9 +305,6 @@ func ContractSuite() conform.Suite[singleflight.Contract] {
 				ID:          ContractChecks.Flights.ZeroOnError(),
 				Statement:   "Flights returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -728,4 +625,4 @@ func contractFlightsValueBeside(h *ContractHandle) singleflight.Contract {
 	return &contractFlightsValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f86bfd547202b861d8fc0ea47847ab90c4c1071deb13f778c6a1ae0ab02aefbd
+// dokimi:provenance sha256:ec23757b94a4ae4b027e34f4dd3b2c7f2ff17f5e14b8cc62d706d0ff68360509

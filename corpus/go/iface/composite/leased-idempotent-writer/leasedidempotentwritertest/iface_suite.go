@@ -15,53 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of LeasedWriter:
-//
-// LeasedWriter.Acquire/smoke: Acquire returns without a panic for derived
-// inputs.
-//
-// LeasedWriter.Acquire/smoke#generated: Acquire returns without a panic
-// for derived inputs.
-//
-// LeasedWriter.Acquire/cancel: Acquire returns an error for a cancelled
-// context.
-//
-// LeasedWriter.Acquire/cancel#generated: Acquire returns an error for a
-// cancelled context.
-//
-// LeasedWriter.Acquire/idempotent: a second identical Acquire succeeds
-// after the first.
-//
-// LeasedWriter.Acquire/idempotent#generated: a second identical Acquire
-// succeeds after the first.
-//
-// LeasedWriter.Release/smoke: Release returns without a panic for derived
-// inputs.
-//
-// LeasedWriter.Release/smoke#generated: Release returns without a panic
-// for derived inputs.
-//
-// LeasedWriter.Release/cancel: Release returns an error for a cancelled
-// context.
-//
-// LeasedWriter.Release/cancel#generated: Release returns an error for a
-// cancelled context.
-
-// The derived checks of LeasedWriter that witness their laws at the
-// shallow end:
-//
-// LeasedWriter.Acquire/smoke
-//
-// LeasedWriter.Release/smoke
-
-// The unclaimed classifications of LeasedWriter:
-//
-// The shape:writer of LeasedWriter.Acquire has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of LeasedWriter.Release has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,34 +47,16 @@ func (c leasedWriterAcquire) Smoke() conform.ID[leasedidempotentwriter.LeasedWri
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Acquire returns
-// without a panic for derived inputs.
-func (c leasedWriterAcquire) SmokeGenerated() conform.ID[leasedidempotentwriter.LeasedWriter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Acquire returns an error
 // for a cancelled context.
 func (c leasedWriterAcquire) Cancel() conform.ID[leasedidempotentwriter.LeasedWriter] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Acquire returns
-// an error for a cancelled context.
-func (c leasedWriterAcquire) CancelGenerated() conform.ID[leasedidempotentwriter.LeasedWriter] {
-	return c.Check("cancel#generated")
-}
-
 // Idempotent returns the identity of the check that a second identical
 // Acquire succeeds after the first.
 func (c leasedWriterAcquire) Idempotent() conform.ID[leasedidempotentwriter.LeasedWriter] {
 	return c.Check("idempotent")
-}
-
-// IdempotentGenerated returns the identity of the check that a second
-// identical Acquire succeeds after the first.
-func (c leasedWriterAcquire) IdempotentGenerated() conform.ID[leasedidempotentwriter.LeasedWriter] {
-	return c.Check("idempotent#generated")
 }
 
 // leasedWriterRelease is the name of LeasedWriter.Release, with the
@@ -136,22 +71,10 @@ func (c leasedWriterRelease) Smoke() conform.ID[leasedidempotentwriter.LeasedWri
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Release returns
-// without a panic for derived inputs.
-func (c leasedWriterRelease) SmokeGenerated() conform.ID[leasedidempotentwriter.LeasedWriter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Release returns an error
 // for a cancelled context.
 func (c leasedWriterRelease) Cancel() conform.ID[leasedidempotentwriter.LeasedWriter] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Release returns
-// an error for a cancelled context.
-func (c leasedWriterRelease) CancelGenerated() conform.ID[leasedidempotentwriter.LeasedWriter] {
-	return c.Check("cancel#generated")
 }
 
 // LeasedWriterSuite returns the checks of LeasedWriter, and the calls and
@@ -166,9 +89,6 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				ID:          LeasedWriterChecks.Acquire.Smoke(),
 				Statement:   "Acquire returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LeasedWriterHandle) {
@@ -179,12 +99,9 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				Defect: leasedWriterAcquirePanics,
 			},
 			{
-				ID:          LeasedWriterChecks.Acquire.SmokeGenerated(),
+				ID:          LeasedWriterChecks.Acquire.Smoke().Generated(),
 				Statement:   "Acquire returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LeasedWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -198,9 +115,6 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				ID:          LeasedWriterChecks.Acquire.Cancel(),
 				Statement:   "Acquire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LeasedWriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -210,12 +124,9 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				Defect: leasedWriterAcquireIgnoresCancel,
 			},
 			{
-				ID:          LeasedWriterChecks.Acquire.CancelGenerated(),
+				ID:          LeasedWriterChecks.Acquire.Cancel().Generated(),
 				Statement:   "Acquire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LeasedWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -229,9 +140,6 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				ID:          LeasedWriterChecks.Acquire.Idempotent(),
 				Statement:   "a second identical Acquire succeeds after the first",
 				Claim:       spec.Idempotent,
-				Probe:       spec.RepeatIsQuiet,
-				Reason:      spec.RefusedRepeat,
-				Law:         spec.RepeatIsAccepted,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LeasedWriterHandle) {
 					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
@@ -241,12 +149,9 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				Defect: leasedWriterAcquireRefusesRepeat,
 			},
 			{
-				ID:          LeasedWriterChecks.Acquire.IdempotentGenerated(),
+				ID:          LeasedWriterChecks.Acquire.Idempotent().Generated(),
 				Statement:   "a second identical Acquire succeeds after the first",
 				Claim:       spec.Idempotent,
-				Probe:       spec.RepeatIsQuiet,
-				Reason:      spec.RefusedRepeat,
-				Law:         spec.RepeatIsAccepted,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LeasedWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -260,9 +165,6 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				ID:          LeasedWriterChecks.Release.Smoke(),
 				Statement:   "Release returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LeasedWriterHandle) {
@@ -273,12 +175,9 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				Defect: leasedWriterReleasePanics,
 			},
 			{
-				ID:          LeasedWriterChecks.Release.SmokeGenerated(),
+				ID:          LeasedWriterChecks.Release.Smoke().Generated(),
 				Statement:   "Release returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LeasedWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -292,9 +191,6 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				ID:          LeasedWriterChecks.Release.Cancel(),
 				Statement:   "Release returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LeasedWriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -304,12 +200,9 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 				Defect: leasedWriterReleaseIgnoresCancel,
 			},
 			{
-				ID:          LeasedWriterChecks.Release.CancelGenerated(),
+				ID:          LeasedWriterChecks.Release.Cancel().Generated(),
 				Statement:   "Release returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LeasedWriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -570,4 +463,4 @@ func leasedWriterReleaseIgnoresCancel(h *LeasedWriterHandle) leasedidempotentwri
 	return &leasedWriterReleaseIgnoresCancelDefect{leasedWriterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:335267c70d2198db04b366673465c605bc9cbe4812214c2a0525c61a2864bdf7
+// dokimi:provenance sha256:211365315047477a6a5a92c8ba9ee700dca24565371e68b99d3e710dd2cbd5e7

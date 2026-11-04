@@ -15,48 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Composed:
-//
-// Composed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Composed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Composed.Get/cancel: Get returns an error for a cancelled context.
-//
-// Composed.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Composed.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Composed.Get/zero-on-error#generated: Get returns the zero value beside
-// an error.
-//
-// Composed.Ping/smoke: Ping returns without a panic for derived inputs.
-//
-// Composed.Ping/cancel: Ping returns an error for a cancelled context.
-//
-// Composed.Close/smoke: Close returns without a panic for derived inputs.
-//
-// Composed.Close/cancel: Close returns an error for a cancelled context.
-
-// The derived checks of Composed that witness their laws at the shallow
-// end:
-//
-// Composed.Get/smoke
-//
-// Composed.Ping/smoke
-//
-// Composed.Close/smoke
-
-// The unclaimed classifications of Composed:
-//
-// The shape:lifecycle of Composed.Ping has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The shape:lifecycle of Composed.Close has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -91,34 +49,16 @@ func (c composedGet) Smoke() conform.ID[embedded.Composed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c composedGet) SmokeGenerated() conform.ID[embedded.Composed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c composedGet) Cancel() conform.ID[embedded.Composed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c composedGet) CancelGenerated() conform.ID[embedded.Composed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c composedGet) ZeroOnError() conform.ID[embedded.Composed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c composedGet) ZeroOnErrorGenerated() conform.ID[embedded.Composed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // composedPing is the name of Composed.Ping, with the identities of its
@@ -169,9 +109,6 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				ID:          ComposedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ComposedHandle) {
@@ -183,12 +120,9 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				Defect: composedGetPanics,
 			},
 			{
-				ID:          ComposedChecks.Get.SmokeGenerated(),
+				ID:          ComposedChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ComposedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -203,9 +137,6 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				ID:          ComposedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ComposedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -216,12 +147,9 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				Defect: composedGetIgnoresCancel,
 			},
 			{
-				ID:          ComposedChecks.Get.CancelGenerated(),
+				ID:          ComposedChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ComposedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -236,9 +164,6 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				ID:          ComposedChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ComposedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -248,12 +173,9 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				Defect: composedGetValueBeside,
 			},
 			{
-				ID:          ComposedChecks.Get.ZeroOnErrorGenerated(),
+				ID:          ComposedChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ComposedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -267,9 +189,6 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				ID:          ComposedChecks.Ping.Smoke(),
 				Statement:   "Ping returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ComposedHandle) {
@@ -283,9 +202,6 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				ID:          ComposedChecks.Ping.Cancel(),
 				Statement:   "Ping returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ComposedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -298,9 +214,6 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				ID:          ComposedChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ComposedHandle) {
@@ -314,9 +227,6 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 				ID:          ComposedChecks.Close.Cancel(),
 				Statement:   "Close returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ComposedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -617,4 +527,4 @@ func composedCloseIgnoresCancel(h *ComposedHandle) embedded.Composed {
 	return &composedCloseIgnoresCancelDefect{composedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c47b4e544961cd988d9e088e31d28aecbe9af8124f7618cec1e7bbbc8fabebc6
+// dokimi:provenance sha256:8b1d15937ee2a0f652c8fd23d5f3ed2feba8b4806c635a76a4a898cdf05a4f37

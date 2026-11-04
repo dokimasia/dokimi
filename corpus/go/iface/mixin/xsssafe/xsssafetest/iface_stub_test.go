@@ -42,23 +42,36 @@ func mixedStubRenderPins() (string, error) {
 	return want0, want1
 }
 
-// mixedStubRenderSubject returns the subject of [stub.Behaviour] for
-// Render. The subject calls a new double that reports to tb.
+// mixedStubRenderSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Render. The subject calls a new double that
+// reports to tb.
 func mixedStubRenderSubject(tb assert.TB) stub.Subject[xsssafetest.MixedRenderCall, xsssafetest.MixedRenderReturn] {
 	tb.Helper()
 	s := xsssafetest.NewMixedStub(tb)
 	return stub.Subject[xsssafetest.MixedRenderCall, xsssafetest.MixedRenderReturn]{
-		Stub: s.OnRender.MethodStub,
+		Stub:  s.OnRender.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubRender(tb, s)
+		},
+		Arguments: func(tb assert.TB, c xsssafetest.MixedRenderCall) {
+			tb.Helper()
+			a0, a1 := mixedStubRenderArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.In, a1, "the call records In")
 		},
 		Result: func() xsssafetest.MixedRenderReturn {
 			got0, got1 := mixedStubRender(tb, s)
 			return xsssafetest.MixedRenderReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnRender.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() xsssafetest.MixedRenderReturn {
+			want0, want1 := mixedStubRenderPins()
+			s.OnRender.Returns(want0, want1)
+			return xsssafetest.MixedRenderReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(xsssafetest.MixedRenderCall)) {
+			s.OnRender.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(xsssafetest.MixedRenderCall{Ctx: p0, In: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -84,7 +97,6 @@ func mixedStubInstanceOf(tb assert.TB, s *xsssafetest.MixedStub) mixedStubInstan
 		Call: func() {
 			_, _ = mixedStubRender(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -96,70 +108,14 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Render", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Render", mixedStubRenderSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := xsssafetest.NewMixedStub(t)
-			_, _ = mixedStubRender(t, s)
-			got := s.OnRender.AssertCalledOnce(t, "Render records the call")
-			a0, a1 := mixedStubRenderArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.In, a1, "the call records In")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := xsssafetest.NewMixedStub(t)
-			var seen []xsssafetest.MixedRenderCall
-			s.OnRender.OnRecord(func(c xsssafetest.MixedRenderCall) { seen = append(seen, c) })
-			_, _ = mixedStubRender(t, s)
-			_, _ = mixedStubRender(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Render")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, xsssafetest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Render", func(t *testing.T) {
+		t.Run("Render", func(t *testing.T) {
 			t.Parallel()
-			s := xsssafetest.NewMixedStub(t)
-			_, _ = mixedStubRender(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRender.CallCount(), 0, "ResetCalls clears the calls of Render")
-		})
-
-		t.Run("keeps the results of Returns of Render", func(t *testing.T) {
-			t.Parallel()
-			s := xsssafetest.NewMixedStub(t)
-			want0, want1 := mixedStubRenderPins()
-			s.OnRender.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubRender(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Render")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Render")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, xsssafetest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Render with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Render-failing")
-			s := xsssafetest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubRender(t, s)
-			assert.ErrorIs(t, r1, want, "Render fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Render", mixedStubRenderSubject)
 		})
 	})
 
@@ -256,57 +212,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedRenderStub checks the methods of MixedRenderStub, which
-// configures Render.
-func TestMixedRenderStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Render", func(t *testing.T) {
-			t.Parallel()
-			s := xsssafetest.NewMixedStub(t)
-			want0, want1 := mixedStubRenderPins()
-			s.OnRender.Returns(want0, want1)
-			got0, got1 := mixedStubRender(t, s)
-			expect.Equal(t, got0, want0, "Render returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Render returns the error that Returns sets")
-		})
-
-		t.Run("configures Render for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := xsssafetest.NewMixedStub(r)
-			s.OnRender.Strict()
-			var want0 string
-			var want1 error
-			s.OnRender.Returns(want0, want1)
-			_, _ = mixedStubRender(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Render")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Render to the function", func(t *testing.T) {
-			t.Parallel()
-			s := xsssafetest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnRender.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubRender(t, s)
-			a0, a1 := mixedStubRenderArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives In")
-		})
-	})
-}
-
-// dokimi:provenance sha256:65b61da140864f49b9b0a28c4281c0df356d53ec095881b6ddc48562021b1dc8
+// dokimi:provenance sha256:4ee56b0cc85bdbd08f9869d854cd382a9da43295e3f6cbcf194504a4fcadf186

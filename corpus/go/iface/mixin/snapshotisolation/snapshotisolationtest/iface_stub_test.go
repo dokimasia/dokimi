@@ -40,25 +40,37 @@ func mixedStubBeginPins() (snapshotisolation.Txn, error) {
 	return want0, want1
 }
 
-// mixedStubBeginSubject returns the subject of [stub.Behaviour] for Begin.
-// The subject calls a new double that reports to tb.
+// mixedStubBeginSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Begin. The subject calls a new double that
+// reports to tb.
 func mixedStubBeginSubject(
 	tb assert.TB,
 ) stub.Subject[snapshotisolationtest.MixedBeginCall, snapshotisolationtest.MixedBeginReturn] {
 	tb.Helper()
 	s := snapshotisolationtest.NewMixedStub(tb)
 	return stub.Subject[snapshotisolationtest.MixedBeginCall, snapshotisolationtest.MixedBeginReturn]{
-		Stub: s.OnBegin.MethodStub,
+		Stub:  s.OnBegin.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubBegin(tb, s)
+		},
+		Arguments: func(tb assert.TB, c snapshotisolationtest.MixedBeginCall) {
+			tb.Helper()
+			a0 := mixedStubBeginArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() snapshotisolationtest.MixedBeginReturn {
 			got0, got1 := mixedStubBegin(tb, s)
 			return snapshotisolationtest.MixedBeginReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnBegin.Func(func(_ context.Context) (snapshotisolation.Txn, error) {
-				mark()
+		Returns: func() snapshotisolationtest.MixedBeginReturn {
+			want0, want1 := mixedStubBeginPins()
+			s.OnBegin.Returns(want0, want1)
+			return snapshotisolationtest.MixedBeginReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(snapshotisolationtest.MixedBeginCall)) {
+			s.OnBegin.Func(func(p0 context.Context) (snapshotisolation.Txn, error) {
+				seen(snapshotisolationtest.MixedBeginCall{Ctx: p0})
 				var z0 snapshotisolation.Txn
 				var z1 error
 				return z0, z1
@@ -84,7 +96,6 @@ func mixedStubInstanceOf(tb assert.TB, s *snapshotisolationtest.MixedStub) mixed
 		Call: func() {
 			_, _ = mixedStubBegin(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -96,68 +107,14 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Begin", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Begin", mixedStubBeginSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewMixedStub(t)
-			_, _ = mixedStubBegin(t, s)
-			got := s.OnBegin.AssertCalledOnce(t, "Begin records the call")
-			a0 := mixedStubBeginArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewMixedStub(t)
-			var seen []snapshotisolationtest.MixedBeginCall
-			s.OnBegin.OnRecord(func(c snapshotisolationtest.MixedBeginCall) { seen = append(seen, c) })
-			_, _ = mixedStubBegin(t, s)
-			_, _ = mixedStubBegin(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Begin")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, snapshotisolationtest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Begin", func(t *testing.T) {
+		t.Run("Begin", func(t *testing.T) {
 			t.Parallel()
-			s := snapshotisolationtest.NewMixedStub(t)
-			_, _ = mixedStubBegin(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnBegin.CallCount(), 0, "ResetCalls clears the calls of Begin")
-		})
-
-		t.Run("keeps the results of Returns of Begin", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewMixedStub(t)
-			want0, want1 := mixedStubBeginPins()
-			s.OnBegin.Returns(want0, want1)
-			s.ResetCalls()
-			_, got1 := mixedStubBegin(t, s)
-			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Begin")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, snapshotisolationtest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Begin with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Begin-failing")
-			s := snapshotisolationtest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubBegin(t, s)
-			assert.ErrorIs(t, r1, want, "Begin fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Begin", mixedStubBeginSubject)
 		})
 	})
 
@@ -270,56 +227,6 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedBeginStub checks the methods of MixedBeginStub, which
-// configures Begin.
-func TestMixedBeginStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Begin", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewMixedStub(t)
-			want0, want1 := mixedStubBeginPins()
-			s.OnBegin.Returns(want0, want1)
-			_, got1 := mixedStubBegin(t, s)
-			assert.ErrorIs(t, got1, want1, "Begin returns the error that Returns sets")
-		})
-
-		t.Run("configures Begin for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := snapshotisolationtest.NewMixedStub(r)
-			s.OnBegin.Strict()
-			var want0 snapshotisolation.Txn
-			var want1 error
-			s.OnBegin.Returns(want0, want1)
-			_, _ = mixedStubBegin(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Begin")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Begin to the function", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnBegin.Func(func(p0 context.Context) (snapshotisolation.Txn, error) {
-				got0 = p0
-				var z0 snapshotisolation.Txn
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubBegin(t, s)
-			a0 := mixedStubBeginArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
 // txnStubCommitArgs returns the samples of the arguments of Commit.
 func txnStubCommitArgs(tb assert.TB) context.Context {
 	tb.Helper()
@@ -412,25 +319,37 @@ func txnStubLoadPins() (int64, error) {
 	return want0, want1
 }
 
-// txnStubCommitSubject returns the subject of [stub.Behaviour] for Commit.
-// The subject calls a new double that reports to tb.
+// txnStubCommitSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Commit. The subject calls a new double that
+// reports to tb.
 func txnStubCommitSubject(
 	tb assert.TB,
 ) stub.Subject[snapshotisolationtest.TxnCommitCall, snapshotisolationtest.TxnCommitReturn] {
 	tb.Helper()
 	s := snapshotisolationtest.NewTxnStub(tb)
 	return stub.Subject[snapshotisolationtest.TxnCommitCall, snapshotisolationtest.TxnCommitReturn]{
-		Stub: s.OnCommit.MethodStub,
+		Stub:  s.OnCommit.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = txnStubCommit(tb, s)
+		},
+		Arguments: func(tb assert.TB, c snapshotisolationtest.TxnCommitCall) {
+			tb.Helper()
+			a0 := txnStubCommitArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() snapshotisolationtest.TxnCommitReturn {
 			got0 := txnStubCommit(tb, s)
 			return snapshotisolationtest.TxnCommitReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnCommit.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() snapshotisolationtest.TxnCommitReturn {
+			want0 := txnStubCommitPins()
+			s.OnCommit.Returns(want0)
+			return snapshotisolationtest.TxnCommitReturn{Err: want0}
+		},
+		Override: func(seen func(snapshotisolationtest.TxnCommitCall)) {
+			s.OnCommit.Func(func(p0 context.Context) error {
+				seen(snapshotisolationtest.TxnCommitCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -442,25 +361,37 @@ func txnStubCommitSubject(
 	}
 }
 
-// txnStubRollbackSubject returns the subject of [stub.Behaviour] for
-// Rollback. The subject calls a new double that reports to tb.
+// txnStubRollbackSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Rollback. The subject calls a new double that
+// reports to tb.
 func txnStubRollbackSubject(
 	tb assert.TB,
 ) stub.Subject[snapshotisolationtest.TxnRollbackCall, snapshotisolationtest.TxnRollbackReturn] {
 	tb.Helper()
 	s := snapshotisolationtest.NewTxnStub(tb)
 	return stub.Subject[snapshotisolationtest.TxnRollbackCall, snapshotisolationtest.TxnRollbackReturn]{
-		Stub: s.OnRollback.MethodStub,
+		Stub:  s.OnRollback.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = txnStubRollback(tb, s)
+		},
+		Arguments: func(tb assert.TB, c snapshotisolationtest.TxnRollbackCall) {
+			tb.Helper()
+			a0 := txnStubRollbackArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() snapshotisolationtest.TxnRollbackReturn {
 			got0 := txnStubRollback(tb, s)
 			return snapshotisolationtest.TxnRollbackReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnRollback.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() snapshotisolationtest.TxnRollbackReturn {
+			want0 := txnStubRollbackPins()
+			s.OnRollback.Returns(want0)
+			return snapshotisolationtest.TxnRollbackReturn{Err: want0}
+		},
+		Override: func(seen func(snapshotisolationtest.TxnRollbackCall)) {
+			s.OnRollback.Func(func(p0 context.Context) error {
+				seen(snapshotisolationtest.TxnRollbackCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -472,25 +403,39 @@ func txnStubRollbackSubject(
 	}
 }
 
-// txnStubSetSubject returns the subject of [stub.Behaviour] for Set. The
-// subject calls a new double that reports to tb.
+// txnStubSetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Set. The subject calls a new double that
+// reports to tb.
 func txnStubSetSubject(
 	tb assert.TB,
 ) stub.Subject[snapshotisolationtest.TxnSetCall, snapshotisolationtest.TxnSetReturn] {
 	tb.Helper()
 	s := snapshotisolationtest.NewTxnStub(tb)
 	return stub.Subject[snapshotisolationtest.TxnSetCall, snapshotisolationtest.TxnSetReturn]{
-		Stub: s.OnSet.MethodStub,
+		Stub:  s.OnSet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = txnStubSet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c snapshotisolationtest.TxnSetCall) {
+			tb.Helper()
+			a0, a1, a2 := txnStubSetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.V, a2, "the call records V")
 		},
 		Result: func() snapshotisolationtest.TxnSetReturn {
 			got0 := txnStubSet(tb, s)
 			return snapshotisolationtest.TxnSetReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnSet.Func(func(_ context.Context, _ string, _ int64) error {
-				mark()
+		Returns: func() snapshotisolationtest.TxnSetReturn {
+			want0 := txnStubSetPins()
+			s.OnSet.Returns(want0)
+			return snapshotisolationtest.TxnSetReturn{Err: want0}
+		},
+		Override: func(seen func(snapshotisolationtest.TxnSetCall)) {
+			s.OnSet.Func(func(p0 context.Context, p1 string, p2 int64) error {
+				seen(snapshotisolationtest.TxnSetCall{Ctx: p0, Key: p1, V: p2})
 				var z0 error
 				return z0
 			})
@@ -502,25 +447,38 @@ func txnStubSetSubject(
 	}
 }
 
-// txnStubLoadSubject returns the subject of [stub.Behaviour] for Load. The
-// subject calls a new double that reports to tb.
+// txnStubLoadSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Load. The subject calls a new double that
+// reports to tb.
 func txnStubLoadSubject(
 	tb assert.TB,
 ) stub.Subject[snapshotisolationtest.TxnLoadCall, snapshotisolationtest.TxnLoadReturn] {
 	tb.Helper()
 	s := snapshotisolationtest.NewTxnStub(tb)
 	return stub.Subject[snapshotisolationtest.TxnLoadCall, snapshotisolationtest.TxnLoadReturn]{
-		Stub: s.OnLoad.MethodStub,
+		Stub:  s.OnLoad.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = txnStubLoad(tb, s)
+		},
+		Arguments: func(tb assert.TB, c snapshotisolationtest.TxnLoadCall) {
+			tb.Helper()
+			a0, a1 := txnStubLoadArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() snapshotisolationtest.TxnLoadReturn {
 			got0, got1 := txnStubLoad(tb, s)
 			return snapshotisolationtest.TxnLoadReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnLoad.Func(func(_ context.Context, _ string) (int64, error) {
-				mark()
+		Returns: func() snapshotisolationtest.TxnLoadReturn {
+			want0, want1 := txnStubLoadPins()
+			s.OnLoad.Returns(want0, want1)
+			return snapshotisolationtest.TxnLoadReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(snapshotisolationtest.TxnLoadCall)) {
+			s.OnLoad.Func(func(p0 context.Context, p1 string) (int64, error) {
+				seen(snapshotisolationtest.TxnLoadCall{Ctx: p0, Key: p1})
 				var z0 int64
 				var z1 error
 				return z0, z1
@@ -546,7 +504,6 @@ func txnStubInstanceOf(tb assert.TB, s *snapshotisolationtest.TxnStub) txnStubIn
 		Call: func() {
 			_ = txnStubCommit(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -558,222 +515,44 @@ func TestTxnStub(t *testing.T) {
 	t.Run("Commit", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Commit", txnStubCommitSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			_ = txnStubCommit(t, s)
-			got := s.OnCommit.AssertCalledOnce(t, "Commit records the call")
-			a0 := txnStubCommitArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			var seen []snapshotisolationtest.TxnCommitCall
-			s.OnCommit.OnRecord(func(c snapshotisolationtest.TxnCommitCall) { seen = append(seen, c) })
-			_ = txnStubCommit(t, s)
-			_ = txnStubCommit(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Commit")
-		})
 	})
 
 	t.Run("Rollback", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Rollback", txnStubRollbackSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			_ = txnStubRollback(t, s)
-			got := s.OnRollback.AssertCalledOnce(t, "Rollback records the call")
-			a0 := txnStubRollbackArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			var seen []snapshotisolationtest.TxnRollbackCall
-			s.OnRollback.OnRecord(func(c snapshotisolationtest.TxnRollbackCall) { seen = append(seen, c) })
-			_ = txnStubRollback(t, s)
-			_ = txnStubRollback(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Rollback")
-		})
 	})
 
 	t.Run("Set", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Set", txnStubSetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			_ = txnStubSet(t, s)
-			got := s.OnSet.AssertCalledOnce(t, "Set records the call")
-			a0, a1, a2 := txnStubSetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.V, a2, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			var seen []snapshotisolationtest.TxnSetCall
-			s.OnSet.OnRecord(func(c snapshotisolationtest.TxnSetCall) { seen = append(seen, c) })
-			_ = txnStubSet(t, s)
-			_ = txnStubSet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Set")
-		})
 	})
 
 	t.Run("Load", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Load", txnStubLoadSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			_, _ = txnStubLoad(t, s)
-			got := s.OnLoad.AssertCalledOnce(t, "Load records the call")
-			a0, a1 := txnStubLoadArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			var seen []snapshotisolationtest.TxnLoadCall
-			s.OnLoad.OnRecord(func(c snapshotisolationtest.TxnLoadCall) { seen = append(seen, c) })
-			_, _ = txnStubLoad(t, s)
-			_, _ = txnStubLoad(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Load")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) txnStubInstance {
-			return txnStubInstanceOf(tb, snapshotisolationtest.NewTxnStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Commit", func(t *testing.T) {
+		t.Run("Commit", func(t *testing.T) {
 			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			_ = txnStubCommit(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnCommit.CallCount(), 0, "ResetCalls clears the calls of Commit")
+			stub.ResetBehaviour(t, "Commit", txnStubCommitSubject)
 		})
 
-		t.Run("keeps the results of Returns of Commit", func(t *testing.T) {
+		t.Run("Rollback", func(t *testing.T) {
 			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			want0 := txnStubCommitPins()
-			s.OnCommit.Returns(want0)
-			s.ResetCalls()
-			got0 := txnStubCommit(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Commit")
+			stub.ResetBehaviour(t, "Rollback", txnStubRollbackSubject)
 		})
 
-		t.Run("clears the recorded calls of Rollback", func(t *testing.T) {
+		t.Run("Set", func(t *testing.T) {
 			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			_ = txnStubRollback(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRollback.CallCount(), 0, "ResetCalls clears the calls of Rollback")
+			stub.ResetBehaviour(t, "Set", txnStubSetSubject)
 		})
 
-		t.Run("keeps the results of Returns of Rollback", func(t *testing.T) {
+		t.Run("Load", func(t *testing.T) {
 			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			want0 := txnStubRollbackPins()
-			s.OnRollback.Returns(want0)
-			s.ResetCalls()
-			got0 := txnStubRollback(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Rollback")
-		})
-
-		t.Run("clears the recorded calls of Set", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			_ = txnStubSet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnSet.CallCount(), 0, "ResetCalls clears the calls of Set")
-		})
-
-		t.Run("keeps the results of Returns of Set", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			want0 := txnStubSetPins()
-			s.OnSet.Returns(want0)
-			s.ResetCalls()
-			got0 := txnStubSet(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Set")
-		})
-
-		t.Run("clears the recorded calls of Load", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			_, _ = txnStubLoad(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLoad.CallCount(), 0, "ResetCalls clears the calls of Load")
-		})
-
-		t.Run("keeps the results of Returns of Load", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			want0, want1 := txnStubLoadPins()
-			s.OnLoad.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := txnStubLoad(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Load")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Load")
-		})
-	})
-
-	t.Run("NewTxnStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) txnStubInstance {
-			return txnStubInstanceOf(tb, snapshotisolationtest.NewTxnStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewTxnStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Commit with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Commit-failing")
-			s := snapshotisolationtest.NewTxnStubFailing(t, want)
-			r0 := txnStubCommit(t, s)
-			assert.ErrorIs(t, r0, want, "Commit fails with the error of NewTxnStubFailing")
-		})
-
-		t.Run("fails Rollback with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Rollback-failing")
-			s := snapshotisolationtest.NewTxnStubFailing(t, want)
-			r0 := txnStubRollback(t, s)
-			assert.ErrorIs(t, r0, want, "Rollback fails with the error of NewTxnStubFailing")
-		})
-
-		t.Run("fails Set with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Set-failing")
-			s := snapshotisolationtest.NewTxnStubFailing(t, want)
-			r0 := txnStubSet(t, s)
-			assert.ErrorIs(t, r0, want, "Set fails with the error of NewTxnStubFailing")
-		})
-
-		t.Run("fails Load with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Load-failing")
-			s := snapshotisolationtest.NewTxnStubFailing(t, want)
-			_, r1 := txnStubLoad(t, s)
-			assert.ErrorIs(t, r1, want, "Load fails with the error of NewTxnStubFailing")
+			stub.ResetBehaviour(t, "Load", txnStubLoadSubject)
 		})
 	})
 
@@ -1012,204 +791,4 @@ func TestTxnStub(t *testing.T) {
 	})
 }
 
-// TestTxnCommitStub checks the methods of TxnCommitStub, which configures
-// Commit.
-func TestTxnCommitStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Commit", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			want0 := txnStubCommitPins()
-			s.OnCommit.Returns(want0)
-			got0 := txnStubCommit(t, s)
-			assert.ErrorIs(t, got0, want0, "Commit returns the error that Returns sets")
-		})
-
-		t.Run("configures Commit for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := snapshotisolationtest.NewTxnStub(r)
-			s.OnCommit.Strict()
-			var want0 error
-			s.OnCommit.Returns(want0)
-			_ = txnStubCommit(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Commit")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Commit to the function", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			var got0 context.Context
-			s.OnCommit.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = txnStubCommit(t, s)
-			a0 := txnStubCommitArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// TestTxnRollbackStub checks the methods of TxnRollbackStub, which
-// configures Rollback.
-func TestTxnRollbackStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Rollback", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			want0 := txnStubRollbackPins()
-			s.OnRollback.Returns(want0)
-			got0 := txnStubRollback(t, s)
-			assert.ErrorIs(t, got0, want0, "Rollback returns the error that Returns sets")
-		})
-
-		t.Run("configures Rollback for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := snapshotisolationtest.NewTxnStub(r)
-			s.OnRollback.Strict()
-			var want0 error
-			s.OnRollback.Returns(want0)
-			_ = txnStubRollback(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Rollback")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Rollback to the function", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			var got0 context.Context
-			s.OnRollback.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = txnStubRollback(t, s)
-			a0 := txnStubRollbackArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// TestTxnSetStub checks the methods of TxnSetStub, which configures Set.
-func TestTxnSetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Set", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			want0 := txnStubSetPins()
-			s.OnSet.Returns(want0)
-			got0 := txnStubSet(t, s)
-			assert.ErrorIs(t, got0, want0, "Set returns the error that Returns sets")
-		})
-
-		t.Run("configures Set for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := snapshotisolationtest.NewTxnStub(r)
-			s.OnSet.Strict()
-			var want0 error
-			s.OnSet.Returns(want0)
-			_ = txnStubSet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Set")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Set to the function", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 int64
-			s.OnSet.Func(func(p0 context.Context, p1 string, p2 int64) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = txnStubSet(t, s)
-			a0, a1, a2 := txnStubSetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives V")
-		})
-	})
-}
-
-// TestTxnLoadStub checks the methods of TxnLoadStub, which configures
-// Load.
-func TestTxnLoadStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Load", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			want0, want1 := txnStubLoadPins()
-			s.OnLoad.Returns(want0, want1)
-			got0, got1 := txnStubLoad(t, s)
-			expect.Equal(t, got0, want0, "Load returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Load returns the error that Returns sets")
-		})
-
-		t.Run("configures Load for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := snapshotisolationtest.NewTxnStub(r)
-			s.OnLoad.Strict()
-			var want0 int64
-			var want1 error
-			s.OnLoad.Returns(want0, want1)
-			_, _ = txnStubLoad(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Load")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Load to the function", func(t *testing.T) {
-			t.Parallel()
-			s := snapshotisolationtest.NewTxnStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnLoad.Func(func(p0 context.Context, p1 string) (int64, error) {
-				got0, got1 = p0, p1
-				var z0 int64
-				var z1 error
-				return z0, z1
-			})
-			_, _ = txnStubLoad(t, s)
-			a0, a1 := txnStubLoadArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:de8c900a64b9ee35f48fd0d3662587d1ebc56c5cd4d7441b25be9822e688b3b0
+// dokimi:provenance sha256:b7e3c2348da1408cc10aff9872a5bb41b6b0360c04dc3a9abd40cc86df6b4bd0

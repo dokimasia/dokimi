@@ -15,51 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Touch/smoke: Touch returns without a panic for derived inputs.
-//
-// Mixed.Touch/smoke#generated: Touch returns without a panic for derived
-// inputs.
-//
-// Mixed.Touch/cancel: Touch returns an error for a cancelled context.
-//
-// Mixed.Touch/cancel#generated: Touch returns an error for a cancelled
-// context.
-//
-// Mixed.Touch/side-effect: Touch changes what Observed returns.
-//
-// Mixed.Touch/side-effect#generated: Touch changes what Observed returns.
-//
-// Mixed.Observed/smoke: Observed returns without a panic for derived
-// inputs.
-//
-// Mixed.Observed/smoke#generated: Observed returns without a panic for
-// derived inputs.
-//
-// Mixed.Observed/cancel: Observed returns an error for a cancelled
-// context.
-//
-// Mixed.Observed/cancel#generated: Observed returns an error for a
-// cancelled context.
-//
-// Mixed.Observed/zero-on-error: Observed returns the zero value beside an
-// error.
-//
-// Mixed.Observed/zero-on-error#generated: Observed returns the zero value
-// beside an error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Touch/smoke
-//
-// Mixed.Observed/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Touch has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,34 +47,16 @@ func (c mixedTouch) Smoke() conform.ID[sideeffect.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Touch returns
-// without a panic for derived inputs.
-func (c mixedTouch) SmokeGenerated() conform.ID[sideeffect.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Touch returns an error for
 // a cancelled context.
 func (c mixedTouch) Cancel() conform.ID[sideeffect.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Touch returns an
-// error for a cancelled context.
-func (c mixedTouch) CancelGenerated() conform.ID[sideeffect.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // SideEffect returns the identity of the check that Touch changes what
 // Observed returns.
 func (c mixedTouch) SideEffect() conform.ID[sideeffect.Mixed] {
 	return c.Check("side-effect")
-}
-
-// SideEffectGenerated returns the identity of the check that Touch changes
-// what Observed returns.
-func (c mixedTouch) SideEffectGenerated() conform.ID[sideeffect.Mixed] {
-	return c.Check("side-effect#generated")
 }
 
 // mixedObserved is the name of Mixed.Observed, with the identities of its
@@ -134,34 +71,16 @@ func (c mixedObserved) Smoke() conform.ID[sideeffect.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Observed returns
-// without a panic for derived inputs.
-func (c mixedObserved) SmokeGenerated() conform.ID[sideeffect.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Observed returns an error
 // for a cancelled context.
 func (c mixedObserved) Cancel() conform.ID[sideeffect.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Observed returns
-// an error for a cancelled context.
-func (c mixedObserved) CancelGenerated() conform.ID[sideeffect.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Observed returns the
 // zero value beside an error.
 func (c mixedObserved) ZeroOnError() conform.ID[sideeffect.Mixed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Observed
-// returns the zero value beside an error.
-func (c mixedObserved) ZeroOnErrorGenerated() conform.ID[sideeffect.Mixed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -176,9 +95,6 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				ID:          MixedChecks.Touch.Smoke(),
 				Statement:   "Touch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -189,12 +105,9 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				Defect: mixedTouchPanics,
 			},
 			{
-				ID:          MixedChecks.Touch.SmokeGenerated(),
+				ID:          MixedChecks.Touch.Smoke().Generated(),
 				Statement:   "Touch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -208,9 +121,6 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				ID:          MixedChecks.Touch.Cancel(),
 				Statement:   "Touch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -220,12 +130,9 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				Defect: mixedTouchIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Touch.CancelGenerated(),
+				ID:          MixedChecks.Touch.Cancel().Generated(),
 				Statement:   "Touch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -239,9 +146,6 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				ID:          MixedChecks.Touch.SideEffect(),
 				Statement:   "Touch changes what Observed returns",
 				Claim:       spec.SideEffect,
-				Probe:       spec.MovesObservation,
-				Reason:      spec.UnmovedObservation,
-				Law:         spec.CallMovesTheNamedObservation,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.MovesObservation(h, func(ctx context.Context) error {
@@ -253,12 +157,9 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				Defect: mixedObservedObservationUnmoved,
 			},
 			{
-				ID:          MixedChecks.Touch.SideEffectGenerated(),
+				ID:          MixedChecks.Touch.SideEffect().Generated(),
 				Statement:   "Touch changes what Observed returns",
 				Claim:       spec.SideEffect,
-				Probe:       spec.MovesObservation,
-				Reason:      spec.UnmovedObservation,
-				Law:         spec.CallMovesTheNamedObservation,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -274,9 +175,6 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				ID:          MixedChecks.Observed.Smoke(),
 				Statement:   "Observed returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -288,12 +186,9 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				Defect: mixedObservedPanics,
 			},
 			{
-				ID:          MixedChecks.Observed.SmokeGenerated(),
+				ID:          MixedChecks.Observed.Smoke().Generated(),
 				Statement:   "Observed returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -308,9 +203,6 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				ID:          MixedChecks.Observed.Cancel(),
 				Statement:   "Observed returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -321,12 +213,9 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				Defect: mixedObservedIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Observed.CancelGenerated(),
+				ID:          MixedChecks.Observed.Cancel().Generated(),
 				Statement:   "Observed returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -341,9 +230,6 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				ID:          MixedChecks.Observed.ZeroOnError(),
 				Statement:   "Observed returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -353,12 +239,9 @@ func MixedSuite() conform.Suite[sideeffect.Mixed] {
 				Defect: mixedObservedValueBeside,
 			},
 			{
-				ID:          MixedChecks.Observed.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Observed.ZeroOnError().Generated(),
 				Statement:   "Observed returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -610,4 +493,4 @@ func mixedObservedValueBeside(h *MixedHandle) sideeffect.Mixed {
 	return &mixedObservedValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:c54e36492f050523139c78ac996581118216667871a4b9e392024baeb6c7c1c0
+// dokimi:provenance sha256:983864eff0f99987ec65f7090d18d7b289adcf762b5036cc3d3ab8aed8b98b65

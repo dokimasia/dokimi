@@ -48,22 +48,7 @@ func TestDeleterSuite(t *testing.T) {
 				},
 				Defect: func(*deletertest.DeleterHandle) deleter.Deleter { return &deleterSubject{} },
 			}),
-			conform.Excuse(
-				deletertest.DeleterChecks.Delete.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deletertest.DeleterChecks.Delete.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deletertest.DeleterChecks.Delete.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deletertest.DeleterChecks.Delete.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[deleter.Deleter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -85,30 +70,20 @@ func TestDeleterSuite(t *testing.T) {
 				},
 				Defect: func(*deletertest.DeleterHandle) deleter.Deleter { return &deleterSubject{} },
 			}),
-			conform.Excuse(
-				deletertest.DeleterChecks.Delete.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deletertest.DeleterChecks.Delete.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deletertest.DeleterChecks.Delete.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				deletertest.DeleterChecks.Delete.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[deleter.Deleter]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// deleterSuite is the suite of Deleter that the tests of the planted
+// defect of a ceiling apply.
+var deleterSuite = deletertest.DeleterSuite()
+
 // deleterIdle returns the planted defect of a ceiling of Deleter with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func deleterIdle(h *deletertest.DeleterHandle) deleter.Deleter {
-	return deletertest.DeleterSuite().Calls[0].Over(h, func() {})
+	return deleterSuite.Calls[0].Over(h, func() {})
 }
 
 // TestDeleterSuiteBudgets applies the allocation ceilings of the suite of
@@ -120,22 +95,7 @@ func TestDeleterSuiteBudgets(t *testing.T) {
 		t,
 		deleterIdle,
 		conform.Ceilings(deletertest.DeleterChecks.Delete.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			deletertest.DeleterChecks.Delete.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deletertest.DeleterChecks.Delete.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deletertest.DeleterChecks.Delete.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deletertest.DeleterChecks.Delete.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deleter.Deleter]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -146,22 +106,7 @@ func FuzzDeleterSuiteDelete(f *testing.F) {
 		f,
 		deletertest.DeleterChecks.Delete.Callable,
 		deleterIdle,
-		conform.Excuse(
-			deletertest.DeleterChecks.Delete.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deletertest.DeleterChecks.Delete.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deletertest.DeleterChecks.Delete.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			deletertest.DeleterChecks.Delete.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[deleter.Deleter]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -173,4 +118,4 @@ func BenchmarkDeleterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:26872d8436897ee0eec6ea0546dd22626733cefb8ef14bdeb0ad7688cfdc2458
+// dokimi:provenance sha256:089916a5848aab1ebb2cae37c203aa2f1e7a0e03669755957e8841613e782ba0

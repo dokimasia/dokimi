@@ -144,21 +144,6 @@ func NewFSStub(tb assert.TB, opts ...FSStubOption) *FSStub {
 	return s
 }
 
-// NewFSStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewFSStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...FSStubOption) *FSStub {
-	return NewFSStub(tb, append([]FSStubOption{
-		FSStubWithClock(clk),
-		FSStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewFSStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewFSStubFailing(tb assert.TB, err error, opts ...FSStubOption) *FSStub {
-	return NewFSStub(tb, append([]FSStubOption{FSStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *FSStub) ResetCalls() {
@@ -366,21 +351,6 @@ func NewFileStub(tb assert.TB, opts ...FileStubOption) *FileStub {
 	return s
 }
 
-// NewFileStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewFileStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...FileStubOption) *FileStub {
-	return NewFileStub(tb, append([]FileStubOption{
-		FileStubWithClock(clk),
-		FileStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewFileStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewFileStubFailing(tb assert.TB, err error, opts ...FileStubOption) *FileStub {
-	return NewFileStub(tb, append([]FileStubOption{FileStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *FileStub) ResetCalls() {
@@ -442,4 +412,4 @@ func (s *FileStub) Close() error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:4b15cd434b1a6de6de4dcfcac86954fa271fc5ed05d5dabbfbae1c446ab86342
+// dokimi:provenance sha256:17016f3f380a0c46987ace9642debc7c5eef47cbac1f2f09334d94422163c9c9

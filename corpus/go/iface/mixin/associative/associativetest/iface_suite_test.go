@@ -48,58 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*associativetest.MixedHandle) associative.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				associativetest.MixedChecks.Apply.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Apply.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Apply.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Apply.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Total.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Total.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Total.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.Commutative(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.Associative(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[associative.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -121,66 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*associativetest.MixedHandle) associative.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				associativetest.MixedChecks.Apply.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Apply.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Apply.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Apply.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Total.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Total.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Total.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.Commutative(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				associativetest.MixedChecks.Merge.Associative(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[associative.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = associativetest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *associativetest.MixedHandle) associative.Mixed {
-	return associativetest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -194,58 +96,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(associativetest.MixedChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(associativetest.MixedChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(associativetest.MixedChecks.Merge.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Commutative(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Associative(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[associative.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -256,58 +107,7 @@ func FuzzMixedSuiteApply(f *testing.F) {
 		f,
 		associativetest.MixedChecks.Apply.Callable,
 		mixedIdle,
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Commutative(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Associative(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[associative.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -318,58 +118,7 @@ func FuzzMixedSuiteTotal(f *testing.F) {
 		f,
 		associativetest.MixedChecks.Total.Callable,
 		mixedIdle,
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Commutative(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Associative(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[associative.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -380,58 +129,7 @@ func FuzzMixedSuiteMerge(f *testing.F) {
 		f,
 		associativetest.MixedChecks.Merge.Callable,
 		mixedIdle,
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Apply.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Total.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Commutative(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			associativetest.MixedChecks.Merge.Associative(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[associative.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -449,4 +147,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:46213c69a25268e96d3cd1f52c28046d77c7bf9d26eb0565d22c7723d669fc8b
+// dokimi:provenance sha256:fcbd07fb00adab7def472380646e726fe81f1943db7a967633c57b270d2c2b1c

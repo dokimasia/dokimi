@@ -48,30 +48,7 @@ func TestCloserSuite(t *testing.T) {
 				},
 				Defect: func(*idempotentclosetest.CloserHandle) idempotentclose.Closer { return &closerSubject{} },
 			}),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Close.Idempotent(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Stats.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Stats.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Stats.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[idempotentclose.Closer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -93,38 +70,20 @@ func TestCloserSuite(t *testing.T) {
 				},
 				Defect: func(*idempotentclosetest.CloserHandle) idempotentclose.Closer { return &closerSubject{} },
 			}),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Close.Idempotent(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Stats.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Stats.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotentclosetest.CloserChecks.Stats.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[idempotentclose.Closer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// closerSuite is the suite of Closer that the tests of the planted defect
+// of a ceiling apply.
+var closerSuite = idempotentclosetest.CloserSuite()
+
 // closerIdle returns the planted defect of a ceiling of Closer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func closerIdle(h *idempotentclosetest.CloserHandle) idempotentclose.Closer {
-	return idempotentclosetest.CloserSuite().Calls[0].Over(h, func() {})
+	return closerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCloserSuiteBudgets applies the allocation ceilings of the suite of
@@ -137,29 +96,8 @@ func TestCloserSuiteBudgets(t *testing.T) {
 		closerIdle,
 		conform.Ceilings(idempotentclosetest.CloserChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(idempotentclosetest.CloserChecks.Stats.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[idempotentclose.Closer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -171,29 +109,8 @@ func FuzzCloserSuiteClose(f *testing.F) {
 		f,
 		idempotentclosetest.CloserChecks.Close.Callable,
 		closerIdle,
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[idempotentclose.Closer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -205,29 +122,8 @@ func FuzzCloserSuiteStats(f *testing.F) {
 		f,
 		idempotentclosetest.CloserChecks.Stats.Callable,
 		closerIdle,
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Close.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotentclosetest.CloserChecks.Stats.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[idempotentclose.Closer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -243,4 +139,4 @@ func BenchmarkCloserSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:546852d492e209b48e422abeba9606e0f718ac47a523323e2036f72c30ee6d59
+// dokimi:provenance sha256:110c9d973cd220c5a601ca6c43dc96407b58b6ab7786df638b21dd0917d27baf

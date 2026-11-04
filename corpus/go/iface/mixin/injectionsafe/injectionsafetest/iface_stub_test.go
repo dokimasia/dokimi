@@ -67,25 +67,39 @@ func mixedStubLoadPins() (string, error) {
 	return want0, want1
 }
 
-// mixedStubStoreSubject returns the subject of [stub.Behaviour] for Store.
-// The subject calls a new double that reports to tb.
+// mixedStubStoreSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Store. The subject calls a new double that
+// reports to tb.
 func mixedStubStoreSubject(
 	tb assert.TB,
 ) stub.Subject[injectionsafetest.MixedStoreCall, injectionsafetest.MixedStoreReturn] {
 	tb.Helper()
 	s := injectionsafetest.NewMixedStub(tb)
 	return stub.Subject[injectionsafetest.MixedStoreCall, injectionsafetest.MixedStoreReturn]{
-		Stub: s.OnStore.MethodStub,
+		Stub:  s.OnStore.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubStore(tb, s)
+		},
+		Arguments: func(tb assert.TB, c injectionsafetest.MixedStoreCall) {
+			tb.Helper()
+			a0, a1, a2 := mixedStubStoreArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.Value, a2, "the call records Value")
 		},
 		Result: func() injectionsafetest.MixedStoreReturn {
 			got0 := mixedStubStore(tb, s)
 			return injectionsafetest.MixedStoreReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnStore.Func(func(_ context.Context, _, _ string) error {
-				mark()
+		Returns: func() injectionsafetest.MixedStoreReturn {
+			want0 := mixedStubStorePins()
+			s.OnStore.Returns(want0)
+			return injectionsafetest.MixedStoreReturn{Err: want0}
+		},
+		Override: func(seen func(injectionsafetest.MixedStoreCall)) {
+			s.OnStore.Func(func(p0 context.Context, p1, p2 string) error {
+				seen(injectionsafetest.MixedStoreCall{Ctx: p0, Key: p1, Value: p2})
 				var z0 error
 				return z0
 			})
@@ -97,25 +111,38 @@ func mixedStubStoreSubject(
 	}
 }
 
-// mixedStubLoadSubject returns the subject of [stub.Behaviour] for Load.
-// The subject calls a new double that reports to tb.
+// mixedStubLoadSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Load. The subject calls a new double that
+// reports to tb.
 func mixedStubLoadSubject(
 	tb assert.TB,
 ) stub.Subject[injectionsafetest.MixedLoadCall, injectionsafetest.MixedLoadReturn] {
 	tb.Helper()
 	s := injectionsafetest.NewMixedStub(tb)
 	return stub.Subject[injectionsafetest.MixedLoadCall, injectionsafetest.MixedLoadReturn]{
-		Stub: s.OnLoad.MethodStub,
+		Stub:  s.OnLoad.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubLoad(tb, s)
+		},
+		Arguments: func(tb assert.TB, c injectionsafetest.MixedLoadCall) {
+			tb.Helper()
+			a0, a1 := mixedStubLoadArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() injectionsafetest.MixedLoadReturn {
 			got0, got1 := mixedStubLoad(tb, s)
 			return injectionsafetest.MixedLoadReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnLoad.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() injectionsafetest.MixedLoadReturn {
+			want0, want1 := mixedStubLoadPins()
+			s.OnLoad.Returns(want0, want1)
+			return injectionsafetest.MixedLoadReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(injectionsafetest.MixedLoadCall)) {
+			s.OnLoad.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(injectionsafetest.MixedLoadCall{Ctx: p0, Key: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -141,7 +168,6 @@ func mixedStubInstanceOf(tb assert.TB, s *injectionsafetest.MixedStub) mixedStub
 		Call: func() {
 			_ = mixedStubStore(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -153,122 +179,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Store", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Store", mixedStubStoreSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			_ = mixedStubStore(t, s)
-			got := s.OnStore.AssertCalledOnce(t, "Store records the call")
-			a0, a1, a2 := mixedStubStoreArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.Value, a2, "the call records Value")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			var seen []injectionsafetest.MixedStoreCall
-			s.OnStore.OnRecord(func(c injectionsafetest.MixedStoreCall) { seen = append(seen, c) })
-			_ = mixedStubStore(t, s)
-			_ = mixedStubStore(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Store")
-		})
 	})
 
 	t.Run("Load", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Load", mixedStubLoadSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			_, _ = mixedStubLoad(t, s)
-			got := s.OnLoad.AssertCalledOnce(t, "Load records the call")
-			a0, a1 := mixedStubLoadArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			var seen []injectionsafetest.MixedLoadCall
-			s.OnLoad.OnRecord(func(c injectionsafetest.MixedLoadCall) { seen = append(seen, c) })
-			_, _ = mixedStubLoad(t, s)
-			_, _ = mixedStubLoad(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Load")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, injectionsafetest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Store", func(t *testing.T) {
+		t.Run("Store", func(t *testing.T) {
 			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			_ = mixedStubStore(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStore.CallCount(), 0, "ResetCalls clears the calls of Store")
+			stub.ResetBehaviour(t, "Store", mixedStubStoreSubject)
 		})
 
-		t.Run("keeps the results of Returns of Store", func(t *testing.T) {
+		t.Run("Load", func(t *testing.T) {
 			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			want0 := mixedStubStorePins()
-			s.OnStore.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Store")
-		})
-
-		t.Run("clears the recorded calls of Load", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			_, _ = mixedStubLoad(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLoad.CallCount(), 0, "ResetCalls clears the calls of Load")
-		})
-
-		t.Run("keeps the results of Returns of Load", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			want0, want1 := mixedStubLoadPins()
-			s.OnLoad.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubLoad(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Load")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Load")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, injectionsafetest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Store with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Store-failing")
-			s := injectionsafetest.NewMixedStubFailing(t, want)
-			r0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, r0, want, "Store fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Load with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Load-failing")
-			s := injectionsafetest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubLoad(t, s)
-			assert.ErrorIs(t, r1, want, "Load fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Load", mixedStubLoadSubject)
 		})
 	})
 
@@ -420,109 +348,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedStoreStub checks the methods of MixedStoreStub, which
-// configures Store.
-func TestMixedStoreStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Store", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			want0 := mixedStubStorePins()
-			s.OnStore.Returns(want0)
-			got0 := mixedStubStore(t, s)
-			assert.ErrorIs(t, got0, want0, "Store returns the error that Returns sets")
-		})
-
-		t.Run("configures Store for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := injectionsafetest.NewMixedStub(r)
-			s.OnStore.Strict()
-			var want0 error
-			s.OnStore.Returns(want0)
-			_ = mixedStubStore(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Store")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Store to the function", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 string
-			s.OnStore.Func(func(p0 context.Context, p1, p2 string) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = mixedStubStore(t, s)
-			a0, a1, a2 := mixedStubStoreArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives Value")
-		})
-	})
-}
-
-// TestMixedLoadStub checks the methods of MixedLoadStub, which configures
-// Load.
-func TestMixedLoadStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Load", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			want0, want1 := mixedStubLoadPins()
-			s.OnLoad.Returns(want0, want1)
-			got0, got1 := mixedStubLoad(t, s)
-			expect.Equal(t, got0, want0, "Load returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Load returns the error that Returns sets")
-		})
-
-		t.Run("configures Load for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := injectionsafetest.NewMixedStub(r)
-			s.OnLoad.Strict()
-			var want0 string
-			var want1 error
-			s.OnLoad.Returns(want0, want1)
-			_, _ = mixedStubLoad(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Load")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Load to the function", func(t *testing.T) {
-			t.Parallel()
-			s := injectionsafetest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnLoad.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubLoad(t, s)
-			a0, a1 := mixedStubLoadArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:3d1c697adbb2f492a0a288bda37142224d1036aa83d7b5f88f626a8d83318873
+// dokimi:provenance sha256:692a828dd925624379fc2a5e5bafc75f1ad8925ce4f71b30caa1116374fd55ba

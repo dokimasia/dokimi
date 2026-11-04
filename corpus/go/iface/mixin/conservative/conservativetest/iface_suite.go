@@ -16,38 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Apply/smoke: Apply returns without a panic for derived inputs.
-//
-// Mixed.Apply/smoke#generated: Apply returns without a panic for derived
-// inputs.
-//
-// Mixed.Apply/cancel: Apply returns an error for a cancelled context.
-//
-// Mixed.Apply/cancel#generated: Apply returns an error for a cancelled
-// context.
-//
-// Mixed.Apply/conserves-the-quantity: each call of Apply keeps the total
-// that Total reads, over any sequence of calls.
-//
-// Mixed.Total/smoke: Total returns without a panic for derived inputs.
-//
-// Mixed.Total/cancel: Total returns an error for a cancelled context.
-//
-// Mixed.Total/zero-on-error: Total returns the zero value beside an error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Apply/smoke
-//
-// Mixed.Total/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Apply has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -80,22 +48,10 @@ func (c mixedApply) Smoke() conform.ID[conservative.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Apply returns
-// without a panic for derived inputs.
-func (c mixedApply) SmokeGenerated() conform.ID[conservative.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Apply returns an error for
 // a cancelled context.
 func (c mixedApply) Cancel() conform.ID[conservative.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Apply returns an
-// error for a cancelled context.
-func (c mixedApply) CancelGenerated() conform.ID[conservative.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // ConservesTheQuantity returns the identity of the check that each call of
@@ -140,9 +96,6 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				ID:          MixedChecks.Apply.Smoke(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -153,12 +106,9 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				Defect: mixedApplyPanics,
 			},
 			{
-				ID:          MixedChecks.Apply.SmokeGenerated(),
+				ID:          MixedChecks.Apply.Smoke().Generated(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[conservative.Delta](), "d")
@@ -172,9 +122,6 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				ID:          MixedChecks.Apply.Cancel(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -184,12 +131,9 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				Defect: mixedApplyIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Apply.CancelGenerated(),
+				ID:          MixedChecks.Apply.Cancel().Generated(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[conservative.Delta](), "d")
@@ -203,9 +147,6 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				ID:          MixedChecks.Apply.ConservesTheQuantity(),
 				Statement:   "each call of Apply keeps the total that Total reads, over any sequence of calls",
 				Claim:       spec.ConservesTheQuantity,
-				Probe:       spec.MovesKeepTheTotal,
-				Reason:      spec.NotConserved,
-				Law:         spec.MovesConserveTheTotal,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					probe.MovesKeepTheTotal(h, c, mixedActions, "Apply", func(ctx context.Context) (int, error) {
@@ -218,9 +159,6 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				ID:          MixedChecks.Total.Smoke(),
 				Statement:   "Total returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -235,9 +173,6 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				ID:          MixedChecks.Total.Cancel(),
 				Statement:   "Total returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -251,9 +186,6 @@ func MixedSuite() conform.Suite[conservative.Mixed] {
 				ID:          MixedChecks.Total.ZeroOnError(),
 				Statement:   "Total returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -555,4 +487,4 @@ func mixedTotalCall(ctx context.Context, subject conservative.Mixed, args []any)
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:82538c390b2b9b6780b97172f28f47e316a83c04dd176d7f0dfd74423f4f668d
+// dokimi:provenance sha256:ee0967c38fcd0fedf435c633efd40d04e3c4ec6a28dca64737535f654570d0e7

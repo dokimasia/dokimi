@@ -16,45 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Dispatcher:
-//
-// Dispatcher.Dispatch/smoke: Dispatch returns without a panic for derived
-// inputs.
-//
-// Dispatcher.Dispatch/cancel: Dispatch returns an error for a cancelled
-// context.
-//
-// Dispatcher.DispatchAll/smoke: DispatchAll returns without a panic for
-// derived inputs.
-//
-// Dispatcher.DispatchAll/cancel: DispatchAll returns an error for a
-// cancelled context.
-//
-// Dispatcher.Weight/smoke: Weight returns without a panic for derived
-// inputs.
-//
-// Dispatcher.Weight/deterministic: Weight returns the same value for the
-// same inputs.
-
-// The derived checks of Dispatcher that witness their laws at the shallow
-// end:
-//
-// Dispatcher.Dispatch/smoke
-//
-// Dispatcher.DispatchAll/smoke
-//
-// Dispatcher.Weight/smoke
-//
-// Dispatcher.Weight/deterministic
-
-// The unclaimed classifications of Dispatcher:
-//
-// The shape:writer of Dispatcher.Dispatch has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Dispatcher.DispatchAll has the stance silent. A
-// write is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -155,9 +116,6 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 				ID:          DispatcherChecks.Dispatch.Smoke(),
 				Statement:   "Dispatch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DispatcherHandle) {
@@ -171,9 +129,6 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 				ID:          DispatcherChecks.Dispatch.Cancel(),
 				Statement:   "Dispatch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *DispatcherHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -186,9 +141,6 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 				ID:          DispatcherChecks.DispatchAll.Smoke(),
 				Statement:   "DispatchAll returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DispatcherHandle) {
@@ -203,9 +155,6 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 				ID:          DispatcherChecks.DispatchAll.Cancel(),
 				Statement:   "DispatchAll returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *DispatcherHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -219,9 +168,6 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 				ID:          DispatcherChecks.Weight.Smoke(),
 				Statement:   "Weight returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DispatcherHandle) {
@@ -236,9 +182,6 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 				ID:          DispatcherChecks.Weight.Deterministic(),
 				Statement:   "Weight returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[nested.Dispatcher]{DispatcherChecks.Weight.Smoke()},
@@ -585,4 +528,4 @@ func dispatcherWeightDrifts(h *DispatcherHandle) nested.Dispatcher {
 	return &dispatcherWeightDriftsDefect{dispatcherOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:39f27f9bc34544c25f85e832df4758f3e9842ceebaa1ed07d06188cdeb5087a2
+// dokimi:provenance sha256:22ada551106b6707788263a491c1499d2d7bbbda0ed471eec427b2bc9169e82c

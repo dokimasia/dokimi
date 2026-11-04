@@ -49,34 +49,7 @@ func TestTxWithRetrySuite(t *testing.T) {
 				},
 				Defect: func(*txwithretrytest.TxWithRetryHandle) txwithretry.TxWithRetry { return &txWithRetrySubject{} },
 			}),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Begin.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Begin.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Commit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Commit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Commit.RetrySucceedsTx(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Rollback.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Rollback.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[txwithretry.TxWithRetry]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -98,42 +71,20 @@ func TestTxWithRetrySuite(t *testing.T) {
 				},
 				Defect: func(*txwithretrytest.TxWithRetryHandle) txwithretry.TxWithRetry { return &txWithRetrySubject{} },
 			}),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Begin.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Begin.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Commit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Commit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Commit.RetrySucceedsTx(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Rollback.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				txwithretrytest.TxWithRetryChecks.Rollback.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[txwithretry.TxWithRetry]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// txWithRetrySuite is the suite of TxWithRetry that the tests of the
+// planted defect of a ceiling apply.
+var txWithRetrySuite = txwithretrytest.TxWithRetrySuite()
+
 // txWithRetryIdle returns the planted defect of a ceiling of TxWithRetry
-// with a spend of nothing, a subject that answers each call at once.
+// with a spend of nothing. Each call of the defect returns its zero
+// results at once.
 func txWithRetryIdle(h *txwithretrytest.TxWithRetryHandle) txwithretry.TxWithRetry {
-	return txwithretrytest.TxWithRetrySuite().Calls[0].Over(h, func() {})
+	return txWithRetrySuite.Calls[0].Over(h, func() {})
 }
 
 // TestTxWithRetrySuiteBudgets applies the allocation ceilings of the suite
@@ -147,33 +98,8 @@ func TestTxWithRetrySuiteBudgets(t *testing.T) {
 		conform.Ceilings(txwithretrytest.TxWithRetryChecks.Begin.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(txwithretrytest.TxWithRetryChecks.Commit.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(txwithretrytest.TxWithRetryChecks.Rollback.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.RetrySucceedsTx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[txwithretry.TxWithRetry](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -185,33 +111,8 @@ func FuzzTxWithRetrySuiteBegin(f *testing.F) {
 		f,
 		txwithretrytest.TxWithRetryChecks.Begin.Callable,
 		txWithRetryIdle,
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.RetrySucceedsTx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[txwithretry.TxWithRetry](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -224,33 +125,8 @@ func FuzzTxWithRetrySuiteCommit(f *testing.F) {
 		f,
 		txwithretrytest.TxWithRetryChecks.Commit.Callable,
 		txWithRetryIdle,
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.RetrySucceedsTx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[txwithretry.TxWithRetry](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -263,33 +139,8 @@ func FuzzTxWithRetrySuiteRollback(f *testing.F) {
 		f,
 		txwithretrytest.TxWithRetryChecks.Rollback.Callable,
 		txWithRetryIdle,
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Begin.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Begin.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Commit.RetrySucceedsTx(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Rollback.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			txwithretrytest.TxWithRetryChecks.Rollback.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[txwithretry.TxWithRetry](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -308,4 +159,4 @@ func BenchmarkTxWithRetrySuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:799b28c4638f765f98dded7a12055e63fb55ffdc4d59d3ec44ad90acabcf177f
+// dokimi:provenance sha256:f0d11a22721454206574fdee708b8d0560cf6233ee32bc11d437c3ccdd6eb1aa

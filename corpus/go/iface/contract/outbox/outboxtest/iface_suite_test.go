@@ -49,34 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*outboxtest.ContractHandle) outbox.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.DeliversEachAppend(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Subscribe.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Subscribe.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[outbox.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -98,42 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*outboxtest.ContractHandle) outbox.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Append.DeliversEachAppend(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Subscribe.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				outboxtest.ContractChecks.Subscribe.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[outbox.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = outboxtest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *outboxtest.ContractHandle) outbox.Contract {
-	return outboxtest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -146,34 +97,7 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(outboxtest.ContractChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(outboxtest.ContractChecks.Subscribe.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.DeliversEachAppend(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Subscribe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Subscribe.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[outbox.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -184,34 +108,7 @@ func FuzzContractSuiteAppend(f *testing.F) {
 		f,
 		outboxtest.ContractChecks.Append.Callable,
 		contractIdle,
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.DeliversEachAppend(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Subscribe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Subscribe.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[outbox.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -223,34 +120,7 @@ func FuzzContractSuiteSubscribe(f *testing.F) {
 		f,
 		outboxtest.ContractChecks.Subscribe.Callable,
 		contractIdle,
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Append.DeliversEachAppend(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Subscribe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			outboxtest.ContractChecks.Subscribe.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[outbox.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -265,4 +135,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c98a4e4c893752fcb22977932cd60ae10f797c4352f3f2208d3bceddc7e709ac
+// dokimi:provenance sha256:2a83f8c192c65a27e0af42fac3bfe7d0bacf4555e75cd14391f783e305fd3419

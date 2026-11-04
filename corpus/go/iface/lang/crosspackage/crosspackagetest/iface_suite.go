@@ -17,51 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Fitter:
-//
-// Fitter.Fit/smoke: Fit returns without a panic for derived inputs.
-//
-// Fitter.Fit/smoke#generated: Fit returns without a panic for derived
-// inputs.
-//
-// Fitter.Fit/cancel: Fit returns an error for a cancelled context.
-//
-// Fitter.Fit/cancel#generated: Fit returns an error for a cancelled
-// context.
-//
-// Fitter.Limit/smoke: Limit returns without a panic for derived inputs.
-//
-// Fitter.Limit/smoke#generated: Limit returns without a panic for derived
-// inputs.
-//
-// Fitter.Limit/cancel: Limit returns an error for a cancelled context.
-//
-// Fitter.Limit/cancel#generated: Limit returns an error for a cancelled
-// context.
-
-// The derived checks of Fitter that witness their laws at the shallow end:
-//
-// Fitter.Fit/smoke
-//
-// Fitter.Limit/smoke
-
-// The refused claims of Fitter:
-//
-// Fitter.Sense/cancel: eidos derives no sample of the parameter s of
-// Sense. The remedy is to author a sample of the parameter s with the
-// directive sample.
-
-// The unclaimed classifications of Fitter:
-//
-// The shape:writer of Fitter.Fit has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Fitter.Limit has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Fitter.Sense has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -95,22 +50,10 @@ func (c fitterFit) Smoke() conform.ID[crosspackage.Fitter] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Fit returns
-// without a panic for derived inputs.
-func (c fitterFit) SmokeGenerated() conform.ID[crosspackage.Fitter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Fit returns an error for a
 // cancelled context.
 func (c fitterFit) Cancel() conform.ID[crosspackage.Fitter] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Fit returns an
-// error for a cancelled context.
-func (c fitterFit) CancelGenerated() conform.ID[crosspackage.Fitter] {
-	return c.Check("cancel#generated")
 }
 
 // fitterLimit is the name of Fitter.Limit, with the identities of its
@@ -125,22 +68,10 @@ func (c fitterLimit) Smoke() conform.ID[crosspackage.Fitter] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Limit returns
-// without a panic for derived inputs.
-func (c fitterLimit) SmokeGenerated() conform.ID[crosspackage.Fitter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Limit returns an error for
 // a cancelled context.
 func (c fitterLimit) Cancel() conform.ID[crosspackage.Fitter] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Limit returns an
-// error for a cancelled context.
-func (c fitterLimit) CancelGenerated() conform.ID[crosspackage.Fitter] {
-	return c.Check("cancel#generated")
 }
 
 // fitterSense is the name of Fitter.Sense, with the identities of its
@@ -161,9 +92,6 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 				ID:          FitterChecks.Fit.Smoke(),
 				Statement:   "Fit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FitterHandle) {
@@ -174,12 +102,9 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 				Defect: fitterFitPanics,
 			},
 			{
-				ID:          FitterChecks.Fit.SmokeGenerated(),
+				ID:          FitterChecks.Fit.Smoke().Generated(),
 				Statement:   "Fit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FitterHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[part.Part](), "p")
@@ -193,9 +118,6 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 				ID:          FitterChecks.Fit.Cancel(),
 				Statement:   "Fit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FitterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -205,12 +127,9 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 				Defect: fitterFitIgnoresCancel,
 			},
 			{
-				ID:          FitterChecks.Fit.CancelGenerated(),
+				ID:          FitterChecks.Fit.Cancel().Generated(),
 				Statement:   "Fit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FitterHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[part.Part](), "p")
@@ -224,9 +143,6 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 				ID:          FitterChecks.Limit.Smoke(),
 				Statement:   "Limit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FitterHandle) {
@@ -237,12 +153,9 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 				Defect: fitterLimitPanics,
 			},
 			{
-				ID:          FitterChecks.Limit.SmokeGenerated(),
+				ID:          FitterChecks.Limit.Smoke().Generated(),
 				Statement:   "Limit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FitterHandle, c *prop.Case) {
 					drawnL := c.Draw(prop.Of[part.Limits](), "l")
@@ -256,9 +169,6 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 				ID:          FitterChecks.Limit.Cancel(),
 				Statement:   "Limit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FitterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -268,12 +178,9 @@ func FitterSuite() conform.Suite[crosspackage.Fitter] {
 				Defect: fitterLimitIgnoresCancel,
 			},
 			{
-				ID:          FitterChecks.Limit.CancelGenerated(),
+				ID:          FitterChecks.Limit.Cancel().Generated(),
 				Statement:   "Limit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FitterHandle, c *prop.Case) {
 					drawnL := c.Draw(prop.Of[part.Limits](), "l")
@@ -573,4 +480,4 @@ func fitterLimitIgnoresCancel(h *FitterHandle) crosspackage.Fitter {
 	return &fitterLimitIgnoresCancelDefect{fitterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:76d295a544241f80b03e551ada163da84a2bd57d9ad91c1b5da35cc580883f35
+// dokimi:provenance sha256:ebda5cf24b1e287c06698353b12e412e95bb7d0636a2089c99977ec1148081ee

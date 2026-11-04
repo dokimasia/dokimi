@@ -43,25 +43,37 @@ func sourceStubNextPins() (streamconsumer.Value, bool, error) {
 	return want0, want1, want2
 }
 
-// sourceStubNextSubject returns the subject of [stub.Behaviour] for Next.
-// The subject calls a new double that reports to tb.
+// sourceStubNextSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Next. The subject calls a new double that
+// reports to tb.
 func sourceStubNextSubject(
 	tb assert.TB,
 ) stub.Subject[streamconsumertest.SourceNextCall, streamconsumertest.SourceNextReturn] {
 	tb.Helper()
 	s := streamconsumertest.NewSourceStub(tb)
 	return stub.Subject[streamconsumertest.SourceNextCall, streamconsumertest.SourceNextReturn]{
-		Stub: s.OnNext.MethodStub,
+		Stub:  s.OnNext.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _, _ = sourceStubNext(tb, s)
+		},
+		Arguments: func(tb assert.TB, c streamconsumertest.SourceNextCall) {
+			tb.Helper()
+			a0 := sourceStubNextArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() streamconsumertest.SourceNextReturn {
 			got0, got1, got2 := sourceStubNext(tb, s)
 			return streamconsumertest.SourceNextReturn{Result0: got0, Result1: got1, Err: got2}
 		},
-		Override: func(mark func()) {
-			s.OnNext.Func(func(_ context.Context) (streamconsumer.Value, bool, error) {
-				mark()
+		Returns: func() streamconsumertest.SourceNextReturn {
+			want0, want1, want2 := sourceStubNextPins()
+			s.OnNext.Returns(want0, want1, want2)
+			return streamconsumertest.SourceNextReturn{Result0: want0, Result1: want1, Err: want2}
+		},
+		Override: func(seen func(streamconsumertest.SourceNextCall)) {
+			s.OnNext.Func(func(p0 context.Context) (streamconsumer.Value, bool, error) {
+				seen(streamconsumertest.SourceNextCall{Ctx: p0})
 				var z0 streamconsumer.Value
 				var z1 bool
 				var z2 error
@@ -88,7 +100,6 @@ func sourceStubInstanceOf(tb assert.TB, s *streamconsumertest.SourceStub) source
 		Call: func() {
 			_, _, _ = sourceStubNext(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -100,70 +111,14 @@ func TestSourceStub(t *testing.T) {
 	t.Run("Next", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Next", sourceStubNextSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewSourceStub(t)
-			_, _, _ = sourceStubNext(t, s)
-			got := s.OnNext.AssertCalledOnce(t, "Next records the call")
-			a0 := sourceStubNextArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewSourceStub(t)
-			var seen []streamconsumertest.SourceNextCall
-			s.OnNext.OnRecord(func(c streamconsumertest.SourceNextCall) { seen = append(seen, c) })
-			_, _, _ = sourceStubNext(t, s)
-			_, _, _ = sourceStubNext(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Next")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) sourceStubInstance {
-			return sourceStubInstanceOf(tb, streamconsumertest.NewSourceStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Next", func(t *testing.T) {
+		t.Run("Next", func(t *testing.T) {
 			t.Parallel()
-			s := streamconsumertest.NewSourceStub(t)
-			_, _, _ = sourceStubNext(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNext.CallCount(), 0, "ResetCalls clears the calls of Next")
-		})
-
-		t.Run("keeps the results of Returns of Next", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewSourceStub(t)
-			want0, want1, want2 := sourceStubNextPins()
-			s.OnNext.Returns(want0, want1, want2)
-			s.ResetCalls()
-			got0, got1, got2 := sourceStubNext(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Next")
-			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Next")
-			expect.ErrorIs(t, got2, want2, "ResetCalls keeps the error of Next")
-		})
-	})
-
-	t.Run("NewSourceStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) sourceStubInstance {
-			return sourceStubInstanceOf(tb, streamconsumertest.NewSourceStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewSourceStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Next with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Next-failing")
-			s := streamconsumertest.NewSourceStubFailing(t, want)
-			_, _, r2 := sourceStubNext(t, s)
-			assert.ErrorIs(t, r2, want, "Next fails with the error of NewSourceStubFailing")
+			stub.ResetBehaviour(t, "Next", sourceStubNextSubject)
 		})
 	})
 
@@ -274,60 +229,6 @@ func TestSourceStub(t *testing.T) {
 	})
 }
 
-// TestSourceNextStub checks the methods of SourceNextStub, which
-// configures Next.
-func TestSourceNextStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Next", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewSourceStub(t)
-			want0, want1, want2 := sourceStubNextPins()
-			s.OnNext.Returns(want0, want1, want2)
-			got0, got1, got2 := sourceStubNext(t, s)
-			expect.Equal(t, got0, want0, "Next returns the Result0 that Returns sets")
-			expect.Equal(t, got1, want1, "Next returns the Result1 that Returns sets")
-			expect.ErrorIs(t, got2, want2, "Next returns the error that Returns sets")
-		})
-
-		t.Run("configures Next for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := streamconsumertest.NewSourceStub(r)
-			s.OnNext.Strict()
-			var want0 streamconsumer.Value
-			var want1 bool
-			var want2 error
-			s.OnNext.Returns(want0, want1, want2)
-			_, _, _ = sourceStubNext(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Next")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Next to the function", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewSourceStub(t)
-			var got0 context.Context
-			s.OnNext.Func(func(p0 context.Context) (streamconsumer.Value, bool, error) {
-				got0 = p0
-				var z0 streamconsumer.Value
-				var z1 bool
-				var z2 error
-				return z0, z1, z2
-			})
-			_, _, _ = sourceStubNext(t, s)
-			a0 := sourceStubNextArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
 // streamConsumerStubIngestArgs returns the samples of the arguments of
 // Ingest.
 func streamConsumerStubIngestArgs(tb assert.TB) (context.Context, streamconsumer.Source) {
@@ -355,24 +256,37 @@ func streamConsumerStubIngestPins() (int, error) {
 }
 
 // streamConsumerStubIngestSubject returns the subject of [stub.Behaviour]
-// for Ingest. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for Ingest. The subject calls a new double
+// that reports to tb.
 func streamConsumerStubIngestSubject(
 	tb assert.TB,
 ) stub.Subject[streamconsumertest.StreamConsumerIngestCall, streamconsumertest.StreamConsumerIngestReturn] {
 	tb.Helper()
 	s := streamconsumertest.NewStreamConsumerStub(tb)
 	return stub.Subject[streamconsumertest.StreamConsumerIngestCall, streamconsumertest.StreamConsumerIngestReturn]{
-		Stub: s.OnIngest.MethodStub,
+		Stub:  s.OnIngest.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = streamConsumerStubIngest(tb, s)
+		},
+		Arguments: func(tb assert.TB, c streamconsumertest.StreamConsumerIngestCall) {
+			tb.Helper()
+			a0, a1 := streamConsumerStubIngestArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Src, a1, "the call records Src")
 		},
 		Result: func() streamconsumertest.StreamConsumerIngestReturn {
 			got0, got1 := streamConsumerStubIngest(tb, s)
 			return streamconsumertest.StreamConsumerIngestReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnIngest.Func(func(_ context.Context, _ streamconsumer.Source) (int, error) {
-				mark()
+		Returns: func() streamconsumertest.StreamConsumerIngestReturn {
+			want0, want1 := streamConsumerStubIngestPins()
+			s.OnIngest.Returns(want0, want1)
+			return streamconsumertest.StreamConsumerIngestReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(streamconsumertest.StreamConsumerIngestCall)) {
+			s.OnIngest.Func(func(p0 context.Context, p1 streamconsumer.Source) (int, error) {
+				seen(streamconsumertest.StreamConsumerIngestCall{Ctx: p0, Src: p1})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -399,7 +313,6 @@ func streamConsumerStubInstanceOf(tb assert.TB, s *streamconsumertest.StreamCons
 		Call: func() {
 			_, _ = streamConsumerStubIngest(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -411,70 +324,14 @@ func TestStreamConsumerStub(t *testing.T) {
 	t.Run("Ingest", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Ingest", streamConsumerStubIngestSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewStreamConsumerStub(t)
-			_, _ = streamConsumerStubIngest(t, s)
-			got := s.OnIngest.AssertCalledOnce(t, "Ingest records the call")
-			a0, a1 := streamConsumerStubIngestArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Src, a1, "the call records Src")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewStreamConsumerStub(t)
-			var seen []streamconsumertest.StreamConsumerIngestCall
-			s.OnIngest.OnRecord(func(c streamconsumertest.StreamConsumerIngestCall) { seen = append(seen, c) })
-			_, _ = streamConsumerStubIngest(t, s)
-			_, _ = streamConsumerStubIngest(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Ingest")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) streamConsumerStubInstance {
-			return streamConsumerStubInstanceOf(tb, streamconsumertest.NewStreamConsumerStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Ingest", func(t *testing.T) {
+		t.Run("Ingest", func(t *testing.T) {
 			t.Parallel()
-			s := streamconsumertest.NewStreamConsumerStub(t)
-			_, _ = streamConsumerStubIngest(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnIngest.CallCount(), 0, "ResetCalls clears the calls of Ingest")
-		})
-
-		t.Run("keeps the results of Returns of Ingest", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewStreamConsumerStub(t)
-			want0, want1 := streamConsumerStubIngestPins()
-			s.OnIngest.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := streamConsumerStubIngest(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Ingest")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Ingest")
-		})
-	})
-
-	t.Run("NewStreamConsumerStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) streamConsumerStubInstance {
-			return streamConsumerStubInstanceOf(tb, streamconsumertest.NewStreamConsumerStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewStreamConsumerStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Ingest with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Ingest-failing")
-			s := streamconsumertest.NewStreamConsumerStubFailing(t, want)
-			_, r1 := streamConsumerStubIngest(t, s)
-			assert.ErrorIs(t, r1, want, "Ingest fails with the error of NewStreamConsumerStubFailing")
+			stub.ResetBehaviour(t, "Ingest", streamConsumerStubIngestSubject)
 		})
 	})
 
@@ -589,57 +446,4 @@ func TestStreamConsumerStub(t *testing.T) {
 	})
 }
 
-// TestStreamConsumerIngestStub checks the methods of
-// StreamConsumerIngestStub, which configures Ingest.
-func TestStreamConsumerIngestStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Ingest", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewStreamConsumerStub(t)
-			want0, want1 := streamConsumerStubIngestPins()
-			s.OnIngest.Returns(want0, want1)
-			got0, got1 := streamConsumerStubIngest(t, s)
-			expect.Equal(t, got0, want0, "Ingest returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Ingest returns the error that Returns sets")
-		})
-
-		t.Run("configures Ingest for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := streamconsumertest.NewStreamConsumerStub(r)
-			s.OnIngest.Strict()
-			var want0 int
-			var want1 error
-			s.OnIngest.Returns(want0, want1)
-			_, _ = streamConsumerStubIngest(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Ingest")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Ingest to the function", func(t *testing.T) {
-			t.Parallel()
-			s := streamconsumertest.NewStreamConsumerStub(t)
-			var got0 context.Context
-			var got1 streamconsumer.Source
-			s.OnIngest.Func(func(p0 context.Context, p1 streamconsumer.Source) (int, error) {
-				got0, got1 = p0, p1
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = streamConsumerStubIngest(t, s)
-			a0, a1 := streamConsumerStubIngestArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Src")
-		})
-	})
-}
-
-// dokimi:provenance sha256:217479251479e065472308a6a6c3eb5a16e0c8579e8ba9b4c38fa2ef73581e11
+// dokimi:provenance sha256:c413548e56d4202496287157d643339c953873dd841114ab2f1e89b9c39de89f

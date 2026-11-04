@@ -48,22 +48,7 @@ func TestWriterSuite(t *testing.T) {
 				},
 				Defect: func(*writertest.WriterHandle) writer.Writer { return &writerSubject{} },
 			}),
-			conform.Excuse(
-				writertest.WriterChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writertest.WriterChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writertest.WriterChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writertest.WriterChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[writer.Writer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -85,30 +70,20 @@ func TestWriterSuite(t *testing.T) {
 				},
 				Defect: func(*writertest.WriterHandle) writer.Writer { return &writerSubject{} },
 			}),
-			conform.Excuse(
-				writertest.WriterChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writertest.WriterChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writertest.WriterChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writertest.WriterChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[writer.Writer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// writerSuite is the suite of Writer that the tests of the planted defect
+// of a ceiling apply.
+var writerSuite = writertest.WriterSuite()
+
 // writerIdle returns the planted defect of a ceiling of Writer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func writerIdle(h *writertest.WriterHandle) writer.Writer {
-	return writertest.WriterSuite().Calls[0].Over(h, func() {})
+	return writerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestWriterSuiteBudgets applies the allocation ceilings of the suite of
@@ -120,22 +95,7 @@ func TestWriterSuiteBudgets(t *testing.T) {
 		t,
 		writerIdle,
 		conform.Ceilings(writertest.WriterChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			writertest.WriterChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writertest.WriterChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writertest.WriterChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writertest.WriterChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[writer.Writer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -146,22 +106,7 @@ func FuzzWriterSuitePut(f *testing.F) {
 		f,
 		writertest.WriterChecks.Put.Callable,
 		writerIdle,
-		conform.Excuse(
-			writertest.WriterChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writertest.WriterChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writertest.WriterChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writertest.WriterChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[writer.Writer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -173,4 +118,4 @@ func BenchmarkWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:076f6821eb2a67fdebbb123c41c891f5d16b5c91922681ee767619e4f6cb6451
+// dokimi:provenance sha256:3d245eba01f8769aa21eb44bf251dfda6df50ba0a83d307d80a3ef7920e1f1e0

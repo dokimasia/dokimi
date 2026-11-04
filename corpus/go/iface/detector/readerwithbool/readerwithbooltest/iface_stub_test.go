@@ -44,24 +44,37 @@ func readerWithBoolStubLoadPins() (readerwithbool.Value, bool) {
 }
 
 // readerWithBoolStubLoadSubject returns the subject of [stub.Behaviour]
-// for Load. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for Load. The subject calls a new double that
+// reports to tb.
 func readerWithBoolStubLoadSubject(
 	tb assert.TB,
 ) stub.Subject[readerwithbooltest.ReaderWithBoolLoadCall, readerwithbooltest.ReaderWithBoolLoadReturn] {
 	tb.Helper()
 	s := readerwithbooltest.NewReaderWithBoolStub(tb)
 	return stub.Subject[readerwithbooltest.ReaderWithBoolLoadCall, readerwithbooltest.ReaderWithBoolLoadReturn]{
-		Stub: s.OnLoad.MethodStub,
+		Stub:  s.OnLoad.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = readerWithBoolStubLoad(tb, s)
+		},
+		Arguments: func(tb assert.TB, c readerwithbooltest.ReaderWithBoolLoadCall) {
+			tb.Helper()
+			a0, a1 := readerWithBoolStubLoadArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() readerwithbooltest.ReaderWithBoolLoadReturn {
 			got0, got1 := readerWithBoolStubLoad(tb, s)
 			return readerwithbooltest.ReaderWithBoolLoadReturn{Result0: got0, Result1: got1}
 		},
-		Override: func(mark func()) {
-			s.OnLoad.Func(func(_ context.Context, _ string) (readerwithbool.Value, bool) {
-				mark()
+		Returns: func() readerwithbooltest.ReaderWithBoolLoadReturn {
+			want0, want1 := readerWithBoolStubLoadPins()
+			s.OnLoad.Returns(want0, want1)
+			return readerwithbooltest.ReaderWithBoolLoadReturn{Result0: want0, Result1: want1}
+		},
+		Override: func(seen func(readerwithbooltest.ReaderWithBoolLoadCall)) {
+			s.OnLoad.Func(func(p0 context.Context, p1 string) (readerwithbool.Value, bool) {
+				seen(readerwithbooltest.ReaderWithBoolLoadCall{Ctx: p0, Key: p1})
 				var z0 readerwithbool.Value
 				var z1 bool
 				return z0, z1
@@ -84,7 +97,6 @@ func readerWithBoolStubInstanceOf(tb assert.TB, s *readerwithbooltest.ReaderWith
 		Call: func() {
 			_, _ = readerWithBoolStubLoad(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -96,58 +108,14 @@ func TestReaderWithBoolStub(t *testing.T) {
 	t.Run("Load", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Load", readerWithBoolStubLoadSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := readerwithbooltest.NewReaderWithBoolStub(t)
-			_, _ = readerWithBoolStubLoad(t, s)
-			got := s.OnLoad.AssertCalledOnce(t, "Load records the call")
-			a0, a1 := readerWithBoolStubLoadArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := readerwithbooltest.NewReaderWithBoolStub(t)
-			var seen []readerwithbooltest.ReaderWithBoolLoadCall
-			s.OnLoad.OnRecord(func(c readerwithbooltest.ReaderWithBoolLoadCall) { seen = append(seen, c) })
-			_, _ = readerWithBoolStubLoad(t, s)
-			_, _ = readerWithBoolStubLoad(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Load")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) readerWithBoolStubInstance {
-			return readerWithBoolStubInstanceOf(tb, readerwithbooltest.NewReaderWithBoolStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Load", func(t *testing.T) {
+		t.Run("Load", func(t *testing.T) {
 			t.Parallel()
-			s := readerwithbooltest.NewReaderWithBoolStub(t)
-			_, _ = readerWithBoolStubLoad(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLoad.CallCount(), 0, "ResetCalls clears the calls of Load")
-		})
-
-		t.Run("keeps the results of Returns of Load", func(t *testing.T) {
-			t.Parallel()
-			s := readerwithbooltest.NewReaderWithBoolStub(t)
-			want0, want1 := readerWithBoolStubLoadPins()
-			s.OnLoad.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := readerWithBoolStubLoad(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Load")
-			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Load")
-		})
-	})
-
-	t.Run("NewReaderWithBoolStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) readerWithBoolStubInstance {
-			return readerWithBoolStubInstanceOf(tb, readerwithbooltest.NewReaderWithBoolStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Load", readerWithBoolStubLoadSubject)
 		})
 	})
 
@@ -240,57 +208,4 @@ func TestReaderWithBoolStub(t *testing.T) {
 	})
 }
 
-// TestReaderWithBoolLoadStub checks the methods of ReaderWithBoolLoadStub,
-// which configures Load.
-func TestReaderWithBoolLoadStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Load", func(t *testing.T) {
-			t.Parallel()
-			s := readerwithbooltest.NewReaderWithBoolStub(t)
-			want0, want1 := readerWithBoolStubLoadPins()
-			s.OnLoad.Returns(want0, want1)
-			got0, got1 := readerWithBoolStubLoad(t, s)
-			expect.Equal(t, got0, want0, "Load returns the Result0 that Returns sets")
-			expect.Equal(t, got1, want1, "Load returns the Result1 that Returns sets")
-		})
-
-		t.Run("configures Load for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := readerwithbooltest.NewReaderWithBoolStub(r)
-			s.OnLoad.Strict()
-			var want0 readerwithbool.Value
-			var want1 bool
-			s.OnLoad.Returns(want0, want1)
-			_, _ = readerWithBoolStubLoad(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Load")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Load to the function", func(t *testing.T) {
-			t.Parallel()
-			s := readerwithbooltest.NewReaderWithBoolStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnLoad.Func(func(p0 context.Context, p1 string) (readerwithbool.Value, bool) {
-				got0, got1 = p0, p1
-				var z0 readerwithbool.Value
-				var z1 bool
-				return z0, z1
-			})
-			_, _ = readerWithBoolStubLoad(t, s)
-			a0, a1 := readerWithBoolStubLoadArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:5bbf64505c7548e19f427e721e6f5ccf3eb2b83d4efdb45bdf2b7cfb1e35fc00
+// dokimi:provenance sha256:06783e86c3f40f72085358a591b81e16f77ee28f7ea5ce8a28b123fe81232313

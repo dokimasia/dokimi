@@ -48,46 +48,7 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*roledtypestest.StoreHandle) roledtypes.Store { return &storeSubject{} },
 			}),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[roledtypes.Store]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -109,54 +70,19 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*roledtypestest.StoreHandle) roledtypes.Store { return &storeSubject{} },
 			}),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				roledtypestest.StoreChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[roledtypes.Store]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// storeSuite is the suite of Store that the tests of the planted defect of
+// a ceiling apply.
+var storeSuite = roledtypestest.StoreSuite()
+
 // storeIdle returns the planted defect of a ceiling of Store with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func storeIdle(h *roledtypestest.StoreHandle) roledtypes.Store {
-	return roledtypestest.StoreSuite().Calls[0].Over(h, func() {})
+	return storeSuite.Calls[0].Over(h, func() {})
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
@@ -169,46 +95,7 @@ func TestStoreSuiteBudgets(t *testing.T) {
 		storeIdle,
 		conform.Ceilings(roledtypestest.StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(roledtypestest.StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[roledtypes.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -219,46 +106,7 @@ func FuzzStoreSuitePut(f *testing.F) {
 		f,
 		roledtypestest.StoreChecks.Put.Callable,
 		storeIdle,
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[roledtypes.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -269,46 +117,7 @@ func FuzzStoreSuiteGet(f *testing.F) {
 		f,
 		roledtypestest.StoreChecks.Get.Callable,
 		storeIdle,
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			roledtypestest.StoreChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[roledtypes.Store]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -323,4 +132,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7df804fab1eb62195790b09eae8889015f2f701c821fdefe3833a0d2498836a3
+// dokimi:provenance sha256:a59874560a566d1572f506de49f97d2e51db3e692c8158cad7e6ae5b67a6e395

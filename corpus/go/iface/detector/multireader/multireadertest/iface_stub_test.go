@@ -51,25 +51,37 @@ func multiReaderStubGetWithMetaPins() (multireader.Value, multireader.Meta, erro
 }
 
 // multiReaderStubGetWithMetaSubject returns the subject of
-// [stub.Behaviour] for GetWithMeta. The subject calls a new double that
-// reports to tb.
+// [stub.Behaviour] and [stub.ResetBehaviour] for GetWithMeta. The subject
+// calls a new double that reports to tb.
 func multiReaderStubGetWithMetaSubject(
 	tb assert.TB,
 ) stub.Subject[multireadertest.MultiReaderGetWithMetaCall, multireadertest.MultiReaderGetWithMetaReturn] {
 	tb.Helper()
 	s := multireadertest.NewMultiReaderStub(tb)
 	return stub.Subject[multireadertest.MultiReaderGetWithMetaCall, multireadertest.MultiReaderGetWithMetaReturn]{
-		Stub: s.OnGetWithMeta.MethodStub,
+		Stub:  s.OnGetWithMeta.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _, _ = multiReaderStubGetWithMeta(tb, s)
+		},
+		Arguments: func(tb assert.TB, c multireadertest.MultiReaderGetWithMetaCall) {
+			tb.Helper()
+			a0, a1 := multiReaderStubGetWithMetaArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() multireadertest.MultiReaderGetWithMetaReturn {
 			got0, got1, got2 := multiReaderStubGetWithMeta(tb, s)
 			return multireadertest.MultiReaderGetWithMetaReturn{Result0: got0, Result1: got1, Err: got2}
 		},
-		Override: func(mark func()) {
-			s.OnGetWithMeta.Func(func(_ context.Context, _ string) (multireader.Value, multireader.Meta, error) {
-				mark()
+		Returns: func() multireadertest.MultiReaderGetWithMetaReturn {
+			want0, want1, want2 := multiReaderStubGetWithMetaPins()
+			s.OnGetWithMeta.Returns(want0, want1, want2)
+			return multireadertest.MultiReaderGetWithMetaReturn{Result0: want0, Result1: want1, Err: want2}
+		},
+		Override: func(seen func(multireadertest.MultiReaderGetWithMetaCall)) {
+			s.OnGetWithMeta.Func(func(p0 context.Context, p1 string) (multireader.Value, multireader.Meta, error) {
+				seen(multireadertest.MultiReaderGetWithMetaCall{Ctx: p0, Key: p1})
 				var z0 multireader.Value
 				var z1 multireader.Meta
 				var z2 error
@@ -97,7 +109,6 @@ func multiReaderStubInstanceOf(tb assert.TB, s *multireadertest.MultiReaderStub)
 		Call: func() {
 			_, _, _ = multiReaderStubGetWithMeta(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -109,71 +120,14 @@ func TestMultiReaderStub(t *testing.T) {
 	t.Run("GetWithMeta", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "GetWithMeta", multiReaderStubGetWithMetaSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := multireadertest.NewMultiReaderStub(t)
-			_, _, _ = multiReaderStubGetWithMeta(t, s)
-			got := s.OnGetWithMeta.AssertCalledOnce(t, "GetWithMeta records the call")
-			a0, a1 := multiReaderStubGetWithMetaArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := multireadertest.NewMultiReaderStub(t)
-			var seen []multireadertest.MultiReaderGetWithMetaCall
-			s.OnGetWithMeta.OnRecord(func(c multireadertest.MultiReaderGetWithMetaCall) { seen = append(seen, c) })
-			_, _, _ = multiReaderStubGetWithMeta(t, s)
-			_, _, _ = multiReaderStubGetWithMeta(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of GetWithMeta")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) multiReaderStubInstance {
-			return multiReaderStubInstanceOf(tb, multireadertest.NewMultiReaderStub(tb))
-		})
 
-		t.Run("clears the recorded calls of GetWithMeta", func(t *testing.T) {
+		t.Run("GetWithMeta", func(t *testing.T) {
 			t.Parallel()
-			s := multireadertest.NewMultiReaderStub(t)
-			_, _, _ = multiReaderStubGetWithMeta(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGetWithMeta.CallCount(), 0, "ResetCalls clears the calls of GetWithMeta")
-		})
-
-		t.Run("keeps the results of Returns of GetWithMeta", func(t *testing.T) {
-			t.Parallel()
-			s := multireadertest.NewMultiReaderStub(t)
-			want0, want1, want2 := multiReaderStubGetWithMetaPins()
-			s.OnGetWithMeta.Returns(want0, want1, want2)
-			s.ResetCalls()
-			got0, got1, got2 := multiReaderStubGetWithMeta(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of GetWithMeta")
-			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of GetWithMeta")
-			expect.ErrorIs(t, got2, want2, "ResetCalls keeps the error of GetWithMeta")
-		})
-	})
-
-	t.Run("NewMultiReaderStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) multiReaderStubInstance {
-			return multiReaderStubInstanceOf(tb, multireadertest.NewMultiReaderStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMultiReaderStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails GetWithMeta with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("GetWithMeta-failing")
-			s := multireadertest.NewMultiReaderStubFailing(t, want)
-			_, _, r2 := multiReaderStubGetWithMeta(t, s)
-			assert.ErrorIs(t, r2, want, "GetWithMeta fails with the error of NewMultiReaderStubFailing")
+			stub.ResetBehaviour(t, "GetWithMeta", multiReaderStubGetWithMetaSubject)
 		})
 	})
 
@@ -289,60 +243,4 @@ func TestMultiReaderStub(t *testing.T) {
 	})
 }
 
-// TestMultiReaderGetWithMetaStub checks the methods of
-// MultiReaderGetWithMetaStub, which configures GetWithMeta.
-func TestMultiReaderGetWithMetaStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of GetWithMeta", func(t *testing.T) {
-			t.Parallel()
-			s := multireadertest.NewMultiReaderStub(t)
-			want0, want1, want2 := multiReaderStubGetWithMetaPins()
-			s.OnGetWithMeta.Returns(want0, want1, want2)
-			got0, got1, got2 := multiReaderStubGetWithMeta(t, s)
-			expect.Equal(t, got0, want0, "GetWithMeta returns the Result0 that Returns sets")
-			expect.Equal(t, got1, want1, "GetWithMeta returns the Result1 that Returns sets")
-			expect.ErrorIs(t, got2, want2, "GetWithMeta returns the error that Returns sets")
-		})
-
-		t.Run("configures GetWithMeta for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := multireadertest.NewMultiReaderStub(r)
-			s.OnGetWithMeta.Strict()
-			var want0 multireader.Value
-			var want1 multireader.Meta
-			var want2 error
-			s.OnGetWithMeta.Returns(want0, want1, want2)
-			_, _, _ = multiReaderStubGetWithMeta(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of GetWithMeta")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of GetWithMeta to the function", func(t *testing.T) {
-			t.Parallel()
-			s := multireadertest.NewMultiReaderStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnGetWithMeta.Func(func(p0 context.Context, p1 string) (multireader.Value, multireader.Meta, error) {
-				got0, got1 = p0, p1
-				var z0 multireader.Value
-				var z1 multireader.Meta
-				var z2 error
-				return z0, z1, z2
-			})
-			_, _, _ = multiReaderStubGetWithMeta(t, s)
-			a0, a1 := multiReaderStubGetWithMetaArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:a3cf17b2f45d536d0efe94eeeeb9b11c1ffd801d08f1b13ae18e38f6951ea39c
+// dokimi:provenance sha256:52af33963aa3c57f1a9fc20c1464e988fa06ffd8fbc44e2a9534bdb8beda4481

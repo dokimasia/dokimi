@@ -55,23 +55,36 @@ func mixedStubOnEvent(tb assert.TB, s *hookstest.MixedStub) {
 	s.OnEvent(a0)
 }
 
-// mixedStubFireSubject returns the subject of [stub.Behaviour] for Fire.
-// The subject calls a new double that reports to tb.
+// mixedStubFireSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Fire. The subject calls a new double that
+// reports to tb.
 func mixedStubFireSubject(tb assert.TB) stub.Subject[hookstest.MixedFireCall, hookstest.MixedFireReturn] {
 	tb.Helper()
 	s := hookstest.NewMixedStub(tb)
 	return stub.Subject[hookstest.MixedFireCall, hookstest.MixedFireReturn]{
-		Stub: s.OnFire.MethodStub,
+		Stub:  s.OnFire.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubFire(tb, s)
+		},
+		Arguments: func(tb assert.TB, c hookstest.MixedFireCall) {
+			tb.Helper()
+			a0, a1 := mixedStubFireArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Event, a1, "the call records Event")
 		},
 		Result: func() hookstest.MixedFireReturn {
 			got0 := mixedStubFire(tb, s)
 			return hookstest.MixedFireReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnFire.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() hookstest.MixedFireReturn {
+			want0 := mixedStubFirePins()
+			s.OnFire.Returns(want0)
+			return hookstest.MixedFireReturn{Err: want0}
+		},
+		Override: func(seen func(hookstest.MixedFireCall)) {
+			s.OnFire.Func(func(p0 context.Context, p1 string) error {
+				seen(hookstest.MixedFireCall{Ctx: p0, Event: p1})
 				var z0 error
 				return z0
 			})
@@ -83,19 +96,26 @@ func mixedStubFireSubject(tb assert.TB) stub.Subject[hookstest.MixedFireCall, ho
 	}
 }
 
-// mixedStubOnEventSubject returns the subject of [stub.Behaviour] for
-// OnEvent. The subject calls a new double that reports to tb.
+// mixedStubOnEventSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for OnEvent. The subject calls a new double that
+// reports to tb.
 func mixedStubOnEventSubject(tb assert.TB) stub.Subject[hookstest.MixedOnEventCall, struct{}] {
 	tb.Helper()
 	s := hookstest.NewMixedStub(tb)
 	return stub.Subject[hookstest.MixedOnEventCall, struct{}]{
-		Stub: s.OnOnEvent.MethodStub,
+		Stub:  s.OnOnEvent.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			mixedStubOnEvent(tb, s)
 		},
-		Override: func(mark func()) {
-			s.OnOnEvent.Func(func(_ func(event string)) {
-				mark()
+		Arguments: func(tb assert.TB, c hookstest.MixedOnEventCall) {
+			tb.Helper()
+			a0 := mixedStubOnEventArgs(tb)
+			assert.Equal(tb, c.Fn, a0, "the call records Fn")
+		},
+		Override: func(seen func(hookstest.MixedOnEventCall)) {
+			s.OnOnEvent.Func(func(p0 func(event string)) {
+				seen(hookstest.MixedOnEventCall{Fn: p0})
 			})
 		},
 	}
@@ -114,7 +134,6 @@ func mixedStubInstanceOf(tb assert.TB, s *hookstest.MixedStub) mixedStubInstance
 		Call: func() {
 			_ = mixedStubFire(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -126,101 +145,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Fire", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Fire", mixedStubFireSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			_ = mixedStubFire(t, s)
-			got := s.OnFire.AssertCalledOnce(t, "Fire records the call")
-			a0, a1 := mixedStubFireArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Event, a1, "the call records Event")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			var seen []hookstest.MixedFireCall
-			s.OnFire.OnRecord(func(c hookstest.MixedFireCall) { seen = append(seen, c) })
-			_ = mixedStubFire(t, s)
-			_ = mixedStubFire(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fire")
-		})
 	})
 
 	t.Run("OnEvent", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "OnEvent", mixedStubOnEventSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			mixedStubOnEvent(t, s)
-			got := s.OnOnEvent.AssertCalledOnce(t, "OnEvent records the call")
-			a0 := mixedStubOnEventArgs(t)
-			assert.Equal(t, got.Fn, a0, "the call records Fn")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			var seen []hookstest.MixedOnEventCall
-			s.OnOnEvent.OnRecord(func(c hookstest.MixedOnEventCall) { seen = append(seen, c) })
-			mixedStubOnEvent(t, s)
-			mixedStubOnEvent(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of OnEvent")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, hookstest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Fire", func(t *testing.T) {
+		t.Run("Fire", func(t *testing.T) {
 			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			_ = mixedStubFire(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFire.CallCount(), 0, "ResetCalls clears the calls of Fire")
+			stub.ResetBehaviour(t, "Fire", mixedStubFireSubject)
 		})
 
-		t.Run("keeps the results of Returns of Fire", func(t *testing.T) {
+		t.Run("OnEvent", func(t *testing.T) {
 			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			want0 := mixedStubFirePins()
-			s.OnFire.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubFire(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Fire")
-		})
-
-		t.Run("clears the recorded calls of OnEvent", func(t *testing.T) {
-			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			mixedStubOnEvent(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnOnEvent.CallCount(), 0, "ResetCalls clears the calls of OnEvent")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, hookstest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Fire with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Fire-failing")
-			s := hookstest.NewMixedStubFailing(t, want)
-			r0 := mixedStubFire(t, s)
-			assert.ErrorIs(t, r0, want, "Fire fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "OnEvent", mixedStubOnEventSubject)
 		})
 	})
 
@@ -335,76 +277,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedFireStub checks the methods of MixedFireStub, which configures
-// Fire.
-func TestMixedFireStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Fire", func(t *testing.T) {
-			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			want0 := mixedStubFirePins()
-			s.OnFire.Returns(want0)
-			got0 := mixedStubFire(t, s)
-			assert.ErrorIs(t, got0, want0, "Fire returns the error that Returns sets")
-		})
-
-		t.Run("configures Fire for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := hookstest.NewMixedStub(r)
-			s.OnFire.Strict()
-			var want0 error
-			s.OnFire.Returns(want0)
-			_ = mixedStubFire(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Fire")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Fire to the function", func(t *testing.T) {
-			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnFire.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubFire(t, s)
-			a0, a1 := mixedStubFireArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Event")
-		})
-	})
-}
-
-// TestMixedOnEventStub checks the methods of MixedOnEventStub, which
-// configures OnEvent.
-func TestMixedOnEventStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of OnEvent to the function", func(t *testing.T) {
-			t.Parallel()
-			s := hookstest.NewMixedStub(t)
-			var got0 func(event string)
-			s.OnOnEvent.Func(func(p0 func(event string)) {
-				got0 = p0
-			})
-			mixedStubOnEvent(t, s)
-			a0 := mixedStubOnEventArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Fn")
-		})
-	})
-}
-
-// dokimi:provenance sha256:e1ab8544f607e1ac4fcebce9b5214c9c8e7ffd780d55b09943f87280f693ec70
+// dokimi:provenance sha256:6908e4124ed139d51b60887bb9de0f50b260f86535b4840098e6e335604bfab1

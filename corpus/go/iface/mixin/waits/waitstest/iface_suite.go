@@ -15,36 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Lock:
-//
-// Lock.Acquire/cancel: Acquire returns an error for a cancelled context.
-//
-// Lock.Release/smoke: Release returns without a panic for derived inputs.
-//
-// Lock.Release/repeat-survives: Release returns without a panic when it is
-// called twice.
-//
-// Lock.Held/smoke: Held returns without a panic for derived inputs.
-//
-// Lock.Held/predicate: Held returns the same answer twice for an unchanged
-// subject.
-
-// The derived checks of Lock that witness their laws at the shallow end:
-//
-// Lock.Release/smoke
-//
-// Lock.Held/smoke
-//
-// Lock.Held/predicate
-
-// The unclaimed classifications of Lock:
-//
-// The shape:lifecycle of Lock.Acquire has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The mixin:waits of Lock.Acquire has the stance silent. The mixin
-// documents that the callable can wait for another call.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -126,9 +96,6 @@ func LockSuite() conform.Suite[waits.Lock] {
 				ID:          LockChecks.Acquire.Cancel(),
 				Statement:   "Acquire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LockHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -141,9 +108,6 @@ func LockSuite() conform.Suite[waits.Lock] {
 				ID:          LockChecks.Release.Smoke(),
 				Statement:   "Release returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LockHandle) {
@@ -158,9 +122,6 @@ func LockSuite() conform.Suite[waits.Lock] {
 				ID:          LockChecks.Release.RepeatSurvives(),
 				Statement:   "Release returns without a panic when it is called twice",
 				Claim:       spec.RepeatSurvives,
-				Probe:       spec.SurvivesRepeat,
-				Reason:      spec.PanickedRepeat,
-				Law:         spec.RepeatedCallSurvives,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LockHandle) {
 					probe.SurvivesRepeat(h, func(ctx context.Context) error {
@@ -174,9 +135,6 @@ func LockSuite() conform.Suite[waits.Lock] {
 				ID:          LockChecks.Held.Smoke(),
 				Statement:   "Held returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LockHandle) {
@@ -191,9 +149,6 @@ func LockSuite() conform.Suite[waits.Lock] {
 				ID:          LockChecks.Held.Predicate(),
 				Statement:   "Held returns the same answer twice for an unchanged subject",
 				Claim:       spec.Predicate,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LockHandle) {
@@ -451,4 +406,4 @@ func lockHeldDrifts(h *LockHandle) waits.Lock {
 	return &lockHeldDriftsDefect{lockOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f9d0f417622390a0c56f85ae0d5a21c271fb0c311517865898d15ba1e2818c93
+// dokimi:provenance sha256:6603869f8681cdcc4a360cd42a7a4c8d6aac2342b0f564c8ac22c486a9bd925f

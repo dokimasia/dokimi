@@ -15,21 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Predicate:
-//
-// Predicate.IsEmpty/smoke: IsEmpty returns without a panic for derived
-// inputs.
-//
-// Predicate.IsEmpty/predicate: IsEmpty returns the same answer twice for
-// an unchanged subject.
-
-// The derived checks of Predicate that witness their laws at the shallow
-// end:
-//
-// Predicate.IsEmpty/smoke
-//
-// Predicate.IsEmpty/predicate
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -78,9 +63,6 @@ func PredicateSuite() conform.Suite[predicate.Predicate] {
 				ID:          PredicateChecks.IsEmpty.Smoke(),
 				Statement:   "IsEmpty returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PredicateHandle) {
@@ -95,9 +77,6 @@ func PredicateSuite() conform.Suite[predicate.Predicate] {
 				ID:          PredicateChecks.IsEmpty.Predicate(),
 				Statement:   "IsEmpty returns the same answer twice for an unchanged subject",
 				Claim:       spec.Predicate,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PredicateHandle) {
@@ -254,4 +233,4 @@ func predicateIsEmptyDrifts(h *PredicateHandle) predicate.Predicate {
 	return &predicateIsEmptyDriftsDefect{predicateOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:935036f5733d3632786a046eeec1ab16e8a2c4bb9c0b27addfd0251a404cc9a6
+// dokimi:provenance sha256:5a6cc0d8122ec1b9bb8042e542ebff1fefa4a6998143e83f246e5caf3c10ebd6

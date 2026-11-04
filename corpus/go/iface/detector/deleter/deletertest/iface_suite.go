@@ -15,28 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Deleter:
-//
-// Deleter.Delete/smoke: Delete returns without a panic for derived inputs.
-//
-// Deleter.Delete/smoke#generated: Delete returns without a panic for
-// derived inputs.
-//
-// Deleter.Delete/cancel: Delete returns an error for a cancelled context.
-//
-// Deleter.Delete/cancel#generated: Delete returns an error for a cancelled
-// context.
-
-// The derived checks of Deleter that witness their laws at the shallow
-// end:
-//
-// Deleter.Delete/smoke
-
-// The unclaimed classifications of Deleter:
-//
-// The shape:deleter of Deleter.Delete has the stance silent. A delete is
-// an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -67,22 +45,10 @@ func (c deleterDelete) Smoke() conform.ID[deleter.Deleter] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Delete returns
-// without a panic for derived inputs.
-func (c deleterDelete) SmokeGenerated() conform.ID[deleter.Deleter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Delete returns an error
 // for a cancelled context.
 func (c deleterDelete) Cancel() conform.ID[deleter.Deleter] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Delete returns an
-// error for a cancelled context.
-func (c deleterDelete) CancelGenerated() conform.ID[deleter.Deleter] {
-	return c.Check("cancel#generated")
 }
 
 // DeleterSuite returns the checks of Deleter, and the calls and the
@@ -97,9 +63,6 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 				ID:          DeleterChecks.Delete.Smoke(),
 				Statement:   "Delete returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DeleterHandle) {
@@ -110,12 +73,9 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 				Defect: deleterDeletePanics,
 			},
 			{
-				ID:          DeleterChecks.Delete.SmokeGenerated(),
+				ID:          DeleterChecks.Delete.Smoke().Generated(),
 				Statement:   "Delete returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *DeleterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -129,9 +89,6 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 				ID:          DeleterChecks.Delete.Cancel(),
 				Statement:   "Delete returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *DeleterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -141,12 +98,9 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 				Defect: deleterDeleteIgnoresCancel,
 			},
 			{
-				ID:          DeleterChecks.Delete.CancelGenerated(),
+				ID:          DeleterChecks.Delete.Cancel().Generated(),
 				Statement:   "Delete returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *DeleterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -302,4 +256,4 @@ func deleterDeleteIgnoresCancel(h *DeleterHandle) deleter.Deleter {
 	return &deleterDeleteIgnoresCancelDefect{deleterOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1ef2b180c26e15d0db02f3900abfe2e8f8988a2d1e8cadc4fb25b41df581022e
+// dokimi:provenance sha256:51a5302cbb1408442305568a53082c428192385ecff02b1a11895d3db973b45b

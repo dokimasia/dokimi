@@ -220,26 +220,6 @@ func NewCalculatorStub(tb assert.TB, opts ...CalculatorStubOption) *CalculatorSt
 	return s
 }
 
-// NewCalculatorStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewCalculatorStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...CalculatorStubOption,
-) *CalculatorStub {
-	return NewCalculatorStub(tb, append([]CalculatorStubOption{
-		CalculatorStubWithClock(clk),
-		CalculatorStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewCalculatorStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewCalculatorStubFailing(tb assert.TB, err error, opts ...CalculatorStubOption) *CalculatorStub {
-	return NewCalculatorStub(tb, append([]CalculatorStubOption{CalculatorStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *CalculatorStub) ResetCalls() {
@@ -324,4 +304,4 @@ func (s *CalculatorStub) Reset() {
 	})
 }
 
-// dokimi:provenance sha256:68c0ab7d96fc9e865ccd45eb4ddb189adc36ccbdf1e70d8cacedf412cb8ff50d
+// dokimi:provenance sha256:8aecd1ca03fd630b6f2078d650aac5830bed18f2e23e25a375f99163a86f8edb

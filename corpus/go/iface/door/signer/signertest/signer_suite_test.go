@@ -48,50 +48,7 @@ func TestSignerSuite(t *testing.T) {
 				},
 				Defect: func(*signertest.SignerHandle) signer.Signer { return &signerSubject{} },
 			}),
-			conform.Excuse(
-				signertest.SignerChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.ServesTheSignedBody(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[signer.Signer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -113,50 +70,7 @@ func TestSignerSuite(t *testing.T) {
 				},
 				Defect: func(*signertest.SignerHandle) signer.Signer { return &signerSubject{} },
 			}),
-			conform.Excuse(
-				signertest.SignerChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				signertest.SignerChecks.Sign.ServesTheSignedBody(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[signer.Signer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -171,10 +85,15 @@ func TestSignerSuite(t *testing.T) {
 	})
 }
 
+// signerSuite is the suite of Signer that the tests of the planted defect
+// of a ceiling apply.
+var signerSuite = signertest.SignerSuite()
+
 // signerIdle returns the planted defect of a ceiling of Signer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func signerIdle(h *signertest.SignerHandle) signer.Signer {
-	return signertest.SignerSuite().Calls[0].Over(h, func() {})
+	return signerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestSignerSuiteBudgets applies the allocation ceilings of the suite of
@@ -187,50 +106,7 @@ func TestSignerSuiteBudgets(t *testing.T) {
 		signerIdle,
 		conform.Ceilings(signertest.SignerChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(signertest.SignerChecks.Sign.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			signertest.SignerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ServesTheSignedBody(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[signer.Signer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -241,50 +117,7 @@ func FuzzSignerSuitePut(f *testing.F) {
 		f,
 		signertest.SignerChecks.Put.Callable,
 		signerIdle,
-		conform.Excuse(
-			signertest.SignerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ServesTheSignedBody(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[signer.Signer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -295,50 +128,7 @@ func FuzzSignerSuiteSign(f *testing.F) {
 		f,
 		signertest.SignerChecks.Sign.Callable,
 		signerIdle,
-		conform.Excuse(
-			signertest.SignerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			signertest.SignerChecks.Sign.ServesTheSignedBody(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[signer.Signer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -353,4 +143,4 @@ func BenchmarkSignerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:136451507a29d94c63485376b882648a23a8aaefaa0db09215219fc2cea301e2
+// dokimi:provenance sha256:7841e570c13c810f7eeb026560e6fcb1197d7250eafe17b1b51978d742a37853

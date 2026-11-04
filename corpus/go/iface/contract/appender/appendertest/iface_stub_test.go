@@ -43,23 +43,36 @@ func contractStubRunPins() (int64, error) {
 	return want0, want1
 }
 
-// contractStubRunSubject returns the subject of [stub.Behaviour] for Run.
-// The subject calls a new double that reports to tb.
+// contractStubRunSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Run. The subject calls a new double that
+// reports to tb.
 func contractStubRunSubject(tb assert.TB) stub.Subject[appendertest.ContractRunCall, appendertest.ContractRunReturn] {
 	tb.Helper()
 	s := appendertest.NewContractStub(tb)
 	return stub.Subject[appendertest.ContractRunCall, appendertest.ContractRunReturn]{
-		Stub: s.OnRun.MethodStub,
+		Stub:  s.OnRun.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubRun(tb, s)
+		},
+		Arguments: func(tb assert.TB, c appendertest.ContractRunCall) {
+			tb.Helper()
+			a0, a1 := contractStubRunArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() appendertest.ContractRunReturn {
 			got0, got1 := contractStubRun(tb, s)
 			return appendertest.ContractRunReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnRun.Func(func(_ context.Context, _ appender.Value) (int64, error) {
-				mark()
+		Returns: func() appendertest.ContractRunReturn {
+			want0, want1 := contractStubRunPins()
+			s.OnRun.Returns(want0, want1)
+			return appendertest.ContractRunReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(appendertest.ContractRunCall)) {
+			s.OnRun.Func(func(p0 context.Context, p1 appender.Value) (int64, error) {
+				seen(appendertest.ContractRunCall{Ctx: p0, V: p1})
 				var z0 int64
 				var z1 error
 				return z0, z1
@@ -85,7 +98,6 @@ func contractStubInstanceOf(tb assert.TB, s *appendertest.ContractStub) contract
 		Call: func() {
 			_, _ = contractStubRun(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -97,70 +109,14 @@ func TestContractStub(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Run", contractStubRunSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := appendertest.NewContractStub(t)
-			_, _ = contractStubRun(t, s)
-			got := s.OnRun.AssertCalledOnce(t, "Run records the call")
-			a0, a1 := contractStubRunArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := appendertest.NewContractStub(t)
-			var seen []appendertest.ContractRunCall
-			s.OnRun.OnRecord(func(c appendertest.ContractRunCall) { seen = append(seen, c) })
-			_, _ = contractStubRun(t, s)
-			_, _ = contractStubRun(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Run")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
-			return contractStubInstanceOf(tb, appendertest.NewContractStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Run", func(t *testing.T) {
+		t.Run("Run", func(t *testing.T) {
 			t.Parallel()
-			s := appendertest.NewContractStub(t)
-			_, _ = contractStubRun(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRun.CallCount(), 0, "ResetCalls clears the calls of Run")
-		})
-
-		t.Run("keeps the results of Returns of Run", func(t *testing.T) {
-			t.Parallel()
-			s := appendertest.NewContractStub(t)
-			want0, want1 := contractStubRunPins()
-			s.OnRun.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubRun(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Run")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Run")
-		})
-	})
-
-	t.Run("NewContractStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
-			return contractStubInstanceOf(tb, appendertest.NewContractStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewContractStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Run with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Run-failing")
-			s := appendertest.NewContractStubFailing(t, want)
-			_, r1 := contractStubRun(t, s)
-			assert.ErrorIs(t, r1, want, "Run fails with the error of NewContractStubFailing")
+			stub.ResetBehaviour(t, "Run", contractStubRunSubject)
 		})
 	})
 
@@ -264,57 +220,4 @@ func TestContractStub(t *testing.T) {
 	})
 }
 
-// TestContractRunStub checks the methods of ContractRunStub, which
-// configures Run.
-func TestContractRunStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Run", func(t *testing.T) {
-			t.Parallel()
-			s := appendertest.NewContractStub(t)
-			want0, want1 := contractStubRunPins()
-			s.OnRun.Returns(want0, want1)
-			got0, got1 := contractStubRun(t, s)
-			expect.Equal(t, got0, want0, "Run returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Run returns the error that Returns sets")
-		})
-
-		t.Run("configures Run for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := appendertest.NewContractStub(r)
-			s.OnRun.Strict()
-			var want0 int64
-			var want1 error
-			s.OnRun.Returns(want0, want1)
-			_, _ = contractStubRun(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Run")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Run to the function", func(t *testing.T) {
-			t.Parallel()
-			s := appendertest.NewContractStub(t)
-			var got0 context.Context
-			var got1 appender.Value
-			s.OnRun.Func(func(p0 context.Context, p1 appender.Value) (int64, error) {
-				got0, got1 = p0, p1
-				var z0 int64
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubRun(t, s)
-			a0, a1 := contractStubRunArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// dokimi:provenance sha256:521b8fc125b0dc0d870f14ceabd3a68d80dae99b16ffc1fc7bf295147f16b852
+// dokimi:provenance sha256:6f1746bedda9019b9147d2d2cc3449a87d0a9a29f7a0c7fa8ed0e7eeeadb1e5d

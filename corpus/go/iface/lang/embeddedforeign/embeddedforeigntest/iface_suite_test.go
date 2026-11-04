@@ -48,34 +48,7 @@ func TestStreamSuite(t *testing.T) {
 				},
 				Defect: func(*embeddedforeigntest.StreamHandle) embeddedforeign.Stream { return &streamSubject{} },
 			}),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[embeddedforeign.Stream]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -97,42 +70,20 @@ func TestStreamSuite(t *testing.T) {
 				},
 				Defect: func(*embeddedforeigntest.StreamHandle) embeddedforeign.Stream { return &streamSubject{} },
 			}),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Read.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedforeigntest.StreamChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[embeddedforeign.Stream]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// streamSuite is the suite of Stream that the tests of the planted defect
+// of a ceiling apply.
+var streamSuite = embeddedforeigntest.StreamSuite()
+
 // streamIdle returns the planted defect of a ceiling of Stream with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func streamIdle(h *embeddedforeigntest.StreamHandle) embeddedforeign.Stream {
-	return embeddedforeigntest.StreamSuite().Calls[0].Over(h, func() {})
+	return streamSuite.Calls[0].Over(h, func() {})
 }
 
 // TestStreamSuiteBudgets applies the allocation ceilings of the suite of
@@ -145,33 +96,8 @@ func TestStreamSuiteBudgets(t *testing.T) {
 		streamIdle,
 		conform.Ceilings(embeddedforeigntest.StreamChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(embeddedforeigntest.StreamChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[embeddedforeign.Stream](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -183,33 +109,8 @@ func FuzzStreamSuiteRead(f *testing.F) {
 		f,
 		embeddedforeigntest.StreamChecks.Read.Callable,
 		streamIdle,
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[embeddedforeign.Stream](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -221,33 +122,8 @@ func FuzzStreamSuiteClose(f *testing.F) {
 		f,
 		embeddedforeigntest.StreamChecks.Close.Callable,
 		streamIdle,
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedforeigntest.StreamChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[embeddedforeign.Stream](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -263,4 +139,4 @@ func BenchmarkStreamSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1038e91143618a9f7d1809d88436595a55047f3123a903cb644c44d4fc17b2b3
+// dokimi:provenance sha256:ea869d73abfefe7081584fd3d127311adf16baf5d36f5393a9b6db37a9bd17a3

@@ -16,62 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Mixed.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Mixed.Put/cancel: Put returns an error for a cancelled context.
-//
-// Mixed.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Mixed.Put/keeps-within-its-bounds: Put keeps the use that Len reads
-// within its bounds, over any sequence of calls.
-//
-// Mixed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mixed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mixed.Get/zero-on-miss: Get returns the zero value beside a false
-// presence flag.
-//
-// Mixed.Get/zero-on-miss#generated: Get returns the zero value beside a
-// false presence flag.
-//
-// Mixed.Get/cacheable: Get returns the same value on a repeat.
-//
-// Mixed.Get/cacheable#generated: Get returns the same value on a repeat.
-//
-// Mixed.Len/smoke: Len returns without a panic for derived inputs.
-//
-// Mixed.Len/cancel: Len returns an error for a cancelled context.
-//
-// Mixed.Len/zero-on-error: Len returns the zero value beside an error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Put/smoke
-//
-// Mixed.Get/smoke
-//
-// Mixed.Get/cacheable
-//
-// Mixed.Len/smoke
-
-// The refused claims of Mixed:
-//
-// Mixed.Get/cancel: Get cannot fail. The remedy is to give Get an error
-// result.
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:composite-writer of Mixed.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -105,22 +49,10 @@ func (c mixedPut) Smoke() conform.ID[boundedcache.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c mixedPut) SmokeGenerated() conform.ID[boundedcache.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c mixedPut) Cancel() conform.ID[boundedcache.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c mixedPut) CancelGenerated() conform.ID[boundedcache.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // KeepsWithinItsBounds returns the identity of the check that Put keeps
@@ -140,34 +72,16 @@ func (c mixedGet) Smoke() conform.ID[boundedcache.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mixedGet) SmokeGenerated() conform.ID[boundedcache.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // ZeroOnMiss returns the identity of the check that Get returns the zero
 // value beside a false presence flag.
 func (c mixedGet) ZeroOnMiss() conform.ID[boundedcache.Mixed] {
 	return c.Check("zero-on-miss")
 }
 
-// ZeroOnMissGenerated returns the identity of the check that Get returns
-// the zero value beside a false presence flag.
-func (c mixedGet) ZeroOnMissGenerated() conform.ID[boundedcache.Mixed] {
-	return c.Check("zero-on-miss#generated")
-}
-
 // Cacheable returns the identity of the check that Get returns the same
 // value on a repeat.
 func (c mixedGet) Cacheable() conform.ID[boundedcache.Mixed] {
 	return c.Check("cacheable")
-}
-
-// CacheableGenerated returns the identity of the check that Get returns
-// the same value on a repeat.
-func (c mixedGet) CacheableGenerated() conform.ID[boundedcache.Mixed] {
-	return c.Check("cacheable#generated")
 }
 
 // mixedLen is the name of Mixed.Len, with the identities of its checks.
@@ -205,9 +119,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -219,12 +130,9 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Defect: mixedPutPanics,
 			},
 			{
-				ID:          MixedChecks.Put.SmokeGenerated(),
+				ID:          MixedChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
@@ -239,9 +147,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -252,12 +157,9 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Defect: mixedPutIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Put.CancelGenerated(),
+				ID:          MixedChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
@@ -272,9 +174,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Put.KeepsWithinItsBounds(),
 				Statement:   "Put keeps the use that Len reads within its bounds, over any sequence of calls",
 				Claim:       spec.KeepsWithinItsBounds,
-				Probe:       spec.UseIsWithinTheBounds,
-				Reason:      spec.ExceededBound,
-				Law:         spec.UseIsWithinItsBounds,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					probe.UseIsWithinTheBounds(h, c, mixedActions, func(ctx context.Context) (int, error) {
@@ -289,9 +188,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -303,12 +199,9 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Get.SmokeGenerated(),
+				ID:          MixedChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
@@ -323,9 +216,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Get.ZeroOnMiss(),
 				Statement:   "Get returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
-				Probe:       spec.ZeroBesideFalse,
-				Reason:      spec.ValueBesideFalse,
-				Law:         spec.NoValueBesideAFalseFlag,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideFalse(h, func(ctx context.Context) (boundedcache.Value, bool) {
@@ -335,12 +225,9 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Defect: mixedGetValueBesideAFalseFlag,
 			},
 			{
-				ID:          MixedChecks.Get.ZeroOnMissGenerated(),
+				ID:          MixedChecks.Get.ZeroOnMiss().Generated(),
 				Statement:   "Get returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
-				Probe:       spec.ZeroBesideFalse,
-				Reason:      spec.ValueBesideFalse,
-				Law:         spec.NoValueBesideAFalseFlag,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
@@ -354,9 +241,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Get.Cacheable(),
 				Statement:   "Get returns the same value on a repeat",
 				Claim:       spec.Cacheable,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -368,12 +252,9 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				Defect: mixedGetDrifts,
 			},
 			{
-				ID:          MixedChecks.Get.CacheableGenerated(),
+				ID:          MixedChecks.Get.Cacheable().Generated(),
 				Statement:   "Get returns the same value on a repeat",
 				Claim:       spec.Cacheable,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[boundedcache.Key](), "key")
@@ -388,9 +269,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Len.Smoke(),
 				Statement:   "Len returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -405,9 +283,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Len.Cancel(),
 				Statement:   "Len returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -421,9 +296,6 @@ func MixedSuite() conform.Suite[boundedcache.Mixed] {
 				ID:          MixedChecks.Len.ZeroOnError(),
 				Statement:   "Len returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -872,4 +744,4 @@ func mixedLenCall(ctx context.Context, subject boundedcache.Mixed, args []any) (
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:b6520507ed1506a2387fdaba2b3905217cbc15fe4d8650810a5438a95df540a0
+// dokimi:provenance sha256:a513a270709de1040d907044ea8af407d99aecf9bd974f2e3d0f2146e2279547

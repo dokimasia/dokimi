@@ -146,21 +146,6 @@ func NewLabellerStub(tb assert.TB, opts ...LabellerStubOption) *LabellerStub {
 	return s
 }
 
-// NewLabellerStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewLabellerStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...LabellerStubOption) *LabellerStub {
-	return NewLabellerStub(tb, append([]LabellerStubOption{
-		LabellerStubWithClock(clk),
-		LabellerStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewLabellerStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewLabellerStubFailing(tb assert.TB, err error, opts ...LabellerStubOption) *LabellerStub {
-	return NewLabellerStub(tb, append([]LabellerStubOption{LabellerStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LabellerStub) ResetCalls() {
@@ -199,4 +184,4 @@ func (s *LabellerStub) Apply(ctx context.Context, tag sampled.Tag, level sampled
 	return r.Err
 }
 
-// dokimi:provenance sha256:3bf4461a02e33a1887cb53c5a6a7f17e17dda37218b23021fb357b17afadc379
+// dokimi:provenance sha256:241499ec4fa3b7f54de090e49aa90c636b54a679cae73428fb37cc6c75e4f1b7

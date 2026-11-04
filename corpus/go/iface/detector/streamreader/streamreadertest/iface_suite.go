@@ -16,48 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of StreamReader:
-//
-// StreamReader.Add/smoke: Add returns without a panic for derived inputs.
-//
-// StreamReader.Add/smoke#generated: Add returns without a panic for
-// derived inputs.
-//
-// StreamReader.Add/cancel: Add returns an error for a cancelled context.
-//
-// StreamReader.Add/cancel#generated: Add returns an error for a cancelled
-// context.
-//
-// StreamReader.List/smoke: List returns without a panic for derived
-// inputs.
-//
-// StreamReader.List/streams-what-was-stored: List yields each value that
-// Add stored.
-//
-// StreamReader.List/streams-what-was-stored#generated: List yields each
-// value that Add stored.
-
-// The derived checks of StreamReader that witness their laws at the
-// shallow end:
-//
-// StreamReader.Add/smoke
-//
-// StreamReader.List/smoke
-//
-// StreamReader.List/streams-what-was-stored
-//
-// StreamReader.List/streams-what-was-stored#generated
-
-// The refused claims of StreamReader:
-//
-// StreamReader.List/cancel: List cannot fail. The remedy is to give List
-// an error result.
-
-// The unclaimed classifications of StreamReader:
-//
-// The shape:writer of StreamReader.Add has the stance silent. A write is
-// an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -90,22 +48,10 @@ func (c streamReaderAdd) Smoke() conform.ID[streamreader.StreamReader] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Add returns
-// without a panic for derived inputs.
-func (c streamReaderAdd) SmokeGenerated() conform.ID[streamreader.StreamReader] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c streamReaderAdd) Cancel() conform.ID[streamreader.StreamReader] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Add returns an
-// error for a cancelled context.
-func (c streamReaderAdd) CancelGenerated() conform.ID[streamreader.StreamReader] {
-	return c.Check("cancel#generated")
 }
 
 // streamReaderList is the name of StreamReader.List, with the identities
@@ -126,12 +72,6 @@ func (c streamReaderList) StreamsWhatWasStored() conform.ID[streamreader.StreamR
 	return c.Check("streams-what-was-stored")
 }
 
-// StreamsWhatWasStoredGenerated returns the identity of the check that
-// List yields each value that Add stored.
-func (c streamReaderList) StreamsWhatWasStoredGenerated() conform.ID[streamreader.StreamReader] {
-	return c.Check("streams-what-was-stored#generated")
-}
-
 // StreamReaderSuite returns the checks of StreamReader, and the calls and
 // the budgets of its callables.
 func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
@@ -144,9 +84,6 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				ID:          StreamReaderChecks.Add.Smoke(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StreamReaderHandle) {
@@ -157,12 +94,9 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				Defect: streamReaderAddPanics,
 			},
 			{
-				ID:          StreamReaderChecks.Add.SmokeGenerated(),
+				ID:          StreamReaderChecks.Add.Smoke().Generated(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StreamReaderHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[streamreader.Value](), "v")
@@ -176,9 +110,6 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				ID:          StreamReaderChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StreamReaderHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -188,12 +119,9 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				Defect: streamReaderAddIgnoresCancel,
 			},
 			{
-				ID:          StreamReaderChecks.Add.CancelGenerated(),
+				ID:          StreamReaderChecks.Add.Cancel().Generated(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StreamReaderHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[streamreader.Value](), "v")
@@ -207,9 +135,6 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				ID:          StreamReaderChecks.List.Smoke(),
 				Statement:   "List returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StreamReaderHandle) {
@@ -224,9 +149,6 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				ID:          StreamReaderChecks.List.StreamsWhatWasStored(),
 				Statement:   "List yields each value that Add stored",
 				Claim:       spec.StreamsWhatWasStored,
-				Probe:       spec.KeepsWhatWentIn,
-				Reason:      spec.ShrunkDrain,
-				Law:         spec.DrainKeepsWhatWentIn,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StreamReaderHandle) {
@@ -255,12 +177,9 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 				Defect: streamReaderListDrainsNothing,
 			},
 			{
-				ID:          StreamReaderChecks.List.StreamsWhatWasStoredGenerated(),
+				ID:          StreamReaderChecks.List.StreamsWhatWasStored().Generated(),
 				Statement:   "List yields each value that Add stored",
 				Claim:       spec.StreamsWhatWasStored,
-				Probe:       spec.KeepsWhatWentIn,
-				Reason:      spec.ShrunkDrain,
-				Law:         spec.DrainKeepsWhatWentIn,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *StreamReaderHandle, c *prop.Case) {
@@ -508,4 +427,4 @@ func streamReaderListDrainsNothing(h *StreamReaderHandle) streamreader.StreamRea
 	return &streamReaderListDrainsNothingDefect{streamReaderOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:9deaac37bf1ddf1fa0be30e2455327a729421f05525db3aa44d99fdfdde2ae0c
+// dokimi:provenance sha256:c91177928c39c27d7d9d6fd0486d5e455c56fc984b91dda609a38ffc35bcae06

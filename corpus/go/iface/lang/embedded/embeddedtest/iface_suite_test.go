@@ -49,46 +49,7 @@ func TestComposedSuite(t *testing.T) {
 				},
 				Defect: func(*embeddedtest.ComposedHandle) embedded.Composed { return &composedSubject{} },
 			}),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Ping.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Ping.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[embedded.Composed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -110,54 +71,20 @@ func TestComposedSuite(t *testing.T) {
 				},
 				Defect: func(*embeddedtest.ComposedHandle) embedded.Composed { return &composedSubject{} },
 			}),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Ping.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Ping.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				embeddedtest.ComposedChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[embedded.Composed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// composedSuite is the suite of Composed that the tests of the planted
+// defect of a ceiling apply.
+var composedSuite = embeddedtest.ComposedSuite()
+
 // composedIdle returns the planted defect of a ceiling of Composed with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func composedIdle(h *embeddedtest.ComposedHandle) embedded.Composed {
-	return embeddedtest.ComposedSuite().Calls[0].Over(h, func() {})
+	return composedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestComposedSuiteBudgets applies the allocation ceilings of the suite of
@@ -171,46 +98,7 @@ func TestComposedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(embeddedtest.ComposedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(embeddedtest.ComposedChecks.Ping.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(embeddedtest.ComposedChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Ping.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Ping.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[embedded.Composed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -221,46 +109,7 @@ func FuzzComposedSuiteGet(f *testing.F) {
 		f,
 		embeddedtest.ComposedChecks.Get.Callable,
 		composedIdle,
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Ping.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Ping.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[embedded.Composed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -271,46 +120,7 @@ func FuzzComposedSuitePing(f *testing.F) {
 		f,
 		embeddedtest.ComposedChecks.Ping.Callable,
 		composedIdle,
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Ping.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Ping.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[embedded.Composed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -321,46 +131,7 @@ func FuzzComposedSuiteClose(f *testing.F) {
 		f,
 		embeddedtest.ComposedChecks.Close.Callable,
 		composedIdle,
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Ping.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Ping.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			embeddedtest.ComposedChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[embedded.Composed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -378,4 +149,4 @@ func BenchmarkComposedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:8d1cbb20424f18de7a818166d00f537b2e377a5c866a138b4ae959287ba15240
+// dokimi:provenance sha256:085ed057faa23a524c0fc44525c96d5127a181d527b35a80e284c95287522b24

@@ -145,26 +145,6 @@ func NewPoisonAccessorStub(tb assert.TB, opts ...PoisonAccessorStubOption) *Pois
 	return s
 }
 
-// NewPoisonAccessorStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewPoisonAccessorStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...PoisonAccessorStubOption,
-) *PoisonAccessorStub {
-	return NewPoisonAccessorStub(tb, append([]PoisonAccessorStubOption{
-		PoisonAccessorStubWithClock(clk),
-		PoisonAccessorStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewPoisonAccessorStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewPoisonAccessorStubFailing(tb assert.TB, err error, opts ...PoisonAccessorStubOption) *PoisonAccessorStub {
-	return NewPoisonAccessorStub(tb, append([]PoisonAccessorStubOption{PoisonAccessorStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *PoisonAccessorStub) ResetCalls() {
@@ -199,4 +179,4 @@ func (s *PoisonAccessorStub) Err() error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:97f58b44fa4b5b328829d9d9839802bdea767ccc67d48161b5027ccdb4fd7fde
+// dokimi:provenance sha256:91a7515c0ea1ad00b37a5d0585b34c8d981f959c612fc3e5160825d8991d6572

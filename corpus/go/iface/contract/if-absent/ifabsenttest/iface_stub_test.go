@@ -41,23 +41,36 @@ func contractStubPutPins() error {
 	return want0
 }
 
-// contractStubPutSubject returns the subject of [stub.Behaviour] for Put.
-// The subject calls a new double that reports to tb.
+// contractStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func contractStubPutSubject(tb assert.TB) stub.Subject[ifabsenttest.ContractPutCall, ifabsenttest.ContractPutReturn] {
 	tb.Helper()
 	s := ifabsenttest.NewContractStub(tb)
 	return stub.Subject[ifabsenttest.ContractPutCall, ifabsenttest.ContractPutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c ifabsenttest.ContractPutCall) {
+			tb.Helper()
+			a0, a1 := contractStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() ifabsenttest.ContractPutReturn {
 			got0 := contractStubPut(tb, s)
 			return ifabsenttest.ContractPutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ ifabsent.Value) error {
-				mark()
+		Returns: func() ifabsenttest.ContractPutReturn {
+			want0 := contractStubPutPins()
+			s.OnPut.Returns(want0)
+			return ifabsenttest.ContractPutReturn{Err: want0}
+		},
+		Override: func(seen func(ifabsenttest.ContractPutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1 ifabsent.Value) error {
+				seen(ifabsenttest.ContractPutCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -82,7 +95,6 @@ func contractStubInstanceOf(tb assert.TB, s *ifabsenttest.ContractStub) contract
 		Call: func() {
 			_ = contractStubPut(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -94,69 +106,14 @@ func TestContractStub(t *testing.T) {
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", contractStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := ifabsenttest.NewContractStub(t)
-			_ = contractStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1 := contractStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := ifabsenttest.NewContractStub(t)
-			var seen []ifabsenttest.ContractPutCall
-			s.OnPut.OnRecord(func(c ifabsenttest.ContractPutCall) { seen = append(seen, c) })
-			_ = contractStubPut(t, s)
-			_ = contractStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
-			return contractStubInstanceOf(tb, ifabsenttest.NewContractStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := ifabsenttest.NewContractStub(t)
-			_ = contractStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
-		})
-
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
-			t.Parallel()
-			s := ifabsenttest.NewContractStub(t)
-			want0 := contractStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
-		})
-	})
-
-	t.Run("NewContractStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
-			return contractStubInstanceOf(tb, ifabsenttest.NewContractStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewContractStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := ifabsenttest.NewContractStubFailing(t, want)
-			r0 := contractStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewContractStubFailing")
+			stub.ResetBehaviour(t, "Put", contractStubPutSubject)
 		})
 	})
 
@@ -259,54 +216,4 @@ func TestContractStub(t *testing.T) {
 	})
 }
 
-// TestContractPutStub checks the methods of ContractPutStub, which
-// configures Put.
-func TestContractPutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := ifabsenttest.NewContractStub(t)
-			want0 := contractStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := contractStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := ifabsenttest.NewContractStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = contractStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := ifabsenttest.NewContractStub(t)
-			var got0 context.Context
-			var got1 ifabsent.Value
-			s.OnPut.Func(func(p0 context.Context, p1 ifabsent.Value) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = contractStubPut(t, s)
-			a0, a1 := contractStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// dokimi:provenance sha256:a4e6d247f119f049134258a5aad796a643c50a15b6f0e9b273c18e9d6c8a48ea
+// dokimi:provenance sha256:189d079705bcd888cc1fc8a61b216bd62a1c52831d3511dc26ce88668e98cadd

@@ -198,26 +198,6 @@ func NewMultiArgWriterStub(tb assert.TB, opts ...MultiArgWriterStubOption) *Mult
 	return s
 }
 
-// NewMultiArgWriterStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewMultiArgWriterStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...MultiArgWriterStubOption,
-) *MultiArgWriterStub {
-	return NewMultiArgWriterStub(tb, append([]MultiArgWriterStubOption{
-		MultiArgWriterStubWithClock(clk),
-		MultiArgWriterStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewMultiArgWriterStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewMultiArgWriterStubFailing(tb assert.TB, err error, opts ...MultiArgWriterStubOption) *MultiArgWriterStub {
-	return NewMultiArgWriterStub(tb, append([]MultiArgWriterStubOption{MultiArgWriterStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MultiArgWriterStub) ResetCalls() {
@@ -281,4 +261,4 @@ func (s *MultiArgWriterStub) Get(ctx context.Context, key string) (string, error
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:559883e36ebfdb7c2b4dbe28b6502dd74c675dadaa018ea1e31a3ccc28419908
+// dokimi:provenance sha256:5a6cce7504d38f3c8bc8dec7aff322de8f36b5dec86233ba895ca1f6903061e9

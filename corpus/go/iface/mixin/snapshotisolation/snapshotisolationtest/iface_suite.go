@@ -19,28 +19,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Begin/smoke: Begin returns without a panic for derived inputs.
-//
-// Mixed.Begin/cancel: Begin returns an error for a cancelled context.
-//
-// Mixed.Begin/snapshot-isolation: every concurrent history of the
-// transactions of Mixed has no anomaly that snapshot isolation excludes.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Begin/smoke
-
-// The refused claims of Mixed:
-//
-// Mixed.Begin/zero-on-error: eidos derives no sample of a result of Begin.
-// The remedy is to author a sample of the result type with the directive
-// sample.
-//
-// Mixed.Begin/tx: eidos derives no sample of a result of Begin. The remedy
-// is to author a sample of the result type with the directive sample.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -96,9 +74,6 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				ID:          MixedChecks.Begin.Smoke(),
 				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -113,9 +88,6 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				ID:          MixedChecks.Begin.Cancel(),
 				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -129,9 +101,6 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				ID:          MixedChecks.Begin.SnapshotIsolation(),
 				Statement:   "every concurrent history of the transactions of Mixed has no anomaly that snapshot isolation excludes",
 				Claim:       spec.SnapshotIsolation,
-				Probe:       spec.SnapshotHistory,
-				Reason:      spec.NotSnapshotIsolated,
-				Law:         spec.ConcurrentTransactionsAreSnapshotIsolated,
 				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					probe.SnapshotHistory(h, c, mixedActions, 2)
@@ -522,4 +491,4 @@ func txnRollbackCall(ctx context.Context, subject snapshotisolation.Txn, args []
 	return nil, subject.Rollback(ctx)
 }
 
-// dokimi:provenance sha256:2e1e1cb4b2bed07b1ef8145b8c8535c31bcc95e5e8437dcc650cabb04201356f
+// dokimi:provenance sha256:9ba9fb38c17b939a1f82ba758a84b518b8dda332582a2b385952cc9175359b56

@@ -15,28 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Breaker:
-//
-// Breaker.Do/smoke: Do returns without a panic for derived inputs.
-//
-// Breaker.Do/cancel: Do returns an error for a cancelled context.
-//
-// Breaker.Do/failure-is-reported: Do returns an error when a call of its
-// dependency fails.
-//
-// Breaker.Do/fails-fast: Do refuses a call without its operation after the
-// operation failed repeatedly.
-
-// The derived checks of Breaker that witness their laws at the shallow
-// end:
-//
-// Breaker.Do/smoke
-
-// The unclaimed classifications of Breaker:
-//
-// The shape:lifecycle of Breaker.Do has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -96,9 +74,6 @@ func BreakerSuite() conform.Suite[breaker.Breaker] {
 				ID:          BreakerChecks.Do.Smoke(),
 				Statement:   "Do returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BreakerHandle) {
@@ -112,9 +87,6 @@ func BreakerSuite() conform.Suite[breaker.Breaker] {
 				ID:          BreakerChecks.Do.Cancel(),
 				Statement:   "Do returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BreakerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -127,9 +99,6 @@ func BreakerSuite() conform.Suite[breaker.Breaker] {
 				ID:          BreakerChecks.Do.FailureIsReported(),
 				Statement:   "Do returns an error when a call of its dependency fails",
 				Claim:       spec.FailureIsReported,
-				Probe:       spec.ReportsAFailedDependency,
-				Reason:      spec.SwallowedFailure,
-				Law:         spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *BreakerHandle) {
 					probe.ReportsAFailedDependency(h, func(ctx context.Context) error {
@@ -142,9 +111,6 @@ func BreakerSuite() conform.Suite[breaker.Breaker] {
 				ID:          BreakerChecks.Do.FailsFast(),
 				Statement:   "Do refuses a call without its operation after the operation failed repeatedly",
 				Claim:       spec.FailsFast,
-				Probe:       spec.RefusesWithoutTheDependency,
-				Reason:      spec.NeverOpened,
-				Law:         spec.OpenBreakerSkipsTheOperation,
 				Machineries: []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller},
 				Apply: func(h *BreakerHandle) {
 					probe.RefusesWithoutTheDependency(h, func(ctx context.Context) error {
@@ -347,4 +313,4 @@ func breakerDoNeverOpens(h *BreakerHandle) breaker.Breaker {
 	return &breakerDoNeverOpensDefect{breakerOverEmbedded: h.Fresh(), h: h}
 }
 
-// dokimi:provenance sha256:8055c735e5cf329c671b45f7d26757d9019901112ea482150c250b3f5c630c8f
+// dokimi:provenance sha256:a120ef1a5ef36dd4d8fe0bb3ce5da2527f2e7e18243b632e8bfbc7c3a110e01c

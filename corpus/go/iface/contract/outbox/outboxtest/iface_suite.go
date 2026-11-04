@@ -17,46 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Append/smoke: Append returns without a panic for derived
-// inputs.
-//
-// Contract.Append/smoke#generated: Append returns without a panic for
-// derived inputs.
-//
-// Contract.Append/cancel: Append returns an error for a cancelled context.
-//
-// Contract.Append/cancel#generated: Append returns an error for a
-// cancelled context.
-//
-// Contract.Append/delivers-each-append: each message that Append records
-// arrives on the channel of Subscribe.
-//
-// Contract.Subscribe/smoke: Subscribe returns without a panic for derived
-// inputs.
-//
-// Contract.Subscribe/cancel: Subscribe returns an error for a cancelled
-// context.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Append/smoke
-//
-// Contract.Subscribe/smoke
-
-// The refused claims of Contract:
-//
-// Contract.Subscribe/zero-on-error: eidos derives no sample of a result of
-// Subscribe. The remedy is to author a sample of the result type with the
-// directive sample.
-
-// The unclaimed classifications of Contract:
-//
-// The shape:writer of Contract.Append has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -89,22 +49,10 @@ func (c contractAppend) Smoke() conform.ID[outbox.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Append returns
-// without a panic for derived inputs.
-func (c contractAppend) SmokeGenerated() conform.ID[outbox.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c contractAppend) Cancel() conform.ID[outbox.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Append returns an
-// error for a cancelled context.
-func (c contractAppend) CancelGenerated() conform.ID[outbox.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // DeliversEachAppend returns the identity of the check that each message
@@ -143,9 +91,6 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				ID:          ContractChecks.Append.Smoke(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -156,12 +101,9 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				Defect: contractAppendPanics,
 			},
 			{
-				ID:          ContractChecks.Append.SmokeGenerated(),
+				ID:          ContractChecks.Append.Smoke().Generated(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[outbox.Value](), "v")
@@ -175,9 +117,6 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				ID:          ContractChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -187,12 +126,9 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				Defect: contractAppendIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Append.CancelGenerated(),
+				ID:          ContractChecks.Append.Cancel().Generated(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[outbox.Value](), "v")
@@ -206,9 +142,6 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				ID:          ContractChecks.Append.DeliversEachAppend(),
 				Statement:   "each message that Append records arrives on the channel of Subscribe",
 				Claim:       spec.DeliversEachAppend,
-				Probe:       spec.AppendsArrive,
-				Reason:      spec.LostMessage,
-				Law:         spec.EachAppendIsDelivered,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					probe.AppendsArrive(
@@ -233,9 +166,6 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				ID:          ContractChecks.Subscribe.Smoke(),
 				Statement:   "Subscribe returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -250,9 +180,6 @@ func ContractSuite() conform.Suite[outbox.Contract] {
 				ID:          ContractChecks.Subscribe.Cancel(),
 				Statement:   "Subscribe returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -545,4 +472,4 @@ func contractSubscribeCall(ctx context.Context, subject outbox.Contract, args []
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:984e37dd06aa39f348759f5df0ea86253680c50514fe881626623f676d99a622
+// dokimi:provenance sha256:8e198b9e7057a6016fef78e7d80534713024ecd6b25604fd36dc64abfba6dfcc

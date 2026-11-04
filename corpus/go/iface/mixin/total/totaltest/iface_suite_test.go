@@ -48,50 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*totaltest.MixedHandle) total.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.Total(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Normalize.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Normalize.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Normalize.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Normalize.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[total.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -113,58 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*totaltest.MixedHandle) total.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Classify.Total(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Normalize.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Normalize.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Normalize.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				totaltest.MixedChecks.Normalize.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[total.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = totaltest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *totaltest.MixedHandle) total.Mixed {
-	return totaltest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -177,50 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(totaltest.MixedChecks.Classify.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(totaltest.MixedChecks.Normalize.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Total(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[total.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -231,50 +106,7 @@ func FuzzMixedSuiteClassify(f *testing.F) {
 		f,
 		totaltest.MixedChecks.Classify.Callable,
 		mixedIdle,
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Total(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[total.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -285,50 +117,7 @@ func FuzzMixedSuiteNormalize(f *testing.F) {
 		f,
 		totaltest.MixedChecks.Normalize.Callable,
 		mixedIdle,
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Classify.Total(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			totaltest.MixedChecks.Normalize.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[total.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -343,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b77962bf39d82eca81ba588180103624610fb901bdbd286f6af903a18b2c4485
+// dokimi:provenance sha256:0bafc255bdec0b2692476e190bd95bc43be3992e7f5ca8643473404730d4c19a

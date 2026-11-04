@@ -51,46 +51,7 @@ func TestLeasedWriterSuite(t *testing.T) {
 					return &leasedWriterSubject{}
 				},
 			}),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.Idempotent(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.IdempotentGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Release.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Release.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Release.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Release.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[leasedidempotentwriter.LeasedWriter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -114,54 +75,20 @@ func TestLeasedWriterSuite(t *testing.T) {
 					return &leasedWriterSubject{}
 				},
 			}),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.Idempotent(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Acquire.IdempotentGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Release.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Release.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Release.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				leasedidempotentwritertest.LeasedWriterChecks.Release.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[leasedidempotentwriter.LeasedWriter]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// leasedWriterSuite is the suite of LeasedWriter that the tests of the
+// planted defect of a ceiling apply.
+var leasedWriterSuite = leasedidempotentwritertest.LeasedWriterSuite()
+
 // leasedWriterIdle returns the planted defect of a ceiling of LeasedWriter
-// with a spend of nothing, a subject that answers each call at once.
+// with a spend of nothing. Each call of the defect returns its zero
+// results at once.
 func leasedWriterIdle(h *leasedidempotentwritertest.LeasedWriterHandle) leasedidempotentwriter.LeasedWriter {
-	return leasedidempotentwritertest.LeasedWriterSuite().Calls[0].Over(h, func() {})
+	return leasedWriterSuite.Calls[0].Over(h, func() {})
 }
 
 // TestLeasedWriterSuiteBudgets applies the allocation ceilings of the
@@ -180,45 +107,8 @@ func TestLeasedWriterSuiteBudgets(t *testing.T) {
 			leasedidempotentwritertest.LeasedWriterChecks.Release.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.IdempotentGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[leasedidempotentwriter.LeasedWriter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -231,45 +121,8 @@ func FuzzLeasedWriterSuiteAcquire(f *testing.F) {
 		f,
 		leasedidempotentwritertest.LeasedWriterChecks.Acquire.Callable,
 		leasedWriterIdle,
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.IdempotentGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[leasedidempotentwriter.LeasedWriter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -282,45 +135,8 @@ func FuzzLeasedWriterSuiteRelease(f *testing.F) {
 		f,
 		leasedidempotentwritertest.LeasedWriterChecks.Release.Callable,
 		leasedWriterIdle,
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Acquire.IdempotentGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			leasedidempotentwritertest.LeasedWriterChecks.Release.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[leasedidempotentwriter.LeasedWriter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -344,4 +160,4 @@ func BenchmarkLeasedWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:583dfecf7d901b94c4ff913a7cc6ddfcd00929265d28d2adc050a03dcc2abec5
+// dokimi:provenance sha256:cdc4a38490dce0bb03127ae0b10d39513d16aa4135e1fa92d755af512b29d90d

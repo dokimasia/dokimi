@@ -48,54 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*idempotenttest.MixedHandle) idempotent.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.Idempotent(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.IdempotentGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[idempotent.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -117,62 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*idempotenttest.MixedHandle) idempotent.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.Idempotent(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Put.IdempotentGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				idempotenttest.MixedChecks.Read.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[idempotent.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = idempotenttest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *idempotenttest.MixedHandle) idempotent.Mixed {
-	return idempotenttest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -185,54 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(idempotenttest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(idempotenttest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.IdempotentGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[idempotent.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -243,54 +106,7 @@ func FuzzMixedSuitePut(f *testing.F) {
 		f,
 		idempotenttest.MixedChecks.Put.Callable,
 		mixedIdle,
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.IdempotentGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[idempotent.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -301,54 +117,7 @@ func FuzzMixedSuiteRead(f *testing.F) {
 		f,
 		idempotenttest.MixedChecks.Read.Callable,
 		mixedIdle,
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Put.IdempotentGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			idempotenttest.MixedChecks.Read.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[idempotent.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -363,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ba9b7825d508bafe6260179d252a18cac63c2f1c39ff21dfddae626a6b35b43c
+// dokimi:provenance sha256:69c7759043cbb3d0b116bef4005778982c3f39b47a1f2dc98883cd40fb651a47

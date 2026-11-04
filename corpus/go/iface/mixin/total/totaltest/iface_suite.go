@@ -15,56 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Classify/smoke: Classify returns without a panic for derived
-// inputs.
-//
-// Mixed.Classify/smoke#generated: Classify returns without a panic for
-// derived inputs.
-//
-// Mixed.Classify/cancel: Classify returns an error for a cancelled
-// context.
-//
-// Mixed.Classify/cancel#generated: Classify returns an error for a
-// cancelled context.
-//
-// Mixed.Classify/zero-on-error: Classify returns the zero value beside an
-// error.
-//
-// Mixed.Classify/zero-on-error#generated: Classify returns the zero value
-// beside an error.
-//
-// Mixed.Classify/total: Classify succeeds for the input that its directive
-// declares at the edge of the domain.
-//
-// Mixed.Normalize/smoke: Normalize returns without a panic for derived
-// inputs.
-//
-// Mixed.Normalize/smoke#generated: Normalize returns without a panic for
-// derived inputs.
-//
-// Mixed.Normalize/deterministic: Normalize returns the same value for the
-// same inputs.
-//
-// Mixed.Normalize/deterministic#generated: Normalize returns the same
-// value for the same inputs.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Classify/smoke
-//
-// Mixed.Classify/total
-//
-// Mixed.Normalize/smoke
-//
-// Mixed.Normalize/deterministic
-
-// The refused claims of Mixed:
-//
-// Mixed.Normalize/total: Normalize cannot fail. The remedy is to give
-// Normalize an error result.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -97,34 +47,16 @@ func (c mixedClassify) Smoke() conform.ID[total.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Classify returns
-// without a panic for derived inputs.
-func (c mixedClassify) SmokeGenerated() conform.ID[total.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Classify returns an error
 // for a cancelled context.
 func (c mixedClassify) Cancel() conform.ID[total.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Classify returns
-// an error for a cancelled context.
-func (c mixedClassify) CancelGenerated() conform.ID[total.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Classify returns the
 // zero value beside an error.
 func (c mixedClassify) ZeroOnError() conform.ID[total.Mixed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Classify
-// returns the zero value beside an error.
-func (c mixedClassify) ZeroOnErrorGenerated() conform.ID[total.Mixed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // Total returns the identity of the check that Classify succeeds for the
@@ -145,22 +77,10 @@ func (c mixedNormalize) Smoke() conform.ID[total.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Normalize returns
-// without a panic for derived inputs.
-func (c mixedNormalize) SmokeGenerated() conform.ID[total.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Normalize returns
 // the same value for the same inputs.
 func (c mixedNormalize) Deterministic() conform.ID[total.Mixed] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Normalize
-// returns the same value for the same inputs.
-func (c mixedNormalize) DeterministicGenerated() conform.ID[total.Mixed] {
-	return c.Check("deterministic#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -175,9 +95,6 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				ID:          MixedChecks.Classify.Smoke(),
 				Statement:   "Classify returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -189,12 +106,9 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				Defect: mixedClassifyPanics,
 			},
 			{
-				ID:          MixedChecks.Classify.SmokeGenerated(),
+				ID:          MixedChecks.Classify.Smoke().Generated(),
 				Statement:   "Classify returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -209,9 +123,6 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				ID:          MixedChecks.Classify.Cancel(),
 				Statement:   "Classify returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -222,12 +133,9 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				Defect: mixedClassifyIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Classify.CancelGenerated(),
+				ID:          MixedChecks.Classify.Cancel().Generated(),
 				Statement:   "Classify returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -242,9 +150,6 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				ID:          MixedChecks.Classify.ZeroOnError(),
 				Statement:   "Classify returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -254,12 +159,9 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				Defect: mixedClassifyValueBeside,
 			},
 			{
-				ID:          MixedChecks.Classify.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Classify.ZeroOnError().Generated(),
 				Statement:   "Classify returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -273,9 +175,6 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				ID:          MixedChecks.Classify.Total(),
 				Statement:   "Classify succeeds for the input that its directive declares at the edge of the domain",
 				Claim:       spec.Total,
-				Probe:       spec.AcceptsTheEdge,
-				Reason:      spec.RefusedTheEdge,
-				Law:         spec.CallAcceptsItsDeclaredDomain,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -290,9 +189,6 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				ID:          MixedChecks.Normalize.Smoke(),
 				Statement:   "Normalize returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -304,12 +200,9 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				Defect: mixedNormalizePanics,
 			},
 			{
-				ID:          MixedChecks.Normalize.SmokeGenerated(),
+				ID:          MixedChecks.Normalize.Smoke().Generated(),
 				Statement:   "Normalize returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -324,9 +217,6 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				ID:          MixedChecks.Normalize.Deterministic(),
 				Statement:   "Normalize returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[total.Mixed]{MixedChecks.Normalize.Smoke()},
@@ -339,14 +229,11 @@ func MixedSuite() conform.Suite[total.Mixed] {
 				Defect: mixedNormalizeDrifts,
 			},
 			{
-				ID:          MixedChecks.Normalize.DeterministicGenerated(),
+				ID:          MixedChecks.Normalize.Deterministic().Generated(),
 				Statement:   "Normalize returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[total.Mixed]{MixedChecks.Normalize.SmokeGenerated()},
+				Entails:     []conform.ID[total.Mixed]{MixedChecks.Normalize.Smoke().Generated()},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
 					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
@@ -607,4 +494,4 @@ func mixedNormalizeDrifts(h *MixedHandle) total.Mixed {
 	return &mixedNormalizeDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:802a78601850502915371dadcabca5c34a3cf1847cbc011ce87e6d0706a73629
+// dokimi:provenance sha256:20dc2b84cb4827eb7d004e832b4175b4de23929aea6f82331b10342383d99952

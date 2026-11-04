@@ -28,15 +28,17 @@ func predicateStubIsEmptyPins() bool {
 	return want0
 }
 
-// predicateStubIsEmptySubject returns the subject of [stub.Behaviour] for
-// IsEmpty. The subject calls a new double that reports to tb.
+// predicateStubIsEmptySubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for IsEmpty. The subject calls a new double that
+// reports to tb.
 func predicateStubIsEmptySubject(
 	tb assert.TB,
 ) stub.Subject[predicatetest.PredicateIsEmptyCall, predicatetest.PredicateIsEmptyReturn] {
 	tb.Helper()
 	s := predicatetest.NewPredicateStub(tb)
 	return stub.Subject[predicatetest.PredicateIsEmptyCall, predicatetest.PredicateIsEmptyReturn]{
-		Stub: s.OnIsEmpty.MethodStub,
+		Stub:  s.OnIsEmpty.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = predicateStubIsEmpty(tb, s)
 		},
@@ -44,9 +46,14 @@ func predicateStubIsEmptySubject(
 			got0 := predicateStubIsEmpty(tb, s)
 			return predicatetest.PredicateIsEmptyReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() predicatetest.PredicateIsEmptyReturn {
+			want0 := predicateStubIsEmptyPins()
+			s.OnIsEmpty.Returns(want0)
+			return predicatetest.PredicateIsEmptyReturn{Result: want0}
+		},
+		Override: func(seen func(predicatetest.PredicateIsEmptyCall)) {
 			s.OnIsEmpty.Func(func() bool {
-				mark()
+				seen(predicatetest.PredicateIsEmptyCall{})
 				var z0 bool
 				return z0
 			})
@@ -67,7 +74,6 @@ func predicateStubInstanceOf(tb assert.TB, s *predicatetest.PredicateStub) predi
 		Call: func() {
 			_ = predicateStubIsEmpty(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -79,47 +85,14 @@ func TestPredicateStub(t *testing.T) {
 	t.Run("IsEmpty", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "IsEmpty", predicateStubIsEmptySubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := predicatetest.NewPredicateStub(t)
-			var seen []predicatetest.PredicateIsEmptyCall
-			s.OnIsEmpty.OnRecord(func(c predicatetest.PredicateIsEmptyCall) { seen = append(seen, c) })
-			_ = predicateStubIsEmpty(t, s)
-			_ = predicateStubIsEmpty(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of IsEmpty")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) predicateStubInstance {
-			return predicateStubInstanceOf(tb, predicatetest.NewPredicateStub(tb))
-		})
 
-		t.Run("clears the recorded calls of IsEmpty", func(t *testing.T) {
+		t.Run("IsEmpty", func(t *testing.T) {
 			t.Parallel()
-			s := predicatetest.NewPredicateStub(t)
-			_ = predicateStubIsEmpty(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnIsEmpty.CallCount(), 0, "ResetCalls clears the calls of IsEmpty")
-		})
-
-		t.Run("keeps the results of Returns of IsEmpty", func(t *testing.T) {
-			t.Parallel()
-			s := predicatetest.NewPredicateStub(t)
-			want0 := predicateStubIsEmptyPins()
-			s.OnIsEmpty.Returns(want0)
-			s.ResetCalls()
-			got0 := predicateStubIsEmpty(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of IsEmpty")
-		})
-	})
-
-	t.Run("NewPredicateStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) predicateStubInstance {
-			return predicateStubInstanceOf(tb, predicatetest.NewPredicateStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "IsEmpty", predicateStubIsEmptySubject)
 		})
 	})
 
@@ -203,34 +176,4 @@ func TestPredicateStub(t *testing.T) {
 	})
 }
 
-// TestPredicateIsEmptyStub checks the methods of PredicateIsEmptyStub,
-// which configures IsEmpty.
-func TestPredicateIsEmptyStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of IsEmpty", func(t *testing.T) {
-			t.Parallel()
-			s := predicatetest.NewPredicateStub(t)
-			want0 := predicateStubIsEmptyPins()
-			s.OnIsEmpty.Returns(want0)
-			got0 := predicateStubIsEmpty(t, s)
-			assert.Equal(t, got0, want0, "IsEmpty returns the Result that Returns sets")
-		})
-
-		t.Run("configures IsEmpty for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := predicatetest.NewPredicateStub(r)
-			s.OnIsEmpty.Strict()
-			var want0 bool
-			s.OnIsEmpty.Returns(want0)
-			_ = predicateStubIsEmpty(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of IsEmpty")
-		})
-	})
-}
-
-// dokimi:provenance sha256:0c9b613e759f54753c4426836381cfdb2ef419d20982f4f68fa9d83152450896
+// dokimi:provenance sha256:32cc4ce9ea3f2bee3e45fd44492c4a7e6cd103741e0e031b4b181ee2a25f2d3c

@@ -48,10 +48,7 @@ func TestCloserSuite(t *testing.T) {
 				},
 				Defect: func(*closertest.CloserHandle) closer.Closer { return &closerSubject{} },
 			}),
-			conform.Excuse(
-				closertest.CloserChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[closer.Closer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -73,18 +70,20 @@ func TestCloserSuite(t *testing.T) {
 				},
 				Defect: func(*closertest.CloserHandle) closer.Closer { return &closerSubject{} },
 			}),
-			conform.Excuse(
-				closertest.CloserChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[closer.Closer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// closerSuite is the suite of Closer that the tests of the planted defect
+// of a ceiling apply.
+var closerSuite = closertest.CloserSuite()
+
 // closerIdle returns the planted defect of a ceiling of Closer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func closerIdle(h *closertest.CloserHandle) closer.Closer {
-	return closertest.CloserSuite().Calls[0].Over(h, func() {})
+	return closerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCloserSuiteBudgets applies the allocation ceilings of the suite of
@@ -96,10 +95,7 @@ func TestCloserSuiteBudgets(t *testing.T) {
 		t,
 		closerIdle,
 		conform.Ceilings(closertest.CloserChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			closertest.CloserChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[closer.Closer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -110,10 +106,7 @@ func FuzzCloserSuiteClose(f *testing.F) {
 		f,
 		closertest.CloserChecks.Close.Callable,
 		closerIdle,
-		conform.Excuse(
-			closertest.CloserChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[closer.Closer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -125,4 +118,4 @@ func BenchmarkCloserSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6056d7e91976bdcf15ad0e31bae597f085ada97a9f8a6f8a8d27bb17bdef6efd
+// dokimi:provenance sha256:62e247adffd338c77269af3665f7335250691c9ed76b711aeaf1ff3e7213919f

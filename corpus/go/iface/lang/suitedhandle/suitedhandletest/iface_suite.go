@@ -15,28 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of File:
-//
-// File.Name/smoke: Name returns without a panic for derived inputs.
-//
-// File.Name/deterministic: Name returns the same value for the same
-// inputs.
-//
-// File.Close/smoke: Close returns without a panic for derived inputs.
-
-// The derived checks of File that witness their laws at the shallow end:
-//
-// File.Name/smoke
-//
-// File.Name/deterministic
-//
-// File.Close/smoke
-
-// The unclaimed classifications of File:
-//
-// The shape:closer of File.Close has the stance silent. A close returns
-// nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -97,9 +75,6 @@ func FileSuite() conform.Suite[suitedhandle.File] {
 				ID:          FileChecks.Name.Smoke(),
 				Statement:   "Name returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FileHandle) {
@@ -114,9 +89,6 @@ func FileSuite() conform.Suite[suitedhandle.File] {
 				ID:          FileChecks.Name.Deterministic(),
 				Statement:   "Name returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[suitedhandle.File]{FileChecks.Name.Smoke()},
@@ -132,9 +104,6 @@ func FileSuite() conform.Suite[suitedhandle.File] {
 				ID:          FileChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FileHandle) {
@@ -323,23 +292,6 @@ func fileClosePanics(h *FileHandle) suitedhandle.File {
 	return &fileClosePanicsDefect{fileOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of FS:
-//
-// FS.Open/smoke: Open returns without a panic for derived inputs.
-//
-// FS.Open/smoke#generated: Open returns without a panic for derived
-// inputs.
-
-// The derived checks of FS that witness their laws at the shallow end:
-//
-// FS.Open/smoke
-
-// The refused claims of FS:
-//
-// FS.Open/zero-on-error: eidos derives no sample of a result of Open. The
-// remedy is to author a sample of the result type with the directive
-// sample.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -369,12 +321,6 @@ func (c fsOpen) Smoke() conform.ID[suitedhandle.FS] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Open returns
-// without a panic for derived inputs.
-func (c fsOpen) SmokeGenerated() conform.ID[suitedhandle.FS] {
-	return c.Check("smoke#generated")
-}
-
 // FSSuite returns the checks of FS, and the calls and the budgets of its
 // callables.
 func FSSuite() conform.Suite[suitedhandle.FS] {
@@ -387,9 +333,6 @@ func FSSuite() conform.Suite[suitedhandle.FS] {
 				ID:          FSChecks.Open.Smoke(),
 				Statement:   "Open returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FSHandle) {
@@ -401,12 +344,9 @@ func FSSuite() conform.Suite[suitedhandle.FS] {
 				Defect: fsOpenPanics,
 			},
 			{
-				ID:          FSChecks.Open.SmokeGenerated(),
+				ID:          FSChecks.Open.Smoke().Generated(),
 				Statement:   "Open returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FSHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -540,4 +480,4 @@ func fsOpenPanics(h *FSHandle) suitedhandle.FS {
 	return &fsOpenPanicsDefect{fsOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:65dad359d1048bfee1cc4b744091ce147ff643a6130d9100a0c1cf69c97e4c8c
+// dokimi:provenance sha256:ccbeec0bcb06cd5a1f35686b1685a9b252ce7adf344dd112f481173ea7d12c8c

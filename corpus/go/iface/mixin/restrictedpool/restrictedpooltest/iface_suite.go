@@ -15,44 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Store:
-//
-// Store.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Store.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Store.Put/cancel: Put returns an error for a cancelled context.
-//
-// Store.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Store.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Store.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Store.Get/cancel: Get returns an error for a cancelled context.
-//
-// Store.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Store.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Store.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-
-// The derived checks of Store that witness their laws at the shallow end:
-//
-// Store.Put/smoke
-//
-// Store.Get/smoke
-
-// The unclaimed classifications of Store:
-//
-// The shape:composite-writer of Store.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -84,22 +46,10 @@ func (c storePut) Smoke() conform.ID[restrictedpool.Store] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c storePut) SmokeGenerated() conform.ID[restrictedpool.Store] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c storePut) Cancel() conform.ID[restrictedpool.Store] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c storePut) CancelGenerated() conform.ID[restrictedpool.Store] {
-	return c.Check("cancel#generated")
 }
 
 // storeGet is the name of Store.Get, with the identities of its checks.
@@ -113,34 +63,16 @@ func (c storeGet) Smoke() conform.ID[restrictedpool.Store] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c storeGet) SmokeGenerated() conform.ID[restrictedpool.Store] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c storeGet) Cancel() conform.ID[restrictedpool.Store] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c storeGet) CancelGenerated() conform.ID[restrictedpool.Store] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c storeGet) ZeroOnError() conform.ID[restrictedpool.Store] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c storeGet) ZeroOnErrorGenerated() conform.ID[restrictedpool.Store] {
-	return c.Check("zero-on-error#generated")
 }
 
 // StoreSuite returns the checks of Store, and the calls and the budgets of
@@ -155,9 +87,6 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				ID:          StoreChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -168,12 +97,9 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				Defect: storePutPanics,
 			},
 			{
-				ID:          StoreChecks.Put.SmokeGenerated(),
+				ID:          StoreChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[restrictedpool.Key](), "key")
@@ -188,9 +114,6 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				ID:          StoreChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -200,12 +123,9 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				Defect: storePutIgnoresCancel,
 			},
 			{
-				ID:          StoreChecks.Put.CancelGenerated(),
+				ID:          StoreChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[restrictedpool.Key](), "key")
@@ -220,9 +140,6 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				ID:          StoreChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StoreHandle) {
@@ -234,12 +151,9 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				Defect: storeGetPanics,
 			},
 			{
-				ID:          StoreChecks.Get.SmokeGenerated(),
+				ID:          StoreChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[restrictedpool.Key](), "key")
@@ -254,9 +168,6 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				ID:          StoreChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -267,12 +178,9 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				Defect: storeGetIgnoresCancel,
 			},
 			{
-				ID:          StoreChecks.Get.CancelGenerated(),
+				ID:          StoreChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[restrictedpool.Key](), "key")
@@ -287,9 +195,6 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				ID:          StoreChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StoreHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (restrictedpool.Body, error) {
@@ -299,12 +204,9 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 				Defect: storeGetValueBeside,
 			},
 			{
-				ID:          StoreChecks.Get.ZeroOnErrorGenerated(),
+				ID:          StoreChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StoreHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[restrictedpool.Key](), "key")
@@ -571,4 +473,4 @@ func storeGetValueBeside(h *StoreHandle) restrictedpool.Store {
 	return &storeGetValueBesideDefect{storeOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:94160dc1a522d617c903ad91c8d5e97735d013ab5a69332d39a8309110542c8b
+// dokimi:provenance sha256:0f2bceeda01bd5f20a290462e64f77014aa7721758f9053e1d1d0f775c8048b5

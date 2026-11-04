@@ -48,34 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*aeadtest.MixedHandle) aead.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				aeadtest.MixedChecks.Seal.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.Seal.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.Open.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.NonceSize.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.NonceSize.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.Overhead.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.Overhead.Deterministic(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[aead.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -97,42 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*aeadtest.MixedHandle) aead.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				aeadtest.MixedChecks.Seal.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.Seal.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.Open.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.NonceSize.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.NonceSize.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.Overhead.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aeadtest.MixedChecks.Overhead.Deterministic(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[aead.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = aeadtest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *aeadtest.MixedHandle) aead.Mixed {
-	return aeadtest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -145,34 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(aeadtest.MixedChecks.NonceSize.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(aeadtest.MixedChecks.Overhead.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[aead.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -183,34 +106,7 @@ func FuzzMixedSuiteSeal(f *testing.F) {
 		f,
 		aeadtest.MixedChecks.Seal.Callable,
 		mixedIdle,
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[aead.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -221,34 +117,7 @@ func FuzzMixedSuiteOpen(f *testing.F) {
 		f,
 		aeadtest.MixedChecks.Open.Callable,
 		mixedIdle,
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[aead.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -259,34 +128,7 @@ func FuzzMixedSuiteNonceSize(f *testing.F) {
 		f,
 		aeadtest.MixedChecks.NonceSize.Callable,
 		mixedIdle,
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[aead.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -297,34 +139,7 @@ func FuzzMixedSuiteOverhead(f *testing.F) {
 		f,
 		aeadtest.MixedChecks.Overhead.Callable,
 		mixedIdle,
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aeadtest.MixedChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[aead.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -345,4 +160,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1d8ee080b28747952bd12efbdf2219b8acfb3900a1e5a9c73db1a3be7997cedd
+// dokimi:provenance sha256:60b41f5bb8008cb61e64e33d32bddf6336aa427f8874e3d179dd1a3ebd3f835b

@@ -94,25 +94,38 @@ func serviceStubPartiallyNamedPins() (string, error) {
 	return want0, want1
 }
 
-// serviceStubNamedSubject returns the subject of [stub.Behaviour] for
-// Named. The subject calls a new double that reports to tb.
+// serviceStubNamedSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Named. The subject calls a new double that
+// reports to tb.
 func serviceStubNamedSubject(
 	tb assert.TB,
 ) stub.Subject[namedreturnstest.ServiceNamedCall, namedreturnstest.ServiceNamedReturn] {
 	tb.Helper()
 	s := namedreturnstest.NewServiceStub(tb)
 	return stub.Subject[namedreturnstest.ServiceNamedCall, namedreturnstest.ServiceNamedReturn]{
-		Stub: s.OnNamed.MethodStub,
+		Stub:  s.OnNamed.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = serviceStubNamed(tb, s)
+		},
+		Arguments: func(tb assert.TB, c namedreturnstest.ServiceNamedCall) {
+			tb.Helper()
+			a0, a1 := serviceStubNamedArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.ID, a1, "the call records ID")
 		},
 		Result: func() namedreturnstest.ServiceNamedReturn {
 			got0, got1 := serviceStubNamed(tb, s)
 			return namedreturnstest.ServiceNamedReturn{Item: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnNamed.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() namedreturnstest.ServiceNamedReturn {
+			want0, want1 := serviceStubNamedPins()
+			s.OnNamed.Returns(want0, want1)
+			return namedreturnstest.ServiceNamedReturn{Item: want0, Err: want1}
+		},
+		Override: func(seen func(namedreturnstest.ServiceNamedCall)) {
+			s.OnNamed.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(namedreturnstest.ServiceNamedCall{Ctx: p0, ID: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -125,25 +138,38 @@ func serviceStubNamedSubject(
 	}
 }
 
-// serviceStubUnnamedSubject returns the subject of [stub.Behaviour] for
-// Unnamed. The subject calls a new double that reports to tb.
+// serviceStubUnnamedSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Unnamed. The subject calls a new double that
+// reports to tb.
 func serviceStubUnnamedSubject(
 	tb assert.TB,
 ) stub.Subject[namedreturnstest.ServiceUnnamedCall, namedreturnstest.ServiceUnnamedReturn] {
 	tb.Helper()
 	s := namedreturnstest.NewServiceStub(tb)
 	return stub.Subject[namedreturnstest.ServiceUnnamedCall, namedreturnstest.ServiceUnnamedReturn]{
-		Stub: s.OnUnnamed.MethodStub,
+		Stub:  s.OnUnnamed.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = serviceStubUnnamed(tb, s)
+		},
+		Arguments: func(tb assert.TB, c namedreturnstest.ServiceUnnamedCall) {
+			tb.Helper()
+			a0, a1 := serviceStubUnnamedArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.ID, a1, "the call records ID")
 		},
 		Result: func() namedreturnstest.ServiceUnnamedReturn {
 			got0, got1 := serviceStubUnnamed(tb, s)
 			return namedreturnstest.ServiceUnnamedReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnUnnamed.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() namedreturnstest.ServiceUnnamedReturn {
+			want0, want1 := serviceStubUnnamedPins()
+			s.OnUnnamed.Returns(want0, want1)
+			return namedreturnstest.ServiceUnnamedReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(namedreturnstest.ServiceUnnamedCall)) {
+			s.OnUnnamed.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(namedreturnstest.ServiceUnnamedCall{Ctx: p0, ID: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -157,24 +183,37 @@ func serviceStubUnnamedSubject(
 }
 
 // serviceStubPartiallyNamedSubject returns the subject of [stub.Behaviour]
-// for PartiallyNamed. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for PartiallyNamed. The subject calls a new
+// double that reports to tb.
 func serviceStubPartiallyNamedSubject(
 	tb assert.TB,
 ) stub.Subject[namedreturnstest.ServicePartiallyNamedCall, namedreturnstest.ServicePartiallyNamedReturn] {
 	tb.Helper()
 	s := namedreturnstest.NewServiceStub(tb)
 	return stub.Subject[namedreturnstest.ServicePartiallyNamedCall, namedreturnstest.ServicePartiallyNamedReturn]{
-		Stub: s.OnPartiallyNamed.MethodStub,
+		Stub:  s.OnPartiallyNamed.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = serviceStubPartiallyNamed(tb, s)
+		},
+		Arguments: func(tb assert.TB, c namedreturnstest.ServicePartiallyNamedCall) {
+			tb.Helper()
+			a0, a1 := serviceStubPartiallyNamedArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.ID, a1, "the call records ID")
 		},
 		Result: func() namedreturnstest.ServicePartiallyNamedReturn {
 			got0, got1 := serviceStubPartiallyNamed(tb, s)
 			return namedreturnstest.ServicePartiallyNamedReturn{Item: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnPartiallyNamed.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() namedreturnstest.ServicePartiallyNamedReturn {
+			want0, want1 := serviceStubPartiallyNamedPins()
+			s.OnPartiallyNamed.Returns(want0, want1)
+			return namedreturnstest.ServicePartiallyNamedReturn{Item: want0, Err: want1}
+		},
+		Override: func(seen func(namedreturnstest.ServicePartiallyNamedCall)) {
+			s.OnPartiallyNamed.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(namedreturnstest.ServicePartiallyNamedCall{Ctx: p0, ID: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -200,7 +239,6 @@ func serviceStubInstanceOf(tb assert.TB, s *namedreturnstest.ServiceStub) servic
 		Call: func() {
 			_, _ = serviceStubNamed(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -212,174 +250,34 @@ func TestServiceStub(t *testing.T) {
 	t.Run("Named", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Named", serviceStubNamedSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			_, _ = serviceStubNamed(t, s)
-			got := s.OnNamed.AssertCalledOnce(t, "Named records the call")
-			a0, a1 := serviceStubNamedArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.ID, a1, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			var seen []namedreturnstest.ServiceNamedCall
-			s.OnNamed.OnRecord(func(c namedreturnstest.ServiceNamedCall) { seen = append(seen, c) })
-			_, _ = serviceStubNamed(t, s)
-			_, _ = serviceStubNamed(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Named")
-		})
 	})
 
 	t.Run("Unnamed", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Unnamed", serviceStubUnnamedSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			_, _ = serviceStubUnnamed(t, s)
-			got := s.OnUnnamed.AssertCalledOnce(t, "Unnamed records the call")
-			a0, a1 := serviceStubUnnamedArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.ID, a1, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			var seen []namedreturnstest.ServiceUnnamedCall
-			s.OnUnnamed.OnRecord(func(c namedreturnstest.ServiceUnnamedCall) { seen = append(seen, c) })
-			_, _ = serviceStubUnnamed(t, s)
-			_, _ = serviceStubUnnamed(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Unnamed")
-		})
 	})
 
 	t.Run("PartiallyNamed", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "PartiallyNamed", serviceStubPartiallyNamedSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			_, _ = serviceStubPartiallyNamed(t, s)
-			got := s.OnPartiallyNamed.AssertCalledOnce(t, "PartiallyNamed records the call")
-			a0, a1 := serviceStubPartiallyNamedArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.ID, a1, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			var seen []namedreturnstest.ServicePartiallyNamedCall
-			s.OnPartiallyNamed.OnRecord(func(c namedreturnstest.ServicePartiallyNamedCall) { seen = append(seen, c) })
-			_, _ = serviceStubPartiallyNamed(t, s)
-			_, _ = serviceStubPartiallyNamed(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of PartiallyNamed")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) serviceStubInstance {
-			return serviceStubInstanceOf(tb, namedreturnstest.NewServiceStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Named", func(t *testing.T) {
+		t.Run("Named", func(t *testing.T) {
 			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			_, _ = serviceStubNamed(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNamed.CallCount(), 0, "ResetCalls clears the calls of Named")
+			stub.ResetBehaviour(t, "Named", serviceStubNamedSubject)
 		})
 
-		t.Run("keeps the results of Returns of Named", func(t *testing.T) {
+		t.Run("Unnamed", func(t *testing.T) {
 			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			want0, want1 := serviceStubNamedPins()
-			s.OnNamed.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := serviceStubNamed(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Item of Named")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Named")
+			stub.ResetBehaviour(t, "Unnamed", serviceStubUnnamedSubject)
 		})
 
-		t.Run("clears the recorded calls of Unnamed", func(t *testing.T) {
+		t.Run("PartiallyNamed", func(t *testing.T) {
 			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			_, _ = serviceStubUnnamed(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnUnnamed.CallCount(), 0, "ResetCalls clears the calls of Unnamed")
-		})
-
-		t.Run("keeps the results of Returns of Unnamed", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			want0, want1 := serviceStubUnnamedPins()
-			s.OnUnnamed.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := serviceStubUnnamed(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Unnamed")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Unnamed")
-		})
-
-		t.Run("clears the recorded calls of PartiallyNamed", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			_, _ = serviceStubPartiallyNamed(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPartiallyNamed.CallCount(), 0, "ResetCalls clears the calls of PartiallyNamed")
-		})
-
-		t.Run("keeps the results of Returns of PartiallyNamed", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			want0, want1 := serviceStubPartiallyNamedPins()
-			s.OnPartiallyNamed.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := serviceStubPartiallyNamed(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Item of PartiallyNamed")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of PartiallyNamed")
-		})
-	})
-
-	t.Run("NewServiceStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) serviceStubInstance {
-			return serviceStubInstanceOf(tb, namedreturnstest.NewServiceStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewServiceStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Named with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Named-failing")
-			s := namedreturnstest.NewServiceStubFailing(t, want)
-			_, err := serviceStubNamed(t, s)
-			assert.ErrorIs(t, err, want, "Named fails with the error of NewServiceStubFailing")
-		})
-
-		t.Run("fails Unnamed with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Unnamed-failing")
-			s := namedreturnstest.NewServiceStubFailing(t, want)
-			_, r1 := serviceStubUnnamed(t, s)
-			assert.ErrorIs(t, r1, want, "Unnamed fails with the error of NewServiceStubFailing")
-		})
-
-		t.Run("fails PartiallyNamed with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("PartiallyNamed-failing")
-			s := namedreturnstest.NewServiceStubFailing(t, want)
-			_, r1 := serviceStubPartiallyNamed(t, s)
-			assert.ErrorIs(t, r1, want, "PartiallyNamed fails with the error of NewServiceStubFailing")
+			stub.ResetBehaviour(t, "PartiallyNamed", serviceStubPartiallyNamedSubject)
 		})
 	})
 
@@ -581,163 +479,4 @@ func TestServiceStub(t *testing.T) {
 	})
 }
 
-// TestServiceNamedStub checks the methods of ServiceNamedStub, which
-// configures Named.
-func TestServiceNamedStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Named", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			want0, want1 := serviceStubNamedPins()
-			s.OnNamed.Returns(want0, want1)
-			got0, got1 := serviceStubNamed(t, s)
-			expect.Equal(t, got0, want0, "Named returns the Item that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Named returns the error that Returns sets")
-		})
-
-		t.Run("configures Named for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := namedreturnstest.NewServiceStub(r)
-			s.OnNamed.Strict()
-			var want0 string
-			var want1 error
-			s.OnNamed.Returns(want0, want1)
-			_, _ = serviceStubNamed(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Named")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Named to the function", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnNamed.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = serviceStubNamed(t, s)
-			a0, a1 := serviceStubNamedArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives ID")
-		})
-	})
-}
-
-// TestServiceUnnamedStub checks the methods of ServiceUnnamedStub, which
-// configures Unnamed.
-func TestServiceUnnamedStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Unnamed", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			want0, want1 := serviceStubUnnamedPins()
-			s.OnUnnamed.Returns(want0, want1)
-			got0, got1 := serviceStubUnnamed(t, s)
-			expect.Equal(t, got0, want0, "Unnamed returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Unnamed returns the error that Returns sets")
-		})
-
-		t.Run("configures Unnamed for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := namedreturnstest.NewServiceStub(r)
-			s.OnUnnamed.Strict()
-			var want0 string
-			var want1 error
-			s.OnUnnamed.Returns(want0, want1)
-			_, _ = serviceStubUnnamed(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Unnamed")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Unnamed to the function", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnUnnamed.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = serviceStubUnnamed(t, s)
-			a0, a1 := serviceStubUnnamedArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives ID")
-		})
-	})
-}
-
-// TestServicePartiallyNamedStub checks the methods of
-// ServicePartiallyNamedStub, which configures PartiallyNamed.
-func TestServicePartiallyNamedStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of PartiallyNamed", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			want0, want1 := serviceStubPartiallyNamedPins()
-			s.OnPartiallyNamed.Returns(want0, want1)
-			got0, got1 := serviceStubPartiallyNamed(t, s)
-			expect.Equal(t, got0, want0, "PartiallyNamed returns the Item that Returns sets")
-			expect.ErrorIs(t, got1, want1, "PartiallyNamed returns the error that Returns sets")
-		})
-
-		t.Run("configures PartiallyNamed for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := namedreturnstest.NewServiceStub(r)
-			s.OnPartiallyNamed.Strict()
-			var want0 string
-			var want1 error
-			s.OnPartiallyNamed.Returns(want0, want1)
-			_, _ = serviceStubPartiallyNamed(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of PartiallyNamed")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of PartiallyNamed to the function", func(t *testing.T) {
-			t.Parallel()
-			s := namedreturnstest.NewServiceStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnPartiallyNamed.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = serviceStubPartiallyNamed(t, s)
-			a0, a1 := serviceStubPartiallyNamedArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives ID")
-		})
-	})
-}
-
-// dokimi:provenance sha256:f848327f750e28230b01d383bac73df1ec810fb8a30bd627fbdc5ad53a0ec23f
+// dokimi:provenance sha256:031770ebefd92aac06597a326c0cfad9b50b5678545eedd2c1369990a0fb2ebb

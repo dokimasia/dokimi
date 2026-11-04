@@ -137,23 +137,36 @@ func contractStubStatePins() (string, error) {
 	return want0, want1
 }
 
-// contractStubStepSubject returns the subject of [stub.Behaviour] for
-// Step. The subject calls a new double that reports to tb.
+// contractStubStepSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Step. The subject calls a new double that
+// reports to tb.
 func contractStubStepSubject(tb assert.TB) stub.Subject[sagatest.ContractStepCall, sagatest.ContractStepReturn] {
 	tb.Helper()
 	s := sagatest.NewContractStub(tb)
 	return stub.Subject[sagatest.ContractStepCall, sagatest.ContractStepReturn]{
-		Stub: s.OnStep.MethodStub,
+		Stub:  s.OnStep.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubStep(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sagatest.ContractStepCall) {
+			tb.Helper()
+			a0, a1 := contractStubStepArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() sagatest.ContractStepReturn {
 			got0 := contractStubStep(tb, s)
 			return sagatest.ContractStepReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnStep.Func(func(_ context.Context, _ saga.Value) error {
-				mark()
+		Returns: func() sagatest.ContractStepReturn {
+			want0 := contractStubStepPins()
+			s.OnStep.Returns(want0)
+			return sagatest.ContractStepReturn{Err: want0}
+		},
+		Override: func(seen func(sagatest.ContractStepCall)) {
+			s.OnStep.Func(func(p0 context.Context, p1 saga.Value) error {
+				seen(sagatest.ContractStepCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -166,24 +179,37 @@ func contractStubStepSubject(tb assert.TB) stub.Subject[sagatest.ContractStepCal
 }
 
 // contractStubCompensateSubject returns the subject of [stub.Behaviour]
-// for Compensate. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for Compensate. The subject calls a new double
+// that reports to tb.
 func contractStubCompensateSubject(
 	tb assert.TB,
 ) stub.Subject[sagatest.ContractCompensateCall, sagatest.ContractCompensateReturn] {
 	tb.Helper()
 	s := sagatest.NewContractStub(tb)
 	return stub.Subject[sagatest.ContractCompensateCall, sagatest.ContractCompensateReturn]{
-		Stub: s.OnCompensate.MethodStub,
+		Stub:  s.OnCompensate.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubCompensate(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sagatest.ContractCompensateCall) {
+			tb.Helper()
+			a0, a1 := contractStubCompensateArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() sagatest.ContractCompensateReturn {
 			got0 := contractStubCompensate(tb, s)
 			return sagatest.ContractCompensateReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnCompensate.Func(func(_ context.Context, _ saga.Value) error {
-				mark()
+		Returns: func() sagatest.ContractCompensateReturn {
+			want0 := contractStubCompensatePins()
+			s.OnCompensate.Returns(want0)
+			return sagatest.ContractCompensateReturn{Err: want0}
+		},
+		Override: func(seen func(sagatest.ContractCompensateCall)) {
+			s.OnCompensate.Func(func(p0 context.Context, p1 saga.Value) error {
+				seen(sagatest.ContractCompensateCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -195,23 +221,36 @@ func contractStubCompensateSubject(
 	}
 }
 
-// contractStubShipSubject returns the subject of [stub.Behaviour] for
-// Ship. The subject calls a new double that reports to tb.
+// contractStubShipSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Ship. The subject calls a new double that
+// reports to tb.
 func contractStubShipSubject(tb assert.TB) stub.Subject[sagatest.ContractShipCall, sagatest.ContractShipReturn] {
 	tb.Helper()
 	s := sagatest.NewContractStub(tb)
 	return stub.Subject[sagatest.ContractShipCall, sagatest.ContractShipReturn]{
-		Stub: s.OnShip.MethodStub,
+		Stub:  s.OnShip.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubShip(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sagatest.ContractShipCall) {
+			tb.Helper()
+			a0, a1 := contractStubShipArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() sagatest.ContractShipReturn {
 			got0 := contractStubShip(tb, s)
 			return sagatest.ContractShipReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnShip.Func(func(_ context.Context, _ saga.Value) error {
-				mark()
+		Returns: func() sagatest.ContractShipReturn {
+			want0 := contractStubShipPins()
+			s.OnShip.Returns(want0)
+			return sagatest.ContractShipReturn{Err: want0}
+		},
+		Override: func(seen func(sagatest.ContractShipCall)) {
+			s.OnShip.Func(func(p0 context.Context, p1 saga.Value) error {
+				seen(sagatest.ContractShipCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -223,25 +262,38 @@ func contractStubShipSubject(tb assert.TB) stub.Subject[sagatest.ContractShipCal
 	}
 }
 
-// contractStubUndoShipSubject returns the subject of [stub.Behaviour] for
-// UndoShip. The subject calls a new double that reports to tb.
+// contractStubUndoShipSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for UndoShip. The subject calls a new double that
+// reports to tb.
 func contractStubUndoShipSubject(
 	tb assert.TB,
 ) stub.Subject[sagatest.ContractUndoShipCall, sagatest.ContractUndoShipReturn] {
 	tb.Helper()
 	s := sagatest.NewContractStub(tb)
 	return stub.Subject[sagatest.ContractUndoShipCall, sagatest.ContractUndoShipReturn]{
-		Stub: s.OnUndoShip.MethodStub,
+		Stub:  s.OnUndoShip.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubUndoShip(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sagatest.ContractUndoShipCall) {
+			tb.Helper()
+			a0, a1 := contractStubUndoShipArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() sagatest.ContractUndoShipReturn {
 			got0 := contractStubUndoShip(tb, s)
 			return sagatest.ContractUndoShipReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnUndoShip.Func(func(_ context.Context, _ saga.Value) error {
-				mark()
+		Returns: func() sagatest.ContractUndoShipReturn {
+			want0 := contractStubUndoShipPins()
+			s.OnUndoShip.Returns(want0)
+			return sagatest.ContractUndoShipReturn{Err: want0}
+		},
+		Override: func(seen func(sagatest.ContractUndoShipCall)) {
+			s.OnUndoShip.Func(func(p0 context.Context, p1 saga.Value) error {
+				seen(sagatest.ContractUndoShipCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -253,23 +305,35 @@ func contractStubUndoShipSubject(
 	}
 }
 
-// contractStubStateSubject returns the subject of [stub.Behaviour] for
-// State. The subject calls a new double that reports to tb.
+// contractStubStateSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for State. The subject calls a new double that
+// reports to tb.
 func contractStubStateSubject(tb assert.TB) stub.Subject[sagatest.ContractStateCall, sagatest.ContractStateReturn] {
 	tb.Helper()
 	s := sagatest.NewContractStub(tb)
 	return stub.Subject[sagatest.ContractStateCall, sagatest.ContractStateReturn]{
-		Stub: s.OnState.MethodStub,
+		Stub:  s.OnState.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubState(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sagatest.ContractStateCall) {
+			tb.Helper()
+			a0 := contractStubStateArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() sagatest.ContractStateReturn {
 			got0, got1 := contractStubState(tb, s)
 			return sagatest.ContractStateReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnState.Func(func(_ context.Context) (string, error) {
-				mark()
+		Returns: func() sagatest.ContractStateReturn {
+			want0, want1 := contractStubStatePins()
+			s.OnState.Returns(want0, want1)
+			return sagatest.ContractStateReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(sagatest.ContractStateCall)) {
+			s.OnState.Func(func(p0 context.Context) (string, error) {
+				seen(sagatest.ContractStateCall{Ctx: p0})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -295,7 +359,6 @@ func contractStubInstanceOf(tb assert.TB, s *sagatest.ContractStub) contractStub
 		Call: func() {
 			_ = contractStubStep(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -307,273 +370,54 @@ func TestContractStub(t *testing.T) {
 	t.Run("Step", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Step", contractStubStepSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_ = contractStubStep(t, s)
-			got := s.OnStep.AssertCalledOnce(t, "Step records the call")
-			a0, a1 := contractStubStepArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var seen []sagatest.ContractStepCall
-			s.OnStep.OnRecord(func(c sagatest.ContractStepCall) { seen = append(seen, c) })
-			_ = contractStubStep(t, s)
-			_ = contractStubStep(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Step")
-		})
 	})
 
 	t.Run("Compensate", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Compensate", contractStubCompensateSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_ = contractStubCompensate(t, s)
-			got := s.OnCompensate.AssertCalledOnce(t, "Compensate records the call")
-			a0, a1 := contractStubCompensateArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var seen []sagatest.ContractCompensateCall
-			s.OnCompensate.OnRecord(func(c sagatest.ContractCompensateCall) { seen = append(seen, c) })
-			_ = contractStubCompensate(t, s)
-			_ = contractStubCompensate(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Compensate")
-		})
 	})
 
 	t.Run("Ship", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Ship", contractStubShipSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_ = contractStubShip(t, s)
-			got := s.OnShip.AssertCalledOnce(t, "Ship records the call")
-			a0, a1 := contractStubShipArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var seen []sagatest.ContractShipCall
-			s.OnShip.OnRecord(func(c sagatest.ContractShipCall) { seen = append(seen, c) })
-			_ = contractStubShip(t, s)
-			_ = contractStubShip(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Ship")
-		})
 	})
 
 	t.Run("UndoShip", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "UndoShip", contractStubUndoShipSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_ = contractStubUndoShip(t, s)
-			got := s.OnUndoShip.AssertCalledOnce(t, "UndoShip records the call")
-			a0, a1 := contractStubUndoShipArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var seen []sagatest.ContractUndoShipCall
-			s.OnUndoShip.OnRecord(func(c sagatest.ContractUndoShipCall) { seen = append(seen, c) })
-			_ = contractStubUndoShip(t, s)
-			_ = contractStubUndoShip(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of UndoShip")
-		})
 	})
 
 	t.Run("State", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "State", contractStubStateSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_, _ = contractStubState(t, s)
-			got := s.OnState.AssertCalledOnce(t, "State records the call")
-			a0 := contractStubStateArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var seen []sagatest.ContractStateCall
-			s.OnState.OnRecord(func(c sagatest.ContractStateCall) { seen = append(seen, c) })
-			_, _ = contractStubState(t, s)
-			_, _ = contractStubState(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of State")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
-			return contractStubInstanceOf(tb, sagatest.NewContractStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Step", func(t *testing.T) {
+		t.Run("Step", func(t *testing.T) {
 			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_ = contractStubStep(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStep.CallCount(), 0, "ResetCalls clears the calls of Step")
+			stub.ResetBehaviour(t, "Step", contractStubStepSubject)
 		})
 
-		t.Run("keeps the results of Returns of Step", func(t *testing.T) {
+		t.Run("Compensate", func(t *testing.T) {
 			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0 := contractStubStepPins()
-			s.OnStep.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubStep(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Step")
+			stub.ResetBehaviour(t, "Compensate", contractStubCompensateSubject)
 		})
 
-		t.Run("clears the recorded calls of Compensate", func(t *testing.T) {
+		t.Run("Ship", func(t *testing.T) {
 			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_ = contractStubCompensate(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnCompensate.CallCount(), 0, "ResetCalls clears the calls of Compensate")
+			stub.ResetBehaviour(t, "Ship", contractStubShipSubject)
 		})
 
-		t.Run("keeps the results of Returns of Compensate", func(t *testing.T) {
+		t.Run("UndoShip", func(t *testing.T) {
 			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0 := contractStubCompensatePins()
-			s.OnCompensate.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubCompensate(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Compensate")
+			stub.ResetBehaviour(t, "UndoShip", contractStubUndoShipSubject)
 		})
 
-		t.Run("clears the recorded calls of Ship", func(t *testing.T) {
+		t.Run("State", func(t *testing.T) {
 			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_ = contractStubShip(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnShip.CallCount(), 0, "ResetCalls clears the calls of Ship")
-		})
-
-		t.Run("keeps the results of Returns of Ship", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0 := contractStubShipPins()
-			s.OnShip.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubShip(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Ship")
-		})
-
-		t.Run("clears the recorded calls of UndoShip", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_ = contractStubUndoShip(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnUndoShip.CallCount(), 0, "ResetCalls clears the calls of UndoShip")
-		})
-
-		t.Run("keeps the results of Returns of UndoShip", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0 := contractStubUndoShipPins()
-			s.OnUndoShip.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubUndoShip(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of UndoShip")
-		})
-
-		t.Run("clears the recorded calls of State", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			_, _ = contractStubState(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnState.CallCount(), 0, "ResetCalls clears the calls of State")
-		})
-
-		t.Run("keeps the results of Returns of State", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0, want1 := contractStubStatePins()
-			s.OnState.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubState(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of State")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of State")
-		})
-	})
-
-	t.Run("NewContractStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
-			return contractStubInstanceOf(tb, sagatest.NewContractStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewContractStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Step with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Step-failing")
-			s := sagatest.NewContractStubFailing(t, want)
-			r0 := contractStubStep(t, s)
-			assert.ErrorIs(t, r0, want, "Step fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Compensate with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Compensate-failing")
-			s := sagatest.NewContractStubFailing(t, want)
-			r0 := contractStubCompensate(t, s)
-			assert.ErrorIs(t, r0, want, "Compensate fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Ship with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Ship-failing")
-			s := sagatest.NewContractStubFailing(t, want)
-			r0 := contractStubShip(t, s)
-			assert.ErrorIs(t, r0, want, "Ship fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails UndoShip with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("UndoShip-failing")
-			s := sagatest.NewContractStubFailing(t, want)
-			r0 := contractStubUndoShip(t, s)
-			assert.ErrorIs(t, r0, want, "UndoShip fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails State with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("State-failing")
-			s := sagatest.NewContractStubFailing(t, want)
-			_, r1 := contractStubState(t, s)
-			assert.ErrorIs(t, r1, want, "State fails with the error of NewContractStubFailing")
+			stub.ResetBehaviour(t, "State", contractStubStateSubject)
 		})
 	})
 
@@ -838,255 +682,4 @@ func TestContractStub(t *testing.T) {
 	})
 }
 
-// TestContractStepStub checks the methods of ContractStepStub, which
-// configures Step.
-func TestContractStepStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Step", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0 := contractStubStepPins()
-			s.OnStep.Returns(want0)
-			got0 := contractStubStep(t, s)
-			assert.ErrorIs(t, got0, want0, "Step returns the error that Returns sets")
-		})
-
-		t.Run("configures Step for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sagatest.NewContractStub(r)
-			s.OnStep.Strict()
-			var want0 error
-			s.OnStep.Returns(want0)
-			_ = contractStubStep(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Step")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Step to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var got0 context.Context
-			var got1 saga.Value
-			s.OnStep.Func(func(p0 context.Context, p1 saga.Value) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = contractStubStep(t, s)
-			a0, a1 := contractStubStepArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// TestContractCompensateStub checks the methods of ContractCompensateStub,
-// which configures Compensate.
-func TestContractCompensateStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Compensate", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0 := contractStubCompensatePins()
-			s.OnCompensate.Returns(want0)
-			got0 := contractStubCompensate(t, s)
-			assert.ErrorIs(t, got0, want0, "Compensate returns the error that Returns sets")
-		})
-
-		t.Run("configures Compensate for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sagatest.NewContractStub(r)
-			s.OnCompensate.Strict()
-			var want0 error
-			s.OnCompensate.Returns(want0)
-			_ = contractStubCompensate(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Compensate")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Compensate to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var got0 context.Context
-			var got1 saga.Value
-			s.OnCompensate.Func(func(p0 context.Context, p1 saga.Value) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = contractStubCompensate(t, s)
-			a0, a1 := contractStubCompensateArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// TestContractShipStub checks the methods of ContractShipStub, which
-// configures Ship.
-func TestContractShipStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Ship", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0 := contractStubShipPins()
-			s.OnShip.Returns(want0)
-			got0 := contractStubShip(t, s)
-			assert.ErrorIs(t, got0, want0, "Ship returns the error that Returns sets")
-		})
-
-		t.Run("configures Ship for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sagatest.NewContractStub(r)
-			s.OnShip.Strict()
-			var want0 error
-			s.OnShip.Returns(want0)
-			_ = contractStubShip(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Ship")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Ship to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var got0 context.Context
-			var got1 saga.Value
-			s.OnShip.Func(func(p0 context.Context, p1 saga.Value) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = contractStubShip(t, s)
-			a0, a1 := contractStubShipArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// TestContractUndoShipStub checks the methods of ContractUndoShipStub,
-// which configures UndoShip.
-func TestContractUndoShipStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of UndoShip", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0 := contractStubUndoShipPins()
-			s.OnUndoShip.Returns(want0)
-			got0 := contractStubUndoShip(t, s)
-			assert.ErrorIs(t, got0, want0, "UndoShip returns the error that Returns sets")
-		})
-
-		t.Run("configures UndoShip for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sagatest.NewContractStub(r)
-			s.OnUndoShip.Strict()
-			var want0 error
-			s.OnUndoShip.Returns(want0)
-			_ = contractStubUndoShip(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of UndoShip")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of UndoShip to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var got0 context.Context
-			var got1 saga.Value
-			s.OnUndoShip.Func(func(p0 context.Context, p1 saga.Value) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = contractStubUndoShip(t, s)
-			a0, a1 := contractStubUndoShipArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// TestContractStateStub checks the methods of ContractStateStub, which
-// configures State.
-func TestContractStateStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of State", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			want0, want1 := contractStubStatePins()
-			s.OnState.Returns(want0, want1)
-			got0, got1 := contractStubState(t, s)
-			expect.Equal(t, got0, want0, "State returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "State returns the error that Returns sets")
-		})
-
-		t.Run("configures State for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sagatest.NewContractStub(r)
-			s.OnState.Strict()
-			var want0 string
-			var want1 error
-			s.OnState.Returns(want0, want1)
-			_, _ = contractStubState(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of State")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of State to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sagatest.NewContractStub(t)
-			var got0 context.Context
-			s.OnState.Func(func(p0 context.Context) (string, error) {
-				got0 = p0
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubState(t, s)
-			a0 := contractStubStateArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:bf5ee68ded2101b551b374afe79c838954893c8db9f3a368e2b1b14ea76fed95
+// dokimi:provenance sha256:3f2260e3a88400a65a7e04bc1e620f9afe1784491e135a6fef682e7a290fa3bb

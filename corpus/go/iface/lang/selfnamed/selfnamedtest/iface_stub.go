@@ -177,15 +177,6 @@ func NewFilterStub(tb assert.TB, opts ...FilterStubOption) *FilterStub {
 	return s
 }
 
-// NewFilterStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewFilterStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...FilterStubOption) *FilterStub {
-	return NewFilterStub(tb, append([]FilterStubOption{
-		FilterStubWithClock(clk),
-		FilterStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *FilterStub) ResetCalls() {
@@ -246,4 +237,4 @@ func (s *FilterStub) Drain(src selfnamed.Source) int {
 	return r.Result
 }
 
-// dokimi:provenance sha256:8578a64c91019c8251fe8b170b066a678742a854eefcb5daa4bc093190bba6b3
+// dokimi:provenance sha256:b4f731b5fe0449ae1e3cd524034a00c87c542e97026300c3c72ace443ee1b132

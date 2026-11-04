@@ -160,15 +160,23 @@ func ledgerStubBillPins() billing.Invoice {
 	return want0
 }
 
-// ledgerStubGetSubject returns the subject of [stub.Behaviour] for Get.
-// The subject calls a new double that reports to tb.
+// ledgerStubGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func ledgerStubGetSubject(tb assert.TB) stub.Subject[builttest.LedgerGetCall, builttest.LedgerGetReturn] {
 	tb.Helper()
 	s := builttest.NewLedgerStub(tb)
 	return stub.Subject[builttest.LedgerGetCall, builttest.LedgerGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = ledgerStubGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c builttest.LedgerGetCall) {
+			tb.Helper()
+			a0, a1 := ledgerStubGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.ID, a1, "the call records ID")
 		},
 		Result: func() builttest.LedgerGetReturn {
 			got0, got1 := ledgerStubGet(tb, s)
@@ -178,9 +186,14 @@ func ledgerStubGetSubject(tb assert.TB) stub.Subject[builttest.LedgerGetCall, bu
 			r0 := builttest.NewAccountBuilder().Build()
 			return builttest.LedgerGetReturn{Result: r0}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (built.Account, error) {
-				mark()
+		Returns: func() builttest.LedgerGetReturn {
+			want0, want1 := ledgerStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return builttest.LedgerGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(builttest.LedgerGetCall)) {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (built.Account, error) {
+				seen(builttest.LedgerGetCall{Ctx: p0, ID: p1})
 				var z0 built.Account
 				var z1 error
 				return z0, z1
@@ -193,15 +206,23 @@ func ledgerStubGetSubject(tb assert.TB) stub.Subject[builttest.LedgerGetCall, bu
 	}
 }
 
-// ledgerStubFindSubject returns the subject of [stub.Behaviour] for Find.
-// The subject calls a new double that reports to tb.
+// ledgerStubFindSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Find. The subject calls a new double that
+// reports to tb.
 func ledgerStubFindSubject(tb assert.TB) stub.Subject[builttest.LedgerFindCall, builttest.LedgerFindReturn] {
 	tb.Helper()
 	s := builttest.NewLedgerStub(tb)
 	return stub.Subject[builttest.LedgerFindCall, builttest.LedgerFindReturn]{
-		Stub: s.OnFind.MethodStub,
+		Stub:  s.OnFind.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = ledgerStubFind(tb, s)
+		},
+		Arguments: func(tb assert.TB, c builttest.LedgerFindCall) {
+			tb.Helper()
+			a0, a1 := ledgerStubFindArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.ID, a1, "the call records ID")
 		},
 		Result: func() builttest.LedgerFindReturn {
 			got0, got1 := ledgerStubFind(tb, s)
@@ -211,9 +232,14 @@ func ledgerStubFindSubject(tb assert.TB) stub.Subject[builttest.LedgerFindCall, 
 			r0 := builttest.NewAccountBuilder().Build()
 			return builttest.LedgerFindReturn{Result: &r0}
 		},
-		Override: func(mark func()) {
-			s.OnFind.Func(func(_ context.Context, _ string) (*built.Account, error) {
-				mark()
+		Returns: func() builttest.LedgerFindReturn {
+			want0, want1 := ledgerStubFindPins()
+			s.OnFind.Returns(want0, want1)
+			return builttest.LedgerFindReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(builttest.LedgerFindCall)) {
+			s.OnFind.Func(func(p0 context.Context, p1 string) (*built.Account, error) {
+				seen(builttest.LedgerFindCall{Ctx: p0, ID: p1})
 				var z0 *built.Account
 				var z1 error
 				return z0, z1
@@ -226,15 +252,22 @@ func ledgerStubFindSubject(tb assert.TB) stub.Subject[builttest.LedgerFindCall, 
 	}
 }
 
-// ledgerStubLookupSubject returns the subject of [stub.Behaviour] for
-// Lookup. The subject calls a new double that reports to tb.
+// ledgerStubLookupSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Lookup. The subject calls a new double that
+// reports to tb.
 func ledgerStubLookupSubject(tb assert.TB) stub.Subject[builttest.LedgerLookupCall, builttest.LedgerLookupReturn] {
 	tb.Helper()
 	s := builttest.NewLedgerStub(tb)
 	return stub.Subject[builttest.LedgerLookupCall, builttest.LedgerLookupReturn]{
-		Stub: s.OnLookup.MethodStub,
+		Stub:  s.OnLookup.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = ledgerStubLookup(tb, s)
+		},
+		Arguments: func(tb assert.TB, c builttest.LedgerLookupCall) {
+			tb.Helper()
+			a0 := ledgerStubLookupArgs(tb)
+			assert.Equal(tb, c.ID, a0, "the call records ID")
 		},
 		Result: func() builttest.LedgerLookupReturn {
 			got0, got1 := ledgerStubLookup(tb, s)
@@ -244,9 +277,14 @@ func ledgerStubLookupSubject(tb assert.TB) stub.Subject[builttest.LedgerLookupCa
 			r0 := builttest.NewAccountBuilder().Build()
 			return builttest.LedgerLookupReturn{Result0: r0}
 		},
-		Override: func(mark func()) {
-			s.OnLookup.Func(func(_ string) (built.Account, bool) {
-				mark()
+		Returns: func() builttest.LedgerLookupReturn {
+			want0, want1 := ledgerStubLookupPins()
+			s.OnLookup.Returns(want0, want1)
+			return builttest.LedgerLookupReturn{Result0: want0, Result1: want1}
+		},
+		Override: func(seen func(builttest.LedgerLookupCall)) {
+			s.OnLookup.Func(func(p0 string) (built.Account, bool) {
+				seen(builttest.LedgerLookupCall{ID: p0})
 				var z0 built.Account
 				var z1 bool
 				return z0, z1
@@ -255,15 +293,22 @@ func ledgerStubLookupSubject(tb assert.TB) stub.Subject[builttest.LedgerLookupCa
 	}
 }
 
-// ledgerStubListSubject returns the subject of [stub.Behaviour] for List.
-// The subject calls a new double that reports to tb.
+// ledgerStubListSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for List. The subject calls a new double that
+// reports to tb.
 func ledgerStubListSubject(tb assert.TB) stub.Subject[builttest.LedgerListCall, builttest.LedgerListReturn] {
 	tb.Helper()
 	s := builttest.NewLedgerStub(tb)
 	return stub.Subject[builttest.LedgerListCall, builttest.LedgerListReturn]{
-		Stub: s.OnList.MethodStub,
+		Stub:  s.OnList.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = ledgerStubList(tb, s)
+		},
+		Arguments: func(tb assert.TB, c builttest.LedgerListCall) {
+			tb.Helper()
+			a0 := ledgerStubListArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() builttest.LedgerListReturn {
 			got0, got1 := ledgerStubList(tb, s)
@@ -273,9 +318,14 @@ func ledgerStubListSubject(tb assert.TB) stub.Subject[builttest.LedgerListCall, 
 			r0 := builttest.NewPageBuilder[built.Account]().Build()
 			return builttest.LedgerListReturn{Result: r0}
 		},
-		Override: func(mark func()) {
-			s.OnList.Func(func(_ context.Context) (built.Page[built.Account], error) {
-				mark()
+		Returns: func() builttest.LedgerListReturn {
+			want0, want1 := ledgerStubListPins()
+			s.OnList.Returns(want0, want1)
+			return builttest.LedgerListReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(builttest.LedgerListCall)) {
+			s.OnList.Func(func(p0 context.Context) (built.Page[built.Account], error) {
+				seen(builttest.LedgerListCall{Ctx: p0})
 				var z0 built.Page[built.Account]
 				var z1 error
 				return z0, z1
@@ -288,23 +338,35 @@ func ledgerStubListSubject(tb assert.TB) stub.Subject[builttest.LedgerListCall, 
 	}
 }
 
-// ledgerStubNoteSubject returns the subject of [stub.Behaviour] for Note.
-// The subject calls a new double that reports to tb.
+// ledgerStubNoteSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Note. The subject calls a new double that
+// reports to tb.
 func ledgerStubNoteSubject(tb assert.TB) stub.Subject[builttest.LedgerNoteCall, builttest.LedgerNoteReturn] {
 	tb.Helper()
 	s := builttest.NewLedgerStub(tb)
 	return stub.Subject[builttest.LedgerNoteCall, builttest.LedgerNoteReturn]{
-		Stub: s.OnNote.MethodStub,
+		Stub:  s.OnNote.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = ledgerStubNote(tb, s)
+		},
+		Arguments: func(tb assert.TB, c builttest.LedgerNoteCall) {
+			tb.Helper()
+			a0 := ledgerStubNoteArgs(tb)
+			assert.Equal(tb, c.ID, a0, "the call records ID")
 		},
 		Result: func() builttest.LedgerNoteReturn {
 			got0 := ledgerStubNote(tb, s)
 			return builttest.LedgerNoteReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnNote.Func(func(_ string) built.Note {
-				mark()
+		Returns: func() builttest.LedgerNoteReturn {
+			want0 := ledgerStubNotePins()
+			s.OnNote.Returns(want0)
+			return builttest.LedgerNoteReturn{Result: want0}
+		},
+		Override: func(seen func(builttest.LedgerNoteCall)) {
+			s.OnNote.Func(func(p0 string) built.Note {
+				seen(builttest.LedgerNoteCall{ID: p0})
 				var z0 built.Note
 				return z0
 			})
@@ -312,23 +374,35 @@ func ledgerStubNoteSubject(tb assert.TB) stub.Subject[builttest.LedgerNoteCall, 
 	}
 }
 
-// ledgerStubBillSubject returns the subject of [stub.Behaviour] for Bill.
-// The subject calls a new double that reports to tb.
+// ledgerStubBillSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Bill. The subject calls a new double that
+// reports to tb.
 func ledgerStubBillSubject(tb assert.TB) stub.Subject[builttest.LedgerBillCall, builttest.LedgerBillReturn] {
 	tb.Helper()
 	s := builttest.NewLedgerStub(tb)
 	return stub.Subject[builttest.LedgerBillCall, builttest.LedgerBillReturn]{
-		Stub: s.OnBill.MethodStub,
+		Stub:  s.OnBill.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = ledgerStubBill(tb, s)
+		},
+		Arguments: func(tb assert.TB, c builttest.LedgerBillCall) {
+			tb.Helper()
+			a0 := ledgerStubBillArgs(tb)
+			assert.Equal(tb, c.ID, a0, "the call records ID")
 		},
 		Result: func() builttest.LedgerBillReturn {
 			got0 := ledgerStubBill(tb, s)
 			return builttest.LedgerBillReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnBill.Func(func(_ string) billing.Invoice {
-				mark()
+		Returns: func() builttest.LedgerBillReturn {
+			want0 := ledgerStubBillPins()
+			s.OnBill.Returns(want0)
+			return builttest.LedgerBillReturn{Result: want0}
+		},
+		Override: func(seen func(builttest.LedgerBillCall)) {
+			s.OnBill.Func(func(p0 string) billing.Invoice {
+				seen(builttest.LedgerBillCall{ID: p0})
 				var z0 billing.Invoice
 				return z0
 			})
@@ -349,7 +423,6 @@ func ledgerStubInstanceOf(tb assert.TB, s *builttest.LedgerStub) ledgerStubInsta
 		Call: func() {
 			_, _ = ledgerStubGet(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -361,300 +434,64 @@ func TestLedgerStub(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Get", ledgerStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_, _ = ledgerStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := ledgerStubGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.ID, a1, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var seen []builttest.LedgerGetCall
-			s.OnGet.OnRecord(func(c builttest.LedgerGetCall) { seen = append(seen, c) })
-			_, _ = ledgerStubGet(t, s)
-			_, _ = ledgerStubGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("Find", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Find", ledgerStubFindSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_, _ = ledgerStubFind(t, s)
-			got := s.OnFind.AssertCalledOnce(t, "Find records the call")
-			a0, a1 := ledgerStubFindArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.ID, a1, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var seen []builttest.LedgerFindCall
-			s.OnFind.OnRecord(func(c builttest.LedgerFindCall) { seen = append(seen, c) })
-			_, _ = ledgerStubFind(t, s)
-			_, _ = ledgerStubFind(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Find")
-		})
 	})
 
 	t.Run("Lookup", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Lookup", ledgerStubLookupSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_, _ = ledgerStubLookup(t, s)
-			got := s.OnLookup.AssertCalledOnce(t, "Lookup records the call")
-			a0 := ledgerStubLookupArgs(t)
-			assert.Equal(t, got.ID, a0, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var seen []builttest.LedgerLookupCall
-			s.OnLookup.OnRecord(func(c builttest.LedgerLookupCall) { seen = append(seen, c) })
-			_, _ = ledgerStubLookup(t, s)
-			_, _ = ledgerStubLookup(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Lookup")
-		})
 	})
 
 	t.Run("List", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "List", ledgerStubListSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_, _ = ledgerStubList(t, s)
-			got := s.OnList.AssertCalledOnce(t, "List records the call")
-			a0 := ledgerStubListArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var seen []builttest.LedgerListCall
-			s.OnList.OnRecord(func(c builttest.LedgerListCall) { seen = append(seen, c) })
-			_, _ = ledgerStubList(t, s)
-			_, _ = ledgerStubList(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of List")
-		})
 	})
 
 	t.Run("Note", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Note", ledgerStubNoteSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_ = ledgerStubNote(t, s)
-			got := s.OnNote.AssertCalledOnce(t, "Note records the call")
-			a0 := ledgerStubNoteArgs(t)
-			assert.Equal(t, got.ID, a0, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var seen []builttest.LedgerNoteCall
-			s.OnNote.OnRecord(func(c builttest.LedgerNoteCall) { seen = append(seen, c) })
-			_ = ledgerStubNote(t, s)
-			_ = ledgerStubNote(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Note")
-		})
 	})
 
 	t.Run("Bill", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Bill", ledgerStubBillSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_ = ledgerStubBill(t, s)
-			got := s.OnBill.AssertCalledOnce(t, "Bill records the call")
-			a0 := ledgerStubBillArgs(t)
-			assert.Equal(t, got.ID, a0, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var seen []builttest.LedgerBillCall
-			s.OnBill.OnRecord(func(c builttest.LedgerBillCall) { seen = append(seen, c) })
-			_ = ledgerStubBill(t, s)
-			_ = ledgerStubBill(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Bill")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) ledgerStubInstance {
-			return ledgerStubInstanceOf(tb, builttest.NewLedgerStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_, _ = ledgerStubGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+			stub.ResetBehaviour(t, "Get", ledgerStubGetSubject)
 		})
 
-		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+		t.Run("Find", func(t *testing.T) {
 			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0, want1 := ledgerStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := ledgerStubGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
+			stub.ResetBehaviour(t, "Find", ledgerStubFindSubject)
 		})
 
-		t.Run("clears the recorded calls of Find", func(t *testing.T) {
+		t.Run("Lookup", func(t *testing.T) {
 			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_, _ = ledgerStubFind(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFind.CallCount(), 0, "ResetCalls clears the calls of Find")
+			stub.ResetBehaviour(t, "Lookup", ledgerStubLookupSubject)
 		})
 
-		t.Run("keeps the results of Returns of Find", func(t *testing.T) {
+		t.Run("List", func(t *testing.T) {
 			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0, want1 := ledgerStubFindPins()
-			s.OnFind.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := ledgerStubFind(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Find")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Find")
+			stub.ResetBehaviour(t, "List", ledgerStubListSubject)
 		})
 
-		t.Run("clears the recorded calls of Lookup", func(t *testing.T) {
+		t.Run("Note", func(t *testing.T) {
 			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_, _ = ledgerStubLookup(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLookup.CallCount(), 0, "ResetCalls clears the calls of Lookup")
+			stub.ResetBehaviour(t, "Note", ledgerStubNoteSubject)
 		})
 
-		t.Run("keeps the results of Returns of Lookup", func(t *testing.T) {
+		t.Run("Bill", func(t *testing.T) {
 			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0, want1 := ledgerStubLookupPins()
-			s.OnLookup.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := ledgerStubLookup(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Lookup")
-			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Lookup")
-		})
-
-		t.Run("clears the recorded calls of List", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_, _ = ledgerStubList(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnList.CallCount(), 0, "ResetCalls clears the calls of List")
-		})
-
-		t.Run("keeps the results of Returns of List", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0, want1 := ledgerStubListPins()
-			s.OnList.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := ledgerStubList(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of List")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of List")
-		})
-
-		t.Run("clears the recorded calls of Note", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_ = ledgerStubNote(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNote.CallCount(), 0, "ResetCalls clears the calls of Note")
-		})
-
-		t.Run("keeps the results of Returns of Note", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0 := ledgerStubNotePins()
-			s.OnNote.Returns(want0)
-			s.ResetCalls()
-			got0 := ledgerStubNote(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Note")
-		})
-
-		t.Run("clears the recorded calls of Bill", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			_ = ledgerStubBill(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnBill.CallCount(), 0, "ResetCalls clears the calls of Bill")
-		})
-
-		t.Run("keeps the results of Returns of Bill", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0 := ledgerStubBillPins()
-			s.OnBill.Returns(want0)
-			s.ResetCalls()
-			got0 := ledgerStubBill(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Bill")
-		})
-	})
-
-	t.Run("NewLedgerStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) ledgerStubInstance {
-			return ledgerStubInstanceOf(tb, builttest.NewLedgerStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewLedgerStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Get with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Get-failing")
-			s := builttest.NewLedgerStubFailing(t, want)
-			_, r1 := ledgerStubGet(t, s)
-			assert.ErrorIs(t, r1, want, "Get fails with the error of NewLedgerStubFailing")
-		})
-
-		t.Run("fails Find with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Find-failing")
-			s := builttest.NewLedgerStubFailing(t, want)
-			_, r1 := ledgerStubFind(t, s)
-			assert.ErrorIs(t, r1, want, "Find fails with the error of NewLedgerStubFailing")
-		})
-
-		t.Run("fails List with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("List-failing")
-			s := builttest.NewLedgerStubFailing(t, want)
-			_, r1 := ledgerStubList(t, s)
-			assert.ErrorIs(t, r1, want, "List fails with the error of NewLedgerStubFailing")
+			stub.ResetBehaviour(t, "Bill", ledgerStubBillSubject)
 		})
 	})
 
@@ -916,316 +753,4 @@ func TestLedgerStub(t *testing.T) {
 	})
 }
 
-// TestLedgerGetStub checks the methods of LedgerGetStub, which configures
-// Get.
-func TestLedgerGetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0, want1 := ledgerStubGetPins()
-			assert.NotEqual(t, want0, ledgerStubGetSubject(t).Default().Result,
-				"the sample of Result differs from its default result")
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := ledgerStubGet(t, s)
-			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := builttest.NewLedgerStub(r)
-			s.OnGet.Strict()
-			var want0 built.Account
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = ledgerStubGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (built.Account, error) {
-				got0, got1 = p0, p1
-				var z0 built.Account
-				var z1 error
-				return z0, z1
-			})
-			_, _ = ledgerStubGet(t, s)
-			a0, a1 := ledgerStubGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives ID")
-		})
-	})
-}
-
-// TestLedgerFindStub checks the methods of LedgerFindStub, which
-// configures Find.
-func TestLedgerFindStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Find", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0, want1 := ledgerStubFindPins()
-			assert.NotEqual(t, want0, ledgerStubFindSubject(t).Default().Result,
-				"the sample of Result differs from its default result")
-			s.OnFind.Returns(want0, want1)
-			got0, got1 := ledgerStubFind(t, s)
-			expect.Equal(t, got0, want0, "Find returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Find returns the error that Returns sets")
-		})
-
-		t.Run("configures Find for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := builttest.NewLedgerStub(r)
-			s.OnFind.Strict()
-			var want0 *built.Account
-			var want1 error
-			s.OnFind.Returns(want0, want1)
-			_, _ = ledgerStubFind(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Find")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Find to the function", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnFind.Func(func(p0 context.Context, p1 string) (*built.Account, error) {
-				got0, got1 = p0, p1
-				var z0 *built.Account
-				var z1 error
-				return z0, z1
-			})
-			_, _ = ledgerStubFind(t, s)
-			a0, a1 := ledgerStubFindArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives ID")
-		})
-	})
-}
-
-// TestLedgerLookupStub checks the methods of LedgerLookupStub, which
-// configures Lookup.
-func TestLedgerLookupStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Lookup", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0, want1 := ledgerStubLookupPins()
-			assert.NotEqual(t, want0, ledgerStubLookupSubject(t).Default().Result0,
-				"the sample of Result0 differs from its default result")
-			s.OnLookup.Returns(want0, want1)
-			got0, got1 := ledgerStubLookup(t, s)
-			expect.Equal(t, got0, want0, "Lookup returns the Result0 that Returns sets")
-			expect.Equal(t, got1, want1, "Lookup returns the Result1 that Returns sets")
-		})
-
-		t.Run("configures Lookup for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := builttest.NewLedgerStub(r)
-			s.OnLookup.Strict()
-			var want0 built.Account
-			var want1 bool
-			s.OnLookup.Returns(want0, want1)
-			_, _ = ledgerStubLookup(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Lookup")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Lookup to the function", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var got0 string
-			s.OnLookup.Func(func(p0 string) (built.Account, bool) {
-				got0 = p0
-				var z0 built.Account
-				var z1 bool
-				return z0, z1
-			})
-			_, _ = ledgerStubLookup(t, s)
-			a0 := ledgerStubLookupArgs(t)
-			assert.Equal(t, got0, a0, "the function receives ID")
-		})
-	})
-}
-
-// TestLedgerListStub checks the methods of LedgerListStub, which
-// configures List.
-func TestLedgerListStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of List", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0, want1 := ledgerStubListPins()
-			assert.NotEqual(t, want0, ledgerStubListSubject(t).Default().Result,
-				"the sample of Result differs from its default result")
-			s.OnList.Returns(want0, want1)
-			got0, got1 := ledgerStubList(t, s)
-			expect.Equal(t, got0, want0, "List returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "List returns the error that Returns sets")
-		})
-
-		t.Run("configures List for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := builttest.NewLedgerStub(r)
-			s.OnList.Strict()
-			var want0 built.Page[built.Account]
-			var want1 error
-			s.OnList.Returns(want0, want1)
-			_, _ = ledgerStubList(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of List")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of List to the function", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var got0 context.Context
-			s.OnList.Func(func(p0 context.Context) (built.Page[built.Account], error) {
-				got0 = p0
-				var z0 built.Page[built.Account]
-				var z1 error
-				return z0, z1
-			})
-			_, _ = ledgerStubList(t, s)
-			a0 := ledgerStubListArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// TestLedgerNoteStub checks the methods of LedgerNoteStub, which
-// configures Note.
-func TestLedgerNoteStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Note", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0 := ledgerStubNotePins()
-			s.OnNote.Returns(want0)
-			got0 := ledgerStubNote(t, s)
-			assert.Equal(t, got0, want0, "Note returns the Result that Returns sets")
-		})
-
-		t.Run("configures Note for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := builttest.NewLedgerStub(r)
-			s.OnNote.Strict()
-			var want0 built.Note
-			s.OnNote.Returns(want0)
-			_ = ledgerStubNote(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Note")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Note to the function", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var got0 string
-			s.OnNote.Func(func(p0 string) built.Note {
-				got0 = p0
-				var z0 built.Note
-				return z0
-			})
-			_ = ledgerStubNote(t, s)
-			a0 := ledgerStubNoteArgs(t)
-			assert.Equal(t, got0, a0, "the function receives ID")
-		})
-	})
-}
-
-// TestLedgerBillStub checks the methods of LedgerBillStub, which
-// configures Bill.
-func TestLedgerBillStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Bill", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			want0 := ledgerStubBillPins()
-			s.OnBill.Returns(want0)
-			got0 := ledgerStubBill(t, s)
-			assert.Equal(t, got0, want0, "Bill returns the Result that Returns sets")
-		})
-
-		t.Run("configures Bill for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := builttest.NewLedgerStub(r)
-			s.OnBill.Strict()
-			var want0 billing.Invoice
-			s.OnBill.Returns(want0)
-			_ = ledgerStubBill(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Bill")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Bill to the function", func(t *testing.T) {
-			t.Parallel()
-			s := builttest.NewLedgerStub(t)
-			var got0 string
-			s.OnBill.Func(func(p0 string) billing.Invoice {
-				got0 = p0
-				var z0 billing.Invoice
-				return z0
-			})
-			_ = ledgerStubBill(t, s)
-			a0 := ledgerStubBillArgs(t)
-			assert.Equal(t, got0, a0, "the function receives ID")
-		})
-	})
-}
-
-// dokimi:provenance sha256:951304a14f499210c7d5e249ae5b94adc5a3205ccf2565f35fe28f530ba30d6d
+// dokimi:provenance sha256:022ec95311a408af5583dae4160559a7769e238c0e02990bba818326f8b814a3

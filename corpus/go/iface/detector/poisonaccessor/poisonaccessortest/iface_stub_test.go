@@ -28,15 +28,17 @@ func poisonAccessorStubErrPins() error {
 	return want0
 }
 
-// poisonAccessorStubErrSubject returns the subject of [stub.Behaviour] for
-// Err. The subject calls a new double that reports to tb.
+// poisonAccessorStubErrSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Err. The subject calls a new double that
+// reports to tb.
 func poisonAccessorStubErrSubject(
 	tb assert.TB,
 ) stub.Subject[poisonaccessortest.PoisonAccessorErrCall, poisonaccessortest.PoisonAccessorErrReturn] {
 	tb.Helper()
 	s := poisonaccessortest.NewPoisonAccessorStub(tb)
 	return stub.Subject[poisonaccessortest.PoisonAccessorErrCall, poisonaccessortest.PoisonAccessorErrReturn]{
-		Stub: s.OnErr.MethodStub,
+		Stub:  s.OnErr.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = poisonAccessorStubErr(tb, s)
 		},
@@ -44,9 +46,14 @@ func poisonAccessorStubErrSubject(
 			got0 := poisonAccessorStubErr(tb, s)
 			return poisonaccessortest.PoisonAccessorErrReturn{Err: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() poisonaccessortest.PoisonAccessorErrReturn {
+			want0 := poisonAccessorStubErrPins()
+			s.OnErr.Returns(want0)
+			return poisonaccessortest.PoisonAccessorErrReturn{Err: want0}
+		},
+		Override: func(seen func(poisonaccessortest.PoisonAccessorErrCall)) {
 			s.OnErr.Func(func() error {
-				mark()
+				seen(poisonaccessortest.PoisonAccessorErrCall{})
 				var z0 error
 				return z0
 			})
@@ -72,7 +79,6 @@ func poisonAccessorStubInstanceOf(tb assert.TB, s *poisonaccessortest.PoisonAcce
 		Call: func() {
 			_ = poisonAccessorStubErr(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -84,59 +90,14 @@ func TestPoisonAccessorStub(t *testing.T) {
 	t.Run("Err", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Err", poisonAccessorStubErrSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := poisonaccessortest.NewPoisonAccessorStub(t)
-			var seen []poisonaccessortest.PoisonAccessorErrCall
-			s.OnErr.OnRecord(func(c poisonaccessortest.PoisonAccessorErrCall) { seen = append(seen, c) })
-			_ = poisonAccessorStubErr(t, s)
-			_ = poisonAccessorStubErr(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Err")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) poisonAccessorStubInstance {
-			return poisonAccessorStubInstanceOf(tb, poisonaccessortest.NewPoisonAccessorStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Err", func(t *testing.T) {
+		t.Run("Err", func(t *testing.T) {
 			t.Parallel()
-			s := poisonaccessortest.NewPoisonAccessorStub(t)
-			_ = poisonAccessorStubErr(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnErr.CallCount(), 0, "ResetCalls clears the calls of Err")
-		})
-
-		t.Run("keeps the results of Returns of Err", func(t *testing.T) {
-			t.Parallel()
-			s := poisonaccessortest.NewPoisonAccessorStub(t)
-			want0 := poisonAccessorStubErrPins()
-			s.OnErr.Returns(want0)
-			s.ResetCalls()
-			got0 := poisonAccessorStubErr(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Err")
-		})
-	})
-
-	t.Run("NewPoisonAccessorStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) poisonAccessorStubInstance {
-			return poisonAccessorStubInstanceOf(tb, poisonaccessortest.NewPoisonAccessorStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewPoisonAccessorStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Err with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Err-failing")
-			s := poisonaccessortest.NewPoisonAccessorStubFailing(t, want)
-			r0 := poisonAccessorStubErr(t, s)
-			assert.ErrorIs(t, r0, want, "Err fails with the error of NewPoisonAccessorStubFailing")
+			stub.ResetBehaviour(t, "Err", poisonAccessorStubErrSubject)
 		})
 	})
 
@@ -245,34 +206,4 @@ func TestPoisonAccessorStub(t *testing.T) {
 	})
 }
 
-// TestPoisonAccessorErrStub checks the methods of PoisonAccessorErrStub,
-// which configures Err.
-func TestPoisonAccessorErrStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Err", func(t *testing.T) {
-			t.Parallel()
-			s := poisonaccessortest.NewPoisonAccessorStub(t)
-			want0 := poisonAccessorStubErrPins()
-			s.OnErr.Returns(want0)
-			got0 := poisonAccessorStubErr(t, s)
-			assert.ErrorIs(t, got0, want0, "Err returns the error that Returns sets")
-		})
-
-		t.Run("configures Err for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := poisonaccessortest.NewPoisonAccessorStub(r)
-			s.OnErr.Strict()
-			var want0 error
-			s.OnErr.Returns(want0)
-			_ = poisonAccessorStubErr(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Err")
-		})
-	})
-}
-
-// dokimi:provenance sha256:099743cd45814c890cf6aa4813f83d136eaaae758ac971e016420baa04eaeaf1
+// dokimi:provenance sha256:0e2599508f4a4850511600037b35e759e0c283fd5d72560c1cea99fe3228894e

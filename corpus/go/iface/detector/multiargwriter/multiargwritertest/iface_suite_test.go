@@ -51,46 +51,7 @@ func TestMultiArgWriterSuite(t *testing.T) {
 					return &multiArgWriterSubject{}
 				},
 			}),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Set.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Set.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Set.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Set.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[multiargwriter.MultiArgWriter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -114,55 +75,20 @@ func TestMultiArgWriterSuite(t *testing.T) {
 					return &multiArgWriterSubject{}
 				},
 			}),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Set.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Set.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Set.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Set.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multiargwritertest.MultiArgWriterChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[multiargwriter.MultiArgWriter]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// multiArgWriterSuite is the suite of MultiArgWriter that the tests of the
+// planted defect of a ceiling apply.
+var multiArgWriterSuite = multiargwritertest.MultiArgWriterSuite()
+
 // multiArgWriterIdle returns the planted defect of a ceiling of
-// MultiArgWriter with a spend of nothing, a subject that answers each call
-// at once.
+// MultiArgWriter with a spend of nothing. Each call of the defect returns
+// its zero results at once.
 func multiArgWriterIdle(h *multiargwritertest.MultiArgWriterHandle) multiargwriter.MultiArgWriter {
-	return multiargwritertest.MultiArgWriterSuite().Calls[0].Over(h, func() {})
+	return multiArgWriterSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMultiArgWriterSuiteBudgets applies the allocation ceilings of the
@@ -175,45 +101,8 @@ func TestMultiArgWriterSuiteBudgets(t *testing.T) {
 		multiArgWriterIdle,
 		conform.Ceilings(multiargwritertest.MultiArgWriterChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(multiargwritertest.MultiArgWriterChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[multiargwriter.MultiArgWriter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -226,45 +115,8 @@ func FuzzMultiArgWriterSuiteSet(f *testing.F) {
 		f,
 		multiargwritertest.MultiArgWriterChecks.Set.Callable,
 		multiArgWriterIdle,
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[multiargwriter.MultiArgWriter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -277,45 +129,8 @@ func FuzzMultiArgWriterSuiteGet(f *testing.F) {
 		f,
 		multiargwritertest.MultiArgWriterChecks.Get.Callable,
 		multiArgWriterIdle,
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Set.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multiargwritertest.MultiArgWriterChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[multiargwriter.MultiArgWriter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -339,4 +154,4 @@ func BenchmarkMultiArgWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6e26c62005563ce17880e87bf11f0fbc4285107f617d9c25aa5b438f84846fcb
+// dokimi:provenance sha256:d2b1f6921c00dd2860e020213e07e7205b4abed79fd79deffb502f1adc43c151

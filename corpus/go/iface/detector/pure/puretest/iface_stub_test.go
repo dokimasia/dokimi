@@ -27,13 +27,15 @@ func pureStubDescribePins() string {
 	return want0
 }
 
-// pureStubDescribeSubject returns the subject of [stub.Behaviour] for
-// Describe. The subject calls a new double that reports to tb.
+// pureStubDescribeSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Describe. The subject calls a new double that
+// reports to tb.
 func pureStubDescribeSubject(tb assert.TB) stub.Subject[puretest.PureDescribeCall, puretest.PureDescribeReturn] {
 	tb.Helper()
 	s := puretest.NewPureStub(tb)
 	return stub.Subject[puretest.PureDescribeCall, puretest.PureDescribeReturn]{
-		Stub: s.OnDescribe.MethodStub,
+		Stub:  s.OnDescribe.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = pureStubDescribe(tb, s)
 		},
@@ -41,9 +43,14 @@ func pureStubDescribeSubject(tb assert.TB) stub.Subject[puretest.PureDescribeCal
 			got0 := pureStubDescribe(tb, s)
 			return puretest.PureDescribeReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() puretest.PureDescribeReturn {
+			want0 := pureStubDescribePins()
+			s.OnDescribe.Returns(want0)
+			return puretest.PureDescribeReturn{Result: want0}
+		},
+		Override: func(seen func(puretest.PureDescribeCall)) {
 			s.OnDescribe.Func(func() string {
-				mark()
+				seen(puretest.PureDescribeCall{})
 				var z0 string
 				return z0
 			})
@@ -64,7 +71,6 @@ func pureStubInstanceOf(tb assert.TB, s *puretest.PureStub) pureStubInstance {
 		Call: func() {
 			_ = pureStubDescribe(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -76,47 +82,14 @@ func TestPureStub(t *testing.T) {
 	t.Run("Describe", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Describe", pureStubDescribeSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := puretest.NewPureStub(t)
-			var seen []puretest.PureDescribeCall
-			s.OnDescribe.OnRecord(func(c puretest.PureDescribeCall) { seen = append(seen, c) })
-			_ = pureStubDescribe(t, s)
-			_ = pureStubDescribe(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Describe")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) pureStubInstance {
-			return pureStubInstanceOf(tb, puretest.NewPureStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Describe", func(t *testing.T) {
+		t.Run("Describe", func(t *testing.T) {
 			t.Parallel()
-			s := puretest.NewPureStub(t)
-			_ = pureStubDescribe(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnDescribe.CallCount(), 0, "ResetCalls clears the calls of Describe")
-		})
-
-		t.Run("keeps the results of Returns of Describe", func(t *testing.T) {
-			t.Parallel()
-			s := puretest.NewPureStub(t)
-			want0 := pureStubDescribePins()
-			s.OnDescribe.Returns(want0)
-			s.ResetCalls()
-			got0 := pureStubDescribe(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Describe")
-		})
-	})
-
-	t.Run("NewPureStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) pureStubInstance {
-			return pureStubInstanceOf(tb, puretest.NewPureStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Describe", pureStubDescribeSubject)
 		})
 	})
 
@@ -187,34 +160,4 @@ func TestPureStub(t *testing.T) {
 	})
 }
 
-// TestPureDescribeStub checks the methods of PureDescribeStub, which
-// configures Describe.
-func TestPureDescribeStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Describe", func(t *testing.T) {
-			t.Parallel()
-			s := puretest.NewPureStub(t)
-			want0 := pureStubDescribePins()
-			s.OnDescribe.Returns(want0)
-			got0 := pureStubDescribe(t, s)
-			assert.Equal(t, got0, want0, "Describe returns the Result that Returns sets")
-		})
-
-		t.Run("configures Describe for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := puretest.NewPureStub(r)
-			s.OnDescribe.Strict()
-			var want0 string
-			s.OnDescribe.Returns(want0)
-			_ = pureStubDescribe(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Describe")
-		})
-	})
-}
-
-// dokimi:provenance sha256:4376018461e0ed299e63f905c7d9e78826d0f4122aeb4801800a6abda40f3342
+// dokimi:provenance sha256:92c6afe785dd4e4b938d30c62eb50f2b6803e7ad88f29911e795313180d96726

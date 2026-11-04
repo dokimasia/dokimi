@@ -15,36 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Stream:
-//
-// Stream.Read/smoke: Read returns without a panic for derived inputs.
-//
-// Stream.Read/smoke#generated: Read returns without a panic for derived
-// inputs.
-//
-// Stream.Read/cancel: Read returns an error for a cancelled context.
-//
-// Stream.Read/cancel#generated: Read returns an error for a cancelled
-// context.
-//
-// Stream.Read/zero-on-error: Read returns the zero value beside an error.
-//
-// Stream.Read/zero-on-error#generated: Read returns the zero value beside
-// an error.
-//
-// Stream.Close/smoke: Close returns without a panic for derived inputs.
-
-// The derived checks of Stream that witness their laws at the shallow end:
-//
-// Stream.Read/smoke
-//
-// Stream.Close/smoke
-
-// The unclaimed classifications of Stream:
-//
-// The shape:closer of Stream.Close has the stance silent. A close returns
-// nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -77,34 +47,16 @@ func (c streamRead) Smoke() conform.ID[embeddedforeign.Stream] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Read returns
-// without a panic for derived inputs.
-func (c streamRead) SmokeGenerated() conform.ID[embeddedforeign.Stream] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c streamRead) Cancel() conform.ID[embeddedforeign.Stream] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Read returns an
-// error for a cancelled context.
-func (c streamRead) CancelGenerated() conform.ID[embeddedforeign.Stream] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Read returns the zero
 // value beside an error.
 func (c streamRead) ZeroOnError() conform.ID[embeddedforeign.Stream] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Read returns
-// the zero value beside an error.
-func (c streamRead) ZeroOnErrorGenerated() conform.ID[embeddedforeign.Stream] {
-	return c.Check("zero-on-error#generated")
 }
 
 // streamClose is the name of Stream.Close, with the identities of its
@@ -131,9 +83,6 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				ID:          StreamChecks.Read.Smoke(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StreamHandle) {
@@ -145,12 +94,9 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				Defect: streamReadPanics,
 			},
 			{
-				ID:          StreamChecks.Read.SmokeGenerated(),
+				ID:          StreamChecks.Read.Smoke().Generated(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StreamHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -165,9 +111,6 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				ID:          StreamChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StreamHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -178,12 +121,9 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				Defect: streamReadIgnoresCancel,
 			},
 			{
-				ID:          StreamChecks.Read.CancelGenerated(),
+				ID:          StreamChecks.Read.Cancel().Generated(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StreamHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -198,9 +138,6 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				ID:          StreamChecks.Read.ZeroOnError(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *StreamHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -210,12 +147,9 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				Defect: streamReadValueBeside,
 			},
 			{
-				ID:          StreamChecks.Read.ZeroOnErrorGenerated(),
+				ID:          StreamChecks.Read.ZeroOnError().Generated(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *StreamHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -229,9 +163,6 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 				ID:          StreamChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *StreamHandle) {
@@ -451,4 +382,4 @@ func streamClosePanics(h *StreamHandle) embeddedforeign.Stream {
 	return &streamClosePanicsDefect{streamOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:ae3f67faf24050bd825b28f18c8ab92dda0c07785bc69bc8d62bf0e14bcfbeaa
+// dokimi:provenance sha256:2a34b7cc7ccb7d998adae3a190bc668eeb91cb63076148fee918eded713d9b38

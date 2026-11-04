@@ -48,14 +48,7 @@ func TestMutatorSuite(t *testing.T) {
 				},
 				Defect: func(*mutatortest.MutatorHandle) mutator.Mutator { return &mutatorSubject{} },
 			}),
-			conform.Excuse(
-				mutatortest.MutatorChecks.Touch.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				mutatortest.MutatorChecks.Touch.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[mutator.Mutator]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -77,22 +70,20 @@ func TestMutatorSuite(t *testing.T) {
 				},
 				Defect: func(*mutatortest.MutatorHandle) mutator.Mutator { return &mutatorSubject{} },
 			}),
-			conform.Excuse(
-				mutatortest.MutatorChecks.Touch.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				mutatortest.MutatorChecks.Touch.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[mutator.Mutator]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mutatorSuite is the suite of Mutator that the tests of the planted
+// defect of a ceiling apply.
+var mutatorSuite = mutatortest.MutatorSuite()
+
 // mutatorIdle returns the planted defect of a ceiling of Mutator with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func mutatorIdle(h *mutatortest.MutatorHandle) mutator.Mutator {
-	return mutatortest.MutatorSuite().Calls[0].Over(h, func() {})
+	return mutatorSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMutatorSuiteBudgets applies the allocation ceilings of the suite of
@@ -104,14 +95,7 @@ func TestMutatorSuiteBudgets(t *testing.T) {
 		t,
 		mutatorIdle,
 		conform.Ceilings(mutatortest.MutatorChecks.Touch.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			mutatortest.MutatorChecks.Touch.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			mutatortest.MutatorChecks.Touch.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[mutator.Mutator]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -122,14 +106,7 @@ func FuzzMutatorSuiteTouch(f *testing.F) {
 		f,
 		mutatortest.MutatorChecks.Touch.Callable,
 		mutatorIdle,
-		conform.Excuse(
-			mutatortest.MutatorChecks.Touch.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			mutatortest.MutatorChecks.Touch.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[mutator.Mutator]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -141,4 +118,4 @@ func BenchmarkMutatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:12a21519ab44498a0b7e45542bba2b6270996d855bae2799864673dda095b612
+// dokimi:provenance sha256:924dd661812c44f47d79cacb5db24f5a0870e40a5d830dbc4189d476a4502f94

@@ -49,58 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*chaintest.ContractHandle) chain.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.Chain(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.ChainGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Replay.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Replay.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Replay.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Verify.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Verify.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Verify.VerifiesWhatItAppended(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Verify.VerifiesWhatItAppendedGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[chain.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -122,66 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*chaintest.ContractHandle) chain.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.Chain(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Append.ChainGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Replay.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Replay.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Replay.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Verify.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Verify.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Verify.VerifiesWhatItAppended(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				chaintest.ContractChecks.Verify.VerifiesWhatItAppendedGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[chain.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = chaintest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *chaintest.ContractHandle) chain.Contract {
-	return chaintest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -195,58 +98,7 @@ func TestContractSuiteBudgets(t *testing.T) {
 		conform.Ceilings(chaintest.ContractChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(chaintest.ContractChecks.Replay.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(chaintest.ContractChecks.Verify.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Chain(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.ChainGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.VerifiesWhatItAppended(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.VerifiesWhatItAppendedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[chain.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -257,58 +109,7 @@ func FuzzContractSuiteAppend(f *testing.F) {
 		f,
 		chaintest.ContractChecks.Append.Callable,
 		contractIdle,
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Chain(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.ChainGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.VerifiesWhatItAppended(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.VerifiesWhatItAppendedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[chain.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -319,58 +120,7 @@ func FuzzContractSuiteReplay(f *testing.F) {
 		f,
 		chaintest.ContractChecks.Replay.Callable,
 		contractIdle,
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Chain(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.ChainGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.VerifiesWhatItAppended(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.VerifiesWhatItAppendedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[chain.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -381,58 +131,7 @@ func FuzzContractSuiteVerify(f *testing.F) {
 		f,
 		chaintest.ContractChecks.Verify.Callable,
 		contractIdle,
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.Chain(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Append.ChainGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Replay.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.VerifiesWhatItAppended(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			chaintest.ContractChecks.Verify.VerifiesWhatItAppendedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[chain.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -450,4 +149,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c21a297b7bcab8e6b12cdc06a1e10cadf087d0f06c1a82d33f7e69ff4c41993b
+// dokimi:provenance sha256:905c5082e42713eb09948fee3933663eb0653214a4d9ce17f977cd5453232efd

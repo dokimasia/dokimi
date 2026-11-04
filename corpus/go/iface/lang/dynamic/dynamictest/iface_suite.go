@@ -17,41 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Diary:
-//
-// Diary.Print/smoke: Print returns without a panic for derived inputs.
-//
-// Diary.Print/smoke#generated: Print returns without a panic for derived
-// inputs.
-//
-// Diary.Field/smoke: Field returns without a panic for derived inputs.
-//
-// Diary.Field/smoke#generated: Field returns without a panic for derived
-// inputs.
-//
-// Diary.Count/smoke: Count returns without a panic for derived inputs.
-//
-// Diary.Count/deterministic: Count returns the same value for the same
-// inputs.
-
-// The derived checks of Diary that witness their laws at the shallow end:
-//
-// Diary.Print/smoke
-//
-// Diary.Field/smoke
-//
-// Diary.Count/smoke
-//
-// Diary.Count/deterministic
-
-// The unclaimed classifications of Diary:
-//
-// The shape:mutator of Diary.In has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Diary.Scale has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -90,12 +55,6 @@ func (c diaryPrint) Smoke() conform.ID[dynamic.Diary] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Print returns
-// without a panic for derived inputs.
-func (c diaryPrint) SmokeGenerated() conform.ID[dynamic.Diary] {
-	return c.Check("smoke#generated")
-}
-
 // diaryField is the name of Diary.Field, with the identities of its
 // checks.
 type diaryField struct {
@@ -106,12 +65,6 @@ type diaryField struct {
 // panic for derived inputs.
 func (c diaryField) Smoke() conform.ID[dynamic.Diary] {
 	return c.Check("smoke")
-}
-
-// SmokeGenerated returns the identity of the check that Field returns
-// without a panic for derived inputs.
-func (c diaryField) SmokeGenerated() conform.ID[dynamic.Diary] {
-	return c.Check("smoke#generated")
 }
 
 // diaryIn is the name of Diary.In, with the identities of its checks.
@@ -155,9 +108,6 @@ func DiarySuite() conform.Suite[dynamic.Diary] {
 				ID:          DiaryChecks.Print.Smoke(),
 				Statement:   "Print returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DiaryHandle) {
@@ -169,12 +119,9 @@ func DiarySuite() conform.Suite[dynamic.Diary] {
 				Defect: diaryPrintPanics,
 			},
 			{
-				ID:          DiaryChecks.Print.SmokeGenerated(),
+				ID:          DiaryChecks.Print.Smoke().Generated(),
 				Statement:   "Print returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *DiaryHandle, c *prop.Case) {
 					drawnMsg := c.Draw(prop.Of[string](), "msg")
@@ -190,9 +137,6 @@ func DiarySuite() conform.Suite[dynamic.Diary] {
 				ID:          DiaryChecks.Field.Smoke(),
 				Statement:   "Field returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DiaryHandle) {
@@ -204,12 +148,9 @@ func DiarySuite() conform.Suite[dynamic.Diary] {
 				Defect: diaryFieldPanics,
 			},
 			{
-				ID:          DiaryChecks.Field.SmokeGenerated(),
+				ID:          DiaryChecks.Field.Smoke().Generated(),
 				Statement:   "Field returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *DiaryHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -225,9 +166,6 @@ func DiarySuite() conform.Suite[dynamic.Diary] {
 				ID:          DiaryChecks.Count.Smoke(),
 				Statement:   "Count returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DiaryHandle) {
@@ -242,9 +180,6 @@ func DiarySuite() conform.Suite[dynamic.Diary] {
 				ID:          DiaryChecks.Count.Deterministic(),
 				Statement:   "Count returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[dynamic.Diary]{DiaryChecks.Count.Smoke()},
@@ -533,4 +468,4 @@ func diaryCountDrifts(h *DiaryHandle) dynamic.Diary {
 	return &diaryCountDriftsDefect{diaryOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2b743da841b66e3e0faa4fb0d22c17646f2318b1d88cba87071e03984e6c1f5f
+// dokimi:provenance sha256:edb5aa641d46e5e4521e5300c162d5e3a27cbf2a53930c559cf48dd6b1343b1c

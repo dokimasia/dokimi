@@ -48,14 +48,7 @@ func TestClockSuite(t *testing.T) {
 				},
 				Defect: func(*refusedtest.ClockHandle) refused.Clock { return &clockSubject{} },
 			}),
-			conform.Excuse(
-				refusedtest.ClockChecks.Update.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refusedtest.ClockChecks.Update.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[refused.Clock]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -77,22 +70,19 @@ func TestClockSuite(t *testing.T) {
 				},
 				Defect: func(*refusedtest.ClockHandle) refused.Clock { return &clockSubject{} },
 			}),
-			conform.Excuse(
-				refusedtest.ClockChecks.Update.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refusedtest.ClockChecks.Update.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[refused.Clock]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// clockSuite is the suite of Clock that the tests of the planted defect of
+// a ceiling apply.
+var clockSuite = refusedtest.ClockSuite()
+
 // clockIdle returns the planted defect of a ceiling of Clock with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func clockIdle(h *refusedtest.ClockHandle) refused.Clock {
-	return refusedtest.ClockSuite().Calls[0].Over(h, func() {})
+	return clockSuite.Calls[0].Over(h, func() {})
 }
 
 // TestClockSuiteBudgets applies the allocation ceilings of the suite of
@@ -104,14 +94,7 @@ func TestClockSuiteBudgets(t *testing.T) {
 		t,
 		clockIdle,
 		conform.Ceilings(refusedtest.ClockChecks.Update.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			refusedtest.ClockChecks.Update.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refusedtest.ClockChecks.Update.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[refused.Clock]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -122,14 +105,7 @@ func FuzzClockSuiteUpdate(f *testing.F) {
 		f,
 		refusedtest.ClockChecks.Update.Callable,
 		clockIdle,
-		conform.Excuse(
-			refusedtest.ClockChecks.Update.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refusedtest.ClockChecks.Update.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[refused.Clock]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -141,4 +117,4 @@ func BenchmarkClockSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:11bb66b044089772b9143ed3e634048ffe9d15547294d3dc4682e34f7b5f7d8a
+// dokimi:provenance sha256:cf0b003a5577f6c1ce5d2ed7bfe67d27ddd89886f45bfc9f6fb04a2a340b2be2

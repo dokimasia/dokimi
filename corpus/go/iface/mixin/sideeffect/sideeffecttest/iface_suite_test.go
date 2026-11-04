@@ -48,54 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*sideeffecttest.MixedHandle) sideeffect.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.SideEffect(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.SideEffectGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sideeffect.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -117,62 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*sideeffecttest.MixedHandle) sideeffect.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.SideEffect(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Touch.SideEffectGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sideeffecttest.MixedChecks.Observed.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sideeffect.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = sideeffecttest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *sideeffecttest.MixedHandle) sideeffect.Mixed {
-	return sideeffecttest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -185,54 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(sideeffecttest.MixedChecks.Touch.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(sideeffecttest.MixedChecks.Observed.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SideEffect(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SideEffectGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[sideeffect.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -243,54 +106,7 @@ func FuzzMixedSuiteTouch(f *testing.F) {
 		f,
 		sideeffecttest.MixedChecks.Touch.Callable,
 		mixedIdle,
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SideEffect(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SideEffectGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[sideeffect.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -301,54 +117,7 @@ func FuzzMixedSuiteObserved(f *testing.F) {
 		f,
 		sideeffecttest.MixedChecks.Observed.Callable,
 		mixedIdle,
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SideEffect(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Touch.SideEffectGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sideeffecttest.MixedChecks.Observed.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[sideeffect.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -363,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:84f5a6d866542ca39d9acf8dbe086f055df80855fdd31ef3189529f57c9c872b
+// dokimi:provenance sha256:36b33b8e74db5eda489fc33258093df6e04b0c63dd3d89414bb027ed897e8323

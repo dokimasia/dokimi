@@ -200,26 +200,6 @@ func NewLeasedWriterStub(tb assert.TB, opts ...LeasedWriterStubOption) *LeasedWr
 	return s
 }
 
-// NewLeasedWriterStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewLeasedWriterStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...LeasedWriterStubOption,
-) *LeasedWriterStub {
-	return NewLeasedWriterStub(tb, append([]LeasedWriterStubOption{
-		LeasedWriterStubWithClock(clk),
-		LeasedWriterStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewLeasedWriterStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewLeasedWriterStubFailing(tb assert.TB, err error, opts ...LeasedWriterStubOption) *LeasedWriterStub {
-	return NewLeasedWriterStub(tb, append([]LeasedWriterStubOption{LeasedWriterStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LeasedWriterStub) ResetCalls() {
@@ -282,4 +262,4 @@ func (s *LeasedWriterStub) Release(ctx context.Context, key string) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:0890911b4bd1349b56b4075934e700898859229bb55a473dca5376b447a514e7
+// dokimi:provenance sha256:84fc2e3e5623a351f2299b0d136810e0b849eda62c6f71d7f8ea5993aadea96c

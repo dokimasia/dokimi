@@ -65,23 +65,36 @@ func mixedStubObservedPins() (int, error) {
 	return want0, want1
 }
 
-// mixedStubTouchSubject returns the subject of [stub.Behaviour] for Touch.
-// The subject calls a new double that reports to tb.
+// mixedStubTouchSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Touch. The subject calls a new double that
+// reports to tb.
 func mixedStubTouchSubject(tb assert.TB) stub.Subject[sideeffecttest.MixedTouchCall, sideeffecttest.MixedTouchReturn] {
 	tb.Helper()
 	s := sideeffecttest.NewMixedStub(tb)
 	return stub.Subject[sideeffecttest.MixedTouchCall, sideeffecttest.MixedTouchReturn]{
-		Stub: s.OnTouch.MethodStub,
+		Stub:  s.OnTouch.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubTouch(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sideeffecttest.MixedTouchCall) {
+			tb.Helper()
+			a0, a1 := mixedStubTouchArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() sideeffecttest.MixedTouchReturn {
 			got0 := mixedStubTouch(tb, s)
 			return sideeffecttest.MixedTouchReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnTouch.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() sideeffecttest.MixedTouchReturn {
+			want0 := mixedStubTouchPins()
+			s.OnTouch.Returns(want0)
+			return sideeffecttest.MixedTouchReturn{Err: want0}
+		},
+		Override: func(seen func(sideeffecttest.MixedTouchCall)) {
+			s.OnTouch.Func(func(p0 context.Context, p1 string) error {
+				seen(sideeffecttest.MixedTouchCall{Ctx: p0, Key: p1})
 				var z0 error
 				return z0
 			})
@@ -93,25 +106,38 @@ func mixedStubTouchSubject(tb assert.TB) stub.Subject[sideeffecttest.MixedTouchC
 	}
 }
 
-// mixedStubObservedSubject returns the subject of [stub.Behaviour] for
-// Observed. The subject calls a new double that reports to tb.
+// mixedStubObservedSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Observed. The subject calls a new double that
+// reports to tb.
 func mixedStubObservedSubject(
 	tb assert.TB,
 ) stub.Subject[sideeffecttest.MixedObservedCall, sideeffecttest.MixedObservedReturn] {
 	tb.Helper()
 	s := sideeffecttest.NewMixedStub(tb)
 	return stub.Subject[sideeffecttest.MixedObservedCall, sideeffecttest.MixedObservedReturn]{
-		Stub: s.OnObserved.MethodStub,
+		Stub:  s.OnObserved.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubObserved(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sideeffecttest.MixedObservedCall) {
+			tb.Helper()
+			a0, a1 := mixedStubObservedArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() sideeffecttest.MixedObservedReturn {
 			got0, got1 := mixedStubObserved(tb, s)
 			return sideeffecttest.MixedObservedReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnObserved.Func(func(_ context.Context, _ string) (int, error) {
-				mark()
+		Returns: func() sideeffecttest.MixedObservedReturn {
+			want0, want1 := mixedStubObservedPins()
+			s.OnObserved.Returns(want0, want1)
+			return sideeffecttest.MixedObservedReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(sideeffecttest.MixedObservedCall)) {
+			s.OnObserved.Func(func(p0 context.Context, p1 string) (int, error) {
+				seen(sideeffecttest.MixedObservedCall{Ctx: p0, Key: p1})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -137,7 +163,6 @@ func mixedStubInstanceOf(tb assert.TB, s *sideeffecttest.MixedStub) mixedStubIns
 		Call: func() {
 			_ = mixedStubTouch(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -149,121 +174,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Touch", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Touch", mixedStubTouchSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			_ = mixedStubTouch(t, s)
-			got := s.OnTouch.AssertCalledOnce(t, "Touch records the call")
-			a0, a1 := mixedStubTouchArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			var seen []sideeffecttest.MixedTouchCall
-			s.OnTouch.OnRecord(func(c sideeffecttest.MixedTouchCall) { seen = append(seen, c) })
-			_ = mixedStubTouch(t, s)
-			_ = mixedStubTouch(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Touch")
-		})
 	})
 
 	t.Run("Observed", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Observed", mixedStubObservedSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			_, _ = mixedStubObserved(t, s)
-			got := s.OnObserved.AssertCalledOnce(t, "Observed records the call")
-			a0, a1 := mixedStubObservedArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			var seen []sideeffecttest.MixedObservedCall
-			s.OnObserved.OnRecord(func(c sideeffecttest.MixedObservedCall) { seen = append(seen, c) })
-			_, _ = mixedStubObserved(t, s)
-			_, _ = mixedStubObserved(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Observed")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, sideeffecttest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Touch", func(t *testing.T) {
+		t.Run("Touch", func(t *testing.T) {
 			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			_ = mixedStubTouch(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnTouch.CallCount(), 0, "ResetCalls clears the calls of Touch")
+			stub.ResetBehaviour(t, "Touch", mixedStubTouchSubject)
 		})
 
-		t.Run("keeps the results of Returns of Touch", func(t *testing.T) {
+		t.Run("Observed", func(t *testing.T) {
 			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			want0 := mixedStubTouchPins()
-			s.OnTouch.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubTouch(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Touch")
-		})
-
-		t.Run("clears the recorded calls of Observed", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			_, _ = mixedStubObserved(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnObserved.CallCount(), 0, "ResetCalls clears the calls of Observed")
-		})
-
-		t.Run("keeps the results of Returns of Observed", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			want0, want1 := mixedStubObservedPins()
-			s.OnObserved.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubObserved(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Observed")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Observed")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, sideeffecttest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Touch with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Touch-failing")
-			s := sideeffecttest.NewMixedStubFailing(t, want)
-			r0 := mixedStubTouch(t, s)
-			assert.ErrorIs(t, r0, want, "Touch fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Observed with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Observed-failing")
-			s := sideeffecttest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubObserved(t, s)
-			assert.ErrorIs(t, r1, want, "Observed fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Observed", mixedStubObservedSubject)
 		})
 	})
 
@@ -406,107 +334,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedTouchStub checks the methods of MixedTouchStub, which
-// configures Touch.
-func TestMixedTouchStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Touch", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			want0 := mixedStubTouchPins()
-			s.OnTouch.Returns(want0)
-			got0 := mixedStubTouch(t, s)
-			assert.ErrorIs(t, got0, want0, "Touch returns the error that Returns sets")
-		})
-
-		t.Run("configures Touch for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sideeffecttest.NewMixedStub(r)
-			s.OnTouch.Strict()
-			var want0 error
-			s.OnTouch.Returns(want0)
-			_ = mixedStubTouch(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Touch")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Touch to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnTouch.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubTouch(t, s)
-			a0, a1 := mixedStubTouchArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestMixedObservedStub checks the methods of MixedObservedStub, which
-// configures Observed.
-func TestMixedObservedStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Observed", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			want0, want1 := mixedStubObservedPins()
-			s.OnObserved.Returns(want0, want1)
-			got0, got1 := mixedStubObserved(t, s)
-			expect.Equal(t, got0, want0, "Observed returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Observed returns the error that Returns sets")
-		})
-
-		t.Run("configures Observed for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sideeffecttest.NewMixedStub(r)
-			s.OnObserved.Strict()
-			var want0 int
-			var want1 error
-			s.OnObserved.Returns(want0, want1)
-			_, _ = mixedStubObserved(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Observed")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Observed to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sideeffecttest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnObserved.Func(func(p0 context.Context, p1 string) (int, error) {
-				got0, got1 = p0, p1
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubObserved(t, s)
-			a0, a1 := mixedStubObservedArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:04f9681b0b4131a36b997ac5c0cae1cfdcb6464492e5a16e143b3ab5c970df60
+// dokimi:provenance sha256:0a718da326a0cf1a34d937f4b9085a5f8d03054772790f55a05d4a4e71d0d517

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/refused"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/refused/refusedtest"
 	"go.dokimi.dev/stub"
@@ -41,23 +40,35 @@ func clockStubUpdatePins() (refused.Instant, error) {
 	return want0, want1
 }
 
-// clockStubUpdateSubject returns the subject of [stub.Behaviour] for
-// Update. The subject calls a new double that reports to tb.
+// clockStubUpdateSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Update. The subject calls a new double that
+// reports to tb.
 func clockStubUpdateSubject(tb assert.TB) stub.Subject[refusedtest.ClockUpdateCall, refusedtest.ClockUpdateReturn] {
 	tb.Helper()
 	s := refusedtest.NewClockStub(tb)
 	return stub.Subject[refusedtest.ClockUpdateCall, refusedtest.ClockUpdateReturn]{
-		Stub: s.OnUpdate.MethodStub,
+		Stub:  s.OnUpdate.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = clockStubUpdate(tb, s)
+		},
+		Arguments: func(tb assert.TB, c refusedtest.ClockUpdateCall) {
+			tb.Helper()
+			a0 := clockStubUpdateArgs(tb)
+			assert.Equal(tb, c.Observed, a0, "the call records Observed")
 		},
 		Result: func() refusedtest.ClockUpdateReturn {
 			got0, got1 := clockStubUpdate(tb, s)
 			return refusedtest.ClockUpdateReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnUpdate.Func(func(_ refused.Instant) (refused.Instant, error) {
-				mark()
+		Returns: func() refusedtest.ClockUpdateReturn {
+			want0, want1 := clockStubUpdatePins()
+			s.OnUpdate.Returns(want0, want1)
+			return refusedtest.ClockUpdateReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(refusedtest.ClockUpdateCall)) {
+			s.OnUpdate.Func(func(p0 refused.Instant) (refused.Instant, error) {
+				seen(refusedtest.ClockUpdateCall{Observed: p0})
 				var z0 refused.Instant
 				var z1 error
 				return z0, z1
@@ -83,7 +94,6 @@ func clockStubInstanceOf(tb assert.TB, s *refusedtest.ClockStub) clockStubInstan
 		Call: func() {
 			_, _ = clockStubUpdate(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -95,69 +105,14 @@ func TestClockStub(t *testing.T) {
 	t.Run("Update", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Update", clockStubUpdateSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := refusedtest.NewClockStub(t)
-			_, _ = clockStubUpdate(t, s)
-			got := s.OnUpdate.AssertCalledOnce(t, "Update records the call")
-			a0 := clockStubUpdateArgs(t)
-			assert.Equal(t, got.Observed, a0, "the call records Observed")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := refusedtest.NewClockStub(t)
-			var seen []refusedtest.ClockUpdateCall
-			s.OnUpdate.OnRecord(func(c refusedtest.ClockUpdateCall) { seen = append(seen, c) })
-			_, _ = clockStubUpdate(t, s)
-			_, _ = clockStubUpdate(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Update")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) clockStubInstance {
-			return clockStubInstanceOf(tb, refusedtest.NewClockStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Update", func(t *testing.T) {
+		t.Run("Update", func(t *testing.T) {
 			t.Parallel()
-			s := refusedtest.NewClockStub(t)
-			_, _ = clockStubUpdate(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnUpdate.CallCount(), 0, "ResetCalls clears the calls of Update")
-		})
-
-		t.Run("keeps the results of Returns of Update", func(t *testing.T) {
-			t.Parallel()
-			s := refusedtest.NewClockStub(t)
-			want0, want1 := clockStubUpdatePins()
-			s.OnUpdate.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := clockStubUpdate(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Update")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Update")
-		})
-	})
-
-	t.Run("NewClockStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) clockStubInstance {
-			return clockStubInstanceOf(tb, refusedtest.NewClockStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewClockStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Update with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Update-failing")
-			s := refusedtest.NewClockStubFailing(t, want)
-			_, r1 := clockStubUpdate(t, s)
-			assert.ErrorIs(t, r1, want, "Update fails with the error of NewClockStubFailing")
+			stub.ResetBehaviour(t, "Update", clockStubUpdateSubject)
 		})
 	})
 
@@ -254,55 +209,4 @@ func TestClockStub(t *testing.T) {
 	})
 }
 
-// TestClockUpdateStub checks the methods of ClockUpdateStub, which
-// configures Update.
-func TestClockUpdateStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Update", func(t *testing.T) {
-			t.Parallel()
-			s := refusedtest.NewClockStub(t)
-			want0, want1 := clockStubUpdatePins()
-			s.OnUpdate.Returns(want0, want1)
-			got0, got1 := clockStubUpdate(t, s)
-			expect.Equal(t, got0, want0, "Update returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Update returns the error that Returns sets")
-		})
-
-		t.Run("configures Update for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := refusedtest.NewClockStub(r)
-			s.OnUpdate.Strict()
-			var want0 refused.Instant
-			var want1 error
-			s.OnUpdate.Returns(want0, want1)
-			_, _ = clockStubUpdate(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Update")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Update to the function", func(t *testing.T) {
-			t.Parallel()
-			s := refusedtest.NewClockStub(t)
-			var got0 refused.Instant
-			s.OnUpdate.Func(func(p0 refused.Instant) (refused.Instant, error) {
-				got0 = p0
-				var z0 refused.Instant
-				var z1 error
-				return z0, z1
-			})
-			_, _ = clockStubUpdate(t, s)
-			a0 := clockStubUpdateArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Observed")
-		})
-	})
-}
-
-// dokimi:provenance sha256:6419f35e541b176f1e79e885b53646bb2124376f9790e1f4dc8b913357c23341
+// dokimi:provenance sha256:3541b4fa948da88bdfa1575b3f9e44b9d20db66a9c8c19d3fb489862433a83e7

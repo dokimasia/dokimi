@@ -15,55 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Encode/smoke: Encode returns without a panic for derived
-// inputs.
-//
-// Contract.Encode/smoke#generated: Encode returns without a panic for
-// derived inputs.
-//
-// Contract.Encode/cancel: Encode returns an error for a cancelled context.
-//
-// Contract.Encode/cancel#generated: Encode returns an error for a
-// cancelled context.
-//
-// Contract.Encode/zero-on-error: Encode returns the zero value beside an
-// error.
-//
-// Contract.Encode/zero-on-error#generated: Encode returns the zero value
-// beside an error.
-//
-// Contract.Decode/smoke: Decode returns without a panic for derived
-// inputs.
-//
-// Contract.Decode/smoke#generated: Decode returns without a panic for
-// derived inputs.
-//
-// Contract.Decode/cancel: Decode returns an error for a cancelled context.
-//
-// Contract.Decode/cancel#generated: Decode returns an error for a
-// cancelled context.
-//
-// Contract.Decode/zero-on-error: Decode returns the zero value beside an
-// error.
-//
-// Contract.Decode/zero-on-error#generated: Decode returns the zero value
-// beside an error.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Encode/smoke
-//
-// Contract.Decode/smoke
-
-// The refused claims of Contract:
-//
-// Contract.Encode/codec: the codec of Encode states the fidelity lossy,
-// and the claim states the exact round trip. The remedy is to check the
-// lossy round trip of Encode with a check of the consumer.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -96,34 +47,16 @@ func (c contractEncode) Smoke() conform.ID[codeclossy.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Encode returns
-// without a panic for derived inputs.
-func (c contractEncode) SmokeGenerated() conform.ID[codeclossy.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Encode returns an error
 // for a cancelled context.
 func (c contractEncode) Cancel() conform.ID[codeclossy.Contract] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Encode returns an
-// error for a cancelled context.
-func (c contractEncode) CancelGenerated() conform.ID[codeclossy.Contract] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Encode returns the
 // zero value beside an error.
 func (c contractEncode) ZeroOnError() conform.ID[codeclossy.Contract] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Encode
-// returns the zero value beside an error.
-func (c contractEncode) ZeroOnErrorGenerated() conform.ID[codeclossy.Contract] {
-	return c.Check("zero-on-error#generated")
 }
 
 // contractDecode is the name of Contract.Decode, with the identities of
@@ -138,34 +71,16 @@ func (c contractDecode) Smoke() conform.ID[codeclossy.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Decode returns
-// without a panic for derived inputs.
-func (c contractDecode) SmokeGenerated() conform.ID[codeclossy.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Decode returns an error
 // for a cancelled context.
 func (c contractDecode) Cancel() conform.ID[codeclossy.Contract] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Decode returns an
-// error for a cancelled context.
-func (c contractDecode) CancelGenerated() conform.ID[codeclossy.Contract] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Decode returns the
 // zero value beside an error.
 func (c contractDecode) ZeroOnError() conform.ID[codeclossy.Contract] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Decode
-// returns the zero value beside an error.
-func (c contractDecode) ZeroOnErrorGenerated() conform.ID[codeclossy.Contract] {
-	return c.Check("zero-on-error#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -180,9 +95,6 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				ID:          ContractChecks.Encode.Smoke(),
 				Statement:   "Encode returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -194,12 +106,9 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				Defect: contractEncodePanics,
 			},
 			{
-				ID:          ContractChecks.Encode.SmokeGenerated(),
+				ID:          ContractChecks.Encode.Smoke().Generated(),
 				Statement:   "Encode returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -214,9 +123,6 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				ID:          ContractChecks.Encode.Cancel(),
 				Statement:   "Encode returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -227,12 +133,9 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				Defect: contractEncodeIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Encode.CancelGenerated(),
+				ID:          ContractChecks.Encode.Cancel().Generated(),
 				Statement:   "Encode returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -247,9 +150,6 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				ID:          ContractChecks.Encode.ZeroOnError(),
 				Statement:   "Encode returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -259,12 +159,9 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				Defect: contractEncodeValueBeside,
 			},
 			{
-				ID:          ContractChecks.Encode.ZeroOnErrorGenerated(),
+				ID:          ContractChecks.Encode.ZeroOnError().Generated(),
 				Statement:   "Encode returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -278,9 +175,6 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				ID:          ContractChecks.Decode.Smoke(),
 				Statement:   "Decode returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -292,12 +186,9 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				Defect: contractDecodePanics,
 			},
 			{
-				ID:          ContractChecks.Decode.SmokeGenerated(),
+				ID:          ContractChecks.Decode.Smoke().Generated(),
 				Statement:   "Decode returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -312,9 +203,6 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				ID:          ContractChecks.Decode.Cancel(),
 				Statement:   "Decode returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -325,12 +213,9 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				Defect: contractDecodeIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Decode.CancelGenerated(),
+				ID:          ContractChecks.Decode.Cancel().Generated(),
 				Statement:   "Decode returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -345,9 +230,6 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				ID:          ContractChecks.Decode.ZeroOnError(),
 				Statement:   "Decode returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -357,12 +239,9 @@ func ContractSuite() conform.Suite[codeclossy.Contract] {
 				Defect: contractDecodeValueBeside,
 			},
 			{
-				ID:          ContractChecks.Decode.ZeroOnErrorGenerated(),
+				ID:          ContractChecks.Decode.ZeroOnError().Generated(),
 				Statement:   "Decode returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnIn := c.Draw(prop.Of[string](), "in")
@@ -626,4 +505,4 @@ func contractDecodeValueBeside(h *ContractHandle) codeclossy.Contract {
 	return &contractDecodeValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:cea0253df6d2343022ed4d593ccc1414321a851a417f70c2d3c6c5ff2475ebb7
+// dokimi:provenance sha256:ea1b8c69452fd352a44b5121f5dc34eed5d12d18ca5f797541d437a013acb635

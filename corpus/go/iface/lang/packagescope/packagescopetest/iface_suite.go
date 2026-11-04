@@ -15,26 +15,6 @@ import (
 	spec2 "go.dokimi.dev/spec"
 )
 
-// The derived checks of Slugger:
-//
-// Slugger.Slug/smoke: Slug returns without a panic for derived inputs.
-//
-// Slugger.Slug/smoke#generated: Slug returns without a panic for derived
-// inputs.
-//
-// Slugger.Slug/deterministic: Slug returns the same value for the same
-// inputs.
-//
-// Slugger.Slug/deterministic#generated: Slug returns the same value for
-// the same inputs.
-
-// The derived checks of Slugger that witness their laws at the shallow
-// end:
-//
-// Slugger.Slug/smoke
-//
-// Slugger.Slug/deterministic
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -71,22 +51,10 @@ func (c sluggerSlug) Smoke() conform.ID[packagescope.Slugger] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Slug returns
-// without a panic for derived inputs.
-func (c sluggerSlug) SmokeGenerated() conform.ID[packagescope.Slugger] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Slug returns the
 // same value for the same inputs.
 func (c sluggerSlug) Deterministic() conform.ID[packagescope.Slugger] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Slug
-// returns the same value for the same inputs.
-func (c sluggerSlug) DeterministicGenerated() conform.ID[packagescope.Slugger] {
-	return c.Check("deterministic#generated")
 }
 
 // SluggerSuite returns the checks of Slugger, and the calls and the
@@ -101,9 +69,6 @@ func SluggerSuite() conform.Suite[packagescope.Slugger] {
 				ID:          SluggerChecks.Slug.Smoke(),
 				Statement:   "Slug returns without a panic for derived inputs",
 				Claim:       spec2.Smoke,
-				Probe:       spec2.Survives,
-				Reason:      spec2.Panicked,
-				Law:         spec2.NoPanicOnAnyInput,
 				Machineries: []spec2.MachineryID{spec2.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *SluggerHandle) {
@@ -115,12 +80,9 @@ func SluggerSuite() conform.Suite[packagescope.Slugger] {
 				Defect: sluggerSlugPanics,
 			},
 			{
-				ID:          SluggerChecks.Slug.SmokeGenerated(),
+				ID:          SluggerChecks.Slug.Smoke().Generated(),
 				Statement:   "Slug returns without a panic for derived inputs",
 				Claim:       spec2.Smoke,
-				Probe:       spec2.Survives,
-				Reason:      spec2.Panicked,
-				Law:         spec2.NoPanicOnAnyInput,
 				Machineries: []spec2.MachineryID{spec2.GeneratedInputs, spec2.NothingBeyondACaller},
 				Property: func(h *SluggerHandle, c *prop.Case) {
 					drawnTitle := c.Draw(prop.Of[string](), "title")
@@ -135,9 +97,6 @@ func SluggerSuite() conform.Suite[packagescope.Slugger] {
 				ID:          SluggerChecks.Slug.Deterministic(),
 				Statement:   "Slug returns the same value for the same inputs",
 				Claim:       spec2.Deterministic,
-				Probe:       spec2.RepeatAgrees,
-				Reason:      spec2.UnstableRepeat,
-				Law:         spec2.RepeatReturnsAlike,
 				Machineries: []spec2.MachineryID{spec2.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[packagescope.Slugger]{SluggerChecks.Slug.Smoke()},
@@ -150,14 +109,11 @@ func SluggerSuite() conform.Suite[packagescope.Slugger] {
 				Defect: sluggerSlugDrifts,
 			},
 			{
-				ID:          SluggerChecks.Slug.DeterministicGenerated(),
+				ID:          SluggerChecks.Slug.Deterministic().Generated(),
 				Statement:   "Slug returns the same value for the same inputs",
 				Claim:       spec2.Deterministic,
-				Probe:       spec2.RepeatAgrees,
-				Reason:      spec2.UnstableRepeat,
-				Law:         spec2.RepeatReturnsAlike,
 				Machineries: []spec2.MachineryID{spec2.GeneratedInputs, spec2.NothingBeyondACaller},
-				Entails:     []conform.ID[packagescope.Slugger]{SluggerChecks.Slug.SmokeGenerated()},
+				Entails:     []conform.ID[packagescope.Slugger]{SluggerChecks.Slug.Smoke().Generated()},
 				Property: func(h *SluggerHandle, c *prop.Case) {
 					drawnTitle := c.Draw(prop.Of[string](), "title")
 					probe2.RepeatAgrees(h, func(ctx context.Context) (string, error) {
@@ -320,4 +276,4 @@ func sluggerSlugDrifts(h *SluggerHandle) packagescope.Slugger {
 	return &sluggerSlugDriftsDefect{sluggerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f36a328366ae49a026bce66d3f244372bc32140eee57006e5e2ad251ee6ab3f8
+// dokimi:provenance sha256:9a7fe64869b1e126eacc10866b877a777ab914356de18666360673afb473b593

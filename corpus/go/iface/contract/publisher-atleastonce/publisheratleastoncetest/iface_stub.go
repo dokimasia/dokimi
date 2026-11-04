@@ -199,21 +199,6 @@ func NewContractStub(tb assert.TB, opts ...ContractStubOption) *ContractStub {
 	return s
 }
 
-// NewContractStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewContractStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ContractStubOption) *ContractStub {
-	return NewContractStub(tb, append([]ContractStubOption{
-		ContractStubWithClock(clk),
-		ContractStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewContractStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewContractStubFailing(tb assert.TB, err error, opts ...ContractStubOption) *ContractStub {
-	return NewContractStub(tb, append([]ContractStubOption{ContractStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ContractStub) ResetCalls() {
@@ -277,4 +262,4 @@ func (s *ContractStub) Subscribe(ctx context.Context) (<-chan publisheratleaston
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:7e0fe1e052c1a7438c3e8c3f727ab4ef548eab78a773b808f785f7f61aa6847e
+// dokimi:provenance sha256:d00a4208ffcca1fcd2b0d4c0aa206c97dc1489d3f8f9441d8e3a63f166b68b2d

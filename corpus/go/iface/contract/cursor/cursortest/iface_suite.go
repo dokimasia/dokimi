@@ -15,33 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Next/smoke: Next returns without a panic for derived inputs.
-//
-// Contract.Next/cancel: Next returns an error for a cancelled context.
-//
-// Contract.Next/zeroes-on-error: Next returns the zero values beside an
-// error.
-//
-// Contract.Next/cursor: Next fails with the declared sentinel after Close.
-//
-// Contract.Close/smoke: Close returns without a panic for derived inputs.
-//
-// Contract.Close/cancel: Close returns an error for a cancelled context.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Next/smoke
-//
-// Contract.Close/smoke
-
-// The unclaimed classifications of Contract:
-//
-// The shape:lifecycle of Contract.Close has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -122,9 +95,6 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 				ID:          ContractChecks.Next.Smoke(),
 				Statement:   "Next returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -139,9 +109,6 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 				ID:          ContractChecks.Next.Cancel(),
 				Statement:   "Next returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -155,9 +122,6 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 				ID:          ContractChecks.Next.ZeroesOnError(),
 				Statement:   "Next returns the zero values beside an error",
 				Claim:       spec.ZeroesOnError,
-				Probe:       spec.ZeroPairBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroPairBesideError(h, func(ctx context.Context) (probe.Pair[cursor.Value, bool], error) {
@@ -171,9 +135,6 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 				ID:          ContractChecks.Next.Cursor(),
 				Statement:   "Next fails with the declared sentinel after Close",
 				Claim:       spec.Cursor,
-				Probe:       spec.ReportsSealed,
-				Reason:      spec.AliveAfterClose,
-				Law:         spec.WorkAfterCloseIsRefused,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ReportsSealed(h, func(ctx context.Context) error {
@@ -189,9 +150,6 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 				ID:          ContractChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -205,9 +163,6 @@ func ContractSuite() conform.Suite[cursor.Contract] {
 				ID:          ContractChecks.Close.Cancel(),
 				Statement:   "Close returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -461,4 +416,4 @@ func contractCloseIgnoresCancel(h *ContractHandle) cursor.Contract {
 	return &contractCloseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2b37fb8b370300a5c92ba1d9358c480923fce3b483221f4012105aa41db6e2ef
+// dokimi:provenance sha256:875bc4490e2e576dbc8daccecf330696c9e9cf9a10c89a4645dbfc2d5d028572

@@ -15,25 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Lifecycle:
-//
-// Lifecycle.Close/smoke: Close returns without a panic for derived inputs.
-//
-// Lifecycle.Close/cancel: Close returns an error for a cancelled context.
-//
-// Lifecycle.Close/idempotent: a second identical Close succeeds after the
-// first.
-
-// The derived checks of Lifecycle that witness their laws at the shallow
-// end:
-//
-// Lifecycle.Close/smoke
-
-// The unclaimed classifications of Lifecycle:
-//
-// The shape:lifecycle of Lifecycle.Close has the stance silent. A
-// lifecycle call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -88,9 +69,6 @@ func LifecycleSuite() conform.Suite[lifecycle.Lifecycle] {
 				ID:          LifecycleChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LifecycleHandle) {
@@ -104,9 +82,6 @@ func LifecycleSuite() conform.Suite[lifecycle.Lifecycle] {
 				ID:          LifecycleChecks.Close.Cancel(),
 				Statement:   "Close returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LifecycleHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -119,9 +94,6 @@ func LifecycleSuite() conform.Suite[lifecycle.Lifecycle] {
 				ID:          LifecycleChecks.Close.Idempotent(),
 				Statement:   "a second identical Close succeeds after the first",
 				Claim:       spec.Idempotent,
-				Probe:       spec.RepeatIsQuiet,
-				Reason:      spec.RefusedRepeat,
-				Law:         spec.RepeatIsAccepted,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LifecycleHandle) {
 					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
@@ -308,4 +280,4 @@ func lifecycleCloseRefusesRepeat(h *LifecycleHandle) lifecycle.Lifecycle {
 	return &lifecycleCloseRefusesRepeatDefect{lifecycleOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6b636ecb21ff99118972f662a65d6c8cb11e385171cf8a050984d19d8131a762
+// dokimi:provenance sha256:697203cea5cbce8fddefd109ed0f0baa310d545e9bf869fbb5b4cf06505144b5

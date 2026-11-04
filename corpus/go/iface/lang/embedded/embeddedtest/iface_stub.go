@@ -143,21 +143,6 @@ func NewBaseStub(tb assert.TB, opts ...BaseStubOption) *BaseStub {
 	return s
 }
 
-// NewBaseStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewBaseStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...BaseStubOption) *BaseStub {
-	return NewBaseStub(tb, append([]BaseStubOption{
-		BaseStubWithClock(clk),
-		BaseStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewBaseStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewBaseStubFailing(tb assert.TB, err error, opts ...BaseStubOption) *BaseStub {
-	return NewBaseStub(tb, append([]BaseStubOption{BaseStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *BaseStub) ResetCalls() {
@@ -319,21 +304,6 @@ func NewCloserStub(tb assert.TB, opts ...CloserStubOption) *CloserStub {
 	}
 	s.group.Bind(tb)
 	return s
-}
-
-// NewCloserStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewCloserStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...CloserStubOption) *CloserStub {
-	return NewCloserStub(tb, append([]CloserStubOption{
-		CloserStubWithClock(clk),
-		CloserStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewCloserStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewCloserStubFailing(tb assert.TB, err error, opts ...CloserStubOption) *CloserStub {
-	return NewCloserStub(tb, append([]CloserStubOption{CloserStubFailing(err)}, opts...)...)
 }
 
 // ResetCalls clears the recorded calls, the counters of the faults and the
@@ -593,21 +563,6 @@ func NewComposedStub(tb assert.TB, opts ...ComposedStubOption) *ComposedStub {
 	return s
 }
 
-// NewComposedStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewComposedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ComposedStubOption) *ComposedStub {
-	return NewComposedStub(tb, append([]ComposedStubOption{
-		ComposedStubWithClock(clk),
-		ComposedStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewComposedStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewComposedStubFailing(tb assert.TB, err error, opts ...ComposedStubOption) *ComposedStub {
-	return NewComposedStub(tb, append([]ComposedStubOption{ComposedStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ComposedStub) ResetCalls() {
@@ -699,4 +654,4 @@ func (s *ComposedStub) Close(ctx context.Context) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:e8db976e1e84c3220ecbdbbb26c9fb3ff5dd4b736cd247420ea7922ca4531263
+// dokimi:provenance sha256:9092fba9af80e829dcb29ba3eed1a649fdf1bd4b9dd5e88b43d5a39d3cd12919

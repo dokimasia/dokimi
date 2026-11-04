@@ -17,49 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Add/smoke: Add returns without a panic for derived inputs.
-//
-// Mixed.Add/smoke#generated: Add returns without a panic for derived
-// inputs.
-//
-// Mixed.Add/cancel: Add returns an error for a cancelled context.
-//
-// Mixed.Add/cancel#generated: Add returns an error for a cancelled
-// context.
-//
-// Mixed.Items/smoke: Items returns without a panic for derived inputs.
-//
-// Mixed.Items/cancel: Items returns an error for a cancelled context.
-//
-// Mixed.Items/zero-on-error: Items returns the zero value beside an error.
-//
-// Mixed.Items/stable-order: two calls of Items return the elements in the
-// same order.
-//
-// Mixed.Items/stable-order#generated: two calls of Items return the
-// elements in the same order.
-//
-// Mixed.Items/keeps-its-order: two calls of Items without another call
-// between them yield their elements in one order, over any sequence of
-// calls.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Add/smoke
-//
-// Mixed.Items/smoke
-//
-// Mixed.Items/stable-order
-//
-// Mixed.Items/stable-order#generated
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Add has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -91,22 +48,10 @@ func (c mixedAdd) Smoke() conform.ID[stableorder.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Add returns
-// without a panic for derived inputs.
-func (c mixedAdd) SmokeGenerated() conform.ID[stableorder.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c mixedAdd) Cancel() conform.ID[stableorder.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Add returns an
-// error for a cancelled context.
-func (c mixedAdd) CancelGenerated() conform.ID[stableorder.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedItems is the name of Mixed.Items, with the identities of its
@@ -139,12 +84,6 @@ func (c mixedItems) StableOrder() conform.ID[stableorder.Mixed] {
 	return c.Check("stable-order")
 }
 
-// StableOrderGenerated returns the identity of the check that two calls of
-// Items return the elements in the same order.
-func (c mixedItems) StableOrderGenerated() conform.ID[stableorder.Mixed] {
-	return c.Check("stable-order#generated")
-}
-
 // KeepsItsOrder returns the identity of the check that two calls of Items
 // without another call between them yield their elements in one order,
 // over any sequence of calls.
@@ -164,9 +103,6 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				ID:          MixedChecks.Add.Smoke(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -177,12 +113,9 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				Defect: mixedAddPanics,
 			},
 			{
-				ID:          MixedChecks.Add.SmokeGenerated(),
+				ID:          MixedChecks.Add.Smoke().Generated(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[stableorder.Value](), "v")
@@ -196,9 +129,6 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				ID:          MixedChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -208,12 +138,9 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				Defect: mixedAddIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Add.CancelGenerated(),
+				ID:          MixedChecks.Add.Cancel().Generated(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[stableorder.Value](), "v")
@@ -227,9 +154,6 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				ID:          MixedChecks.Items.Smoke(),
 				Statement:   "Items returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -244,9 +168,6 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				ID:          MixedChecks.Items.Cancel(),
 				Statement:   "Items returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -260,9 +181,6 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				ID:          MixedChecks.Items.ZeroOnError(),
 				Statement:   "Items returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) ([]stableorder.Value, error) {
@@ -275,9 +193,6 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				ID:          MixedChecks.Items.StableOrder(),
 				Statement:   "two calls of Items return the elements in the same order",
 				Claim:       spec.StableOrder,
-				Probe:       spec.DrainsInOneOrder,
-				Reason:      spec.ReorderedDrain,
-				Law:         spec.TwoDrainsAgreeOnOrder,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -298,12 +213,9 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				Defect: mixedItemsReordersDrain,
 			},
 			{
-				ID:          MixedChecks.Items.StableOrderGenerated(),
+				ID:          MixedChecks.Items.StableOrder().Generated(),
 				Statement:   "two calls of Items return the elements in the same order",
 				Claim:       spec.StableOrder,
-				Probe:       spec.DrainsInOneOrder,
-				Reason:      spec.ReorderedDrain,
-				Law:         spec.TwoDrainsAgreeOnOrder,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -331,9 +243,6 @@ func MixedSuite() conform.Suite[stableorder.Mixed] {
 				ID:          MixedChecks.Items.KeepsItsOrder(),
 				Statement:   "two calls of Items without another call between them yield their elements in one order, over any sequence of calls",
 				Claim:       spec.KeepsItsOrder,
-				Probe:       spec.DrainsAgreeBetweenWrites,
-				Reason:      spec.ReorderedDrain,
-				Law:         spec.TwoDrainsAgreeOnOrder,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[stableorder.Mixed]{MixedChecks.Items.StableOrder()},
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -663,4 +572,4 @@ func mixedItemsCall(ctx context.Context, subject stableorder.Mixed, args []any) 
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:b5d277a0ab97f0333c3e1091217a93120a56d42c778f02a31168dc9479244286
+// dokimi:provenance sha256:48ce7e59d419650e22f8de4b42f5735ce29dc3f522f41e84099f127c122f890c

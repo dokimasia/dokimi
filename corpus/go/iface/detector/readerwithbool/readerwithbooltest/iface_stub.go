@@ -146,20 +146,6 @@ func NewReaderWithBoolStub(tb assert.TB, opts ...ReaderWithBoolStubOption) *Read
 	return s
 }
 
-// NewReaderWithBoolStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewReaderWithBoolStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...ReaderWithBoolStubOption,
-) *ReaderWithBoolStub {
-	return NewReaderWithBoolStub(tb, append([]ReaderWithBoolStubOption{
-		ReaderWithBoolStubWithClock(clk),
-		ReaderWithBoolStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ReaderWithBoolStub) ResetCalls() {
@@ -194,4 +180,4 @@ func (s *ReaderWithBoolStub) Load(ctx context.Context, key string) (readerwithbo
 	return r.Result0, r.Result1
 }
 
-// dokimi:provenance sha256:73128a001bf29afd138a2997d2b5d6470f2950405039ab386cec932e5e1ae07f
+// dokimi:provenance sha256:837bd056d2a14beee166b8a94e15fa1f85e92e65be3910b2de886c4e49e3e621

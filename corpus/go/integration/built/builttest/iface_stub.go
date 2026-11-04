@@ -373,21 +373,6 @@ func NewLedgerStub(tb assert.TB, opts ...LedgerStubOption) *LedgerStub {
 	return s
 }
 
-// NewLedgerStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewLedgerStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...LedgerStubOption) *LedgerStub {
-	return NewLedgerStub(tb, append([]LedgerStubOption{
-		LedgerStubWithClock(clk),
-		LedgerStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewLedgerStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewLedgerStubFailing(tb assert.TB, err error, opts ...LedgerStubOption) *LedgerStub {
-	return NewLedgerStub(tb, append([]LedgerStubOption{LedgerStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LedgerStub) ResetCalls() {
@@ -579,4 +564,4 @@ func (s *LedgerStub) Bill(id string) billing.Invoice {
 	return r.Result
 }
 
-// dokimi:provenance sha256:ffa14094087fe80dd8d7e18c7a731279a2ede7ce2d8a7f118ac3dab19e27a82e
+// dokimi:provenance sha256:70bdd3b53961a2ee75f958c4b0fc023fc7253f8fe17aed1bdd2c7f2c1fafca17

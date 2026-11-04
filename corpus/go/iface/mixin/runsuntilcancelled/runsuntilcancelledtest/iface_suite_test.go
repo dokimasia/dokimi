@@ -48,18 +48,7 @@ func TestWorkerSuite(t *testing.T) {
 				},
 				Defect: func(*runsuntilcancelledtest.WorkerHandle) runsuntilcancelled.Worker { return &workerSubject{} },
 			}),
-			conform.Excuse(
-				runsuntilcancelledtest.WorkerChecks.Running.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				runsuntilcancelledtest.WorkerChecks.Running.Predicate(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				runsuntilcancelledtest.WorkerChecks.Run.StopsWhenItsContextEnds(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[runsuntilcancelled.Worker]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -81,18 +70,7 @@ func TestWorkerSuite(t *testing.T) {
 				},
 				Defect: func(*runsuntilcancelledtest.WorkerHandle) runsuntilcancelled.Worker { return &workerSubject{} },
 			}),
-			conform.Excuse(
-				runsuntilcancelledtest.WorkerChecks.Running.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				runsuntilcancelledtest.WorkerChecks.Running.Predicate(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				runsuntilcancelledtest.WorkerChecks.Run.StopsWhenItsContextEnds(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[runsuntilcancelled.Worker]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -107,10 +85,15 @@ func TestWorkerSuite(t *testing.T) {
 	})
 }
 
+// workerSuite is the suite of Worker that the tests of the planted defect
+// of a ceiling apply.
+var workerSuite = runsuntilcancelledtest.WorkerSuite()
+
 // workerIdle returns the planted defect of a ceiling of Worker with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func workerIdle(h *runsuntilcancelledtest.WorkerHandle) runsuntilcancelled.Worker {
-	return runsuntilcancelledtest.WorkerSuite().Calls[0].Over(h, func() {})
+	return workerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestWorkerSuiteBudgets applies the allocation ceilings of the suite of
@@ -122,17 +105,8 @@ func TestWorkerSuiteBudgets(t *testing.T) {
 		t,
 		workerIdle,
 		conform.Ceilings(runsuntilcancelledtest.WorkerChecks.Running.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Running.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Running.Predicate(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Run.StopsWhenItsContextEnds(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[runsuntilcancelled.Worker](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -144,17 +118,8 @@ func FuzzWorkerSuiteRun(f *testing.F) {
 		f,
 		runsuntilcancelledtest.WorkerChecks.Run.Callable,
 		workerIdle,
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Running.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Running.Predicate(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Run.StopsWhenItsContextEnds(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[runsuntilcancelled.Worker](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -166,17 +131,8 @@ func FuzzWorkerSuiteRunning(f *testing.F) {
 		f,
 		runsuntilcancelledtest.WorkerChecks.Running.Callable,
 		workerIdle,
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Running.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Running.Predicate(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			runsuntilcancelledtest.WorkerChecks.Run.StopsWhenItsContextEnds(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[runsuntilcancelled.Worker](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -189,4 +145,4 @@ func BenchmarkWorkerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5257e60a2373e7147c9fce639cbcadb2073c1a4e6eb1ab4811aa584a656e921a
+// dokimi:provenance sha256:658edf2a57be7b7bedc2c4274c82636ae152e4c697be8e7f3d434875144649cb

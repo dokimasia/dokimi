@@ -237,21 +237,6 @@ func NewRankedStub(tb assert.TB, opts ...RankedStubOption) *RankedStub {
 	return s
 }
 
-// NewRankedStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewRankedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...RankedStubOption) *RankedStub {
-	return NewRankedStub(tb, append([]RankedStubOption{
-		RankedStubWithClock(clk),
-		RankedStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewRankedStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewRankedStubFailing(tb assert.TB, err error, opts ...RankedStubOption) *RankedStub {
-	return NewRankedStub(tb, append([]RankedStubOption{RankedStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *RankedStub) ResetCalls() {
@@ -344,4 +329,4 @@ func (s *RankedStub) At(ctx context.Context, i int) (indexed.Value, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:05c7a267f7e7da0abffd5d5bf55688e1f0af23f993456296b85f0f6d87b4b4aa
+// dokimi:provenance sha256:e842dcc189be59a1c3811ae988ceba849072292a35b8d998552221eab3606125

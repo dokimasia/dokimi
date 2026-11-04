@@ -48,10 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*sourcetest.MixedHandle) source.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				sourcetest.MixedChecks.Uint64.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[source.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -73,18 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*sourcetest.MixedHandle) source.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				sourcetest.MixedChecks.Uint64.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[source.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = sourcetest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *sourcetest.MixedHandle) source.Mixed {
-	return sourcetest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -96,10 +94,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(sourcetest.MixedChecks.Uint64.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			sourcetest.MixedChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[source.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -110,10 +105,7 @@ func FuzzMixedSuiteUint64(f *testing.F) {
 		f,
 		sourcetest.MixedChecks.Uint64.Callable,
 		mixedIdle,
-		conform.Excuse(
-			sourcetest.MixedChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[source.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -125,4 +117,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:a50b475e937f1ce44e42c48d5cb8dda22775f59804791d627de03cdbd8a25086
+// dokimi:provenance sha256:59a2298a5b28ad4809fc9b675b8ea12a7fe32b8b1e64d1df176cf4beec52019b

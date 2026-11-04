@@ -48,86 +48,7 @@ func TestCopierSuite(t *testing.T) {
 				},
 				Defect: func(*copiertest.CopierHandle) copier.Copier { return &copierSubject{} },
 			}),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.ReleasesOnEveryPath(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[copier.Copier]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -149,94 +70,20 @@ func TestCopierSuite(t *testing.T) {
 				},
 				Defect: func(*copiertest.CopierHandle) copier.Copier { return &copierSubject{} },
 			}),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.ReleasesOnEveryPath(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Open.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				copiertest.CopierChecks.Close.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[copier.Copier]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// copierSuite is the suite of Copier that the tests of the planted defect
+// of a ceiling apply.
+var copierSuite = copiertest.CopierSuite()
+
 // copierIdle returns the planted defect of a ceiling of Copier with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func copierIdle(h *copiertest.CopierHandle) copier.Copier {
-	return copiertest.CopierSuite().Calls[0].Over(h, func() {})
+	return copierSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCopierSuiteBudgets applies the allocation ceilings of the suite of
@@ -250,86 +97,7 @@ func TestCopierSuiteBudgets(t *testing.T) {
 		conform.Ceilings(copiertest.CopierChecks.Copy.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(copiertest.CopierChecks.Open.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(copiertest.CopierChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.ReleasesOnEveryPath(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[copier.Copier]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -340,86 +108,7 @@ func FuzzCopierSuiteCopy(f *testing.F) {
 		f,
 		copiertest.CopierChecks.Copy.Callable,
 		copierIdle,
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.ReleasesOnEveryPath(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[copier.Copier]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -430,86 +119,7 @@ func FuzzCopierSuiteOpen(f *testing.F) {
 		f,
 		copiertest.CopierChecks.Open.Callable,
 		copierIdle,
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.ReleasesOnEveryPath(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[copier.Copier]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -520,86 +130,7 @@ func FuzzCopierSuiteClose(f *testing.F) {
 		f,
 		copiertest.CopierChecks.Close.Callable,
 		copierIdle,
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.ReleasesOnEveryPath(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Open.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			copiertest.CopierChecks.Close.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[copier.Copier]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -617,4 +148,4 @@ func BenchmarkCopierSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:973596ee078474c3e4f08ff00fe19bfcc8c0133d38fd430ba549a755f5d15815
+// dokimi:provenance sha256:fc70f5868bc8d7ad47c92858d6fb908d15c297bbf0a8ee376dc28822d34bcfc7

@@ -49,30 +49,7 @@ func TestMultiReaderSuite(t *testing.T) {
 				},
 				Defect: func(*multireadertest.MultiReaderHandle) multireader.MultiReader { return &multiReaderSubject{} },
 			}),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.ZeroesOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.ZeroesOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[multireader.MultiReader]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -94,38 +71,20 @@ func TestMultiReaderSuite(t *testing.T) {
 				},
 				Defect: func(*multireadertest.MultiReaderHandle) multireader.MultiReader { return &multiReaderSubject{} },
 			}),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.ZeroesOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				multireadertest.MultiReaderChecks.GetWithMeta.ZeroesOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[multireader.MultiReader]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// multiReaderSuite is the suite of MultiReader that the tests of the
+// planted defect of a ceiling apply.
+var multiReaderSuite = multireadertest.MultiReaderSuite()
+
 // multiReaderIdle returns the planted defect of a ceiling of MultiReader
-// with a spend of nothing, a subject that answers each call at once.
+// with a spend of nothing. Each call of the defect returns its zero
+// results at once.
 func multiReaderIdle(h *multireadertest.MultiReaderHandle) multireader.MultiReader {
-	return multireadertest.MultiReaderSuite().Calls[0].Over(h, func() {})
+	return multiReaderSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMultiReaderSuiteBudgets applies the allocation ceilings of the suite
@@ -140,29 +99,8 @@ func TestMultiReaderSuiteBudgets(t *testing.T) {
 			multireadertest.MultiReaderChecks.GetWithMeta.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.ZeroesOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.ZeroesOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[multireader.MultiReader](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -175,29 +113,8 @@ func FuzzMultiReaderSuiteGetWithMeta(f *testing.F) {
 		f,
 		multireadertest.MultiReaderChecks.GetWithMeta.Callable,
 		multiReaderIdle,
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.ZeroesOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			multireadertest.MultiReaderChecks.GetWithMeta.ZeroesOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[multireader.MultiReader](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -214,4 +131,4 @@ func BenchmarkMultiReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e1d2aec5d963d40b1694b4925f5112922315eb4bfd74987b83d4518adfaf9dad
+// dokimi:provenance sha256:31fe2d4de174015d8dbef13e22a41cd4d0b84ccfff954fe0f98f5a4c7f5e4499

@@ -200,21 +200,6 @@ func NewFinderStub(tb assert.TB, opts ...FinderStubOption) *FinderStub {
 	return s
 }
 
-// NewFinderStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewFinderStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...FinderStubOption) *FinderStub {
-	return NewFinderStub(tb, append([]FinderStubOption{
-		FinderStubWithClock(clk),
-		FinderStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewFinderStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewFinderStubFailing(tb assert.TB, err error, opts ...FinderStubOption) *FinderStub {
-	return NewFinderStub(tb, append([]FinderStubOption{FinderStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *FinderStub) ResetCalls() {
@@ -283,4 +268,4 @@ func (s *FinderStub) FindWithLimit(ctx context.Context, limit int, keys ...strin
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:c880d322052bc71f44a8212520ff4e8c4d469c4ca6e2c9afb059db04b0fe93eb
+// dokimi:provenance sha256:d3b5046f665c8a11be6aa3aba4ccb9207e00edc67ad4b3a0ee6b720e12a88536

@@ -19,85 +19,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Begin/smoke: Begin returns without a panic for derived inputs.
-//
-// Mixed.Begin/cancel: Begin returns an error for a cancelled context.
-//
-// Mixed.Begin/zero-on-error: Begin returns the zero value beside an error.
-//
-// Mixed.Begin/tx: Rollback of a transaction that Begin opened and Commit
-// settled fails with the declared sentinel.
-//
-// Mixed.Commit/smoke: Commit returns without a panic for derived inputs.
-//
-// Mixed.Commit/smoke#generated: Commit returns without a panic for derived
-// inputs.
-//
-// Mixed.Commit/cancel: Commit returns an error for a cancelled context.
-//
-// Mixed.Commit/cancel#generated: Commit returns an error for a cancelled
-// context.
-//
-// Mixed.Rollback/smoke: Rollback returns without a panic for derived
-// inputs.
-//
-// Mixed.Rollback/smoke#generated: Rollback returns without a panic for
-// derived inputs.
-//
-// Mixed.Rollback/cancel: Rollback returns an error for a cancelled
-// context.
-//
-// Mixed.Rollback/cancel#generated: Rollback returns an error for a
-// cancelled context.
-//
-// Mixed.Append/smoke: Append returns without a panic for derived inputs.
-//
-// Mixed.Append/smoke#generated: Append returns without a panic for derived
-// inputs.
-//
-// Mixed.Append/cancel: Append returns an error for a cancelled context.
-//
-// Mixed.Append/cancel#generated: Append returns an error for a cancelled
-// context.
-//
-// Mixed.Append/serializable: every concurrent history of the transactions
-// of Mixed has a serial order in which each read returns the same result.
-//
-// Mixed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mixed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mixed.Get/cancel: Get returns an error for a cancelled context.
-//
-// Mixed.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Begin/smoke
-//
-// Mixed.Commit/smoke
-//
-// Mixed.Rollback/smoke
-//
-// Mixed.Append/smoke
-//
-// Mixed.Get/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Commit has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Mixed.Rollback has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:multi-arg-writer of Mixed.Append has the stance silent. A
-// write is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -166,22 +87,10 @@ func (c mixedCommit) Smoke() conform.ID[serializable.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Commit returns
-// without a panic for derived inputs.
-func (c mixedCommit) SmokeGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Commit returns an error
 // for a cancelled context.
 func (c mixedCommit) Cancel() conform.ID[serializable.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Commit returns an
-// error for a cancelled context.
-func (c mixedCommit) CancelGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedRollback is the name of Mixed.Rollback, with the identities of its
@@ -196,22 +105,10 @@ func (c mixedRollback) Smoke() conform.ID[serializable.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Rollback returns
-// without a panic for derived inputs.
-func (c mixedRollback) SmokeGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Rollback returns an error
 // for a cancelled context.
 func (c mixedRollback) Cancel() conform.ID[serializable.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Rollback returns
-// an error for a cancelled context.
-func (c mixedRollback) CancelGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedAppend is the name of Mixed.Append, with the identities of its
@@ -226,22 +123,10 @@ func (c mixedAppend) Smoke() conform.ID[serializable.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Append returns
-// without a panic for derived inputs.
-func (c mixedAppend) SmokeGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c mixedAppend) Cancel() conform.ID[serializable.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Append returns an
-// error for a cancelled context.
-func (c mixedAppend) CancelGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // Serializable returns the identity of the check that every concurrent
@@ -262,22 +147,10 @@ func (c mixedGet) Smoke() conform.ID[serializable.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mixedGet) SmokeGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mixedGet) Cancel() conform.ID[serializable.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c mixedGet) CancelGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -292,9 +165,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Begin.Smoke(),
 				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -309,9 +179,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Begin.Cancel(),
 				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -325,9 +192,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Begin.ZeroOnError(),
 				Statement:   "Begin returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (serializable.Tx, error) {
@@ -340,9 +204,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Begin.Tx(),
 				Statement:   "Rollback of a transaction that Begin opened and Commit settled fails with the declared sentinel",
 				Claim:       spec.Tx,
-				Probe:       spec.SealsAfterClose,
-				Reason:      spec.AliveAfterClose,
-				Law:         spec.SettledTransactionIsNotSettledAgain,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.SealsAfterClose(h, func(ctx context.Context) (serializable.Tx, error) {
@@ -359,9 +220,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Commit.Smoke(),
 				Statement:   "Commit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -372,12 +230,9 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Defect: mixedCommitPanics,
 			},
 			{
-				ID:          MixedChecks.Commit.SmokeGenerated(),
+				ID:          MixedChecks.Commit.Smoke().Generated(),
 				Statement:   "Commit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
@@ -391,9 +246,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Commit.Cancel(),
 				Statement:   "Commit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -403,12 +255,9 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Defect: mixedCommitIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Commit.CancelGenerated(),
+				ID:          MixedChecks.Commit.Cancel().Generated(),
 				Statement:   "Commit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
@@ -422,9 +271,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Rollback.Smoke(),
 				Statement:   "Rollback returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -435,12 +281,9 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Defect: mixedRollbackPanics,
 			},
 			{
-				ID:          MixedChecks.Rollback.SmokeGenerated(),
+				ID:          MixedChecks.Rollback.Smoke().Generated(),
 				Statement:   "Rollback returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
@@ -454,9 +297,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Rollback.Cancel(),
 				Statement:   "Rollback returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -466,12 +306,9 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Defect: mixedRollbackIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Rollback.CancelGenerated(),
+				ID:          MixedChecks.Rollback.Cancel().Generated(),
 				Statement:   "Rollback returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
@@ -485,9 +322,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Append.Smoke(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -498,12 +332,9 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Defect: mixedAppendPanics,
 			},
 			{
-				ID:          MixedChecks.Append.SmokeGenerated(),
+				ID:          MixedChecks.Append.Smoke().Generated(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
@@ -519,9 +350,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -531,12 +359,9 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Defect: mixedAppendIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Append.CancelGenerated(),
+				ID:          MixedChecks.Append.Cancel().Generated(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
@@ -552,9 +377,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Append.Serializable(),
 				Statement:   "every concurrent history of the transactions of Mixed has a serial order in which each read returns the same result",
 				Claim:       spec.Serializable,
-				Probe:       spec.SerializableHistory,
-				Reason:      spec.NotSerializable,
-				Law:         spec.ConcurrentTransactionsAreSerializable,
 				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					probe.SerializableHistory(h, c, mixedActions, 2)
@@ -565,9 +387,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -579,12 +398,9 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Defect: mixedGetPanics,
 			},
 			{
-				ID:          MixedChecks.Get.SmokeGenerated(),
+				ID:          MixedChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
@@ -600,9 +416,6 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				ID:          MixedChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -613,12 +426,9 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Defect: mixedGetIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Get.CancelGenerated(),
+				ID:          MixedChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
@@ -1312,4 +1122,4 @@ func mixedGetCall(ctx context.Context, subject serializable.Mixed, args []any) (
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:a94be5a5f5c421e3c7c2c4a510cab108e2f51bf91238f95ad0c2588b0f535421
+// dokimi:provenance sha256:95ca03f918fd82d35d5ca0b49bfeb1e0efa2e2cde906be7956c7008dddbb0247

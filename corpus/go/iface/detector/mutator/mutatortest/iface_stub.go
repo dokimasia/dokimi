@@ -123,15 +123,6 @@ func NewMutatorStub(tb assert.TB, opts ...MutatorStubOption) *MutatorStub {
 	return s
 }
 
-// NewMutatorStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewMutatorStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MutatorStubOption) *MutatorStub {
-	return NewMutatorStub(tb, append([]MutatorStubOption{
-		MutatorStubWithClock(clk),
-		MutatorStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MutatorStub) ResetCalls() {
@@ -160,4 +151,4 @@ func (s *MutatorStub) Touch(ctx context.Context, key string) {
 	})
 }
 
-// dokimi:provenance sha256:a72c15728141c32c27a2ab090a36a2b8985d4319e02faf6f113fa503e7f7a6fb
+// dokimi:provenance sha256:9ebd600ef5fef66bd70af25376a21c657a9f757cfd6f80c3f8362839f34e296f

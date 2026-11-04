@@ -16,38 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Add/smoke: Add returns without a panic for derived inputs.
-//
-// Mixed.Add/smoke#generated: Add returns without a panic for derived
-// inputs.
-//
-// Mixed.Add/cancel: Add returns an error for a cancelled context.
-//
-// Mixed.Add/cancel#generated: Add returns an error for a cancelled
-// context.
-//
-// Mixed.Add/keeps-within-its-bounds: Add keeps the use that List reads
-// within its bounds, over any sequence of calls.
-//
-// Mixed.List/smoke: List returns without a panic for derived inputs.
-//
-// Mixed.List/cancel: List returns an error for a cancelled context.
-//
-// Mixed.List/zero-on-error: List returns the zero value beside an error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Add/smoke
-//
-// Mixed.List/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Add has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -79,22 +47,10 @@ func (c mixedAdd) Smoke() conform.ID[bounded.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Add returns
-// without a panic for derived inputs.
-func (c mixedAdd) SmokeGenerated() conform.ID[bounded.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c mixedAdd) Cancel() conform.ID[bounded.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Add returns an
-// error for a cancelled context.
-func (c mixedAdd) CancelGenerated() conform.ID[bounded.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // KeepsWithinItsBounds returns the identity of the check that Add keeps
@@ -138,9 +94,6 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				ID:          MixedChecks.Add.Smoke(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -151,12 +104,9 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				Defect: mixedAddPanics,
 			},
 			{
-				ID:          MixedChecks.Add.SmokeGenerated(),
+				ID:          MixedChecks.Add.Smoke().Generated(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnItem := c.Draw(prop.Of[string](), "item")
@@ -170,9 +120,6 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				ID:          MixedChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -182,12 +129,9 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				Defect: mixedAddIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Add.CancelGenerated(),
+				ID:          MixedChecks.Add.Cancel().Generated(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnItem := c.Draw(prop.Of[string](), "item")
@@ -201,9 +145,6 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				ID:          MixedChecks.Add.KeepsWithinItsBounds(),
 				Statement:   "Add keeps the use that List reads within its bounds, over any sequence of calls",
 				Claim:       spec.KeepsWithinItsBounds,
-				Probe:       spec.UseIsWithinTheBounds,
-				Reason:      spec.ExceededBound,
-				Law:         spec.UseIsWithinItsBounds,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					probe.UseIsWithinTheBounds(h, c, mixedActions, func(ctx context.Context) (int, error) {
@@ -218,9 +159,6 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				ID:          MixedChecks.List.Smoke(),
 				Statement:   "List returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -235,9 +173,6 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				ID:          MixedChecks.List.Cancel(),
 				Statement:   "List returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -251,9 +186,6 @@ func MixedSuite() conform.Suite[bounded.Mixed] {
 				ID:          MixedChecks.List.ZeroOnError(),
 				Statement:   "List returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) ([]string, error) {
@@ -553,4 +485,4 @@ func mixedListCall(ctx context.Context, subject bounded.Mixed, args []any) ([]an
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:de8ae50cc37f09a6d8b1bb33a9c489fdf608ed89166c6487a17979b09383d9eb
+// dokimi:provenance sha256:e4b7868b23c780a84640b7e49ce9455b23bbacafbf926fa1563d30f2382ab910

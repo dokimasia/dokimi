@@ -135,20 +135,6 @@ func NewPredicateStub(tb assert.TB, opts ...PredicateStubOption) *PredicateStub 
 	return s
 }
 
-// NewPredicateStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewPredicateStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...PredicateStubOption,
-) *PredicateStub {
-	return NewPredicateStub(tb, append([]PredicateStubOption{
-		PredicateStubWithClock(clk),
-		PredicateStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *PredicateStub) ResetCalls() {
@@ -182,4 +168,4 @@ func (s *PredicateStub) IsEmpty() bool {
 	return r.Result
 }
 
-// dokimi:provenance sha256:de026f8107d86df3e71b765cf43f9fe82c05f99f2b201b232e9456e76b212e74
+// dokimi:provenance sha256:95ba37659eedb0d0f088a3ca92b3af82189391f1e41125bdda4202906dd0642d

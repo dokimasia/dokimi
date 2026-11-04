@@ -48,26 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*lifecycleafterclosetest.MixedHandle) lifecycleafterclose.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Work.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Work.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[lifecycleafterclose.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -89,34 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*lifecycleafterclosetest.MixedHandle) lifecycleafterclose.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Work.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Work.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[lifecycleafterclose.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = lifecycleafterclosetest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *lifecycleafterclosetest.MixedHandle) lifecycleafterclose.Mixed {
-	return lifecycleafterclosetest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -129,25 +95,8 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(lifecycleafterclosetest.MixedChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(lifecycleafterclosetest.MixedChecks.Work.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[lifecycleafterclose.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -159,25 +108,8 @@ func FuzzMixedSuiteClose(f *testing.F) {
 		f,
 		lifecycleafterclosetest.MixedChecks.Close.Callable,
 		mixedIdle,
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[lifecycleafterclose.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -189,25 +121,8 @@ func FuzzMixedSuiteWork(f *testing.F) {
 		f,
 		lifecycleafterclosetest.MixedChecks.Work.Callable,
 		mixedIdle,
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[lifecycleafterclose.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -223,4 +138,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:424cc13880d7e98c3c2266f4c7b6f5be674506c2f7902a8846af00e637433715
+// dokimi:provenance sha256:a8268302564b4b5e3918b35cf8dc5f44562664746e0798d17e30e12554ccf77e

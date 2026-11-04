@@ -48,38 +48,7 @@ func TestFitterSuite(t *testing.T) {
 				},
 				Defect: func(*crosspackagetest.FitterHandle) crosspackage.Fitter { return &fitterSubject{} },
 			}),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Fit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Fit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Fit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Fit.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Limit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Limit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Limit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Limit.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[crosspackage.Fitter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -101,46 +70,20 @@ func TestFitterSuite(t *testing.T) {
 				},
 				Defect: func(*crosspackagetest.FitterHandle) crosspackage.Fitter { return &fitterSubject{} },
 			}),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Fit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Fit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Fit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Fit.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Limit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Limit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Limit.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				crosspackagetest.FitterChecks.Limit.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[crosspackage.Fitter]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// fitterSuite is the suite of Fitter that the tests of the planted defect
+// of a ceiling apply.
+var fitterSuite = crosspackagetest.FitterSuite()
+
 // fitterIdle returns the planted defect of a ceiling of Fitter with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func fitterIdle(h *crosspackagetest.FitterHandle) crosspackage.Fitter {
-	return crosspackagetest.FitterSuite().Calls[0].Over(h, func() {})
+	return fitterSuite.Calls[0].Over(h, func() {})
 }
 
 // TestFitterSuiteBudgets applies the allocation ceilings of the suite of
@@ -153,37 +96,8 @@ func TestFitterSuiteBudgets(t *testing.T) {
 		fitterIdle,
 		conform.Ceilings(crosspackagetest.FitterChecks.Fit.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(crosspackagetest.FitterChecks.Limit.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[crosspackage.Fitter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -195,37 +109,8 @@ func FuzzFitterSuiteFit(f *testing.F) {
 		f,
 		crosspackagetest.FitterChecks.Fit.Callable,
 		fitterIdle,
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[crosspackage.Fitter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -237,37 +122,8 @@ func FuzzFitterSuiteLimit(f *testing.F) {
 		f,
 		crosspackagetest.FitterChecks.Limit.Callable,
 		fitterIdle,
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[crosspackage.Fitter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -279,37 +135,8 @@ func FuzzFitterSuiteSense(f *testing.F) {
 		f,
 		crosspackagetest.FitterChecks.Sense.Callable,
 		fitterIdle,
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Fit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			crosspackagetest.FitterChecks.Limit.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[crosspackage.Fitter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -328,4 +155,4 @@ func BenchmarkFitterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5d216cfe36cede23fe279972e4d3233bb25bfda3daa8a0e526b02de7dcea7f8d
+// dokimi:provenance sha256:2e805653daa002d0230bd1325b579bec21ba38a858a3f9f3ebd50d7edaa1d763

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/leakfree/leakfreetest"
 	"go.dokimi.dev/stub"
 )
@@ -84,25 +83,37 @@ func mixedStubOutstandingPins() (int, error) {
 	return want0, want1
 }
 
-// mixedStubAcquireSubject returns the subject of [stub.Behaviour] for
-// Acquire. The subject calls a new double that reports to tb.
+// mixedStubAcquireSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Acquire. The subject calls a new double that
+// reports to tb.
 func mixedStubAcquireSubject(
 	tb assert.TB,
 ) stub.Subject[leakfreetest.MixedAcquireCall, leakfreetest.MixedAcquireReturn] {
 	tb.Helper()
 	s := leakfreetest.NewMixedStub(tb)
 	return stub.Subject[leakfreetest.MixedAcquireCall, leakfreetest.MixedAcquireReturn]{
-		Stub: s.OnAcquire.MethodStub,
+		Stub:  s.OnAcquire.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubAcquire(tb, s)
+		},
+		Arguments: func(tb assert.TB, c leakfreetest.MixedAcquireCall) {
+			tb.Helper()
+			a0 := mixedStubAcquireArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() leakfreetest.MixedAcquireReturn {
 			got0 := mixedStubAcquire(tb, s)
 			return leakfreetest.MixedAcquireReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnAcquire.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() leakfreetest.MixedAcquireReturn {
+			want0 := mixedStubAcquirePins()
+			s.OnAcquire.Returns(want0)
+			return leakfreetest.MixedAcquireReturn{Err: want0}
+		},
+		Override: func(seen func(leakfreetest.MixedAcquireCall)) {
+			s.OnAcquire.Func(func(p0 context.Context) error {
+				seen(leakfreetest.MixedAcquireCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -114,25 +125,37 @@ func mixedStubAcquireSubject(
 	}
 }
 
-// mixedStubReleaseSubject returns the subject of [stub.Behaviour] for
-// Release. The subject calls a new double that reports to tb.
+// mixedStubReleaseSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Release. The subject calls a new double that
+// reports to tb.
 func mixedStubReleaseSubject(
 	tb assert.TB,
 ) stub.Subject[leakfreetest.MixedReleaseCall, leakfreetest.MixedReleaseReturn] {
 	tb.Helper()
 	s := leakfreetest.NewMixedStub(tb)
 	return stub.Subject[leakfreetest.MixedReleaseCall, leakfreetest.MixedReleaseReturn]{
-		Stub: s.OnRelease.MethodStub,
+		Stub:  s.OnRelease.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubRelease(tb, s)
+		},
+		Arguments: func(tb assert.TB, c leakfreetest.MixedReleaseCall) {
+			tb.Helper()
+			a0 := mixedStubReleaseArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() leakfreetest.MixedReleaseReturn {
 			got0 := mixedStubRelease(tb, s)
 			return leakfreetest.MixedReleaseReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnRelease.Func(func(_ context.Context) error {
-				mark()
+		Returns: func() leakfreetest.MixedReleaseReturn {
+			want0 := mixedStubReleasePins()
+			s.OnRelease.Returns(want0)
+			return leakfreetest.MixedReleaseReturn{Err: want0}
+		},
+		Override: func(seen func(leakfreetest.MixedReleaseCall)) {
+			s.OnRelease.Func(func(p0 context.Context) error {
+				seen(leakfreetest.MixedReleaseCall{Ctx: p0})
 				var z0 error
 				return z0
 			})
@@ -144,25 +167,37 @@ func mixedStubReleaseSubject(
 	}
 }
 
-// mixedStubOutstandingSubject returns the subject of [stub.Behaviour] for
-// Outstanding. The subject calls a new double that reports to tb.
+// mixedStubOutstandingSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Outstanding. The subject calls a new double
+// that reports to tb.
 func mixedStubOutstandingSubject(
 	tb assert.TB,
 ) stub.Subject[leakfreetest.MixedOutstandingCall, leakfreetest.MixedOutstandingReturn] {
 	tb.Helper()
 	s := leakfreetest.NewMixedStub(tb)
 	return stub.Subject[leakfreetest.MixedOutstandingCall, leakfreetest.MixedOutstandingReturn]{
-		Stub: s.OnOutstanding.MethodStub,
+		Stub:  s.OnOutstanding.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubOutstanding(tb, s)
+		},
+		Arguments: func(tb assert.TB, c leakfreetest.MixedOutstandingCall) {
+			tb.Helper()
+			a0 := mixedStubOutstandingArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() leakfreetest.MixedOutstandingReturn {
 			got0, got1 := mixedStubOutstanding(tb, s)
 			return leakfreetest.MixedOutstandingReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnOutstanding.Func(func(_ context.Context) (int, error) {
-				mark()
+		Returns: func() leakfreetest.MixedOutstandingReturn {
+			want0, want1 := mixedStubOutstandingPins()
+			s.OnOutstanding.Returns(want0, want1)
+			return leakfreetest.MixedOutstandingReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(leakfreetest.MixedOutstandingCall)) {
+			s.OnOutstanding.Func(func(p0 context.Context) (int, error) {
+				seen(leakfreetest.MixedOutstandingCall{Ctx: p0})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -188,7 +223,6 @@ func mixedStubInstanceOf(tb assert.TB, s *leakfreetest.MixedStub) mixedStubInsta
 		Call: func() {
 			_ = mixedStubAcquire(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -200,169 +234,34 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Acquire", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Acquire", mixedStubAcquireSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			_ = mixedStubAcquire(t, s)
-			got := s.OnAcquire.AssertCalledOnce(t, "Acquire records the call")
-			a0 := mixedStubAcquireArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			var seen []leakfreetest.MixedAcquireCall
-			s.OnAcquire.OnRecord(func(c leakfreetest.MixedAcquireCall) { seen = append(seen, c) })
-			_ = mixedStubAcquire(t, s)
-			_ = mixedStubAcquire(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Acquire")
-		})
 	})
 
 	t.Run("Release", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Release", mixedStubReleaseSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			_ = mixedStubRelease(t, s)
-			got := s.OnRelease.AssertCalledOnce(t, "Release records the call")
-			a0 := mixedStubReleaseArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			var seen []leakfreetest.MixedReleaseCall
-			s.OnRelease.OnRecord(func(c leakfreetest.MixedReleaseCall) { seen = append(seen, c) })
-			_ = mixedStubRelease(t, s)
-			_ = mixedStubRelease(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Release")
-		})
 	})
 
 	t.Run("Outstanding", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Outstanding", mixedStubOutstandingSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			_, _ = mixedStubOutstanding(t, s)
-			got := s.OnOutstanding.AssertCalledOnce(t, "Outstanding records the call")
-			a0 := mixedStubOutstandingArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			var seen []leakfreetest.MixedOutstandingCall
-			s.OnOutstanding.OnRecord(func(c leakfreetest.MixedOutstandingCall) { seen = append(seen, c) })
-			_, _ = mixedStubOutstanding(t, s)
-			_, _ = mixedStubOutstanding(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Outstanding")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, leakfreetest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Acquire", func(t *testing.T) {
+		t.Run("Acquire", func(t *testing.T) {
 			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			_ = mixedStubAcquire(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnAcquire.CallCount(), 0, "ResetCalls clears the calls of Acquire")
+			stub.ResetBehaviour(t, "Acquire", mixedStubAcquireSubject)
 		})
 
-		t.Run("keeps the results of Returns of Acquire", func(t *testing.T) {
+		t.Run("Release", func(t *testing.T) {
 			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			want0 := mixedStubAcquirePins()
-			s.OnAcquire.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubAcquire(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Acquire")
+			stub.ResetBehaviour(t, "Release", mixedStubReleaseSubject)
 		})
 
-		t.Run("clears the recorded calls of Release", func(t *testing.T) {
+		t.Run("Outstanding", func(t *testing.T) {
 			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			_ = mixedStubRelease(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRelease.CallCount(), 0, "ResetCalls clears the calls of Release")
-		})
-
-		t.Run("keeps the results of Returns of Release", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			want0 := mixedStubReleasePins()
-			s.OnRelease.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubRelease(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Release")
-		})
-
-		t.Run("clears the recorded calls of Outstanding", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			_, _ = mixedStubOutstanding(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnOutstanding.CallCount(), 0, "ResetCalls clears the calls of Outstanding")
-		})
-
-		t.Run("keeps the results of Returns of Outstanding", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			want0, want1 := mixedStubOutstandingPins()
-			s.OnOutstanding.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubOutstanding(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Outstanding")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Outstanding")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, leakfreetest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Acquire with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Acquire-failing")
-			s := leakfreetest.NewMixedStubFailing(t, want)
-			r0 := mixedStubAcquire(t, s)
-			assert.ErrorIs(t, r0, want, "Acquire fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Release with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Release-failing")
-			s := leakfreetest.NewMixedStubFailing(t, want)
-			r0 := mixedStubRelease(t, s)
-			assert.ErrorIs(t, r0, want, "Release fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Outstanding with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Outstanding-failing")
-			s := leakfreetest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubOutstanding(t, s)
-			assert.ErrorIs(t, r1, want, "Outstanding fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Outstanding", mixedStubOutstandingSubject)
 		})
 	})
 
@@ -544,151 +443,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedAcquireStub checks the methods of MixedAcquireStub, which
-// configures Acquire.
-func TestMixedAcquireStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Acquire", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			want0 := mixedStubAcquirePins()
-			s.OnAcquire.Returns(want0)
-			got0 := mixedStubAcquire(t, s)
-			assert.ErrorIs(t, got0, want0, "Acquire returns the error that Returns sets")
-		})
-
-		t.Run("configures Acquire for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := leakfreetest.NewMixedStub(r)
-			s.OnAcquire.Strict()
-			var want0 error
-			s.OnAcquire.Returns(want0)
-			_ = mixedStubAcquire(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Acquire")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Acquire to the function", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnAcquire.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = mixedStubAcquire(t, s)
-			a0 := mixedStubAcquireArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// TestMixedReleaseStub checks the methods of MixedReleaseStub, which
-// configures Release.
-func TestMixedReleaseStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Release", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			want0 := mixedStubReleasePins()
-			s.OnRelease.Returns(want0)
-			got0 := mixedStubRelease(t, s)
-			assert.ErrorIs(t, got0, want0, "Release returns the error that Returns sets")
-		})
-
-		t.Run("configures Release for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := leakfreetest.NewMixedStub(r)
-			s.OnRelease.Strict()
-			var want0 error
-			s.OnRelease.Returns(want0)
-			_ = mixedStubRelease(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Release")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Release to the function", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnRelease.Func(func(p0 context.Context) error {
-				got0 = p0
-				var z0 error
-				return z0
-			})
-			_ = mixedStubRelease(t, s)
-			a0 := mixedStubReleaseArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// TestMixedOutstandingStub checks the methods of MixedOutstandingStub,
-// which configures Outstanding.
-func TestMixedOutstandingStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Outstanding", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			want0, want1 := mixedStubOutstandingPins()
-			s.OnOutstanding.Returns(want0, want1)
-			got0, got1 := mixedStubOutstanding(t, s)
-			expect.Equal(t, got0, want0, "Outstanding returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Outstanding returns the error that Returns sets")
-		})
-
-		t.Run("configures Outstanding for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := leakfreetest.NewMixedStub(r)
-			s.OnOutstanding.Strict()
-			var want0 int
-			var want1 error
-			s.OnOutstanding.Returns(want0, want1)
-			_, _ = mixedStubOutstanding(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Outstanding")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Outstanding to the function", func(t *testing.T) {
-			t.Parallel()
-			s := leakfreetest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnOutstanding.Func(func(p0 context.Context) (int, error) {
-				got0 = p0
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubOutstanding(t, s)
-			a0 := mixedStubOutstandingArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:14b016adbf108015b86abac752967759f52229c4d40baea32f6cee305f391d33
+// dokimi:provenance sha256:96ba6b863cd71eccdf8b0fdde4c6cef74a4310c315f9f5a0d5d743b37246447c

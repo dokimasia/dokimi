@@ -48,22 +48,7 @@ func TestCounterSuite(t *testing.T) {
 				},
 				Defect: func(*recursivetest.CounterHandle) recursive.Counter { return &counterSubject{} },
 			}),
-			conform.Excuse(
-				recursivetest.CounterChecks.Steps.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				recursivetest.CounterChecks.Steps.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				recursivetest.CounterChecks.Nodes.CountsTheRoot(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				recursivetest.CounterChecks.Steps.TakesTheFirstStep(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[recursive.Counter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -85,22 +70,7 @@ func TestCounterSuite(t *testing.T) {
 				},
 				Defect: func(*recursivetest.CounterHandle) recursive.Counter { return &counterSubject{} },
 			}),
-			conform.Excuse(
-				recursivetest.CounterChecks.Steps.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				recursivetest.CounterChecks.Steps.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				recursivetest.CounterChecks.Nodes.CountsTheRoot(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				recursivetest.CounterChecks.Steps.TakesTheFirstStep(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[recursive.Counter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -121,10 +91,15 @@ func TestCounterSuite(t *testing.T) {
 	})
 }
 
+// counterSuite is the suite of Counter that the tests of the planted
+// defect of a ceiling apply.
+var counterSuite = recursivetest.CounterSuite()
+
 // counterIdle returns the planted defect of a ceiling of Counter with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func counterIdle(h *recursivetest.CounterHandle) recursive.Counter {
-	return recursivetest.CounterSuite().Calls[0].Over(h, func() {})
+	return counterSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCounterSuiteBudgets applies the allocation ceilings of the suite of
@@ -136,22 +111,7 @@ func TestCounterSuiteBudgets(t *testing.T) {
 		t,
 		counterIdle,
 		conform.Ceilings(recursivetest.CounterChecks.Steps.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Nodes.CountsTheRoot(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.TakesTheFirstStep(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[recursive.Counter]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -162,22 +122,7 @@ func FuzzCounterSuiteNodes(f *testing.F) {
 		f,
 		recursivetest.CounterChecks.Nodes.Callable,
 		counterIdle,
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Nodes.CountsTheRoot(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.TakesTheFirstStep(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[recursive.Counter]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -188,22 +133,7 @@ func FuzzCounterSuiteSteps(f *testing.F) {
 		f,
 		recursivetest.CounterChecks.Steps.Callable,
 		counterIdle,
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Nodes.CountsTheRoot(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			recursivetest.CounterChecks.Steps.TakesTheFirstStep(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[recursive.Counter]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -218,4 +148,4 @@ func BenchmarkCounterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ad73a87e147b2314f7aa4d37fc1944fed5f1d4533a82ecfe722683fdacef04b3
+// dokimi:provenance sha256:0292a7050d975625275b08211320c79a9c5ededc805ea38398996e74d5318f89

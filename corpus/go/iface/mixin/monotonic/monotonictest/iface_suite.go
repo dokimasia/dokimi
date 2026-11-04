@@ -16,38 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Version/smoke: Version returns without a panic for derived inputs.
-//
-// Mixed.Version/cancel: Version returns an error for a cancelled context.
-//
-// Mixed.Version/zero-on-error: Version returns the zero value beside an
-// error.
-//
-// Mixed.Version/monotonic: Version never returns less than it returned
-// before.
-//
-// Mixed.Version/never-goes-back: Version never returns less than a result
-// that it returned before, over any sequence of calls.
-//
-// Mixed.Advance/smoke: Advance returns without a panic for derived inputs.
-//
-// Mixed.Advance/cancel: Advance returns an error for a cancelled context.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Version/smoke
-//
-// Mixed.Version/monotonic
-//
-// Mixed.Advance/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:lifecycle of Mixed.Advance has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -135,9 +103,6 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 				ID:          MixedChecks.Version.Smoke(),
 				Statement:   "Version returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -152,9 +117,6 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 				ID:          MixedChecks.Version.Cancel(),
 				Statement:   "Version returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -168,9 +130,6 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 				ID:          MixedChecks.Version.ZeroOnError(),
 				Statement:   "Version returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
@@ -183,9 +142,6 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 				ID:          MixedChecks.Version.Monotonic(),
 				Statement:   "Version never returns less than it returned before",
 				Claim:       spec.Monotonic,
-				Probe:       spec.NeverDecreases,
-				Reason:      spec.Regressed,
-				Law:         spec.ResultsNeverDecrease,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -199,9 +155,6 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 				ID:          MixedChecks.Version.NeverGoesBack(),
 				Statement:   "Version never returns less than a result that it returned before, over any sequence of calls",
 				Claim:       spec.NeverGoesBack,
-				Probe:       spec.ResultsNeverFall,
-				Reason:      spec.Regressed,
-				Law:         spec.ResultsNeverDecrease,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[monotonic.Mixed]{MixedChecks.Version.Monotonic()},
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -213,9 +166,6 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 				ID:          MixedChecks.Advance.Smoke(),
 				Statement:   "Advance returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -229,9 +179,6 @@ func MixedSuite() conform.Suite[monotonic.Mixed] {
 				ID:          MixedChecks.Advance.Cancel(),
 				Statement:   "Advance returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -557,4 +504,4 @@ func mixedAdvanceCall(ctx context.Context, subject monotonic.Mixed, args []any) 
 	return nil, subject.Advance(ctx)
 }
 
-// dokimi:provenance sha256:6e5dc22e050a13782bc3d4aca675fa63dfb5930c3fb3fd1676d958ee8fbc8a87
+// dokimi:provenance sha256:d20f0ff2d60e4d5347b1395982dfb269ea93cb196d91534cdbda34f0b828b4e0

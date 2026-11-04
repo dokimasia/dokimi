@@ -15,33 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Worker:
-//
-// Worker.Running/smoke: Running returns without a panic for derived
-// inputs.
-//
-// Worker.Running/predicate: Running returns the same answer twice for an
-// unchanged subject.
-
-// The derived checks of Worker that witness their laws at the shallow end:
-//
-// Worker.Running/smoke
-//
-// Worker.Running/predicate
-
-// The refused claims of Worker:
-//
-// Worker.Run/cancel: Run runs until its context ends. The remedy is to
-// check Run with a check of the consumer that ends its context.
-
-// The unclaimed classifications of Worker:
-//
-// The shape:lifecycle of Worker.Run has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The mixin:runs-until-cancelled of Worker.Run has the stance silent. The
-// mixin documents that the callable runs until its context ends.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -103,9 +76,6 @@ func WorkerSuite() conform.Suite[runsuntilcancelled.Worker] {
 				ID:          WorkerChecks.Running.Smoke(),
 				Statement:   "Running returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *WorkerHandle) {
@@ -120,9 +90,6 @@ func WorkerSuite() conform.Suite[runsuntilcancelled.Worker] {
 				ID:          WorkerChecks.Running.Predicate(),
 				Statement:   "Running returns the same answer twice for an unchanged subject",
 				Claim:       spec.Predicate,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *WorkerHandle) {
@@ -329,4 +296,4 @@ func workerRunningDrifts(h *WorkerHandle) runsuntilcancelled.Worker {
 	return &workerRunningDriftsDefect{workerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:80e3bb2f4e52908e34b5aa66f45e51a009239fdca835ab7a326294e930d91185
+// dokimi:provenance sha256:edf64c49cb60e86578d73f8e7046aff157073b6b11868bdcc860603bd063cf3b

@@ -49,38 +49,7 @@ func TestBalancerSuite(t *testing.T) {
 				},
 				Defect: func(*balancertest.BalancerHandle) balancer.Balancer { return &balancerSubject{} },
 			}),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.KeepsItsInstance(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.KeepsItsInstanceGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[balancer.Balancer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -102,46 +71,20 @@ func TestBalancerSuite(t *testing.T) {
 				},
 				Defect: func(*balancertest.BalancerHandle) balancer.Balancer { return &balancerSubject{} },
 			}),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.KeepsItsInstance(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				balancertest.BalancerChecks.Send.KeepsItsInstanceGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[balancer.Balancer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// balancerSuite is the suite of Balancer that the tests of the planted
+// defect of a ceiling apply.
+var balancerSuite = balancertest.BalancerSuite()
+
 // balancerIdle returns the planted defect of a ceiling of Balancer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func balancerIdle(h *balancertest.BalancerHandle) balancer.Balancer {
-	return balancertest.BalancerSuite().Calls[0].Over(h, func() {})
+	return balancerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestBalancerSuiteBudgets applies the allocation ceilings of the suite of
@@ -153,38 +96,7 @@ func TestBalancerSuiteBudgets(t *testing.T) {
 		t,
 		balancerIdle,
 		conform.Ceilings(balancertest.BalancerChecks.Send.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.KeepsItsInstance(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.KeepsItsInstanceGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[balancer.Balancer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -195,38 +107,7 @@ func FuzzBalancerSuiteSend(f *testing.F) {
 		f,
 		balancertest.BalancerChecks.Send.Callable,
 		balancerIdle,
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.KeepsItsInstance(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			balancertest.BalancerChecks.Send.KeepsItsInstanceGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[balancer.Balancer]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -238,4 +119,4 @@ func BenchmarkBalancerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:065d122f00da52802396af830ef546eacdd36aa660ff5ec14ecb1daf08f91d0e
+// dokimi:provenance sha256:ba7950e8abbf6cf15a343003f044fd4cd00826364c9a318e8ac580a344cf4d40

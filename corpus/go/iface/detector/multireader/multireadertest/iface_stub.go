@@ -163,26 +163,6 @@ func NewMultiReaderStub(tb assert.TB, opts ...MultiReaderStubOption) *MultiReade
 	return s
 }
 
-// NewMultiReaderStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewMultiReaderStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...MultiReaderStubOption,
-) *MultiReaderStub {
-	return NewMultiReaderStub(tb, append([]MultiReaderStubOption{
-		MultiReaderStubWithClock(clk),
-		MultiReaderStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewMultiReaderStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewMultiReaderStubFailing(tb assert.TB, err error, opts ...MultiReaderStubOption) *MultiReaderStub {
-	return NewMultiReaderStub(tb, append([]MultiReaderStubOption{MultiReaderStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MultiReaderStub) ResetCalls() {
@@ -223,4 +203,4 @@ func (s *MultiReaderStub) GetWithMeta(ctx context.Context, key string) (multirea
 	return r.Result0, r.Result1, r.Err
 }
 
-// dokimi:provenance sha256:310a249967745e5fd20a19818a82a6b5d5037cc296556dca12d4097be8ccb6be
+// dokimi:provenance sha256:96cbe6b47defbba7e95db68fc9526ec5f6f945544c9bd4a396a2832a4059d248

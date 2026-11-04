@@ -139,20 +139,6 @@ func NewPointerReaderStub(tb assert.TB, opts ...PointerReaderStubOption) *Pointe
 	return s
 }
 
-// NewPointerReaderStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewPointerReaderStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...PointerReaderStubOption,
-) *PointerReaderStub {
-	return NewPointerReaderStub(tb, append([]PointerReaderStubOption{
-		PointerReaderStubWithClock(clk),
-		PointerReaderStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *PointerReaderStub) ResetCalls() {
@@ -186,4 +172,4 @@ func (s *PointerReaderStub) Find(ctx context.Context, key string) *pointerreader
 	return r.Result
 }
 
-// dokimi:provenance sha256:09ae22cd021133b1356cf36bb4460b7909e4b9b7da6632bc01f25f9adf336ec9
+// dokimi:provenance sha256:b33a44499350df6dd524dc8a16d4e3760b4ea29e0ab73a157803c323253cbe1f

@@ -154,26 +154,6 @@ func NewMultiAggregatorStub(tb assert.TB, opts ...MultiAggregatorStubOption) *Mu
 	return s
 }
 
-// NewMultiAggregatorStubDelayed returns a double whose methods sleep d on
-// clk before they return. It applies opts after the clock and the latency.
-func NewMultiAggregatorStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...MultiAggregatorStubOption,
-) *MultiAggregatorStub {
-	return NewMultiAggregatorStub(tb, append([]MultiAggregatorStubOption{
-		MultiAggregatorStubWithClock(clk),
-		MultiAggregatorStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewMultiAggregatorStubFailing returns a double on which each call of a
-// method that can fail fails with err. It applies opts after the failure.
-func NewMultiAggregatorStubFailing(tb assert.TB, err error, opts ...MultiAggregatorStubOption) *MultiAggregatorStub {
-	return NewMultiAggregatorStub(tb, append([]MultiAggregatorStubOption{MultiAggregatorStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MultiAggregatorStub) ResetCalls() {
@@ -210,4 +190,4 @@ func (s *MultiAggregatorStub) Stats(ctx context.Context) (int, int, error) {
 	return r.Result0, r.Result1, r.Err
 }
 
-// dokimi:provenance sha256:aff45ea21c6db63cd3b040bb06ec4c7cb0a342a429992dbd276502c233692494
+// dokimi:provenance sha256:d6948c778605cd888f9c5a6ee7dead9552bb7774297df8245692634f7cd92d06

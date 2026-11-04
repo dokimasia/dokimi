@@ -48,34 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*monotonictest.MixedHandle) monotonic.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.Monotonic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.NeverGoesBack(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Advance.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Advance.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[monotonic.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -97,42 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*monotonictest.MixedHandle) monotonic.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.Monotonic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Version.NeverGoesBack(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Advance.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				monotonictest.MixedChecks.Advance.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[monotonic.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = monotonictest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *monotonictest.MixedHandle) monotonic.Mixed {
-	return monotonictest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -145,34 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(monotonictest.MixedChecks.Version.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(monotonictest.MixedChecks.Advance.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Monotonic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.NeverGoesBack(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Advance.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Advance.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[monotonic.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -183,34 +106,7 @@ func FuzzMixedSuiteVersion(f *testing.F) {
 		f,
 		monotonictest.MixedChecks.Version.Callable,
 		mixedIdle,
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Monotonic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.NeverGoesBack(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Advance.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Advance.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[monotonic.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -221,34 +117,7 @@ func FuzzMixedSuiteAdvance(f *testing.F) {
 		f,
 		monotonictest.MixedChecks.Advance.Callable,
 		mixedIdle,
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.Monotonic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Version.NeverGoesBack(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Advance.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			monotonictest.MixedChecks.Advance.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[monotonic.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -263,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7eb14ec2650dda1287f655dca356c76d5f2987dbc2d54e3159e763d9ba508d94
+// dokimi:provenance sha256:900b44c7a325235df21e7d8947f8c84a13bcb939347a15e84ee969932bcb13bd

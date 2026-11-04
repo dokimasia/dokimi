@@ -237,25 +237,39 @@ func storeStubReplacePins() error {
 	return want0
 }
 
-// storeStubTouchSubject returns the subject of [stub.Behaviour] for Touch.
-// The subject calls a new double that reports to tb.
+// storeStubTouchSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Touch. The subject calls a new double that
+// reports to tb.
 func storeStubTouchSubject(
 	tb assert.TB,
 ) stub.Subject[partnernamingtest.StoreTouchCall, partnernamingtest.StoreTouchReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreTouchCall, partnernamingtest.StoreTouchReturn]{
-		Stub: s.OnTouch.MethodStub,
+		Stub:  s.OnTouch.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = storeStubTouch(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StoreTouchCall) {
+			tb.Helper()
+			a0, a1, a2 := storeStubTouchArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.Weight, a2, "the call records Weight")
 		},
 		Result: func() partnernamingtest.StoreTouchReturn {
 			got0 := storeStubTouch(tb, s)
 			return partnernamingtest.StoreTouchReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnTouch.Func(func(_ context.Context, _ string, _ int) error {
-				mark()
+		Returns: func() partnernamingtest.StoreTouchReturn {
+			want0 := storeStubTouchPins()
+			s.OnTouch.Returns(want0)
+			return partnernamingtest.StoreTouchReturn{Err: want0}
+		},
+		Override: func(seen func(partnernamingtest.StoreTouchCall)) {
+			s.OnTouch.Func(func(p0 context.Context, p1 string, p2 int) error {
+				seen(partnernamingtest.StoreTouchCall{Ctx: p0, Key: p1, Weight: p2})
 				var z0 error
 				return z0
 			})
@@ -267,25 +281,38 @@ func storeStubTouchSubject(
 	}
 }
 
-// storeStubSeenSubject returns the subject of [stub.Behaviour] for Seen.
-// The subject calls a new double that reports to tb.
+// storeStubSeenSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Seen. The subject calls a new double that
+// reports to tb.
 func storeStubSeenSubject(
 	tb assert.TB,
 ) stub.Subject[partnernamingtest.StoreSeenCall, partnernamingtest.StoreSeenReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreSeenCall, partnernamingtest.StoreSeenReturn]{
-		Stub: s.OnSeen.MethodStub,
+		Stub:  s.OnSeen.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = storeStubSeen(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StoreSeenCall) {
+			tb.Helper()
+			a0, a1 := storeStubSeenArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.K, a1, "the call records K")
 		},
 		Result: func() partnernamingtest.StoreSeenReturn {
 			got0, got1 := storeStubSeen(tb, s)
 			return partnernamingtest.StoreSeenReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnSeen.Func(func(_ context.Context, _ string) (int, error) {
-				mark()
+		Returns: func() partnernamingtest.StoreSeenReturn {
+			want0, want1 := storeStubSeenPins()
+			s.OnSeen.Returns(want0, want1)
+			return partnernamingtest.StoreSeenReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(partnernamingtest.StoreSeenCall)) {
+			s.OnSeen.Func(func(p0 context.Context, p1 string) (int, error) {
+				seen(partnernamingtest.StoreSeenCall{Ctx: p0, K: p1})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -298,25 +325,39 @@ func storeStubSeenSubject(
 	}
 }
 
-// storeStubMoveSubject returns the subject of [stub.Behaviour] for Move.
-// The subject calls a new double that reports to tb.
+// storeStubMoveSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Move. The subject calls a new double that
+// reports to tb.
 func storeStubMoveSubject(
 	tb assert.TB,
 ) stub.Subject[partnernamingtest.StoreMoveCall, partnernamingtest.StoreMoveReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreMoveCall, partnernamingtest.StoreMoveReturn]{
-		Stub: s.OnMove.MethodStub,
+		Stub:  s.OnMove.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = storeStubMove(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StoreMoveCall) {
+			tb.Helper()
+			a0, a1, a2 := storeStubMoveArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.From, a1, "the call records From")
+			expect.Equal(tb, c.To, a2, "the call records To")
 		},
 		Result: func() partnernamingtest.StoreMoveReturn {
 			got0 := storeStubMove(tb, s)
 			return partnernamingtest.StoreMoveReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnMove.Func(func(_ context.Context, _, _ string) error {
-				mark()
+		Returns: func() partnernamingtest.StoreMoveReturn {
+			want0 := storeStubMovePins()
+			s.OnMove.Returns(want0)
+			return partnernamingtest.StoreMoveReturn{Err: want0}
+		},
+		Override: func(seen func(partnernamingtest.StoreMoveCall)) {
+			s.OnMove.Func(func(p0 context.Context, p1, p2 string) error {
+				seen(partnernamingtest.StoreMoveCall{Ctx: p0, From: p1, To: p2})
 				var z0 error
 				return z0
 			})
@@ -328,23 +369,36 @@ func storeStubMoveSubject(
 	}
 }
 
-// storeStubAtSubject returns the subject of [stub.Behaviour] for At. The
-// subject calls a new double that reports to tb.
+// storeStubAtSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for At. The subject calls a new double that
+// reports to tb.
 func storeStubAtSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreAtCall, partnernamingtest.StoreAtReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreAtCall, partnernamingtest.StoreAtReturn]{
-		Stub: s.OnAt.MethodStub,
+		Stub:  s.OnAt.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = storeStubAt(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StoreAtCall) {
+			tb.Helper()
+			a0, a1 := storeStubAtArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Where, a1, "the call records Where")
 		},
 		Result: func() partnernamingtest.StoreAtReturn {
 			got0, got1 := storeStubAt(tb, s)
 			return partnernamingtest.StoreAtReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnAt.Func(func(_ context.Context, _ string) (int, error) {
-				mark()
+		Returns: func() partnernamingtest.StoreAtReturn {
+			want0, want1 := storeStubAtPins()
+			s.OnAt.Returns(want0, want1)
+			return partnernamingtest.StoreAtReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(partnernamingtest.StoreAtCall)) {
+			s.OnAt.Func(func(p0 context.Context, p1 string) (int, error) {
+				seen(partnernamingtest.StoreAtCall{Ctx: p0, Where: p1})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -357,25 +411,38 @@ func storeStubAtSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreAtCall
 	}
 }
 
-// storeStubEmitSubject returns the subject of [stub.Behaviour] for Emit.
-// The subject calls a new double that reports to tb.
+// storeStubEmitSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Emit. The subject calls a new double that
+// reports to tb.
 func storeStubEmitSubject(
 	tb assert.TB,
 ) stub.Subject[partnernamingtest.StoreEmitCall, partnernamingtest.StoreEmitReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreEmitCall, partnernamingtest.StoreEmitReturn]{
-		Stub: s.OnEmit.MethodStub,
+		Stub:  s.OnEmit.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = storeStubEmit(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StoreEmitCall) {
+			tb.Helper()
+			a0, a1 := storeStubEmitArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.ID, a1, "the call records ID")
 		},
 		Result: func() partnernamingtest.StoreEmitReturn {
 			got0 := storeStubEmit(tb, s)
 			return partnernamingtest.StoreEmitReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnEmit.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() partnernamingtest.StoreEmitReturn {
+			want0 := storeStubEmitPins()
+			s.OnEmit.Returns(want0)
+			return partnernamingtest.StoreEmitReturn{Err: want0}
+		},
+		Override: func(seen func(partnernamingtest.StoreEmitCall)) {
+			s.OnEmit.Func(func(p0 context.Context, p1 string) error {
+				seen(partnernamingtest.StoreEmitCall{Ctx: p0, ID: p1})
 				var z0 error
 				return z0
 			})
@@ -387,25 +454,38 @@ func storeStubEmitSubject(
 	}
 }
 
-// storeStubCountSubject returns the subject of [stub.Behaviour] for Count.
-// The subject calls a new double that reports to tb.
+// storeStubCountSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Count. The subject calls a new double that
+// reports to tb.
 func storeStubCountSubject(
 	tb assert.TB,
 ) stub.Subject[partnernamingtest.StoreCountCall, partnernamingtest.StoreCountReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreCountCall, partnernamingtest.StoreCountReturn]{
-		Stub: s.OnCount.MethodStub,
+		Stub:  s.OnCount.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = storeStubCount(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StoreCountCall) {
+			tb.Helper()
+			a0, a1 := storeStubCountArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Bucket, a1, "the call records Bucket")
 		},
 		Result: func() partnernamingtest.StoreCountReturn {
 			got0, got1 := storeStubCount(tb, s)
 			return partnernamingtest.StoreCountReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnCount.Func(func(_ context.Context, _ int) (int, error) {
-				mark()
+		Returns: func() partnernamingtest.StoreCountReturn {
+			want0, want1 := storeStubCountPins()
+			s.OnCount.Returns(want0, want1)
+			return partnernamingtest.StoreCountReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(partnernamingtest.StoreCountCall)) {
+			s.OnCount.Func(func(p0 context.Context, p1 int) (int, error) {
+				seen(partnernamingtest.StoreCountCall{Ctx: p0, Bucket: p1})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -418,25 +498,38 @@ func storeStubCountSubject(
 	}
 }
 
-// storeStubVersionSubject returns the subject of [stub.Behaviour] for
-// Version. The subject calls a new double that reports to tb.
+// storeStubVersionSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Version. The subject calls a new double that
+// reports to tb.
 func storeStubVersionSubject(
 	tb assert.TB,
 ) stub.Subject[partnernamingtest.StoreVersionCall, partnernamingtest.StoreVersionReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreVersionCall, partnernamingtest.StoreVersionReturn]{
-		Stub: s.OnVersion.MethodStub,
+		Stub:  s.OnVersion.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = storeStubVersion(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StoreVersionCall) {
+			tb.Helper()
+			a0, a1 := storeStubVersionArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() partnernamingtest.StoreVersionReturn {
 			got0, got1 := storeStubVersion(tb, s)
 			return partnernamingtest.StoreVersionReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnVersion.Func(func(_ context.Context, _ string) (partnernaming.Rec, error) {
-				mark()
+		Returns: func() partnernamingtest.StoreVersionReturn {
+			want0, want1 := storeStubVersionPins()
+			s.OnVersion.Returns(want0, want1)
+			return partnernamingtest.StoreVersionReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(partnernamingtest.StoreVersionCall)) {
+			s.OnVersion.Func(func(p0 context.Context, p1 string) (partnernaming.Rec, error) {
+				seen(partnernamingtest.StoreVersionCall{Ctx: p0, Key: p1})
 				var z0 partnernaming.Rec
 				var z1 error
 				return z0, z1
@@ -449,23 +542,36 @@ func storeStubVersionSubject(
 	}
 }
 
-// storeStubPutSubject returns the subject of [stub.Behaviour] for Put. The
-// subject calls a new double that reports to tb.
+// storeStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func storeStubPutSubject(tb assert.TB) stub.Subject[partnernamingtest.StorePutCall, partnernamingtest.StorePutReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StorePutCall, partnernamingtest.StorePutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = storeStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StorePutCall) {
+			tb.Helper()
+			a0, a1 := storeStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.R, a1, "the call records R")
 		},
 		Result: func() partnernamingtest.StorePutReturn {
 			got0 := storeStubPut(tb, s)
 			return partnernamingtest.StorePutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ partnernaming.Rec) error {
-				mark()
+		Returns: func() partnernamingtest.StorePutReturn {
+			want0 := storeStubPutPins()
+			s.OnPut.Returns(want0)
+			return partnernamingtest.StorePutReturn{Err: want0}
+		},
+		Override: func(seen func(partnernamingtest.StorePutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1 partnernaming.Rec) error {
+				seen(partnernamingtest.StorePutCall{Ctx: p0, R: p1})
 				var z0 error
 				return z0
 			})
@@ -477,25 +583,38 @@ func storeStubPutSubject(tb assert.TB) stub.Subject[partnernamingtest.StorePutCa
 	}
 }
 
-// storeStubReplaceSubject returns the subject of [stub.Behaviour] for
-// Replace. The subject calls a new double that reports to tb.
+// storeStubReplaceSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Replace. The subject calls a new double that
+// reports to tb.
 func storeStubReplaceSubject(
 	tb assert.TB,
 ) stub.Subject[partnernamingtest.StoreReplaceCall, partnernamingtest.StoreReplaceReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreReplaceCall, partnernamingtest.StoreReplaceReturn]{
-		Stub: s.OnReplace.MethodStub,
+		Stub:  s.OnReplace.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = storeStubReplace(tb, s)
+		},
+		Arguments: func(tb assert.TB, c partnernamingtest.StoreReplaceCall) {
+			tb.Helper()
+			a0, a1 := storeStubReplaceArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.R, a1, "the call records R")
 		},
 		Result: func() partnernamingtest.StoreReplaceReturn {
 			got0 := storeStubReplace(tb, s)
 			return partnernamingtest.StoreReplaceReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnReplace.Func(func(_ context.Context, _ partnernaming.Rec) error {
-				mark()
+		Returns: func() partnernamingtest.StoreReplaceReturn {
+			want0 := storeStubReplacePins()
+			s.OnReplace.Returns(want0)
+			return partnernamingtest.StoreReplaceReturn{Err: want0}
+		},
+		Override: func(seen func(partnernamingtest.StoreReplaceCall)) {
+			s.OnReplace.Func(func(p0 context.Context, p1 partnernaming.Rec) error {
+				seen(partnernamingtest.StoreReplaceCall{Ctx: p0, R: p1})
 				var z0 error
 				return z0
 			})
@@ -520,7 +639,6 @@ func storeStubInstanceOf(tb assert.TB, s *partnernamingtest.StoreStub) storeStub
 		Call: func() {
 			_ = storeStubTouch(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -532,483 +650,94 @@ func TestStoreStub(t *testing.T) {
 	t.Run("Touch", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Touch", storeStubTouchSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubTouch(t, s)
-			got := s.OnTouch.AssertCalledOnce(t, "Touch records the call")
-			a0, a1, a2 := storeStubTouchArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.Weight, a2, "the call records Weight")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StoreTouchCall
-			s.OnTouch.OnRecord(func(c partnernamingtest.StoreTouchCall) { seen = append(seen, c) })
-			_ = storeStubTouch(t, s)
-			_ = storeStubTouch(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Touch")
-		})
 	})
 
 	t.Run("Seen", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Seen", storeStubSeenSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_, _ = storeStubSeen(t, s)
-			got := s.OnSeen.AssertCalledOnce(t, "Seen records the call")
-			a0, a1 := storeStubSeenArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.K, a1, "the call records K")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StoreSeenCall
-			s.OnSeen.OnRecord(func(c partnernamingtest.StoreSeenCall) { seen = append(seen, c) })
-			_, _ = storeStubSeen(t, s)
-			_, _ = storeStubSeen(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Seen")
-		})
 	})
 
 	t.Run("Move", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Move", storeStubMoveSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubMove(t, s)
-			got := s.OnMove.AssertCalledOnce(t, "Move records the call")
-			a0, a1, a2 := storeStubMoveArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.From, a1, "the call records From")
-			expect.Equal(t, got.To, a2, "the call records To")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StoreMoveCall
-			s.OnMove.OnRecord(func(c partnernamingtest.StoreMoveCall) { seen = append(seen, c) })
-			_ = storeStubMove(t, s)
-			_ = storeStubMove(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Move")
-		})
 	})
 
 	t.Run("At", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "At", storeStubAtSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_, _ = storeStubAt(t, s)
-			got := s.OnAt.AssertCalledOnce(t, "At records the call")
-			a0, a1 := storeStubAtArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Where, a1, "the call records Where")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StoreAtCall
-			s.OnAt.OnRecord(func(c partnernamingtest.StoreAtCall) { seen = append(seen, c) })
-			_, _ = storeStubAt(t, s)
-			_, _ = storeStubAt(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of At")
-		})
 	})
 
 	t.Run("Emit", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Emit", storeStubEmitSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubEmit(t, s)
-			got := s.OnEmit.AssertCalledOnce(t, "Emit records the call")
-			a0, a1 := storeStubEmitArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.ID, a1, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StoreEmitCall
-			s.OnEmit.OnRecord(func(c partnernamingtest.StoreEmitCall) { seen = append(seen, c) })
-			_ = storeStubEmit(t, s)
-			_ = storeStubEmit(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Emit")
-		})
 	})
 
 	t.Run("Count", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Count", storeStubCountSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_, _ = storeStubCount(t, s)
-			got := s.OnCount.AssertCalledOnce(t, "Count records the call")
-			a0, a1 := storeStubCountArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Bucket, a1, "the call records Bucket")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StoreCountCall
-			s.OnCount.OnRecord(func(c partnernamingtest.StoreCountCall) { seen = append(seen, c) })
-			_, _ = storeStubCount(t, s)
-			_, _ = storeStubCount(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Count")
-		})
 	})
 
 	t.Run("Version", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Version", storeStubVersionSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_, _ = storeStubVersion(t, s)
-			got := s.OnVersion.AssertCalledOnce(t, "Version records the call")
-			a0, a1 := storeStubVersionArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StoreVersionCall
-			s.OnVersion.OnRecord(func(c partnernamingtest.StoreVersionCall) { seen = append(seen, c) })
-			_, _ = storeStubVersion(t, s)
-			_, _ = storeStubVersion(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Version")
-		})
 	})
 
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", storeStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1 := storeStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.R, a1, "the call records R")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StorePutCall
-			s.OnPut.OnRecord(func(c partnernamingtest.StorePutCall) { seen = append(seen, c) })
-			_ = storeStubPut(t, s)
-			_ = storeStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("Replace", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Replace", storeStubReplaceSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubReplace(t, s)
-			got := s.OnReplace.AssertCalledOnce(t, "Replace records the call")
-			a0, a1 := storeStubReplaceArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.R, a1, "the call records R")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var seen []partnernamingtest.StoreReplaceCall
-			s.OnReplace.OnRecord(func(c partnernamingtest.StoreReplaceCall) { seen = append(seen, c) })
-			_ = storeStubReplace(t, s)
-			_ = storeStubReplace(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Replace")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) storeStubInstance {
-			return storeStubInstanceOf(tb, partnernamingtest.NewStoreStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Touch", func(t *testing.T) {
+		t.Run("Touch", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubTouch(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnTouch.CallCount(), 0, "ResetCalls clears the calls of Touch")
+			stub.ResetBehaviour(t, "Touch", storeStubTouchSubject)
 		})
 
-		t.Run("keeps the results of Returns of Touch", func(t *testing.T) {
+		t.Run("Seen", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubTouchPins()
-			s.OnTouch.Returns(want0)
-			s.ResetCalls()
-			got0 := storeStubTouch(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Touch")
+			stub.ResetBehaviour(t, "Seen", storeStubSeenSubject)
 		})
 
-		t.Run("clears the recorded calls of Seen", func(t *testing.T) {
+		t.Run("Move", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_, _ = storeStubSeen(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnSeen.CallCount(), 0, "ResetCalls clears the calls of Seen")
+			stub.ResetBehaviour(t, "Move", storeStubMoveSubject)
 		})
 
-		t.Run("keeps the results of Returns of Seen", func(t *testing.T) {
+		t.Run("At", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0, want1 := storeStubSeenPins()
-			s.OnSeen.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := storeStubSeen(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Seen")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Seen")
+			stub.ResetBehaviour(t, "At", storeStubAtSubject)
 		})
 
-		t.Run("clears the recorded calls of Move", func(t *testing.T) {
+		t.Run("Emit", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubMove(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnMove.CallCount(), 0, "ResetCalls clears the calls of Move")
+			stub.ResetBehaviour(t, "Emit", storeStubEmitSubject)
 		})
 
-		t.Run("keeps the results of Returns of Move", func(t *testing.T) {
+		t.Run("Count", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubMovePins()
-			s.OnMove.Returns(want0)
-			s.ResetCalls()
-			got0 := storeStubMove(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Move")
+			stub.ResetBehaviour(t, "Count", storeStubCountSubject)
 		})
 
-		t.Run("clears the recorded calls of At", func(t *testing.T) {
+		t.Run("Version", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_, _ = storeStubAt(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnAt.CallCount(), 0, "ResetCalls clears the calls of At")
+			stub.ResetBehaviour(t, "Version", storeStubVersionSubject)
 		})
 
-		t.Run("keeps the results of Returns of At", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0, want1 := storeStubAtPins()
-			s.OnAt.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := storeStubAt(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of At")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of At")
+			stub.ResetBehaviour(t, "Put", storeStubPutSubject)
 		})
 
-		t.Run("clears the recorded calls of Emit", func(t *testing.T) {
+		t.Run("Replace", func(t *testing.T) {
 			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubEmit(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnEmit.CallCount(), 0, "ResetCalls clears the calls of Emit")
-		})
-
-		t.Run("keeps the results of Returns of Emit", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubEmitPins()
-			s.OnEmit.Returns(want0)
-			s.ResetCalls()
-			got0 := storeStubEmit(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Emit")
-		})
-
-		t.Run("clears the recorded calls of Count", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_, _ = storeStubCount(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnCount.CallCount(), 0, "ResetCalls clears the calls of Count")
-		})
-
-		t.Run("keeps the results of Returns of Count", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0, want1 := storeStubCountPins()
-			s.OnCount.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := storeStubCount(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Count")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Count")
-		})
-
-		t.Run("clears the recorded calls of Version", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_, _ = storeStubVersion(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnVersion.CallCount(), 0, "ResetCalls clears the calls of Version")
-		})
-
-		t.Run("keeps the results of Returns of Version", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0, want1 := storeStubVersionPins()
-			s.OnVersion.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := storeStubVersion(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Version")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Version")
-		})
-
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
-		})
-
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := storeStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
-		})
-
-		t.Run("clears the recorded calls of Replace", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			_ = storeStubReplace(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnReplace.CallCount(), 0, "ResetCalls clears the calls of Replace")
-		})
-
-		t.Run("keeps the results of Returns of Replace", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubReplacePins()
-			s.OnReplace.Returns(want0)
-			s.ResetCalls()
-			got0 := storeStubReplace(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Replace")
-		})
-	})
-
-	t.Run("NewStoreStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
-			return storeStubInstanceOf(tb, partnernamingtest.NewStoreStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewStoreStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Touch with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Touch-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			r0 := storeStubTouch(t, s)
-			assert.ErrorIs(t, r0, want, "Touch fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Seen with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Seen-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			_, r1 := storeStubSeen(t, s)
-			assert.ErrorIs(t, r1, want, "Seen fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Move with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Move-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			r0 := storeStubMove(t, s)
-			assert.ErrorIs(t, r0, want, "Move fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails At with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("At-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			_, r1 := storeStubAt(t, s)
-			assert.ErrorIs(t, r1, want, "At fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Emit with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Emit-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			r0 := storeStubEmit(t, s)
-			assert.ErrorIs(t, r0, want, "Emit fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Count with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Count-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			_, r1 := storeStubCount(t, s)
-			assert.ErrorIs(t, r1, want, "Count fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Version with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Version-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			_, r1 := storeStubVersion(t, s)
-			assert.ErrorIs(t, r1, want, "Version fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			r0 := storeStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails Replace with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Replace-failing")
-			s := partnernamingtest.NewStoreStubFailing(t, want)
-			r0 := storeStubReplace(t, s)
-			assert.ErrorIs(t, r0, want, "Replace fails with the error of NewStoreStubFailing")
+			stub.ResetBehaviour(t, "Replace", storeStubReplaceSubject)
 		})
 	})
 
@@ -1478,469 +1207,4 @@ func TestStoreStub(t *testing.T) {
 	})
 }
 
-// TestStoreTouchStub checks the methods of StoreTouchStub, which
-// configures Touch.
-func TestStoreTouchStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Touch", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubTouchPins()
-			s.OnTouch.Returns(want0)
-			got0 := storeStubTouch(t, s)
-			assert.ErrorIs(t, got0, want0, "Touch returns the error that Returns sets")
-		})
-
-		t.Run("configures Touch for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnTouch.Strict()
-			var want0 error
-			s.OnTouch.Returns(want0)
-			_ = storeStubTouch(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Touch")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Touch to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 int
-			s.OnTouch.Func(func(p0 context.Context, p1 string, p2 int) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = storeStubTouch(t, s)
-			a0, a1, a2 := storeStubTouchArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives Weight")
-		})
-	})
-}
-
-// TestStoreSeenStub checks the methods of StoreSeenStub, which configures
-// Seen.
-func TestStoreSeenStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Seen", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0, want1 := storeStubSeenPins()
-			s.OnSeen.Returns(want0, want1)
-			got0, got1 := storeStubSeen(t, s)
-			expect.Equal(t, got0, want0, "Seen returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Seen returns the error that Returns sets")
-		})
-
-		t.Run("configures Seen for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnSeen.Strict()
-			var want0 int
-			var want1 error
-			s.OnSeen.Returns(want0, want1)
-			_, _ = storeStubSeen(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Seen")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Seen to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnSeen.Func(func(p0 context.Context, p1 string) (int, error) {
-				got0, got1 = p0, p1
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = storeStubSeen(t, s)
-			a0, a1 := storeStubSeenArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives K")
-		})
-	})
-}
-
-// TestStoreMoveStub checks the methods of StoreMoveStub, which configures
-// Move.
-func TestStoreMoveStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Move", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubMovePins()
-			s.OnMove.Returns(want0)
-			got0 := storeStubMove(t, s)
-			assert.ErrorIs(t, got0, want0, "Move returns the error that Returns sets")
-		})
-
-		t.Run("configures Move for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnMove.Strict()
-			var want0 error
-			s.OnMove.Returns(want0)
-			_ = storeStubMove(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Move")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Move to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 string
-			s.OnMove.Func(func(p0 context.Context, p1, p2 string) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = storeStubMove(t, s)
-			a0, a1, a2 := storeStubMoveArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives From")
-			expect.Equal(t, got2, a2, "the function receives To")
-		})
-	})
-}
-
-// TestStoreAtStub checks the methods of StoreAtStub, which configures At.
-func TestStoreAtStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of At", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0, want1 := storeStubAtPins()
-			s.OnAt.Returns(want0, want1)
-			got0, got1 := storeStubAt(t, s)
-			expect.Equal(t, got0, want0, "At returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "At returns the error that Returns sets")
-		})
-
-		t.Run("configures At for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnAt.Strict()
-			var want0 int
-			var want1 error
-			s.OnAt.Returns(want0, want1)
-			_, _ = storeStubAt(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of At")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of At to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnAt.Func(func(p0 context.Context, p1 string) (int, error) {
-				got0, got1 = p0, p1
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = storeStubAt(t, s)
-			a0, a1 := storeStubAtArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Where")
-		})
-	})
-}
-
-// TestStoreEmitStub checks the methods of StoreEmitStub, which configures
-// Emit.
-func TestStoreEmitStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Emit", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubEmitPins()
-			s.OnEmit.Returns(want0)
-			got0 := storeStubEmit(t, s)
-			assert.ErrorIs(t, got0, want0, "Emit returns the error that Returns sets")
-		})
-
-		t.Run("configures Emit for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnEmit.Strict()
-			var want0 error
-			s.OnEmit.Returns(want0)
-			_ = storeStubEmit(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Emit")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Emit to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnEmit.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = storeStubEmit(t, s)
-			a0, a1 := storeStubEmitArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives ID")
-		})
-	})
-}
-
-// TestStoreCountStub checks the methods of StoreCountStub, which
-// configures Count.
-func TestStoreCountStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Count", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0, want1 := storeStubCountPins()
-			s.OnCount.Returns(want0, want1)
-			got0, got1 := storeStubCount(t, s)
-			expect.Equal(t, got0, want0, "Count returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Count returns the error that Returns sets")
-		})
-
-		t.Run("configures Count for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnCount.Strict()
-			var want0 int
-			var want1 error
-			s.OnCount.Returns(want0, want1)
-			_, _ = storeStubCount(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Count")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Count to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 int
-			s.OnCount.Func(func(p0 context.Context, p1 int) (int, error) {
-				got0, got1 = p0, p1
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = storeStubCount(t, s)
-			a0, a1 := storeStubCountArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Bucket")
-		})
-	})
-}
-
-// TestStoreVersionStub checks the methods of StoreVersionStub, which
-// configures Version.
-func TestStoreVersionStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Version", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0, want1 := storeStubVersionPins()
-			s.OnVersion.Returns(want0, want1)
-			got0, got1 := storeStubVersion(t, s)
-			expect.Equal(t, got0, want0, "Version returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Version returns the error that Returns sets")
-		})
-
-		t.Run("configures Version for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnVersion.Strict()
-			var want0 partnernaming.Rec
-			var want1 error
-			s.OnVersion.Returns(want0, want1)
-			_, _ = storeStubVersion(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Version")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Version to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnVersion.Func(func(p0 context.Context, p1 string) (partnernaming.Rec, error) {
-				got0, got1 = p0, p1
-				var z0 partnernaming.Rec
-				var z1 error
-				return z0, z1
-			})
-			_, _ = storeStubVersion(t, s)
-			a0, a1 := storeStubVersionArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestStorePutStub checks the methods of StorePutStub, which configures
-// Put.
-func TestStorePutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := storeStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = storeStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 partnernaming.Rec
-			s.OnPut.Func(func(p0 context.Context, p1 partnernaming.Rec) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = storeStubPut(t, s)
-			a0, a1 := storeStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives R")
-		})
-	})
-}
-
-// TestStoreReplaceStub checks the methods of StoreReplaceStub, which
-// configures Replace.
-func TestStoreReplaceStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Replace", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			want0 := storeStubReplacePins()
-			s.OnReplace.Returns(want0)
-			got0 := storeStubReplace(t, s)
-			assert.ErrorIs(t, got0, want0, "Replace returns the error that Returns sets")
-		})
-
-		t.Run("configures Replace for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := partnernamingtest.NewStoreStub(r)
-			s.OnReplace.Strict()
-			var want0 error
-			s.OnReplace.Returns(want0)
-			_ = storeStubReplace(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Replace")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Replace to the function", func(t *testing.T) {
-			t.Parallel()
-			s := partnernamingtest.NewStoreStub(t)
-			var got0 context.Context
-			var got1 partnernaming.Rec
-			s.OnReplace.Func(func(p0 context.Context, p1 partnernaming.Rec) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = storeStubReplace(t, s)
-			a0, a1 := storeStubReplaceArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives R")
-		})
-	})
-}
-
-// dokimi:provenance sha256:9e6e851908037c4c4e76ab34261368652738a12e4da7f11ae0b784464f22afff
+// dokimi:provenance sha256:5c0d95319ddba104a354c4c9712ba1869134f5942218ed48d2071ab108e5cddf

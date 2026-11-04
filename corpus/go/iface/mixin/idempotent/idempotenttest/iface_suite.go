@@ -15,49 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Mixed.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Mixed.Put/cancel: Put returns an error for a cancelled context.
-//
-// Mixed.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Mixed.Put/idempotent: a second identical Put succeeds after the first.
-//
-// Mixed.Put/idempotent#generated: a second identical Put succeeds after
-// the first.
-//
-// Mixed.Read/smoke: Read returns without a panic for derived inputs.
-//
-// Mixed.Read/smoke#generated: Read returns without a panic for derived
-// inputs.
-//
-// Mixed.Read/cancel: Read returns an error for a cancelled context.
-//
-// Mixed.Read/cancel#generated: Read returns an error for a cancelled
-// context.
-//
-// Mixed.Read/zero-on-error: Read returns the zero value beside an error.
-//
-// Mixed.Read/zero-on-error#generated: Read returns the zero value beside
-// an error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Put/smoke
-//
-// Mixed.Read/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:composite-writer of Mixed.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -89,34 +46,16 @@ func (c mixedPut) Smoke() conform.ID[idempotent.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c mixedPut) SmokeGenerated() conform.ID[idempotent.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c mixedPut) Cancel() conform.ID[idempotent.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c mixedPut) CancelGenerated() conform.ID[idempotent.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // Idempotent returns the identity of the check that a second identical Put
 // succeeds after the first.
 func (c mixedPut) Idempotent() conform.ID[idempotent.Mixed] {
 	return c.Check("idempotent")
-}
-
-// IdempotentGenerated returns the identity of the check that a second
-// identical Put succeeds after the first.
-func (c mixedPut) IdempotentGenerated() conform.ID[idempotent.Mixed] {
-	return c.Check("idempotent#generated")
 }
 
 // mixedRead is the name of Mixed.Read, with the identities of its checks.
@@ -130,34 +69,16 @@ func (c mixedRead) Smoke() conform.ID[idempotent.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Read returns
-// without a panic for derived inputs.
-func (c mixedRead) SmokeGenerated() conform.ID[idempotent.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c mixedRead) Cancel() conform.ID[idempotent.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Read returns an
-// error for a cancelled context.
-func (c mixedRead) CancelGenerated() conform.ID[idempotent.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Read returns the zero
 // value beside an error.
 func (c mixedRead) ZeroOnError() conform.ID[idempotent.Mixed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Read returns
-// the zero value beside an error.
-func (c mixedRead) ZeroOnErrorGenerated() conform.ID[idempotent.Mixed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -172,9 +93,6 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				ID:          MixedChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -185,12 +103,9 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				Defect: mixedPutPanics,
 			},
 			{
-				ID:          MixedChecks.Put.SmokeGenerated(),
+				ID:          MixedChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -205,9 +120,6 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				ID:          MixedChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -217,12 +129,9 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				Defect: mixedPutIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Put.CancelGenerated(),
+				ID:          MixedChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -237,9 +146,6 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				ID:          MixedChecks.Put.Idempotent(),
 				Statement:   "a second identical Put succeeds after the first",
 				Claim:       spec.Idempotent,
-				Probe:       spec.RepeatIsQuiet,
-				Reason:      spec.RefusedRepeat,
-				Law:         spec.RepeatIsAccepted,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
@@ -249,12 +155,9 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				Defect: mixedPutRefusesRepeat,
 			},
 			{
-				ID:          MixedChecks.Put.IdempotentGenerated(),
+				ID:          MixedChecks.Put.Idempotent().Generated(),
 				Statement:   "a second identical Put succeeds after the first",
 				Claim:       spec.Idempotent,
-				Probe:       spec.RepeatIsQuiet,
-				Reason:      spec.RefusedRepeat,
-				Law:         spec.RepeatIsAccepted,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -269,9 +172,6 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				ID:          MixedChecks.Read.Smoke(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -283,12 +183,9 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				Defect: mixedReadPanics,
 			},
 			{
-				ID:          MixedChecks.Read.SmokeGenerated(),
+				ID:          MixedChecks.Read.Smoke().Generated(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -303,9 +200,6 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				ID:          MixedChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -316,12 +210,9 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				Defect: mixedReadIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Read.CancelGenerated(),
+				ID:          MixedChecks.Read.Cancel().Generated(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -336,9 +227,6 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				ID:          MixedChecks.Read.ZeroOnError(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -348,12 +236,9 @@ func MixedSuite() conform.Suite[idempotent.Mixed] {
 				Defect: mixedReadValueBeside,
 			},
 			{
-				ID:          MixedChecks.Read.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Read.ZeroOnError().Generated(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -611,4 +496,4 @@ func mixedReadValueBeside(h *MixedHandle) idempotent.Mixed {
 	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b572cfb7e3faea3dea0638420739e886ad1e62ead1cba49b4f165a9358e0f8ac
+// dokimi:provenance sha256:eb3a1e625dbb86e84e69ca84de4180da9a46dfa78736536845ee098125d72647

@@ -27,13 +27,15 @@ func mixedStubNowPins() int64 {
 	return want0
 }
 
-// mixedStubNowSubject returns the subject of [stub.Behaviour] for Now. The
-// subject calls a new double that reports to tb.
+// mixedStubNowSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Now. The subject calls a new double that
+// reports to tb.
 func mixedStubNowSubject(tb assert.TB) stub.Subject[clocktest.MixedNowCall, clocktest.MixedNowReturn] {
 	tb.Helper()
 	s := clocktest.NewMixedStub(tb)
 	return stub.Subject[clocktest.MixedNowCall, clocktest.MixedNowReturn]{
-		Stub: s.OnNow.MethodStub,
+		Stub:  s.OnNow.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubNow(tb, s)
 		},
@@ -41,9 +43,14 @@ func mixedStubNowSubject(tb assert.TB) stub.Subject[clocktest.MixedNowCall, cloc
 			got0 := mixedStubNow(tb, s)
 			return clocktest.MixedNowReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() clocktest.MixedNowReturn {
+			want0 := mixedStubNowPins()
+			s.OnNow.Returns(want0)
+			return clocktest.MixedNowReturn{Result: want0}
+		},
+		Override: func(seen func(clocktest.MixedNowCall)) {
 			s.OnNow.Func(func() int64 {
-				mark()
+				seen(clocktest.MixedNowCall{})
 				var z0 int64
 				return z0
 			})
@@ -64,7 +71,6 @@ func mixedStubInstanceOf(tb assert.TB, s *clocktest.MixedStub) mixedStubInstance
 		Call: func() {
 			_ = mixedStubNow(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -76,47 +82,14 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Now", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Now", mixedStubNowSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := clocktest.NewMixedStub(t)
-			var seen []clocktest.MixedNowCall
-			s.OnNow.OnRecord(func(c clocktest.MixedNowCall) { seen = append(seen, c) })
-			_ = mixedStubNow(t, s)
-			_ = mixedStubNow(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Now")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, clocktest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Now", func(t *testing.T) {
+		t.Run("Now", func(t *testing.T) {
 			t.Parallel()
-			s := clocktest.NewMixedStub(t)
-			_ = mixedStubNow(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNow.CallCount(), 0, "ResetCalls clears the calls of Now")
-		})
-
-		t.Run("keeps the results of Returns of Now", func(t *testing.T) {
-			t.Parallel()
-			s := clocktest.NewMixedStub(t)
-			want0 := mixedStubNowPins()
-			s.OnNow.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubNow(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Now")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, clocktest.NewMixedStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Now", mixedStubNowSubject)
 		})
 	})
 
@@ -187,34 +160,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedNowStub checks the methods of MixedNowStub, which configures
-// Now.
-func TestMixedNowStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Now", func(t *testing.T) {
-			t.Parallel()
-			s := clocktest.NewMixedStub(t)
-			want0 := mixedStubNowPins()
-			s.OnNow.Returns(want0)
-			got0 := mixedStubNow(t, s)
-			assert.Equal(t, got0, want0, "Now returns the Result that Returns sets")
-		})
-
-		t.Run("configures Now for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := clocktest.NewMixedStub(r)
-			s.OnNow.Strict()
-			var want0 int64
-			s.OnNow.Returns(want0)
-			_ = mixedStubNow(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Now")
-		})
-	})
-}
-
-// dokimi:provenance sha256:2eb42e80b27e50d83827b2494cadb18dd4a840d7dcf6bb0718a76ba2555af356
+// dokimi:provenance sha256:d802ad8366e0643fa2c48d3e3954e9df9da7bcea1a49f668632a669c62861534

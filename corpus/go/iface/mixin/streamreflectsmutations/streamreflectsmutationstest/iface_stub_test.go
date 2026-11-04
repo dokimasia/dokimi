@@ -85,25 +85,37 @@ func mixedStubRemovePins() error {
 	return want0
 }
 
-// mixedStubStreamSubject returns the subject of [stub.Behaviour] for
-// Stream. The subject calls a new double that reports to tb.
+// mixedStubStreamSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Stream. The subject calls a new double that
+// reports to tb.
 func mixedStubStreamSubject(
 	tb assert.TB,
 ) stub.Subject[streamreflectsmutationstest.MixedStreamCall, streamreflectsmutationstest.MixedStreamReturn] {
 	tb.Helper()
 	s := streamreflectsmutationstest.NewMixedStub(tb)
 	return stub.Subject[streamreflectsmutationstest.MixedStreamCall, streamreflectsmutationstest.MixedStreamReturn]{
-		Stub: s.OnStream.MethodStub,
+		Stub:  s.OnStream.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubStream(tb, s)
+		},
+		Arguments: func(tb assert.TB, c streamreflectsmutationstest.MixedStreamCall) {
+			tb.Helper()
+			a0 := mixedStubStreamArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() streamreflectsmutationstest.MixedStreamReturn {
 			got0 := mixedStubStream(tb, s)
 			return streamreflectsmutationstest.MixedStreamReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnStream.Func(func(_ context.Context) iter.Seq2[string, error] {
-				mark()
+		Returns: func() streamreflectsmutationstest.MixedStreamReturn {
+			want0 := mixedStubStreamPins()
+			s.OnStream.Returns(want0)
+			return streamreflectsmutationstest.MixedStreamReturn{Result: want0}
+		},
+		Override: func(seen func(streamreflectsmutationstest.MixedStreamCall)) {
+			s.OnStream.Func(func(p0 context.Context) iter.Seq2[string, error] {
+				seen(streamreflectsmutationstest.MixedStreamCall{Ctx: p0})
 				var z0 iter.Seq2[string, error]
 				return z0
 			})
@@ -111,25 +123,38 @@ func mixedStubStreamSubject(
 	}
 }
 
-// mixedStubAddSubject returns the subject of [stub.Behaviour] for Add. The
-// subject calls a new double that reports to tb.
+// mixedStubAddSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Add. The subject calls a new double that
+// reports to tb.
 func mixedStubAddSubject(
 	tb assert.TB,
 ) stub.Subject[streamreflectsmutationstest.MixedAddCall, streamreflectsmutationstest.MixedAddReturn] {
 	tb.Helper()
 	s := streamreflectsmutationstest.NewMixedStub(tb)
 	return stub.Subject[streamreflectsmutationstest.MixedAddCall, streamreflectsmutationstest.MixedAddReturn]{
-		Stub: s.OnAdd.MethodStub,
+		Stub:  s.OnAdd.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubAdd(tb, s)
+		},
+		Arguments: func(tb assert.TB, c streamreflectsmutationstest.MixedAddCall) {
+			tb.Helper()
+			a0, a1 := mixedStubAddArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Item, a1, "the call records Item")
 		},
 		Result: func() streamreflectsmutationstest.MixedAddReturn {
 			got0 := mixedStubAdd(tb, s)
 			return streamreflectsmutationstest.MixedAddReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnAdd.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() streamreflectsmutationstest.MixedAddReturn {
+			want0 := mixedStubAddPins()
+			s.OnAdd.Returns(want0)
+			return streamreflectsmutationstest.MixedAddReturn{Err: want0}
+		},
+		Override: func(seen func(streamreflectsmutationstest.MixedAddCall)) {
+			s.OnAdd.Func(func(p0 context.Context, p1 string) error {
+				seen(streamreflectsmutationstest.MixedAddCall{Ctx: p0, Item: p1})
 				var z0 error
 				return z0
 			})
@@ -141,25 +166,38 @@ func mixedStubAddSubject(
 	}
 }
 
-// mixedStubRemoveSubject returns the subject of [stub.Behaviour] for
-// Remove. The subject calls a new double that reports to tb.
+// mixedStubRemoveSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Remove. The subject calls a new double that
+// reports to tb.
 func mixedStubRemoveSubject(
 	tb assert.TB,
 ) stub.Subject[streamreflectsmutationstest.MixedRemoveCall, streamreflectsmutationstest.MixedRemoveReturn] {
 	tb.Helper()
 	s := streamreflectsmutationstest.NewMixedStub(tb)
 	return stub.Subject[streamreflectsmutationstest.MixedRemoveCall, streamreflectsmutationstest.MixedRemoveReturn]{
-		Stub: s.OnRemove.MethodStub,
+		Stub:  s.OnRemove.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubRemove(tb, s)
+		},
+		Arguments: func(tb assert.TB, c streamreflectsmutationstest.MixedRemoveCall) {
+			tb.Helper()
+			a0, a1 := mixedStubRemoveArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Item, a1, "the call records Item")
 		},
 		Result: func() streamreflectsmutationstest.MixedRemoveReturn {
 			got0 := mixedStubRemove(tb, s)
 			return streamreflectsmutationstest.MixedRemoveReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnRemove.Func(func(_ context.Context, _ string) error {
-				mark()
+		Returns: func() streamreflectsmutationstest.MixedRemoveReturn {
+			want0 := mixedStubRemovePins()
+			s.OnRemove.Returns(want0)
+			return streamreflectsmutationstest.MixedRemoveReturn{Err: want0}
+		},
+		Override: func(seen func(streamreflectsmutationstest.MixedRemoveCall)) {
+			s.OnRemove.Func(func(p0 context.Context, p1 string) error {
+				seen(streamreflectsmutationstest.MixedRemoveCall{Ctx: p0, Item: p1})
 				var z0 error
 				return z0
 			})
@@ -185,7 +223,6 @@ func mixedStubInstanceOf(tb assert.TB, s *streamreflectsmutationstest.MixedStub)
 		Call: func() {
 			_ = mixedStubStream(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -197,162 +234,34 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Stream", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Stream", mixedStubStreamSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			_ = mixedStubStream(t, s)
-			got := s.OnStream.AssertCalledOnce(t, "Stream records the call")
-			a0 := mixedStubStreamArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			var seen []streamreflectsmutationstest.MixedStreamCall
-			s.OnStream.OnRecord(func(c streamreflectsmutationstest.MixedStreamCall) { seen = append(seen, c) })
-			_ = mixedStubStream(t, s)
-			_ = mixedStubStream(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Stream")
-		})
 	})
 
 	t.Run("Add", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Add", mixedStubAddSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			_ = mixedStubAdd(t, s)
-			got := s.OnAdd.AssertCalledOnce(t, "Add records the call")
-			a0, a1 := mixedStubAddArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Item, a1, "the call records Item")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			var seen []streamreflectsmutationstest.MixedAddCall
-			s.OnAdd.OnRecord(func(c streamreflectsmutationstest.MixedAddCall) { seen = append(seen, c) })
-			_ = mixedStubAdd(t, s)
-			_ = mixedStubAdd(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Add")
-		})
 	})
 
 	t.Run("Remove", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Remove", mixedStubRemoveSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			_ = mixedStubRemove(t, s)
-			got := s.OnRemove.AssertCalledOnce(t, "Remove records the call")
-			a0, a1 := mixedStubRemoveArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Item, a1, "the call records Item")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			var seen []streamreflectsmutationstest.MixedRemoveCall
-			s.OnRemove.OnRecord(func(c streamreflectsmutationstest.MixedRemoveCall) { seen = append(seen, c) })
-			_ = mixedStubRemove(t, s)
-			_ = mixedStubRemove(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Remove")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, streamreflectsmutationstest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Stream", func(t *testing.T) {
+		t.Run("Stream", func(t *testing.T) {
 			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			_ = mixedStubStream(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStream.CallCount(), 0, "ResetCalls clears the calls of Stream")
+			stub.ResetBehaviour(t, "Stream", mixedStubStreamSubject)
 		})
 
-		t.Run("keeps the results of Returns of Stream", func(t *testing.T) {
+		t.Run("Add", func(t *testing.T) {
 			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			want0 := mixedStubStreamPins()
-			s.OnStream.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubStream(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Stream")
+			stub.ResetBehaviour(t, "Add", mixedStubAddSubject)
 		})
 
-		t.Run("clears the recorded calls of Add", func(t *testing.T) {
+		t.Run("Remove", func(t *testing.T) {
 			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			_ = mixedStubAdd(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnAdd.CallCount(), 0, "ResetCalls clears the calls of Add")
-		})
-
-		t.Run("keeps the results of Returns of Add", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			want0 := mixedStubAddPins()
-			s.OnAdd.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubAdd(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Add")
-		})
-
-		t.Run("clears the recorded calls of Remove", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			_ = mixedStubRemove(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRemove.CallCount(), 0, "ResetCalls clears the calls of Remove")
-		})
-
-		t.Run("keeps the results of Returns of Remove", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			want0 := mixedStubRemovePins()
-			s.OnRemove.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubRemove(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Remove")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, streamreflectsmutationstest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Add with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Add-failing")
-			s := streamreflectsmutationstest.NewMixedStubFailing(t, want)
-			r0 := mixedStubAdd(t, s)
-			assert.ErrorIs(t, r0, want, "Add fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Remove with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Remove-failing")
-			s := streamreflectsmutationstest.NewMixedStubFailing(t, want)
-			r0 := mixedStubRemove(t, s)
-			assert.ErrorIs(t, r0, want, "Remove fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Remove", mixedStubRemoveSubject)
 		})
 	})
 
@@ -541,48 +450,6 @@ func TestMixedStub(t *testing.T) {
 func TestMixedStreamStub(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Stream", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			want0 := mixedStubStreamPins()
-			s.OnStream.Returns(want0)
-			got0 := mixedStubStream(t, s)
-			assert.Equal(t, got0, want0, "Stream returns the Result that Returns sets")
-		})
-
-		t.Run("configures Stream for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := streamreflectsmutationstest.NewMixedStub(r)
-			s.OnStream.Strict()
-			var want0 iter.Seq2[string, error]
-			s.OnStream.Returns(want0)
-			_ = mixedStubStream(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Stream")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Stream to the function", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnStream.Func(func(p0 context.Context) iter.Seq2[string, error] {
-				got0 = p0
-				var z0 iter.Seq2[string, error]
-				return z0
-			})
-			_ = mixedStubStream(t, s)
-			a0 := mixedStubStreamArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-
 	t.Run("Yields", func(t *testing.T) {
 		t.Parallel()
 
@@ -653,104 +520,4 @@ func TestMixedStreamStub(t *testing.T) {
 	})
 }
 
-// TestMixedAddStub checks the methods of MixedAddStub, which configures
-// Add.
-func TestMixedAddStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Add", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			want0 := mixedStubAddPins()
-			s.OnAdd.Returns(want0)
-			got0 := mixedStubAdd(t, s)
-			assert.ErrorIs(t, got0, want0, "Add returns the error that Returns sets")
-		})
-
-		t.Run("configures Add for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := streamreflectsmutationstest.NewMixedStub(r)
-			s.OnAdd.Strict()
-			var want0 error
-			s.OnAdd.Returns(want0)
-			_ = mixedStubAdd(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Add")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Add to the function", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnAdd.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubAdd(t, s)
-			a0, a1 := mixedStubAddArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Item")
-		})
-	})
-}
-
-// TestMixedRemoveStub checks the methods of MixedRemoveStub, which
-// configures Remove.
-func TestMixedRemoveStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Remove", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			want0 := mixedStubRemovePins()
-			s.OnRemove.Returns(want0)
-			got0 := mixedStubRemove(t, s)
-			assert.ErrorIs(t, got0, want0, "Remove returns the error that Returns sets")
-		})
-
-		t.Run("configures Remove for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := streamreflectsmutationstest.NewMixedStub(r)
-			s.OnRemove.Strict()
-			var want0 error
-			s.OnRemove.Returns(want0)
-			_ = mixedStubRemove(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Remove")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Remove to the function", func(t *testing.T) {
-			t.Parallel()
-			s := streamreflectsmutationstest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnRemove.Func(func(p0 context.Context, p1 string) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubRemove(t, s)
-			a0, a1 := mixedStubRemoveArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Item")
-		})
-	})
-}
-
-// dokimi:provenance sha256:80cd1c81c56abbe1e68c5b43b2e16ff95b30d03cff05c09a32a39e66930f2720
+// dokimi:provenance sha256:90c6818173463baecf2e70d0bdd76e4099e9e95adfbc1315f5583d91f68a28e5

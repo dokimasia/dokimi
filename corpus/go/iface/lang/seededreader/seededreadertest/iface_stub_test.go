@@ -66,25 +66,38 @@ func catalogStubLenPins() (int, error) {
 	return want0, want1
 }
 
-// catalogStubLookupSubject returns the subject of [stub.Behaviour] for
-// Lookup. The subject calls a new double that reports to tb.
+// catalogStubLookupSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Lookup. The subject calls a new double that
+// reports to tb.
 func catalogStubLookupSubject(
 	tb assert.TB,
 ) stub.Subject[seededreadertest.CatalogLookupCall, seededreadertest.CatalogLookupReturn] {
 	tb.Helper()
 	s := seededreadertest.NewCatalogStub(tb)
 	return stub.Subject[seededreadertest.CatalogLookupCall, seededreadertest.CatalogLookupReturn]{
-		Stub: s.OnLookup.MethodStub,
+		Stub:  s.OnLookup.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = catalogStubLookup(tb, s)
+		},
+		Arguments: func(tb assert.TB, c seededreadertest.CatalogLookupCall) {
+			tb.Helper()
+			a0, a1 := catalogStubLookupArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() seededreadertest.CatalogLookupReturn {
 			got0, got1 := catalogStubLookup(tb, s)
 			return seededreadertest.CatalogLookupReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnLookup.Func(func(_ context.Context, _ seededreader.Key) (seededreader.Body, error) {
-				mark()
+		Returns: func() seededreadertest.CatalogLookupReturn {
+			want0, want1 := catalogStubLookupPins()
+			s.OnLookup.Returns(want0, want1)
+			return seededreadertest.CatalogLookupReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(seededreadertest.CatalogLookupCall)) {
+			s.OnLookup.Func(func(p0 context.Context, p1 seededreader.Key) (seededreader.Body, error) {
+				seen(seededreadertest.CatalogLookupCall{Ctx: p0, Key: p1})
 				var z0 seededreader.Body
 				var z1 error
 				return z0, z1
@@ -97,25 +110,37 @@ func catalogStubLookupSubject(
 	}
 }
 
-// catalogStubLenSubject returns the subject of [stub.Behaviour] for Len.
-// The subject calls a new double that reports to tb.
+// catalogStubLenSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Len. The subject calls a new double that
+// reports to tb.
 func catalogStubLenSubject(
 	tb assert.TB,
 ) stub.Subject[seededreadertest.CatalogLenCall, seededreadertest.CatalogLenReturn] {
 	tb.Helper()
 	s := seededreadertest.NewCatalogStub(tb)
 	return stub.Subject[seededreadertest.CatalogLenCall, seededreadertest.CatalogLenReturn]{
-		Stub: s.OnLen.MethodStub,
+		Stub:  s.OnLen.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = catalogStubLen(tb, s)
+		},
+		Arguments: func(tb assert.TB, c seededreadertest.CatalogLenCall) {
+			tb.Helper()
+			a0 := catalogStubLenArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() seededreadertest.CatalogLenReturn {
 			got0, got1 := catalogStubLen(tb, s)
 			return seededreadertest.CatalogLenReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnLen.Func(func(_ context.Context) (int, error) {
-				mark()
+		Returns: func() seededreadertest.CatalogLenReturn {
+			want0, want1 := catalogStubLenPins()
+			s.OnLen.Returns(want0, want1)
+			return seededreadertest.CatalogLenReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(seededreadertest.CatalogLenCall)) {
+			s.OnLen.Func(func(p0 context.Context) (int, error) {
+				seen(seededreadertest.CatalogLenCall{Ctx: p0})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -141,7 +166,6 @@ func catalogStubInstanceOf(tb assert.TB, s *seededreadertest.CatalogStub) catalo
 		Call: func() {
 			_, _ = catalogStubLookup(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -153,121 +177,24 @@ func TestCatalogStub(t *testing.T) {
 	t.Run("Lookup", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Lookup", catalogStubLookupSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			_, _ = catalogStubLookup(t, s)
-			got := s.OnLookup.AssertCalledOnce(t, "Lookup records the call")
-			a0, a1 := catalogStubLookupArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			var seen []seededreadertest.CatalogLookupCall
-			s.OnLookup.OnRecord(func(c seededreadertest.CatalogLookupCall) { seen = append(seen, c) })
-			_, _ = catalogStubLookup(t, s)
-			_, _ = catalogStubLookup(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Lookup")
-		})
 	})
 
 	t.Run("Len", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Len", catalogStubLenSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			_, _ = catalogStubLen(t, s)
-			got := s.OnLen.AssertCalledOnce(t, "Len records the call")
-			a0 := catalogStubLenArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			var seen []seededreadertest.CatalogLenCall
-			s.OnLen.OnRecord(func(c seededreadertest.CatalogLenCall) { seen = append(seen, c) })
-			_, _ = catalogStubLen(t, s)
-			_, _ = catalogStubLen(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Len")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) catalogStubInstance {
-			return catalogStubInstanceOf(tb, seededreadertest.NewCatalogStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Lookup", func(t *testing.T) {
+		t.Run("Lookup", func(t *testing.T) {
 			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			_, _ = catalogStubLookup(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLookup.CallCount(), 0, "ResetCalls clears the calls of Lookup")
+			stub.ResetBehaviour(t, "Lookup", catalogStubLookupSubject)
 		})
 
-		t.Run("keeps the results of Returns of Lookup", func(t *testing.T) {
+		t.Run("Len", func(t *testing.T) {
 			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			want0, want1 := catalogStubLookupPins()
-			s.OnLookup.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := catalogStubLookup(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Lookup")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Lookup")
-		})
-
-		t.Run("clears the recorded calls of Len", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			_, _ = catalogStubLen(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLen.CallCount(), 0, "ResetCalls clears the calls of Len")
-		})
-
-		t.Run("keeps the results of Returns of Len", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			want0, want1 := catalogStubLenPins()
-			s.OnLen.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := catalogStubLen(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Len")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Len")
-		})
-	})
-
-	t.Run("NewCatalogStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) catalogStubInstance {
-			return catalogStubInstanceOf(tb, seededreadertest.NewCatalogStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewCatalogStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Lookup with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Lookup-failing")
-			s := seededreadertest.NewCatalogStubFailing(t, want)
-			_, r1 := catalogStubLookup(t, s)
-			assert.ErrorIs(t, r1, want, "Lookup fails with the error of NewCatalogStubFailing")
-		})
-
-		t.Run("fails Len with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Len-failing")
-			s := seededreadertest.NewCatalogStubFailing(t, want)
-			_, r1 := catalogStubLen(t, s)
-			assert.ErrorIs(t, r1, want, "Len fails with the error of NewCatalogStubFailing")
+			stub.ResetBehaviour(t, "Len", catalogStubLenSubject)
 		})
 	})
 
@@ -425,108 +352,4 @@ func TestCatalogStub(t *testing.T) {
 	})
 }
 
-// TestCatalogLookupStub checks the methods of CatalogLookupStub, which
-// configures Lookup.
-func TestCatalogLookupStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Lookup", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			want0, want1 := catalogStubLookupPins()
-			s.OnLookup.Returns(want0, want1)
-			got0, got1 := catalogStubLookup(t, s)
-			expect.Equal(t, got0, want0, "Lookup returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Lookup returns the error that Returns sets")
-		})
-
-		t.Run("configures Lookup for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := seededreadertest.NewCatalogStub(r)
-			s.OnLookup.Strict()
-			var want0 seededreader.Body
-			var want1 error
-			s.OnLookup.Returns(want0, want1)
-			_, _ = catalogStubLookup(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Lookup")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Lookup to the function", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			var got0 context.Context
-			var got1 seededreader.Key
-			s.OnLookup.Func(func(p0 context.Context, p1 seededreader.Key) (seededreader.Body, error) {
-				got0, got1 = p0, p1
-				var z0 seededreader.Body
-				var z1 error
-				return z0, z1
-			})
-			_, _ = catalogStubLookup(t, s)
-			a0, a1 := catalogStubLookupArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestCatalogLenStub checks the methods of CatalogLenStub, which
-// configures Len.
-func TestCatalogLenStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Len", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			want0, want1 := catalogStubLenPins()
-			s.OnLen.Returns(want0, want1)
-			got0, got1 := catalogStubLen(t, s)
-			expect.Equal(t, got0, want0, "Len returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Len returns the error that Returns sets")
-		})
-
-		t.Run("configures Len for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := seededreadertest.NewCatalogStub(r)
-			s.OnLen.Strict()
-			var want0 int
-			var want1 error
-			s.OnLen.Returns(want0, want1)
-			_, _ = catalogStubLen(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Len")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Len to the function", func(t *testing.T) {
-			t.Parallel()
-			s := seededreadertest.NewCatalogStub(t)
-			var got0 context.Context
-			s.OnLen.Func(func(p0 context.Context) (int, error) {
-				got0 = p0
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = catalogStubLen(t, s)
-			a0 := catalogStubLenArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:e91ff985927ad99abe8077afca001a2b3978111593bf8c361f3b24cb9f9992ab
+// dokimi:provenance sha256:edaea4cd4440bfc58d73bdb98970cdc95e9cc2be3c23392ef40096bc7c4daee6

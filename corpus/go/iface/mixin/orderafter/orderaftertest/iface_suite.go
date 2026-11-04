@@ -15,35 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Commit/smoke: Commit returns without a panic for derived inputs.
-//
-// Mixed.Commit/cancel: Commit returns an error for a cancelled context.
-//
-// Mixed.Commit/order-after: Commit fails with the declared unready
-// sentinel before its declared predecessor.
-//
-// Mixed.Commit/ready-after: Commit succeeds once Prepare has run.
-//
-// Mixed.Prepare/smoke: Prepare returns without a panic for derived inputs.
-//
-// Mixed.Prepare/cancel: Prepare returns an error for a cancelled context.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Commit/smoke
-//
-// Mixed.Prepare/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:lifecycle of Mixed.Commit has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The shape:lifecycle of Mixed.Prepare has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -124,9 +95,6 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 				ID:          MixedChecks.Commit.Smoke(),
 				Statement:   "Commit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -140,9 +108,6 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 				ID:          MixedChecks.Commit.Cancel(),
 				Statement:   "Commit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -155,9 +120,6 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 				ID:          MixedChecks.Commit.OrderAfter(),
 				Statement:   "Commit fails with the declared unready sentinel before its declared predecessor",
 				Claim:       spec.OrderAfter,
-				Probe:       spec.RefusesEarly,
-				Reason:      spec.AcceptedEarly,
-				Law:         spec.CallRefusesBeforeItsPredecessor,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.RefusesEarly(h, func(ctx context.Context) error {
@@ -170,9 +132,6 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 				ID:          MixedChecks.Commit.ReadyAfter(),
 				Statement:   "Commit succeeds once Prepare has run",
 				Claim:       spec.ReadyAfter,
-				Probe:       spec.WorksAfter,
-				Reason:      spec.NeverReady,
-				Law:         spec.CallWorksAfterItsPredecessor,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.WorksAfter(h, func(ctx context.Context) error {
@@ -187,9 +146,6 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 				ID:          MixedChecks.Prepare.Smoke(),
 				Statement:   "Prepare returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -203,9 +159,6 @@ func MixedSuite() conform.Suite[orderafter.Mixed] {
 				ID:          MixedChecks.Prepare.Cancel(),
 				Statement:   "Prepare returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -463,4 +416,4 @@ func mixedPrepareIgnoresCancel(h *MixedHandle) orderafter.Mixed {
 	return &mixedPrepareIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:11f05c3a316269c7b2cbeefb3c457cd63b26cd62da1b10fc3e913b557d1ac62b
+// dokimi:provenance sha256:90a072073ae59a37635082ebb3cb5795e514f54020f4449a7e398036292f126b

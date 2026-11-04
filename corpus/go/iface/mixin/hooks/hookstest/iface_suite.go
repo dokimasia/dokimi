@@ -15,41 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Fire/smoke: Fire returns without a panic for derived inputs.
-//
-// Mixed.Fire/smoke#generated: Fire returns without a panic for derived
-// inputs.
-//
-// Mixed.Fire/cancel: Fire returns an error for a cancelled context.
-//
-// Mixed.Fire/cancel#generated: Fire returns an error for a cancelled
-// context.
-//
-// Mixed.OnEvent/smoke: OnEvent returns without a panic for derived inputs.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Fire/smoke
-//
-// Mixed.OnEvent/smoke
-
-// The refused claims of Mixed:
-//
-// Mixed.Fire/hooks: a parameter of the read of Fire selects neither a
-// value that register takes nor a field of the written value. The remedy
-// is to align the name of the parameter of the read with a parameter or a
-// field of the write.
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Fire has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Mixed.OnEvent has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -81,22 +46,10 @@ func (c mixedFire) Smoke() conform.ID[hooks.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Fire returns
-// without a panic for derived inputs.
-func (c mixedFire) SmokeGenerated() conform.ID[hooks.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Fire returns an error for
 // a cancelled context.
 func (c mixedFire) Cancel() conform.ID[hooks.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Fire returns an
-// error for a cancelled context.
-func (c mixedFire) CancelGenerated() conform.ID[hooks.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedOnEvent is the name of Mixed.OnEvent, with the identities of its
@@ -123,9 +76,6 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 				ID:          MixedChecks.Fire.Smoke(),
 				Statement:   "Fire returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -136,12 +86,9 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 				Defect: mixedFirePanics,
 			},
 			{
-				ID:          MixedChecks.Fire.SmokeGenerated(),
+				ID:          MixedChecks.Fire.Smoke().Generated(),
 				Statement:   "Fire returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnEvent := c.Draw(prop.Of[string](), "event")
@@ -155,9 +102,6 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 				ID:          MixedChecks.Fire.Cancel(),
 				Statement:   "Fire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -167,12 +111,9 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 				Defect: mixedFireIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Fire.CancelGenerated(),
+				ID:          MixedChecks.Fire.Cancel().Generated(),
 				Statement:   "Fire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnEvent := c.Draw(prop.Of[string](), "event")
@@ -186,9 +127,6 @@ func MixedSuite() conform.Suite[hooks.Mixed] {
 				ID:          MixedChecks.OnEvent.Smoke(),
 				Statement:   "OnEvent returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -393,4 +331,4 @@ func mixedOnEventPanics(h *MixedHandle) hooks.Mixed {
 	return &mixedOnEventPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:2db5ddc6d4b58b27895dfa0593d8aa22a0f3fed3fd83c2beea48cad45eafe320
+// dokimi:provenance sha256:def1602cc6d65167442c4c08155138d428836ede3d7d832f3223ee2d6e939f00

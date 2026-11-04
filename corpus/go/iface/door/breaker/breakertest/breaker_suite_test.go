@@ -48,22 +48,7 @@ func TestBreakerSuite(t *testing.T) {
 				},
 				Defect: func(*breakertest.BreakerHandle) breaker.Breaker { return &breakerSubject{} },
 			}),
-			conform.Excuse(
-				breakertest.BreakerChecks.Do.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				breakertest.BreakerChecks.Do.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				breakertest.BreakerChecks.Do.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				breakertest.BreakerChecks.Do.FailsFast(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[breaker.Breaker]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -85,30 +70,20 @@ func TestBreakerSuite(t *testing.T) {
 				},
 				Defect: func(*breakertest.BreakerHandle) breaker.Breaker { return &breakerSubject{} },
 			}),
-			conform.Excuse(
-				breakertest.BreakerChecks.Do.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				breakertest.BreakerChecks.Do.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				breakertest.BreakerChecks.Do.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				breakertest.BreakerChecks.Do.FailsFast(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[breaker.Breaker]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// breakerSuite is the suite of Breaker that the tests of the planted
+// defect of a ceiling apply.
+var breakerSuite = breakertest.BreakerSuite()
+
 // breakerIdle returns the planted defect of a ceiling of Breaker with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func breakerIdle(h *breakertest.BreakerHandle) breaker.Breaker {
-	return breakertest.BreakerSuite().Calls[0].Over(h, func() {})
+	return breakerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestBreakerSuiteBudgets applies the allocation ceilings of the suite of
@@ -120,22 +95,7 @@ func TestBreakerSuiteBudgets(t *testing.T) {
 		t,
 		breakerIdle,
 		conform.Ceilings(breakertest.BreakerChecks.Do.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			breakertest.BreakerChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			breakertest.BreakerChecks.Do.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			breakertest.BreakerChecks.Do.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			breakertest.BreakerChecks.Do.FailsFast(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[breaker.Breaker]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -146,22 +106,7 @@ func FuzzBreakerSuiteDo(f *testing.F) {
 		f,
 		breakertest.BreakerChecks.Do.Callable,
 		breakerIdle,
-		conform.Excuse(
-			breakertest.BreakerChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			breakertest.BreakerChecks.Do.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			breakertest.BreakerChecks.Do.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			breakertest.BreakerChecks.Do.FailsFast(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[breaker.Breaker]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -173,4 +118,4 @@ func BenchmarkBreakerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:60a2a9daecae6bb469003486f52df2d2da9380b4eb562a6ce0de62f4d8b38f07
+// dokimi:provenance sha256:7ded51e7f2f3df7d2a930226b8cb78deaa2820b359ee2b488d96a0f91042bff7

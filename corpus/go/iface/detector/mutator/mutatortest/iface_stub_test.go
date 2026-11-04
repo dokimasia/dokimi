@@ -32,19 +32,27 @@ func mutatorStubTouch(tb assert.TB, s *mutatortest.MutatorStub) {
 	s.Touch(a0, a1)
 }
 
-// mutatorStubTouchSubject returns the subject of [stub.Behaviour] for
-// Touch. The subject calls a new double that reports to tb.
+// mutatorStubTouchSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Touch. The subject calls a new double that
+// reports to tb.
 func mutatorStubTouchSubject(tb assert.TB) stub.Subject[mutatortest.MutatorTouchCall, struct{}] {
 	tb.Helper()
 	s := mutatortest.NewMutatorStub(tb)
 	return stub.Subject[mutatortest.MutatorTouchCall, struct{}]{
-		Stub: s.OnTouch.MethodStub,
+		Stub:  s.OnTouch.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			mutatorStubTouch(tb, s)
 		},
-		Override: func(mark func()) {
-			s.OnTouch.Func(func(_ context.Context, _ string) {
-				mark()
+		Arguments: func(tb assert.TB, c mutatortest.MutatorTouchCall) {
+			tb.Helper()
+			a0, a1 := mutatorStubTouchArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+		},
+		Override: func(seen func(mutatortest.MutatorTouchCall)) {
+			s.OnTouch.Func(func(p0 context.Context, p1 string) {
+				seen(mutatortest.MutatorTouchCall{Ctx: p0, Key: p1})
 			})
 		},
 	}
@@ -63,7 +71,6 @@ func mutatorStubInstanceOf(tb assert.TB, s *mutatortest.MutatorStub) mutatorStub
 		Call: func() {
 			mutatorStubTouch(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -75,47 +82,14 @@ func TestMutatorStub(t *testing.T) {
 	t.Run("Touch", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Touch", mutatorStubTouchSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := mutatortest.NewMutatorStub(t)
-			mutatorStubTouch(t, s)
-			got := s.OnTouch.AssertCalledOnce(t, "Touch records the call")
-			a0, a1 := mutatorStubTouchArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := mutatortest.NewMutatorStub(t)
-			var seen []mutatortest.MutatorTouchCall
-			s.OnTouch.OnRecord(func(c mutatortest.MutatorTouchCall) { seen = append(seen, c) })
-			mutatorStubTouch(t, s)
-			mutatorStubTouch(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Touch")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mutatorStubInstance {
-			return mutatorStubInstanceOf(tb, mutatortest.NewMutatorStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Touch", func(t *testing.T) {
+		t.Run("Touch", func(t *testing.T) {
 			t.Parallel()
-			s := mutatortest.NewMutatorStub(t)
-			mutatorStubTouch(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnTouch.CallCount(), 0, "ResetCalls clears the calls of Touch")
-		})
-	})
-
-	t.Run("NewMutatorStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mutatorStubInstance {
-			return mutatorStubInstanceOf(tb, mutatortest.NewMutatorStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Touch", mutatorStubTouchSubject)
 		})
 	})
 
@@ -188,28 +162,4 @@ func TestMutatorStub(t *testing.T) {
 	})
 }
 
-// TestMutatorTouchStub checks the methods of MutatorTouchStub, which
-// configures Touch.
-func TestMutatorTouchStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Touch to the function", func(t *testing.T) {
-			t.Parallel()
-			s := mutatortest.NewMutatorStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnTouch.Func(func(p0 context.Context, p1 string) {
-				got0, got1 = p0, p1
-			})
-			mutatorStubTouch(t, s)
-			a0, a1 := mutatorStubTouchArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:46943080376bbd7bcb2e56549b2d521b56010798ab02a4470824b95ebd3ec480
+// dokimi:provenance sha256:b2e8b7cfbf3615bb0423f305c1c1d4bc4e05ad633572a1cc24d0df1719805600

@@ -70,23 +70,36 @@ func mixedStubTracedGetPins() (wrappedvia.Value, error) {
 	return want0, want1
 }
 
-// mixedStubGetSubject returns the subject of [stub.Behaviour] for Get. The
-// subject calls a new double that reports to tb.
+// mixedStubGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func mixedStubGetSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedGetCall, wrappedviatest.MixedGetReturn] {
 	tb.Helper()
 	s := wrappedviatest.NewMixedStub(tb)
 	return stub.Subject[wrappedviatest.MixedGetCall, wrappedviatest.MixedGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c wrappedviatest.MixedGetCall) {
+			tb.Helper()
+			a0, a1 := mixedStubGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() wrappedviatest.MixedGetReturn {
 			got0, got1 := mixedStubGet(tb, s)
 			return wrappedviatest.MixedGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (wrappedvia.Value, error) {
-				mark()
+		Returns: func() wrappedviatest.MixedGetReturn {
+			want0, want1 := mixedStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return wrappedviatest.MixedGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(wrappedviatest.MixedGetCall)) {
+			s.OnGet.Func(func(p0 context.Context, p1 string) (wrappedvia.Value, error) {
+				seen(wrappedviatest.MixedGetCall{Ctx: p0, Key: p1})
 				var z0 wrappedvia.Value
 				var z1 error
 				return z0, z1
@@ -99,25 +112,38 @@ func mixedStubGetSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedGetCall,
 	}
 }
 
-// mixedStubTracedGetSubject returns the subject of [stub.Behaviour] for
-// TracedGet. The subject calls a new double that reports to tb.
+// mixedStubTracedGetSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for TracedGet. The subject calls a new double that
+// reports to tb.
 func mixedStubTracedGetSubject(
 	tb assert.TB,
 ) stub.Subject[wrappedviatest.MixedTracedGetCall, wrappedviatest.MixedTracedGetReturn] {
 	tb.Helper()
 	s := wrappedviatest.NewMixedStub(tb)
 	return stub.Subject[wrappedviatest.MixedTracedGetCall, wrappedviatest.MixedTracedGetReturn]{
-		Stub: s.OnTracedGet.MethodStub,
+		Stub:  s.OnTracedGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubTracedGet(tb, s)
+		},
+		Arguments: func(tb assert.TB, c wrappedviatest.MixedTracedGetCall) {
+			tb.Helper()
+			a0, a1 := mixedStubTracedGetArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() wrappedviatest.MixedTracedGetReturn {
 			got0, got1 := mixedStubTracedGet(tb, s)
 			return wrappedviatest.MixedTracedGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnTracedGet.Func(func(_ context.Context, _ string) (wrappedvia.Value, error) {
-				mark()
+		Returns: func() wrappedviatest.MixedTracedGetReturn {
+			want0, want1 := mixedStubTracedGetPins()
+			s.OnTracedGet.Returns(want0, want1)
+			return wrappedviatest.MixedTracedGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(wrappedviatest.MixedTracedGetCall)) {
+			s.OnTracedGet.Func(func(p0 context.Context, p1 string) (wrappedvia.Value, error) {
+				seen(wrappedviatest.MixedTracedGetCall{Ctx: p0, Key: p1})
 				var z0 wrappedvia.Value
 				var z1 error
 				return z0, z1
@@ -143,7 +169,6 @@ func mixedStubInstanceOf(tb assert.TB, s *wrappedviatest.MixedStub) mixedStubIns
 		Call: func() {
 			_, _ = mixedStubGet(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -155,122 +180,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Get", mixedStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			_, _ = mixedStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := mixedStubGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			var seen []wrappedviatest.MixedGetCall
-			s.OnGet.OnRecord(func(c wrappedviatest.MixedGetCall) { seen = append(seen, c) })
-			_, _ = mixedStubGet(t, s)
-			_, _ = mixedStubGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("TracedGet", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "TracedGet", mixedStubTracedGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			_, _ = mixedStubTracedGet(t, s)
-			got := s.OnTracedGet.AssertCalledOnce(t, "TracedGet records the call")
-			a0, a1 := mixedStubTracedGetArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			var seen []wrappedviatest.MixedTracedGetCall
-			s.OnTracedGet.OnRecord(func(c wrappedviatest.MixedTracedGetCall) { seen = append(seen, c) })
-			_, _ = mixedStubTracedGet(t, s)
-			_, _ = mixedStubTracedGet(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of TracedGet")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			_, _ = mixedStubGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+			stub.ResetBehaviour(t, "Get", mixedStubGetSubject)
 		})
 
-		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+		t.Run("TracedGet", func(t *testing.T) {
 			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			want0, want1 := mixedStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
-		})
-
-		t.Run("clears the recorded calls of TracedGet", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			_, _ = mixedStubTracedGet(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnTracedGet.CallCount(), 0, "ResetCalls clears the calls of TracedGet")
-		})
-
-		t.Run("keeps the results of Returns of TracedGet", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			want0, want1 := mixedStubTracedGetPins()
-			s.OnTracedGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubTracedGet(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of TracedGet")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of TracedGet")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Get with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Get-failing")
-			s := wrappedviatest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubGet(t, s)
-			assert.ErrorIs(t, r1, want, "Get fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails TracedGet with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("TracedGet-failing")
-			s := wrappedviatest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubTracedGet(t, s)
-			assert.ErrorIs(t, r1, want, "TracedGet fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "TracedGet", mixedStubTracedGetSubject)
 		})
 	})
 
@@ -417,110 +344,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedGetStub checks the methods of MixedGetStub, which configures
-// Get.
-func TestMixedGetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			want0, want1 := mixedStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := mixedStubGet(t, s)
-			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := wrappedviatest.NewMixedStub(r)
-			s.OnGet.Strict()
-			var want0 wrappedvia.Value
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = mixedStubGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (wrappedvia.Value, error) {
-				got0, got1 = p0, p1
-				var z0 wrappedvia.Value
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubGet(t, s)
-			a0, a1 := mixedStubGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestMixedTracedGetStub checks the methods of MixedTracedGetStub, which
-// configures TracedGet.
-func TestMixedTracedGetStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of TracedGet", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			want0, want1 := mixedStubTracedGetPins()
-			s.OnTracedGet.Returns(want0, want1)
-			got0, got1 := mixedStubTracedGet(t, s)
-			expect.Equal(t, got0, want0, "TracedGet returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "TracedGet returns the error that Returns sets")
-		})
-
-		t.Run("configures TracedGet for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := wrappedviatest.NewMixedStub(r)
-			s.OnTracedGet.Strict()
-			var want0 wrappedvia.Value
-			var want1 error
-			s.OnTracedGet.Returns(want0, want1)
-			_, _ = mixedStubTracedGet(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of TracedGet")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of TracedGet to the function", func(t *testing.T) {
-			t.Parallel()
-			s := wrappedviatest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnTracedGet.Func(func(p0 context.Context, p1 string) (wrappedvia.Value, error) {
-				got0, got1 = p0, p1
-				var z0 wrappedvia.Value
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubTracedGet(t, s)
-			a0, a1 := mixedStubTracedGetArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:bedc9efbfd56642ec23eb7a0547460e476513905876c9426d6077b165cd4b1b0
+// dokimi:provenance sha256:81f677bc3974150e7f7c7dc15f91012ce7f5cc5e9a2925d81399aae804771424

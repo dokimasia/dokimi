@@ -15,24 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Uint64/smoke: Uint64 returns without a panic for derived inputs.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Uint64/smoke
-
-// The refused claims of Mixed:
-//
-// Mixed.Uint64/deterministic: Uint64 reads the clock or changes its
-// subject, so a repeat can return another value. The remedy is to remove
-// the mixin time-aware or side-effect where a repeat of Uint64 returns the
-// same value.
-//
-// Mixed.Uint64/side-effect: Uint64 takes no context. The remedy is to add
-// a context parameter to Uint64.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -75,9 +57,6 @@ func MixedSuite() conform.Suite[source.Mixed] {
 				ID:          MixedChecks.Uint64.Smoke(),
 				Statement:   "Uint64 returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -218,4 +197,4 @@ func mixedUint64Panics(h *MixedHandle) source.Mixed {
 	return &mixedUint64PanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:126cd4dcc02f08b3cc20bc2671913eacdaf70052024249be62205b462facca75
+// dokimi:provenance sha256:dd65fb4235a54050d3df6169fbb3025bf756f47346ed9caf945363b7b3d8b4f0

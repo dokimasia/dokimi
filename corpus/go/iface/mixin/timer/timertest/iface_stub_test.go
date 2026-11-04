@@ -27,13 +27,15 @@ func mixedStubStopPins() bool {
 	return want0
 }
 
-// mixedStubStopSubject returns the subject of [stub.Behaviour] for Stop.
-// The subject calls a new double that reports to tb.
+// mixedStubStopSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Stop. The subject calls a new double that
+// reports to tb.
 func mixedStubStopSubject(tb assert.TB) stub.Subject[timertest.MixedStopCall, timertest.MixedStopReturn] {
 	tb.Helper()
 	s := timertest.NewMixedStub(tb)
 	return stub.Subject[timertest.MixedStopCall, timertest.MixedStopReturn]{
-		Stub: s.OnStop.MethodStub,
+		Stub:  s.OnStop.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubStop(tb, s)
 		},
@@ -41,9 +43,14 @@ func mixedStubStopSubject(tb assert.TB) stub.Subject[timertest.MixedStopCall, ti
 			got0 := mixedStubStop(tb, s)
 			return timertest.MixedStopReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() timertest.MixedStopReturn {
+			want0 := mixedStubStopPins()
+			s.OnStop.Returns(want0)
+			return timertest.MixedStopReturn{Result: want0}
+		},
+		Override: func(seen func(timertest.MixedStopCall)) {
 			s.OnStop.Func(func() bool {
-				mark()
+				seen(timertest.MixedStopCall{})
 				var z0 bool
 				return z0
 			})
@@ -64,7 +71,6 @@ func mixedStubInstanceOf(tb assert.TB, s *timertest.MixedStub) mixedStubInstance
 		Call: func() {
 			_ = mixedStubStop(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -76,47 +82,14 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Stop", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Stop", mixedStubStopSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := timertest.NewMixedStub(t)
-			var seen []timertest.MixedStopCall
-			s.OnStop.OnRecord(func(c timertest.MixedStopCall) { seen = append(seen, c) })
-			_ = mixedStubStop(t, s)
-			_ = mixedStubStop(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Stop")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, timertest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Stop", func(t *testing.T) {
+		t.Run("Stop", func(t *testing.T) {
 			t.Parallel()
-			s := timertest.NewMixedStub(t)
-			_ = mixedStubStop(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStop.CallCount(), 0, "ResetCalls clears the calls of Stop")
-		})
-
-		t.Run("keeps the results of Returns of Stop", func(t *testing.T) {
-			t.Parallel()
-			s := timertest.NewMixedStub(t)
-			want0 := mixedStubStopPins()
-			s.OnStop.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubStop(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Stop")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, timertest.NewMixedStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Stop", mixedStubStopSubject)
 		})
 	})
 
@@ -187,34 +160,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedStopStub checks the methods of MixedStopStub, which configures
-// Stop.
-func TestMixedStopStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Stop", func(t *testing.T) {
-			t.Parallel()
-			s := timertest.NewMixedStub(t)
-			want0 := mixedStubStopPins()
-			s.OnStop.Returns(want0)
-			got0 := mixedStubStop(t, s)
-			assert.Equal(t, got0, want0, "Stop returns the Result that Returns sets")
-		})
-
-		t.Run("configures Stop for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := timertest.NewMixedStub(r)
-			s.OnStop.Strict()
-			var want0 bool
-			s.OnStop.Returns(want0)
-			_ = mixedStubStop(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Stop")
-		})
-	})
-}
-
-// dokimi:provenance sha256:710e06c92ce7b4552a80dda5af2de2b23b3b1970b2450a1d229f1b003ee86a0b
+// dokimi:provenance sha256:5b4f0510741a85fbb3d382a3b83578287f208c0df7b743c676bd3c9a68cdcdae

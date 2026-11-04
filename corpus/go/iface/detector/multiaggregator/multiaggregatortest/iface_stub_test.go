@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator/multiaggregatortest"
 	"go.dokimi.dev/stub"
 )
@@ -45,24 +44,36 @@ func multiAggregatorStubStatsPins() (int, int, error) {
 }
 
 // multiAggregatorStubStatsSubject returns the subject of [stub.Behaviour]
-// for Stats. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for Stats. The subject calls a new double that
+// reports to tb.
 func multiAggregatorStubStatsSubject(
 	tb assert.TB,
 ) stub.Subject[multiaggregatortest.MultiAggregatorStatsCall, multiaggregatortest.MultiAggregatorStatsReturn] {
 	tb.Helper()
 	s := multiaggregatortest.NewMultiAggregatorStub(tb)
 	return stub.Subject[multiaggregatortest.MultiAggregatorStatsCall, multiaggregatortest.MultiAggregatorStatsReturn]{
-		Stub: s.OnStats.MethodStub,
+		Stub:  s.OnStats.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _, _ = multiAggregatorStubStats(tb, s)
+		},
+		Arguments: func(tb assert.TB, c multiaggregatortest.MultiAggregatorStatsCall) {
+			tb.Helper()
+			a0 := multiAggregatorStubStatsArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() multiaggregatortest.MultiAggregatorStatsReturn {
 			got0, got1, got2 := multiAggregatorStubStats(tb, s)
 			return multiaggregatortest.MultiAggregatorStatsReturn{Result0: got0, Result1: got1, Err: got2}
 		},
-		Override: func(mark func()) {
-			s.OnStats.Func(func(_ context.Context) (int, int, error) {
-				mark()
+		Returns: func() multiaggregatortest.MultiAggregatorStatsReturn {
+			want0, want1, want2 := multiAggregatorStubStatsPins()
+			s.OnStats.Returns(want0, want1, want2)
+			return multiaggregatortest.MultiAggregatorStatsReturn{Result0: want0, Result1: want1, Err: want2}
+		},
+		Override: func(seen func(multiaggregatortest.MultiAggregatorStatsCall)) {
+			s.OnStats.Func(func(p0 context.Context) (int, int, error) {
+				seen(multiaggregatortest.MultiAggregatorStatsCall{Ctx: p0})
 				var z0 int
 				var z1 int
 				var z2 error
@@ -93,7 +104,6 @@ func multiAggregatorStubInstanceOf(
 		Call: func() {
 			_, _, _ = multiAggregatorStubStats(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -105,70 +115,14 @@ func TestMultiAggregatorStub(t *testing.T) {
 	t.Run("Stats", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Stats", multiAggregatorStubStatsSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := multiaggregatortest.NewMultiAggregatorStub(t)
-			_, _, _ = multiAggregatorStubStats(t, s)
-			got := s.OnStats.AssertCalledOnce(t, "Stats records the call")
-			a0 := multiAggregatorStubStatsArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := multiaggregatortest.NewMultiAggregatorStub(t)
-			var seen []multiaggregatortest.MultiAggregatorStatsCall
-			s.OnStats.OnRecord(func(c multiaggregatortest.MultiAggregatorStatsCall) { seen = append(seen, c) })
-			_, _, _ = multiAggregatorStubStats(t, s)
-			_, _, _ = multiAggregatorStubStats(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Stats")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) multiAggregatorStubInstance {
-			return multiAggregatorStubInstanceOf(tb, multiaggregatortest.NewMultiAggregatorStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Stats", func(t *testing.T) {
+		t.Run("Stats", func(t *testing.T) {
 			t.Parallel()
-			s := multiaggregatortest.NewMultiAggregatorStub(t)
-			_, _, _ = multiAggregatorStubStats(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStats.CallCount(), 0, "ResetCalls clears the calls of Stats")
-		})
-
-		t.Run("keeps the results of Returns of Stats", func(t *testing.T) {
-			t.Parallel()
-			s := multiaggregatortest.NewMultiAggregatorStub(t)
-			want0, want1, want2 := multiAggregatorStubStatsPins()
-			s.OnStats.Returns(want0, want1, want2)
-			s.ResetCalls()
-			got0, got1, got2 := multiAggregatorStubStats(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Stats")
-			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Stats")
-			expect.ErrorIs(t, got2, want2, "ResetCalls keeps the error of Stats")
-		})
-	})
-
-	t.Run("NewMultiAggregatorStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) multiAggregatorStubInstance {
-			return multiAggregatorStubInstanceOf(tb, multiaggregatortest.NewMultiAggregatorStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMultiAggregatorStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Stats with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Stats-failing")
-			s := multiaggregatortest.NewMultiAggregatorStubFailing(t, want)
-			_, _, r2 := multiAggregatorStubStats(t, s)
-			assert.ErrorIs(t, r2, want, "Stats fails with the error of NewMultiAggregatorStubFailing")
+			stub.ResetBehaviour(t, "Stats", multiAggregatorStubStatsSubject)
 		})
 	})
 
@@ -285,58 +239,4 @@ func TestMultiAggregatorStub(t *testing.T) {
 	})
 }
 
-// TestMultiAggregatorStatsStub checks the methods of
-// MultiAggregatorStatsStub, which configures Stats.
-func TestMultiAggregatorStatsStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Stats", func(t *testing.T) {
-			t.Parallel()
-			s := multiaggregatortest.NewMultiAggregatorStub(t)
-			want0, want1, want2 := multiAggregatorStubStatsPins()
-			s.OnStats.Returns(want0, want1, want2)
-			got0, got1, got2 := multiAggregatorStubStats(t, s)
-			expect.Equal(t, got0, want0, "Stats returns the Result0 that Returns sets")
-			expect.Equal(t, got1, want1, "Stats returns the Result1 that Returns sets")
-			expect.ErrorIs(t, got2, want2, "Stats returns the error that Returns sets")
-		})
-
-		t.Run("configures Stats for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := multiaggregatortest.NewMultiAggregatorStub(r)
-			s.OnStats.Strict()
-			var want0 int
-			var want1 int
-			var want2 error
-			s.OnStats.Returns(want0, want1, want2)
-			_, _, _ = multiAggregatorStubStats(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Stats")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Stats to the function", func(t *testing.T) {
-			t.Parallel()
-			s := multiaggregatortest.NewMultiAggregatorStub(t)
-			var got0 context.Context
-			s.OnStats.Func(func(p0 context.Context) (int, int, error) {
-				got0 = p0
-				var z0 int
-				var z1 int
-				var z2 error
-				return z0, z1, z2
-			})
-			_, _, _ = multiAggregatorStubStats(t, s)
-			a0 := multiAggregatorStubStatsArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:30e8afd161a0b74cb446f4eb3336957185889aa2f932a6834ec8e2e437cbc3be
+// dokimi:provenance sha256:2f97e1e454014fab801010eb877cc320d8a6452f8f0b57a340fcdfd04ab6676f

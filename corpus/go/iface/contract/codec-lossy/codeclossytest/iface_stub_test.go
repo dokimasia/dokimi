@@ -67,25 +67,38 @@ func contractStubDecodePins() (string, error) {
 	return want0, want1
 }
 
-// contractStubEncodeSubject returns the subject of [stub.Behaviour] for
-// Encode. The subject calls a new double that reports to tb.
+// contractStubEncodeSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Encode. The subject calls a new double that
+// reports to tb.
 func contractStubEncodeSubject(
 	tb assert.TB,
 ) stub.Subject[codeclossytest.ContractEncodeCall, codeclossytest.ContractEncodeReturn] {
 	tb.Helper()
 	s := codeclossytest.NewContractStub(tb)
 	return stub.Subject[codeclossytest.ContractEncodeCall, codeclossytest.ContractEncodeReturn]{
-		Stub: s.OnEncode.MethodStub,
+		Stub:  s.OnEncode.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubEncode(tb, s)
+		},
+		Arguments: func(tb assert.TB, c codeclossytest.ContractEncodeCall) {
+			tb.Helper()
+			a0, a1 := contractStubEncodeArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.In, a1, "the call records In")
 		},
 		Result: func() codeclossytest.ContractEncodeReturn {
 			got0, got1 := contractStubEncode(tb, s)
 			return codeclossytest.ContractEncodeReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnEncode.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() codeclossytest.ContractEncodeReturn {
+			want0, want1 := contractStubEncodePins()
+			s.OnEncode.Returns(want0, want1)
+			return codeclossytest.ContractEncodeReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(codeclossytest.ContractEncodeCall)) {
+			s.OnEncode.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(codeclossytest.ContractEncodeCall{Ctx: p0, In: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -98,25 +111,38 @@ func contractStubEncodeSubject(
 	}
 }
 
-// contractStubDecodeSubject returns the subject of [stub.Behaviour] for
-// Decode. The subject calls a new double that reports to tb.
+// contractStubDecodeSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Decode. The subject calls a new double that
+// reports to tb.
 func contractStubDecodeSubject(
 	tb assert.TB,
 ) stub.Subject[codeclossytest.ContractDecodeCall, codeclossytest.ContractDecodeReturn] {
 	tb.Helper()
 	s := codeclossytest.NewContractStub(tb)
 	return stub.Subject[codeclossytest.ContractDecodeCall, codeclossytest.ContractDecodeReturn]{
-		Stub: s.OnDecode.MethodStub,
+		Stub:  s.OnDecode.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubDecode(tb, s)
+		},
+		Arguments: func(tb assert.TB, c codeclossytest.ContractDecodeCall) {
+			tb.Helper()
+			a0, a1 := contractStubDecodeArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.In, a1, "the call records In")
 		},
 		Result: func() codeclossytest.ContractDecodeReturn {
 			got0, got1 := contractStubDecode(tb, s)
 			return codeclossytest.ContractDecodeReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnDecode.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() codeclossytest.ContractDecodeReturn {
+			want0, want1 := contractStubDecodePins()
+			s.OnDecode.Returns(want0, want1)
+			return codeclossytest.ContractDecodeReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(codeclossytest.ContractDecodeCall)) {
+			s.OnDecode.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(codeclossytest.ContractDecodeCall{Ctx: p0, In: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -142,7 +168,6 @@ func contractStubInstanceOf(tb assert.TB, s *codeclossytest.ContractStub) contra
 		Call: func() {
 			_, _ = contractStubEncode(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -154,122 +179,24 @@ func TestContractStub(t *testing.T) {
 	t.Run("Encode", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Encode", contractStubEncodeSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			_, _ = contractStubEncode(t, s)
-			got := s.OnEncode.AssertCalledOnce(t, "Encode records the call")
-			a0, a1 := contractStubEncodeArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.In, a1, "the call records In")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			var seen []codeclossytest.ContractEncodeCall
-			s.OnEncode.OnRecord(func(c codeclossytest.ContractEncodeCall) { seen = append(seen, c) })
-			_, _ = contractStubEncode(t, s)
-			_, _ = contractStubEncode(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Encode")
-		})
 	})
 
 	t.Run("Decode", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Decode", contractStubDecodeSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			_, _ = contractStubDecode(t, s)
-			got := s.OnDecode.AssertCalledOnce(t, "Decode records the call")
-			a0, a1 := contractStubDecodeArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.In, a1, "the call records In")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			var seen []codeclossytest.ContractDecodeCall
-			s.OnDecode.OnRecord(func(c codeclossytest.ContractDecodeCall) { seen = append(seen, c) })
-			_, _ = contractStubDecode(t, s)
-			_, _ = contractStubDecode(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Decode")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
-			return contractStubInstanceOf(tb, codeclossytest.NewContractStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Encode", func(t *testing.T) {
+		t.Run("Encode", func(t *testing.T) {
 			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			_, _ = contractStubEncode(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnEncode.CallCount(), 0, "ResetCalls clears the calls of Encode")
+			stub.ResetBehaviour(t, "Encode", contractStubEncodeSubject)
 		})
 
-		t.Run("keeps the results of Returns of Encode", func(t *testing.T) {
+		t.Run("Decode", func(t *testing.T) {
 			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			want0, want1 := contractStubEncodePins()
-			s.OnEncode.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubEncode(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Encode")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Encode")
-		})
-
-		t.Run("clears the recorded calls of Decode", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			_, _ = contractStubDecode(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnDecode.CallCount(), 0, "ResetCalls clears the calls of Decode")
-		})
-
-		t.Run("keeps the results of Returns of Decode", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			want0, want1 := contractStubDecodePins()
-			s.OnDecode.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubDecode(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Decode")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Decode")
-		})
-	})
-
-	t.Run("NewContractStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
-			return contractStubInstanceOf(tb, codeclossytest.NewContractStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewContractStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Encode with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Encode-failing")
-			s := codeclossytest.NewContractStubFailing(t, want)
-			_, r1 := contractStubEncode(t, s)
-			assert.ErrorIs(t, r1, want, "Encode fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Decode with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Decode-failing")
-			s := codeclossytest.NewContractStubFailing(t, want)
-			_, r1 := contractStubDecode(t, s)
-			assert.ErrorIs(t, r1, want, "Decode fails with the error of NewContractStubFailing")
+			stub.ResetBehaviour(t, "Decode", contractStubDecodeSubject)
 		})
 	})
 
@@ -425,110 +352,4 @@ func TestContractStub(t *testing.T) {
 	})
 }
 
-// TestContractEncodeStub checks the methods of ContractEncodeStub, which
-// configures Encode.
-func TestContractEncodeStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Encode", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			want0, want1 := contractStubEncodePins()
-			s.OnEncode.Returns(want0, want1)
-			got0, got1 := contractStubEncode(t, s)
-			expect.Equal(t, got0, want0, "Encode returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Encode returns the error that Returns sets")
-		})
-
-		t.Run("configures Encode for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := codeclossytest.NewContractStub(r)
-			s.OnEncode.Strict()
-			var want0 string
-			var want1 error
-			s.OnEncode.Returns(want0, want1)
-			_, _ = contractStubEncode(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Encode")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Encode to the function", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnEncode.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubEncode(t, s)
-			a0, a1 := contractStubEncodeArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives In")
-		})
-	})
-}
-
-// TestContractDecodeStub checks the methods of ContractDecodeStub, which
-// configures Decode.
-func TestContractDecodeStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Decode", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			want0, want1 := contractStubDecodePins()
-			s.OnDecode.Returns(want0, want1)
-			got0, got1 := contractStubDecode(t, s)
-			expect.Equal(t, got0, want0, "Decode returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Decode returns the error that Returns sets")
-		})
-
-		t.Run("configures Decode for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := codeclossytest.NewContractStub(r)
-			s.OnDecode.Strict()
-			var want0 string
-			var want1 error
-			s.OnDecode.Returns(want0, want1)
-			_, _ = contractStubDecode(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Decode")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Decode to the function", func(t *testing.T) {
-			t.Parallel()
-			s := codeclossytest.NewContractStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnDecode.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubDecode(t, s)
-			a0, a1 := contractStubDecodeArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives In")
-		})
-	})
-}
-
-// dokimi:provenance sha256:cc5f4ad552b072d501093da95169bad0b8092c4f9cc9bfcf826fe5883c333c82
+// dokimi:provenance sha256:105ecf9f0f2b12862395fd903892b4bd4417981574ac79897dda6ea81a5ca4ac

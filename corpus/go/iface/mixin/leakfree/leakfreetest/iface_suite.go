@@ -15,45 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Acquire/smoke: Acquire returns without a panic for derived inputs.
-//
-// Mixed.Acquire/cancel: Acquire returns an error for a cancelled context.
-//
-// Mixed.Release/smoke: Release returns without a panic for derived inputs.
-//
-// Mixed.Release/cancel: Release returns an error for a cancelled context.
-//
-// Mixed.Outstanding/smoke: Outstanding returns without a panic for derived
-// inputs.
-//
-// Mixed.Outstanding/cancel: Outstanding returns an error for a cancelled
-// context.
-//
-// Mixed.Outstanding/zero-on-error: Outstanding returns the zero value
-// beside an error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Acquire/smoke
-//
-// Mixed.Release/smoke
-//
-// Mixed.Outstanding/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:lifecycle of Mixed.Acquire has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The mixin:leak-free of Mixed.Acquire has the stance needs. The claim
-// releases-on-every-path needs the param machineries=[faults] of the
-// directive suite.
-//
-// The shape:lifecycle of Mixed.Release has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -148,9 +109,6 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 				ID:          MixedChecks.Acquire.Smoke(),
 				Statement:   "Acquire returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -164,9 +122,6 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 				ID:          MixedChecks.Acquire.Cancel(),
 				Statement:   "Acquire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -179,9 +134,6 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 				ID:          MixedChecks.Release.Smoke(),
 				Statement:   "Release returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -195,9 +147,6 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 				ID:          MixedChecks.Release.Cancel(),
 				Statement:   "Release returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -210,9 +159,6 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 				ID:          MixedChecks.Outstanding.Smoke(),
 				Statement:   "Outstanding returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -227,9 +173,6 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 				ID:          MixedChecks.Outstanding.Cancel(),
 				Statement:   "Outstanding returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -243,9 +186,6 @@ func MixedSuite() conform.Suite[leakfree.Mixed] {
 				ID:          MixedChecks.Outstanding.ZeroOnError(),
 				Statement:   "Outstanding returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -541,4 +481,4 @@ func mixedOutstandingValueBeside(h *MixedHandle) leakfree.Mixed {
 	return &mixedOutstandingValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:f91270eece7abcf259cb9e30093571c9b3bd3d3134c30bd937395ca682a99a95
+// dokimi:provenance sha256:3921d76f1320c910c43f328da3becab43f1927f384916f42a9b335e9f9bb50a1

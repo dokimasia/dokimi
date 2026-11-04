@@ -15,37 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Catalog:
-//
-// Catalog.Lookup/smoke: Lookup returns without a panic for derived inputs.
-//
-// Catalog.Lookup/smoke#generated: Lookup returns without a panic for
-// derived inputs.
-//
-// Catalog.Lookup/cancel: Lookup returns an error for a cancelled context.
-//
-// Catalog.Lookup/cancel#generated: Lookup returns an error for a cancelled
-// context.
-//
-// Catalog.Lookup/zero-on-error: Lookup returns the zero value beside an
-// error.
-//
-// Catalog.Lookup/zero-on-error#generated: Lookup returns the zero value
-// beside an error.
-//
-// Catalog.Len/smoke: Len returns without a panic for derived inputs.
-//
-// Catalog.Len/cancel: Len returns an error for a cancelled context.
-//
-// Catalog.Len/zero-on-error: Len returns the zero value beside an error.
-
-// The derived checks of Catalog that witness their laws at the shallow
-// end:
-//
-// Catalog.Lookup/smoke
-//
-// Catalog.Len/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -78,34 +47,16 @@ func (c catalogLookup) Smoke() conform.ID[seededreader.Catalog] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Lookup returns
-// without a panic for derived inputs.
-func (c catalogLookup) SmokeGenerated() conform.ID[seededreader.Catalog] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Lookup returns an error
 // for a cancelled context.
 func (c catalogLookup) Cancel() conform.ID[seededreader.Catalog] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Lookup returns an
-// error for a cancelled context.
-func (c catalogLookup) CancelGenerated() conform.ID[seededreader.Catalog] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Lookup returns the
 // zero value beside an error.
 func (c catalogLookup) ZeroOnError() conform.ID[seededreader.Catalog] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Lookup
-// returns the zero value beside an error.
-func (c catalogLookup) ZeroOnErrorGenerated() conform.ID[seededreader.Catalog] {
-	return c.Check("zero-on-error#generated")
 }
 
 // catalogLen is the name of Catalog.Len, with the identities of its
@@ -144,9 +95,6 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				ID:          CatalogChecks.Lookup.Smoke(),
 				Statement:   "Lookup returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CatalogHandle) {
@@ -158,12 +106,9 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				Defect: catalogLookupPanics,
 			},
 			{
-				ID:          CatalogChecks.Lookup.SmokeGenerated(),
+				ID:          CatalogChecks.Lookup.Smoke().Generated(),
 				Statement:   "Lookup returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CatalogHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[seededreader.Key](), "key")
@@ -178,9 +123,6 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				ID:          CatalogChecks.Lookup.Cancel(),
 				Statement:   "Lookup returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CatalogHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -191,12 +133,9 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				Defect: catalogLookupIgnoresCancel,
 			},
 			{
-				ID:          CatalogChecks.Lookup.CancelGenerated(),
+				ID:          CatalogChecks.Lookup.Cancel().Generated(),
 				Statement:   "Lookup returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CatalogHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[seededreader.Key](), "key")
@@ -211,9 +150,6 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				ID:          CatalogChecks.Lookup.ZeroOnError(),
 				Statement:   "Lookup returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CatalogHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (seededreader.Body, error) {
@@ -223,12 +159,9 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				Defect: catalogLookupValueBeside,
 			},
 			{
-				ID:          CatalogChecks.Lookup.ZeroOnErrorGenerated(),
+				ID:          CatalogChecks.Lookup.ZeroOnError().Generated(),
 				Statement:   "Lookup returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CatalogHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[seededreader.Key](), "key")
@@ -242,9 +175,6 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				ID:          CatalogChecks.Len.Smoke(),
 				Statement:   "Len returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CatalogHandle) {
@@ -259,9 +189,6 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				ID:          CatalogChecks.Len.Cancel(),
 				Statement:   "Len returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CatalogHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -275,9 +202,6 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 				ID:          CatalogChecks.Len.ZeroOnError(),
 				Statement:   "Len returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CatalogHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -549,4 +473,4 @@ func catalogLenValueBeside(h *CatalogHandle) seededreader.Catalog {
 	return &catalogLenValueBesideDefect{catalogOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:fc505c3174b6ca1390cb4930378598349ae9cd1ad7e01a463e07839db5874e27
+// dokimi:provenance sha256:e168c67fcab2ab88a44b32e95795b362356f3850bbed0f0c7323fce210d95824

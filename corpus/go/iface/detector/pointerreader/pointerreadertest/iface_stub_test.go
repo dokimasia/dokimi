@@ -40,25 +40,38 @@ func pointerReaderStubFindPins() *pointerreader.Value {
 	return want0
 }
 
-// pointerReaderStubFindSubject returns the subject of [stub.Behaviour] for
-// Find. The subject calls a new double that reports to tb.
+// pointerReaderStubFindSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Find. The subject calls a new double that
+// reports to tb.
 func pointerReaderStubFindSubject(
 	tb assert.TB,
 ) stub.Subject[pointerreadertest.PointerReaderFindCall, pointerreadertest.PointerReaderFindReturn] {
 	tb.Helper()
 	s := pointerreadertest.NewPointerReaderStub(tb)
 	return stub.Subject[pointerreadertest.PointerReaderFindCall, pointerreadertest.PointerReaderFindReturn]{
-		Stub: s.OnFind.MethodStub,
+		Stub:  s.OnFind.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = pointerReaderStubFind(tb, s)
+		},
+		Arguments: func(tb assert.TB, c pointerreadertest.PointerReaderFindCall) {
+			tb.Helper()
+			a0, a1 := pointerReaderStubFindArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() pointerreadertest.PointerReaderFindReturn {
 			got0 := pointerReaderStubFind(tb, s)
 			return pointerreadertest.PointerReaderFindReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnFind.Func(func(_ context.Context, _ string) *pointerreader.Value {
-				mark()
+		Returns: func() pointerreadertest.PointerReaderFindReturn {
+			want0 := pointerReaderStubFindPins()
+			s.OnFind.Returns(want0)
+			return pointerreadertest.PointerReaderFindReturn{Result: want0}
+		},
+		Override: func(seen func(pointerreadertest.PointerReaderFindCall)) {
+			s.OnFind.Func(func(p0 context.Context, p1 string) *pointerreader.Value {
+				seen(pointerreadertest.PointerReaderFindCall{Ctx: p0, Key: p1})
 				var z0 *pointerreader.Value
 				return z0
 			})
@@ -80,7 +93,6 @@ func pointerReaderStubInstanceOf(tb assert.TB, s *pointerreadertest.PointerReade
 		Call: func() {
 			_ = pointerReaderStubFind(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -92,57 +104,14 @@ func TestPointerReaderStub(t *testing.T) {
 	t.Run("Find", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Find", pointerReaderStubFindSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := pointerreadertest.NewPointerReaderStub(t)
-			_ = pointerReaderStubFind(t, s)
-			got := s.OnFind.AssertCalledOnce(t, "Find records the call")
-			a0, a1 := pointerReaderStubFindArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := pointerreadertest.NewPointerReaderStub(t)
-			var seen []pointerreadertest.PointerReaderFindCall
-			s.OnFind.OnRecord(func(c pointerreadertest.PointerReaderFindCall) { seen = append(seen, c) })
-			_ = pointerReaderStubFind(t, s)
-			_ = pointerReaderStubFind(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Find")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) pointerReaderStubInstance {
-			return pointerReaderStubInstanceOf(tb, pointerreadertest.NewPointerReaderStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Find", func(t *testing.T) {
+		t.Run("Find", func(t *testing.T) {
 			t.Parallel()
-			s := pointerreadertest.NewPointerReaderStub(t)
-			_ = pointerReaderStubFind(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFind.CallCount(), 0, "ResetCalls clears the calls of Find")
-		})
-
-		t.Run("keeps the results of Returns of Find", func(t *testing.T) {
-			t.Parallel()
-			s := pointerreadertest.NewPointerReaderStub(t)
-			want0 := pointerReaderStubFindPins()
-			s.OnFind.Returns(want0)
-			s.ResetCalls()
-			got0 := pointerReaderStubFind(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Find")
-		})
-	})
-
-	t.Run("NewPointerReaderStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) pointerReaderStubInstance {
-			return pointerReaderStubInstanceOf(tb, pointerreadertest.NewPointerReaderStubDelayed(tb, d, clk))
+			stub.ResetBehaviour(t, "Find", pointerReaderStubFindSubject)
 		})
 	})
 
@@ -232,54 +201,4 @@ func TestPointerReaderStub(t *testing.T) {
 	})
 }
 
-// TestPointerReaderFindStub checks the methods of PointerReaderFindStub,
-// which configures Find.
-func TestPointerReaderFindStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Find", func(t *testing.T) {
-			t.Parallel()
-			s := pointerreadertest.NewPointerReaderStub(t)
-			want0 := pointerReaderStubFindPins()
-			s.OnFind.Returns(want0)
-			got0 := pointerReaderStubFind(t, s)
-			assert.Equal(t, got0, want0, "Find returns the Result that Returns sets")
-		})
-
-		t.Run("configures Find for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := pointerreadertest.NewPointerReaderStub(r)
-			s.OnFind.Strict()
-			var want0 *pointerreader.Value
-			s.OnFind.Returns(want0)
-			_ = pointerReaderStubFind(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Find")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Find to the function", func(t *testing.T) {
-			t.Parallel()
-			s := pointerreadertest.NewPointerReaderStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnFind.Func(func(p0 context.Context, p1 string) *pointerreader.Value {
-				got0, got1 = p0, p1
-				var z0 *pointerreader.Value
-				return z0
-			})
-			_ = pointerReaderStubFind(t, s)
-			a0, a1 := pointerReaderStubFindArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:b1088a6954c7f7773d83f8801db8a4ebaba7231aa50aebe2d718d2228b100b0d
+// dokimi:provenance sha256:a2a0d85a50bac4e8b46c676aaa67dcf52bfee8ce1bfd5488fab2dc5779191cba

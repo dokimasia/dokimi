@@ -16,69 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Acquire/smoke: Acquire returns without a panic for derived
-// inputs.
-//
-// Contract.Acquire/smoke#generated: Acquire returns without a panic for
-// derived inputs.
-//
-// Contract.Acquire/cancel: Acquire returns an error for a cancelled
-// context.
-//
-// Contract.Acquire/cancel#generated: Acquire returns an error for a
-// cancelled context.
-//
-// Contract.Acquire/lease: a second Acquire for one key fails with the
-// declared sentinel.
-//
-// Contract.Acquire/lease#generated: a second Acquire for one key fails
-// with the declared sentinel.
-//
-// Contract.Acquire/release-frees-the-lease: Acquire grants a lease again
-// after Release released it.
-//
-// Contract.Acquire/release-frees-the-lease#generated: Acquire grants a
-// lease again after Release released it.
-//
-// Contract.Acquire/one-holder-at-a-time: calls of Acquire with one key at
-// once grant the lease once.
-//
-// Contract.Acquire/one-holder-at-a-time#generated: calls of Acquire with
-// one key at once grant the lease once.
-//
-// Contract.Release/smoke: Release returns without a panic for derived
-// inputs.
-//
-// Contract.Release/smoke#generated: Release returns without a panic for
-// derived inputs.
-//
-// Contract.Release/cancel: Release returns an error for a cancelled
-// context.
-//
-// Contract.Release/cancel#generated: Release returns an error for a
-// cancelled context.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Acquire/smoke
-//
-// Contract.Acquire/lease
-//
-// Contract.Acquire/lease#generated
-//
-// Contract.Release/smoke
-
-// The unclaimed classifications of Contract:
-//
-// The shape:writer of Contract.Acquire has the stance silent. A write is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Contract.Release has the stance silent. A write is
-// an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -111,22 +48,10 @@ func (c contractAcquire) Smoke() conform.ID[lease.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Acquire returns
-// without a panic for derived inputs.
-func (c contractAcquire) SmokeGenerated() conform.ID[lease.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Acquire returns an error
 // for a cancelled context.
 func (c contractAcquire) Cancel() conform.ID[lease.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Acquire returns
-// an error for a cancelled context.
-func (c contractAcquire) CancelGenerated() conform.ID[lease.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // Lease returns the identity of the check that a second Acquire for one
@@ -135,34 +60,16 @@ func (c contractAcquire) Lease() conform.ID[lease.Contract] {
 	return c.Check("lease")
 }
 
-// LeaseGenerated returns the identity of the check that a second Acquire
-// for one key fails with the declared sentinel.
-func (c contractAcquire) LeaseGenerated() conform.ID[lease.Contract] {
-	return c.Check("lease#generated")
-}
-
 // ReleaseFreesTheLease returns the identity of the check that Acquire
 // grants a lease again after Release released it.
 func (c contractAcquire) ReleaseFreesTheLease() conform.ID[lease.Contract] {
 	return c.Check("release-frees-the-lease")
 }
 
-// ReleaseFreesTheLeaseGenerated returns the identity of the check that
-// Acquire grants a lease again after Release released it.
-func (c contractAcquire) ReleaseFreesTheLeaseGenerated() conform.ID[lease.Contract] {
-	return c.Check("release-frees-the-lease#generated")
-}
-
 // OneHolderAtATime returns the identity of the check that calls of Acquire
 // with one key at once grant the lease once.
 func (c contractAcquire) OneHolderAtATime() conform.ID[lease.Contract] {
 	return c.Check("one-holder-at-a-time")
-}
-
-// OneHolderAtATimeGenerated returns the identity of the check that calls
-// of Acquire with one key at once grant the lease once.
-func (c contractAcquire) OneHolderAtATimeGenerated() conform.ID[lease.Contract] {
-	return c.Check("one-holder-at-a-time#generated")
 }
 
 // contractRelease is the name of Contract.Release, with the identities of
@@ -177,22 +84,10 @@ func (c contractRelease) Smoke() conform.ID[lease.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Release returns
-// without a panic for derived inputs.
-func (c contractRelease) SmokeGenerated() conform.ID[lease.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Release returns an error
 // for a cancelled context.
 func (c contractRelease) Cancel() conform.ID[lease.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Release returns
-// an error for a cancelled context.
-func (c contractRelease) CancelGenerated() conform.ID[lease.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -207,9 +102,6 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				ID:          ContractChecks.Acquire.Smoke(),
 				Statement:   "Acquire returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -220,12 +112,9 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractAcquirePanics,
 			},
 			{
-				ID:          ContractChecks.Acquire.SmokeGenerated(),
+				ID:          ContractChecks.Acquire.Smoke().Generated(),
 				Statement:   "Acquire returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -239,9 +128,6 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				ID:          ContractChecks.Acquire.Cancel(),
 				Statement:   "Acquire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -251,12 +137,9 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractAcquireIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Acquire.CancelGenerated(),
+				ID:          ContractChecks.Acquire.Cancel().Generated(),
 				Statement:   "Acquire returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -270,9 +153,6 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				ID:          ContractChecks.Acquire.Lease(),
 				Statement:   "a second Acquire for one key fails with the declared sentinel",
 				Claim:       spec.Lease,
-				Probe:       spec.RefusesTheSecondWrite,
-				Reason:      spec.UnguardedWrite,
-				Law:         spec.GrantedLeaseIsNotGrantedTwice,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -283,12 +163,9 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractAcquireSucceedsAlways,
 			},
 			{
-				ID:          ContractChecks.Acquire.LeaseGenerated(),
+				ID:          ContractChecks.Acquire.Lease().Generated(),
 				Statement:   "a second Acquire for one key fails with the declared sentinel",
 				Claim:       spec.Lease,
-				Probe:       spec.RefusesTheSecondWrite,
-				Reason:      spec.UnguardedWrite,
-				Law:         spec.GrantedLeaseIsNotGrantedTwice,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *ContractHandle, c *prop.Case) {
@@ -303,9 +180,6 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				ID:          ContractChecks.Acquire.ReleaseFreesTheLease(),
 				Statement:   "Acquire grants a lease again after Release released it",
 				Claim:       spec.ReleaseFreesTheLease,
-				Probe:       spec.GrantsAfterRelease,
-				Reason:      spec.KeptAfterRelease,
-				Law:         spec.ReleasedLeaseIsGrantedAgain,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.GrantsAfterRelease(h, func(ctx context.Context) error {
@@ -317,12 +191,9 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractReleaseReleaseKeepsTheLease,
 			},
 			{
-				ID:          ContractChecks.Acquire.ReleaseFreesTheLeaseGenerated(),
+				ID:          ContractChecks.Acquire.ReleaseFreesTheLease().Generated(),
 				Statement:   "Acquire grants a lease again after Release released it",
 				Claim:       spec.ReleaseFreesTheLease,
-				Probe:       spec.GrantsAfterRelease,
-				Reason:      spec.KeptAfterRelease,
-				Law:         spec.ReleasedLeaseIsGrantedAgain,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -338,9 +209,6 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				ID:          ContractChecks.Acquire.OneHolderAtATime(),
 				Statement:   "calls of Acquire with one key at once grant the lease once",
 				Claim:       spec.OneHolderAtATime,
-				Probe:       spec.ExclusiveUnderConcurrency,
-				Reason:      spec.UnguardedWrite,
-				Law:         spec.GrantedLeaseIsNotGrantedTwice,
 				Machineries: []spec.MachineryID{spec.ConcurrentCallers},
 				Entails:     []conform.ID[lease.Contract]{ContractChecks.Acquire.Lease()},
 				Property: func(h *ContractHandle, c *prop.Case) {
@@ -351,14 +219,11 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractAcquireCheckThenGrant,
 			},
 			{
-				ID:          ContractChecks.Acquire.OneHolderAtATimeGenerated(),
+				ID:          ContractChecks.Acquire.OneHolderAtATime().Generated(),
 				Statement:   "calls of Acquire with one key at once grant the lease once",
 				Claim:       spec.OneHolderAtATime,
-				Probe:       spec.ExclusiveUnderConcurrency,
-				Reason:      spec.UnguardedWrite,
-				Law:         spec.GrantedLeaseIsNotGrantedTwice,
 				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedInputs},
-				Entails:     []conform.ID[lease.Contract]{ContractChecks.Acquire.LeaseGenerated()},
+				Entails:     []conform.ID[lease.Contract]{ContractChecks.Acquire.Lease().Generated()},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
 					probe.ExclusiveUnderConcurrency(h, c, func(ctx context.Context) error {
@@ -371,9 +236,6 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				ID:          ContractChecks.Release.Smoke(),
 				Statement:   "Release returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -384,12 +246,9 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractReleasePanics,
 			},
 			{
-				ID:          ContractChecks.Release.SmokeGenerated(),
+				ID:          ContractChecks.Release.Smoke().Generated(),
 				Statement:   "Release returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -403,9 +262,6 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				ID:          ContractChecks.Release.Cancel(),
 				Statement:   "Release returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -415,12 +271,9 @@ func ContractSuite() conform.Suite[lease.Contract] {
 				Defect: contractReleaseIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Release.CancelGenerated(),
+				ID:          ContractChecks.Release.Cancel().Generated(),
 				Statement:   "Release returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -710,4 +563,4 @@ func contractReleaseIgnoresCancel(h *ContractHandle) lease.Contract {
 	return &contractReleaseIgnoresCancelDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6304e1a72297b10317262521c9a4c001a2c1d7fff34da337d817b7ab2ca644d7
+// dokimi:provenance sha256:7d258602adc4fdd7358118bef99db6bc77debe7458b3dc1facc0d00de513bf2c

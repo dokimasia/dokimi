@@ -48,34 +48,7 @@ func TestEverySuite(t *testing.T) {
 				},
 				Defect: func(*kindstest.EveryHandle) kinds.Every { return &everySubject{} },
 			}),
-			conform.Excuse(
-				kindstest.EveryChecks.Fields.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Fields.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Elements.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Elements.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Drain.DrainsTheFeed(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Measure.MeasuresTheShape(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Index.CountsTheNames(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Every]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -97,34 +70,7 @@ func TestEverySuite(t *testing.T) {
 				},
 				Defect: func(*kindstest.EveryHandle) kinds.Every { return &everySubject{} },
 			}),
-			conform.Excuse(
-				kindstest.EveryChecks.Fields.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Fields.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Elements.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Elements.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Drain.DrainsTheFeed(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Measure.MeasuresTheShape(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kindstest.EveryChecks.Index.CountsTheNames(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Every]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -151,10 +97,14 @@ func TestEverySuite(t *testing.T) {
 	})
 }
 
+// everySuite is the suite of Every that the tests of the planted defect of
+// a ceiling apply.
+var everySuite = kindstest.EverySuite()
+
 // everyIdle returns the planted defect of a ceiling of Every with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func everyIdle(h *kindstest.EveryHandle) kinds.Every {
-	return kindstest.EverySuite().Calls[0].Over(h, func() {})
+	return everySuite.Calls[0].Over(h, func() {})
 }
 
 // TestEverySuiteBudgets applies the allocation ceilings of the suite of
@@ -172,34 +122,7 @@ func TestEverySuiteBudgets(t *testing.T) {
 		conform.Ceilings(kindstest.EveryChecks.Index.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(kindstest.EveryChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(kindstest.EveryChecks.Use.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -210,34 +133,7 @@ func FuzzEverySuiteParams(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Params.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -248,34 +144,7 @@ func FuzzEverySuiteFields(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Fields.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -286,34 +155,7 @@ func FuzzEverySuiteElements(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Elements.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -324,34 +166,7 @@ func FuzzEverySuiteResults(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Results.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -362,34 +177,7 @@ func FuzzEverySuitePlace(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Place.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -400,34 +188,7 @@ func FuzzEverySuiteRoute(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Route.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -438,34 +199,7 @@ func FuzzEverySuiteDrain(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Drain.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -476,34 +210,7 @@ func FuzzEverySuiteWatch(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Watch.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -514,34 +221,7 @@ func FuzzEverySuiteMeasure(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Measure.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -552,34 +232,7 @@ func FuzzEverySuiteIndex(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Index.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -590,34 +243,7 @@ func FuzzEverySuiteCount(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Count.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -628,34 +254,7 @@ func FuzzEverySuiteUse(f *testing.F) {
 		f,
 		kindstest.EveryChecks.Use.Callable,
 		everyIdle,
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Fields.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Elements.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Drain.DrainsTheFeed(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Measure.MeasuresTheShape(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kindstest.EveryChecks.Index.CountsTheNames(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[kinds.Every]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -700,4 +299,4 @@ func BenchmarkEverySuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:cd9c806d64f20ea433285818c17166566ddd627070de1fb230bace92c89ff123
+// dokimi:provenance sha256:fae23bb4b1d963c444fdce1269a8c40a8f53c86eb4c432ff90a0e85a13b81818

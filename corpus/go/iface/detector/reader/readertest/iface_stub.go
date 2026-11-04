@@ -180,21 +180,6 @@ func NewReaderStub(tb assert.TB, opts ...ReaderStubOption) *ReaderStub {
 	return s
 }
 
-// NewReaderStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewReaderStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ReaderStubOption) *ReaderStub {
-	return NewReaderStub(tb, append([]ReaderStubOption{
-		ReaderStubWithClock(clk),
-		ReaderStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewReaderStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewReaderStubFailing(tb assert.TB, err error, opts ...ReaderStubOption) *ReaderStub {
-	return NewReaderStub(tb, append([]ReaderStubOption{ReaderStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ReaderStub) ResetCalls() {
@@ -230,4 +215,4 @@ func (s *ReaderStub) Get(ctx context.Context, key string) (reader.Value, error) 
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:5d566b5929ef87b86084f0fe2232e1b2a5d2e2d7e7c5be7807ebdc36112720f1
+// dokimi:provenance sha256:cc79af4ebb060d6ddb9b531eafc70e4c5ca96c5f1e6149d5b22ac89570c7bee7

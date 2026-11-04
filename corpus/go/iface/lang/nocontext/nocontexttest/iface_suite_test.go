@@ -49,38 +49,7 @@ func TestCalculatorSuite(t *testing.T) {
 				},
 				Defect: func(*nocontexttest.CalculatorHandle) nocontext.Calculator { return &calculatorSubject{} },
 			}),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Add.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Add.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Add.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Add.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Divide.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Divide.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Reset.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Reset.RepeatSurvives(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[nocontext.Calculator]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -102,46 +71,20 @@ func TestCalculatorSuite(t *testing.T) {
 				},
 				Defect: func(*nocontexttest.CalculatorHandle) nocontext.Calculator { return &calculatorSubject{} },
 			}),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Add.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Add.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Add.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Add.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Divide.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Divide.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Reset.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				nocontexttest.CalculatorChecks.Reset.RepeatSurvives(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[nocontext.Calculator]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// calculatorSuite is the suite of Calculator that the tests of the planted
+// defect of a ceiling apply.
+var calculatorSuite = nocontexttest.CalculatorSuite()
+
 // calculatorIdle returns the planted defect of a ceiling of Calculator
-// with a spend of nothing, a subject that answers each call at once.
+// with a spend of nothing. Each call of the defect returns its zero
+// results at once.
 func calculatorIdle(h *nocontexttest.CalculatorHandle) nocontext.Calculator {
-	return nocontexttest.CalculatorSuite().Calls[0].Over(h, func() {})
+	return calculatorSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCalculatorSuiteBudgets applies the allocation ceilings of the suite
@@ -155,37 +98,8 @@ func TestCalculatorSuiteBudgets(t *testing.T) {
 		conform.Ceilings(nocontexttest.CalculatorChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(nocontexttest.CalculatorChecks.Divide.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(nocontexttest.CalculatorChecks.Reset.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Divide.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Divide.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Reset.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Reset.RepeatSurvives(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[nocontext.Calculator](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -197,37 +111,8 @@ func FuzzCalculatorSuiteAdd(f *testing.F) {
 		f,
 		nocontexttest.CalculatorChecks.Add.Callable,
 		calculatorIdle,
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Divide.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Divide.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Reset.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Reset.RepeatSurvives(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[nocontext.Calculator](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -239,37 +124,8 @@ func FuzzCalculatorSuiteDivide(f *testing.F) {
 		f,
 		nocontexttest.CalculatorChecks.Divide.Callable,
 		calculatorIdle,
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Divide.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Divide.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Reset.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Reset.RepeatSurvives(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[nocontext.Calculator](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -281,37 +137,8 @@ func FuzzCalculatorSuiteReset(f *testing.F) {
 		f,
 		nocontexttest.CalculatorChecks.Reset.Callable,
 		calculatorIdle,
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Add.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Divide.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Divide.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Reset.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			nocontexttest.CalculatorChecks.Reset.RepeatSurvives(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[nocontext.Calculator](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -330,4 +157,4 @@ func BenchmarkCalculatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:045a83662cc31bf336509f2e23e0fbe40a832e673f3a6cb280e00cc3497afe15
+// dokimi:provenance sha256:9e5428d69b597b84a398b3f12c2502d03850151a0c439e795ee38899da22339b

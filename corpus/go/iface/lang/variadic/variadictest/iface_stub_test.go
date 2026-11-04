@@ -69,23 +69,36 @@ func finderStubFindWithLimitPins() ([]string, error) {
 	return want0, want1
 }
 
-// finderStubFindSubject returns the subject of [stub.Behaviour] for Find.
-// The subject calls a new double that reports to tb.
+// finderStubFindSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Find. The subject calls a new double that
+// reports to tb.
 func finderStubFindSubject(tb assert.TB) stub.Subject[variadictest.FinderFindCall, variadictest.FinderFindReturn] {
 	tb.Helper()
 	s := variadictest.NewFinderStub(tb)
 	return stub.Subject[variadictest.FinderFindCall, variadictest.FinderFindReturn]{
-		Stub: s.OnFind.MethodStub,
+		Stub:  s.OnFind.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = finderStubFind(tb, s)
+		},
+		Arguments: func(tb assert.TB, c variadictest.FinderFindCall) {
+			tb.Helper()
+			a0, a1 := finderStubFindArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Keys, a1, "the call records Keys")
 		},
 		Result: func() variadictest.FinderFindReturn {
 			got0, got1 := finderStubFind(tb, s)
 			return variadictest.FinderFindReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnFind.Func(func(_ context.Context, _ ...string) ([]string, error) {
-				mark()
+		Returns: func() variadictest.FinderFindReturn {
+			want0, want1 := finderStubFindPins()
+			s.OnFind.Returns(want0, want1)
+			return variadictest.FinderFindReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(variadictest.FinderFindCall)) {
+			s.OnFind.Func(func(p0 context.Context, p1 ...string) ([]string, error) {
+				seen(variadictest.FinderFindCall{Ctx: p0, Keys: p1})
 				var z0 []string
 				var z1 error
 				return z0, z1
@@ -99,24 +112,38 @@ func finderStubFindSubject(tb assert.TB) stub.Subject[variadictest.FinderFindCal
 }
 
 // finderStubFindWithLimitSubject returns the subject of [stub.Behaviour]
-// for FindWithLimit. The subject calls a new double that reports to tb.
+// and [stub.ResetBehaviour] for FindWithLimit. The subject calls a new
+// double that reports to tb.
 func finderStubFindWithLimitSubject(
 	tb assert.TB,
 ) stub.Subject[variadictest.FinderFindWithLimitCall, variadictest.FinderFindWithLimitReturn] {
 	tb.Helper()
 	s := variadictest.NewFinderStub(tb)
 	return stub.Subject[variadictest.FinderFindWithLimitCall, variadictest.FinderFindWithLimitReturn]{
-		Stub: s.OnFindWithLimit.MethodStub,
+		Stub:  s.OnFindWithLimit.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = finderStubFindWithLimit(tb, s)
+		},
+		Arguments: func(tb assert.TB, c variadictest.FinderFindWithLimitCall) {
+			tb.Helper()
+			a0, a1, a2 := finderStubFindWithLimitArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Limit, a1, "the call records Limit")
+			expect.Equal(tb, c.Keys, a2, "the call records Keys")
 		},
 		Result: func() variadictest.FinderFindWithLimitReturn {
 			got0, got1 := finderStubFindWithLimit(tb, s)
 			return variadictest.FinderFindWithLimitReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnFindWithLimit.Func(func(_ context.Context, _ int, _ ...string) ([]string, error) {
-				mark()
+		Returns: func() variadictest.FinderFindWithLimitReturn {
+			want0, want1 := finderStubFindWithLimitPins()
+			s.OnFindWithLimit.Returns(want0, want1)
+			return variadictest.FinderFindWithLimitReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(variadictest.FinderFindWithLimitCall)) {
+			s.OnFindWithLimit.Func(func(p0 context.Context, p1 int, p2 ...string) ([]string, error) {
+				seen(variadictest.FinderFindWithLimitCall{Ctx: p0, Limit: p1, Keys: p2})
 				var z0 []string
 				var z1 error
 				return z0, z1
@@ -142,7 +169,6 @@ func finderStubInstanceOf(tb assert.TB, s *variadictest.FinderStub) finderStubIn
 		Call: func() {
 			_, _ = finderStubFind(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -154,123 +180,24 @@ func TestFinderStub(t *testing.T) {
 	t.Run("Find", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Find", finderStubFindSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			_, _ = finderStubFind(t, s)
-			got := s.OnFind.AssertCalledOnce(t, "Find records the call")
-			a0, a1 := finderStubFindArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Keys, a1, "the call records Keys")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			var seen []variadictest.FinderFindCall
-			s.OnFind.OnRecord(func(c variadictest.FinderFindCall) { seen = append(seen, c) })
-			_, _ = finderStubFind(t, s)
-			_, _ = finderStubFind(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Find")
-		})
 	})
 
 	t.Run("FindWithLimit", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "FindWithLimit", finderStubFindWithLimitSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			_, _ = finderStubFindWithLimit(t, s)
-			got := s.OnFindWithLimit.AssertCalledOnce(t, "FindWithLimit records the call")
-			a0, a1, a2 := finderStubFindWithLimitArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Limit, a1, "the call records Limit")
-			expect.Equal(t, got.Keys, a2, "the call records Keys")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			var seen []variadictest.FinderFindWithLimitCall
-			s.OnFindWithLimit.OnRecord(func(c variadictest.FinderFindWithLimitCall) { seen = append(seen, c) })
-			_, _ = finderStubFindWithLimit(t, s)
-			_, _ = finderStubFindWithLimit(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of FindWithLimit")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) finderStubInstance {
-			return finderStubInstanceOf(tb, variadictest.NewFinderStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Find", func(t *testing.T) {
+		t.Run("Find", func(t *testing.T) {
 			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			_, _ = finderStubFind(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFind.CallCount(), 0, "ResetCalls clears the calls of Find")
+			stub.ResetBehaviour(t, "Find", finderStubFindSubject)
 		})
 
-		t.Run("keeps the results of Returns of Find", func(t *testing.T) {
+		t.Run("FindWithLimit", func(t *testing.T) {
 			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			want0, want1 := finderStubFindPins()
-			s.OnFind.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := finderStubFind(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Find")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Find")
-		})
-
-		t.Run("clears the recorded calls of FindWithLimit", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			_, _ = finderStubFindWithLimit(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFindWithLimit.CallCount(), 0, "ResetCalls clears the calls of FindWithLimit")
-		})
-
-		t.Run("keeps the results of Returns of FindWithLimit", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			want0, want1 := finderStubFindWithLimitPins()
-			s.OnFindWithLimit.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := finderStubFindWithLimit(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of FindWithLimit")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of FindWithLimit")
-		})
-	})
-
-	t.Run("NewFinderStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) finderStubInstance {
-			return finderStubInstanceOf(tb, variadictest.NewFinderStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewFinderStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Find with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Find-failing")
-			s := variadictest.NewFinderStubFailing(t, want)
-			_, r1 := finderStubFind(t, s)
-			assert.ErrorIs(t, r1, want, "Find fails with the error of NewFinderStubFailing")
-		})
-
-		t.Run("fails FindWithLimit with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("FindWithLimit-failing")
-			s := variadictest.NewFinderStubFailing(t, want)
-			_, r1 := finderStubFindWithLimit(t, s)
-			assert.ErrorIs(t, r1, want, "FindWithLimit fails with the error of NewFinderStubFailing")
+			stub.ResetBehaviour(t, "FindWithLimit", finderStubFindWithLimitSubject)
 		})
 	})
 
@@ -417,112 +344,4 @@ func TestFinderStub(t *testing.T) {
 	})
 }
 
-// TestFinderFindStub checks the methods of FinderFindStub, which
-// configures Find.
-func TestFinderFindStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Find", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			want0, want1 := finderStubFindPins()
-			s.OnFind.Returns(want0, want1)
-			got0, got1 := finderStubFind(t, s)
-			expect.Equal(t, got0, want0, "Find returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Find returns the error that Returns sets")
-		})
-
-		t.Run("configures Find for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := variadictest.NewFinderStub(r)
-			s.OnFind.Strict()
-			var want0 []string
-			var want1 error
-			s.OnFind.Returns(want0, want1)
-			_, _ = finderStubFind(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Find")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Find to the function", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			var got0 context.Context
-			var got1 []string
-			s.OnFind.Func(func(p0 context.Context, p1 ...string) ([]string, error) {
-				got0, got1 = p0, p1
-				var z0 []string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = finderStubFind(t, s)
-			a0, a1 := finderStubFindArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Keys")
-		})
-	})
-}
-
-// TestFinderFindWithLimitStub checks the methods of
-// FinderFindWithLimitStub, which configures FindWithLimit.
-func TestFinderFindWithLimitStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of FindWithLimit", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			want0, want1 := finderStubFindWithLimitPins()
-			s.OnFindWithLimit.Returns(want0, want1)
-			got0, got1 := finderStubFindWithLimit(t, s)
-			expect.Equal(t, got0, want0, "FindWithLimit returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "FindWithLimit returns the error that Returns sets")
-		})
-
-		t.Run("configures FindWithLimit for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := variadictest.NewFinderStub(r)
-			s.OnFindWithLimit.Strict()
-			var want0 []string
-			var want1 error
-			s.OnFindWithLimit.Returns(want0, want1)
-			_, _ = finderStubFindWithLimit(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of FindWithLimit")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of FindWithLimit to the function", func(t *testing.T) {
-			t.Parallel()
-			s := variadictest.NewFinderStub(t)
-			var got0 context.Context
-			var got1 int
-			var got2 []string
-			s.OnFindWithLimit.Func(func(p0 context.Context, p1 int, p2 ...string) ([]string, error) {
-				got0, got1, got2 = p0, p1, p2
-				var z0 []string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = finderStubFindWithLimit(t, s)
-			a0, a1, a2 := finderStubFindWithLimitArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Limit")
-			expect.Equal(t, got2, a2, "the function receives Keys")
-		})
-	})
-}
-
-// dokimi:provenance sha256:ed00b52aed7b6b78d665e47acc0a2d330c7905b2ff0289ec697ad94e55f5b0df
+// dokimi:provenance sha256:b89767323a88da1f8306606dd19c2230d131486e8417d386ff09953b25c03d7a

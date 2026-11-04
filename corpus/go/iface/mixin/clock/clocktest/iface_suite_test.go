@@ -48,10 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*clocktest.MixedHandle) clock.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				clocktest.MixedChecks.Now.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[clock.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -73,18 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*clocktest.MixedHandle) clock.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				clocktest.MixedChecks.Now.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[clock.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = clocktest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *clocktest.MixedHandle) clock.Mixed {
-	return clocktest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -96,10 +94,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(clocktest.MixedChecks.Now.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			clocktest.MixedChecks.Now.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[clock.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -110,10 +105,7 @@ func FuzzMixedSuiteNow(f *testing.F) {
 		f,
 		clocktest.MixedChecks.Now.Callable,
 		mixedIdle,
-		conform.Excuse(
-			clocktest.MixedChecks.Now.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[clock.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -125,4 +117,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:eb0c1730f140d26ffa38f07a9030f6aab8cad9d5ca825915955d47f15a6ef449
+// dokimi:provenance sha256:e59d335246eb66101794506b81e483fa5576c195edb36426b5f37b82b00e9303

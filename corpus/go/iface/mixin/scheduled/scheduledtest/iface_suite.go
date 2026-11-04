@@ -17,39 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.At/smoke: At returns without a panic for derived inputs.
-//
-// Mixed.At/smoke#generated: At returns without a panic for derived inputs.
-//
-// Mixed.At/cancel: At returns an error for a cancelled context.
-//
-// Mixed.At/cancel#generated: At returns an error for a cancelled context.
-//
-// Mixed.At/scheduled: a task that At registers runs once the clock passes
-// its instant, and not before.
-//
-// Mixed.At/scheduled#generated: a task that At registers runs once the
-// clock passes its instant, and not before.
-//
-// Mixed.Fired/smoke: Fired returns without a panic for derived inputs.
-//
-// Mixed.Fired/cancel: Fired returns an error for a cancelled context.
-//
-// Mixed.Fired/zero-on-error: Fired returns the zero value beside an error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.At/smoke
-//
-// Mixed.Fired/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.At has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -81,34 +48,16 @@ func (c mixedAt) Smoke() conform.ID[scheduled.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that At returns without
-// a panic for derived inputs.
-func (c mixedAt) SmokeGenerated() conform.ID[scheduled.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that At returns an error for a
 // cancelled context.
 func (c mixedAt) Cancel() conform.ID[scheduled.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that At returns an
-// error for a cancelled context.
-func (c mixedAt) CancelGenerated() conform.ID[scheduled.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // Scheduled returns the identity of the check that a task that At
 // registers runs once the clock passes its instant, and not before.
 func (c mixedAt) Scheduled() conform.ID[scheduled.Mixed] {
 	return c.Check("scheduled")
-}
-
-// ScheduledGenerated returns the identity of the check that a task that At
-// registers runs once the clock passes its instant, and not before.
-func (c mixedAt) ScheduledGenerated() conform.ID[scheduled.Mixed] {
-	return c.Check("scheduled#generated")
 }
 
 // mixedFired is the name of Mixed.Fired, with the identities of its
@@ -147,9 +96,6 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				ID:          MixedChecks.At.Smoke(),
 				Statement:   "At returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -160,12 +106,9 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				Defect: mixedAtPanics,
 			},
 			{
-				ID:          MixedChecks.At.SmokeGenerated(),
+				ID:          MixedChecks.At.Smoke().Generated(),
 				Statement:   "At returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnAfter := c.Draw(prop.Of[time.Duration](), "after")
@@ -179,9 +122,6 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				ID:          MixedChecks.At.Cancel(),
 				Statement:   "At returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -191,12 +131,9 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				Defect: mixedAtIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.At.CancelGenerated(),
+				ID:          MixedChecks.At.Cancel().Generated(),
 				Statement:   "At returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnAfter := c.Draw(prop.Of[time.Duration](), "after")
@@ -210,9 +147,6 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				ID:          MixedChecks.At.Scheduled(),
 				Statement:   "a task that At registers runs once the clock passes its instant, and not before",
 				Claim:       spec.Scheduled,
-				Probe:       spec.RunsOnSchedule,
-				Reason:      spec.OffSchedule,
-				Law:         spec.TaskRunsOnceItsInstantPasses,
 				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances},
 				Apply: func(h *MixedHandle) {
 					probe.RunsOnSchedule(h, func(ctx context.Context) (time.Duration, error) {
@@ -227,12 +161,9 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				Around: synctest.Test,
 			},
 			{
-				ID:          MixedChecks.At.ScheduledGenerated(),
+				ID:          MixedChecks.At.Scheduled().Generated(),
 				Statement:   "a task that At registers runs once the clock passes its instant, and not before",
 				Claim:       spec.Scheduled,
-				Probe:       spec.RunsOnSchedule,
-				Reason:      spec.OffSchedule,
-				Law:         spec.TaskRunsOnceItsInstantPasses,
 				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances, spec.GeneratedInputs},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnAfter := c.Draw(prop.Of[time.Duration](), "after")
@@ -251,9 +182,6 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				ID:          MixedChecks.Fired.Smoke(),
 				Statement:   "Fired returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -268,9 +196,6 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				ID:          MixedChecks.Fired.Cancel(),
 				Statement:   "Fired returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -284,9 +209,6 @@ func MixedSuite() conform.Suite[scheduled.Mixed] {
 				ID:          MixedChecks.Fired.ZeroOnError(),
 				Statement:   "Fired returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -540,4 +462,4 @@ func mixedFiredValueBeside(h *MixedHandle) scheduled.Mixed {
 	return &mixedFiredValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:22017fbc24489ef1c9524a02674a5b0bbc4ae99358789915299335b8c33b6da1
+// dokimi:provenance sha256:a9cad16fcb8e3a0e3f2b644b6b3c080eb3e37aaab575b827d28132c0a4384331

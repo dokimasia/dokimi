@@ -15,44 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Signer:
-//
-// Signer.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Signer.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Signer.Put/cancel: Put returns an error for a cancelled context.
-//
-// Signer.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Signer.Sign/smoke: Sign returns without a panic for derived inputs.
-//
-// Signer.Sign/smoke#generated: Sign returns without a panic for derived
-// inputs.
-//
-// Signer.Sign/cancel: Sign returns an error for a cancelled context.
-//
-// Signer.Sign/cancel#generated: Sign returns an error for a cancelled
-// context.
-//
-// Signer.Sign/zero-on-error: Sign returns the zero value beside an error.
-//
-// Signer.Sign/zero-on-error#generated: Sign returns the zero value beside
-// an error.
-
-// The derived checks of Signer that witness their laws at the shallow end:
-//
-// Signer.Put/smoke
-//
-// Signer.Sign/smoke
-
-// The unclaimed classifications of Signer:
-//
-// The shape:composite-writer of Signer.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -84,22 +46,10 @@ func (c signerPut) Smoke() conform.ID[signer.Signer] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c signerPut) SmokeGenerated() conform.ID[signer.Signer] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c signerPut) Cancel() conform.ID[signer.Signer] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c signerPut) CancelGenerated() conform.ID[signer.Signer] {
-	return c.Check("cancel#generated")
 }
 
 // signerSign is the name of Signer.Sign, with the identities of its
@@ -120,34 +70,16 @@ func (c signerSign) Smoke() conform.ID[signer.Signer] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Sign returns
-// without a panic for derived inputs.
-func (c signerSign) SmokeGenerated() conform.ID[signer.Signer] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Sign returns an error for
 // a cancelled context.
 func (c signerSign) Cancel() conform.ID[signer.Signer] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Sign returns an
-// error for a cancelled context.
-func (c signerSign) CancelGenerated() conform.ID[signer.Signer] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Sign returns the zero
 // value beside an error.
 func (c signerSign) ZeroOnError() conform.ID[signer.Signer] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Sign returns
-// the zero value beside an error.
-func (c signerSign) ZeroOnErrorGenerated() conform.ID[signer.Signer] {
-	return c.Check("zero-on-error#generated")
 }
 
 // SignerSuite returns the checks of Signer, and the calls and the budgets
@@ -162,9 +94,6 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				ID:          SignerChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *SignerHandle) {
@@ -175,12 +104,9 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				Defect: signerPutPanics,
 			},
 			{
-				ID:          SignerChecks.Put.SmokeGenerated(),
+				ID:          SignerChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SignerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -195,9 +121,6 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				ID:          SignerChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *SignerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -207,12 +130,9 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				Defect: signerPutIgnoresCancel,
 			},
 			{
-				ID:          SignerChecks.Put.CancelGenerated(),
+				ID:          SignerChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SignerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -227,9 +147,6 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				ID:          SignerChecks.Sign.Smoke(),
 				Statement:   "Sign returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *SignerHandle) {
@@ -241,12 +158,9 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				Defect: signerSignPanics,
 			},
 			{
-				ID:          SignerChecks.Sign.SmokeGenerated(),
+				ID:          SignerChecks.Sign.Smoke().Generated(),
 				Statement:   "Sign returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SignerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -261,9 +175,6 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				ID:          SignerChecks.Sign.Cancel(),
 				Statement:   "Sign returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *SignerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -274,12 +185,9 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				Defect: signerSignIgnoresCancel,
 			},
 			{
-				ID:          SignerChecks.Sign.CancelGenerated(),
+				ID:          SignerChecks.Sign.Cancel().Generated(),
 				Statement:   "Sign returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SignerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -294,9 +202,6 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				ID:          SignerChecks.Sign.ZeroOnError(),
 				Statement:   "Sign returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *SignerHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -306,12 +211,9 @@ func SignerSuite() conform.Suite[signer.Signer] {
 				Defect: signerSignValueBeside,
 			},
 			{
-				ID:          SignerChecks.Sign.ZeroOnErrorGenerated(),
+				ID:          SignerChecks.Sign.ZeroOnError().Generated(),
 				Statement:   "Sign returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SignerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -552,4 +454,4 @@ func signerSignValueBeside(h *SignerHandle) signer.Signer {
 	return &signerSignValueBesideDefect{signerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:6493ff878589b3aeadd4d15e3b48e0b3843c982e24306f29c21c7e217bfe0f63
+// dokimi:provenance sha256:8e3dcf9859148a19b3dcb7c0c73145dc3911bcac28cb8bb775153c8b84dca922

@@ -49,18 +49,7 @@ func TestAggregatorSuite(t *testing.T) {
 				},
 				Defect: func(*aggregatortest.AggregatorHandle) aggregator.Aggregator { return &aggregatorSubject{} },
 			}),
-			conform.Excuse(
-				aggregatortest.AggregatorChecks.Count.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aggregatortest.AggregatorChecks.Count.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aggregatortest.AggregatorChecks.Count.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[aggregator.Aggregator]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -82,26 +71,20 @@ func TestAggregatorSuite(t *testing.T) {
 				},
 				Defect: func(*aggregatortest.AggregatorHandle) aggregator.Aggregator { return &aggregatorSubject{} },
 			}),
-			conform.Excuse(
-				aggregatortest.AggregatorChecks.Count.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aggregatortest.AggregatorChecks.Count.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				aggregatortest.AggregatorChecks.Count.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[aggregator.Aggregator]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// aggregatorSuite is the suite of Aggregator that the tests of the planted
+// defect of a ceiling apply.
+var aggregatorSuite = aggregatortest.AggregatorSuite()
+
 // aggregatorIdle returns the planted defect of a ceiling of Aggregator
-// with a spend of nothing, a subject that answers each call at once.
+// with a spend of nothing. Each call of the defect returns its zero
+// results at once.
 func aggregatorIdle(h *aggregatortest.AggregatorHandle) aggregator.Aggregator {
-	return aggregatortest.AggregatorSuite().Calls[0].Over(h, func() {})
+	return aggregatorSuite.Calls[0].Over(h, func() {})
 }
 
 // TestAggregatorSuiteBudgets applies the allocation ceilings of the suite
@@ -113,17 +96,8 @@ func TestAggregatorSuiteBudgets(t *testing.T) {
 		t,
 		aggregatorIdle,
 		conform.Ceilings(aggregatortest.AggregatorChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			aggregatortest.AggregatorChecks.Count.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aggregatortest.AggregatorChecks.Count.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aggregatortest.AggregatorChecks.Count.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[aggregator.Aggregator](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -135,17 +109,8 @@ func FuzzAggregatorSuiteCount(f *testing.F) {
 		f,
 		aggregatortest.AggregatorChecks.Count.Callable,
 		aggregatorIdle,
-		conform.Excuse(
-			aggregatortest.AggregatorChecks.Count.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aggregatortest.AggregatorChecks.Count.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			aggregatortest.AggregatorChecks.Count.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[aggregator.Aggregator](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -158,4 +123,4 @@ func BenchmarkAggregatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e7e50af400c75992530d85bb84433e090a8b880c0ff6a64fa3836ed79db3a773
+// dokimi:provenance sha256:edcd1d59f2d4a07fdfc37b88a1787fcf3004bf42f8ee0d2cc0fd4a60d168ea71

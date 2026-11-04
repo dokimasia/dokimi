@@ -48,62 +48,7 @@ func TestVaultSuite(t *testing.T) {
 				},
 				Defect: func(*durabletest.VaultHandle) durable.Vault { return &vaultSubject{} },
 			}),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.CorruptionIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[durable.Vault]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -125,70 +70,19 @@ func TestVaultSuite(t *testing.T) {
 				},
 				Defect: func(*durabletest.VaultHandle) durable.Vault { return &vaultSubject{} },
 			}),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.CorruptionIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Put.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durabletest.VaultChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[durable.Vault]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// vaultSuite is the suite of Vault that the tests of the planted defect of
+// a ceiling apply.
+var vaultSuite = durabletest.VaultSuite()
+
 // vaultIdle returns the planted defect of a ceiling of Vault with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func vaultIdle(h *durabletest.VaultHandle) durable.Vault {
-	return durabletest.VaultSuite().Calls[0].Over(h, func() {})
+	return vaultSuite.Calls[0].Over(h, func() {})
 }
 
 // TestVaultSuiteBudgets applies the allocation ceilings of the suite of
@@ -201,62 +95,7 @@ func TestVaultSuiteBudgets(t *testing.T) {
 		vaultIdle,
 		conform.Ceilings(durabletest.VaultChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(durabletest.VaultChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.CorruptionIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[durable.Vault]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -267,62 +106,7 @@ func FuzzVaultSuitePut(f *testing.F) {
 		f,
 		durabletest.VaultChecks.Put.Callable,
 		vaultIdle,
-		conform.Excuse(
-			durabletest.VaultChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.CorruptionIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[durable.Vault]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -333,62 +117,7 @@ func FuzzVaultSuiteGet(f *testing.F) {
 		f,
 		durabletest.VaultChecks.Get.Callable,
 		vaultIdle,
-		conform.Excuse(
-			durabletest.VaultChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.CorruptionIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durabletest.VaultChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[durable.Vault]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -403,4 +132,4 @@ func BenchmarkVaultSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6e9f2b26763dcd700fa7528b2427b1ccc8197e43a78d20ee16095154ee46de2b
+// dokimi:provenance sha256:a37f21ea89f4dc123759a01bc2ec718aa9f975a7abf2ab682320ce0ed550878f

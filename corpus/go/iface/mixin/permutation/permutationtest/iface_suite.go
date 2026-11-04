@@ -16,49 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Add/smoke: Add returns without a panic for derived inputs.
-//
-// Mixed.Add/smoke#generated: Add returns without a panic for derived
-// inputs.
-//
-// Mixed.Add/cancel: Add returns an error for a cancelled context.
-//
-// Mixed.Add/cancel#generated: Add returns an error for a cancelled
-// context.
-//
-// Mixed.Items/smoke: Items returns without a panic for derived inputs.
-//
-// Mixed.Items/cancel: Items returns an error for a cancelled context.
-//
-// Mixed.Items/zero-on-error: Items returns the zero value beside an error.
-//
-// Mixed.Items/permutation: Items gains exactly the elements that Add wrote
-// between two of its calls.
-//
-// Mixed.Items/permutation#generated: Items gains exactly the elements that
-// Add wrote between two of its calls.
-//
-// Mixed.Items/drains-gain-exactly-what-went-in: Items yields the elements
-// of the call before it and the elements that Add wrote since, each as
-// often as it was written, over any sequence of calls.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Add/smoke
-//
-// Mixed.Items/smoke
-//
-// Mixed.Items/permutation
-//
-// Mixed.Items/permutation#generated
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Add has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -90,22 +47,10 @@ func (c mixedAdd) Smoke() conform.ID[permutation.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Add returns
-// without a panic for derived inputs.
-func (c mixedAdd) SmokeGenerated() conform.ID[permutation.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Add returns an error for a
 // cancelled context.
 func (c mixedAdd) Cancel() conform.ID[permutation.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Add returns an
-// error for a cancelled context.
-func (c mixedAdd) CancelGenerated() conform.ID[permutation.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedItems is the name of Mixed.Items, with the identities of its
@@ -138,12 +83,6 @@ func (c mixedItems) Permutation() conform.ID[permutation.Mixed] {
 	return c.Check("permutation")
 }
 
-// PermutationGenerated returns the identity of the check that Items gains
-// exactly the elements that Add wrote between two of its calls.
-func (c mixedItems) PermutationGenerated() conform.ID[permutation.Mixed] {
-	return c.Check("permutation#generated")
-}
-
 // DrainsGainExactlyWhatWentIn returns the identity of the check that Items
 // yields the elements of the call before it and the elements that Add
 // wrote since, each as often as it was written, over any sequence of
@@ -164,9 +103,6 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				ID:          MixedChecks.Add.Smoke(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -177,12 +113,9 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				Defect: mixedAddPanics,
 			},
 			{
-				ID:          MixedChecks.Add.SmokeGenerated(),
+				ID:          MixedChecks.Add.Smoke().Generated(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[permutation.Value](), "v")
@@ -196,9 +129,6 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				ID:          MixedChecks.Add.Cancel(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -208,12 +138,9 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				Defect: mixedAddIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Add.CancelGenerated(),
+				ID:          MixedChecks.Add.Cancel().Generated(),
 				Statement:   "Add returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[permutation.Value](), "v")
@@ -227,9 +154,6 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				ID:          MixedChecks.Items.Smoke(),
 				Statement:   "Items returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -244,9 +168,6 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				ID:          MixedChecks.Items.Cancel(),
 				Statement:   "Items returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -260,9 +181,6 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				ID:          MixedChecks.Items.ZeroOnError(),
 				Statement:   "Items returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) ([]permutation.Value, error) {
@@ -275,9 +193,6 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				ID:          MixedChecks.Items.Permutation(),
 				Statement:   "Items gains exactly the elements that Add wrote between two of its calls",
 				Claim:       spec.Permutation,
-				Probe:       spec.GainsWhatWentIn,
-				Reason:      spec.MiscountedDrain,
-				Law:         spec.DrainGainsExactlyWhatWentIn,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -298,12 +213,9 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				Defect: mixedItemsDrainsNothing,
 			},
 			{
-				ID:          MixedChecks.Items.PermutationGenerated(),
+				ID:          MixedChecks.Items.Permutation().Generated(),
 				Statement:   "Items gains exactly the elements that Add wrote between two of its calls",
 				Claim:       spec.Permutation,
-				Probe:       spec.GainsWhatWentIn,
-				Reason:      spec.MiscountedDrain,
-				Law:         spec.DrainGainsExactlyWhatWentIn,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -331,9 +243,6 @@ func MixedSuite() conform.Suite[permutation.Mixed] {
 				ID:          MixedChecks.Items.DrainsGainExactlyWhatWentIn(),
 				Statement:   "Items yields the elements of the call before it and the elements that Add wrote since, each as often as it was written, over any sequence of calls",
 				Claim:       spec.DrainsGainExactlyWhatWentIn,
-				Probe:       spec.DrainsGainTheWrites,
-				Reason:      spec.MiscountedDrain,
-				Law:         spec.DrainGainsExactlyWhatWentIn,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[permutation.Mixed]{MixedChecks.Items.Permutation()},
 				Property: func(h *MixedHandle, c *prop.Case) {
@@ -660,4 +569,4 @@ func mixedItemsCall(ctx context.Context, subject permutation.Mixed, args []any) 
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:229de73b02fa83bf8a0aa0a9bb03e98dfd0f6aaddc4845424d68ce953d7a3a90
+// dokimi:provenance sha256:f31267c7a504ee9a0615ef5827132878e207bf60a1af29d51f9f5f4953d7010b

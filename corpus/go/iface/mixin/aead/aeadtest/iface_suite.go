@@ -15,51 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Seal/smoke: Seal returns without a panic for derived inputs.
-//
-// Mixed.Seal/deterministic: Seal returns the same value for the same
-// inputs.
-//
-// Mixed.Open/smoke: Open returns without a panic for derived inputs.
-//
-// Mixed.NonceSize/smoke: NonceSize returns without a panic for derived
-// inputs.
-//
-// Mixed.NonceSize/deterministic: NonceSize returns the same value for the
-// same inputs.
-//
-// Mixed.Overhead/smoke: Overhead returns without a panic for derived
-// inputs.
-//
-// Mixed.Overhead/deterministic: Overhead returns the same value for the
-// same inputs.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Seal/smoke
-//
-// Mixed.Seal/deterministic
-//
-// Mixed.Open/smoke
-//
-// Mixed.NonceSize/smoke
-//
-// Mixed.NonceSize/deterministic
-//
-// Mixed.Overhead/smoke
-//
-// Mixed.Overhead/deterministic
-
-// The unclaimed classifications of Mixed:
-//
-// The mixin:sample of Mixed.Seal has the stance silent. The mixin names
-// the builder of the inputs of each derived call of the callable.
-//
-// The mixin:sample of Mixed.Open has the stance silent. The mixin names
-// the builder of the inputs of each derived call of the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -160,9 +115,6 @@ func MixedSuite() conform.Suite[aead.Mixed] {
 				ID:          MixedChecks.Seal.Smoke(),
 				Statement:   "Seal returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.InputsBuiltFromTheSubject, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -178,9 +130,6 @@ func MixedSuite() conform.Suite[aead.Mixed] {
 				ID:          MixedChecks.Seal.Deterministic(),
 				Statement:   "Seal returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.InputsBuiltFromTheSubject, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[aead.Mixed]{MixedChecks.Seal.Smoke()},
@@ -197,9 +146,6 @@ func MixedSuite() conform.Suite[aead.Mixed] {
 				ID:          MixedChecks.Open.Smoke(),
 				Statement:   "Open returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.InputsBuiltFromTheSubject, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -215,9 +161,6 @@ func MixedSuite() conform.Suite[aead.Mixed] {
 				ID:          MixedChecks.NonceSize.Smoke(),
 				Statement:   "NonceSize returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -232,9 +175,6 @@ func MixedSuite() conform.Suite[aead.Mixed] {
 				ID:          MixedChecks.NonceSize.Deterministic(),
 				Statement:   "NonceSize returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[aead.Mixed]{MixedChecks.NonceSize.Smoke()},
@@ -250,9 +190,6 @@ func MixedSuite() conform.Suite[aead.Mixed] {
 				ID:          MixedChecks.Overhead.Smoke(),
 				Statement:   "Overhead returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -267,9 +204,6 @@ func MixedSuite() conform.Suite[aead.Mixed] {
 				ID:          MixedChecks.Overhead.Deterministic(),
 				Statement:   "Overhead returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[aead.Mixed]{MixedChecks.Overhead.Smoke()},
@@ -588,4 +522,4 @@ func mixedOverheadDrifts(h *MixedHandle) aead.Mixed {
 	return &mixedOverheadDriftsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:05a03bed9b5000e1bf93ca5608cf62d98cf3f589c7e8c16a09f37d7aab45168f
+// dokimi:provenance sha256:5fc04e3552418908b83f44fde73976a65adb39de3dc377c7f64d567172fadf96

@@ -67,23 +67,36 @@ func mixedStubNewPins() (string, error) {
 	return want0, want1
 }
 
-// mixedStubOldSubject returns the subject of [stub.Behaviour] for Old. The
-// subject calls a new double that reports to tb.
+// mixedStubOldSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Old. The subject calls a new double that
+// reports to tb.
 func mixedStubOldSubject(tb assert.TB) stub.Subject[deprecatedtest.MixedOldCall, deprecatedtest.MixedOldReturn] {
 	tb.Helper()
 	s := deprecatedtest.NewMixedStub(tb)
 	return stub.Subject[deprecatedtest.MixedOldCall, deprecatedtest.MixedOldReturn]{
-		Stub: s.OnOld.MethodStub,
+		Stub:  s.OnOld.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubOld(tb, s)
+		},
+		Arguments: func(tb assert.TB, c deprecatedtest.MixedOldCall) {
+			tb.Helper()
+			a0, a1 := mixedStubOldArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() deprecatedtest.MixedOldReturn {
 			got0, got1 := mixedStubOld(tb, s)
 			return deprecatedtest.MixedOldReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnOld.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() deprecatedtest.MixedOldReturn {
+			want0, want1 := mixedStubOldPins()
+			s.OnOld.Returns(want0, want1)
+			return deprecatedtest.MixedOldReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(deprecatedtest.MixedOldCall)) {
+			s.OnOld.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(deprecatedtest.MixedOldCall{Ctx: p0, Key: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -96,23 +109,36 @@ func mixedStubOldSubject(tb assert.TB) stub.Subject[deprecatedtest.MixedOldCall,
 	}
 }
 
-// mixedStubNewSubject returns the subject of [stub.Behaviour] for New. The
-// subject calls a new double that reports to tb.
+// mixedStubNewSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for New. The subject calls a new double that
+// reports to tb.
 func mixedStubNewSubject(tb assert.TB) stub.Subject[deprecatedtest.MixedNewCall, deprecatedtest.MixedNewReturn] {
 	tb.Helper()
 	s := deprecatedtest.NewMixedStub(tb)
 	return stub.Subject[deprecatedtest.MixedNewCall, deprecatedtest.MixedNewReturn]{
-		Stub: s.OnNew.MethodStub,
+		Stub:  s.OnNew.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubNew(tb, s)
+		},
+		Arguments: func(tb assert.TB, c deprecatedtest.MixedNewCall) {
+			tb.Helper()
+			a0, a1 := mixedStubNewArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() deprecatedtest.MixedNewReturn {
 			got0, got1 := mixedStubNew(tb, s)
 			return deprecatedtest.MixedNewReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnNew.Func(func(_ context.Context, _ string) (string, error) {
-				mark()
+		Returns: func() deprecatedtest.MixedNewReturn {
+			want0, want1 := mixedStubNewPins()
+			s.OnNew.Returns(want0, want1)
+			return deprecatedtest.MixedNewReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(deprecatedtest.MixedNewCall)) {
+			s.OnNew.Func(func(p0 context.Context, p1 string) (string, error) {
+				seen(deprecatedtest.MixedNewCall{Ctx: p0, Key: p1})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -138,7 +164,6 @@ func mixedStubInstanceOf(tb assert.TB, s *deprecatedtest.MixedStub) mixedStubIns
 		Call: func() {
 			_, _ = mixedStubOld(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -150,122 +175,24 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Old", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Old", mixedStubOldSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			_, _ = mixedStubOld(t, s)
-			got := s.OnOld.AssertCalledOnce(t, "Old records the call")
-			a0, a1 := mixedStubOldArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			var seen []deprecatedtest.MixedOldCall
-			s.OnOld.OnRecord(func(c deprecatedtest.MixedOldCall) { seen = append(seen, c) })
-			_, _ = mixedStubOld(t, s)
-			_, _ = mixedStubOld(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Old")
-		})
 	})
 
 	t.Run("New", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "New", mixedStubNewSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			_, _ = mixedStubNew(t, s)
-			got := s.OnNew.AssertCalledOnce(t, "New records the call")
-			a0, a1 := mixedStubNewArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			var seen []deprecatedtest.MixedNewCall
-			s.OnNew.OnRecord(func(c deprecatedtest.MixedNewCall) { seen = append(seen, c) })
-			_, _ = mixedStubNew(t, s)
-			_, _ = mixedStubNew(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of New")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, deprecatedtest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Old", func(t *testing.T) {
+		t.Run("Old", func(t *testing.T) {
 			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			_, _ = mixedStubOld(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnOld.CallCount(), 0, "ResetCalls clears the calls of Old")
+			stub.ResetBehaviour(t, "Old", mixedStubOldSubject)
 		})
 
-		t.Run("keeps the results of Returns of Old", func(t *testing.T) {
+		t.Run("New", func(t *testing.T) {
 			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			want0, want1 := mixedStubOldPins()
-			s.OnOld.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubOld(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Old")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Old")
-		})
-
-		t.Run("clears the recorded calls of New", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			_, _ = mixedStubNew(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNew.CallCount(), 0, "ResetCalls clears the calls of New")
-		})
-
-		t.Run("keeps the results of Returns of New", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			want0, want1 := mixedStubNewPins()
-			s.OnNew.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubNew(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of New")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of New")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, deprecatedtest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Old with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Old-failing")
-			s := deprecatedtest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubOld(t, s)
-			assert.ErrorIs(t, r1, want, "Old fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails New with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("New-failing")
-			s := deprecatedtest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubNew(t, s)
-			assert.ErrorIs(t, r1, want, "New fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "New", mixedStubNewSubject)
 		})
 	})
 
@@ -412,110 +339,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedOldStub checks the methods of MixedOldStub, which configures
-// Old.
-func TestMixedOldStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Old", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			want0, want1 := mixedStubOldPins()
-			s.OnOld.Returns(want0, want1)
-			got0, got1 := mixedStubOld(t, s)
-			expect.Equal(t, got0, want0, "Old returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Old returns the error that Returns sets")
-		})
-
-		t.Run("configures Old for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := deprecatedtest.NewMixedStub(r)
-			s.OnOld.Strict()
-			var want0 string
-			var want1 error
-			s.OnOld.Returns(want0, want1)
-			_, _ = mixedStubOld(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Old")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Old to the function", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnOld.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubOld(t, s)
-			a0, a1 := mixedStubOldArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestMixedNewStub checks the methods of MixedNewStub, which configures
-// New.
-func TestMixedNewStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of New", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			want0, want1 := mixedStubNewPins()
-			s.OnNew.Returns(want0, want1)
-			got0, got1 := mixedStubNew(t, s)
-			expect.Equal(t, got0, want0, "New returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "New returns the error that Returns sets")
-		})
-
-		t.Run("configures New for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := deprecatedtest.NewMixedStub(r)
-			s.OnNew.Strict()
-			var want0 string
-			var want1 error
-			s.OnNew.Returns(want0, want1)
-			_, _ = mixedStubNew(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of New")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of New to the function", func(t *testing.T) {
-			t.Parallel()
-			s := deprecatedtest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnNew.Func(func(p0 context.Context, p1 string) (string, error) {
-				got0, got1 = p0, p1
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubNew(t, s)
-			a0, a1 := mixedStubNewArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:454571aaa0d5e9226996e552099b4c186094c4bac34f311b63c1d66cbc1425c4
+// dokimi:provenance sha256:42a0ab3960d00e08431125b652ff8ef5a57e6152138f74a80e928e10e577bc2a

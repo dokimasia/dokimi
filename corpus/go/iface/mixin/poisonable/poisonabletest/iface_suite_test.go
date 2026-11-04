@@ -48,26 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*poisonabletest.MixedHandle) poisonable.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Fail.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Fail.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Probe.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Probe.Poisonable(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[poisonable.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -89,34 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*poisonabletest.MixedHandle) poisonable.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Fail.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Fail.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Probe.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Probe.Poisonable(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[poisonable.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = poisonabletest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *poisonabletest.MixedHandle) poisonable.Mixed {
-	return poisonabletest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -129,26 +95,7 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(poisonabletest.MixedChecks.Fail.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(poisonabletest.MixedChecks.Probe.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Fail.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Fail.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.Poisonable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[poisonable.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -159,26 +106,7 @@ func FuzzMixedSuiteFail(f *testing.F) {
 		f,
 		poisonabletest.MixedChecks.Fail.Callable,
 		mixedIdle,
-		conform.Excuse(
-			poisonabletest.MixedChecks.Fail.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Fail.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.Poisonable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[poisonable.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -189,26 +117,7 @@ func FuzzMixedSuiteProbe(f *testing.F) {
 		f,
 		poisonabletest.MixedChecks.Probe.Callable,
 		mixedIdle,
-		conform.Excuse(
-			poisonabletest.MixedChecks.Fail.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Fail.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.Poisonable(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			poisonabletest.MixedChecks.Probe.FreshReportsNoPoison(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[poisonable.Mixed]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -223,4 +132,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:40c5d9c5b015d7f787a9a1fde3e1c0eba80bc7bffe4ba1486289b2dbe6619d42
+// dokimi:provenance sha256:c333d1b76da885d7a2012e5840325c91b7a998d2eea8719f80c377d9168a36c6

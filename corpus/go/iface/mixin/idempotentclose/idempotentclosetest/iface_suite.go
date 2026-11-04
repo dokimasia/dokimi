@@ -15,33 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Closer:
-//
-// Closer.Close/smoke: Close returns without a panic for derived inputs.
-//
-// Closer.Close/cancel: Close returns an error for a cancelled context.
-//
-// Closer.Close/idempotent: a second identical Close succeeds after the
-// first.
-//
-// Closer.Stats/smoke: Stats returns without a panic for derived inputs.
-//
-// Closer.Stats/cancel: Stats returns an error for a cancelled context.
-//
-// Closer.Stats/zero-on-error: Stats returns the zero value beside an
-// error.
-
-// The derived checks of Closer that witness their laws at the shallow end:
-//
-// Closer.Close/smoke
-//
-// Closer.Stats/smoke
-
-// The unclaimed classifications of Closer:
-//
-// The shape:lifecycle of Closer.Close has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -122,9 +95,6 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 				ID:          CloserChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CloserHandle) {
@@ -138,9 +108,6 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 				ID:          CloserChecks.Close.Cancel(),
 				Statement:   "Close returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CloserHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -153,9 +120,6 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 				ID:          CloserChecks.Close.Idempotent(),
 				Statement:   "a second identical Close succeeds after the first",
 				Claim:       spec.Idempotent,
-				Probe:       spec.RepeatIsQuiet,
-				Reason:      spec.RefusedRepeat,
-				Law:         spec.RepeatIsAccepted,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CloserHandle) {
 					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
@@ -168,9 +132,6 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 				ID:          CloserChecks.Stats.Smoke(),
 				Statement:   "Stats returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CloserHandle) {
@@ -185,9 +146,6 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 				ID:          CloserChecks.Stats.Cancel(),
 				Statement:   "Stats returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CloserHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -201,9 +159,6 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 				ID:          CloserChecks.Stats.ZeroOnError(),
 				Statement:   "Stats returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CloserHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -468,4 +423,4 @@ func closerStatsValueBeside(h *CloserHandle) idempotentclose.Closer {
 	return &closerStatsValueBesideDefect{closerOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:7be39f28577fccfb2d0c14f2542bb108eefd66d5eeb4a3bb85da91ac430f1091
+// dokimi:provenance sha256:251f3bb4e04dffdeee48d3bfc7af378814289cf4b4d7d410a3e15f4fc22a54da

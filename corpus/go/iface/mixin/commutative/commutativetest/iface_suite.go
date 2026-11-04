@@ -15,58 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Apply/smoke: Apply returns without a panic for derived inputs.
-//
-// Mixed.Apply/smoke#generated: Apply returns without a panic for derived
-// inputs.
-//
-// Mixed.Apply/cancel: Apply returns an error for a cancelled context.
-//
-// Mixed.Apply/cancel#generated: Apply returns an error for a cancelled
-// context.
-//
-// Mixed.Total/smoke: Total returns without a panic for derived inputs.
-//
-// Mixed.Total/cancel: Total returns an error for a cancelled context.
-//
-// Mixed.Total/zero-on-error: Total returns the zero value beside an error.
-//
-// Mixed.Sum/smoke: Sum returns without a panic for derived inputs.
-//
-// Mixed.Sum/smoke#generated: Sum returns without a panic for derived
-// inputs.
-//
-// Mixed.Sum/deterministic: Sum returns the same value for the same inputs.
-//
-// Mixed.Sum/deterministic#generated: Sum returns the same value for the
-// same inputs.
-//
-// Mixed.Sum/commutative: Sum returns one value for two inputs in either
-// order.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Apply/smoke
-//
-// Mixed.Total/smoke
-//
-// Mixed.Sum/smoke
-//
-// Mixed.Sum/deterministic
-
-// The refused claims of Mixed:
-//
-// Mixed.Apply/commutative: Apply does not take two inputs of one type. The
-// remedy is to remove the classification, or give Apply two inputs of one
-// type.
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Apply has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -101,22 +49,10 @@ func (c mixedApply) Smoke() conform.ID[commutative.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Apply returns
-// without a panic for derived inputs.
-func (c mixedApply) SmokeGenerated() conform.ID[commutative.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Apply returns an error for
 // a cancelled context.
 func (c mixedApply) Cancel() conform.ID[commutative.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Apply returns an
-// error for a cancelled context.
-func (c mixedApply) CancelGenerated() conform.ID[commutative.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedTotal is the name of Mixed.Total, with the identities of its
@@ -154,22 +90,10 @@ func (c mixedSum) Smoke() conform.ID[commutative.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Sum returns
-// without a panic for derived inputs.
-func (c mixedSum) SmokeGenerated() conform.ID[commutative.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Sum returns the
 // same value for the same inputs.
 func (c mixedSum) Deterministic() conform.ID[commutative.Mixed] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Sum
-// returns the same value for the same inputs.
-func (c mixedSum) DeterministicGenerated() conform.ID[commutative.Mixed] {
-	return c.Check("deterministic#generated")
 }
 
 // Commutative returns the identity of the check that Sum returns one value
@@ -190,9 +114,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				ID:          MixedChecks.Apply.Smoke(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -203,12 +124,9 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				Defect: mixedApplyPanics,
 			},
 			{
-				ID:          MixedChecks.Apply.SmokeGenerated(),
+				ID:          MixedChecks.Apply.Smoke().Generated(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[commutative.Delta](), "d")
@@ -222,9 +140,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				ID:          MixedChecks.Apply.Cancel(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -234,12 +149,9 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				Defect: mixedApplyIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Apply.CancelGenerated(),
+				ID:          MixedChecks.Apply.Cancel().Generated(),
 				Statement:   "Apply returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[commutative.Delta](), "d")
@@ -253,9 +165,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				ID:          MixedChecks.Total.Smoke(),
 				Statement:   "Total returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -270,9 +179,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				ID:          MixedChecks.Total.Cancel(),
 				Statement:   "Total returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -286,9 +192,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				ID:          MixedChecks.Total.ZeroOnError(),
 				Statement:   "Total returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -301,9 +204,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				ID:          MixedChecks.Sum.Smoke(),
 				Statement:   "Sum returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -315,12 +215,9 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				Defect: mixedSumPanics,
 			},
 			{
-				ID:          MixedChecks.Sum.SmokeGenerated(),
+				ID:          MixedChecks.Sum.Smoke().Generated(),
 				Statement:   "Sum returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnA := c.Draw(prop.Of[commutative.Delta](), "a")
@@ -336,9 +233,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				ID:          MixedChecks.Sum.Deterministic(),
 				Statement:   "Sum returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[commutative.Mixed]{MixedChecks.Sum.Smoke()},
@@ -351,14 +245,11 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				Defect: mixedSumDrifts,
 			},
 			{
-				ID:          MixedChecks.Sum.DeterministicGenerated(),
+				ID:          MixedChecks.Sum.Deterministic().Generated(),
 				Statement:   "Sum returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[commutative.Mixed]{MixedChecks.Sum.SmokeGenerated()},
+				Entails:     []conform.ID[commutative.Mixed]{MixedChecks.Sum.Smoke().Generated()},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnA := c.Draw(prop.Of[commutative.Delta](), "a")
 					drawnB := c.Draw(prop.Of[commutative.Delta](), "b")
@@ -373,9 +264,6 @@ func MixedSuite() conform.Suite[commutative.Mixed] {
 				ID:          MixedChecks.Sum.Commutative(),
 				Statement:   "Sum returns one value for two inputs in either order",
 				Claim:       spec.Commutative,
-				Probe:       spec.EitherOrderAgrees,
-				Reason:      spec.OrderDependent,
-				Law:         spec.CombiningIgnoresTheOrder,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnA := c.Draw(prop.Of[commutative.Delta](), "a")
@@ -697,4 +585,4 @@ func mixedSumIgnoresTheSecondInput(h *MixedHandle) commutative.Mixed {
 	return &mixedSumIgnoresTheSecondInputDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:1b8040c3aef02f832be6c37411c124a4d9c6357fc4efef1272600cea9dc2dd83
+// dokimi:provenance sha256:d5bb19d3972ee0bc2e5be0db98b20917709eb4911988890402f912c959777d07

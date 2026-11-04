@@ -145,21 +145,6 @@ func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	return s
 }
 
-// NewMixedStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MixedStubOption) *MixedStub {
-	return NewMixedStub(tb, append([]MixedStubOption{
-		MixedStubWithClock(clk),
-		MixedStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewMixedStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewMixedStubFailing(tb assert.TB, err error, opts ...MixedStubOption) *MixedStub {
-	return NewMixedStub(tb, append([]MixedStubOption{MixedStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MixedStub) ResetCalls() {
@@ -463,21 +448,6 @@ func NewTxnStub(tb assert.TB, opts ...TxnStubOption) *TxnStub {
 	return s
 }
 
-// NewTxnStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewTxnStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...TxnStubOption) *TxnStub {
-	return NewTxnStub(tb, append([]TxnStubOption{
-		TxnStubWithClock(clk),
-		TxnStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewTxnStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewTxnStubFailing(tb assert.TB, err error, opts ...TxnStubOption) *TxnStub {
-	return NewTxnStub(tb, append([]TxnStubOption{TxnStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *TxnStub) ResetCalls() {
@@ -597,4 +567,4 @@ func (s *TxnStub) Load(ctx context.Context, key string) (int64, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:e3ac5c06d55b538f4d8d3566f48fc5ba7de098b2277550d1c360b504d8cf08d8
+// dokimi:provenance sha256:c43613612548825deda461015caf06e197ebd9fc7278656274ea73e8071afc11

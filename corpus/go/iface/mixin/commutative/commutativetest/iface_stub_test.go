@@ -88,25 +88,38 @@ func mixedStubSumPins() int {
 	return want0
 }
 
-// mixedStubApplySubject returns the subject of [stub.Behaviour] for Apply.
-// The subject calls a new double that reports to tb.
+// mixedStubApplySubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Apply. The subject calls a new double that
+// reports to tb.
 func mixedStubApplySubject(
 	tb assert.TB,
 ) stub.Subject[commutativetest.MixedApplyCall, commutativetest.MixedApplyReturn] {
 	tb.Helper()
 	s := commutativetest.NewMixedStub(tb)
 	return stub.Subject[commutativetest.MixedApplyCall, commutativetest.MixedApplyReturn]{
-		Stub: s.OnApply.MethodStub,
+		Stub:  s.OnApply.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubApply(tb, s)
+		},
+		Arguments: func(tb assert.TB, c commutativetest.MixedApplyCall) {
+			tb.Helper()
+			a0, a1 := mixedStubApplyArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.D, a1, "the call records D")
 		},
 		Result: func() commutativetest.MixedApplyReturn {
 			got0 := mixedStubApply(tb, s)
 			return commutativetest.MixedApplyReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnApply.Func(func(_ context.Context, _ commutative.Delta) error {
-				mark()
+		Returns: func() commutativetest.MixedApplyReturn {
+			want0 := mixedStubApplyPins()
+			s.OnApply.Returns(want0)
+			return commutativetest.MixedApplyReturn{Err: want0}
+		},
+		Override: func(seen func(commutativetest.MixedApplyCall)) {
+			s.OnApply.Func(func(p0 context.Context, p1 commutative.Delta) error {
+				seen(commutativetest.MixedApplyCall{Ctx: p0, D: p1})
 				var z0 error
 				return z0
 			})
@@ -118,25 +131,37 @@ func mixedStubApplySubject(
 	}
 }
 
-// mixedStubTotalSubject returns the subject of [stub.Behaviour] for Total.
-// The subject calls a new double that reports to tb.
+// mixedStubTotalSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Total. The subject calls a new double that
+// reports to tb.
 func mixedStubTotalSubject(
 	tb assert.TB,
 ) stub.Subject[commutativetest.MixedTotalCall, commutativetest.MixedTotalReturn] {
 	tb.Helper()
 	s := commutativetest.NewMixedStub(tb)
 	return stub.Subject[commutativetest.MixedTotalCall, commutativetest.MixedTotalReturn]{
-		Stub: s.OnTotal.MethodStub,
+		Stub:  s.OnTotal.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = mixedStubTotal(tb, s)
+		},
+		Arguments: func(tb assert.TB, c commutativetest.MixedTotalCall) {
+			tb.Helper()
+			a0 := mixedStubTotalArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() commutativetest.MixedTotalReturn {
 			got0, got1 := mixedStubTotal(tb, s)
 			return commutativetest.MixedTotalReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnTotal.Func(func(_ context.Context) (int, error) {
-				mark()
+		Returns: func() commutativetest.MixedTotalReturn {
+			want0, want1 := mixedStubTotalPins()
+			s.OnTotal.Returns(want0, want1)
+			return commutativetest.MixedTotalReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(commutativetest.MixedTotalCall)) {
+			s.OnTotal.Func(func(p0 context.Context) (int, error) {
+				seen(commutativetest.MixedTotalCall{Ctx: p0})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -149,23 +174,36 @@ func mixedStubTotalSubject(
 	}
 }
 
-// mixedStubSumSubject returns the subject of [stub.Behaviour] for Sum. The
-// subject calls a new double that reports to tb.
+// mixedStubSumSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Sum. The subject calls a new double that
+// reports to tb.
 func mixedStubSumSubject(tb assert.TB) stub.Subject[commutativetest.MixedSumCall, commutativetest.MixedSumReturn] {
 	tb.Helper()
 	s := commutativetest.NewMixedStub(tb)
 	return stub.Subject[commutativetest.MixedSumCall, commutativetest.MixedSumReturn]{
-		Stub: s.OnSum.MethodStub,
+		Stub:  s.OnSum.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = mixedStubSum(tb, s)
+		},
+		Arguments: func(tb assert.TB, c commutativetest.MixedSumCall) {
+			tb.Helper()
+			a0, a1 := mixedStubSumArgs(tb)
+			expect.Equal(tb, c.A, a0, "the call records A")
+			expect.Equal(tb, c.B, a1, "the call records B")
 		},
 		Result: func() commutativetest.MixedSumReturn {
 			got0 := mixedStubSum(tb, s)
 			return commutativetest.MixedSumReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnSum.Func(func(_, _ commutative.Delta) int {
-				mark()
+		Returns: func() commutativetest.MixedSumReturn {
+			want0 := mixedStubSumPins()
+			s.OnSum.Returns(want0)
+			return commutativetest.MixedSumReturn{Result: want0}
+		},
+		Override: func(seen func(commutativetest.MixedSumCall)) {
+			s.OnSum.Func(func(p0, p1 commutative.Delta) int {
+				seen(commutativetest.MixedSumCall{A: p0, B: p1})
 				var z0 int
 				return z0
 			})
@@ -186,7 +224,6 @@ func mixedStubInstanceOf(tb assert.TB, s *commutativetest.MixedStub) mixedStubIn
 		Call: func() {
 			_ = mixedStubApply(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -198,163 +235,34 @@ func TestMixedStub(t *testing.T) {
 	t.Run("Apply", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Apply", mixedStubApplySubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			_ = mixedStubApply(t, s)
-			got := s.OnApply.AssertCalledOnce(t, "Apply records the call")
-			a0, a1 := mixedStubApplyArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.D, a1, "the call records D")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			var seen []commutativetest.MixedApplyCall
-			s.OnApply.OnRecord(func(c commutativetest.MixedApplyCall) { seen = append(seen, c) })
-			_ = mixedStubApply(t, s)
-			_ = mixedStubApply(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Apply")
-		})
 	})
 
 	t.Run("Total", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Total", mixedStubTotalSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			_, _ = mixedStubTotal(t, s)
-			got := s.OnTotal.AssertCalledOnce(t, "Total records the call")
-			a0 := mixedStubTotalArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			var seen []commutativetest.MixedTotalCall
-			s.OnTotal.OnRecord(func(c commutativetest.MixedTotalCall) { seen = append(seen, c) })
-			_, _ = mixedStubTotal(t, s)
-			_, _ = mixedStubTotal(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Total")
-		})
 	})
 
 	t.Run("Sum", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Sum", mixedStubSumSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			_ = mixedStubSum(t, s)
-			got := s.OnSum.AssertCalledOnce(t, "Sum records the call")
-			a0, a1 := mixedStubSumArgs(t)
-			expect.Equal(t, got.A, a0, "the call records A")
-			expect.Equal(t, got.B, a1, "the call records B")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			var seen []commutativetest.MixedSumCall
-			s.OnSum.OnRecord(func(c commutativetest.MixedSumCall) { seen = append(seen, c) })
-			_ = mixedStubSum(t, s)
-			_ = mixedStubSum(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Sum")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
-			return mixedStubInstanceOf(tb, commutativetest.NewMixedStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Apply", func(t *testing.T) {
+		t.Run("Apply", func(t *testing.T) {
 			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			_ = mixedStubApply(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnApply.CallCount(), 0, "ResetCalls clears the calls of Apply")
+			stub.ResetBehaviour(t, "Apply", mixedStubApplySubject)
 		})
 
-		t.Run("keeps the results of Returns of Apply", func(t *testing.T) {
+		t.Run("Total", func(t *testing.T) {
 			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			want0 := mixedStubApplyPins()
-			s.OnApply.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubApply(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Apply")
+			stub.ResetBehaviour(t, "Total", mixedStubTotalSubject)
 		})
 
-		t.Run("clears the recorded calls of Total", func(t *testing.T) {
+		t.Run("Sum", func(t *testing.T) {
 			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			_, _ = mixedStubTotal(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnTotal.CallCount(), 0, "ResetCalls clears the calls of Total")
-		})
-
-		t.Run("keeps the results of Returns of Total", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			want0, want1 := mixedStubTotalPins()
-			s.OnTotal.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := mixedStubTotal(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Total")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Total")
-		})
-
-		t.Run("clears the recorded calls of Sum", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			_ = mixedStubSum(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnSum.CallCount(), 0, "ResetCalls clears the calls of Sum")
-		})
-
-		t.Run("keeps the results of Returns of Sum", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			want0 := mixedStubSumPins()
-			s.OnSum.Returns(want0)
-			s.ResetCalls()
-			got0 := mixedStubSum(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Sum")
-		})
-	})
-
-	t.Run("NewMixedStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
-			return mixedStubInstanceOf(tb, commutativetest.NewMixedStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewMixedStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Apply with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Apply-failing")
-			s := commutativetest.NewMixedStubFailing(t, want)
-			r0 := mixedStubApply(t, s)
-			assert.ErrorIs(t, r0, want, "Apply fails with the error of NewMixedStubFailing")
-		})
-
-		t.Run("fails Total with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Total-failing")
-			s := commutativetest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubTotal(t, s)
-			assert.ErrorIs(t, r1, want, "Total fails with the error of NewMixedStubFailing")
+			stub.ResetBehaviour(t, "Sum", mixedStubSumSubject)
 		})
 	})
 
@@ -524,155 +432,4 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedApplyStub checks the methods of MixedApplyStub, which
-// configures Apply.
-func TestMixedApplyStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Apply", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			want0 := mixedStubApplyPins()
-			s.OnApply.Returns(want0)
-			got0 := mixedStubApply(t, s)
-			assert.ErrorIs(t, got0, want0, "Apply returns the error that Returns sets")
-		})
-
-		t.Run("configures Apply for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := commutativetest.NewMixedStub(r)
-			s.OnApply.Strict()
-			var want0 error
-			s.OnApply.Returns(want0)
-			_ = mixedStubApply(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Apply")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Apply to the function", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			var got0 context.Context
-			var got1 commutative.Delta
-			s.OnApply.Func(func(p0 context.Context, p1 commutative.Delta) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = mixedStubApply(t, s)
-			a0, a1 := mixedStubApplyArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives D")
-		})
-	})
-}
-
-// TestMixedTotalStub checks the methods of MixedTotalStub, which
-// configures Total.
-func TestMixedTotalStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Total", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			want0, want1 := mixedStubTotalPins()
-			s.OnTotal.Returns(want0, want1)
-			got0, got1 := mixedStubTotal(t, s)
-			expect.Equal(t, got0, want0, "Total returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Total returns the error that Returns sets")
-		})
-
-		t.Run("configures Total for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := commutativetest.NewMixedStub(r)
-			s.OnTotal.Strict()
-			var want0 int
-			var want1 error
-			s.OnTotal.Returns(want0, want1)
-			_, _ = mixedStubTotal(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Total")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Total to the function", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			var got0 context.Context
-			s.OnTotal.Func(func(p0 context.Context) (int, error) {
-				got0 = p0
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = mixedStubTotal(t, s)
-			a0 := mixedStubTotalArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// TestMixedSumStub checks the methods of MixedSumStub, which configures
-// Sum.
-func TestMixedSumStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Sum", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			want0 := mixedStubSumPins()
-			s.OnSum.Returns(want0)
-			got0 := mixedStubSum(t, s)
-			assert.Equal(t, got0, want0, "Sum returns the Result that Returns sets")
-		})
-
-		t.Run("configures Sum for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := commutativetest.NewMixedStub(r)
-			s.OnSum.Strict()
-			var want0 int
-			s.OnSum.Returns(want0)
-			_ = mixedStubSum(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Sum")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Sum to the function", func(t *testing.T) {
-			t.Parallel()
-			s := commutativetest.NewMixedStub(t)
-			var got0 commutative.Delta
-			var got1 commutative.Delta
-			s.OnSum.Func(func(p0, p1 commutative.Delta) int {
-				got0, got1 = p0, p1
-				var z0 int
-				return z0
-			})
-			_ = mixedStubSum(t, s)
-			a0, a1 := mixedStubSumArgs(t)
-			expect.Equal(t, got0, a0, "the function receives A")
-			expect.Equal(t, got1, a1, "the function receives B")
-		})
-	})
-}
-
-// dokimi:provenance sha256:c29f7698ebdbe6ab7e571d89063a6e43b865681a5c032d6fcba3902a67d255e9
+// dokimi:provenance sha256:2fc294b4deec1fb728e2082bc7cceadff6d5dc27c3559d0355b566bea89fbfd7

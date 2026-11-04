@@ -15,34 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Contract.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Contract.Put/cancel: Put returns an error for a cancelled context.
-//
-// Contract.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Contract.Put/if-absent: a second Put for one key fails with the declared
-// conflict.
-//
-// Contract.Put/if-absent#generated: a second Put for one key fails with
-// the declared conflict.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Put/smoke
-
-// The unclaimed classifications of Contract:
-//
-// The shape:writer of Contract.Put has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -73,34 +45,16 @@ func (c contractPut) Smoke() conform.ID[ifabsent.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c contractPut) SmokeGenerated() conform.ID[ifabsent.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c contractPut) Cancel() conform.ID[ifabsent.Contract] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c contractPut) CancelGenerated() conform.ID[ifabsent.Contract] {
-	return c.Check("cancel#generated")
-}
-
 // IfAbsent returns the identity of the check that a second Put for one key
 // fails with the declared conflict.
 func (c contractPut) IfAbsent() conform.ID[ifabsent.Contract] {
 	return c.Check("if-absent")
-}
-
-// IfAbsentGenerated returns the identity of the check that a second Put
-// for one key fails with the declared conflict.
-func (c contractPut) IfAbsentGenerated() conform.ID[ifabsent.Contract] {
-	return c.Check("if-absent#generated")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -115,9 +69,6 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				ID:          ContractChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -128,12 +79,9 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				Defect: contractPutPanics,
 			},
 			{
-				ID:          ContractChecks.Put.SmokeGenerated(),
+				ID:          ContractChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[ifabsent.Value](), "v")
@@ -147,9 +95,6 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				ID:          ContractChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -159,12 +104,9 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				Defect: contractPutIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Put.CancelGenerated(),
+				ID:          ContractChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[ifabsent.Value](), "v")
@@ -178,9 +120,6 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				ID:          ContractChecks.Put.IfAbsent(),
 				Statement:   "a second Put for one key fails with the declared conflict",
 				Claim:       spec.IfAbsent,
-				Probe:       spec.RefusesTheSecondWrite,
-				Reason:      spec.UnguardedWrite,
-				Law:         spec.WriteIsRefusedWhereItsKeyExists,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
@@ -190,12 +129,9 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 				Defect: contractPutSucceedsAlways,
 			},
 			{
-				ID:          ContractChecks.Put.IfAbsentGenerated(),
+				ID:          ContractChecks.Put.IfAbsent().Generated(),
 				Statement:   "a second Put for one key fails with the declared conflict",
 				Claim:       spec.IfAbsent,
-				Probe:       spec.RefusesTheSecondWrite,
-				Reason:      spec.UnguardedWrite,
-				Law:         spec.WriteIsRefusedWhereItsKeyExists,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[ifabsent.Value](), "v")
@@ -378,4 +314,4 @@ func contractPutSucceedsAlways(h *ContractHandle) ifabsent.Contract {
 	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:55b66d9e94403b7a5bfd94c5c1948329b7d60002b115b1ad6703cf18766a6f7e
+// dokimi:provenance sha256:ca1d3d35d459d9c929f2275451a3fda5beb4a815aa55dea3c32be0725278aad4

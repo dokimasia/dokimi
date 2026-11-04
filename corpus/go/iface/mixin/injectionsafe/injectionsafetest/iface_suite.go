@@ -15,52 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Store/smoke: Store returns without a panic for derived inputs.
-//
-// Mixed.Store/smoke#generated: Store returns without a panic for derived
-// inputs.
-//
-// Mixed.Store/cancel: Store returns an error for a cancelled context.
-//
-// Mixed.Store/cancel#generated: Store returns an error for a cancelled
-// context.
-//
-// Mixed.Store/injection-safe: Load returns the value that the directive of
-// Store declares unsafe, unchanged.
-//
-// Mixed.Store/injection-safe#generated: Load returns the value that the
-// directive of Store declares unsafe, unchanged.
-//
-// Mixed.Load/smoke: Load returns without a panic for derived inputs.
-//
-// Mixed.Load/smoke#generated: Load returns without a panic for derived
-// inputs.
-//
-// Mixed.Load/cancel: Load returns an error for a cancelled context.
-//
-// Mixed.Load/cancel#generated: Load returns an error for a cancelled
-// context.
-//
-// Mixed.Load/zero-on-error: Load returns the zero value beside an error.
-//
-// Mixed.Load/zero-on-error#generated: Load returns the zero value beside
-// an error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Store/smoke
-//
-// Mixed.Store/injection-safe
-//
-// Mixed.Load/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:composite-writer of Mixed.Store has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -93,35 +47,16 @@ func (c mixedStore) Smoke() conform.ID[injectionsafe.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Store returns
-// without a panic for derived inputs.
-func (c mixedStore) SmokeGenerated() conform.ID[injectionsafe.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Store returns an error for
 // a cancelled context.
 func (c mixedStore) Cancel() conform.ID[injectionsafe.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Store returns an
-// error for a cancelled context.
-func (c mixedStore) CancelGenerated() conform.ID[injectionsafe.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // InjectionSafe returns the identity of the check that Load returns the
 // value that the directive of Store declares unsafe, unchanged.
 func (c mixedStore) InjectionSafe() conform.ID[injectionsafe.Mixed] {
 	return c.Check("injection-safe")
-}
-
-// InjectionSafeGenerated returns the identity of the check that Load
-// returns the value that the directive of Store declares unsafe,
-// unchanged.
-func (c mixedStore) InjectionSafeGenerated() conform.ID[injectionsafe.Mixed] {
-	return c.Check("injection-safe#generated")
 }
 
 // mixedLoad is the name of Mixed.Load, with the identities of its checks.
@@ -135,34 +70,16 @@ func (c mixedLoad) Smoke() conform.ID[injectionsafe.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Load returns
-// without a panic for derived inputs.
-func (c mixedLoad) SmokeGenerated() conform.ID[injectionsafe.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Load returns an error for
 // a cancelled context.
 func (c mixedLoad) Cancel() conform.ID[injectionsafe.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Load returns an
-// error for a cancelled context.
-func (c mixedLoad) CancelGenerated() conform.ID[injectionsafe.Mixed] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Load returns the zero
 // value beside an error.
 func (c mixedLoad) ZeroOnError() conform.ID[injectionsafe.Mixed] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Load returns
-// the zero value beside an error.
-func (c mixedLoad) ZeroOnErrorGenerated() conform.ID[injectionsafe.Mixed] {
-	return c.Check("zero-on-error#generated")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -177,9 +94,6 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				ID:          MixedChecks.Store.Smoke(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -190,12 +104,9 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				Defect: mixedStorePanics,
 			},
 			{
-				ID:          MixedChecks.Store.SmokeGenerated(),
+				ID:          MixedChecks.Store.Smoke().Generated(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -210,9 +121,6 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				ID:          MixedChecks.Store.Cancel(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -222,12 +130,9 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				Defect: mixedStoreIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Store.CancelGenerated(),
+				ID:          MixedChecks.Store.Cancel().Generated(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -242,9 +147,6 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				ID:          MixedChecks.Store.InjectionSafe(),
 				Statement:   "Load returns the value that the directive of Store declares unsafe, unchanged",
 				Claim:       spec.InjectionSafe,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.UnsafeValueIsKeptAsData,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -259,12 +161,9 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				Defect: mixedStoreStoresNothing,
 			},
 			{
-				ID:          MixedChecks.Store.InjectionSafeGenerated(),
+				ID:          MixedChecks.Store.InjectionSafe().Generated(),
 				Statement:   "Load returns the value that the directive of Store declares unsafe, unchanged",
 				Claim:       spec.InjectionSafe,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.UnsafeValueIsKeptAsData,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -283,9 +182,6 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				ID:          MixedChecks.Load.Smoke(),
 				Statement:   "Load returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -297,12 +193,9 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				Defect: mixedLoadPanics,
 			},
 			{
-				ID:          MixedChecks.Load.SmokeGenerated(),
+				ID:          MixedChecks.Load.Smoke().Generated(),
 				Statement:   "Load returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -317,9 +210,6 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				ID:          MixedChecks.Load.Cancel(),
 				Statement:   "Load returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -330,12 +220,9 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				Defect: mixedLoadIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Load.CancelGenerated(),
+				ID:          MixedChecks.Load.Cancel().Generated(),
 				Statement:   "Load returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -350,9 +237,6 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				ID:          MixedChecks.Load.ZeroOnError(),
 				Statement:   "Load returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -362,12 +246,9 @@ func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 				Defect: mixedLoadValueBeside,
 			},
 			{
-				ID:          MixedChecks.Load.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Load.ZeroOnError().Generated(),
 				Statement:   "Load returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -624,4 +505,4 @@ func mixedLoadValueBeside(h *MixedHandle) injectionsafe.Mixed {
 	return &mixedLoadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:b8acdab3a628266102808efd7a6e7e7b63fe38ad62c5cdbcc8a3b01f5b0f97af
+// dokimi:provenance sha256:6c9232f1c71a8819d49a8c7a50de2b81d9c6b7f2732c858f8cb6f5c41bbdfa48

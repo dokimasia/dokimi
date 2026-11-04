@@ -48,66 +48,7 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*writesfollowreadstest.MixedHandle) writesfollowreads.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[writesfollowreads.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -129,74 +70,19 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*writesfollowreadstest.MixedHandle) writesfollowreads.Mixed { return &mixedSubject{} },
 			}),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Store.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[writesfollowreads.Mixed]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixedSuite is the suite of Mixed that the tests of the planted defect of
+// a ceiling apply.
+var mixedSuite = writesfollowreadstest.MixedSuite()
+
 // mixedIdle returns the planted defect of a ceiling of Mixed with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixedIdle(h *writesfollowreadstest.MixedHandle) writesfollowreads.Mixed {
-	return writesfollowreadstest.MixedSuite().Calls[0].Over(h, func() {})
+	return mixedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
@@ -209,65 +95,8 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(writesfollowreadstest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(writesfollowreadstest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[writesfollowreads.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -279,65 +108,8 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		f,
 		writesfollowreadstest.MixedChecks.Store.Callable,
 		mixedIdle,
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[writesfollowreads.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -349,65 +121,8 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		writesfollowreadstest.MixedChecks.Get.Callable,
 		mixedIdle,
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Store.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowReads(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowReadsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			writesfollowreadstest.MixedChecks.Get.WritesFollowTheirReads(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[writesfollowreads.Mixed](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -423,4 +138,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:41f78a0c2266a17d1108e622e9ee3fab5ca1189cba4b1056035e9d936ee3e5b2
+// dokimi:provenance sha256:d6787452fe804c1ec1d4ca4d93edd114dff8e8b0f96b82fa31fafb78e4f0f1a5

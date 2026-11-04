@@ -17,50 +17,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Mixed.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Mixed.Put/cancel: Put returns an error for a cancelled context.
-//
-// Mixed.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Mixed.Read/smoke: Read returns without a panic for derived inputs.
-//
-// Mixed.Read/smoke#generated: Read returns without a panic for derived
-// inputs.
-//
-// Mixed.Read/cancel: Read returns an error for a cancelled context.
-//
-// Mixed.Read/cancel#generated: Read returns an error for a cancelled
-// context.
-//
-// Mixed.Read/zero-on-error: Read returns the zero value beside an error.
-//
-// Mixed.Read/zero-on-error#generated: Read returns the zero value beside
-// an error.
-//
-// Mixed.Read/expires: Read fails with the declared sentinel once the clock
-// passes the declared lifetime.
-//
-// Mixed.Read/expires#generated: Read fails with the declared sentinel once
-// the clock passes the declared lifetime.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Put/smoke
-//
-// Mixed.Read/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The shape:writer of Mixed.Put has the stance silent. A write is an input
-// of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -92,22 +48,10 @@ func (c mixedPut) Smoke() conform.ID[ttl.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c mixedPut) SmokeGenerated() conform.ID[ttl.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c mixedPut) Cancel() conform.ID[ttl.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c mixedPut) CancelGenerated() conform.ID[ttl.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // mixedRead is the name of Mixed.Read, with the identities of its checks.
@@ -121,22 +65,10 @@ func (c mixedRead) Smoke() conform.ID[ttl.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Read returns
-// without a panic for derived inputs.
-func (c mixedRead) SmokeGenerated() conform.ID[ttl.Mixed] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c mixedRead) Cancel() conform.ID[ttl.Mixed] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Read returns an
-// error for a cancelled context.
-func (c mixedRead) CancelGenerated() conform.ID[ttl.Mixed] {
-	return c.Check("cancel#generated")
 }
 
 // ZeroOnError returns the identity of the check that Read returns the zero
@@ -145,22 +77,10 @@ func (c mixedRead) ZeroOnError() conform.ID[ttl.Mixed] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Read returns
-// the zero value beside an error.
-func (c mixedRead) ZeroOnErrorGenerated() conform.ID[ttl.Mixed] {
-	return c.Check("zero-on-error#generated")
-}
-
 // Expires returns the identity of the check that Read fails with the
 // declared sentinel once the clock passes the declared lifetime.
 func (c mixedRead) Expires() conform.ID[ttl.Mixed] {
 	return c.Check("expires")
-}
-
-// ExpiresGenerated returns the identity of the check that Read fails with
-// the declared sentinel once the clock passes the declared lifetime.
-func (c mixedRead) ExpiresGenerated() conform.ID[ttl.Mixed] {
-	return c.Check("expires#generated")
 }
 
 // AllocationBudget returns the identity of the check
@@ -193,9 +113,6 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				ID:          MixedChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -206,12 +123,9 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				Defect: mixedPutPanics,
 			},
 			{
-				ID:          MixedChecks.Put.SmokeGenerated(),
+				ID:          MixedChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[ttl.Value](), "v")
@@ -225,9 +139,6 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				ID:          MixedChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -237,12 +148,9 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				Defect: mixedPutIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Put.CancelGenerated(),
+				ID:          MixedChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[ttl.Value](), "v")
@@ -256,9 +164,6 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				ID:          MixedChecks.Read.Smoke(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -270,12 +175,9 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				Defect: mixedReadPanics,
 			},
 			{
-				ID:          MixedChecks.Read.SmokeGenerated(),
+				ID:          MixedChecks.Read.Smoke().Generated(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -290,9 +192,6 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				ID:          MixedChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -303,12 +202,9 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				Defect: mixedReadIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Read.CancelGenerated(),
+				ID:          MixedChecks.Read.Cancel().Generated(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -323,9 +219,6 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				ID:          MixedChecks.Read.ZeroOnError(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (ttl.Value, error) {
@@ -335,12 +228,9 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				Defect: mixedReadValueBeside,
 			},
 			{
-				ID:          MixedChecks.Read.ZeroOnErrorGenerated(),
+				ID:          MixedChecks.Read.ZeroOnError().Generated(),
 				Statement:   "Read returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -354,9 +244,6 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				ID:          MixedChecks.Read.Expires(),
 				Statement:   "Read fails with the declared sentinel once the clock passes the declared lifetime",
 				Claim:       spec.Expires,
-				Probe:       spec.ExpiresAfter,
-				Reason:      spec.NotExpired,
-				Law:         spec.EntryLapsesOnTheClock,
 				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances},
 				Apply: func(h *MixedHandle) {
 					probe.ExpiresAfter(h, func(ctx context.Context) (ttl.Value, error) {
@@ -369,12 +256,9 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 				Around: synctest.Test,
 			},
 			{
-				ID:          MixedChecks.Read.ExpiresGenerated(),
+				ID:          MixedChecks.Read.Expires().Generated(),
 				Statement:   "Read fails with the declared sentinel once the clock passes the declared lifetime",
 				Claim:       spec.Expires,
-				Probe:       spec.ExpiresAfter,
-				Reason:      spec.NotExpired,
-				Law:         spec.EntryLapsesOnTheClock,
 				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances, spec.GeneratedInputs},
 				Property: func(h *MixedHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[ttl.Value](), "v")
@@ -634,4 +518,4 @@ func mixedReadAnswersASample(h *MixedHandle) ttl.Mixed {
 	return &mixedReadAnswersASampleDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:af4ed92fe50a5b792e1d3755cafa484a9a295ecfd5354c876e3f2b77da356da7
+// dokimi:provenance sha256:ebfbc6e8408cfa64dfda7cb599f244bd23022bd03194bf395e636b4d958669cd

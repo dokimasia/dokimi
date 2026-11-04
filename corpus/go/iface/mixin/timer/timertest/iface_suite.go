@@ -15,23 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Stop/smoke: Stop returns without a panic for derived inputs.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Stop/smoke
-
-// The refused claims of Mixed:
-//
-// Mixed.Stop/predicate: Stop reads the clock or changes its subject, so a
-// repeat can return another value. The remedy is to remove the mixin
-// time-aware or side-effect where a repeat of Stop returns the same value.
-//
-// Mixed.Stop/side-effect: Stop takes no context. The remedy is to add a
-// context parameter to Stop.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -73,9 +56,6 @@ func MixedSuite() conform.Suite[timer.Mixed] {
 				ID:          MixedChecks.Stop.Smoke(),
 				Statement:   "Stop returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -216,4 +196,4 @@ func mixedStopPanics(h *MixedHandle) timer.Mixed {
 	return &mixedStopPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:e10b6ec979fa56639f886190c153bab09b6710be19d2162f9e6b0e1cac2fb725
+// dokimi:provenance sha256:949a7b0fce7dc22edbd5f63cfb2c9147cb2487ce29dee9c476439fa745f298d6

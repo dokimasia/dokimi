@@ -67,25 +67,38 @@ func batchReaderStubPutPins() error {
 	return want0
 }
 
-// batchReaderStubGetAllSubject returns the subject of [stub.Behaviour] for
-// GetAll. The subject calls a new double that reports to tb.
+// batchReaderStubGetAllSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for GetAll. The subject calls a new double that
+// reports to tb.
 func batchReaderStubGetAllSubject(
 	tb assert.TB,
 ) stub.Subject[batchreadertest.BatchReaderGetAllCall, batchreadertest.BatchReaderGetAllReturn] {
 	tb.Helper()
 	s := batchreadertest.NewBatchReaderStub(tb)
 	return stub.Subject[batchreadertest.BatchReaderGetAllCall, batchreadertest.BatchReaderGetAllReturn]{
-		Stub: s.OnGetAll.MethodStub,
+		Stub:  s.OnGetAll.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = batchReaderStubGetAll(tb, s)
+		},
+		Arguments: func(tb assert.TB, c batchreadertest.BatchReaderGetAllCall) {
+			tb.Helper()
+			a0, a1 := batchReaderStubGetAllArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Keys, a1, "the call records Keys")
 		},
 		Result: func() batchreadertest.BatchReaderGetAllReturn {
 			got0, got1 := batchReaderStubGetAll(tb, s)
 			return batchreadertest.BatchReaderGetAllReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGetAll.Func(func(_ context.Context, _ ...string) ([]batchreader.Value, error) {
-				mark()
+		Returns: func() batchreadertest.BatchReaderGetAllReturn {
+			want0, want1 := batchReaderStubGetAllPins()
+			s.OnGetAll.Returns(want0, want1)
+			return batchreadertest.BatchReaderGetAllReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(batchreadertest.BatchReaderGetAllCall)) {
+			s.OnGetAll.Func(func(p0 context.Context, p1 ...string) ([]batchreader.Value, error) {
+				seen(batchreadertest.BatchReaderGetAllCall{Ctx: p0, Keys: p1})
 				var z0 []batchreader.Value
 				var z1 error
 				return z0, z1
@@ -98,25 +111,38 @@ func batchReaderStubGetAllSubject(
 	}
 }
 
-// batchReaderStubPutSubject returns the subject of [stub.Behaviour] for
-// Put. The subject calls a new double that reports to tb.
+// batchReaderStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func batchReaderStubPutSubject(
 	tb assert.TB,
 ) stub.Subject[batchreadertest.BatchReaderPutCall, batchreadertest.BatchReaderPutReturn] {
 	tb.Helper()
 	s := batchreadertest.NewBatchReaderStub(tb)
 	return stub.Subject[batchreadertest.BatchReaderPutCall, batchreadertest.BatchReaderPutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = batchReaderStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c batchreadertest.BatchReaderPutCall) {
+			tb.Helper()
+			a0, a1 := batchReaderStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() batchreadertest.BatchReaderPutReturn {
 			got0 := batchReaderStubPut(tb, s)
 			return batchreadertest.BatchReaderPutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ batchreader.Value) error {
-				mark()
+		Returns: func() batchreadertest.BatchReaderPutReturn {
+			want0 := batchReaderStubPutPins()
+			s.OnPut.Returns(want0)
+			return batchreadertest.BatchReaderPutReturn{Err: want0}
+		},
+		Override: func(seen func(batchreadertest.BatchReaderPutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1 batchreader.Value) error {
+				seen(batchreadertest.BatchReaderPutCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -142,7 +168,6 @@ func batchReaderStubInstanceOf(tb assert.TB, s *batchreadertest.BatchReaderStub)
 		Call: func() {
 			_, _ = batchReaderStubGetAll(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -154,121 +179,24 @@ func TestBatchReaderStub(t *testing.T) {
 	t.Run("GetAll", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "GetAll", batchReaderStubGetAllSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			_, _ = batchReaderStubGetAll(t, s)
-			got := s.OnGetAll.AssertCalledOnce(t, "GetAll records the call")
-			a0, a1 := batchReaderStubGetAllArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Keys, a1, "the call records Keys")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			var seen []batchreadertest.BatchReaderGetAllCall
-			s.OnGetAll.OnRecord(func(c batchreadertest.BatchReaderGetAllCall) { seen = append(seen, c) })
-			_, _ = batchReaderStubGetAll(t, s)
-			_, _ = batchReaderStubGetAll(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of GetAll")
-		})
 	})
 
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", batchReaderStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			_ = batchReaderStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1 := batchReaderStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			var seen []batchreadertest.BatchReaderPutCall
-			s.OnPut.OnRecord(func(c batchreadertest.BatchReaderPutCall) { seen = append(seen, c) })
-			_ = batchReaderStubPut(t, s)
-			_ = batchReaderStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) batchReaderStubInstance {
-			return batchReaderStubInstanceOf(tb, batchreadertest.NewBatchReaderStub(tb))
-		})
 
-		t.Run("clears the recorded calls of GetAll", func(t *testing.T) {
+		t.Run("GetAll", func(t *testing.T) {
 			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			_, _ = batchReaderStubGetAll(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnGetAll.CallCount(), 0, "ResetCalls clears the calls of GetAll")
+			stub.ResetBehaviour(t, "GetAll", batchReaderStubGetAllSubject)
 		})
 
-		t.Run("keeps the results of Returns of GetAll", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			want0, want1 := batchReaderStubGetAllPins()
-			s.OnGetAll.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := batchReaderStubGetAll(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of GetAll")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of GetAll")
-		})
-
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			_ = batchReaderStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
-		})
-
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			want0 := batchReaderStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := batchReaderStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
-		})
-	})
-
-	t.Run("NewBatchReaderStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) batchReaderStubInstance {
-			return batchReaderStubInstanceOf(tb, batchreadertest.NewBatchReaderStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewBatchReaderStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails GetAll with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("GetAll-failing")
-			s := batchreadertest.NewBatchReaderStubFailing(t, want)
-			_, r1 := batchReaderStubGetAll(t, s)
-			assert.ErrorIs(t, r1, want, "GetAll fails with the error of NewBatchReaderStubFailing")
-		})
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := batchreadertest.NewBatchReaderStubFailing(t, want)
-			r0 := batchReaderStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewBatchReaderStubFailing")
+			stub.ResetBehaviour(t, "Put", batchReaderStubPutSubject)
 		})
 	})
 
@@ -428,107 +356,4 @@ func TestBatchReaderStub(t *testing.T) {
 	})
 }
 
-// TestBatchReaderGetAllStub checks the methods of BatchReaderGetAllStub,
-// which configures GetAll.
-func TestBatchReaderGetAllStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of GetAll", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			want0, want1 := batchReaderStubGetAllPins()
-			s.OnGetAll.Returns(want0, want1)
-			got0, got1 := batchReaderStubGetAll(t, s)
-			expect.Equal(t, got0, want0, "GetAll returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "GetAll returns the error that Returns sets")
-		})
-
-		t.Run("configures GetAll for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := batchreadertest.NewBatchReaderStub(r)
-			s.OnGetAll.Strict()
-			var want0 []batchreader.Value
-			var want1 error
-			s.OnGetAll.Returns(want0, want1)
-			_, _ = batchReaderStubGetAll(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of GetAll")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of GetAll to the function", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			var got0 context.Context
-			var got1 []string
-			s.OnGetAll.Func(func(p0 context.Context, p1 ...string) ([]batchreader.Value, error) {
-				got0, got1 = p0, p1
-				var z0 []batchreader.Value
-				var z1 error
-				return z0, z1
-			})
-			_, _ = batchReaderStubGetAll(t, s)
-			a0, a1 := batchReaderStubGetAllArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Keys")
-		})
-	})
-}
-
-// TestBatchReaderPutStub checks the methods of BatchReaderPutStub, which
-// configures Put.
-func TestBatchReaderPutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			want0 := batchReaderStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := batchReaderStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := batchreadertest.NewBatchReaderStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = batchReaderStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := batchreadertest.NewBatchReaderStub(t)
-			var got0 context.Context
-			var got1 batchreader.Value
-			s.OnPut.Func(func(p0 context.Context, p1 batchreader.Value) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = batchReaderStubPut(t, s)
-			a0, a1 := batchReaderStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// dokimi:provenance sha256:bad83929d9d23f534f8a2c1bf6a41d8d948fe30e73df56fbf98c74bfecf736ac
+// dokimi:provenance sha256:aa39668ab6bc926d833a6be1748425e45663e4c25300517153c8e88ba186e35c

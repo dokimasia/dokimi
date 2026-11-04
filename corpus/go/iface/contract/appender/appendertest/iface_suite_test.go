@@ -49,42 +49,7 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*appendertest.ContractHandle) appender.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.Appender(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.AppenderGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.AppendsKeepAscending(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[appender.Contract]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -106,50 +71,20 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*appendertest.ContractHandle) appender.Contract { return &contractSubject{} },
 			}),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.Appender(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.AppenderGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				appendertest.ContractChecks.Run.AppendsKeepAscending(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[appender.Contract]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// contractSuite is the suite of Contract that the tests of the planted
+// defect of a ceiling apply.
+var contractSuite = appendertest.ContractSuite()
+
 // contractIdle returns the planted defect of a ceiling of Contract with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func contractIdle(h *appendertest.ContractHandle) appender.Contract {
-	return appendertest.ContractSuite().Calls[0].Over(h, func() {})
+	return contractSuite.Calls[0].Over(h, func() {})
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
@@ -161,42 +96,7 @@ func TestContractSuiteBudgets(t *testing.T) {
 		t,
 		contractIdle,
 		conform.Ceilings(appendertest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.Appender(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.AppenderGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.AppendsKeepAscending(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[appender.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -207,42 +107,7 @@ func FuzzContractSuiteRun(f *testing.F) {
 		f,
 		appendertest.ContractChecks.Run.Callable,
 		contractIdle,
-		conform.Excuse(
-			appendertest.ContractChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.Appender(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.AppenderGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			appendertest.ContractChecks.Run.AppendsKeepAscending(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[appender.Contract]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -254,4 +119,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1c92ea267452430b46334917ce2718b92d93924f2db661512f4a2b95eadbdc24
+// dokimi:provenance sha256:99117d9b487027d66d7bf623272be367826d4f44362a006fff5f387b9fef1919

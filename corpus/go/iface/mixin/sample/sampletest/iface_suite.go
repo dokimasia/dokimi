@@ -15,24 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Process/smoke: Process returns without a panic for derived inputs.
-//
-// Mixed.Process/cancel: Process returns an error for a cancelled context.
-//
-// Mixed.Process/zero-on-error: Process returns the zero value beside an
-// error.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Process/smoke
-
-// The unclaimed classifications of Mixed:
-//
-// The mixin:sample of Mixed.Process has the stance silent. The mixin names
-// the builder of the inputs of each derived call of the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -87,9 +69,6 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				ID:          MixedChecks.Process.Smoke(),
 				Statement:   "Process returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -105,9 +84,6 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				ID:          MixedChecks.Process.Cancel(),
 				Statement:   "Process returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -122,9 +98,6 @@ func MixedSuite() conform.Suite[sample.Mixed] {
 				ID:          MixedChecks.Process.ZeroOnError(),
 				Statement:   "Process returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -298,4 +271,4 @@ func mixedProcessValueBeside(h *MixedHandle) sample.Mixed {
 	return &mixedProcessValueBesideDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:26ee5934ee70942d3649aff1a92940e5479f3e0e351c55990a76c075d8f5e6a2
+// dokimi:provenance sha256:7596c7e482e5a589a508f39a54d35a1d36fd592786468236786acf29a8817036

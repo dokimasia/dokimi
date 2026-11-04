@@ -66,25 +66,38 @@ func contractStubPutPins() error {
 	return want0
 }
 
-// contractStubFetchSubject returns the subject of [stub.Behaviour] for
-// Fetch. The subject calls a new double that reports to tb.
+// contractStubFetchSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Fetch. The subject calls a new double that
+// reports to tb.
 func contractStubFetchSubject(
 	tb assert.TB,
 ) stub.Subject[paginationtest.ContractFetchCall, paginationtest.ContractFetchReturn] {
 	tb.Helper()
 	s := paginationtest.NewContractStub(tb)
 	return stub.Subject[paginationtest.ContractFetchCall, paginationtest.ContractFetchReturn]{
-		Stub: s.OnFetch.MethodStub,
+		Stub:  s.OnFetch.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubFetch(tb, s)
+		},
+		Arguments: func(tb assert.TB, c paginationtest.ContractFetchCall) {
+			tb.Helper()
+			a0, a1 := contractStubFetchArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Cur, a1, "the call records Cur")
 		},
 		Result: func() paginationtest.ContractFetchReturn {
 			got0, got1 := contractStubFetch(tb, s)
 			return paginationtest.ContractFetchReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnFetch.Func(func(_ context.Context, _ pagination.Cursor) (pagination.Page, error) {
-				mark()
+		Returns: func() paginationtest.ContractFetchReturn {
+			want0, want1 := contractStubFetchPins()
+			s.OnFetch.Returns(want0, want1)
+			return paginationtest.ContractFetchReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(paginationtest.ContractFetchCall)) {
+			s.OnFetch.Func(func(p0 context.Context, p1 pagination.Cursor) (pagination.Page, error) {
+				seen(paginationtest.ContractFetchCall{Ctx: p0, Cur: p1})
 				var z0 pagination.Page
 				var z1 error
 				return z0, z1
@@ -97,25 +110,38 @@ func contractStubFetchSubject(
 	}
 }
 
-// contractStubPutSubject returns the subject of [stub.Behaviour] for Put.
-// The subject calls a new double that reports to tb.
+// contractStubPutSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Put. The subject calls a new double that
+// reports to tb.
 func contractStubPutSubject(
 	tb assert.TB,
 ) stub.Subject[paginationtest.ContractPutCall, paginationtest.ContractPutReturn] {
 	tb.Helper()
 	s := paginationtest.NewContractStub(tb)
 	return stub.Subject[paginationtest.ContractPutCall, paginationtest.ContractPutReturn]{
-		Stub: s.OnPut.MethodStub,
+		Stub:  s.OnPut.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubPut(tb, s)
+		},
+		Arguments: func(tb assert.TB, c paginationtest.ContractPutCall) {
+			tb.Helper()
+			a0, a1 := contractStubPutArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.V, a1, "the call records V")
 		},
 		Result: func() paginationtest.ContractPutReturn {
 			got0 := contractStubPut(tb, s)
 			return paginationtest.ContractPutReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ pagination.Value) error {
-				mark()
+		Returns: func() paginationtest.ContractPutReturn {
+			want0 := contractStubPutPins()
+			s.OnPut.Returns(want0)
+			return paginationtest.ContractPutReturn{Err: want0}
+		},
+		Override: func(seen func(paginationtest.ContractPutCall)) {
+			s.OnPut.Func(func(p0 context.Context, p1 pagination.Value) error {
+				seen(paginationtest.ContractPutCall{Ctx: p0, V: p1})
 				var z0 error
 				return z0
 			})
@@ -140,7 +166,6 @@ func contractStubInstanceOf(tb assert.TB, s *paginationtest.ContractStub) contra
 		Call: func() {
 			_, _ = contractStubFetch(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -152,121 +177,24 @@ func TestContractStub(t *testing.T) {
 	t.Run("Fetch", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Fetch", contractStubFetchSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			_, _ = contractStubFetch(t, s)
-			got := s.OnFetch.AssertCalledOnce(t, "Fetch records the call")
-			a0, a1 := contractStubFetchArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Cur, a1, "the call records Cur")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			var seen []paginationtest.ContractFetchCall
-			s.OnFetch.OnRecord(func(c paginationtest.ContractFetchCall) { seen = append(seen, c) })
-			_, _ = contractStubFetch(t, s)
-			_, _ = contractStubFetch(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fetch")
-		})
 	})
 
 	t.Run("Put", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Put", contractStubPutSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			_ = contractStubPut(t, s)
-			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
-			a0, a1 := contractStubPutArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.V, a1, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			var seen []paginationtest.ContractPutCall
-			s.OnPut.OnRecord(func(c paginationtest.ContractPutCall) { seen = append(seen, c) })
-			_ = contractStubPut(t, s)
-			_ = contractStubPut(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
-			return contractStubInstanceOf(tb, paginationtest.NewContractStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Fetch", func(t *testing.T) {
+		t.Run("Fetch", func(t *testing.T) {
 			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			_, _ = contractStubFetch(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFetch.CallCount(), 0, "ResetCalls clears the calls of Fetch")
+			stub.ResetBehaviour(t, "Fetch", contractStubFetchSubject)
 		})
 
-		t.Run("keeps the results of Returns of Fetch", func(t *testing.T) {
+		t.Run("Put", func(t *testing.T) {
 			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			want0, want1 := contractStubFetchPins()
-			s.OnFetch.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubFetch(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Fetch")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Fetch")
-		})
-
-		t.Run("clears the recorded calls of Put", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			_ = contractStubPut(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
-		})
-
-		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			want0 := contractStubPutPins()
-			s.OnPut.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
-		})
-	})
-
-	t.Run("NewContractStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
-			return contractStubInstanceOf(tb, paginationtest.NewContractStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewContractStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Fetch with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Fetch-failing")
-			s := paginationtest.NewContractStubFailing(t, want)
-			_, r1 := contractStubFetch(t, s)
-			assert.ErrorIs(t, r1, want, "Fetch fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Put with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Put-failing")
-			s := paginationtest.NewContractStubFailing(t, want)
-			r0 := contractStubPut(t, s)
-			assert.ErrorIs(t, r0, want, "Put fails with the error of NewContractStubFailing")
+			stub.ResetBehaviour(t, "Put", contractStubPutSubject)
 		})
 	})
 
@@ -421,107 +349,4 @@ func TestContractStub(t *testing.T) {
 	})
 }
 
-// TestContractFetchStub checks the methods of ContractFetchStub, which
-// configures Fetch.
-func TestContractFetchStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Fetch", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			want0, want1 := contractStubFetchPins()
-			s.OnFetch.Returns(want0, want1)
-			got0, got1 := contractStubFetch(t, s)
-			expect.Equal(t, got0, want0, "Fetch returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Fetch returns the error that Returns sets")
-		})
-
-		t.Run("configures Fetch for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := paginationtest.NewContractStub(r)
-			s.OnFetch.Strict()
-			var want0 pagination.Page
-			var want1 error
-			s.OnFetch.Returns(want0, want1)
-			_, _ = contractStubFetch(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Fetch")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Fetch to the function", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			var got0 context.Context
-			var got1 pagination.Cursor
-			s.OnFetch.Func(func(p0 context.Context, p1 pagination.Cursor) (pagination.Page, error) {
-				got0, got1 = p0, p1
-				var z0 pagination.Page
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubFetch(t, s)
-			a0, a1 := contractStubFetchArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Cur")
-		})
-	})
-}
-
-// TestContractPutStub checks the methods of ContractPutStub, which
-// configures Put.
-func TestContractPutStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Put", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			want0 := contractStubPutPins()
-			s.OnPut.Returns(want0)
-			got0 := contractStubPut(t, s)
-			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
-		})
-
-		t.Run("configures Put for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := paginationtest.NewContractStub(r)
-			s.OnPut.Strict()
-			var want0 error
-			s.OnPut.Returns(want0)
-			_ = contractStubPut(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
-			t.Parallel()
-			s := paginationtest.NewContractStub(t)
-			var got0 context.Context
-			var got1 pagination.Value
-			s.OnPut.Func(func(p0 context.Context, p1 pagination.Value) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
-			})
-			_ = contractStubPut(t, s)
-			a0, a1 := contractStubPutArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives V")
-		})
-	})
-}
-
-// dokimi:provenance sha256:86ced1aea70e77770715da0b67908ab9d048820492323d8edb93b37399bf42e7
+// dokimi:provenance sha256:91ed3cce2dd782a4416fc4c006618b11aa0053bc6d57ba4cb864f9f23fe9a863

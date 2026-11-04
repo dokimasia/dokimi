@@ -15,60 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Append/smoke: Append returns without a panic for derived
-// inputs.
-//
-// Contract.Append/smoke#generated: Append returns without a panic for
-// derived inputs.
-//
-// Contract.Append/cancel: Append returns an error for a cancelled context.
-//
-// Contract.Append/cancel#generated: Append returns an error for a
-// cancelled context.
-//
-// Contract.Append/chain: Append grows Replay by the entry that it admits.
-//
-// Contract.Append/chain#generated: Append grows Replay by the entry that
-// it admits.
-//
-// Contract.Replay/smoke: Replay returns without a panic for derived
-// inputs.
-//
-// Contract.Replay/cancel: Replay returns an error for a cancelled context.
-//
-// Contract.Replay/zero-on-error: Replay returns the zero value beside an
-// error.
-//
-// Contract.Verify/smoke: Verify returns without a panic for derived
-// inputs.
-//
-// Contract.Verify/cancel: Verify returns an error for a cancelled context.
-//
-// Contract.Verify/verifies-what-it-appended: Verify reports no error for a
-// chain that Append produced.
-//
-// Contract.Verify/verifies-what-it-appended#generated: Verify reports no
-// error for a chain that Append produced.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Append/smoke
-//
-// Contract.Replay/smoke
-//
-// Contract.Verify/smoke
-
-// The unclaimed classifications of Contract:
-//
-// The shape:writer of Contract.Append has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:lifecycle of Contract.Verify has the stance silent. A
-// lifecycle call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -103,34 +49,16 @@ func (c contractAppend) Smoke() conform.ID[chain.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Append returns
-// without a panic for derived inputs.
-func (c contractAppend) SmokeGenerated() conform.ID[chain.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c contractAppend) Cancel() conform.ID[chain.Contract] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Append returns an
-// error for a cancelled context.
-func (c contractAppend) CancelGenerated() conform.ID[chain.Contract] {
-	return c.Check("cancel#generated")
-}
-
 // Chain returns the identity of the check that Append grows Replay by the
 // entry that it admits.
 func (c contractAppend) Chain() conform.ID[chain.Contract] {
 	return c.Check("chain")
-}
-
-// ChainGenerated returns the identity of the check that Append grows
-// Replay by the entry that it admits.
-func (c contractAppend) ChainGenerated() conform.ID[chain.Contract] {
-	return c.Check("chain#generated")
 }
 
 // contractReplay is the name of Contract.Replay, with the identities of
@@ -181,12 +109,6 @@ func (c contractVerify) VerifiesWhatItAppended() conform.ID[chain.Contract] {
 	return c.Check("verifies-what-it-appended")
 }
 
-// VerifiesWhatItAppendedGenerated returns the identity of the check that
-// Verify reports no error for a chain that Append produced.
-func (c contractVerify) VerifiesWhatItAppendedGenerated() conform.ID[chain.Contract] {
-	return c.Check("verifies-what-it-appended#generated")
-}
-
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[chain.Contract] {
@@ -199,9 +121,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Append.Smoke(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -212,12 +131,9 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				Defect: contractAppendPanics,
 			},
 			{
-				ID:          ContractChecks.Append.SmokeGenerated(),
+				ID:          ContractChecks.Append.Smoke().Generated(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnE := c.Draw(prop.Of[chain.Entry](), "e")
@@ -231,9 +147,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -243,12 +156,9 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				Defect: contractAppendIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Append.CancelGenerated(),
+				ID:          ContractChecks.Append.Cancel().Generated(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnE := c.Draw(prop.Of[chain.Entry](), "e")
@@ -262,9 +172,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Append.Chain(),
 				Statement:   "Append grows Replay by the entry that it admits",
 				Claim:       spec.Chain,
-				Probe:       spec.ReplayGrows,
-				Reason:      spec.ReplayNotGrown,
-				Law:         spec.AdmittedEntryGrowsTheReplay,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ReplayGrows(h, func(ctx context.Context) error {
@@ -276,12 +183,9 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				Defect: contractAppendSucceedsAlways,
 			},
 			{
-				ID:          ContractChecks.Append.ChainGenerated(),
+				ID:          ContractChecks.Append.Chain().Generated(),
 				Statement:   "Append grows Replay by the entry that it admits",
 				Claim:       spec.Chain,
-				Probe:       spec.ReplayGrows,
-				Reason:      spec.ReplayNotGrown,
-				Law:         spec.AdmittedEntryGrowsTheReplay,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnE := c.Draw(prop.Of[chain.Entry](), "e")
@@ -297,9 +201,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Replay.Smoke(),
 				Statement:   "Replay returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -314,9 +215,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Replay.Cancel(),
 				Statement:   "Replay returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -330,9 +228,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Replay.ZeroOnError(),
 				Statement:   "Replay returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) ([]chain.Entry, error) {
@@ -345,9 +240,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Verify.Smoke(),
 				Statement:   "Verify returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -361,9 +253,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Verify.Cancel(),
 				Statement:   "Verify returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -376,9 +265,6 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				ID:          ContractChecks.Verify.VerifiesWhatItAppended(),
 				Statement:   "Verify reports no error for a chain that Append produced",
 				Claim:       spec.VerifiesWhatItAppended,
-				Probe:       spec.VerifiesAfterAppends,
-				Reason:      spec.FalseTamper,
-				Law:         spec.AppendedChainVerifies,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.VerifiesAfterAppends(h, func(ctx context.Context) error {
@@ -398,12 +284,9 @@ func ContractSuite() conform.Suite[chain.Contract] {
 				Defect: contractVerifyReportsTamper,
 			},
 			{
-				ID:          ContractChecks.Verify.VerifiesWhatItAppendedGenerated(),
+				ID:          ContractChecks.Verify.VerifiesWhatItAppended().Generated(),
 				Statement:   "Verify reports no error for a chain that Append produced",
 				Claim:       spec.VerifiesWhatItAppended,
-				Probe:       spec.VerifiesAfterAppends,
-				Reason:      spec.FalseTamper,
-				Law:         spec.AppendedChainVerifies,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnE := c.Draw(
@@ -756,4 +639,4 @@ func contractVerifyReportsTamper(h *ContractHandle) chain.Contract {
 	return &contractVerifyReportsTamperDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:92901ad6efafbdf5b883e17e8fc5b460578e34478dbc3b72b7256248701c3da8
+// dokimi:provenance sha256:ebe1c3a1ff503a68b503de4234596dd64b47fc9d1f4c9aa1a258e62ced8dcc94

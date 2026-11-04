@@ -15,26 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Mixed:
-//
-// Mixed.Now/smoke: Now returns without a panic for derived inputs.
-
-// The derived checks of Mixed that witness their laws at the shallow end:
-//
-// Mixed.Now/smoke
-
-// The refused claims of Mixed:
-//
-// Mixed.Now/deterministic: Now reads the clock or changes its subject, so
-// a repeat can return another value. The remedy is to remove the mixin
-// time-aware or side-effect where a repeat of Now returns the same value.
-//
-// Mixed.Now/time-aware: Now takes no context. The remedy is to add a
-// context parameter to Now.
-//
-// Mixed.Now/steady: Now takes no context. The remedy is to add a context
-// parameter to Now.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -76,9 +56,6 @@ func MixedSuite() conform.Suite[clock.Mixed] {
 				ID:          MixedChecks.Now.Smoke(),
 				Statement:   "Now returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
@@ -225,4 +202,4 @@ func mixedNowPanics(h *MixedHandle) clock.Mixed {
 	return &mixedNowPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:5c7719d8a0f6365e634bfc17836bdfa5163793a66ac16b1f2cc4f887ff59ef93
+// dokimi:provenance sha256:182f98adbb0bb8c689c0f9a37120f55ee1e8c1058c14bd7390382e1c622878b5

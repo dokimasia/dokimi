@@ -93,23 +93,37 @@ func contractStubFetchPins() (cache.Value, error) {
 	return want0, want1
 }
 
-// contractStubStoreSubject returns the subject of [stub.Behaviour] for
-// Store. The subject calls a new double that reports to tb.
+// contractStubStoreSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Store. The subject calls a new double that
+// reports to tb.
 func contractStubStoreSubject(tb assert.TB) stub.Subject[cachetest.ContractStoreCall, cachetest.ContractStoreReturn] {
 	tb.Helper()
 	s := cachetest.NewContractStub(tb)
 	return stub.Subject[cachetest.ContractStoreCall, cachetest.ContractStoreReturn]{
-		Stub: s.OnStore.MethodStub,
+		Stub:  s.OnStore.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = contractStubStore(tb, s)
+		},
+		Arguments: func(tb assert.TB, c cachetest.ContractStoreCall) {
+			tb.Helper()
+			a0, a1, a2 := contractStubStoreArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
+			expect.Equal(tb, c.V, a2, "the call records V")
 		},
 		Result: func() cachetest.ContractStoreReturn {
 			got0 := contractStubStore(tb, s)
 			return cachetest.ContractStoreReturn{Err: got0}
 		},
-		Override: func(mark func()) {
-			s.OnStore.Func(func(_ context.Context, _ string, _ cache.Value) error {
-				mark()
+		Returns: func() cachetest.ContractStoreReturn {
+			want0 := contractStubStorePins()
+			s.OnStore.Returns(want0)
+			return cachetest.ContractStoreReturn{Err: want0}
+		},
+		Override: func(seen func(cachetest.ContractStoreCall)) {
+			s.OnStore.Func(func(p0 context.Context, p1 string, p2 cache.Value) error {
+				seen(cachetest.ContractStoreCall{Ctx: p0, Key: p1, V: p2})
 				var z0 error
 				return z0
 			})
@@ -121,25 +135,38 @@ func contractStubStoreSubject(tb assert.TB) stub.Subject[cachetest.ContractStore
 	}
 }
 
-// contractStubLookupSubject returns the subject of [stub.Behaviour] for
-// Lookup. The subject calls a new double that reports to tb.
+// contractStubLookupSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Lookup. The subject calls a new double that
+// reports to tb.
 func contractStubLookupSubject(
 	tb assert.TB,
 ) stub.Subject[cachetest.ContractLookupCall, cachetest.ContractLookupReturn] {
 	tb.Helper()
 	s := cachetest.NewContractStub(tb)
 	return stub.Subject[cachetest.ContractLookupCall, cachetest.ContractLookupReturn]{
-		Stub: s.OnLookup.MethodStub,
+		Stub:  s.OnLookup.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubLookup(tb, s)
+		},
+		Arguments: func(tb assert.TB, c cachetest.ContractLookupCall) {
+			tb.Helper()
+			a0, a1 := contractStubLookupArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() cachetest.ContractLookupReturn {
 			got0, got1 := contractStubLookup(tb, s)
 			return cachetest.ContractLookupReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnLookup.Func(func(_ context.Context, _ string) (cache.Value, error) {
-				mark()
+		Returns: func() cachetest.ContractLookupReturn {
+			want0, want1 := contractStubLookupPins()
+			s.OnLookup.Returns(want0, want1)
+			return cachetest.ContractLookupReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(cachetest.ContractLookupCall)) {
+			s.OnLookup.Func(func(p0 context.Context, p1 string) (cache.Value, error) {
+				seen(cachetest.ContractLookupCall{Ctx: p0, Key: p1})
 				var z0 cache.Value
 				var z1 error
 				return z0, z1
@@ -152,23 +179,36 @@ func contractStubLookupSubject(
 	}
 }
 
-// contractStubFetchSubject returns the subject of [stub.Behaviour] for
-// Fetch. The subject calls a new double that reports to tb.
+// contractStubFetchSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Fetch. The subject calls a new double that
+// reports to tb.
 func contractStubFetchSubject(tb assert.TB) stub.Subject[cachetest.ContractFetchCall, cachetest.ContractFetchReturn] {
 	tb.Helper()
 	s := cachetest.NewContractStub(tb)
 	return stub.Subject[cachetest.ContractFetchCall, cachetest.ContractFetchReturn]{
-		Stub: s.OnFetch.MethodStub,
+		Stub:  s.OnFetch.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = contractStubFetch(tb, s)
+		},
+		Arguments: func(tb assert.TB, c cachetest.ContractFetchCall) {
+			tb.Helper()
+			a0, a1 := contractStubFetchArgs(tb)
+			expect.Equal(tb, c.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(tb, c.Key, a1, "the call records Key")
 		},
 		Result: func() cachetest.ContractFetchReturn {
 			got0, got1 := contractStubFetch(tb, s)
 			return cachetest.ContractFetchReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnFetch.Func(func(_ context.Context, _ string) (cache.Value, error) {
-				mark()
+		Returns: func() cachetest.ContractFetchReturn {
+			want0, want1 := contractStubFetchPins()
+			s.OnFetch.Returns(want0, want1)
+			return cachetest.ContractFetchReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(cachetest.ContractFetchCall)) {
+			s.OnFetch.Func(func(p0 context.Context, p1 string) (cache.Value, error) {
+				seen(cachetest.ContractFetchCall{Ctx: p0, Key: p1})
 				var z0 cache.Value
 				var z1 error
 				return z0, z1
@@ -194,7 +234,6 @@ func contractStubInstanceOf(tb assert.TB, s *cachetest.ContractStub) contractStu
 		Call: func() {
 			_ = contractStubStore(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -206,174 +245,34 @@ func TestContractStub(t *testing.T) {
 	t.Run("Store", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Store", contractStubStoreSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			_ = contractStubStore(t, s)
-			got := s.OnStore.AssertCalledOnce(t, "Store records the call")
-			a0, a1, a2 := contractStubStoreArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-			expect.Equal(t, got.V, a2, "the call records V")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			var seen []cachetest.ContractStoreCall
-			s.OnStore.OnRecord(func(c cachetest.ContractStoreCall) { seen = append(seen, c) })
-			_ = contractStubStore(t, s)
-			_ = contractStubStore(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Store")
-		})
 	})
 
 	t.Run("Lookup", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Lookup", contractStubLookupSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			_, _ = contractStubLookup(t, s)
-			got := s.OnLookup.AssertCalledOnce(t, "Lookup records the call")
-			a0, a1 := contractStubLookupArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			var seen []cachetest.ContractLookupCall
-			s.OnLookup.OnRecord(func(c cachetest.ContractLookupCall) { seen = append(seen, c) })
-			_, _ = contractStubLookup(t, s)
-			_, _ = contractStubLookup(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Lookup")
-		})
 	})
 
 	t.Run("Fetch", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Fetch", contractStubFetchSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			_, _ = contractStubFetch(t, s)
-			got := s.OnFetch.AssertCalledOnce(t, "Fetch records the call")
-			a0, a1 := contractStubFetchArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			var seen []cachetest.ContractFetchCall
-			s.OnFetch.OnRecord(func(c cachetest.ContractFetchCall) { seen = append(seen, c) })
-			_, _ = contractStubFetch(t, s)
-			_, _ = contractStubFetch(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fetch")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
-			return contractStubInstanceOf(tb, cachetest.NewContractStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Store", func(t *testing.T) {
+		t.Run("Store", func(t *testing.T) {
 			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			_ = contractStubStore(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnStore.CallCount(), 0, "ResetCalls clears the calls of Store")
+			stub.ResetBehaviour(t, "Store", contractStubStoreSubject)
 		})
 
-		t.Run("keeps the results of Returns of Store", func(t *testing.T) {
+		t.Run("Lookup", func(t *testing.T) {
 			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			want0 := contractStubStorePins()
-			s.OnStore.Returns(want0)
-			s.ResetCalls()
-			got0 := contractStubStore(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Store")
+			stub.ResetBehaviour(t, "Lookup", contractStubLookupSubject)
 		})
 
-		t.Run("clears the recorded calls of Lookup", func(t *testing.T) {
+		t.Run("Fetch", func(t *testing.T) {
 			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			_, _ = contractStubLookup(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnLookup.CallCount(), 0, "ResetCalls clears the calls of Lookup")
-		})
-
-		t.Run("keeps the results of Returns of Lookup", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			want0, want1 := contractStubLookupPins()
-			s.OnLookup.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubLookup(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Lookup")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Lookup")
-		})
-
-		t.Run("clears the recorded calls of Fetch", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			_, _ = contractStubFetch(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnFetch.CallCount(), 0, "ResetCalls clears the calls of Fetch")
-		})
-
-		t.Run("keeps the results of Returns of Fetch", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			want0, want1 := contractStubFetchPins()
-			s.OnFetch.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := contractStubFetch(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Fetch")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Fetch")
-		})
-	})
-
-	t.Run("NewContractStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
-			return contractStubInstanceOf(tb, cachetest.NewContractStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewContractStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Store with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Store-failing")
-			s := cachetest.NewContractStubFailing(t, want)
-			r0 := contractStubStore(t, s)
-			assert.ErrorIs(t, r0, want, "Store fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Lookup with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Lookup-failing")
-			s := cachetest.NewContractStubFailing(t, want)
-			_, r1 := contractStubLookup(t, s)
-			assert.ErrorIs(t, r1, want, "Lookup fails with the error of NewContractStubFailing")
-		})
-
-		t.Run("fails Fetch with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Fetch-failing")
-			s := cachetest.NewContractStubFailing(t, want)
-			_, r1 := contractStubFetch(t, s)
-			assert.ErrorIs(t, r1, want, "Fetch fails with the error of NewContractStubFailing")
+			stub.ResetBehaviour(t, "Fetch", contractStubFetchSubject)
 		})
 	})
 
@@ -565,162 +464,4 @@ func TestContractStub(t *testing.T) {
 	})
 }
 
-// TestContractStoreStub checks the methods of ContractStoreStub, which
-// configures Store.
-func TestContractStoreStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Store", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			want0 := contractStubStorePins()
-			s.OnStore.Returns(want0)
-			got0 := contractStubStore(t, s)
-			assert.ErrorIs(t, got0, want0, "Store returns the error that Returns sets")
-		})
-
-		t.Run("configures Store for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := cachetest.NewContractStub(r)
-			s.OnStore.Strict()
-			var want0 error
-			s.OnStore.Returns(want0)
-			_ = contractStubStore(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Store")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Store to the function", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			var got0 context.Context
-			var got1 string
-			var got2 cache.Value
-			s.OnStore.Func(func(p0 context.Context, p1 string, p2 cache.Value) error {
-				got0, got1, got2 = p0, p1, p2
-				var z0 error
-				return z0
-			})
-			_ = contractStubStore(t, s)
-			a0, a1, a2 := contractStubStoreArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-			expect.Equal(t, got2, a2, "the function receives V")
-		})
-	})
-}
-
-// TestContractLookupStub checks the methods of ContractLookupStub, which
-// configures Lookup.
-func TestContractLookupStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Lookup", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			want0, want1 := contractStubLookupPins()
-			s.OnLookup.Returns(want0, want1)
-			got0, got1 := contractStubLookup(t, s)
-			expect.Equal(t, got0, want0, "Lookup returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Lookup returns the error that Returns sets")
-		})
-
-		t.Run("configures Lookup for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := cachetest.NewContractStub(r)
-			s.OnLookup.Strict()
-			var want0 cache.Value
-			var want1 error
-			s.OnLookup.Returns(want0, want1)
-			_, _ = contractStubLookup(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Lookup")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Lookup to the function", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnLookup.Func(func(p0 context.Context, p1 string) (cache.Value, error) {
-				got0, got1 = p0, p1
-				var z0 cache.Value
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubLookup(t, s)
-			a0, a1 := contractStubLookupArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// TestContractFetchStub checks the methods of ContractFetchStub, which
-// configures Fetch.
-func TestContractFetchStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Fetch", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			want0, want1 := contractStubFetchPins()
-			s.OnFetch.Returns(want0, want1)
-			got0, got1 := contractStubFetch(t, s)
-			expect.Equal(t, got0, want0, "Fetch returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Fetch returns the error that Returns sets")
-		})
-
-		t.Run("configures Fetch for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := cachetest.NewContractStub(r)
-			s.OnFetch.Strict()
-			var want0 cache.Value
-			var want1 error
-			s.OnFetch.Returns(want0, want1)
-			_, _ = contractStubFetch(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Fetch")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Fetch to the function", func(t *testing.T) {
-			t.Parallel()
-			s := cachetest.NewContractStub(t)
-			var got0 context.Context
-			var got1 string
-			s.OnFetch.Func(func(p0 context.Context, p1 string) (cache.Value, error) {
-				got0, got1 = p0, p1
-				var z0 cache.Value
-				var z1 error
-				return z0, z1
-			})
-			_, _ = contractStubFetch(t, s)
-			a0, a1 := contractStubFetchArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
-		})
-	})
-}
-
-// dokimi:provenance sha256:6b13a82807820851bfec598f1651e4b3a9b0207926940645ee320b88dac33f8a
+// dokimi:provenance sha256:9aee63355b6c2b470f64cc1f0f729ba64360e7aa8e631bfab086d91918ad71a2

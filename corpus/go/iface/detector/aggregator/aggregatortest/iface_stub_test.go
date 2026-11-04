@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/aggregator/aggregatortest"
 	"go.dokimi.dev/stub"
 )
@@ -40,25 +39,37 @@ func aggregatorStubCountPins() (int, error) {
 	return want0, want1
 }
 
-// aggregatorStubCountSubject returns the subject of [stub.Behaviour] for
-// Count. The subject calls a new double that reports to tb.
+// aggregatorStubCountSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Count. The subject calls a new double that
+// reports to tb.
 func aggregatorStubCountSubject(
 	tb assert.TB,
 ) stub.Subject[aggregatortest.AggregatorCountCall, aggregatortest.AggregatorCountReturn] {
 	tb.Helper()
 	s := aggregatortest.NewAggregatorStub(tb)
 	return stub.Subject[aggregatortest.AggregatorCountCall, aggregatortest.AggregatorCountReturn]{
-		Stub: s.OnCount.MethodStub,
+		Stub:  s.OnCount.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = aggregatorStubCount(tb, s)
+		},
+		Arguments: func(tb assert.TB, c aggregatortest.AggregatorCountCall) {
+			tb.Helper()
+			a0 := aggregatorStubCountArgs(tb)
+			assert.Equal(tb, c.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		},
 		Result: func() aggregatortest.AggregatorCountReturn {
 			got0, got1 := aggregatorStubCount(tb, s)
 			return aggregatortest.AggregatorCountReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnCount.Func(func(_ context.Context) (int, error) {
-				mark()
+		Returns: func() aggregatortest.AggregatorCountReturn {
+			want0, want1 := aggregatorStubCountPins()
+			s.OnCount.Returns(want0, want1)
+			return aggregatortest.AggregatorCountReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(aggregatortest.AggregatorCountCall)) {
+			s.OnCount.Func(func(p0 context.Context) (int, error) {
+				seen(aggregatortest.AggregatorCountCall{Ctx: p0})
 				var z0 int
 				var z1 error
 				return z0, z1
@@ -85,7 +96,6 @@ func aggregatorStubInstanceOf(tb assert.TB, s *aggregatortest.AggregatorStub) ag
 		Call: func() {
 			_, _ = aggregatorStubCount(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -97,69 +107,14 @@ func TestAggregatorStub(t *testing.T) {
 	t.Run("Count", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Count", aggregatorStubCountSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := aggregatortest.NewAggregatorStub(t)
-			_, _ = aggregatorStubCount(t, s)
-			got := s.OnCount.AssertCalledOnce(t, "Count records the call")
-			a0 := aggregatorStubCountArgs(t)
-			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := aggregatortest.NewAggregatorStub(t)
-			var seen []aggregatortest.AggregatorCountCall
-			s.OnCount.OnRecord(func(c aggregatortest.AggregatorCountCall) { seen = append(seen, c) })
-			_, _ = aggregatorStubCount(t, s)
-			_, _ = aggregatorStubCount(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Count")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) aggregatorStubInstance {
-			return aggregatorStubInstanceOf(tb, aggregatortest.NewAggregatorStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Count", func(t *testing.T) {
+		t.Run("Count", func(t *testing.T) {
 			t.Parallel()
-			s := aggregatortest.NewAggregatorStub(t)
-			_, _ = aggregatorStubCount(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnCount.CallCount(), 0, "ResetCalls clears the calls of Count")
-		})
-
-		t.Run("keeps the results of Returns of Count", func(t *testing.T) {
-			t.Parallel()
-			s := aggregatortest.NewAggregatorStub(t)
-			want0, want1 := aggregatorStubCountPins()
-			s.OnCount.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := aggregatorStubCount(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Count")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Count")
-		})
-	})
-
-	t.Run("NewAggregatorStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) aggregatorStubInstance {
-			return aggregatorStubInstanceOf(tb, aggregatortest.NewAggregatorStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewAggregatorStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Count with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Count-failing")
-			s := aggregatortest.NewAggregatorStubFailing(t, want)
-			_, r1 := aggregatorStubCount(t, s)
-			assert.ErrorIs(t, r1, want, "Count fails with the error of NewAggregatorStubFailing")
+			stub.ResetBehaviour(t, "Count", aggregatorStubCountSubject)
 		})
 	})
 
@@ -272,55 +227,4 @@ func TestAggregatorStub(t *testing.T) {
 	})
 }
 
-// TestAggregatorCountStub checks the methods of AggregatorCountStub, which
-// configures Count.
-func TestAggregatorCountStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Count", func(t *testing.T) {
-			t.Parallel()
-			s := aggregatortest.NewAggregatorStub(t)
-			want0, want1 := aggregatorStubCountPins()
-			s.OnCount.Returns(want0, want1)
-			got0, got1 := aggregatorStubCount(t, s)
-			expect.Equal(t, got0, want0, "Count returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "Count returns the error that Returns sets")
-		})
-
-		t.Run("configures Count for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := aggregatortest.NewAggregatorStub(r)
-			s.OnCount.Strict()
-			var want0 int
-			var want1 error
-			s.OnCount.Returns(want0, want1)
-			_, _ = aggregatorStubCount(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Count")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Count to the function", func(t *testing.T) {
-			t.Parallel()
-			s := aggregatortest.NewAggregatorStub(t)
-			var got0 context.Context
-			s.OnCount.Func(func(p0 context.Context) (int, error) {
-				got0 = p0
-				var z0 int
-				var z1 error
-				return z0, z1
-			})
-			_, _ = aggregatorStubCount(t, s)
-			a0 := aggregatorStubCountArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
-		})
-	})
-}
-
-// dokimi:provenance sha256:3bf0471c11ff33c26e61d003816c51e37586bf208a4a099e7347bd88026560c1
+// dokimi:provenance sha256:9f2657ec07e6cc1e1b1840c46fc9f89408ecf10da58e89c3beffe1a0f38d8c94

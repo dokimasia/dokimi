@@ -15,94 +15,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Contract:
-//
-// Contract.Step/smoke: Step returns without a panic for derived inputs.
-//
-// Contract.Step/smoke#generated: Step returns without a panic for derived
-// inputs.
-//
-// Contract.Step/cancel: Step returns an error for a cancelled context.
-//
-// Contract.Step/cancel#generated: Step returns an error for a cancelled
-// context.
-//
-// Contract.Step/saga: Compensate accepts what Step applied.
-//
-// Contract.Step/saga#generated: Compensate accepts what Step applied.
-//
-// Contract.Compensate/smoke: Compensate returns without a panic for
-// derived inputs.
-//
-// Contract.Compensate/smoke#generated: Compensate returns without a panic
-// for derived inputs.
-//
-// Contract.Compensate/cancel: Compensate returns an error for a cancelled
-// context.
-//
-// Contract.Compensate/cancel#generated: Compensate returns an error for a
-// cancelled context.
-//
-// Contract.Ship/smoke: Ship returns without a panic for derived inputs.
-//
-// Contract.Ship/smoke#generated: Ship returns without a panic for derived
-// inputs.
-//
-// Contract.Ship/cancel: Ship returns an error for a cancelled context.
-//
-// Contract.Ship/cancel#generated: Ship returns an error for a cancelled
-// context.
-//
-// Contract.Ship/saga: UndoShip accepts what Ship applied.
-//
-// Contract.Ship/saga#generated: UndoShip accepts what Ship applied.
-//
-// Contract.UndoShip/smoke: UndoShip returns without a panic for derived
-// inputs.
-//
-// Contract.UndoShip/smoke#generated: UndoShip returns without a panic for
-// derived inputs.
-//
-// Contract.UndoShip/cancel: UndoShip returns an error for a cancelled
-// context.
-//
-// Contract.UndoShip/cancel#generated: UndoShip returns an error for a
-// cancelled context.
-//
-// Contract.State/smoke: State returns without a panic for derived inputs.
-//
-// Contract.State/cancel: State returns an error for a cancelled context.
-//
-// Contract.State/zero-on-error: State returns the zero value beside an
-// error.
-
-// The derived checks of Contract that witness their laws at the shallow
-// end:
-//
-// Contract.Step/smoke
-//
-// Contract.Compensate/smoke
-//
-// Contract.Ship/smoke
-//
-// Contract.UndoShip/smoke
-//
-// Contract.State/smoke
-
-// The unclaimed classifications of Contract:
-//
-// The shape:writer of Contract.Step has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Contract.Compensate has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Contract.Ship has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Contract.UndoShip has the stance silent. A write is
-// an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -141,34 +53,16 @@ func (c contractStep) Smoke() conform.ID[saga.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Step returns
-// without a panic for derived inputs.
-func (c contractStep) SmokeGenerated() conform.ID[saga.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Step returns an error for
 // a cancelled context.
 func (c contractStep) Cancel() conform.ID[saga.Contract] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Step returns an
-// error for a cancelled context.
-func (c contractStep) CancelGenerated() conform.ID[saga.Contract] {
-	return c.Check("cancel#generated")
-}
-
 // Saga returns the identity of the check that Compensate accepts what Step
 // applied.
 func (c contractStep) Saga() conform.ID[saga.Contract] {
 	return c.Check("saga")
-}
-
-// SagaGenerated returns the identity of the check that Compensate accepts
-// what Step applied.
-func (c contractStep) SagaGenerated() conform.ID[saga.Contract] {
-	return c.Check("saga#generated")
 }
 
 // contractCompensate is the name of Contract.Compensate, with the
@@ -183,22 +77,10 @@ func (c contractCompensate) Smoke() conform.ID[saga.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Compensate returns
-// without a panic for derived inputs.
-func (c contractCompensate) SmokeGenerated() conform.ID[saga.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Compensate returns an
 // error for a cancelled context.
 func (c contractCompensate) Cancel() conform.ID[saga.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Compensate
-// returns an error for a cancelled context.
-func (c contractCompensate) CancelGenerated() conform.ID[saga.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // contractShip is the name of Contract.Ship, with the identities of its
@@ -213,34 +95,16 @@ func (c contractShip) Smoke() conform.ID[saga.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Ship returns
-// without a panic for derived inputs.
-func (c contractShip) SmokeGenerated() conform.ID[saga.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Ship returns an error for
 // a cancelled context.
 func (c contractShip) Cancel() conform.ID[saga.Contract] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Ship returns an
-// error for a cancelled context.
-func (c contractShip) CancelGenerated() conform.ID[saga.Contract] {
-	return c.Check("cancel#generated")
-}
-
 // Saga returns the identity of the check that UndoShip accepts what Ship
 // applied.
 func (c contractShip) Saga() conform.ID[saga.Contract] {
 	return c.Check("saga")
-}
-
-// SagaGenerated returns the identity of the check that UndoShip accepts
-// what Ship applied.
-func (c contractShip) SagaGenerated() conform.ID[saga.Contract] {
-	return c.Check("saga#generated")
 }
 
 // contractUndoShip is the name of Contract.UndoShip, with the identities
@@ -255,22 +119,10 @@ func (c contractUndoShip) Smoke() conform.ID[saga.Contract] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that UndoShip returns
-// without a panic for derived inputs.
-func (c contractUndoShip) SmokeGenerated() conform.ID[saga.Contract] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that UndoShip returns an error
 // for a cancelled context.
 func (c contractUndoShip) Cancel() conform.ID[saga.Contract] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that UndoShip returns
-// an error for a cancelled context.
-func (c contractUndoShip) CancelGenerated() conform.ID[saga.Contract] {
-	return c.Check("cancel#generated")
 }
 
 // contractState is the name of Contract.State, with the identities of its
@@ -309,9 +161,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.Step.Smoke(),
 				Statement:   "Step returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -322,12 +171,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractStepPanics,
 			},
 			{
-				ID:          ContractChecks.Step.SmokeGenerated(),
+				ID:          ContractChecks.Step.Smoke().Generated(),
 				Statement:   "Step returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -341,9 +187,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.Step.Cancel(),
 				Statement:   "Step returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -353,12 +196,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractStepIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Step.CancelGenerated(),
+				ID:          ContractChecks.Step.Cancel().Generated(),
 				Statement:   "Step returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -372,9 +212,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.Step.Saga(),
 				Statement:   "Compensate accepts what Step applied",
 				Claim:       spec.Saga,
-				Probe:       spec.CompensatesTheStep,
-				Reason:      spec.UncompensatedStep,
-				Law:         spec.CompensationAcceptsItsStep,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.CompensatesTheStep(h, func(ctx context.Context) error {
@@ -386,12 +223,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractCompensateCompensationRefuses,
 			},
 			{
-				ID:          ContractChecks.Step.SagaGenerated(),
+				ID:          ContractChecks.Step.Saga().Generated(),
 				Statement:   "Compensate accepts what Step applied",
 				Claim:       spec.Saga,
-				Probe:       spec.CompensatesTheStep,
-				Reason:      spec.UncompensatedStep,
-				Law:         spec.CompensationAcceptsItsStep,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -407,9 +241,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.Compensate.Smoke(),
 				Statement:   "Compensate returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -420,12 +251,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractCompensatePanics,
 			},
 			{
-				ID:          ContractChecks.Compensate.SmokeGenerated(),
+				ID:          ContractChecks.Compensate.Smoke().Generated(),
 				Statement:   "Compensate returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -439,9 +267,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.Compensate.Cancel(),
 				Statement:   "Compensate returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -451,12 +276,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractCompensateIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Compensate.CancelGenerated(),
+				ID:          ContractChecks.Compensate.Cancel().Generated(),
 				Statement:   "Compensate returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -470,9 +292,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.Ship.Smoke(),
 				Statement:   "Ship returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -483,12 +302,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractShipPanics,
 			},
 			{
-				ID:          ContractChecks.Ship.SmokeGenerated(),
+				ID:          ContractChecks.Ship.Smoke().Generated(),
 				Statement:   "Ship returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -502,9 +318,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.Ship.Cancel(),
 				Statement:   "Ship returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -514,12 +327,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractShipIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.Ship.CancelGenerated(),
+				ID:          ContractChecks.Ship.Cancel().Generated(),
 				Statement:   "Ship returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -533,9 +343,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.Ship.Saga(),
 				Statement:   "UndoShip accepts what Ship applied",
 				Claim:       spec.Saga,
-				Probe:       spec.CompensatesTheStep,
-				Reason:      spec.UncompensatedStep,
-				Law:         spec.CompensationAcceptsItsStep,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.CompensatesTheStep(h, func(ctx context.Context) error {
@@ -547,12 +354,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractUndoShipCompensationRefuses,
 			},
 			{
-				ID:          ContractChecks.Ship.SagaGenerated(),
+				ID:          ContractChecks.Ship.Saga().Generated(),
 				Statement:   "UndoShip accepts what Ship applied",
 				Claim:       spec.Saga,
-				Probe:       spec.CompensatesTheStep,
-				Reason:      spec.UncompensatedStep,
-				Law:         spec.CompensationAcceptsItsStep,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -568,9 +372,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.UndoShip.Smoke(),
 				Statement:   "UndoShip returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -581,12 +382,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractUndoShipPanics,
 			},
 			{
-				ID:          ContractChecks.UndoShip.SmokeGenerated(),
+				ID:          ContractChecks.UndoShip.Smoke().Generated(),
 				Statement:   "UndoShip returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -600,9 +398,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.UndoShip.Cancel(),
 				Statement:   "UndoShip returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -612,12 +407,9 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				Defect: contractUndoShipIgnoresCancel,
 			},
 			{
-				ID:          ContractChecks.UndoShip.CancelGenerated(),
+				ID:          ContractChecks.UndoShip.Cancel().Generated(),
 				Statement:   "UndoShip returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ContractHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[saga.Value](), "v")
@@ -631,9 +423,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.State.Smoke(),
 				Statement:   "State returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ContractHandle) {
@@ -648,9 +437,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.State.Cancel(),
 				Statement:   "State returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -664,9 +450,6 @@ func ContractSuite() conform.Suite[saga.Contract] {
 				ID:          ContractChecks.State.ZeroOnError(),
 				Statement:   "State returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ContractHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -1132,4 +915,4 @@ func contractStateValueBeside(h *ContractHandle) saga.Contract {
 	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:3fd086e7d01a95c41650f36dc9209d6206d1dd70cf79b475656b4072f83f09ec
+// dokimi:provenance sha256:7284931642f750537bd1981ae43e3f71373d5cb945caab4e7f72aa6239032abf

@@ -49,30 +49,7 @@ func TestLabellerSuite(t *testing.T) {
 				},
 				Defect: func(*sampledtest.LabellerHandle) sampled.Labeller { return &labellerSubject{} },
 			}),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.Idempotent(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.IdempotentGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sampled.Labeller]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -94,38 +71,20 @@ func TestLabellerSuite(t *testing.T) {
 				},
 				Defect: func(*sampledtest.LabellerHandle) sampled.Labeller { return &labellerSubject{} },
 			}),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.Idempotent(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sampledtest.LabellerChecks.Apply.IdempotentGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sampled.Labeller]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// labellerSuite is the suite of Labeller that the tests of the planted
+// defect of a ceiling apply.
+var labellerSuite = sampledtest.LabellerSuite()
+
 // labellerIdle returns the planted defect of a ceiling of Labeller with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func labellerIdle(h *sampledtest.LabellerHandle) sampled.Labeller {
-	return sampledtest.LabellerSuite().Calls[0].Over(h, func() {})
+	return labellerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestLabellerSuiteBudgets applies the allocation ceilings of the suite of
@@ -137,30 +96,7 @@ func TestLabellerSuiteBudgets(t *testing.T) {
 		t,
 		labellerIdle,
 		conform.Ceilings(sampledtest.LabellerChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.IdempotentGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[sampled.Labeller]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -171,30 +107,7 @@ func FuzzLabellerSuiteApply(f *testing.F) {
 		f,
 		sampledtest.LabellerChecks.Apply.Callable,
 		labellerIdle,
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.Idempotent(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sampledtest.LabellerChecks.Apply.IdempotentGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
+		conform.ExcuseSuite[sampled.Labeller]("the planted defect of a ceiling returns the zero results of each call"),
 	)
 }
 
@@ -206,4 +119,4 @@ func BenchmarkLabellerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7b9ffa57c6e09ba9b3489c41b8b7f891da504e6589514d6597d659aad05f4c66
+// dokimi:provenance sha256:b10024003a7c4a473d6a6953afd327d763c1bc541870c6f574b1eff93dd11ada

@@ -49,14 +49,7 @@ func TestPredicateSuite(t *testing.T) {
 				},
 				Defect: func(*predicatetest.PredicateHandle) predicate.Predicate { return &predicateSubject{} },
 			}),
-			conform.Excuse(
-				predicatetest.PredicateChecks.IsEmpty.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				predicatetest.PredicateChecks.IsEmpty.Predicate(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[predicate.Predicate]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -78,22 +71,20 @@ func TestPredicateSuite(t *testing.T) {
 				},
 				Defect: func(*predicatetest.PredicateHandle) predicate.Predicate { return &predicateSubject{} },
 			}),
-			conform.Excuse(
-				predicatetest.PredicateChecks.IsEmpty.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				predicatetest.PredicateChecks.IsEmpty.Predicate(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[predicate.Predicate]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// predicateSuite is the suite of Predicate that the tests of the planted
+// defect of a ceiling apply.
+var predicateSuite = predicatetest.PredicateSuite()
+
 // predicateIdle returns the planted defect of a ceiling of Predicate with
-// a spend of nothing, a subject that answers each call at once.
+// a spend of nothing. Each call of the defect returns its zero results at
+// once.
 func predicateIdle(h *predicatetest.PredicateHandle) predicate.Predicate {
-	return predicatetest.PredicateSuite().Calls[0].Over(h, func() {})
+	return predicateSuite.Calls[0].Over(h, func() {})
 }
 
 // TestPredicateSuiteBudgets applies the allocation ceilings of the suite
@@ -105,13 +96,8 @@ func TestPredicateSuiteBudgets(t *testing.T) {
 		t,
 		predicateIdle,
 		conform.Ceilings(predicatetest.PredicateChecks.IsEmpty.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			predicatetest.PredicateChecks.IsEmpty.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			predicatetest.PredicateChecks.IsEmpty.Predicate(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[predicate.Predicate](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -123,13 +109,8 @@ func FuzzPredicateSuiteIsEmpty(f *testing.F) {
 		f,
 		predicatetest.PredicateChecks.IsEmpty.Callable,
 		predicateIdle,
-		conform.Excuse(
-			predicatetest.PredicateChecks.IsEmpty.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			predicatetest.PredicateChecks.IsEmpty.Predicate(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[predicate.Predicate](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -142,4 +123,4 @@ func BenchmarkPredicateSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3fcbe061831e02bbf707a2fc59ba7ded6d42a7a3f4f994da386b267490d23559
+// dokimi:provenance sha256:62f7ed2b3f058b5bd54e3cd7762ea3403545a1a2ac3b81db4b18cf332aae2a58

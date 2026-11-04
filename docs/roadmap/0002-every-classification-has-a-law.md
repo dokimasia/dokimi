@@ -64,3 +64,4 @@ Nothing has to exist first. The derivation of checks in milestone 0003 reads the
 | 2026-10-28 | The spec does not vendor assert-spec, and a probe lists no assertions | The build of each runtime fails on an assertion that its assert library lacks, so a copy of the definition checked nothing more |
 | 2026-10-28 | In progress, with five of the six lines of Done when met | The spec, its renderer and its test exist. A release of dokimi that contains the spec is the last line |
 | 2026-11-01 | Done, released in 0.7.0 | The release v0.7.0 of dokimi contains the spec, and dokimi-go vendors its copy from that tag |
+| 2026-11-04 | The runtime contract of the spec moves to dokimasia/dokimi-spec, and the rules of the generator, with the stances of `unclaimed`, move to the package `rules` of dokimi | A language repository vendors the runtime contract alone, and a rule of the generator changes without a release of the spec |

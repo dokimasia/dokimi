@@ -42,3 +42,4 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0031](0031-judges-of-deliveries-iterations-totals-and-faults.md) | Judges of deliveries, iterations, totals and failed calls | Accepted |
 | [0032](0032-derived-claims-that-a-declaration-narrows.md) | Derived claims that a declaration narrows | Accepted |
 | [0033](0033-the-isolation-levels-of-transactions.md) | The isolation levels of transactions | Accepted |
+| [0034](0034-the-runtime-contract-and-the-rules-of-the-generator.md) | The runtime contract and the rules of the generator | Accepted |

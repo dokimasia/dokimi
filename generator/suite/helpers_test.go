@@ -4,8 +4,10 @@
 package suite_test
 
 import (
+	"maps"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"go.dokimi.dev/assert"
@@ -122,14 +124,42 @@ func derivedNamed(t *testing.T, s *suite.Suite, field, segment string) *suite.De
 	return &s.Derived[at]
 }
 
-// generate runs a new suite over the packages pkgs of the tree dir, and
-// returns what it records. It checks that each family claims its files
-// through its template.
+// generation is what generate records over one tree and one list of
+// packages. ran reports that the spec that recorded it ran the generation
+// whole.
+type generation struct {
+	once sync.Once
+	got  generated
+	ran  bool
+}
+
+// generations contains the generation of each tree and list of packages that
+// a spec asks generate for, by the tree and the packages. A fixture loads and
+// parses its tree again for each spec, so the specs of the package share each
+// generation. No spec changes a record inside a generation.
+var generations sync.Map
+
+// generate runs a new suite over the packages pkgs of the tree dir once in the
+// test binary, and returns what it records. It returns copies of the maps and
+// the lists of the generation, so a spec may add to them, as a spec that
+// merges the suites of two generations does. It checks that each family
+// claims its files through its template. A spec whose generation failed in
+// another spec fails at the start.
 func generate(t *testing.T, dir string, pkgs ...string) generated {
 	t.Helper()
 
-	p := suite.New()
-	return recorded(t, fixture(t, dir, p, pkgs...), p)
+	stored, _ := generations.LoadOrStore(dir+"\n"+strings.Join(pkgs, "\n"), new(generation))
+	g, _ := stored.(*generation)
+	g.once.Do(func() {
+		p := suite.New()
+		g.got = recorded(t, fixture(t, dir, p, pkgs...), p)
+		g.ran = true
+	})
+	assert.True(t, g.ran, "the generation over "+strings.Join(pkgs, ", ")+" runs whole in the spec that runs it first")
+	got := g.got
+	got.suites, got.tests, got.beside = maps.Clone(got.suites), maps.Clone(got.tests), maps.Clone(got.beside)
+	got.inside, got.locks, got.findings = maps.Clone(got.inside), slices.Clone(got.locks), slices.Clone(got.findings)
+	return got
 }
 
 // ref returns the reference of a record to the function named name of the

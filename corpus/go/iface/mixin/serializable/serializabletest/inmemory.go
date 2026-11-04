@@ -15,23 +15,42 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable"
 )
 
-// ErrNotFound is the error of Get for a key that no recorded entry has.
-var ErrNotFound = errors.New("serializabletest: not found")
-
-// ErrNotAdmissible is the error of Record for an entry that the isolation
-// level refuses.
-var ErrNotAdmissible = errors.New("serializabletest: the isolation level refuses the entry")
+// ErrConflict is the error of a commit of a transaction that read a list that
+// another transaction changed after its begin.
+var ErrConflict = errors.New("serializabletest: conflict")
 
 // InMemory implements [serializable.Mixed] in memory. The corpus applies the
 // suite of Mixed to it as a subject.
 //
+// A transaction reads the committed lists with its own appends at their end.
+// Its commit fails with ErrConflict where a list that it read changed after
+// its begin, and applies its appends otherwise. Each list that a committed
+// transaction read is unchanged at its commit, so the order of the commits is
+// a serial order. No call keeps the store locked after it returns, so the
+// transactions of concurrent clients interleave.
+//
 //dokimi:subject serializable.Mixed new=NewInMemory
 type InMemory struct {
-	version map[string]int64
-	wrote   map[keyed]bool
-	entries []serializable.Entry
-	txn     int
+	lists   map[string][]int
+	changed map[string]int64
+	open    map[int64]*txn
+	next    int64
+	commits int64
 	mu      sync.Mutex
+}
+
+// txn is an open transaction with the keys that it read and its appends.
+// begin is the number of commits before its begin.
+type txn struct {
+	read    map[string]bool
+	appends []appended
+	begin   int64
+}
+
+// appended is one append of a transaction.
+type appended struct {
+	key string
+	v   int
 }
 
 // The compiler checks that InMemory implements [serializable.Mixed].
@@ -39,80 +58,109 @@ var _ serializable.Mixed = (*InMemory)(nil)
 
 // NewInMemory returns a new InMemory.
 func NewInMemory() *InMemory {
-	return &InMemory{version: map[string]int64{}, wrote: map[keyed]bool{}}
+	return &InMemory{lists: map[string][]int{}, changed: map[string]int64{}, open: map[int64]*txn{}}
 }
 
-// Record implements [serializable.Mixed].
-func (s *InMemory) Record(ctx context.Context, e serializable.Entry) error {
+// Begin implements [serializable.Mixed].
+func (s *InMemory) Begin(ctx context.Context) (serializable.Tx, error) {
+	if err := contextErr(ctx); err != nil {
+		return serializable.Tx{}, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.next++
+	s.open[s.next] = &txn{read: map[string]bool{}, begin: s.commits}
+	return serializable.Tx{ID: s.next}, nil
+}
+
+// Commit implements [serializable.Mixed].
+func (s *InMemory) Commit(ctx context.Context, tx serializable.Tx) error {
 	if err := contextErr(ctx); err != nil {
 		return err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := s.admits(e); err != nil {
+	t, err := s.close(tx)
+	if err != nil {
 		return err
 	}
-	if e.Txn > s.txn {
-		s.txn = e.Txn
+	for key := range t.read {
+		if s.changed[key] > t.begin {
+			return fmt.Errorf("serializabletest: transaction %d read %q: %w", tx.ID, key, ErrConflict)
+		}
 	}
-	if e.Write {
-		s.version[e.Key] = e.Version
-		s.wrote[keyed{txn: e.Txn, key: e.Key}] = true
+	s.commits++
+	for _, a := range t.appends {
+		s.lists[a.key] = append(s.lists[a.key], a.v)
+		s.changed[a.key] = s.commits
 	}
-	s.entries = append(s.entries, e)
 	return nil
 }
 
-// History implements [serializable.Mixed].
-func (s *InMemory) History(ctx context.Context) ([]serializable.Entry, error) {
+// Rollback implements [serializable.Mixed].
+func (s *InMemory) Rollback(ctx context.Context, tx serializable.Tx) error {
+	if err := contextErr(ctx); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, err := s.close(tx)
+	return err
+}
+
+// Append implements [serializable.Mixed].
+func (s *InMemory) Append(ctx context.Context, tx serializable.Tx, key string, v int) error {
+	if err := contextErr(ctx); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	t, err := s.of(tx)
+	if err != nil {
+		return err
+	}
+	t.appends = append(t.appends, appended{key: key, v: v})
+	return nil
+}
+
+// Get implements [serializable.Mixed].
+func (s *InMemory) Get(ctx context.Context, tx serializable.Tx, key string) ([]int, error) {
 	if err := contextErr(ctx); err != nil {
 		return nil, err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return slices.Clone(s.entries), nil
-}
-
-// Get implements [serializable.Mixed].
-func (s *InMemory) Get(ctx context.Context, key string) (serializable.Entry, error) {
-	if err := contextErr(ctx); err != nil {
-		return serializable.Entry{}, err
+	t, err := s.of(tx)
+	if err != nil {
+		return nil, err
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, e := range slices.Backward(s.entries) {
-		if e.Key == key {
-			return e, nil
+	t.read[key] = true
+	list := slices.Clone(s.lists[key])
+	for _, a := range t.appends {
+		if a.key == key {
+			list = append(list, a.v)
 		}
 	}
-	return serializable.Entry{}, ErrNotFound
+	return list, nil
 }
 
-// keyed is the pair of a transaction and a key that the transaction wrote.
-type keyed struct {
-	key string
-	txn int
-}
-
-// admits returns an error that wraps ErrNotAdmissible when the isolation level
-// refuses e, and nil otherwise.
-func (s *InMemory) admits(e serializable.Entry) error {
-	switch {
-	case e.Txn <= 0:
-		return fmt.Errorf("%w: transaction %d", ErrNotAdmissible, e.Txn)
-	case e.Version <= 0:
-		return fmt.Errorf("%w: version %d", ErrNotAdmissible, e.Version)
-	case e.Txn < s.txn:
-		return fmt.Errorf("%w: transaction %d closed at %d", ErrNotAdmissible, e.Txn, s.txn)
-	case e.Write && e.Version <= s.version[e.Key]:
-		return fmt.Errorf("%w: %q is at version %d", ErrNotAdmissible, e.Key, s.version[e.Key])
-	case e.Write && s.wrote[keyed{txn: e.Txn, key: e.Key}]:
-		return fmt.Errorf("%w: transaction %d already wrote %q", ErrNotAdmissible, e.Txn, e.Key)
-	case !e.Write && e.Version != s.version[e.Key]:
-		return fmt.Errorf("%w: %q is at version %d, not %d",
-			ErrNotAdmissible, e.Key, s.version[e.Key], e.Version)
+// of returns the open transaction of tx, and an error that wraps
+// [serializable.ErrClosed] for a transaction that is not open.
+func (s *InMemory) of(tx serializable.Tx) (*txn, error) {
+	t, open := s.open[tx.ID]
+	if !open {
+		return nil, fmt.Errorf("serializabletest: transaction %d: %w", tx.ID, serializable.ErrClosed)
 	}
-	return nil
+	return t, nil
+}
+
+// close closes the open transaction of tx and returns it.
+func (s *InMemory) close(tx serializable.Tx) (*txn, error) {
+	t, err := s.of(tx)
+	if err == nil {
+		delete(s.open, tx.ID)
+	}
+	return t, err
 }
 
 // contextErr returns the error of a canceled or expired context, and an error

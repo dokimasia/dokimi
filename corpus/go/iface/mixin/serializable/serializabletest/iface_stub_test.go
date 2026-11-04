@@ -18,134 +18,246 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// mixedStubRecordArgs returns the samples of the arguments of Record.
-func mixedStubRecordArgs(tb assert.TB) (context.Context, serializable.Entry) {
-	tb.Helper()
-	a0 := assert.Context(tb)
-	var a1 serializable.Entry
-	a1 = serializable.Entry{Key: "Key-a"}
-	return a0, a1
-}
-
-// mixedStubRecord calls Record of s with the samples of its arguments.
-func mixedStubRecord(tb assert.TB, s *serializabletest.MixedStub) error {
-	tb.Helper()
-	a0, a1 := mixedStubRecordArgs(tb)
-	return s.Record(a0, a1)
-}
-
-// mixedStubRecordPins returns the samples of the results of Record, with a
-// new error as its error result.
-func mixedStubRecordPins() error {
-	want0 := errors.New("Record-returns")
-	return want0
-}
-
-// mixedStubHistoryArgs returns the samples of the arguments of History.
-func mixedStubHistoryArgs(tb assert.TB) context.Context {
+// mixedStubBeginArgs returns the samples of the arguments of Begin.
+func mixedStubBeginArgs(tb assert.TB) context.Context {
 	tb.Helper()
 	a0 := assert.Context(tb)
 	return a0
 }
 
-// mixedStubHistory calls History of s with the samples of its arguments.
-func mixedStubHistory(tb assert.TB, s *serializabletest.MixedStub) ([]serializable.Entry, error) {
+// mixedStubBegin calls Begin of s with the samples of its arguments.
+func mixedStubBegin(tb assert.TB, s *serializabletest.MixedStub) (serializable.Tx, error) {
 	tb.Helper()
-	a0 := mixedStubHistoryArgs(tb)
-	return s.History(a0)
+	a0 := mixedStubBeginArgs(tb)
+	return s.Begin(a0)
 }
 
-// mixedStubHistoryPins returns the samples of the results of History, with
-// a new error as its error result.
-func mixedStubHistoryPins() ([]serializable.Entry, error) {
-	var want0 []serializable.Entry
-	want1 := errors.New("History-returns")
-	want0 = []serializable.Entry{{Key: "Key-a"}}
+// mixedStubBeginPins returns the samples of the results of Begin, with a
+// new error as its error result.
+func mixedStubBeginPins() (serializable.Tx, error) {
+	var want0 serializable.Tx
+	want1 := errors.New("Begin-returns")
+	want0 = serializable.Tx{ID: 42}
 	return want0, want1
 }
 
-// mixedStubGetArgs returns the samples of the arguments of Get.
-func mixedStubGetArgs(tb assert.TB) (context.Context, string) {
+// mixedStubCommitArgs returns the samples of the arguments of Commit.
+func mixedStubCommitArgs(tb assert.TB) (context.Context, serializable.Tx) {
 	tb.Helper()
 	a0 := assert.Context(tb)
-	var a1 string
-	a1 = "Get-a"
+	var a1 serializable.Tx
+	a1 = serializable.Tx{ID: 42}
 	return a0, a1
 }
 
-// mixedStubGet calls Get of s with the samples of its arguments.
-func mixedStubGet(tb assert.TB, s *serializabletest.MixedStub) (serializable.Entry, error) {
+// mixedStubCommit calls Commit of s with the samples of its arguments.
+func mixedStubCommit(tb assert.TB, s *serializabletest.MixedStub) error {
 	tb.Helper()
-	a0, a1 := mixedStubGetArgs(tb)
-	return s.Get(a0, a1)
+	a0, a1 := mixedStubCommitArgs(tb)
+	return s.Commit(a0, a1)
+}
+
+// mixedStubCommitPins returns the samples of the results of Commit, with a
+// new error as its error result.
+func mixedStubCommitPins() error {
+	want0 := errors.New("Commit-returns")
+	return want0
+}
+
+// mixedStubRollbackArgs returns the samples of the arguments of Rollback.
+func mixedStubRollbackArgs(tb assert.TB) (context.Context, serializable.Tx) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 serializable.Tx
+	a1 = serializable.Tx{ID: 42}
+	return a0, a1
+}
+
+// mixedStubRollback calls Rollback of s with the samples of its arguments.
+func mixedStubRollback(tb assert.TB, s *serializabletest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubRollbackArgs(tb)
+	return s.Rollback(a0, a1)
+}
+
+// mixedStubRollbackPins returns the samples of the results of Rollback,
+// with a new error as its error result.
+func mixedStubRollbackPins() error {
+	want0 := errors.New("Rollback-returns")
+	return want0
+}
+
+// mixedStubAppendArgs returns the samples of the arguments of Append.
+func mixedStubAppendArgs(tb assert.TB) (context.Context, serializable.Tx, string, int) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 serializable.Tx
+	var a2 string
+	var a3 int
+	a1 = serializable.Tx{ID: 42}
+	a2 = "Append-a"
+	a3 = 42
+	return a0, a1, a2, a3
+}
+
+// mixedStubAppend calls Append of s with the samples of its arguments.
+func mixedStubAppend(tb assert.TB, s *serializabletest.MixedStub) error {
+	tb.Helper()
+	a0, a1, a2, a3 := mixedStubAppendArgs(tb)
+	return s.Append(a0, a1, a2, a3)
+}
+
+// mixedStubAppendPins returns the samples of the results of Append, with a
+// new error as its error result.
+func mixedStubAppendPins() error {
+	want0 := errors.New("Append-returns")
+	return want0
+}
+
+// mixedStubGetArgs returns the samples of the arguments of Get.
+func mixedStubGetArgs(tb assert.TB) (context.Context, serializable.Tx, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 serializable.Tx
+	var a2 string
+	a1 = serializable.Tx{ID: 42}
+	a2 = "Get-a"
+	return a0, a1, a2
+}
+
+// mixedStubGet calls Get of s with the samples of its arguments.
+func mixedStubGet(tb assert.TB, s *serializabletest.MixedStub) ([]int, error) {
+	tb.Helper()
+	a0, a1, a2 := mixedStubGetArgs(tb)
+	return s.Get(a0, a1, a2)
 }
 
 // mixedStubGetPins returns the samples of the results of Get, with a new
 // error as its error result.
-func mixedStubGetPins() (serializable.Entry, error) {
-	var want0 serializable.Entry
+func mixedStubGetPins() ([]int, error) {
+	var want0 []int
 	want1 := errors.New("Get-returns")
-	want0 = serializable.Entry{Key: "Key-a"}
+	want0 = []int{42}
 	return want0, want1
 }
 
-// mixedStubRecordSubject returns the subject of [stub.Behaviour] for
-// Record. The subject calls a new double that reports to tb.
-func mixedStubRecordSubject(
+// mixedStubBeginSubject returns the subject of [stub.Behaviour] for Begin.
+// The subject calls a new double that reports to tb.
+func mixedStubBeginSubject(
 	tb assert.TB,
-) stub.Subject[serializabletest.MixedRecordCall, serializabletest.MixedRecordReturn] {
+) stub.Subject[serializabletest.MixedBeginCall, serializabletest.MixedBeginReturn] {
 	tb.Helper()
 	s := serializabletest.NewMixedStub(tb)
-	return stub.Subject[serializabletest.MixedRecordCall, serializabletest.MixedRecordReturn]{
-		Stub: s.OnRecord.MethodStub,
+	return stub.Subject[serializabletest.MixedBeginCall, serializabletest.MixedBeginReturn]{
+		Stub: s.OnBegin.MethodStub,
 		Call: func() {
-			_ = mixedStubRecord(tb, s)
+			_, _ = mixedStubBegin(tb, s)
 		},
-		Result: func() serializabletest.MixedRecordReturn {
-			got0 := mixedStubRecord(tb, s)
-			return serializabletest.MixedRecordReturn{Err: got0}
+		Result: func() serializabletest.MixedBeginReturn {
+			got0, got1 := mixedStubBegin(tb, s)
+			return serializabletest.MixedBeginReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
-			s.OnRecord.Func(func(_ context.Context, _ serializable.Entry) error {
+			s.OnBegin.Func(func(_ context.Context) (serializable.Tx, error) {
+				mark()
+				var z0 serializable.Tx
+				var z1 error
+				return z0, z1
+			})
+		},
+		Fails: func() error {
+			_, r1 := mixedStubBegin(tb, s)
+			return r1
+		},
+	}
+}
+
+// mixedStubCommitSubject returns the subject of [stub.Behaviour] for
+// Commit. The subject calls a new double that reports to tb.
+func mixedStubCommitSubject(
+	tb assert.TB,
+) stub.Subject[serializabletest.MixedCommitCall, serializabletest.MixedCommitReturn] {
+	tb.Helper()
+	s := serializabletest.NewMixedStub(tb)
+	return stub.Subject[serializabletest.MixedCommitCall, serializabletest.MixedCommitReturn]{
+		Stub: s.OnCommit.MethodStub,
+		Call: func() {
+			_ = mixedStubCommit(tb, s)
+		},
+		Result: func() serializabletest.MixedCommitReturn {
+			got0 := mixedStubCommit(tb, s)
+			return serializabletest.MixedCommitReturn{Err: got0}
+		},
+		Override: func(mark func()) {
+			s.OnCommit.Func(func(_ context.Context, _ serializable.Tx) error {
 				mark()
 				var z0 error
 				return z0
 			})
 		},
 		Fails: func() error {
-			r0 := mixedStubRecord(tb, s)
+			r0 := mixedStubCommit(tb, s)
 			return r0
 		},
 	}
 }
 
-// mixedStubHistorySubject returns the subject of [stub.Behaviour] for
-// History. The subject calls a new double that reports to tb.
-func mixedStubHistorySubject(
+// mixedStubRollbackSubject returns the subject of [stub.Behaviour] for
+// Rollback. The subject calls a new double that reports to tb.
+func mixedStubRollbackSubject(
 	tb assert.TB,
-) stub.Subject[serializabletest.MixedHistoryCall, serializabletest.MixedHistoryReturn] {
+) stub.Subject[serializabletest.MixedRollbackCall, serializabletest.MixedRollbackReturn] {
 	tb.Helper()
 	s := serializabletest.NewMixedStub(tb)
-	return stub.Subject[serializabletest.MixedHistoryCall, serializabletest.MixedHistoryReturn]{
-		Stub: s.OnHistory.MethodStub,
+	return stub.Subject[serializabletest.MixedRollbackCall, serializabletest.MixedRollbackReturn]{
+		Stub: s.OnRollback.MethodStub,
 		Call: func() {
-			_, _ = mixedStubHistory(tb, s)
+			_ = mixedStubRollback(tb, s)
 		},
-		Result: func() serializabletest.MixedHistoryReturn {
-			got0, got1 := mixedStubHistory(tb, s)
-			return serializabletest.MixedHistoryReturn{Result: got0, Err: got1}
+		Result: func() serializabletest.MixedRollbackReturn {
+			got0 := mixedStubRollback(tb, s)
+			return serializabletest.MixedRollbackReturn{Err: got0}
 		},
 		Override: func(mark func()) {
-			s.OnHistory.Func(func(_ context.Context) ([]serializable.Entry, error) {
+			s.OnRollback.Func(func(_ context.Context, _ serializable.Tx) error {
 				mark()
-				var z0 []serializable.Entry
-				var z1 error
-				return z0, z1
+				var z0 error
+				return z0
 			})
 		},
 		Fails: func() error {
-			_, r1 := mixedStubHistory(tb, s)
-			return r1
+			r0 := mixedStubRollback(tb, s)
+			return r0
+		},
+	}
+}
+
+// mixedStubAppendSubject returns the subject of [stub.Behaviour] for
+// Append. The subject calls a new double that reports to tb.
+func mixedStubAppendSubject(
+	tb assert.TB,
+) stub.Subject[serializabletest.MixedAppendCall, serializabletest.MixedAppendReturn] {
+	tb.Helper()
+	s := serializabletest.NewMixedStub(tb)
+	return stub.Subject[serializabletest.MixedAppendCall, serializabletest.MixedAppendReturn]{
+		Stub: s.OnAppend.MethodStub,
+		Call: func() {
+			_ = mixedStubAppend(tb, s)
+		},
+		Result: func() serializabletest.MixedAppendReturn {
+			got0 := mixedStubAppend(tb, s)
+			return serializabletest.MixedAppendReturn{Err: got0}
+		},
+		Override: func(mark func()) {
+			s.OnAppend.Func(func(_ context.Context, _ serializable.Tx, _ string, _ int) error {
+				mark()
+				var z0 error
+				return z0
+			})
+		},
+		Fails: func() error {
+			r0 := mixedStubAppend(tb, s)
+			return r0
 		},
 	}
 }
@@ -165,9 +277,9 @@ func mixedStubGetSubject(tb assert.TB) stub.Subject[serializabletest.MixedGetCal
 			return serializabletest.MixedGetReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string) (serializable.Entry, error) {
+			s.OnGet.Func(func(_ context.Context, _ serializable.Tx, _ string) ([]int, error) {
 				mark()
-				var z0 serializable.Entry
+				var z0 []int
 				var z1 error
 				return z0, z1
 			})
@@ -181,16 +293,16 @@ func mixedStubGetSubject(tb assert.TB) stub.Subject[serializabletest.MixedGetCal
 
 // mixedStubInstance is the instance of a serializabletest.MixedStub that
 // the checks of the constructors and the options drive.
-type mixedStubInstance = stub.Instance[serializabletest.MixedRecordCall]
+type mixedStubInstance = stub.Instance[serializabletest.MixedBeginCall]
 
 // mixedStubInstanceOf returns the instance of s. The options apply to the
-// whole double, so the checks call Record alone.
+// whole double, so the checks call Begin alone.
 func mixedStubInstanceOf(tb assert.TB, s *serializabletest.MixedStub) mixedStubInstance {
 	tb.Helper()
 	return mixedStubInstance{
-		Stub: s.OnRecord.MethodStub,
+		Stub: s.OnBegin.MethodStub,
 		Call: func() {
-			_ = mixedStubRecord(tb, s)
+			_, _ = mixedStubBegin(tb, s)
 		},
 		Reset: s.ResetCalls,
 	}
@@ -201,52 +313,104 @@ func mixedStubInstanceOf(tb assert.TB, s *serializabletest.MixedStub) mixedStubI
 func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Record", func(t *testing.T) {
+	t.Run("Begin", func(t *testing.T) {
 		t.Parallel()
-		stub.Behaviour(t, "Record", mixedStubRecordSubject)
+		stub.Behaviour(t, "Begin", mixedStubBeginSubject)
 
 		t.Run("records the arguments of the call", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
-			_ = mixedStubRecord(t, s)
-			got := s.OnRecord.AssertCalledOnce(t, "Record records the call")
-			a0, a1 := mixedStubRecordArgs(t)
-			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.E, a1, "the call records E")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := serializabletest.NewMixedStub(t)
-			var seen []serializabletest.MixedRecordCall
-			s.OnRecord.OnRecord(func(c serializabletest.MixedRecordCall) { seen = append(seen, c) })
-			_ = mixedStubRecord(t, s)
-			_ = mixedStubRecord(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Record")
-		})
-	})
-
-	t.Run("History", func(t *testing.T) {
-		t.Parallel()
-		stub.Behaviour(t, "History", mixedStubHistorySubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := serializabletest.NewMixedStub(t)
-			_, _ = mixedStubHistory(t, s)
-			got := s.OnHistory.AssertCalledOnce(t, "History records the call")
-			a0 := mixedStubHistoryArgs(t)
+			_, _ = mixedStubBegin(t, s)
+			got := s.OnBegin.AssertCalledOnce(t, "Begin records the call")
+			a0 := mixedStubBeginArgs(t)
 			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
 		})
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
-			var seen []serializabletest.MixedHistoryCall
-			s.OnHistory.OnRecord(func(c serializabletest.MixedHistoryCall) { seen = append(seen, c) })
-			_, _ = mixedStubHistory(t, s)
-			_, _ = mixedStubHistory(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of History")
+			var seen []serializabletest.MixedBeginCall
+			s.OnBegin.OnRecord(func(c serializabletest.MixedBeginCall) { seen = append(seen, c) })
+			_, _ = mixedStubBegin(t, s)
+			_, _ = mixedStubBegin(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Begin")
+		})
+	})
+
+	t.Run("Commit", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Commit", mixedStubCommitSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			_ = mixedStubCommit(t, s)
+			got := s.OnCommit.AssertCalledOnce(t, "Commit records the call")
+			a0, a1 := mixedStubCommitArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Tx, a1, "the call records Tx")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			var seen []serializabletest.MixedCommitCall
+			s.OnCommit.OnRecord(func(c serializabletest.MixedCommitCall) { seen = append(seen, c) })
+			_ = mixedStubCommit(t, s)
+			_ = mixedStubCommit(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Commit")
+		})
+	})
+
+	t.Run("Rollback", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Rollback", mixedStubRollbackSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			_ = mixedStubRollback(t, s)
+			got := s.OnRollback.AssertCalledOnce(t, "Rollback records the call")
+			a0, a1 := mixedStubRollbackArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Tx, a1, "the call records Tx")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			var seen []serializabletest.MixedRollbackCall
+			s.OnRollback.OnRecord(func(c serializabletest.MixedRollbackCall) { seen = append(seen, c) })
+			_ = mixedStubRollback(t, s)
+			_ = mixedStubRollback(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Rollback")
+		})
+	})
+
+	t.Run("Append", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Append", mixedStubAppendSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			_ = mixedStubAppend(t, s)
+			got := s.OnAppend.AssertCalledOnce(t, "Append records the call")
+			a0, a1, a2, a3 := mixedStubAppendArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Tx, a1, "the call records Tx")
+			expect.Equal(t, got.Key, a2, "the call records Key")
+			expect.Equal(t, got.V, a3, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			var seen []serializabletest.MixedAppendCall
+			s.OnAppend.OnRecord(func(c serializabletest.MixedAppendCall) { seen = append(seen, c) })
+			_ = mixedStubAppend(t, s)
+			_ = mixedStubAppend(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Append")
 		})
 	})
 
@@ -259,9 +423,10 @@ func TestMixedStub(t *testing.T) {
 			s := serializabletest.NewMixedStub(t)
 			_, _ = mixedStubGet(t, s)
 			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0, a1 := mixedStubGetArgs(t)
+			a0, a1, a2 := mixedStubGetArgs(t)
 			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
-			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.Tx, a1, "the call records Tx")
+			expect.Equal(t, got.Key, a2, "the call records Key")
 		})
 
 		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
@@ -281,41 +446,77 @@ func TestMixedStub(t *testing.T) {
 			return mixedStubInstanceOf(tb, serializabletest.NewMixedStub(tb))
 		})
 
-		t.Run("clears the recorded calls of Record", func(t *testing.T) {
+		t.Run("clears the recorded calls of Begin", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
-			_ = mixedStubRecord(t, s)
+			_, _ = mixedStubBegin(t, s)
 			s.ResetCalls()
-			assert.Equal(t, s.OnRecord.CallCount(), 0, "ResetCalls clears the calls of Record")
+			assert.Equal(t, s.OnBegin.CallCount(), 0, "ResetCalls clears the calls of Begin")
 		})
 
-		t.Run("keeps the results of Returns of Record", func(t *testing.T) {
+		t.Run("keeps the results of Returns of Begin", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
-			want0 := mixedStubRecordPins()
-			s.OnRecord.Returns(want0)
+			want0, want1 := mixedStubBeginPins()
+			s.OnBegin.Returns(want0, want1)
 			s.ResetCalls()
-			got0 := mixedStubRecord(t, s)
-			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Record")
+			got0, got1 := mixedStubBegin(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Begin")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Begin")
 		})
 
-		t.Run("clears the recorded calls of History", func(t *testing.T) {
+		t.Run("clears the recorded calls of Commit", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
-			_, _ = mixedStubHistory(t, s)
+			_ = mixedStubCommit(t, s)
 			s.ResetCalls()
-			assert.Equal(t, s.OnHistory.CallCount(), 0, "ResetCalls clears the calls of History")
+			assert.Equal(t, s.OnCommit.CallCount(), 0, "ResetCalls clears the calls of Commit")
 		})
 
-		t.Run("keeps the results of Returns of History", func(t *testing.T) {
+		t.Run("keeps the results of Returns of Commit", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
-			want0, want1 := mixedStubHistoryPins()
-			s.OnHistory.Returns(want0, want1)
+			want0 := mixedStubCommitPins()
+			s.OnCommit.Returns(want0)
 			s.ResetCalls()
-			got0, got1 := mixedStubHistory(t, s)
-			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of History")
-			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of History")
+			got0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Commit")
+		})
+
+		t.Run("clears the recorded calls of Rollback", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			_ = mixedStubRollback(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnRollback.CallCount(), 0, "ResetCalls clears the calls of Rollback")
+		})
+
+		t.Run("keeps the results of Returns of Rollback", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			want0 := mixedStubRollbackPins()
+			s.OnRollback.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubRollback(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Rollback")
+		})
+
+		t.Run("clears the recorded calls of Append", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			_ = mixedStubAppend(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAppend.CallCount(), 0, "ResetCalls clears the calls of Append")
+		})
+
+		t.Run("keeps the results of Returns of Append", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			want0 := mixedStubAppendPins()
+			s.OnAppend.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubAppend(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Append")
 		})
 
 		t.Run("clears the recorded calls of Get", func(t *testing.T) {
@@ -348,20 +549,36 @@ func TestMixedStub(t *testing.T) {
 	t.Run("NewMixedStubFailing", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("fails Record with its error", func(t *testing.T) {
+		t.Run("fails Begin with its error", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Record-failing")
+			want := errors.New("Begin-failing")
 			s := serializabletest.NewMixedStubFailing(t, want)
-			r0 := mixedStubRecord(t, s)
-			assert.ErrorIs(t, r0, want, "Record fails with the error of NewMixedStubFailing")
+			_, r1 := mixedStubBegin(t, s)
+			assert.ErrorIs(t, r1, want, "Begin fails with the error of NewMixedStubFailing")
 		})
 
-		t.Run("fails History with its error", func(t *testing.T) {
+		t.Run("fails Commit with its error", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("History-failing")
+			want := errors.New("Commit-failing")
 			s := serializabletest.NewMixedStubFailing(t, want)
-			_, r1 := mixedStubHistory(t, s)
-			assert.ErrorIs(t, r1, want, "History fails with the error of NewMixedStubFailing")
+			r0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Rollback with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rollback-failing")
+			s := serializabletest.NewMixedStubFailing(t, want)
+			r0 := mixedStubRollback(t, s)
+			assert.ErrorIs(t, r0, want, "Rollback fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Append with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-failing")
+			s := serializabletest.NewMixedStubFailing(t, want)
+			r0 := mixedStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of NewMixedStubFailing")
 		})
 
 		t.Run("fails Get with its error", func(t *testing.T) {
@@ -383,40 +600,76 @@ func TestMixedStub(t *testing.T) {
 	t.Run("MixedStubDelegateTo", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("passes Record to the implementation", func(t *testing.T) {
+		t.Run("passes Begin to the implementation", func(t *testing.T) {
 			t.Parallel()
 			inner := serializabletest.NewMixedStub(t)
 			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubDelegateTo(inner))
-			_ = mixedStubRecord(t, s)
-			inner.OnRecord.AssertCalledOnce(t, "Record calls the implementation")
+			_, _ = mixedStubBegin(t, s)
+			inner.OnBegin.AssertCalledOnce(t, "Begin calls the implementation")
 		})
 
-		t.Run("fails Record with the error of the implementation", func(t *testing.T) {
+		t.Run("fails Begin with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Record-delegate")
+			want := errors.New("Begin-delegate")
 			inner := serializabletest.NewMixedStub(t)
-			inner.OnRecord.Faults(want, 1)
+			inner.OnBegin.Faults(want, 1)
 			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubDelegateTo(inner))
-			r0 := mixedStubRecord(t, s)
-			assert.ErrorIs(t, r0, want, "Record fails with the error of the implementation")
+			_, r1 := mixedStubBegin(t, s)
+			assert.ErrorIs(t, r1, want, "Begin fails with the error of the implementation")
 		})
 
-		t.Run("passes History to the implementation", func(t *testing.T) {
+		t.Run("passes Commit to the implementation", func(t *testing.T) {
 			t.Parallel()
 			inner := serializabletest.NewMixedStub(t)
 			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubDelegateTo(inner))
-			_, _ = mixedStubHistory(t, s)
-			inner.OnHistory.AssertCalledOnce(t, "History calls the implementation")
+			_ = mixedStubCommit(t, s)
+			inner.OnCommit.AssertCalledOnce(t, "Commit calls the implementation")
 		})
 
-		t.Run("fails History with the error of the implementation", func(t *testing.T) {
+		t.Run("fails Commit with the error of the implementation", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("History-delegate")
+			want := errors.New("Commit-delegate")
 			inner := serializabletest.NewMixedStub(t)
-			inner.OnHistory.Faults(want, 1)
+			inner.OnCommit.Faults(want, 1)
 			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubDelegateTo(inner))
-			_, r1 := mixedStubHistory(t, s)
-			assert.ErrorIs(t, r1, want, "History fails with the error of the implementation")
+			r0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of the implementation")
+		})
+
+		t.Run("passes Rollback to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := serializabletest.NewMixedStub(t)
+			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubDelegateTo(inner))
+			_ = mixedStubRollback(t, s)
+			inner.OnRollback.AssertCalledOnce(t, "Rollback calls the implementation")
+		})
+
+		t.Run("fails Rollback with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rollback-delegate")
+			inner := serializabletest.NewMixedStub(t)
+			inner.OnRollback.Faults(want, 1)
+			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubDelegateTo(inner))
+			r0 := mixedStubRollback(t, s)
+			assert.ErrorIs(t, r0, want, "Rollback fails with the error of the implementation")
+		})
+
+		t.Run("passes Append to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := serializabletest.NewMixedStub(t)
+			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubDelegateTo(inner))
+			_ = mixedStubAppend(t, s)
+			inner.OnAppend.AssertCalledOnce(t, "Append calls the implementation")
+		})
+
+		t.Run("fails Append with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-delegate")
+			inner := serializabletest.NewMixedStub(t)
+			inner.OnAppend.Faults(want, 1)
+			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubDelegateTo(inner))
+			r0 := mixedStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of the implementation")
 		})
 
 		t.Run("passes Get to the implementation", func(t *testing.T) {
@@ -479,20 +732,36 @@ func TestMixedStub(t *testing.T) {
 	t.Run("MixedStubFailing", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("fails Record with its error", func(t *testing.T) {
+		t.Run("fails Begin with its error", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("Record-failing")
+			want := errors.New("Begin-failing")
 			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubFailing(want))
-			r0 := mixedStubRecord(t, s)
-			assert.ErrorIs(t, r0, want, "Record fails with the error of MixedStubFailing")
+			_, r1 := mixedStubBegin(t, s)
+			assert.ErrorIs(t, r1, want, "Begin fails with the error of MixedStubFailing")
 		})
 
-		t.Run("fails History with its error", func(t *testing.T) {
+		t.Run("fails Commit with its error", func(t *testing.T) {
 			t.Parallel()
-			want := errors.New("History-failing")
+			want := errors.New("Commit-failing")
 			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubFailing(want))
-			_, r1 := mixedStubHistory(t, s)
-			assert.ErrorIs(t, r1, want, "History fails with the error of MixedStubFailing")
+			r0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Rollback with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rollback-failing")
+			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubFailing(want))
+			r0 := mixedStubRollback(t, s)
+			assert.ErrorIs(t, r0, want, "Rollback fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Append with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-failing")
+			s := serializabletest.NewMixedStub(t, serializabletest.MixedStubFailing(want))
+			r0 := mixedStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of MixedStubFailing")
 		})
 
 		t.Run("fails Get with its error", func(t *testing.T) {
@@ -504,42 +773,80 @@ func TestMixedStub(t *testing.T) {
 		})
 	})
 
-	t.Run("WithMixedRecord", func(t *testing.T) {
+	t.Run("WithMixedBegin", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("sets the function of Record", func(t *testing.T) {
+		t.Run("sets the function of Begin", func(t *testing.T) {
 			t.Parallel()
 			called := false
 			s := serializabletest.NewMixedStub(
 				t,
-				serializabletest.WithMixedRecord(func(_ context.Context, _ serializable.Entry) error {
+				serializabletest.WithMixedBegin(func(_ context.Context) (serializable.Tx, error) {
+					called = true
+					var z0 serializable.Tx
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubBegin(t, s)
+			assert.True(t, called, "WithMixedBegin sets the function of Begin")
+		})
+	})
+
+	t.Run("WithMixedCommit", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Commit", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := serializabletest.NewMixedStub(
+				t,
+				serializabletest.WithMixedCommit(func(_ context.Context, _ serializable.Tx) error {
 					called = true
 					var z0 error
 					return z0
 				}),
 			)
-			_ = mixedStubRecord(t, s)
-			assert.True(t, called, "WithMixedRecord sets the function of Record")
+			_ = mixedStubCommit(t, s)
+			assert.True(t, called, "WithMixedCommit sets the function of Commit")
 		})
 	})
 
-	t.Run("WithMixedHistory", func(t *testing.T) {
+	t.Run("WithMixedRollback", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("sets the function of History", func(t *testing.T) {
+		t.Run("sets the function of Rollback", func(t *testing.T) {
 			t.Parallel()
 			called := false
 			s := serializabletest.NewMixedStub(
 				t,
-				serializabletest.WithMixedHistory(func(_ context.Context) ([]serializable.Entry, error) {
+				serializabletest.WithMixedRollback(func(_ context.Context, _ serializable.Tx) error {
 					called = true
-					var z0 []serializable.Entry
-					var z1 error
-					return z0, z1
+					var z0 error
+					return z0
 				}),
 			)
-			_, _ = mixedStubHistory(t, s)
-			assert.True(t, called, "WithMixedHistory sets the function of History")
+			_ = mixedStubRollback(t, s)
+			assert.True(t, called, "WithMixedRollback sets the function of Rollback")
+		})
+	})
+
+	t.Run("WithMixedAppend", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Append", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := serializabletest.NewMixedStub(
+				t,
+				serializabletest.WithMixedAppend(func(_ context.Context, _ serializable.Tx, _ string, _ int) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubAppend(t, s)
+			assert.True(t, called, "WithMixedAppend sets the function of Append")
 		})
 	})
 
@@ -551,9 +858,9 @@ func TestMixedStub(t *testing.T) {
 			called := false
 			s := serializabletest.NewMixedStub(
 				t,
-				serializabletest.WithMixedGet(func(_ context.Context, _ string) (serializable.Entry, error) {
+				serializabletest.WithMixedGet(func(_ context.Context, _ serializable.Tx, _ string) ([]int, error) {
 					called = true
-					var z0 serializable.Entry
+					var z0 []int
 					var z1 error
 					return z0, z1
 				}),
@@ -564,103 +871,207 @@ func TestMixedStub(t *testing.T) {
 	})
 }
 
-// TestMixedRecordStub checks the methods of MixedRecordStub, which
-// configures Record.
-func TestMixedRecordStub(t *testing.T) {
+// TestMixedBeginStub checks the methods of MixedBeginStub, which
+// configures Begin.
+func TestMixedBeginStub(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Returns", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("sets the results of each call of Record", func(t *testing.T) {
+		t.Run("sets the results of each call of Begin", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
-			want0 := mixedStubRecordPins()
-			s.OnRecord.Returns(want0)
-			got0 := mixedStubRecord(t, s)
-			assert.ErrorIs(t, got0, want0, "Record returns the error that Returns sets")
+			want0, want1 := mixedStubBeginPins()
+			s.OnBegin.Returns(want0, want1)
+			got0, got1 := mixedStubBegin(t, s)
+			expect.Equal(t, got0, want0, "Begin returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Begin returns the error that Returns sets")
 		})
 
-		t.Run("configures Record for strict mode", func(t *testing.T) {
+		t.Run("configures Begin for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
 			s := serializabletest.NewMixedStub(r)
-			s.OnRecord.Strict()
-			var want0 error
-			s.OnRecord.Returns(want0)
-			_ = mixedStubRecord(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Record")
+			s.OnBegin.Strict()
+			var want0 serializable.Tx
+			var want1 error
+			s.OnBegin.Returns(want0, want1)
+			_, _ = mixedStubBegin(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Begin")
 		})
 	})
 
 	t.Run("Func", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("passes the arguments of each call of Record to the function", func(t *testing.T) {
+		t.Run("passes the arguments of each call of Begin to the function", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
 			var got0 context.Context
-			var got1 serializable.Entry
-			s.OnRecord.Func(func(p0 context.Context, p1 serializable.Entry) error {
-				got0, got1 = p0, p1
-				var z0 error
-				return z0
+			s.OnBegin.Func(func(p0 context.Context) (serializable.Tx, error) {
+				got0 = p0
+				var z0 serializable.Tx
+				var z1 error
+				return z0, z1
 			})
-			_ = mixedStubRecord(t, s)
-			a0, a1 := mixedStubRecordArgs(t)
-			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives E")
+			_, _ = mixedStubBegin(t, s)
+			a0 := mixedStubBeginArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
 		})
 	})
 }
 
-// TestMixedHistoryStub checks the methods of MixedHistoryStub, which
-// configures History.
-func TestMixedHistoryStub(t *testing.T) {
+// TestMixedCommitStub checks the methods of MixedCommitStub, which
+// configures Commit.
+func TestMixedCommitStub(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Returns", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("sets the results of each call of History", func(t *testing.T) {
+		t.Run("sets the results of each call of Commit", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
-			want0, want1 := mixedStubHistoryPins()
-			s.OnHistory.Returns(want0, want1)
-			got0, got1 := mixedStubHistory(t, s)
-			expect.Equal(t, got0, want0, "History returns the Result that Returns sets")
-			expect.ErrorIs(t, got1, want1, "History returns the error that Returns sets")
+			want0 := mixedStubCommitPins()
+			s.OnCommit.Returns(want0)
+			got0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, got0, want0, "Commit returns the error that Returns sets")
 		})
 
-		t.Run("configures History for strict mode", func(t *testing.T) {
+		t.Run("configures Commit for strict mode", func(t *testing.T) {
 			t.Parallel()
 			r := assert.NewRecorder()
 			s := serializabletest.NewMixedStub(r)
-			s.OnHistory.Strict()
-			var want0 []serializable.Entry
-			var want1 error
-			s.OnHistory.Returns(want0, want1)
-			_, _ = mixedStubHistory(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of History")
+			s.OnCommit.Strict()
+			var want0 error
+			s.OnCommit.Returns(want0)
+			_ = mixedStubCommit(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Commit")
 		})
 	})
 
 	t.Run("Func", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("passes the arguments of each call of History to the function", func(t *testing.T) {
+		t.Run("passes the arguments of each call of Commit to the function", func(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
 			var got0 context.Context
-			s.OnHistory.Func(func(p0 context.Context) ([]serializable.Entry, error) {
-				got0 = p0
-				var z0 []serializable.Entry
-				var z1 error
-				return z0, z1
+			var got1 serializable.Tx
+			s.OnCommit.Func(func(p0 context.Context, p1 serializable.Tx) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
 			})
-			_, _ = mixedStubHistory(t, s)
-			a0 := mixedStubHistoryArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+			_ = mixedStubCommit(t, s)
+			a0, a1 := mixedStubCommitArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Tx")
+		})
+	})
+}
+
+// TestMixedRollbackStub checks the methods of MixedRollbackStub, which
+// configures Rollback.
+func TestMixedRollbackStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Rollback", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			want0 := mixedStubRollbackPins()
+			s.OnRollback.Returns(want0)
+			got0 := mixedStubRollback(t, s)
+			assert.ErrorIs(t, got0, want0, "Rollback returns the error that Returns sets")
+		})
+
+		t.Run("configures Rollback for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := serializabletest.NewMixedStub(r)
+			s.OnRollback.Strict()
+			var want0 error
+			s.OnRollback.Returns(want0)
+			_ = mixedStubRollback(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Rollback")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Rollback to the function", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 serializable.Tx
+			s.OnRollback.Func(func(p0 context.Context, p1 serializable.Tx) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubRollback(t, s)
+			a0, a1 := mixedStubRollbackArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Tx")
+		})
+	})
+}
+
+// TestMixedAppendStub checks the methods of MixedAppendStub, which
+// configures Append.
+func TestMixedAppendStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Append", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			want0 := mixedStubAppendPins()
+			s.OnAppend.Returns(want0)
+			got0 := mixedStubAppend(t, s)
+			assert.ErrorIs(t, got0, want0, "Append returns the error that Returns sets")
+		})
+
+		t.Run("configures Append for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := serializabletest.NewMixedStub(r)
+			s.OnAppend.Strict()
+			var want0 error
+			s.OnAppend.Returns(want0)
+			_ = mixedStubAppend(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Append")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Append to the function", func(t *testing.T) {
+			t.Parallel()
+			s := serializabletest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 serializable.Tx
+			var got2 string
+			var got3 int
+			s.OnAppend.Func(func(p0 context.Context, p1 serializable.Tx, p2 string, p3 int) error {
+				got0, got1, got2, got3 = p0, p1, p2, p3
+				var z0 error
+				return z0
+			})
+			_ = mixedStubAppend(t, s)
+			a0, a1, a2, a3 := mixedStubAppendArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Tx")
+			expect.Equal(t, got2, a2, "the function receives Key")
+			expect.Equal(t, got3, a3, "the function receives V")
 		})
 	})
 }
@@ -688,7 +1099,7 @@ func TestMixedGetStub(t *testing.T) {
 			r := assert.NewRecorder()
 			s := serializabletest.NewMixedStub(r)
 			s.OnGet.Strict()
-			var want0 serializable.Entry
+			var want0 []int
 			var want1 error
 			s.OnGet.Returns(want0, want1)
 			_, _ = mixedStubGet(t, s)
@@ -703,19 +1114,21 @@ func TestMixedGetStub(t *testing.T) {
 			t.Parallel()
 			s := serializabletest.NewMixedStub(t)
 			var got0 context.Context
-			var got1 string
-			s.OnGet.Func(func(p0 context.Context, p1 string) (serializable.Entry, error) {
-				got0, got1 = p0, p1
-				var z0 serializable.Entry
+			var got1 serializable.Tx
+			var got2 string
+			s.OnGet.Func(func(p0 context.Context, p1 serializable.Tx, p2 string) ([]int, error) {
+				got0, got1, got2 = p0, p1, p2
+				var z0 []int
 				var z1 error
 				return z0, z1
 			})
 			_, _ = mixedStubGet(t, s)
-			a0, a1 := mixedStubGetArgs(t)
+			a0, a1, a2 := mixedStubGetArgs(t)
 			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
-			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got1, a1, "the function receives Tx")
+			expect.Equal(t, got2, a2, "the function receives Key")
 		})
 	})
 }
 
-// dokimi:provenance sha256:3708239655fa7c02fa5d0be069131f9a59fd0e6876e41ca702dfb1c81584216b
+// dokimi:provenance sha256:7799deaf74f88033c71cb6d3f3a21050a2059edaba397435f2c3a2826c25f2a6

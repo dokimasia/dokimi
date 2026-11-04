@@ -1,0 +1,24 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/refused
+level: 1
+subjects:
+  - type: iface/lang/refused/refusedtest.InMemory
+controls: []
+declarations:
+  clock:
+    checks:
+      clock.update/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      clock.update/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      clock.update/zero-on-error: unrefused
+    unclaimed: []

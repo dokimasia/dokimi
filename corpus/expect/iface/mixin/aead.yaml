@@ -1,0 +1,49 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/aead
+level: 2
+subjects:
+  - type: iface/mixin/aead/aeadtest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.nonce-size/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.nonce-size/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.open/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.overhead/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.overhead/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.seal/deterministic:
+        claim: deterministic
+        law: repeat-returns-alike
+        reason: unstable-repeat
+      mixed.seal/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: mixin:sample
+        callable: mixed.open
+        stance: silent
+      - classification: mixin:sample
+        callable: mixed.seal
+        stance: silent

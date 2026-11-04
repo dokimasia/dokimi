@@ -1,0 +1,21 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/source
+level: 2
+subjects:
+  - type: iface/mixin/source/sourcetest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.uint64/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.uint64/deterministic: stable-subject
+      mixed.uint64/side-effect: cancellation
+    unclaimed: []

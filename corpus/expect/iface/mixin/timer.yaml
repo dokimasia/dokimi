@@ -1,0 +1,21 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/timer
+level: 2
+subjects:
+  - type: iface/mixin/timer/timertest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.stop/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.stop/predicate: stable-subject
+      mixed.stop/side-effect: cancellation
+    unclaimed: []

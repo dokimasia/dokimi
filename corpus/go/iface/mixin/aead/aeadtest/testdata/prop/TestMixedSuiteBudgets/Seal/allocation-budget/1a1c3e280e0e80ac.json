@@ -1,0 +1,17 @@
+{
+  "store": 1,
+  "definition": "14.2.0",
+  "property": "Seal allocates at most 0 times per call",
+  "identity": {
+    "assertion": "max-allocs",
+    "file": "budget.go",
+    "line": 212
+  },
+  "choices": "prop1:",
+  "counterexample": [
+    {
+      "label": "call"
+    }
+  ],
+  "found": "2026-11-03"
+}

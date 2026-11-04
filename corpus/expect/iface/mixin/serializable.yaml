@@ -9,6 +9,57 @@ controls: []
 declarations:
   mixed:
     checks:
+      mixed.append/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.append/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.append/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.append/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.begin/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.begin/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.begin/tx:
+        claim: tx
+        partners:
+          commit: mixed.commit
+          rollback: mixed.rollback
+        law: settled-transaction-is-not-settled-again
+        reason: alive-after-close
+      mixed.begin/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      mixed.commit/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.commit/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.commit/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.commit/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
       mixed.get/cancel:
         claim: cancel
         law: cancelled-context-is-reported
@@ -25,46 +76,36 @@ declarations:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
-      mixed.get/zero-on-error:
-        claim: zero-on-error
-        law: no-value-beside-an-error
-        reason: value-beside-error
-      mixed.get/zero-on-error#generated:
-        claim: zero-on-error
-        law: no-value-beside-an-error
-        reason: value-beside-error
-      mixed.history/cancel:
+      mixed.rollback/cancel:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
-      mixed.history/smoke:
-        claim: smoke
-        law: no-panic-on-any-input
-        reason: panicked
-      mixed.history/zero-on-error:
-        claim: zero-on-error
-        law: no-value-beside-an-error
-        reason: value-beside-error
-      mixed.record/cancel:
+      mixed.rollback/cancel#generated:
         claim: cancel
         law: cancelled-context-is-reported
         reason: ignored-cancel
-      mixed.record/cancel#generated:
-        claim: cancel
-        law: cancelled-context-is-reported
-        reason: ignored-cancel
-      mixed.record/smoke:
+      mixed.rollback/smoke:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
-      mixed.record/smoke#generated:
+      mixed.rollback/smoke#generated:
         claim: smoke
         law: no-panic-on-any-input
         reason: panicked
+      mixed/serializable:
+        claim: serializable
+        law: concurrent-transactions-are-serializable
+        reason: not-serializable
     authored: []
     ceilings: []
     refusals: {}
     unclaimed:
+      - classification: shape:multi-arg-writer
+        callable: mixed.append
+        stance: silent
       - classification: shape:writer
-        callable: mixed.record
+        callable: mixed.commit
+        stance: silent
+      - classification: shape:writer
+        callable: mixed.rollback
         stance: silent

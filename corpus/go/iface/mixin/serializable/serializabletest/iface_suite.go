@@ -6,9 +6,13 @@ package serializabletest
 
 import (
 	"context"
+	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable"
@@ -17,22 +21,49 @@ import (
 
 // The derived checks of Mixed:
 //
-// Mixed.Record/smoke: Record returns without a panic for derived inputs.
+// Mixed.Begin/smoke: Begin returns without a panic for derived inputs.
 //
-// Mixed.Record/smoke#generated: Record returns without a panic for derived
+// Mixed.Begin/cancel: Begin returns an error for a cancelled context.
+//
+// Mixed.Begin/zero-on-error: Begin returns the zero value beside an error.
+//
+// Mixed.Begin/tx: Rollback of a transaction that Begin opened and Commit
+// settled fails with the declared sentinel.
+//
+// Mixed.Commit/smoke: Commit returns without a panic for derived inputs.
+//
+// Mixed.Commit/smoke#generated: Commit returns without a panic for derived
 // inputs.
 //
-// Mixed.Record/cancel: Record returns an error for a cancelled context.
+// Mixed.Commit/cancel: Commit returns an error for a cancelled context.
 //
-// Mixed.Record/cancel#generated: Record returns an error for a cancelled
+// Mixed.Commit/cancel#generated: Commit returns an error for a cancelled
 // context.
 //
-// Mixed.History/smoke: History returns without a panic for derived inputs.
+// Mixed.Rollback/smoke: Rollback returns without a panic for derived
+// inputs.
 //
-// Mixed.History/cancel: History returns an error for a cancelled context.
+// Mixed.Rollback/smoke#generated: Rollback returns without a panic for
+// derived inputs.
 //
-// Mixed.History/zero-on-error: History returns the zero value beside an
-// error.
+// Mixed.Rollback/cancel: Rollback returns an error for a cancelled
+// context.
+//
+// Mixed.Rollback/cancel#generated: Rollback returns an error for a
+// cancelled context.
+//
+// Mixed.Append/smoke: Append returns without a panic for derived inputs.
+//
+// Mixed.Append/smoke#generated: Append returns without a panic for derived
+// inputs.
+//
+// Mixed.Append/cancel: Append returns an error for a cancelled context.
+//
+// Mixed.Append/cancel#generated: Append returns an error for a cancelled
+// context.
+//
+// Mixed.Append/serializable: every concurrent history of the transactions
+// of Mixed has a serial order in which each read returns the same result.
 //
 // Mixed.Get/smoke: Get returns without a panic for derived inputs.
 //
@@ -43,24 +74,29 @@ import (
 //
 // Mixed.Get/cancel#generated: Get returns an error for a cancelled
 // context.
-//
-// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
-// Mixed.Record/smoke
+// Mixed.Begin/smoke
 //
-// Mixed.History/smoke
+// Mixed.Commit/smoke
+//
+// Mixed.Rollback/smoke
+//
+// Mixed.Append/smoke
 //
 // Mixed.Get/smoke
 
 // The unclaimed classifications of Mixed:
 //
-// The shape:writer of Mixed.Record has the stance silent. A write is an
+// The shape:writer of Mixed.Commit has the stance silent. A write is an
 // input of the other checks, and its result is an error alone.
+//
+// The shape:writer of Mixed.Rollback has the stance silent. A write is an
+// input of the other checks, and its result is an error alone.
+//
+// The shape:multi-arg-writer of Mixed.Append has the stance silent. A
+// write is an input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -75,67 +111,144 @@ type (
 // MixedChecks contains the name of each callable of Mixed, with the
 // identities of its checks.
 var MixedChecks = struct {
-	Record  mixedRecord
-	History mixedHistory
-	Get     mixedGet
+	Begin    mixedBegin
+	Commit   mixedCommit
+	Rollback mixedRollback
+	Append   mixedAppend
+	Get      mixedGet
 }{
-	Record:  mixedRecord{"Mixed.Record"},
-	History: mixedHistory{"Mixed.History"},
-	Get:     mixedGet{"Mixed.Get"},
+	Begin:    mixedBegin{"Mixed.Begin"},
+	Commit:   mixedCommit{"Mixed.Commit"},
+	Rollback: mixedRollback{"Mixed.Rollback"},
+	Append:   mixedAppend{"Mixed.Append"},
+	Get:      mixedGet{"Mixed.Get"},
 }
 
-// mixedRecord is the name of Mixed.Record, with the identities of its
+// mixedBegin is the name of Mixed.Begin, with the identities of its
 // checks.
-type mixedRecord struct {
+type mixedBegin struct {
 	conform.Callable[serializable.Mixed]
 }
 
-// Smoke returns the identity of the check that Record returns without a
+// Smoke returns the identity of the check that Begin returns without a
 // panic for derived inputs.
-func (c mixedRecord) Smoke() conform.ID[serializable.Mixed] {
+func (c mixedBegin) Smoke() conform.ID[serializable.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Record returns
+// Cancel returns the identity of the check that Begin returns an error for
+// a cancelled context.
+func (c mixedBegin) Cancel() conform.ID[serializable.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Begin returns the
+// zero value beside an error.
+func (c mixedBegin) ZeroOnError() conform.ID[serializable.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// Tx returns the identity of the check that Rollback of a transaction that
+// Begin opened and Commit settled fails with the declared sentinel.
+func (c mixedBegin) Tx() conform.ID[serializable.Mixed] {
+	return c.Check("tx")
+}
+
+// mixedCommit is the name of Mixed.Commit, with the identities of its
+// checks.
+type mixedCommit struct {
+	conform.Callable[serializable.Mixed]
+}
+
+// Smoke returns the identity of the check that Commit returns without a
+// panic for derived inputs.
+func (c mixedCommit) Smoke() conform.ID[serializable.Mixed] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Commit returns
 // without a panic for derived inputs.
-func (c mixedRecord) SmokeGenerated() conform.ID[serializable.Mixed] {
+func (c mixedCommit) SmokeGenerated() conform.ID[serializable.Mixed] {
 	return c.Check("smoke#generated")
 }
 
-// Cancel returns the identity of the check that Record returns an error
+// Cancel returns the identity of the check that Commit returns an error
 // for a cancelled context.
-func (c mixedRecord) Cancel() conform.ID[serializable.Mixed] {
+func (c mixedCommit) Cancel() conform.ID[serializable.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Record returns an
+// CancelGenerated returns the identity of the check that Commit returns an
 // error for a cancelled context.
-func (c mixedRecord) CancelGenerated() conform.ID[serializable.Mixed] {
+func (c mixedCommit) CancelGenerated() conform.ID[serializable.Mixed] {
 	return c.Check("cancel#generated")
 }
 
-// mixedHistory is the name of Mixed.History, with the identities of its
+// mixedRollback is the name of Mixed.Rollback, with the identities of its
 // checks.
-type mixedHistory struct {
+type mixedRollback struct {
 	conform.Callable[serializable.Mixed]
 }
 
-// Smoke returns the identity of the check that History returns without a
+// Smoke returns the identity of the check that Rollback returns without a
 // panic for derived inputs.
-func (c mixedHistory) Smoke() conform.ID[serializable.Mixed] {
+func (c mixedRollback) Smoke() conform.ID[serializable.Mixed] {
 	return c.Check("smoke")
 }
 
-// Cancel returns the identity of the check that History returns an error
+// SmokeGenerated returns the identity of the check that Rollback returns
+// without a panic for derived inputs.
+func (c mixedRollback) SmokeGenerated() conform.ID[serializable.Mixed] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Rollback returns an error
 // for a cancelled context.
-func (c mixedHistory) Cancel() conform.ID[serializable.Mixed] {
+func (c mixedRollback) Cancel() conform.ID[serializable.Mixed] {
 	return c.Check("cancel")
 }
 
-// ZeroOnError returns the identity of the check that History returns the
-// zero value beside an error.
-func (c mixedHistory) ZeroOnError() conform.ID[serializable.Mixed] {
-	return c.Check("zero-on-error")
+// CancelGenerated returns the identity of the check that Rollback returns
+// an error for a cancelled context.
+func (c mixedRollback) CancelGenerated() conform.ID[serializable.Mixed] {
+	return c.Check("cancel#generated")
+}
+
+// mixedAppend is the name of Mixed.Append, with the identities of its
+// checks.
+type mixedAppend struct {
+	conform.Callable[serializable.Mixed]
+}
+
+// Smoke returns the identity of the check that Append returns without a
+// panic for derived inputs.
+func (c mixedAppend) Smoke() conform.ID[serializable.Mixed] {
+	return c.Check("smoke")
+}
+
+// SmokeGenerated returns the identity of the check that Append returns
+// without a panic for derived inputs.
+func (c mixedAppend) SmokeGenerated() conform.ID[serializable.Mixed] {
+	return c.Check("smoke#generated")
+}
+
+// Cancel returns the identity of the check that Append returns an error
+// for a cancelled context.
+func (c mixedAppend) Cancel() conform.ID[serializable.Mixed] {
+	return c.Check("cancel")
+}
+
+// CancelGenerated returns the identity of the check that Append returns an
+// error for a cancelled context.
+func (c mixedAppend) CancelGenerated() conform.ID[serializable.Mixed] {
+	return c.Check("cancel#generated")
+}
+
+// Serializable returns the identity of the check that every concurrent
+// history of the transactions of Mixed has a serial order in which each
+// read returns the same result.
+func (c mixedAppend) Serializable() conform.ID[serializable.Mixed] {
+	return "Mixed/serializable"
 }
 
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
@@ -167,18 +280,6 @@ func (c mixedGet) CancelGenerated() conform.ID[serializable.Mixed] {
 	return c.Check("cancel#generated")
 }
 
-// ZeroOnError returns the identity of the check that Get returns the zero
-// value beside an error.
-func (c mixedGet) ZeroOnError() conform.ID[serializable.Mixed] {
-	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c mixedGet) ZeroOnErrorGenerated() conform.ID[serializable.Mixed] {
-	return c.Check("zero-on-error#generated")
-}
-
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[serializable.Mixed] {
@@ -188,8 +289,8 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[serializable.Mixed]{
 			{
-				ID:          MixedChecks.Record.Smoke(),
-				Statement:   "Record returns without a panic for derived inputs",
+				ID:          MixedChecks.Begin.Smoke(),
+				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
 				Probe:       spec.Survives,
 				Reason:      spec.Panicked,
@@ -198,78 +299,15 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Record(ctx, serializable.Entry{Key: "Key-a"})
-					})
-				},
-				Defect: mixedRecordPanics,
-			},
-			{
-				ID:          MixedChecks.Record.SmokeGenerated(),
-				Statement:   "Record returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnE := c.Draw(prop.Of[serializable.Entry](), "e")
-					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Record(ctx, drawnE)
-					})
-				},
-				Defect: mixedRecordPanics,
-			},
-			{
-				ID:          MixedChecks.Record.Cancel(),
-				Statement:   "Record returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Apply: func(h *MixedHandle) {
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Record(ctx, serializable.Entry{Key: "Key-a"})
-					})
-				},
-				Defect: mixedRecordIgnoresCancel,
-			},
-			{
-				ID:          MixedChecks.Record.CancelGenerated(),
-				Statement:   "Record returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnE := c.Draw(prop.Of[serializable.Entry](), "e")
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Record(ctx, drawnE)
-					})
-				},
-				Defect: mixedRecordIgnoresCancel,
-			},
-			{
-				ID:          MixedChecks.History.Smoke(),
-				Statement:   "History returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Shallow:     true,
-				Apply: func(h *MixedHandle) {
-					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().History(ctx)
+						_, err := h.Subject().Begin(ctx)
 						return err
 					})
 				},
-				Defect: mixedHistoryPanics,
+				Defect: mixedBeginPanics,
 			},
 			{
-				ID:          MixedChecks.History.Cancel(),
-				Statement:   "History returns an error for a cancelled context",
+				ID:          MixedChecks.Begin.Cancel(),
+				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
 				Probe:       spec.UnderCancelled,
 				Reason:      spec.IgnoredCancel,
@@ -277,26 +315,251 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().History(ctx)
+						_, err := h.Subject().Begin(ctx)
 						return err
 					})
 				},
-				Defect: mixedHistoryIgnoresCancel,
+				Defect: mixedBeginIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.History.ZeroOnError(),
-				Statement:   "History returns the zero value beside an error",
+				ID:          MixedChecks.Begin.ZeroOnError(),
+				Statement:   "Begin returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
 				Probe:       spec.ZeroBesideError,
 				Reason:      spec.ValueBesideError,
 				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
-					probe.ZeroBesideError(h, func(ctx context.Context) ([]serializable.Entry, error) {
-						return h.Subject().History(ctx)
-					}, []serializable.Entry(nil))
+					probe.ZeroBesideError(h, func(ctx context.Context) (serializable.Tx, error) {
+						return h.Subject().Begin(ctx)
+					}, serializable.Tx{})
 				},
-				Defect: mixedHistoryValueBeside,
+				Defect: mixedBeginValueBeside,
+			},
+			{
+				ID:          MixedChecks.Begin.Tx(),
+				Statement:   "Rollback of a transaction that Begin opened and Commit settled fails with the declared sentinel",
+				Claim:       spec.Tx,
+				Probe:       spec.SealsAfterClose,
+				Reason:      spec.AliveAfterClose,
+				Law:         spec.SettledTransactionIsNotSettledAgain,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.SealsAfterClose(h, func(ctx context.Context) (serializable.Tx, error) {
+						return h.Subject().Begin(ctx)
+					}, func(ctx context.Context, handle serializable.Tx) error {
+						return h.Subject().Commit(ctx, handle)
+					}, func(ctx context.Context, handle serializable.Tx) error {
+						return h.Subject().Rollback(ctx, handle)
+					}, serializable.ErrClosed)
+				},
+				Defect: mixedRollbackSettlesTwice,
+			},
+			{
+				ID:          MixedChecks.Commit.Smoke(),
+				Statement:   "Commit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Commit(ctx, serializable.Tx{ID: 42})
+					})
+				},
+				Defect: mixedCommitPanics,
+			},
+			{
+				ID:          MixedChecks.Commit.SmokeGenerated(),
+				Statement:   "Commit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Commit(ctx, drawnTx)
+					})
+				},
+				Defect: mixedCommitPanics,
+			},
+			{
+				ID:          MixedChecks.Commit.Cancel(),
+				Statement:   "Commit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Commit(ctx, serializable.Tx{ID: 42})
+					})
+				},
+				Defect: mixedCommitIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Commit.CancelGenerated(),
+				Statement:   "Commit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Commit(ctx, drawnTx)
+					})
+				},
+				Defect: mixedCommitIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Rollback.Smoke(),
+				Statement:   "Rollback returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Rollback(ctx, serializable.Tx{ID: 42})
+					})
+				},
+				Defect: mixedRollbackPanics,
+			},
+			{
+				ID:          MixedChecks.Rollback.SmokeGenerated(),
+				Statement:   "Rollback returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Rollback(ctx, drawnTx)
+					})
+				},
+				Defect: mixedRollbackPanics,
+			},
+			{
+				ID:          MixedChecks.Rollback.Cancel(),
+				Statement:   "Rollback returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Rollback(ctx, serializable.Tx{ID: 42})
+					})
+				},
+				Defect: mixedRollbackIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Rollback.CancelGenerated(),
+				Statement:   "Rollback returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Rollback(ctx, drawnTx)
+					})
+				},
+				Defect: mixedRollbackIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Append.Smoke(),
+				Statement:   "Append returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, serializable.Tx{ID: 42}, string("key-a"), int(42))
+					})
+				},
+				Defect: mixedAppendPanics,
+			},
+			{
+				ID:          MixedChecks.Append.SmokeGenerated(),
+				Statement:   "Append returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnV := c.Draw(prop.Of[int](), "v")
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnTx, drawnKey, drawnV)
+					})
+				},
+				Defect: mixedAppendPanics,
+			},
+			{
+				ID:          MixedChecks.Append.Cancel(),
+				Statement:   "Append returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, serializable.Tx{ID: 42}, string("key-a"), int(42))
+					})
+				},
+				Defect: mixedAppendIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Append.CancelGenerated(),
+				Statement:   "Append returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
+					drawnKey := c.Draw(prop.Of[string](), "key")
+					drawnV := c.Draw(prop.Of[int](), "v")
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, drawnTx, drawnKey, drawnV)
+					})
+				},
+				Defect: mixedAppendIgnoresCancel,
+			},
+			{
+				ID:          MixedChecks.Append.Serializable(),
+				Statement:   "every concurrent history of the transactions of Mixed has a serial order in which each read returns the same result",
+				Claim:       spec.Serializable,
+				Probe:       spec.SerializableHistory,
+				Reason:      spec.NotSerializable,
+				Law:         spec.ConcurrentTransactionsAreSerializable,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
+				Property: func(h *MixedHandle, c *prop.Case) {
+					probe.SerializableHistory(h, c, mixedActions, 2)
+				},
+				Defect: mixedReadsUncommitted,
 			},
 			{
 				ID:          MixedChecks.Get.Smoke(),
@@ -309,7 +572,7 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().Get(ctx, string("key-a"))
+						_, err := h.Subject().Get(ctx, serializable.Tx{ID: 42}, string("key-a"))
 						return err
 					})
 				},
@@ -324,9 +587,10 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
 					drawnKey := c.Draw(prop.Of[string](), "key")
 					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().Get(ctx, drawnKey)
+						_, err := h.Subject().Get(ctx, drawnTx, drawnKey)
 						return err
 					})
 				},
@@ -342,7 +606,7 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().Get(ctx, string("key-a"))
+						_, err := h.Subject().Get(ctx, serializable.Tx{ID: 42}, string("key-a"))
 						return err
 					})
 				},
@@ -357,64 +621,56 @@ func MixedSuite() conform.Suite[serializable.Mixed] {
 				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MixedHandle, c *prop.Case) {
+					drawnTx := c.Draw(prop.Of[serializable.Tx](), "tx")
 					drawnKey := c.Draw(prop.Of[string](), "key")
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().Get(ctx, drawnKey)
+						_, err := h.Subject().Get(ctx, drawnTx, drawnKey)
 						return err
 					})
 				},
 				Defect: mixedGetIgnoresCancel,
 			},
-			{
-				ID:          MixedChecks.Get.ZeroOnError(),
-				Statement:   "Get returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Apply: func(h *MixedHandle) {
-					probe.ZeroBesideError(h, func(ctx context.Context) (serializable.Entry, error) {
-						return h.Subject().Get(ctx, string("key-a"))
-					}, serializable.Entry{})
-				},
-				Defect: mixedGetValueBeside,
-			},
-			{
-				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
-				Statement:   "Get returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnKey := c.Draw(prop.Of[string](), "key")
-					probe.ZeroBesideError(h, func(ctx context.Context) (serializable.Entry, error) {
-						return h.Subject().Get(ctx, drawnKey)
-					}, serializable.Entry{})
-				},
-				Defect: mixedGetValueBeside,
-			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
 				Classification: "shape:writer",
-				Callable:       "Mixed.Record",
+				Callable:       "Mixed.Commit",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:writer",
+				Callable:       "Mixed.Rollback",
+				Stance:         spec.Silent,
+				Note:           "A write is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:multi-arg-writer",
+				Callable:       "Mixed.Append",
 				Stance:         spec.Silent,
 				Note:           "A write is an input of the other checks, and its result is an error alone.",
 			},
 		},
 		Calls: []conform.Call[serializable.Mixed]{
 			{
-				Calls:    mixedRecordCalls,
+				Calls:    mixedBeginCalls,
 				Over:     newMixedOver,
-				Callable: MixedChecks.Record.Callable,
+				Callable: MixedChecks.Begin.Callable,
 			},
 			{
-				Calls:    mixedHistoryCalls,
+				Calls:    mixedCommitCalls,
 				Over:     newMixedOver,
-				Callable: MixedChecks.History.Callable,
+				Callable: MixedChecks.Commit.Callable,
+			},
+			{
+				Calls:    mixedRollbackCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Rollback.Callable,
+			},
+			{
+				Calls:    mixedAppendCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Append.Callable,
 			},
 			{
 				Calls:    mixedGetCalls,
@@ -482,30 +738,51 @@ func mixedSubjects[T serializable.Mixed](newSubject func(h *MixedHandle) T) func
 	return func(h *MixedHandle) serializable.Mixed { return newSubject(h) }
 }
 
-// mixedRecordCalls generates the calls of Mixed.Record with the inputs
-// that each case draws.
-var mixedRecordCalls = prop.Composite(func(c *prop.Case) func(context.Context, serializable.Mixed) error {
-	e := c.Draw(prop.Of[serializable.Entry](), "e")
+// mixedBeginCalls generates the calls of Mixed.Begin with the inputs that
+// each case draws.
+var mixedBeginCalls = prop.Composite(func(*prop.Case) func(context.Context, serializable.Mixed) error {
 	return func(ctx context.Context, subject serializable.Mixed) error {
-		return subject.Record(ctx, e)
+		_, err := subject.Begin(ctx)
+		return err
 	}
 })
 
-// mixedHistoryCalls generates the calls of Mixed.History with the inputs
+// mixedCommitCalls generates the calls of Mixed.Commit with the inputs
 // that each case draws.
-var mixedHistoryCalls = prop.Composite(func(*prop.Case) func(context.Context, serializable.Mixed) error {
+var mixedCommitCalls = prop.Composite(func(c *prop.Case) func(context.Context, serializable.Mixed) error {
+	tx := c.Draw(prop.Of[serializable.Tx](), "tx")
 	return func(ctx context.Context, subject serializable.Mixed) error {
-		_, err := subject.History(ctx)
-		return err
+		return subject.Commit(ctx, tx)
+	}
+})
+
+// mixedRollbackCalls generates the calls of Mixed.Rollback with the inputs
+// that each case draws.
+var mixedRollbackCalls = prop.Composite(func(c *prop.Case) func(context.Context, serializable.Mixed) error {
+	tx := c.Draw(prop.Of[serializable.Tx](), "tx")
+	return func(ctx context.Context, subject serializable.Mixed) error {
+		return subject.Rollback(ctx, tx)
+	}
+})
+
+// mixedAppendCalls generates the calls of Mixed.Append with the inputs
+// that each case draws.
+var mixedAppendCalls = prop.Composite(func(c *prop.Case) func(context.Context, serializable.Mixed) error {
+	tx := c.Draw(prop.Of[serializable.Tx](), "tx")
+	key := c.Draw(prop.Of[string](), "key")
+	v := c.Draw(prop.Of[int](), "v")
+	return func(ctx context.Context, subject serializable.Mixed) error {
+		return subject.Append(ctx, tx, key, v)
 	}
 })
 
 // mixedGetCalls generates the calls of Mixed.Get with the inputs that each
 // case draws.
 var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, serializable.Mixed) error {
+	tx := c.Draw(prop.Of[serializable.Tx](), "tx")
 	key := c.Draw(prop.Of[string](), "key")
 	return func(ctx context.Context, subject serializable.Mixed) error {
-		_, err := subject.Get(ctx, key)
+		_, err := subject.Get(ctx, tx, key)
 		return err
 	}
 })
@@ -522,20 +799,32 @@ type mixedOver struct {
 	spend func()
 }
 
-// Record calls spend and returns its zero results.
-func (o mixedOver) Record(context.Context, serializable.Entry) (r0 error) {
-	o.spend()
-	return r0
-}
-
-// History calls spend and returns its zero results.
-func (o mixedOver) History(context.Context) (r0 []serializable.Entry, r1 error) {
+// Begin calls spend and returns its zero results.
+func (o mixedOver) Begin(context.Context) (r0 serializable.Tx, r1 error) {
 	o.spend()
 	return r0, r1
 }
 
+// Commit calls spend and returns its zero results.
+func (o mixedOver) Commit(context.Context, serializable.Tx) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Rollback calls spend and returns its zero results.
+func (o mixedOver) Rollback(context.Context, serializable.Tx) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Append calls spend and returns its zero results.
+func (o mixedOver) Append(context.Context, serializable.Tx, string, int) (r0 error) {
+	o.spend()
+	return r0
+}
+
 // Get calls spend and returns its zero results.
-func (o mixedOver) Get(context.Context, string) (r0 serializable.Entry, r1 error) {
+func (o mixedOver) Get(context.Context, serializable.Tx, string) (r0 []int, r1 error) {
 	o.spend()
 	return r0, r1
 }
@@ -546,99 +835,264 @@ func newMixedOver(_ *MixedHandle, spend func()) serializable.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// mixedRecordPanicsDefect is the planted defect of a Mixed whose Record
+// mixedBeginPanicsDefect is the planted defect of a Mixed whose Begin
 // panics.
-type mixedRecordPanicsDefect struct {
+type mixedBeginPanicsDefect struct {
 	mixedOverEmbedded
 }
 
-// Record is the override of the planted defect.
-func (*mixedRecordPanicsDefect) Record(p0 context.Context, p1 serializable.Entry) (r0 error) {
-	panic("the planted defect of a Mixed whose Record panics")
+// Begin is the override of the planted defect.
+func (*mixedBeginPanicsDefect) Begin(p0 context.Context) (r0 serializable.Tx, r1 error) {
+	panic("the planted defect of a Mixed whose Begin panics")
 }
 
-// mixedRecordPanics returns the planted defect of a Mixed whose Record
+// mixedBeginPanics returns the planted defect of a Mixed whose Begin
 // panics over a fresh subject.
-func mixedRecordPanics(h *MixedHandle) serializable.Mixed {
-	return &mixedRecordPanicsDefect{mixedOverEmbedded: h.Fresh()}
+func mixedBeginPanics(h *MixedHandle) serializable.Mixed {
+	return &mixedBeginPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedRecordIgnoresCancelDefect is the planted defect of a Mixed whose
-// Record ignores the context.
-type mixedRecordIgnoresCancelDefect struct {
+// mixedBeginIgnoresCancelDefect is the planted defect of a Mixed whose
+// Begin ignores the context.
+type mixedBeginIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
-// Record is the override of the planted defect.
-func (d *mixedRecordIgnoresCancelDefect) Record(p0 context.Context, p1 serializable.Entry) (r0 error) {
-	if p0.Err() != nil {
-		return r0
-	}
-	return d.mixedOverEmbedded.Record(p0, p1)
-}
-
-// mixedRecordIgnoresCancel returns the planted defect of a Mixed whose
-// Record ignores the context over a fresh subject.
-func mixedRecordIgnoresCancel(h *MixedHandle) serializable.Mixed {
-	return &mixedRecordIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedHistoryPanicsDefect is the planted defect of a Mixed whose History
-// panics.
-type mixedHistoryPanicsDefect struct {
-	mixedOverEmbedded
-}
-
-// History is the override of the planted defect.
-func (*mixedHistoryPanicsDefect) History(p0 context.Context) (r0 []serializable.Entry, r1 error) {
-	panic("the planted defect of a Mixed whose History panics")
-}
-
-// mixedHistoryPanics returns the planted defect of a Mixed whose History
-// panics over a fresh subject.
-func mixedHistoryPanics(h *MixedHandle) serializable.Mixed {
-	return &mixedHistoryPanicsDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedHistoryIgnoresCancelDefect is the planted defect of a Mixed whose
-// History ignores the context.
-type mixedHistoryIgnoresCancelDefect struct {
-	mixedOverEmbedded
-}
-
-// History is the override of the planted defect.
-func (d *mixedHistoryIgnoresCancelDefect) History(p0 context.Context) (r0 []serializable.Entry, r1 error) {
+// Begin is the override of the planted defect.
+func (d *mixedBeginIgnoresCancelDefect) Begin(p0 context.Context) (r0 serializable.Tx, r1 error) {
 	if p0.Err() != nil {
 		return r0, r1
 	}
-	return d.mixedOverEmbedded.History(p0)
+	return d.mixedOverEmbedded.Begin(p0)
 }
 
-// mixedHistoryIgnoresCancel returns the planted defect of a Mixed whose
-// History ignores the context over a fresh subject.
-func mixedHistoryIgnoresCancel(h *MixedHandle) serializable.Mixed {
-	return &mixedHistoryIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+// mixedBeginIgnoresCancel returns the planted defect of a Mixed whose
+// Begin ignores the context over a fresh subject.
+func mixedBeginIgnoresCancel(h *MixedHandle) serializable.Mixed {
+	return &mixedBeginIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedHistoryValueBesideDefect is the planted defect of a Mixed whose
-// History returns a value beside an error.
-type mixedHistoryValueBesideDefect struct {
+// mixedBeginValueBesideDefect is the planted defect of a Mixed whose Begin
+// returns a value beside an error.
+type mixedBeginValueBesideDefect struct {
 	mixedOverEmbedded
 }
 
-// History is the override of the planted defect.
-func (d *mixedHistoryValueBesideDefect) History(p0 context.Context) (r0 []serializable.Entry, r1 error) {
-	r0, r1 = d.mixedOverEmbedded.History(p0)
+// Begin is the override of the planted defect.
+func (d *mixedBeginValueBesideDefect) Begin(p0 context.Context) (r0 serializable.Tx, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Begin(p0)
 	if r1 != nil {
-		r0 = []serializable.Entry{{Key: "Key-b"}}
+		r0 = serializable.Tx{ID: 7}
 	}
 	return r0, r1
 }
 
-// mixedHistoryValueBeside returns the planted defect of a Mixed whose
-// History returns a value beside an error over a fresh subject.
-func mixedHistoryValueBeside(h *MixedHandle) serializable.Mixed {
-	return &mixedHistoryValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+// mixedBeginValueBeside returns the planted defect of a Mixed whose Begin
+// returns a value beside an error over a fresh subject.
+func mixedBeginValueBeside(h *MixedHandle) serializable.Mixed {
+	return &mixedBeginValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRollbackSettlesTwiceDefect is the planted defect of a Mixed whose
+// Rollback settles a transaction that Commit settled.
+type mixedRollbackSettlesTwiceDefect struct {
+	mixedOverEmbedded
+}
+
+// Rollback is the override of the planted defect.
+func (*mixedRollbackSettlesTwiceDefect) Rollback(p0 context.Context, p1 serializable.Tx) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	return r0
+}
+
+// mixedRollbackSettlesTwice returns the planted defect of a Mixed whose
+// Rollback settles a transaction that Commit settled over a fresh subject.
+func mixedRollbackSettlesTwice(h *MixedHandle) serializable.Mixed {
+	return &mixedRollbackSettlesTwiceDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCommitPanicsDefect is the planted defect of a Mixed whose Commit
+// panics.
+type mixedCommitPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Commit is the override of the planted defect.
+func (*mixedCommitPanicsDefect) Commit(p0 context.Context, p1 serializable.Tx) (r0 error) {
+	panic("the planted defect of a Mixed whose Commit panics")
+}
+
+// mixedCommitPanics returns the planted defect of a Mixed whose Commit
+// panics over a fresh subject.
+func mixedCommitPanics(h *MixedHandle) serializable.Mixed {
+	return &mixedCommitPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCommitIgnoresCancelDefect is the planted defect of a Mixed whose
+// Commit ignores the context.
+type mixedCommitIgnoresCancelDefect struct {
+	mixedOverEmbedded
+}
+
+// Commit is the override of the planted defect.
+func (d *mixedCommitIgnoresCancelDefect) Commit(p0 context.Context, p1 serializable.Tx) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Commit(p0, p1)
+}
+
+// mixedCommitIgnoresCancel returns the planted defect of a Mixed whose
+// Commit ignores the context over a fresh subject.
+func mixedCommitIgnoresCancel(h *MixedHandle) serializable.Mixed {
+	return &mixedCommitIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRollbackPanicsDefect is the planted defect of a Mixed whose
+// Rollback panics.
+type mixedRollbackPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Rollback is the override of the planted defect.
+func (*mixedRollbackPanicsDefect) Rollback(p0 context.Context, p1 serializable.Tx) (r0 error) {
+	panic("the planted defect of a Mixed whose Rollback panics")
+}
+
+// mixedRollbackPanics returns the planted defect of a Mixed whose Rollback
+// panics over a fresh subject.
+func mixedRollbackPanics(h *MixedHandle) serializable.Mixed {
+	return &mixedRollbackPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRollbackIgnoresCancelDefect is the planted defect of a Mixed whose
+// Rollback ignores the context.
+type mixedRollbackIgnoresCancelDefect struct {
+	mixedOverEmbedded
+}
+
+// Rollback is the override of the planted defect.
+func (d *mixedRollbackIgnoresCancelDefect) Rollback(p0 context.Context, p1 serializable.Tx) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Rollback(p0, p1)
+}
+
+// mixedRollbackIgnoresCancel returns the planted defect of a Mixed whose
+// Rollback ignores the context over a fresh subject.
+func mixedRollbackIgnoresCancel(h *MixedHandle) serializable.Mixed {
+	return &mixedRollbackIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAppendPanicsDefect is the planted defect of a Mixed whose Append
+// panics.
+type mixedAppendPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (*mixedAppendPanicsDefect) Append(p0 context.Context, p1 serializable.Tx, p2 string, p3 int) (r0 error) {
+	panic("the planted defect of a Mixed whose Append panics")
+}
+
+// mixedAppendPanics returns the planted defect of a Mixed whose Append
+// panics over a fresh subject.
+func mixedAppendPanics(h *MixedHandle) serializable.Mixed {
+	return &mixedAppendPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAppendIgnoresCancelDefect is the planted defect of a Mixed whose
+// Append ignores the context.
+type mixedAppendIgnoresCancelDefect struct {
+	mixedOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (d *mixedAppendIgnoresCancelDefect) Append(p0 context.Context, p1 serializable.Tx, p2 string, p3 int) (r0 error) {
+	if p0.Err() != nil {
+		return r0
+	}
+	return d.mixedOverEmbedded.Append(p0, p1, p2, p3)
+}
+
+// mixedAppendIgnoresCancel returns the planted defect of a Mixed whose
+// Append ignores the context over a fresh subject.
+func mixedAppendIgnoresCancel(h *MixedHandle) serializable.Mixed {
+	return &mixedAppendIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadsUncommittedDefect is the planted defect of a Mixed whose read
+// returns the write of a transaction that has not committed.
+type mixedReadsUncommittedDefect struct {
+	mixedOverEmbedded
+	h    *MixedHandle
+	mu   sync.Mutex
+	open map[any][2]any
+}
+
+// Append is the override of the planted defect.
+func (d *mixedReadsUncommittedDefect) Append(p0 context.Context, p1 serializable.Tx, p2 string, p3 int) (r0 error) {
+	r0 = d.mixedOverEmbedded.Append(p0, p1, p2, p3)
+	if r0 == nil {
+		d.mu.Lock()
+		d.open[p2] = [2]any{p1, p3}
+		d.mu.Unlock()
+	}
+	d.h.Yield()
+	return r0
+}
+
+// Get is the override of the planted defect.
+func (d *mixedReadsUncommittedDefect) Get(p0 context.Context, p1 serializable.Tx, p2 string) (r0 []int, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Get(p0, p1, p2)
+	d.mu.Lock()
+	kept, found := d.open[p2]
+	d.mu.Unlock()
+	if found && kept[0] != any(p1) && r1 == nil {
+		v, _ := kept[1].(int)
+		r0 = append(r0[:len(r0):len(r0)], v)
+	}
+	d.h.Yield()
+	return r0, r1
+}
+
+// Commit is the override of the planted defect.
+func (d *mixedReadsUncommittedDefect) Commit(p0 context.Context, p1 serializable.Tx) (r0 error) {
+	r0 = d.mixedOverEmbedded.Commit(p0, p1)
+	d.mu.Lock()
+	for key, kept := range d.open {
+		if kept[0] == any(p1) {
+			delete(d.open, key)
+		}
+	}
+	d.mu.Unlock()
+	d.h.Yield()
+	return r0
+}
+
+// Rollback is the override of the planted defect.
+func (d *mixedReadsUncommittedDefect) Rollback(p0 context.Context, p1 serializable.Tx) (r0 error) {
+	r0 = d.mixedOverEmbedded.Rollback(p0, p1)
+	d.mu.Lock()
+	for key, kept := range d.open {
+		if kept[0] == any(p1) {
+			delete(d.open, key)
+		}
+	}
+	d.mu.Unlock()
+	d.h.Yield()
+	return r0
+}
+
+// mixedReadsUncommitted returns the planted defect of a Mixed whose read
+// returns the write of a transaction that has not committed over a fresh
+// subject.
+func mixedReadsUncommitted(h *MixedHandle) serializable.Mixed {
+	return &mixedReadsUncommittedDefect{mixedOverEmbedded: h.Fresh(), h: h, open: map[any][2]any{}}
 }
 
 // mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
@@ -647,7 +1101,7 @@ type mixedGetPanicsDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (*mixedGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 serializable.Entry, r1 error) {
+func (*mixedGetPanicsDefect) Get(p0 context.Context, p1 serializable.Tx, p2 string) (r0 []int, r1 error) {
 	panic("the planted defect of a Mixed whose Get panics")
 }
 
@@ -664,11 +1118,11 @@ type mixedGetIgnoresCancelDefect struct {
 }
 
 // Get is the override of the planted defect.
-func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 serializable.Entry, r1 error) {
+func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1 serializable.Tx, p2 string) (r0 []int, r1 error) {
 	if p0.Err() != nil {
 		return r0, r1
 	}
-	return d.mixedOverEmbedded.Get(p0, p1)
+	return d.mixedOverEmbedded.Get(p0, p1, p2)
 }
 
 // mixedGetIgnoresCancel returns the planted defect of a Mixed whose Get
@@ -677,25 +1131,185 @@ func mixedGetIgnoresCancel(h *MixedHandle) serializable.Mixed {
 	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
-// returns a value beside an error.
-type mixedGetValueBesideDefect struct {
-	mixedOverEmbedded
-}
-
-// Get is the override of the planted defect.
-func (d *mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 serializable.Entry, r1 error) {
-	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
-	if r1 != nil {
-		r0 = serializable.Entry{Key: "Key-b"}
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() serializable.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	var counter atomic.Int64
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Begin",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Begin", args)
+				values, err := mixedBeginCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Commit",
+			Input: func(c *prop.Case, _ struct{}) any {
+				tx := c.Draw(prop.Of[serializable.Tx](), "commit.tx")
+				return []any{tx}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Commit", args)
+				values, err := mixedCommitCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Rollback",
+			Input: func(c *prop.Case, _ struct{}) any {
+				tx := c.Draw(prop.Of[serializable.Tx](), "rollback.tx")
+				return []any{tx}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Rollback", args)
+				values, err := mixedRollbackCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Append",
+			Input: func(c *prop.Case, _ struct{}) any {
+				tx := c.Draw(prop.Of[serializable.Tx](), "append.tx")
+				key := c.Draw(prop.Of[string](), "append.key")
+				v := c.Draw(prop.Of[int](), "append.v")
+				return []any{tx, key, v}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Append", args)
+				values, err := mixedAppendCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case, _ struct{}) any {
+				tx := c.Draw(prop.Of[serializable.Tx](), "get.tx")
+				key := c.Draw(prop.Of[string](), "get.key")
+				return []any{tx, key}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Get", args)
+				values, err := mixedGetCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name:    "txn",
+			Enabled: func(struct{}) bool { return false },
+			Input: func(c *prop.Case, _ struct{}) any {
+				ops := make([]any, c.Draw(prop.Integer(1, 4), "txn.ops"))
+				for i := range ops {
+					key := c.Draw(prop.SampledFrom(keysString...), "txn.key")
+					if c.Draw(prop.Boolean(), "txn.read") {
+						ops[i] = []any{"read", key, nil}
+						continue
+					}
+					ops[i] = []any{"append", key, int(counter.Add(1))}
+				}
+				return []any{ops, c.Draw(prop.Integer(0, 9), "txn.commit") > 0}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				in, _ := input.([]any)
+				ops, _ := in[0].([]any)
+				commit, _ := in[1].(bool)
+				call := c.History().Invoke(client, "txn", ops)
+				ctx, s := c.Context(), subject()
+				end := func(err error) {
+					if ctx.Err() != nil && errors.Is(err, ctx.Err()) {
+						call.Unknown(err)
+						return
+					}
+					call.Fail(err)
+				}
+				begun, err := mixedBeginCall(ctx, s, []any{})
+				if err != nil {
+					end(err)
+					return
+				}
+				tx := begun[0]
+				rollback := func() { _, _ = mixedRollbackCall(ctx, s, []any{tx}) }
+				out := make([]any, len(ops))
+				for i, op := range ops {
+					m, _ := op.([]any)
+					key, v := m[1], m[2]
+					if m[0] == "read" {
+						read, err := mixedGetCall(ctx, s, []any{tx, key})
+						if err != nil {
+							rollback()
+							end(err)
+							return
+						}
+						out[i] = []any{"read", key, read[0]}
+						continue
+					}
+					if _, err := mixedAppendCall(ctx, s, []any{tx, key, v}); err != nil {
+						rollback()
+						end(err)
+						return
+					}
+					out[i] = m
+				}
+				if !commit {
+					rollback()
+					call.Fail(conform.ErrGenerated)
+					return
+				}
+				if _, err := mixedCommitCall(ctx, s, []any{tx}); err != nil {
+					end(err)
+					return
+				}
+				call.OK(out)
+			},
+		},
 	}
-	return r0, r1
 }
 
-// mixedGetValueBeside returns the planted defect of a Mixed whose Get
-// returns a value beside an error over a fresh subject.
-func mixedGetValueBeside(h *MixedHandle) serializable.Mixed {
-	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+// mixedBeginCall calls Begin on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedBeginCall(ctx context.Context, subject serializable.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Begin(ctx)
+	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:5ae093e2465898dd9f7144c13f0afdb77e79b6428f1e48ce73184fb6d706d04e
+// mixedCommitCall calls Commit on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedCommitCall(ctx context.Context, subject serializable.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(serializable.Tx)
+	return nil, subject.Commit(ctx, a0)
+}
+
+// mixedRollbackCall calls Rollback on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedRollbackCall(ctx context.Context, subject serializable.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(serializable.Tx)
+	return nil, subject.Rollback(ctx, a0)
+}
+
+// mixedAppendCall calls Append on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedAppendCall(ctx context.Context, subject serializable.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(serializable.Tx)
+	a1, _ := args[1].(string)
+	a2, _ := args[2].(int)
+	return nil, subject.Append(ctx, a0, a1, a2)
+}
+
+// mixedGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func mixedGetCall(ctx context.Context, subject serializable.Mixed, args []any) ([]any, error) {
+	a0, _ := args[0].(serializable.Tx)
+	a1, _ := args[1].(string)
+	r0, err := subject.Get(ctx, a0, a1)
+	return []any{r0}, err
+}
+
+// dokimi:provenance sha256:a94be5a5f5c421e3c7c2c4a510cab108e2f51bf91238f95ad0c2588b0f535421

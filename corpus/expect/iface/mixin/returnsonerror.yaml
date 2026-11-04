@@ -1,0 +1,84 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/mixin/returnsonerror
+level: 2
+subjects:
+  - type: iface/mixin/returnsonerror/returnsonerrortest.InMemory
+controls: []
+declarations:
+  mixed:
+    checks:
+      mixed.fill/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.fill/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.fill/returns-on-error:
+        claim: returns-on-error
+        law: failure-returns-the-request-field
+        reason: field-lost-on-error
+      mixed.fill/returns-on-error#generated:
+        claim: returns-on-error
+        law: failure-returns-the-request-field
+        reason: field-lost-on-error
+      mixed.fill/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.fill/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.read/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.read/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      mixed.read/returns-on-error:
+        claim: returns-on-error
+        law: failure-returns-the-request-field
+        reason: field-lost-on-error
+      mixed.read/returns-on-error#generated:
+        claim: returns-on-error
+        law: failure-returns-the-request-field
+        reason: field-lost-on-error
+      mixed.read/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      mixed.read/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      mixed.fill/zero-on-error: returns-no-field
+      mixed.read/zero-on-error: returns-no-field
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: mixed.put
+        stance: silent

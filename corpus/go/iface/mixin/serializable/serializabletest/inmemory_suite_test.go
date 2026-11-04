@@ -27,17 +27,31 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
 // Mixed on InMemory.
 func BenchmarkInMemoryConformsToMixed(b *testing.B) {
-	b.Run("Record", func(b *testing.B) {
+	b.Run("Begin", func(b *testing.B) {
 		serializabletest.BenchMixedSuite(
 			b,
-			serializabletest.MixedChecks.Record.Callable,
+			serializabletest.MixedChecks.Begin.Callable,
 			func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
 		)
 	})
-	b.Run("History", func(b *testing.B) {
+	b.Run("Commit", func(b *testing.B) {
 		serializabletest.BenchMixedSuite(
 			b,
-			serializabletest.MixedChecks.History.Callable,
+			serializabletest.MixedChecks.Commit.Callable,
+			func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
+		)
+	})
+	b.Run("Rollback", func(b *testing.B) {
+		serializabletest.BenchMixedSuite(
+			b,
+			serializabletest.MixedChecks.Rollback.Callable,
+			func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
+		)
+	})
+	b.Run("Append", func(b *testing.B) {
+		serializabletest.BenchMixedSuite(
+			b,
+			serializabletest.MixedChecks.Append.Callable,
 			func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
 		)
 	})
@@ -50,22 +64,42 @@ func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryConformsToMixedRecord fuzzes the property checks of
-// Mixed.Record on InMemory.
-func FuzzInMemoryConformsToMixedRecord(f *testing.F) {
+// FuzzInMemoryConformsToMixedBegin fuzzes the property checks of
+// Mixed.Begin on InMemory.
+func FuzzInMemoryConformsToMixedBegin(f *testing.F) {
 	serializabletest.FuzzMixedSuite(
 		f,
-		serializabletest.MixedChecks.Record.Callable,
+		serializabletest.MixedChecks.Begin.Callable,
 		func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
 	)
 }
 
-// FuzzInMemoryConformsToMixedHistory fuzzes the property checks of
-// Mixed.History on InMemory.
-func FuzzInMemoryConformsToMixedHistory(f *testing.F) {
+// FuzzInMemoryConformsToMixedCommit fuzzes the property checks of
+// Mixed.Commit on InMemory.
+func FuzzInMemoryConformsToMixedCommit(f *testing.F) {
 	serializabletest.FuzzMixedSuite(
 		f,
-		serializabletest.MixedChecks.History.Callable,
+		serializabletest.MixedChecks.Commit.Callable,
+		func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryConformsToMixedRollback fuzzes the property checks of
+// Mixed.Rollback on InMemory.
+func FuzzInMemoryConformsToMixedRollback(f *testing.F) {
+	serializabletest.FuzzMixedSuite(
+		f,
+		serializabletest.MixedChecks.Rollback.Callable,
+		func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryConformsToMixedAppend fuzzes the property checks of
+// Mixed.Append on InMemory.
+func FuzzInMemoryConformsToMixedAppend(f *testing.F) {
+	serializabletest.FuzzMixedSuite(
+		f,
+		serializabletest.MixedChecks.Append.Callable,
 		func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
 	)
 }
@@ -80,4 +114,4 @@ func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:08feb73aae9331e86ee2764446739febb309872489abdbf8cccadcb136c0e045
+// dokimi:provenance sha256:2f85c4060084dda5208ae34ab566fbb3c4503b83930b6c5f336e9d5ff4c4b28f

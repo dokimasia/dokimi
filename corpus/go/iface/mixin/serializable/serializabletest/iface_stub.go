@@ -14,81 +14,155 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// MixedRecordCall records one call of Mixed.Record.
-type MixedRecordCall struct {
+// MixedBeginCall records one call of Mixed.Begin.
+type MixedBeginCall struct {
+	Ctx    context.Context
+	Result serializable.Tx
+	Err    error
+}
+
+// MixedCommitCall records one call of Mixed.Commit.
+type MixedCommitCall struct {
 	Ctx context.Context
-	E   serializable.Entry
+	Tx  serializable.Tx
 	Err error
 }
 
-// MixedHistoryCall records one call of Mixed.History.
-type MixedHistoryCall struct {
-	Ctx    context.Context
-	Result []serializable.Entry
-	Err    error
+// MixedRollbackCall records one call of Mixed.Rollback.
+type MixedRollbackCall struct {
+	Ctx context.Context
+	Tx  serializable.Tx
+	Err error
+}
+
+// MixedAppendCall records one call of Mixed.Append.
+type MixedAppendCall struct {
+	Ctx context.Context
+	Tx  serializable.Tx
+	Key string
+	V   int
+	Err error
 }
 
 // MixedGetCall records one call of Mixed.Get.
 type MixedGetCall struct {
 	Ctx    context.Context
+	Tx     serializable.Tx
 	Key    string
-	Result serializable.Entry
+	Result []int
 	Err    error
 }
 
-// MixedRecordStub configures Record and records its calls. A fault armed
+// MixedBeginStub configures Begin and records its calls. A fault armed
 // through it takes precedence over the function and the fixed results.
-type MixedRecordStub struct {
-	*stub.MethodStub[MixedRecordCall]
+type MixedBeginStub struct {
+	*stub.MethodStub[MixedBeginCall]
 
-	fn       func(context.Context, serializable.Entry) error
-	fallback *MixedRecordReturn
+	fn       func(context.Context) (serializable.Tx, error)
+	fallback *MixedBeginReturn
 }
 
-// MixedRecordReturn contains the fixed results of Record.
-type MixedRecordReturn struct {
-	Err error
+// MixedBeginReturn contains the fixed results of Begin.
+type MixedBeginReturn struct {
+	Result serializable.Tx
+	Err    error
 }
 
-// Returns sets the results of every call of Record. A function and an
+// Returns sets the results of every call of Begin. A function and an
 // injected fault take precedence over them.
-func (s *MixedRecordStub) Returns(err error) *MixedRecordStub {
-	s.fallback = &MixedRecordReturn{Err: err}
+func (s *MixedBeginStub) Returns(result serializable.Tx, err error) *MixedBeginStub {
+	s.fallback = &MixedBeginReturn{Result: result, Err: err}
 	return s
 }
 
-// Func sets the function that computes the results of Record from its
+// Func sets the function that computes the results of Begin from its
 // arguments. An injected fault takes precedence over it.
-func (s *MixedRecordStub) Func(fn func(context.Context, serializable.Entry) error) *MixedRecordStub {
+func (s *MixedBeginStub) Func(fn func(context.Context) (serializable.Tx, error)) *MixedBeginStub {
 	s.fn = fn
 	return s
 }
 
-// MixedHistoryStub configures History and records its calls. A fault armed
+// MixedCommitStub configures Commit and records its calls. A fault armed
 // through it takes precedence over the function and the fixed results.
-type MixedHistoryStub struct {
-	*stub.MethodStub[MixedHistoryCall]
+type MixedCommitStub struct {
+	*stub.MethodStub[MixedCommitCall]
 
-	fn       func(context.Context) ([]serializable.Entry, error)
-	fallback *MixedHistoryReturn
+	fn       func(context.Context, serializable.Tx) error
+	fallback *MixedCommitReturn
 }
 
-// MixedHistoryReturn contains the fixed results of History.
-type MixedHistoryReturn struct {
-	Result []serializable.Entry
-	Err    error
+// MixedCommitReturn contains the fixed results of Commit.
+type MixedCommitReturn struct {
+	Err error
 }
 
-// Returns sets the results of every call of History. A function and an
+// Returns sets the results of every call of Commit. A function and an
 // injected fault take precedence over them.
-func (s *MixedHistoryStub) Returns(result []serializable.Entry, err error) *MixedHistoryStub {
-	s.fallback = &MixedHistoryReturn{Result: result, Err: err}
+func (s *MixedCommitStub) Returns(err error) *MixedCommitStub {
+	s.fallback = &MixedCommitReturn{Err: err}
 	return s
 }
 
-// Func sets the function that computes the results of History from its
+// Func sets the function that computes the results of Commit from its
 // arguments. An injected fault takes precedence over it.
-func (s *MixedHistoryStub) Func(fn func(context.Context) ([]serializable.Entry, error)) *MixedHistoryStub {
+func (s *MixedCommitStub) Func(fn func(context.Context, serializable.Tx) error) *MixedCommitStub {
+	s.fn = fn
+	return s
+}
+
+// MixedRollbackStub configures Rollback and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
+type MixedRollbackStub struct {
+	*stub.MethodStub[MixedRollbackCall]
+
+	fn       func(context.Context, serializable.Tx) error
+	fallback *MixedRollbackReturn
+}
+
+// MixedRollbackReturn contains the fixed results of Rollback.
+type MixedRollbackReturn struct {
+	Err error
+}
+
+// Returns sets the results of every call of Rollback. A function and an
+// injected fault take precedence over them.
+func (s *MixedRollbackStub) Returns(err error) *MixedRollbackStub {
+	s.fallback = &MixedRollbackReturn{Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Rollback from its
+// arguments. An injected fault takes precedence over it.
+func (s *MixedRollbackStub) Func(fn func(context.Context, serializable.Tx) error) *MixedRollbackStub {
+	s.fn = fn
+	return s
+}
+
+// MixedAppendStub configures Append and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
+type MixedAppendStub struct {
+	*stub.MethodStub[MixedAppendCall]
+
+	fn       func(context.Context, serializable.Tx, string, int) error
+	fallback *MixedAppendReturn
+}
+
+// MixedAppendReturn contains the fixed results of Append.
+type MixedAppendReturn struct {
+	Err error
+}
+
+// Returns sets the results of every call of Append. A function and an
+// injected fault take precedence over them.
+func (s *MixedAppendStub) Returns(err error) *MixedAppendStub {
+	s.fallback = &MixedAppendReturn{Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Append from its
+// arguments. An injected fault takes precedence over it.
+func (s *MixedAppendStub) Func(fn func(context.Context, serializable.Tx, string, int) error) *MixedAppendStub {
 	s.fn = fn
 	return s
 }
@@ -98,26 +172,26 @@ func (s *MixedHistoryStub) Func(fn func(context.Context) ([]serializable.Entry, 
 type MixedGetStub struct {
 	*stub.MethodStub[MixedGetCall]
 
-	fn       func(context.Context, string) (serializable.Entry, error)
+	fn       func(context.Context, serializable.Tx, string) ([]int, error)
 	fallback *MixedGetReturn
 }
 
 // MixedGetReturn contains the fixed results of Get.
 type MixedGetReturn struct {
-	Result serializable.Entry
+	Result []int
 	Err    error
 }
 
 // Returns sets the results of every call of Get. A function and an
 // injected fault take precedence over them.
-func (s *MixedGetStub) Returns(result serializable.Entry, err error) *MixedGetStub {
+func (s *MixedGetStub) Returns(result []int, err error) *MixedGetStub {
 	s.fallback = &MixedGetReturn{Result: result, Err: err}
 	return s
 }
 
 // Func sets the function that computes the results of Get from its
 // arguments. An injected fault takes precedence over it.
-func (s *MixedGetStub) Func(fn func(context.Context, string) (serializable.Entry, error)) *MixedGetStub {
+func (s *MixedGetStub) Func(fn func(context.Context, serializable.Tx, string) ([]int, error)) *MixedGetStub {
 	s.fn = fn
 	return s
 }
@@ -139,8 +213,10 @@ func MixedStubStrict() MixedStubOption {
 // The double still records the call.
 func MixedStubDelegateTo(impl serializable.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
-		s.OnRecord.Func(impl.Record)
-		s.OnHistory.Func(impl.History)
+		s.OnBegin.Func(impl.Begin)
+		s.OnCommit.Func(impl.Commit)
+		s.OnRollback.Func(impl.Rollback)
+		s.OnAppend.Func(impl.Append)
 		s.OnGet.Func(impl.Get)
 	}
 }
@@ -176,24 +252,36 @@ func MixedStubWithLatency(d time.Duration) MixedStubOption {
 // can fail. Each call of such a method then fails with err.
 func MixedStubFailing(err error) MixedStubOption {
 	return func(s *MixedStub) {
-		s.OnRecord.Faults(err, 1)
-		s.OnHistory.Faults(err, 1)
+		s.OnBegin.Faults(err, 1)
+		s.OnCommit.Faults(err, 1)
+		s.OnRollback.Faults(err, 1)
+		s.OnAppend.Faults(err, 1)
 		s.OnGet.Faults(err, 1)
 	}
 }
 
-// WithMixedRecord returns the option that sets the function of Record.
-func WithMixedRecord(fn func(context.Context, serializable.Entry) error) MixedStubOption {
-	return func(s *MixedStub) { s.OnRecord.Func(fn) }
+// WithMixedBegin returns the option that sets the function of Begin.
+func WithMixedBegin(fn func(context.Context) (serializable.Tx, error)) MixedStubOption {
+	return func(s *MixedStub) { s.OnBegin.Func(fn) }
 }
 
-// WithMixedHistory returns the option that sets the function of History.
-func WithMixedHistory(fn func(context.Context) ([]serializable.Entry, error)) MixedStubOption {
-	return func(s *MixedStub) { s.OnHistory.Func(fn) }
+// WithMixedCommit returns the option that sets the function of Commit.
+func WithMixedCommit(fn func(context.Context, serializable.Tx) error) MixedStubOption {
+	return func(s *MixedStub) { s.OnCommit.Func(fn) }
+}
+
+// WithMixedRollback returns the option that sets the function of Rollback.
+func WithMixedRollback(fn func(context.Context, serializable.Tx) error) MixedStubOption {
+	return func(s *MixedStub) { s.OnRollback.Func(fn) }
+}
+
+// WithMixedAppend returns the option that sets the function of Append.
+func WithMixedAppend(fn func(context.Context, serializable.Tx, string, int) error) MixedStubOption {
+	return func(s *MixedStub) { s.OnAppend.Func(fn) }
 }
 
 // WithMixedGet returns the option that sets the function of Get.
-func WithMixedGet(fn func(context.Context, string) (serializable.Entry, error)) MixedStubOption {
+func WithMixedGet(fn func(context.Context, serializable.Tx, string) ([]int, error)) MixedStubOption {
 	return func(s *MixedStub) { s.OnGet.Func(fn) }
 }
 
@@ -201,9 +289,11 @@ func WithMixedGet(fn func(context.Context, string) (serializable.Entry, error)) 
 // configures its method. An unconfigured method records the call and
 // returns the zero values of its results.
 type MixedStub struct {
-	OnRecord  *MixedRecordStub
-	OnHistory *MixedHistoryStub
-	OnGet     *MixedGetStub
+	OnBegin    *MixedBeginStub
+	OnCommit   *MixedCommitStub
+	OnRollback *MixedRollbackStub
+	OnAppend   *MixedAppendStub
+	OnGet      *MixedGetStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -218,13 +308,17 @@ var _ serializable.Mixed = (*MixedStub)(nil)
 // end of the test. With a nil tb, the double reports nothing.
 func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
-		OnRecord:  &MixedRecordStub{MethodStub: stub.NewMethodStub[MixedRecordCall](tb, "Mixed.Record")},
-		OnHistory: &MixedHistoryStub{MethodStub: stub.NewMethodStub[MixedHistoryCall](tb, "Mixed.History")},
-		OnGet:     &MixedGetStub{MethodStub: stub.NewMethodStub[MixedGetCall](tb, "Mixed.Get")},
+		OnBegin:    &MixedBeginStub{MethodStub: stub.NewMethodStub[MixedBeginCall](tb, "Mixed.Begin")},
+		OnCommit:   &MixedCommitStub{MethodStub: stub.NewMethodStub[MixedCommitCall](tb, "Mixed.Commit")},
+		OnRollback: &MixedRollbackStub{MethodStub: stub.NewMethodStub[MixedRollbackCall](tb, "Mixed.Rollback")},
+		OnAppend:   &MixedAppendStub{MethodStub: stub.NewMethodStub[MixedAppendCall](tb, "Mixed.Append")},
+		OnGet:      &MixedGetStub{MethodStub: stub.NewMethodStub[MixedGetCall](tb, "Mixed.Get")},
 	}
 	s.group = stub.NewGroup(
-		s.OnRecord.MethodStub,
-		s.OnHistory.MethodStub,
+		s.OnBegin.MethodStub,
+		s.OnCommit.MethodStub,
+		s.OnRollback.MethodStub,
+		s.OnAppend.MethodStub,
 		s.OnGet.MethodStub,
 	)
 	for _, opt := range opts {
@@ -260,53 +354,25 @@ func (s *MixedStub) ResetCalls() {
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedRecordStub) invoke(ctx context.Context, e serializable.Entry) func() MixedRecordReturn {
+func (s *MixedBeginStub) invoke(ctx context.Context) func() MixedBeginReturn {
 	if s.fn == nil {
 		return nil
 	}
-	return func() MixedRecordReturn {
-		r0 := s.fn(ctx, e)
-		return MixedRecordReturn{Err: r0}
-	}
-}
-
-// Record records the call. An armed fault comes first, then the function
-// of Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) Record(ctx context.Context, e serializable.Entry) error {
-	call := MixedRecordCall{Ctx: ctx, E: e}
-	r := stub.Answer(s.OnRecord.MethodStub, call, stub.Arms[MixedRecordCall, MixedRecordReturn]{
-		Invoke:   s.OnRecord.invoke(ctx, e),
-		Fallback: s.OnRecord.fallback,
-		Fault:    func(err error) MixedRecordReturn { return MixedRecordReturn{Err: err} },
-		Stamp: func(c MixedRecordCall, r MixedRecordReturn) MixedRecordCall {
-			c.Err = r.Err
-			return c
-		},
-	})
-	return r.Err
-}
-
-// invoke returns a call of the function of Func with the arguments, and nil
-// where no function is set.
-func (s *MixedHistoryStub) invoke(ctx context.Context) func() MixedHistoryReturn {
-	if s.fn == nil {
-		return nil
-	}
-	return func() MixedHistoryReturn {
+	return func() MixedBeginReturn {
 		r0, r1 := s.fn(ctx)
-		return MixedHistoryReturn{Result: r0, Err: r1}
+		return MixedBeginReturn{Result: r0, Err: r1}
 	}
 }
 
-// History records the call. An armed fault comes first, then the function
-// of Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) History(ctx context.Context) ([]serializable.Entry, error) {
-	call := MixedHistoryCall{Ctx: ctx}
-	r := stub.Answer(s.OnHistory.MethodStub, call, stub.Arms[MixedHistoryCall, MixedHistoryReturn]{
-		Invoke:   s.OnHistory.invoke(ctx),
-		Fallback: s.OnHistory.fallback,
-		Fault:    func(err error) MixedHistoryReturn { return MixedHistoryReturn{Err: err} },
-		Stamp: func(c MixedHistoryCall, r MixedHistoryReturn) MixedHistoryCall {
+// Begin records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *MixedStub) Begin(ctx context.Context) (serializable.Tx, error) {
+	call := MixedBeginCall{Ctx: ctx}
+	r := stub.Answer(s.OnBegin.MethodStub, call, stub.Arms[MixedBeginCall, MixedBeginReturn]{
+		Invoke:   s.OnBegin.invoke(ctx),
+		Fallback: s.OnBegin.fallback,
+		Fault:    func(err error) MixedBeginReturn { return MixedBeginReturn{Err: err} },
+		Stamp: func(c MixedBeginCall, r MixedBeginReturn) MixedBeginCall {
 			c.Result = r.Result
 			c.Err = r.Err
 			return c
@@ -317,22 +383,106 @@ func (s *MixedStub) History(ctx context.Context) ([]serializable.Entry, error) {
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedGetStub) invoke(ctx context.Context, key string) func() MixedGetReturn {
+func (s *MixedCommitStub) invoke(ctx context.Context, tx serializable.Tx) func() MixedCommitReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() MixedCommitReturn {
+		r0 := s.fn(ctx, tx)
+		return MixedCommitReturn{Err: r0}
+	}
+}
+
+// Commit records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
+func (s *MixedStub) Commit(ctx context.Context, tx serializable.Tx) error {
+	call := MixedCommitCall{Ctx: ctx, Tx: tx}
+	r := stub.Answer(s.OnCommit.MethodStub, call, stub.Arms[MixedCommitCall, MixedCommitReturn]{
+		Invoke:   s.OnCommit.invoke(ctx, tx),
+		Fallback: s.OnCommit.fallback,
+		Fault:    func(err error) MixedCommitReturn { return MixedCommitReturn{Err: err} },
+		Stamp: func(c MixedCommitCall, r MixedCommitReturn) MixedCommitCall {
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r.Err
+}
+
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *MixedRollbackStub) invoke(ctx context.Context, tx serializable.Tx) func() MixedRollbackReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() MixedRollbackReturn {
+		r0 := s.fn(ctx, tx)
+		return MixedRollbackReturn{Err: r0}
+	}
+}
+
+// Rollback records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
+func (s *MixedStub) Rollback(ctx context.Context, tx serializable.Tx) error {
+	call := MixedRollbackCall{Ctx: ctx, Tx: tx}
+	r := stub.Answer(s.OnRollback.MethodStub, call, stub.Arms[MixedRollbackCall, MixedRollbackReturn]{
+		Invoke:   s.OnRollback.invoke(ctx, tx),
+		Fallback: s.OnRollback.fallback,
+		Fault:    func(err error) MixedRollbackReturn { return MixedRollbackReturn{Err: err} },
+		Stamp: func(c MixedRollbackCall, r MixedRollbackReturn) MixedRollbackCall {
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r.Err
+}
+
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *MixedAppendStub) invoke(ctx context.Context, tx serializable.Tx, key string, v int) func() MixedAppendReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() MixedAppendReturn {
+		r0 := s.fn(ctx, tx, key, v)
+		return MixedAppendReturn{Err: r0}
+	}
+}
+
+// Append records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
+func (s *MixedStub) Append(ctx context.Context, tx serializable.Tx, key string, v int) error {
+	call := MixedAppendCall{Ctx: ctx, Tx: tx, Key: key, V: v}
+	r := stub.Answer(s.OnAppend.MethodStub, call, stub.Arms[MixedAppendCall, MixedAppendReturn]{
+		Invoke:   s.OnAppend.invoke(ctx, tx, key, v),
+		Fallback: s.OnAppend.fallback,
+		Fault:    func(err error) MixedAppendReturn { return MixedAppendReturn{Err: err} },
+		Stamp: func(c MixedAppendCall, r MixedAppendReturn) MixedAppendCall {
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r.Err
+}
+
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *MixedGetStub) invoke(ctx context.Context, tx serializable.Tx, key string) func() MixedGetReturn {
 	if s.fn == nil {
 		return nil
 	}
 	return func() MixedGetReturn {
-		r0, r1 := s.fn(ctx, key)
+		r0, r1 := s.fn(ctx, tx, key)
 		return MixedGetReturn{Result: r0, Err: r1}
 	}
 }
 
 // Get records the call. An armed fault comes first, then the function of
 // Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) Get(ctx context.Context, key string) (serializable.Entry, error) {
-	call := MixedGetCall{Ctx: ctx, Key: key}
+func (s *MixedStub) Get(ctx context.Context, tx serializable.Tx, key string) ([]int, error) {
+	call := MixedGetCall{Ctx: ctx, Tx: tx, Key: key}
 	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
-		Invoke:   s.OnGet.invoke(ctx, key),
+		Invoke:   s.OnGet.invoke(ctx, tx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) MixedGetReturn { return MixedGetReturn{Err: err} },
 		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
@@ -344,4 +494,4 @@ func (s *MixedStub) Get(ctx context.Context, key string) (serializable.Entry, er
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:8c8543332b168305fd82bf637a06023d0ccee0c5f37eee4a6f2d846c7948e2f8
+// dokimi:provenance sha256:9ef9bfa6a4418ca44cda6a3f7102f4441cb936cff9035af65047d80545914d01

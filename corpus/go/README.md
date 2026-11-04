@@ -34,7 +34,7 @@ A shape family is a group of subjects whose state has one representation. `famil
 | counters | One integer | 8 | `iface/mixin/commutative/perkey` | A total for each key, summed on each read |
 | stateless | No state, or a value that the constructor sets | 15 | `iface/mixin/xsssafe/htmlescape` | `html.EscapeString` of the standard library |
 | clocked | Instants of a clock beside the values | 9 | `iface/mixin/ttl/deadline` | The deadline of each value in place of the instant of its write |
-| transactional | Staged writes beside committed ones, a snapshot, or a history | 6 | `iface/contract/tx/writelog` | One log of every write, read through the order of the commits |
+| transactional | Staged writes beside committed ones, or a snapshot | 6 | `iface/contract/tx/writelog` | One log of every write, read through the order of the commits |
 | leases | The holders of keys, which a release or the end of a context frees | 5 | `iface/contract/lease/sortedkeys` | A sorted slice of the held keys |
 
 ## Excusals

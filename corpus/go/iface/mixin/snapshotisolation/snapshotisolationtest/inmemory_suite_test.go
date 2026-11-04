@@ -27,28 +27,10 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
 // Mixed on InMemory.
 func BenchmarkInMemoryConformsToMixed(b *testing.B) {
-	b.Run("Record", func(b *testing.B) {
+	b.Run("Begin", func(b *testing.B) {
 		snapshotisolationtest.BenchMixedSuite(
 			b,
-			snapshotisolationtest.MixedChecks.Record.Callable,
-			func(*snapshotisolationtest.MixedHandle) *snapshotisolationtest.InMemory {
-				return snapshotisolationtest.NewInMemory()
-			},
-		)
-	})
-	b.Run("History", func(b *testing.B) {
-		snapshotisolationtest.BenchMixedSuite(
-			b,
-			snapshotisolationtest.MixedChecks.History.Callable,
-			func(*snapshotisolationtest.MixedHandle) *snapshotisolationtest.InMemory {
-				return snapshotisolationtest.NewInMemory()
-			},
-		)
-	})
-	b.Run("Get", func(b *testing.B) {
-		snapshotisolationtest.BenchMixedSuite(
-			b,
-			snapshotisolationtest.MixedChecks.Get.Callable,
+			snapshotisolationtest.MixedChecks.Begin.Callable,
 			func(*snapshotisolationtest.MixedHandle) *snapshotisolationtest.InMemory {
 				return snapshotisolationtest.NewInMemory()
 			},
@@ -56,40 +38,16 @@ func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryConformsToMixedRecord fuzzes the property checks of
-// Mixed.Record on InMemory.
-func FuzzInMemoryConformsToMixedRecord(f *testing.F) {
+// FuzzInMemoryConformsToMixedBegin fuzzes the property checks of
+// Mixed.Begin on InMemory.
+func FuzzInMemoryConformsToMixedBegin(f *testing.F) {
 	snapshotisolationtest.FuzzMixedSuite(
 		f,
-		snapshotisolationtest.MixedChecks.Record.Callable,
+		snapshotisolationtest.MixedChecks.Begin.Callable,
 		func(*snapshotisolationtest.MixedHandle) *snapshotisolationtest.InMemory {
 			return snapshotisolationtest.NewInMemory()
 		},
 	)
 }
 
-// FuzzInMemoryConformsToMixedHistory fuzzes the property checks of
-// Mixed.History on InMemory.
-func FuzzInMemoryConformsToMixedHistory(f *testing.F) {
-	snapshotisolationtest.FuzzMixedSuite(
-		f,
-		snapshotisolationtest.MixedChecks.History.Callable,
-		func(*snapshotisolationtest.MixedHandle) *snapshotisolationtest.InMemory {
-			return snapshotisolationtest.NewInMemory()
-		},
-	)
-}
-
-// FuzzInMemoryConformsToMixedGet fuzzes the property checks of Mixed.Get
-// on InMemory.
-func FuzzInMemoryConformsToMixedGet(f *testing.F) {
-	snapshotisolationtest.FuzzMixedSuite(
-		f,
-		snapshotisolationtest.MixedChecks.Get.Callable,
-		func(*snapshotisolationtest.MixedHandle) *snapshotisolationtest.InMemory {
-			return snapshotisolationtest.NewInMemory()
-		},
-	)
-}
-
-// dokimi:provenance sha256:8f6871f72941e35392530b46a6ddc021ba4c0c95fd8f6e41d8e2d268f46dc487
+// dokimi:provenance sha256:a870c4b89256230fea2233843d14b10da0a3c681c28391a08032fc0b373073d5

@@ -6,9 +6,13 @@ package snapshotisolationtest
 
 import (
 	"context"
+	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
+	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation"
@@ -17,50 +21,25 @@ import (
 
 // The derived checks of Mixed:
 //
-// Mixed.Record/smoke: Record returns without a panic for derived inputs.
+// Mixed.Begin/smoke: Begin returns without a panic for derived inputs.
 //
-// Mixed.Record/smoke#generated: Record returns without a panic for derived
-// inputs.
+// Mixed.Begin/cancel: Begin returns an error for a cancelled context.
 //
-// Mixed.Record/cancel: Record returns an error for a cancelled context.
-//
-// Mixed.Record/cancel#generated: Record returns an error for a cancelled
-// context.
-//
-// Mixed.History/smoke: History returns without a panic for derived inputs.
-//
-// Mixed.History/cancel: History returns an error for a cancelled context.
-//
-// Mixed.History/zero-on-error: History returns the zero value beside an
-// error.
-//
-// Mixed.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mixed.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mixed.Get/cancel: Get returns an error for a cancelled context.
-//
-// Mixed.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Mixed.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Mixed.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
+// Mixed.Begin/snapshot-isolation: every concurrent history of the
+// transactions of Mixed has no anomaly that snapshot isolation excludes.
 
 // The derived checks of Mixed that witness their laws at the shallow end:
 //
-// Mixed.Record/smoke
-//
-// Mixed.History/smoke
-//
-// Mixed.Get/smoke
+// Mixed.Begin/smoke
 
-// The unclaimed classifications of Mixed:
+// The refused claims of Mixed:
 //
-// The shape:writer of Mixed.Record has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
+// Mixed.Begin/zero-on-error: eidos derives no sample of a result of Begin.
+// The remedy is to author a sample of the result type with the directive
+// sample.
+//
+// Mixed.Begin/tx: eidos derives no sample of a result of Begin. The remedy
+// is to author a sample of the result type with the directive sample.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -75,108 +54,34 @@ type (
 // MixedChecks contains the name of each callable of Mixed, with the
 // identities of its checks.
 var MixedChecks = struct {
-	Record  mixedRecord
-	History mixedHistory
-	Get     mixedGet
+	Begin mixedBegin
 }{
-	Record:  mixedRecord{"Mixed.Record"},
-	History: mixedHistory{"Mixed.History"},
-	Get:     mixedGet{"Mixed.Get"},
+	Begin: mixedBegin{"Mixed.Begin"},
 }
 
-// mixedRecord is the name of Mixed.Record, with the identities of its
+// mixedBegin is the name of Mixed.Begin, with the identities of its
 // checks.
-type mixedRecord struct {
+type mixedBegin struct {
 	conform.Callable[snapshotisolation.Mixed]
 }
 
-// Smoke returns the identity of the check that Record returns without a
+// Smoke returns the identity of the check that Begin returns without a
 // panic for derived inputs.
-func (c mixedRecord) Smoke() conform.ID[snapshotisolation.Mixed] {
+func (c mixedBegin) Smoke() conform.ID[snapshotisolation.Mixed] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Record returns
-// without a panic for derived inputs.
-func (c mixedRecord) SmokeGenerated() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("smoke#generated")
-}
-
-// Cancel returns the identity of the check that Record returns an error
-// for a cancelled context.
-func (c mixedRecord) Cancel() conform.ID[snapshotisolation.Mixed] {
+// Cancel returns the identity of the check that Begin returns an error for
+// a cancelled context.
+func (c mixedBegin) Cancel() conform.ID[snapshotisolation.Mixed] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Record returns an
-// error for a cancelled context.
-func (c mixedRecord) CancelGenerated() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("cancel#generated")
-}
-
-// mixedHistory is the name of Mixed.History, with the identities of its
-// checks.
-type mixedHistory struct {
-	conform.Callable[snapshotisolation.Mixed]
-}
-
-// Smoke returns the identity of the check that History returns without a
-// panic for derived inputs.
-func (c mixedHistory) Smoke() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("smoke")
-}
-
-// Cancel returns the identity of the check that History returns an error
-// for a cancelled context.
-func (c mixedHistory) Cancel() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("cancel")
-}
-
-// ZeroOnError returns the identity of the check that History returns the
-// zero value beside an error.
-func (c mixedHistory) ZeroOnError() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("zero-on-error")
-}
-
-// mixedGet is the name of Mixed.Get, with the identities of its checks.
-type mixedGet struct {
-	conform.Callable[snapshotisolation.Mixed]
-}
-
-// Smoke returns the identity of the check that Get returns without a panic
-// for derived inputs.
-func (c mixedGet) Smoke() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("smoke")
-}
-
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mixedGet) SmokeGenerated() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("smoke#generated")
-}
-
-// Cancel returns the identity of the check that Get returns an error for a
-// cancelled context.
-func (c mixedGet) Cancel() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c mixedGet) CancelGenerated() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("cancel#generated")
-}
-
-// ZeroOnError returns the identity of the check that Get returns the zero
-// value beside an error.
-func (c mixedGet) ZeroOnError() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c mixedGet) ZeroOnErrorGenerated() conform.ID[snapshotisolation.Mixed] {
-	return c.Check("zero-on-error#generated")
+// SnapshotIsolation returns the identity of the check that every
+// concurrent history of the transactions of Mixed has no anomaly that
+// snapshot isolation excludes.
+func (c mixedBegin) SnapshotIsolation() conform.ID[snapshotisolation.Mixed] {
+	return "Mixed/snapshot-isolation"
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -188,8 +93,8 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[snapshotisolation.Mixed]{
 			{
-				ID:          MixedChecks.Record.Smoke(),
-				Statement:   "Record returns without a panic for derived inputs",
+				ID:          MixedChecks.Begin.Smoke(),
+				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
 				Probe:       spec.Survives,
 				Reason:      spec.Panicked,
@@ -198,30 +103,15 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				Shallow:     true,
 				Apply: func(h *MixedHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Record(ctx, snapshotisolation.Entry{Key: "Key-a"})
+						_, err := h.Subject().Begin(ctx)
+						return err
 					})
 				},
-				Defect: mixedRecordPanics,
+				Defect: mixedBeginPanics,
 			},
 			{
-				ID:          MixedChecks.Record.SmokeGenerated(),
-				Statement:   "Record returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnE := c.Draw(prop.Of[snapshotisolation.Entry](), "e")
-					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Record(ctx, drawnE)
-					})
-				},
-				Defect: mixedRecordPanics,
-			},
-			{
-				ID:          MixedChecks.Record.Cancel(),
-				Statement:   "Record returns an error for a cancelled context",
+				ID:          MixedChecks.Begin.Cancel(),
+				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
 				Probe:       spec.UnderCancelled,
 				Reason:      spec.IgnoredCancel,
@@ -229,197 +119,47 @@ func MixedSuite() conform.Suite[snapshotisolation.Mixed] {
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Record(ctx, snapshotisolation.Entry{Key: "Key-a"})
+						_, err := h.Subject().Begin(ctx)
+						return err
 					})
 				},
-				Defect: mixedRecordIgnoresCancel,
+				Defect: mixedBeginIgnoresCancel,
 			},
 			{
-				ID:          MixedChecks.Record.CancelGenerated(),
-				Statement:   "Record returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				ID:          MixedChecks.Begin.SnapshotIsolation(),
+				Statement:   "every concurrent history of the transactions of Mixed has no anomaly that snapshot isolation excludes",
+				Claim:       spec.SnapshotIsolation,
+				Probe:       spec.SnapshotHistory,
+				Reason:      spec.NotSnapshotIsolated,
+				Law:         spec.ConcurrentTransactionsAreSnapshotIsolated,
+				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
 				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnE := c.Draw(prop.Of[snapshotisolation.Entry](), "e")
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Record(ctx, drawnE)
-					})
+					probe.SnapshotHistory(h, c, mixedActions, 2)
 				},
-				Defect: mixedRecordIgnoresCancel,
-			},
-			{
-				ID:          MixedChecks.History.Smoke(),
-				Statement:   "History returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Shallow:     true,
-				Apply: func(h *MixedHandle) {
-					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().History(ctx)
-						return err
-					})
-				},
-				Defect: mixedHistoryPanics,
-			},
-			{
-				ID:          MixedChecks.History.Cancel(),
-				Statement:   "History returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Apply: func(h *MixedHandle) {
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().History(ctx)
-						return err
-					})
-				},
-				Defect: mixedHistoryIgnoresCancel,
-			},
-			{
-				ID:          MixedChecks.History.ZeroOnError(),
-				Statement:   "History returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Apply: func(h *MixedHandle) {
-					probe.ZeroBesideError(h, func(ctx context.Context) ([]snapshotisolation.Entry, error) {
-						return h.Subject().History(ctx)
-					}, []snapshotisolation.Entry(nil))
-				},
-				Defect: mixedHistoryValueBeside,
-			},
-			{
-				ID:          MixedChecks.Get.Smoke(),
-				Statement:   "Get returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Shallow:     true,
-				Apply: func(h *MixedHandle) {
-					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().Get(ctx, string("key-a"))
-						return err
-					})
-				},
-				Defect: mixedGetPanics,
-			},
-			{
-				ID:          MixedChecks.Get.SmokeGenerated(),
-				Statement:   "Get returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnKey := c.Draw(prop.Of[string](), "key")
-					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().Get(ctx, drawnKey)
-						return err
-					})
-				},
-				Defect: mixedGetPanics,
-			},
-			{
-				ID:          MixedChecks.Get.Cancel(),
-				Statement:   "Get returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Apply: func(h *MixedHandle) {
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().Get(ctx, string("key-a"))
-						return err
-					})
-				},
-				Defect: mixedGetIgnoresCancel,
-			},
-			{
-				ID:          MixedChecks.Get.CancelGenerated(),
-				Statement:   "Get returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnKey := c.Draw(prop.Of[string](), "key")
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().Get(ctx, drawnKey)
-						return err
-					})
-				},
-				Defect: mixedGetIgnoresCancel,
-			},
-			{
-				ID:          MixedChecks.Get.ZeroOnError(),
-				Statement:   "Get returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
-				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-				Apply: func(h *MixedHandle) {
-					probe.ZeroBesideError(h, func(ctx context.Context) (snapshotisolation.Entry, error) {
-						return h.Subject().Get(ctx, string("key-a"))
-					}, snapshotisolation.Entry{})
-				},
-				Defect: mixedGetValueBeside,
-			},
-			{
-				ID:          MixedChecks.Get.ZeroOnErrorGenerated(),
-				Statement:   "Get returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *MixedHandle, c *prop.Case) {
-					drawnKey := c.Draw(prop.Of[string](), "key")
-					probe.ZeroBesideError(h, func(ctx context.Context) (snapshotisolation.Entry, error) {
-						return h.Subject().Get(ctx, drawnKey)
-					}, snapshotisolation.Entry{})
-				},
-				Defect: mixedGetValueBeside,
+				Defect: mixedWritesWithoutASnapshot,
 			},
 		},
-		Unclaimed: []conform.Unclaimed{
+		Refusals: []conform.Refusal{
 			{
-				Classification: "shape:writer",
-				Callable:       "Mixed.Record",
-				Stance:         spec.Silent,
-				Note:           "A write is an input of the other checks, and its result is an error alone.",
+				Claim:    spec.ZeroOnError,
+				Callable: "Mixed.Begin",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Begin",
+				Remedy:   "author a sample of the result type with the directive sample",
+			},
+			{
+				Claim:    spec.Tx,
+				Callable: "Mixed.Begin",
+				Gate:     spec.ValueSamples,
+				Why:      "eidos derives no sample of a result of Begin",
+				Remedy:   "author a sample of the result type with the directive sample",
 			},
 		},
 		Calls: []conform.Call[snapshotisolation.Mixed]{
 			{
-				Calls:    mixedRecordCalls,
+				Calls:    mixedBeginCalls,
 				Over:     newMixedOver,
-				Callable: MixedChecks.Record.Callable,
-			},
-			{
-				Calls:    mixedHistoryCalls,
-				Over:     newMixedOver,
-				Callable: MixedChecks.History.Callable,
-			},
-			{
-				Calls:    mixedGetCalls,
-				Over:     newMixedOver,
-				Callable: MixedChecks.Get.Callable,
+				Callable: MixedChecks.Begin.Callable,
 			},
 		},
 	}
@@ -484,30 +224,11 @@ func mixedSubjects[T snapshotisolation.Mixed](
 	return func(h *MixedHandle) snapshotisolation.Mixed { return newSubject(h) }
 }
 
-// mixedRecordCalls generates the calls of Mixed.Record with the inputs
-// that each case draws.
-var mixedRecordCalls = prop.Composite(func(c *prop.Case) func(context.Context, snapshotisolation.Mixed) error {
-	e := c.Draw(prop.Of[snapshotisolation.Entry](), "e")
+// mixedBeginCalls generates the calls of Mixed.Begin with the inputs that
+// each case draws.
+var mixedBeginCalls = prop.Composite(func(*prop.Case) func(context.Context, snapshotisolation.Mixed) error {
 	return func(ctx context.Context, subject snapshotisolation.Mixed) error {
-		return subject.Record(ctx, e)
-	}
-})
-
-// mixedHistoryCalls generates the calls of Mixed.History with the inputs
-// that each case draws.
-var mixedHistoryCalls = prop.Composite(func(*prop.Case) func(context.Context, snapshotisolation.Mixed) error {
-	return func(ctx context.Context, subject snapshotisolation.Mixed) error {
-		_, err := subject.History(ctx)
-		return err
-	}
-})
-
-// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
-// case draws.
-var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, snapshotisolation.Mixed) error {
-	key := c.Draw(prop.Of[string](), "key")
-	return func(ctx context.Context, subject snapshotisolation.Mixed) error {
-		_, err := subject.Get(ctx, key)
+		_, err := subject.Begin(ctx)
 		return err
 	}
 })
@@ -524,20 +245,8 @@ type mixedOver struct {
 	spend func()
 }
 
-// Record calls spend and returns its zero results.
-func (o mixedOver) Record(context.Context, snapshotisolation.Entry) (r0 error) {
-	o.spend()
-	return r0
-}
-
-// History calls spend and returns its zero results.
-func (o mixedOver) History(context.Context) (r0 []snapshotisolation.Entry, r1 error) {
-	o.spend()
-	return r0, r1
-}
-
-// Get calls spend and returns its zero results.
-func (o mixedOver) Get(context.Context, string) (r0 snapshotisolation.Entry, r1 error) {
+// Begin calls spend and returns its zero results.
+func (o mixedOver) Begin(context.Context) (r0 snapshotisolation.Txn, r1 error) {
 	o.spend()
 	return r0, r1
 }
@@ -548,156 +257,269 @@ func newMixedOver(_ *MixedHandle, spend func()) snapshotisolation.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// mixedRecordPanicsDefect is the planted defect of a Mixed whose Record
+// mixedBeginPanicsDefect is the planted defect of a Mixed whose Begin
 // panics.
-type mixedRecordPanicsDefect struct {
+type mixedBeginPanicsDefect struct {
 	mixedOverEmbedded
 }
 
-// Record is the override of the planted defect.
-func (*mixedRecordPanicsDefect) Record(p0 context.Context, p1 snapshotisolation.Entry) (r0 error) {
-	panic("the planted defect of a Mixed whose Record panics")
+// Begin is the override of the planted defect.
+func (*mixedBeginPanicsDefect) Begin(p0 context.Context) (r0 snapshotisolation.Txn, r1 error) {
+	panic("the planted defect of a Mixed whose Begin panics")
 }
 
-// mixedRecordPanics returns the planted defect of a Mixed whose Record
+// mixedBeginPanics returns the planted defect of a Mixed whose Begin
 // panics over a fresh subject.
-func mixedRecordPanics(h *MixedHandle) snapshotisolation.Mixed {
-	return &mixedRecordPanicsDefect{mixedOverEmbedded: h.Fresh()}
+func mixedBeginPanics(h *MixedHandle) snapshotisolation.Mixed {
+	return &mixedBeginPanicsDefect{mixedOverEmbedded: h.Fresh()}
 }
 
-// mixedRecordIgnoresCancelDefect is the planted defect of a Mixed whose
-// Record ignores the context.
-type mixedRecordIgnoresCancelDefect struct {
+// mixedBeginIgnoresCancelDefect is the planted defect of a Mixed whose
+// Begin ignores the context.
+type mixedBeginIgnoresCancelDefect struct {
 	mixedOverEmbedded
 }
 
-// Record is the override of the planted defect.
-func (d *mixedRecordIgnoresCancelDefect) Record(p0 context.Context, p1 snapshotisolation.Entry) (r0 error) {
+// Begin is the override of the planted defect.
+func (d *mixedBeginIgnoresCancelDefect) Begin(p0 context.Context) (r0 snapshotisolation.Txn, r1 error) {
 	if p0.Err() != nil {
+		return r0, r1
+	}
+	return d.mixedOverEmbedded.Begin(p0)
+}
+
+// mixedBeginIgnoresCancel returns the planted defect of a Mixed whose
+// Begin ignores the context over a fresh subject.
+func mixedBeginIgnoresCancel(h *MixedHandle) snapshotisolation.Mixed {
+	return &mixedBeginIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedWritesWithoutASnapshotDefect is the planted defect of a Mixed whose
+// commit applies the writes of its transaction without the snapshot of the
+// transaction.
+type mixedWritesWithoutASnapshotDefect struct {
+	mixedOverEmbedded
+	h      *MixedHandle
+	mu     sync.Mutex
+	staged map[any][][2]any
+}
+
+// Begin is the override of the planted defect.
+func (d *mixedWritesWithoutASnapshotDefect) Begin(p0 context.Context) (r0 snapshotisolation.Txn, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Begin(p0)
+	if r1 == nil {
+		r0 = &mixedWritesWithoutASnapshotTxn{Txn: r0, d: d}
+	}
+	d.h.Yield()
+	return r0, r1
+}
+
+// mixedWritesWithoutASnapshotTxn wraps a handle of a transaction of the
+// planted defect of a Mixed whose commit applies the writes of its
+// transaction without the snapshot of the transaction.
+type mixedWritesWithoutASnapshotTxn struct {
+	snapshotisolation.Txn
+	d *mixedWritesWithoutASnapshotDefect
+}
+
+// Set is the override of the planted defect.
+func (t *mixedWritesWithoutASnapshotTxn) Set(p0 context.Context, p1 string, p2 int64) (r0 error) {
+	t.d.mu.Lock()
+	t.d.staged[t] = append(t.d.staged[t], [2]any{p1, p2})
+	t.d.mu.Unlock()
+	t.d.h.Yield()
+	return r0
+}
+
+// Load is the override of the planted defect.
+func (t *mixedWritesWithoutASnapshotTxn) Load(p0 context.Context, p1 string) (r0 int64, r1 error) {
+	r0, r1 = t.Txn.Load(p0, p1)
+	if r1 == nil {
+		t.d.mu.Lock()
+		for _, w := range t.d.staged[t] {
+			if w[0] == any(p1) {
+				v, _ := w[1].(int64)
+				r0 = v
+			}
+		}
+		t.d.mu.Unlock()
+	}
+	t.d.h.Yield()
+	return r0, r1
+}
+
+// Commit is the override of the planted defect.
+func (t *mixedWritesWithoutASnapshotTxn) Commit(p0 context.Context) (r0 error) {
+	t.d.mu.Lock()
+	staged := t.d.staged[t]
+	delete(t.d.staged, t)
+	t.d.mu.Unlock()
+	r0 = t.Txn.Commit(p0)
+	if r0 != nil || len(staged) == 0 {
+		t.d.h.Yield()
 		return r0
 	}
-	return d.mixedOverEmbedded.Record(p0, p1)
-}
-
-// mixedRecordIgnoresCancel returns the planted defect of a Mixed whose
-// Record ignores the context over a fresh subject.
-func mixedRecordIgnoresCancel(h *MixedHandle) snapshotisolation.Mixed {
-	return &mixedRecordIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedHistoryPanicsDefect is the planted defect of a Mixed whose History
-// panics.
-type mixedHistoryPanicsDefect struct {
-	mixedOverEmbedded
-}
-
-// History is the override of the planted defect.
-func (*mixedHistoryPanicsDefect) History(p0 context.Context) (r0 []snapshotisolation.Entry, r1 error) {
-	panic("the planted defect of a Mixed whose History panics")
-}
-
-// mixedHistoryPanics returns the planted defect of a Mixed whose History
-// panics over a fresh subject.
-func mixedHistoryPanics(h *MixedHandle) snapshotisolation.Mixed {
-	return &mixedHistoryPanicsDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedHistoryIgnoresCancelDefect is the planted defect of a Mixed whose
-// History ignores the context.
-type mixedHistoryIgnoresCancelDefect struct {
-	mixedOverEmbedded
-}
-
-// History is the override of the planted defect.
-func (d *mixedHistoryIgnoresCancelDefect) History(p0 context.Context) (r0 []snapshotisolation.Entry, r1 error) {
-	if p0.Err() != nil {
-		return r0, r1
+	ctx := p0
+	begun, err := mixedBeginCall(ctx, t.d.mixedOverEmbedded, []any{})
+	if err != nil {
+		r0 = err
+		return r0
 	}
-	return d.mixedOverEmbedded.History(p0)
-}
-
-// mixedHistoryIgnoresCancel returns the planted defect of a Mixed whose
-// History ignores the context over a fresh subject.
-func mixedHistoryIgnoresCancel(h *MixedHandle) snapshotisolation.Mixed {
-	return &mixedHistoryIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedHistoryValueBesideDefect is the planted defect of a Mixed whose
-// History returns a value beside an error.
-type mixedHistoryValueBesideDefect struct {
-	mixedOverEmbedded
-}
-
-// History is the override of the planted defect.
-func (d *mixedHistoryValueBesideDefect) History(p0 context.Context) (r0 []snapshotisolation.Entry, r1 error) {
-	r0, r1 = d.mixedOverEmbedded.History(p0)
-	if r1 != nil {
-		r0 = []snapshotisolation.Entry{{Key: "Key-b"}}
+	tx, _ := begun[0].(snapshotisolation.Txn)
+	for _, w := range staged {
+		key, v := w[0], w[1]
+		if _, err := txnSetCall(ctx, tx, []any{key, v}); err != nil {
+			_, _ = txnRollbackCall(ctx, tx, []any{})
+			r0 = err
+			return r0
+		}
 	}
-	return r0, r1
+	_, r0 = txnCommitCall(ctx, tx, []any{})
+	t.d.h.Yield()
+	return r0
 }
 
-// mixedHistoryValueBeside returns the planted defect of a Mixed whose
-// History returns a value beside an error over a fresh subject.
-func mixedHistoryValueBeside(h *MixedHandle) snapshotisolation.Mixed {
-	return &mixedHistoryValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+// Rollback is the override of the planted defect.
+func (t *mixedWritesWithoutASnapshotTxn) Rollback(p0 context.Context) (r0 error) {
+	t.d.mu.Lock()
+	delete(t.d.staged, t)
+	t.d.mu.Unlock()
+	r0 = t.Txn.Rollback(p0)
+	t.d.h.Yield()
+	return r0
 }
 
-// mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
-type mixedGetPanicsDefect struct {
-	mixedOverEmbedded
+// mixedWritesWithoutASnapshot returns the planted defect of a Mixed whose
+// commit applies the writes of its transaction without the snapshot of the
+// transaction over a fresh subject.
+func mixedWritesWithoutASnapshot(h *MixedHandle) snapshotisolation.Mixed {
+	return &mixedWritesWithoutASnapshotDefect{mixedOverEmbedded: h.Fresh(), h: h, staged: map[any][][2]any{}}
 }
 
-// Get is the override of the planted defect.
-func (*mixedGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 snapshotisolation.Entry, r1 error) {
-	panic("the planted defect of a Mixed whose Get panics")
-}
-
-// mixedGetPanics returns the planted defect of a Mixed whose Get panics
-// over a fresh subject.
-func mixedGetPanics(h *MixedHandle) snapshotisolation.Mixed {
-	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
-}
-
-// mixedGetIgnoresCancelDefect is the planted defect of a Mixed whose Get
-// ignores the context.
-type mixedGetIgnoresCancelDefect struct {
-	mixedOverEmbedded
-}
-
-// Get is the override of the planted defect.
-func (d *mixedGetIgnoresCancelDefect) Get(p0 context.Context, p1 string) (r0 snapshotisolation.Entry, r1 error) {
-	if p0.Err() != nil {
-		return r0, r1
+// mixedActions returns the actions of the generated sequences of Mixed
+// over the subject that subject returns. The actions of a case take their
+// keys from the pools that it draws.
+func mixedActions(c *prop.Case, subject func() snapshotisolation.Mixed) []stateful.Action[struct{}] {
+	keysString := c.Draw(prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)), "keys.string")
+	var counter atomic.Int64
+	return []stateful.Action[struct{}]{
+		{
+			Name: "Begin",
+			Run: func(c *prop.Case, client int, input any) {
+				args, _ := input.([]any)
+				call := c.History().Invoke(client, "Begin", args)
+				values, err := mixedBeginCall(c.Context(), subject(), args)
+				conform.Complete(c.Context(), call, err, values...)
+			},
+		},
+		{
+			Name:    "txn",
+			Enabled: func(struct{}) bool { return false },
+			Input: func(c *prop.Case, _ struct{}) any {
+				ops := make([]any, c.Draw(prop.Integer(1, 4), "txn.ops"))
+				for i := range ops {
+					key := c.Draw(prop.SampledFrom(keysString...), "txn.key")
+					if c.Draw(prop.Boolean(), "txn.read") {
+						ops[i] = []any{"read", key, nil}
+						continue
+					}
+					ops[i] = []any{"write", key, int64(counter.Add(1))}
+				}
+				return []any{ops, c.Draw(prop.Integer(0, 9), "txn.commit") > 0}
+			},
+			Run: func(c *prop.Case, client int, input any) {
+				in, _ := input.([]any)
+				ops, _ := in[0].([]any)
+				commit, _ := in[1].(bool)
+				call := c.History().Invoke(client, "txn", ops)
+				ctx, s := c.Context(), subject()
+				end := func(err error) {
+					if ctx.Err() != nil && errors.Is(err, ctx.Err()) {
+						call.Unknown(err)
+						return
+					}
+					call.Fail(err)
+				}
+				begun, err := mixedBeginCall(ctx, s, []any{})
+				if err != nil {
+					end(err)
+					return
+				}
+				tx, _ := begun[0].(snapshotisolation.Txn)
+				rollback := func() { _, _ = txnRollbackCall(ctx, tx, []any{}) }
+				out := make([]any, len(ops))
+				for i, op := range ops {
+					m, _ := op.([]any)
+					key, v := m[1], m[2]
+					if m[0] == "read" {
+						read, err := txnLoadCall(ctx, tx, []any{key})
+						if err != nil {
+							rollback()
+							end(err)
+							return
+						}
+						var value any
+						if r := read[0]; r != any(*new(int64)) {
+							value = r
+						}
+						out[i] = []any{"read", key, value}
+						continue
+					}
+					if _, err := txnSetCall(ctx, tx, []any{key, v}); err != nil {
+						rollback()
+						end(err)
+						return
+					}
+					out[i] = m
+				}
+				if !commit {
+					rollback()
+					call.Fail(conform.ErrGenerated)
+					return
+				}
+				if _, err := txnCommitCall(ctx, tx, []any{}); err != nil {
+					end(err)
+					return
+				}
+				call.OK(out)
+			},
+		},
 	}
-	return d.mixedOverEmbedded.Get(p0, p1)
 }
 
-// mixedGetIgnoresCancel returns the planted defect of a Mixed whose Get
-// ignores the context over a fresh subject.
-func mixedGetIgnoresCancel(h *MixedHandle) snapshotisolation.Mixed {
-	return &mixedGetIgnoresCancelDefect{mixedOverEmbedded: h.Fresh()}
+// mixedBeginCall calls Begin on subject with the arguments args, and
+// returns the values of the call beside its error.
+func mixedBeginCall(ctx context.Context, subject snapshotisolation.Mixed, args []any) ([]any, error) {
+	r0, err := subject.Begin(ctx)
+	return []any{r0}, err
 }
 
-// mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
-// returns a value beside an error.
-type mixedGetValueBesideDefect struct {
-	mixedOverEmbedded
+// txnSetCall calls Set on subject with the arguments args, and returns the
+// values of the call beside its error.
+func txnSetCall(ctx context.Context, subject snapshotisolation.Txn, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(int64)
+	return nil, subject.Set(ctx, a0, a1)
 }
 
-// Get is the override of the planted defect.
-func (d *mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 snapshotisolation.Entry, r1 error) {
-	r0, r1 = d.mixedOverEmbedded.Get(p0, p1)
-	if r1 != nil {
-		r0 = snapshotisolation.Entry{Key: "Key-b"}
-	}
-	return r0, r1
+// txnLoadCall calls Load on subject with the arguments args, and returns
+// the values of the call beside its error.
+func txnLoadCall(ctx context.Context, subject snapshotisolation.Txn, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Load(ctx, a0)
+	return []any{r0}, err
 }
 
-// mixedGetValueBeside returns the planted defect of a Mixed whose Get
-// returns a value beside an error over a fresh subject.
-func mixedGetValueBeside(h *MixedHandle) snapshotisolation.Mixed {
-	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+// txnCommitCall calls Commit on subject with the arguments args, and
+// returns the values of the call beside its error.
+func txnCommitCall(ctx context.Context, subject snapshotisolation.Txn, args []any) ([]any, error) {
+	return nil, subject.Commit(ctx)
 }
 
-// dokimi:provenance sha256:a63df85a04e7553bb65ebae543672c827d67fc6849c87b0424bf2863e75d15ec
+// txnRollbackCall calls Rollback on subject with the arguments args, and
+// returns the values of the call beside its error.
+func txnRollbackCall(ctx context.Context, subject snapshotisolation.Txn, args []any) ([]any, error) {
+	return nil, subject.Rollback(ctx)
+}
+
+// dokimi:provenance sha256:2e1e1cb4b2bed07b1ef8145b8c8535c31bcc95e5e8437dcc650cabb04201356f

@@ -14,110 +14,38 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// MixedRecordCall records one call of Mixed.Record.
-type MixedRecordCall struct {
-	Ctx context.Context
-	E   snapshotisolation.Entry
-	Err error
-}
-
-// MixedHistoryCall records one call of Mixed.History.
-type MixedHistoryCall struct {
+// MixedBeginCall records one call of Mixed.Begin.
+type MixedBeginCall struct {
 	Ctx    context.Context
-	Result []snapshotisolation.Entry
+	Result snapshotisolation.Txn
 	Err    error
 }
 
-// MixedGetCall records one call of Mixed.Get.
-type MixedGetCall struct {
-	Ctx    context.Context
-	Key    string
-	Result snapshotisolation.Entry
-	Err    error
-}
-
-// MixedRecordStub configures Record and records its calls. A fault armed
+// MixedBeginStub configures Begin and records its calls. A fault armed
 // through it takes precedence over the function and the fixed results.
-type MixedRecordStub struct {
-	*stub.MethodStub[MixedRecordCall]
+type MixedBeginStub struct {
+	*stub.MethodStub[MixedBeginCall]
 
-	fn       func(context.Context, snapshotisolation.Entry) error
-	fallback *MixedRecordReturn
+	fn       func(context.Context) (snapshotisolation.Txn, error)
+	fallback *MixedBeginReturn
 }
 
-// MixedRecordReturn contains the fixed results of Record.
-type MixedRecordReturn struct {
-	Err error
-}
-
-// Returns sets the results of every call of Record. A function and an
-// injected fault take precedence over them.
-func (s *MixedRecordStub) Returns(err error) *MixedRecordStub {
-	s.fallback = &MixedRecordReturn{Err: err}
-	return s
-}
-
-// Func sets the function that computes the results of Record from its
-// arguments. An injected fault takes precedence over it.
-func (s *MixedRecordStub) Func(fn func(context.Context, snapshotisolation.Entry) error) *MixedRecordStub {
-	s.fn = fn
-	return s
-}
-
-// MixedHistoryStub configures History and records its calls. A fault armed
-// through it takes precedence over the function and the fixed results.
-type MixedHistoryStub struct {
-	*stub.MethodStub[MixedHistoryCall]
-
-	fn       func(context.Context) ([]snapshotisolation.Entry, error)
-	fallback *MixedHistoryReturn
-}
-
-// MixedHistoryReturn contains the fixed results of History.
-type MixedHistoryReturn struct {
-	Result []snapshotisolation.Entry
+// MixedBeginReturn contains the fixed results of Begin.
+type MixedBeginReturn struct {
+	Result snapshotisolation.Txn
 	Err    error
 }
 
-// Returns sets the results of every call of History. A function and an
+// Returns sets the results of every call of Begin. A function and an
 // injected fault take precedence over them.
-func (s *MixedHistoryStub) Returns(result []snapshotisolation.Entry, err error) *MixedHistoryStub {
-	s.fallback = &MixedHistoryReturn{Result: result, Err: err}
+func (s *MixedBeginStub) Returns(result snapshotisolation.Txn, err error) *MixedBeginStub {
+	s.fallback = &MixedBeginReturn{Result: result, Err: err}
 	return s
 }
 
-// Func sets the function that computes the results of History from its
+// Func sets the function that computes the results of Begin from its
 // arguments. An injected fault takes precedence over it.
-func (s *MixedHistoryStub) Func(fn func(context.Context) ([]snapshotisolation.Entry, error)) *MixedHistoryStub {
-	s.fn = fn
-	return s
-}
-
-// MixedGetStub configures Get and records its calls. A fault armed through
-// it takes precedence over the function and the fixed results.
-type MixedGetStub struct {
-	*stub.MethodStub[MixedGetCall]
-
-	fn       func(context.Context, string) (snapshotisolation.Entry, error)
-	fallback *MixedGetReturn
-}
-
-// MixedGetReturn contains the fixed results of Get.
-type MixedGetReturn struct {
-	Result snapshotisolation.Entry
-	Err    error
-}
-
-// Returns sets the results of every call of Get. A function and an
-// injected fault take precedence over them.
-func (s *MixedGetStub) Returns(result snapshotisolation.Entry, err error) *MixedGetStub {
-	s.fallback = &MixedGetReturn{Result: result, Err: err}
-	return s
-}
-
-// Func sets the function that computes the results of Get from its
-// arguments. An injected fault takes precedence over it.
-func (s *MixedGetStub) Func(fn func(context.Context, string) (snapshotisolation.Entry, error)) *MixedGetStub {
+func (s *MixedBeginStub) Func(fn func(context.Context) (snapshotisolation.Txn, error)) *MixedBeginStub {
 	s.fn = fn
 	return s
 }
@@ -139,9 +67,7 @@ func MixedStubStrict() MixedStubOption {
 // The double still records the call.
 func MixedStubDelegateTo(impl snapshotisolation.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
-		s.OnRecord.Func(impl.Record)
-		s.OnHistory.Func(impl.History)
-		s.OnGet.Func(impl.Get)
+		s.OnBegin.Func(impl.Begin)
 	}
 }
 
@@ -176,34 +102,20 @@ func MixedStubWithLatency(d time.Duration) MixedStubOption {
 // can fail. Each call of such a method then fails with err.
 func MixedStubFailing(err error) MixedStubOption {
 	return func(s *MixedStub) {
-		s.OnRecord.Faults(err, 1)
-		s.OnHistory.Faults(err, 1)
-		s.OnGet.Faults(err, 1)
+		s.OnBegin.Faults(err, 1)
 	}
 }
 
-// WithMixedRecord returns the option that sets the function of Record.
-func WithMixedRecord(fn func(context.Context, snapshotisolation.Entry) error) MixedStubOption {
-	return func(s *MixedStub) { s.OnRecord.Func(fn) }
-}
-
-// WithMixedHistory returns the option that sets the function of History.
-func WithMixedHistory(fn func(context.Context) ([]snapshotisolation.Entry, error)) MixedStubOption {
-	return func(s *MixedStub) { s.OnHistory.Func(fn) }
-}
-
-// WithMixedGet returns the option that sets the function of Get.
-func WithMixedGet(fn func(context.Context, string) (snapshotisolation.Entry, error)) MixedStubOption {
-	return func(s *MixedStub) { s.OnGet.Func(fn) }
+// WithMixedBegin returns the option that sets the function of Begin.
+func WithMixedBegin(fn func(context.Context) (snapshotisolation.Txn, error)) MixedStubOption {
+	return func(s *MixedStub) { s.OnBegin.Func(fn) }
 }
 
 // MixedStub is a recording test double of Mixed. Each field On<Method>
 // configures its method. An unconfigured method records the call and
 // returns the zero values of its results.
 type MixedStub struct {
-	OnRecord  *MixedRecordStub
-	OnHistory *MixedHistoryStub
-	OnGet     *MixedGetStub
+	OnBegin *MixedBeginStub
 
 	// group contains the stub of each method.
 	group  *stub.Group
@@ -218,14 +130,10 @@ var _ snapshotisolation.Mixed = (*MixedStub)(nil)
 // end of the test. With a nil tb, the double reports nothing.
 func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
-		OnRecord:  &MixedRecordStub{MethodStub: stub.NewMethodStub[MixedRecordCall](tb, "Mixed.Record")},
-		OnHistory: &MixedHistoryStub{MethodStub: stub.NewMethodStub[MixedHistoryCall](tb, "Mixed.History")},
-		OnGet:     &MixedGetStub{MethodStub: stub.NewMethodStub[MixedGetCall](tb, "Mixed.Get")},
+		OnBegin: &MixedBeginStub{MethodStub: stub.NewMethodStub[MixedBeginCall](tb, "Mixed.Begin")},
 	}
 	s.group = stub.NewGroup(
-		s.OnRecord.MethodStub,
-		s.OnHistory.MethodStub,
-		s.OnGet.MethodStub,
+		s.OnBegin.MethodStub,
 	)
 	for _, opt := range opts {
 		opt(s)
@@ -260,25 +168,343 @@ func (s *MixedStub) ResetCalls() {
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedRecordStub) invoke(ctx context.Context, e snapshotisolation.Entry) func() MixedRecordReturn {
+func (s *MixedBeginStub) invoke(ctx context.Context) func() MixedBeginReturn {
 	if s.fn == nil {
 		return nil
 	}
-	return func() MixedRecordReturn {
-		r0 := s.fn(ctx, e)
-		return MixedRecordReturn{Err: r0}
+	return func() MixedBeginReturn {
+		r0, r1 := s.fn(ctx)
+		return MixedBeginReturn{Result: r0, Err: r1}
 	}
 }
 
-// Record records the call. An armed fault comes first, then the function
+// Begin records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *MixedStub) Begin(ctx context.Context) (snapshotisolation.Txn, error) {
+	call := MixedBeginCall{Ctx: ctx}
+	r := stub.Answer(s.OnBegin.MethodStub, call, stub.Arms[MixedBeginCall, MixedBeginReturn]{
+		Invoke:   s.OnBegin.invoke(ctx),
+		Fallback: s.OnBegin.fallback,
+		Fault:    func(err error) MixedBeginReturn { return MixedBeginReturn{Err: err} },
+		Stamp: func(c MixedBeginCall, r MixedBeginReturn) MixedBeginCall {
+			c.Result = r.Result
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r.Result, r.Err
+}
+
+// Txn is a handle that a method of Mixed returns.
+
+// TxnCommitCall records one call of Txn.Commit.
+type TxnCommitCall struct {
+	Ctx context.Context
+	Err error
+}
+
+// TxnRollbackCall records one call of Txn.Rollback.
+type TxnRollbackCall struct {
+	Ctx context.Context
+	Err error
+}
+
+// TxnSetCall records one call of Txn.Set.
+type TxnSetCall struct {
+	Ctx context.Context
+	Key string
+	V   int64
+	Err error
+}
+
+// TxnLoadCall records one call of Txn.Load.
+type TxnLoadCall struct {
+	Ctx    context.Context
+	Key    string
+	Result int64
+	Err    error
+}
+
+// TxnCommitStub configures Commit and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
+type TxnCommitStub struct {
+	*stub.MethodStub[TxnCommitCall]
+
+	fn       func(context.Context) error
+	fallback *TxnCommitReturn
+}
+
+// TxnCommitReturn contains the fixed results of Commit.
+type TxnCommitReturn struct {
+	Err error
+}
+
+// Returns sets the results of every call of Commit. A function and an
+// injected fault take precedence over them.
+func (s *TxnCommitStub) Returns(err error) *TxnCommitStub {
+	s.fallback = &TxnCommitReturn{Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Commit from its
+// arguments. An injected fault takes precedence over it.
+func (s *TxnCommitStub) Func(fn func(context.Context) error) *TxnCommitStub {
+	s.fn = fn
+	return s
+}
+
+// TxnRollbackStub configures Rollback and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
+type TxnRollbackStub struct {
+	*stub.MethodStub[TxnRollbackCall]
+
+	fn       func(context.Context) error
+	fallback *TxnRollbackReturn
+}
+
+// TxnRollbackReturn contains the fixed results of Rollback.
+type TxnRollbackReturn struct {
+	Err error
+}
+
+// Returns sets the results of every call of Rollback. A function and an
+// injected fault take precedence over them.
+func (s *TxnRollbackStub) Returns(err error) *TxnRollbackStub {
+	s.fallback = &TxnRollbackReturn{Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Rollback from its
+// arguments. An injected fault takes precedence over it.
+func (s *TxnRollbackStub) Func(fn func(context.Context) error) *TxnRollbackStub {
+	s.fn = fn
+	return s
+}
+
+// TxnSetStub configures Set and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
+type TxnSetStub struct {
+	*stub.MethodStub[TxnSetCall]
+
+	fn       func(context.Context, string, int64) error
+	fallback *TxnSetReturn
+}
+
+// TxnSetReturn contains the fixed results of Set.
+type TxnSetReturn struct {
+	Err error
+}
+
+// Returns sets the results of every call of Set. A function and an
+// injected fault take precedence over them.
+func (s *TxnSetStub) Returns(err error) *TxnSetStub {
+	s.fallback = &TxnSetReturn{Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Set from its
+// arguments. An injected fault takes precedence over it.
+func (s *TxnSetStub) Func(fn func(context.Context, string, int64) error) *TxnSetStub {
+	s.fn = fn
+	return s
+}
+
+// TxnLoadStub configures Load and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
+type TxnLoadStub struct {
+	*stub.MethodStub[TxnLoadCall]
+
+	fn       func(context.Context, string) (int64, error)
+	fallback *TxnLoadReturn
+}
+
+// TxnLoadReturn contains the fixed results of Load.
+type TxnLoadReturn struct {
+	Result int64
+	Err    error
+}
+
+// Returns sets the results of every call of Load. A function and an
+// injected fault take precedence over them.
+func (s *TxnLoadStub) Returns(result int64, err error) *TxnLoadStub {
+	s.fallback = &TxnLoadReturn{Result: result, Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Load from its
+// arguments. An injected fault takes precedence over it.
+func (s *TxnLoadStub) Func(fn func(context.Context, string) (int64, error)) *TxnLoadStub {
+	s.fn = fn
+	return s
+}
+
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
+var _ = stub.CompatV1
+
+// TxnStubOption configures a [TxnStub] at its construction.
+type TxnStubOption func(*TxnStub)
+
+// TxnStubStrict returns the option that makes an unconfigured method fail
+// the test instead of returning its zero value.
+func TxnStubStrict() TxnStubOption {
+	return func(s *TxnStub) { s.strict = true }
+}
+
+// TxnStubDelegateTo returns the option that passes each call to impl. The
+// double still records the call.
+func TxnStubDelegateTo(impl snapshotisolation.Txn) TxnStubOption {
+	return func(s *TxnStub) {
+		s.OnCommit.Func(impl.Commit)
+		s.OnRollback.Func(impl.Rollback)
+		s.OnSet.Func(impl.Set)
+		s.OnLoad.Func(impl.Load)
+	}
+}
+
+// TxnStubWithClock returns the option that sets the clock of the double to
+// clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
+func TxnStubWithClock(clk assert.Clock) TxnStubOption {
+	return func(s *TxnStub) { s.group.SetClock(clk) }
+}
+
+// TxnStubWithRandSource returns the option that sets the random source of
+// the probabilistic faults to src. A seeded source repeats the faults of a
+// run.
+func TxnStubWithRandSource(src rand.Source) TxnStubOption {
+	return func(s *TxnStub) { s.group.SetRandSource(src) }
+}
+
+// TxnStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
+func TxnStubBenchMode() TxnStubOption {
+	return func(s *TxnStub) { s.group.BenchMode() }
+}
+
+// TxnStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without TxnStubWithClock, d passes in real time.
+func TxnStubWithLatency(d time.Duration) TxnStubOption {
+	return func(s *TxnStub) { s.group.SetLatency(d) }
+}
+
+// TxnStubFailing returns the option that arms err on each method that can
+// fail. Each call of such a method then fails with err.
+func TxnStubFailing(err error) TxnStubOption {
+	return func(s *TxnStub) {
+		s.OnCommit.Faults(err, 1)
+		s.OnRollback.Faults(err, 1)
+		s.OnSet.Faults(err, 1)
+		s.OnLoad.Faults(err, 1)
+	}
+}
+
+// WithTxnCommit returns the option that sets the function of Commit.
+func WithTxnCommit(fn func(context.Context) error) TxnStubOption {
+	return func(s *TxnStub) { s.OnCommit.Func(fn) }
+}
+
+// WithTxnRollback returns the option that sets the function of Rollback.
+func WithTxnRollback(fn func(context.Context) error) TxnStubOption {
+	return func(s *TxnStub) { s.OnRollback.Func(fn) }
+}
+
+// WithTxnSet returns the option that sets the function of Set.
+func WithTxnSet(fn func(context.Context, string, int64) error) TxnStubOption {
+	return func(s *TxnStub) { s.OnSet.Func(fn) }
+}
+
+// WithTxnLoad returns the option that sets the function of Load.
+func WithTxnLoad(fn func(context.Context, string) (int64, error)) TxnStubOption {
+	return func(s *TxnStub) { s.OnLoad.Func(fn) }
+}
+
+// TxnStub is a recording test double of Txn. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
+type TxnStub struct {
+	OnCommit   *TxnCommitStub
+	OnRollback *TxnRollbackStub
+	OnSet      *TxnSetStub
+	OnLoad     *TxnLoadStub
+
+	// group contains the stub of each method.
+	group  *stub.Group
+	strict bool
+}
+
+// The compiler checks that TxnStub implements Txn.
+var _ snapshotisolation.Txn = (*TxnStub)(nil)
+
+// NewTxnStub returns a double of Txn that reports its failures to tb and
+// applies opts. The double checks the expected counts of calls at the end
+// of the test. With a nil tb, the double reports nothing.
+func NewTxnStub(tb assert.TB, opts ...TxnStubOption) *TxnStub {
+	s := &TxnStub{
+		OnCommit:   &TxnCommitStub{MethodStub: stub.NewMethodStub[TxnCommitCall](tb, "Txn.Commit")},
+		OnRollback: &TxnRollbackStub{MethodStub: stub.NewMethodStub[TxnRollbackCall](tb, "Txn.Rollback")},
+		OnSet:      &TxnSetStub{MethodStub: stub.NewMethodStub[TxnSetCall](tb, "Txn.Set")},
+		OnLoad:     &TxnLoadStub{MethodStub: stub.NewMethodStub[TxnLoadCall](tb, "Txn.Load")},
+	}
+	s.group = stub.NewGroup(
+		s.OnCommit.MethodStub,
+		s.OnRollback.MethodStub,
+		s.OnSet.MethodStub,
+		s.OnLoad.MethodStub,
+	)
+	for _, opt := range opts {
+		opt(s)
+	}
+	if s.strict {
+		s.group.StrictAll()
+	}
+	s.group.Bind(tb)
+	return s
+}
+
+// NewTxnStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
+func NewTxnStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...TxnStubOption) *TxnStub {
+	return NewTxnStub(tb, append([]TxnStubOption{
+		TxnStubWithClock(clk),
+		TxnStubWithLatency(d),
+	}, opts...)...)
+}
+
+// NewTxnStubFailing returns a double on which each call of a method that
+// can fail fails with err. It applies opts after the failure.
+func NewTxnStubFailing(tb assert.TB, err error, opts ...TxnStubOption) *TxnStub {
+	return NewTxnStub(tb, append([]TxnStubOption{TxnStubFailing(err)}, opts...)...)
+}
+
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
+func (s *TxnStub) ResetCalls() {
+	s.group.Reset()
+}
+
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *TxnCommitStub) invoke(ctx context.Context) func() TxnCommitReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() TxnCommitReturn {
+		r0 := s.fn(ctx)
+		return TxnCommitReturn{Err: r0}
+	}
+}
+
+// Commit records the call. An armed fault comes first, then the function
 // of Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) Record(ctx context.Context, e snapshotisolation.Entry) error {
-	call := MixedRecordCall{Ctx: ctx, E: e}
-	r := stub.Answer(s.OnRecord.MethodStub, call, stub.Arms[MixedRecordCall, MixedRecordReturn]{
-		Invoke:   s.OnRecord.invoke(ctx, e),
-		Fallback: s.OnRecord.fallback,
-		Fault:    func(err error) MixedRecordReturn { return MixedRecordReturn{Err: err} },
-		Stamp: func(c MixedRecordCall, r MixedRecordReturn) MixedRecordCall {
+func (s *TxnStub) Commit(ctx context.Context) error {
+	call := TxnCommitCall{Ctx: ctx}
+	r := stub.Answer(s.OnCommit.MethodStub, call, stub.Arms[TxnCommitCall, TxnCommitReturn]{
+		Invoke:   s.OnCommit.invoke(ctx),
+		Fallback: s.OnCommit.fallback,
+		Fault:    func(err error) TxnCommitReturn { return TxnCommitReturn{Err: err} },
+		Stamp: func(c TxnCommitCall, r TxnCommitReturn) TxnCommitCall {
 			c.Err = r.Err
 			return c
 		},
@@ -288,54 +514,81 @@ func (s *MixedStub) Record(ctx context.Context, e snapshotisolation.Entry) error
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedHistoryStub) invoke(ctx context.Context) func() MixedHistoryReturn {
+func (s *TxnRollbackStub) invoke(ctx context.Context) func() TxnRollbackReturn {
 	if s.fn == nil {
 		return nil
 	}
-	return func() MixedHistoryReturn {
-		r0, r1 := s.fn(ctx)
-		return MixedHistoryReturn{Result: r0, Err: r1}
+	return func() TxnRollbackReturn {
+		r0 := s.fn(ctx)
+		return TxnRollbackReturn{Err: r0}
 	}
 }
 
-// History records the call. An armed fault comes first, then the function
+// Rollback records the call. An armed fault comes first, then the function
 // of Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) History(ctx context.Context) ([]snapshotisolation.Entry, error) {
-	call := MixedHistoryCall{Ctx: ctx}
-	r := stub.Answer(s.OnHistory.MethodStub, call, stub.Arms[MixedHistoryCall, MixedHistoryReturn]{
-		Invoke:   s.OnHistory.invoke(ctx),
-		Fallback: s.OnHistory.fallback,
-		Fault:    func(err error) MixedHistoryReturn { return MixedHistoryReturn{Err: err} },
-		Stamp: func(c MixedHistoryCall, r MixedHistoryReturn) MixedHistoryCall {
-			c.Result = r.Result
+func (s *TxnStub) Rollback(ctx context.Context) error {
+	call := TxnRollbackCall{Ctx: ctx}
+	r := stub.Answer(s.OnRollback.MethodStub, call, stub.Arms[TxnRollbackCall, TxnRollbackReturn]{
+		Invoke:   s.OnRollback.invoke(ctx),
+		Fallback: s.OnRollback.fallback,
+		Fault:    func(err error) TxnRollbackReturn { return TxnRollbackReturn{Err: err} },
+		Stamp: func(c TxnRollbackCall, r TxnRollbackReturn) TxnRollbackCall {
 			c.Err = r.Err
 			return c
 		},
 	})
-	return r.Result, r.Err
+	return r.Err
 }
 
 // invoke returns a call of the function of Func with the arguments, and nil
 // where no function is set.
-func (s *MixedGetStub) invoke(ctx context.Context, key string) func() MixedGetReturn {
+func (s *TxnSetStub) invoke(ctx context.Context, key string, v int64) func() TxnSetReturn {
 	if s.fn == nil {
 		return nil
 	}
-	return func() MixedGetReturn {
-		r0, r1 := s.fn(ctx, key)
-		return MixedGetReturn{Result: r0, Err: r1}
+	return func() TxnSetReturn {
+		r0 := s.fn(ctx, key, v)
+		return TxnSetReturn{Err: r0}
 	}
 }
 
-// Get records the call. An armed fault comes first, then the function of
+// Set records the call. An armed fault comes first, then the function of
 // Func, then the results of Returns, and then the zero values.
-func (s *MixedStub) Get(ctx context.Context, key string) (snapshotisolation.Entry, error) {
-	call := MixedGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
-		Invoke:   s.OnGet.invoke(ctx, key),
-		Fallback: s.OnGet.fallback,
-		Fault:    func(err error) MixedGetReturn { return MixedGetReturn{Err: err} },
-		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
+func (s *TxnStub) Set(ctx context.Context, key string, v int64) error {
+	call := TxnSetCall{Ctx: ctx, Key: key, V: v}
+	r := stub.Answer(s.OnSet.MethodStub, call, stub.Arms[TxnSetCall, TxnSetReturn]{
+		Invoke:   s.OnSet.invoke(ctx, key, v),
+		Fallback: s.OnSet.fallback,
+		Fault:    func(err error) TxnSetReturn { return TxnSetReturn{Err: err} },
+		Stamp: func(c TxnSetCall, r TxnSetReturn) TxnSetCall {
+			c.Err = r.Err
+			return c
+		},
+	})
+	return r.Err
+}
+
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *TxnLoadStub) invoke(ctx context.Context, key string) func() TxnLoadReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() TxnLoadReturn {
+		r0, r1 := s.fn(ctx, key)
+		return TxnLoadReturn{Result: r0, Err: r1}
+	}
+}
+
+// Load records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *TxnStub) Load(ctx context.Context, key string) (int64, error) {
+	call := TxnLoadCall{Ctx: ctx, Key: key}
+	r := stub.Answer(s.OnLoad.MethodStub, call, stub.Arms[TxnLoadCall, TxnLoadReturn]{
+		Invoke:   s.OnLoad.invoke(ctx, key),
+		Fallback: s.OnLoad.fallback,
+		Fault:    func(err error) TxnLoadReturn { return TxnLoadReturn{Err: err} },
+		Stamp: func(c TxnLoadCall, r TxnLoadReturn) TxnLoadCall {
 			c.Result = r.Result
 			c.Err = r.Err
 			return c
@@ -344,4 +597,4 @@ func (s *MixedStub) Get(ctx context.Context, key string) (snapshotisolation.Entr
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:bfab04ad67d30178e134827ee5713a1ae015fe53910684bbc295f6137801f86f
+// dokimi:provenance sha256:e3ac5c06d55b538f4d8d3566f48fc5ba7de098b2277550d1c360b504d8cf08d8

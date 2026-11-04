@@ -326,7 +326,7 @@ var Families = []Family{
 	},
 	{
 		Name:           "transactional",
-		Representation: "staged writes beside committed ones, a snapshot, or a history",
+		Representation: "staged writes beside committed ones, or a snapshot",
 		Subjects: []string{
 			"iface/contract/transaction/transactiontest.InMemory",
 			"iface/contract/tx/txtest.InMemory",

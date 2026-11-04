@@ -9,28 +9,31 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
+	"maps"
 	"sync"
 
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/snapshotisolation"
 )
 
-// ErrNotFound is the error of Get for a key that no recorded entry has.
-var ErrNotFound = errors.New("snapshotisolationtest: not found")
+// ErrConflict is the error of a commit of a transaction that wrote a key that
+// another transaction committed a write of after its begin.
+var ErrConflict = errors.New("snapshotisolationtest: conflict")
 
-// ErrNotAdmissible is the error of Record for an entry that the isolation
-// level refuses.
-var ErrNotAdmissible = errors.New("snapshotisolationtest: the isolation level refuses the entry")
-
-// InMemory implements [snapshotisolation.Mixed] in memory. The corpus
-// applies the suite of Mixed to it as a subject.
+// InMemory implements [snapshotisolation.Mixed] in memory. The corpus applies
+// the suite of Mixed to it as a subject.
+//
+// A transaction reads a copy of the committed numbers from its begin, with its
+// own writes over it. Its commit fails with ErrConflict where another
+// transaction committed a write of a key that it wrote after its begin, and
+// applies its writes otherwise. The store allows write skew, so its
+// transactions are not serializable. No call keeps the store locked after it
+// returns, so the transactions of concurrent clients interleave.
 //
 //dokimi:subject snapshotisolation.Mixed new=NewInMemory
 type InMemory struct {
-	version map[string]int64
-	wrote   map[keyed]bool
-	entries []snapshotisolation.Entry
-	txn     int
+	numbers map[string]int64
+	changed map[string]int64
+	commits int64
 	mu      sync.Mutex
 }
 
@@ -39,79 +42,104 @@ var _ snapshotisolation.Mixed = (*InMemory)(nil)
 
 // NewInMemory returns a new InMemory.
 func NewInMemory() *InMemory {
-	return &InMemory{version: map[string]int64{}, wrote: map[keyed]bool{}}
+	return &InMemory{numbers: map[string]int64{}, changed: map[string]int64{}}
 }
 
-// Record implements [snapshotisolation.Mixed].
-func (s *InMemory) Record(ctx context.Context, e snapshotisolation.Entry) error {
-	if err := contextErr(ctx); err != nil {
-		return err
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := s.admits(e); err != nil {
-		return err
-	}
-	if e.Txn > s.txn {
-		s.txn = e.Txn
-	}
-	if e.Write {
-		s.version[e.Key] = e.Version
-		s.wrote[keyed{txn: e.Txn, key: e.Key}] = true
-	}
-	s.entries = append(s.entries, e)
-	return nil
-}
-
-// History implements [snapshotisolation.Mixed].
-func (s *InMemory) History(ctx context.Context) ([]snapshotisolation.Entry, error) {
+// Begin implements [snapshotisolation.Mixed].
+func (s *InMemory) Begin(ctx context.Context) (snapshotisolation.Txn, error) {
 	if err := contextErr(ctx); err != nil {
 		return nil, err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return slices.Clone(s.entries), nil
+	return &txn{store: s, snapshot: maps.Clone(s.numbers), writes: map[string]int64{}, begin: s.commits}, nil
 }
 
-// Get implements [snapshotisolation.Mixed].
-func (s *InMemory) Get(ctx context.Context, key string) (snapshotisolation.Entry, error) {
+// txn implements [snapshotisolation.Txn] for a transaction of InMemory: the
+// numbers at its begin, its writes, and the number of commits before its
+// begin.
+type txn struct {
+	store    *InMemory
+	snapshot map[string]int64
+	writes   map[string]int64
+	begin    int64
+	closed   bool
+}
+
+// Commit implements [snapshotisolation.Txn].
+func (t *txn) Commit(ctx context.Context) error {
 	if err := contextErr(ctx); err != nil {
-		return snapshotisolation.Entry{}, err
+		return err
 	}
+	s := t.store
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, e := range slices.Backward(s.entries) {
-		if e.Key == key {
-			return e, nil
+	if err := t.close(); err != nil {
+		return err
+	}
+	for key := range t.writes {
+		if s.changed[key] > t.begin {
+			return fmt.Errorf("snapshotisolationtest: key %q: %w", key, ErrConflict)
 		}
 	}
-	return snapshotisolation.Entry{}, ErrNotFound
-}
-
-// keyed is the pair of a transaction and a key that the transaction wrote.
-type keyed struct {
-	key string
-	txn int
-}
-
-// admits returns an error that wraps ErrNotAdmissible when the isolation level
-// refuses e, and nil otherwise.
-func (s *InMemory) admits(e snapshotisolation.Entry) error {
-	switch {
-	case e.Txn <= 0:
-		return fmt.Errorf("%w: transaction %d", ErrNotAdmissible, e.Txn)
-	case e.Version <= 0:
-		return fmt.Errorf("%w: version %d", ErrNotAdmissible, e.Version)
-	case e.Txn < s.txn:
-		return fmt.Errorf("%w: transaction %d closed at %d", ErrNotAdmissible, e.Txn, s.txn)
-	case e.Write && e.Version <= s.version[e.Key]:
-		return fmt.Errorf("%w: %q is at version %d", ErrNotAdmissible, e.Key, s.version[e.Key])
-	case e.Write && s.wrote[keyed{txn: e.Txn, key: e.Key}]:
-		return fmt.Errorf("%w: transaction %d already wrote %q", ErrNotAdmissible, e.Txn, e.Key)
-	case !e.Write && e.Version != s.version[e.Key]:
-		return fmt.Errorf("%w: %q is at version %d, not %d",
-			ErrNotAdmissible, e.Key, s.version[e.Key], e.Version)
+	s.commits++
+	for key, v := range t.writes {
+		s.numbers[key] = v
+		s.changed[key] = s.commits
 	}
+	return nil
+}
+
+// Rollback implements [snapshotisolation.Txn].
+func (t *txn) Rollback(ctx context.Context) error {
+	if err := contextErr(ctx); err != nil {
+		return err
+	}
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	return t.close()
+}
+
+// Set implements [snapshotisolation.Txn].
+func (t *txn) Set(ctx context.Context, key string, v int64) error {
+	if err := contextErr(ctx); err != nil {
+		return err
+	}
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	if t.closed {
+		return errClosed
+	}
+	t.writes[key] = v
+	return nil
+}
+
+// Load implements [snapshotisolation.Txn].
+func (t *txn) Load(ctx context.Context, key string) (int64, error) {
+	if err := contextErr(ctx); err != nil {
+		return 0, err
+	}
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	if t.closed {
+		return 0, errClosed
+	}
+	if v, written := t.writes[key]; written {
+		return v, nil
+	}
+	return t.snapshot[key], nil
+}
+
+// errClosed is the error of a call of a closed transaction.
+var errClosed = fmt.Errorf("snapshotisolationtest: %w", snapshotisolation.ErrClosed)
+
+// close closes the transaction, and returns errClosed for a transaction that
+// is closed already.
+func (t *txn) close() error {
+	if t.closed {
+		return errClosed
+	}
+	t.closed = true
 	return nil
 }
 

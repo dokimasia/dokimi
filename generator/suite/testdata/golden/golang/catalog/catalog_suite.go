@@ -10,31 +10,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Catalog:
-//
-// Catalog.Find/smoke: Find returns without a panic for derived inputs.
-//
-// Catalog.Find/smoke#generated: Find returns without a panic for derived
-// inputs.
-//
-// Catalog.Find/zero-on-miss: Find returns the zero value beside a false
-// presence flag.
-//
-// Catalog.Find/zero-on-miss#generated: Find returns the zero value beside
-// a false presence flag.
-//
-// Catalog.Add/smoke: Add returns without a panic for derived inputs.
-//
-// Catalog.Add/smoke#generated: Add returns without a panic for derived
-// inputs.
-
-// The derived checks of Catalog that witness their laws at the shallow
-// end:
-//
-// Catalog.Find/smoke
-//
-// Catalog.Add/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -80,22 +55,10 @@ func (c catalogFind) Smoke() conform.ID[CatalogMethods] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Find returns
-// without a panic for derived inputs.
-func (c catalogFind) SmokeGenerated() conform.ID[CatalogMethods] {
-	return c.Check("smoke#generated")
-}
-
 // ZeroOnMiss returns the identity of the check that Find returns the zero
 // value beside a false presence flag.
 func (c catalogFind) ZeroOnMiss() conform.ID[CatalogMethods] {
 	return c.Check("zero-on-miss")
-}
-
-// ZeroOnMissGenerated returns the identity of the check that Find returns
-// the zero value beside a false presence flag.
-func (c catalogFind) ZeroOnMissGenerated() conform.ID[CatalogMethods] {
-	return c.Check("zero-on-miss#generated")
 }
 
 // AllocationBudget returns the identity of the check
@@ -116,12 +79,6 @@ func (c catalogAdd) Smoke() conform.ID[CatalogMethods] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Add returns
-// without a panic for derived inputs.
-func (c catalogAdd) SmokeGenerated() conform.ID[CatalogMethods] {
-	return c.Check("smoke#generated")
-}
-
 // CatalogSuite returns the checks of Catalog, and the calls and the
 // budgets of its callables.
 func CatalogSuite() conform.Suite[CatalogMethods] {
@@ -134,9 +91,6 @@ func CatalogSuite() conform.Suite[CatalogMethods] {
 				ID:          CatalogChecks.Find.Smoke(),
 				Statement:   "Find returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CatalogHandle) {
@@ -148,12 +102,9 @@ func CatalogSuite() conform.Suite[CatalogMethods] {
 				Defect: catalogFindPanics,
 			},
 			{
-				ID:          CatalogChecks.Find.SmokeGenerated(),
+				ID:          CatalogChecks.Find.Smoke().Generated(),
 				Statement:   "Find returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CatalogHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -168,9 +119,6 @@ func CatalogSuite() conform.Suite[CatalogMethods] {
 				ID:          CatalogChecks.Find.ZeroOnMiss(),
 				Statement:   "Find returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
-				Probe:       spec.ZeroBesideFalse,
-				Reason:      spec.ValueBesideFalse,
-				Law:         spec.NoValueBesideAFalseFlag,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CatalogHandle) {
 					probe.ZeroBesideFalse(h, func(ctx context.Context) (string, bool) {
@@ -180,12 +128,9 @@ func CatalogSuite() conform.Suite[CatalogMethods] {
 				Defect: catalogFindValueBesideAFalseFlag,
 			},
 			{
-				ID:          CatalogChecks.Find.ZeroOnMissGenerated(),
+				ID:          CatalogChecks.Find.ZeroOnMiss().Generated(),
 				Statement:   "Find returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
-				Probe:       spec.ZeroBesideFalse,
-				Reason:      spec.ValueBesideFalse,
-				Law:         spec.NoValueBesideAFalseFlag,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CatalogHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -199,9 +144,6 @@ func CatalogSuite() conform.Suite[CatalogMethods] {
 				ID:          CatalogChecks.Add.Smoke(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CatalogHandle) {
@@ -213,12 +155,9 @@ func CatalogSuite() conform.Suite[CatalogMethods] {
 				Defect: catalogAddPanics,
 			},
 			{
-				ID:          CatalogChecks.Add.SmokeGenerated(),
+				ID:          CatalogChecks.Add.Smoke().Generated(),
 				Statement:   "Add returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CatalogHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")

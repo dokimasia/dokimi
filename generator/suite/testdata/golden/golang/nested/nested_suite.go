@@ -12,29 +12,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Courier:
-//
-// Courier.Ship/smoke: Ship returns without a panic for derived inputs.
-//
-// Courier.Ship/cancel: Ship returns an error for a cancelled context.
-//
-// Courier.Send/smoke: Send returns without a panic for derived inputs.
-
-// The derived checks of Courier that witness their laws at the shallow
-// end:
-//
-// Courier.Ship/smoke
-//
-// Courier.Send/smoke
-
-// The unclaimed classifications of Courier:
-//
-// The shape:writer of Courier.Ship has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Courier.Send has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -97,9 +74,6 @@ func CourierSuite() conform.Suite[Courier] {
 				ID:          CourierChecks.Ship.Smoke(),
 				Statement:   "Ship returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CourierHandle) {
@@ -113,9 +87,6 @@ func CourierSuite() conform.Suite[Courier] {
 				ID:          CourierChecks.Ship.Cancel(),
 				Statement:   "Ship returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CourierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -128,9 +99,6 @@ func CourierSuite() conform.Suite[Courier] {
 				ID:          CourierChecks.Send.Smoke(),
 				Statement:   "Send returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CourierHandle) {
@@ -441,59 +409,6 @@ func courierSendPanics(h *CourierHandle) Courier {
 	return &courierSendPanicsDefect{courierOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Tracker:
-//
-// Tracker.Walk/smoke: Walk returns without a panic for derived inputs.
-//
-// Tracker.Walk/deterministic: Walk returns the same value for the same
-// inputs.
-//
-// Tracker.Tick/smoke: Tick returns without a panic for derived inputs.
-//
-// Tracker.Tick/deterministic: Tick returns the same value for the same
-// inputs.
-
-// The derived checks of Tracker that witness their laws at the shallow
-// end:
-//
-// Tracker.Walk/smoke
-//
-// Tracker.Walk/deterministic
-//
-// Tracker.Tick/smoke
-//
-// Tracker.Tick/deterministic
-
-// The refused claims of Tracker:
-//
-// Tracker.Route/deterministic: eidos derives no sample of the parameter
-// root of Route. The remedy is to author a sample of the parameter root
-// with the directive sample.
-//
-// Tracker.Follow/deterministic: eidos derives no sample of the parameter b
-// of Follow. The remedy is to author a sample of the parameter b with the
-// directive sample.
-//
-// Tracker.Volley/deterministic: eidos derives no sample of the parameter p
-// of Volley. The remedy is to author a sample of the parameter p with the
-// directive sample.
-//
-// Tracker.Track/deterministic: eidos derives no sample of the parameter l
-// of Track. The remedy is to author a sample of the parameter l with the
-// directive sample.
-//
-// Tracker.Pick/deterministic: eidos derives no sample of the parameter c
-// of Pick. The remedy is to author a sample of the parameter c with the
-// directive sample.
-//
-// Tracker.Play/deterministic: eidos derives no sample of the parameter m
-// of Play. The remedy is to author a sample of the parameter m with the
-// directive sample.
-//
-// Tracker.Link/deterministic: eidos derives no sample of the parameter l
-// of Link. The remedy is to author a sample of the parameter l with the
-// directive sample.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -618,9 +533,6 @@ func TrackerSuite() conform.Suite[Tracker] {
 				ID:          TrackerChecks.Walk.Smoke(),
 				Statement:   "Walk returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *TrackerHandle) {
@@ -635,9 +547,6 @@ func TrackerSuite() conform.Suite[Tracker] {
 				ID:          TrackerChecks.Walk.Deterministic(),
 				Statement:   "Walk returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[Tracker]{TrackerChecks.Walk.Smoke()},
@@ -653,9 +562,6 @@ func TrackerSuite() conform.Suite[Tracker] {
 				ID:          TrackerChecks.Tick.Smoke(),
 				Statement:   "Tick returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *TrackerHandle) {
@@ -670,9 +576,6 @@ func TrackerSuite() conform.Suite[Tracker] {
 				ID:          TrackerChecks.Tick.Deterministic(),
 				Statement:   "Tick returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[Tracker]{TrackerChecks.Tick.Smoke()},
@@ -1518,18 +1421,6 @@ func trackerTickDrifts(h *TrackerHandle) Tracker {
 	return &trackerTickDriftsDefect{trackerOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Hire:
-//
-// Hire/smoke: Hire returns without a panic for derived inputs.
-//
-// Hire/deterministic: Hire returns the same value for the same inputs.
-
-// The derived checks of Hire that witness their laws at the shallow end:
-//
-// Hire/smoke
-//
-// Hire/deterministic
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1577,9 +1468,6 @@ func HireSuite() conform.Suite[HireFunc] {
 				ID:          HireChecks.Smoke(),
 				Statement:   "Hire returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HireHandle) {
@@ -1594,9 +1482,6 @@ func HireSuite() conform.Suite[HireFunc] {
 				ID:          HireChecks.Deterministic(),
 				Statement:   "Hire returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[HireFunc]{HireChecks.Smoke()},

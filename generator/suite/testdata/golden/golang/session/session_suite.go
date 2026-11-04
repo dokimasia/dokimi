@@ -10,45 +10,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Sessions:
-//
-// Sessions.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Sessions.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Sessions.Put/cancel: Put returns an error for a cancelled context.
-//
-// Sessions.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Sessions.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Sessions.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Sessions.Get/cancel: Get returns an error for a cancelled context.
-//
-// Sessions.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Sessions.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Sessions.Get/zero-on-error#generated: Get returns the zero value beside
-// an error.
-
-// The derived checks of Sessions that witness their laws at the shallow
-// end:
-//
-// Sessions.Put/smoke
-//
-// Sessions.Get/smoke
-
-// The unclaimed classifications of Sessions:
-//
-// The shape:writer of Sessions.Put has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -81,22 +42,10 @@ func (c sessionsPut) Smoke() conform.ID[Sessions] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c sessionsPut) SmokeGenerated() conform.ID[Sessions] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c sessionsPut) Cancel() conform.ID[Sessions] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c sessionsPut) CancelGenerated() conform.ID[Sessions] {
-	return c.Check("cancel#generated")
 }
 
 // sessionsGet is the name of Sessions.Get, with the identities of its
@@ -111,34 +60,16 @@ func (c sessionsGet) Smoke() conform.ID[Sessions] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c sessionsGet) SmokeGenerated() conform.ID[Sessions] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c sessionsGet) Cancel() conform.ID[Sessions] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c sessionsGet) CancelGenerated() conform.ID[Sessions] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c sessionsGet) ZeroOnError() conform.ID[Sessions] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c sessionsGet) ZeroOnErrorGenerated() conform.ID[Sessions] {
-	return c.Check("zero-on-error#generated")
 }
 
 // SessionsSuite returns the checks of Sessions, and the calls and the
@@ -153,9 +84,6 @@ func SessionsSuite() conform.Suite[Sessions] {
 				ID:          SessionsChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *SessionsHandle) {
@@ -166,12 +94,9 @@ func SessionsSuite() conform.Suite[Sessions] {
 				Defect: sessionsPutPanics,
 			},
 			{
-				ID:          SessionsChecks.Put.SmokeGenerated(),
+				ID:          SessionsChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SessionsHandle, c *prop.Case) {
 					drawnS := c.Draw(prop.Of[Session](), "s")
@@ -185,9 +110,6 @@ func SessionsSuite() conform.Suite[Sessions] {
 				ID:          SessionsChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *SessionsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -197,12 +119,9 @@ func SessionsSuite() conform.Suite[Sessions] {
 				Defect: sessionsPutIgnoresCancel,
 			},
 			{
-				ID:          SessionsChecks.Put.CancelGenerated(),
+				ID:          SessionsChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SessionsHandle, c *prop.Case) {
 					drawnS := c.Draw(prop.Of[Session](), "s")
@@ -216,9 +135,6 @@ func SessionsSuite() conform.Suite[Sessions] {
 				ID:          SessionsChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *SessionsHandle) {
@@ -230,12 +146,9 @@ func SessionsSuite() conform.Suite[Sessions] {
 				Defect: sessionsGetPanics,
 			},
 			{
-				ID:          SessionsChecks.Get.SmokeGenerated(),
+				ID:          SessionsChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SessionsHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -250,9 +163,6 @@ func SessionsSuite() conform.Suite[Sessions] {
 				ID:          SessionsChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *SessionsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -263,12 +173,9 @@ func SessionsSuite() conform.Suite[Sessions] {
 				Defect: sessionsGetIgnoresCancel,
 			},
 			{
-				ID:          SessionsChecks.Get.CancelGenerated(),
+				ID:          SessionsChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SessionsHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")
@@ -283,9 +190,6 @@ func SessionsSuite() conform.Suite[Sessions] {
 				ID:          SessionsChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *SessionsHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Session, error) {
@@ -295,12 +199,9 @@ func SessionsSuite() conform.Suite[Sessions] {
 				Defect: sessionsGetValueBeside,
 			},
 			{
-				ID:          SessionsChecks.Get.ZeroOnErrorGenerated(),
+				ID:          SessionsChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *SessionsHandle, c *prop.Case) {
 					drawnID := c.Draw(prop.Of[string](), "id")

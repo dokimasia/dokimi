@@ -10,84 +10,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Records:
-//
-// Records.Read/smoke: Read returns without a panic for derived inputs.
-//
-// Records.Read/smoke#generated: Read returns without a panic for derived
-// inputs.
-//
-// Records.Read/cancel: Read returns an error for a cancelled context.
-//
-// Records.Read/cancel#generated: Read returns an error for a cancelled
-// context.
-//
-// Records.Read/returns-on-error: Read returns the field of its request
-// beside an error.
-//
-// Records.Read/returns-on-error#generated: Read returns the field of its
-// request beside an error.
-//
-// Records.Fill/smoke: Fill returns without a panic for derived inputs.
-//
-// Records.Fill/smoke#generated: Fill returns without a panic for derived
-// inputs.
-//
-// Records.Fill/cancel: Fill returns an error for a cancelled context.
-//
-// Records.Fill/cancel#generated: Fill returns an error for a cancelled
-// context.
-//
-// Records.Fill/returns-on-error: Fill returns the field of its request
-// beside an error.
-//
-// Records.Fill/returns-on-error#generated: Fill returns the field of its
-// request beside an error.
-//
-// Records.Peek/smoke: Peek returns without a panic for derived inputs.
-//
-// Records.Peek/smoke#generated: Peek returns without a panic for derived
-// inputs.
-//
-// Records.Peek/cancel: Peek returns an error for a cancelled context.
-//
-// Records.Peek/cancel#generated: Peek returns an error for a cancelled
-// context.
-
-// The derived checks of Records that witness their laws at the shallow
-// end:
-//
-// Records.Read/smoke
-//
-// Records.Fill/smoke
-//
-// Records.Peek/smoke
-
-// The refused claims of Records:
-//
-// Records.Read/zero-on-error: Read returns a field of its request beside
-// an error, as its mixin returns-on-error states. The remedy is to remove
-// the mixin returns-on-error where Read returns the zero value beside an
-// error.
-//
-// Records.Fill/zero-on-error: Fill returns a field of its request beside
-// an error, as its mixin returns-on-error states. The remedy is to remove
-// the mixin returns-on-error where Fill returns the zero value beside an
-// error.
-//
-// Records.Peek/zero-on-error: Peek returns a field of its request beside
-// an error, as its mixin returns-on-error states. The remedy is to remove
-// the mixin returns-on-error where Peek returns the zero value beside an
-// error.
-//
-// Records.Peek/returns-on-error: the classification of Peek sets no param
-// {param}. The remedy is to set the param {param} in the directive of
-// Peek.
-//
-// Records.Peek/returns-on-error: the classification of Peek sets no param
-// {param}. The remedy is to set the param {param} in the directive of
-// Peek.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -122,34 +44,16 @@ func (c recordsRead) Smoke() conform.ID[Records] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Read returns
-// without a panic for derived inputs.
-func (c recordsRead) SmokeGenerated() conform.ID[Records] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c recordsRead) Cancel() conform.ID[Records] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Read returns an
-// error for a cancelled context.
-func (c recordsRead) CancelGenerated() conform.ID[Records] {
-	return c.Check("cancel#generated")
-}
-
 // ReturnsOnError returns the identity of the check that Read returns the
 // field of its request beside an error.
 func (c recordsRead) ReturnsOnError() conform.ID[Records] {
 	return c.Check("returns-on-error")
-}
-
-// ReturnsOnErrorGenerated returns the identity of the check that Read
-// returns the field of its request beside an error.
-func (c recordsRead) ReturnsOnErrorGenerated() conform.ID[Records] {
-	return c.Check("returns-on-error#generated")
 }
 
 // recordsFill is the name of Records.Fill, with the identities of its
@@ -164,34 +68,16 @@ func (c recordsFill) Smoke() conform.ID[Records] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Fill returns
-// without a panic for derived inputs.
-func (c recordsFill) SmokeGenerated() conform.ID[Records] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Fill returns an error for
 // a cancelled context.
 func (c recordsFill) Cancel() conform.ID[Records] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Fill returns an
-// error for a cancelled context.
-func (c recordsFill) CancelGenerated() conform.ID[Records] {
-	return c.Check("cancel#generated")
-}
-
 // ReturnsOnError returns the identity of the check that Fill returns the
 // field of its request beside an error.
 func (c recordsFill) ReturnsOnError() conform.ID[Records] {
 	return c.Check("returns-on-error")
-}
-
-// ReturnsOnErrorGenerated returns the identity of the check that Fill
-// returns the field of its request beside an error.
-func (c recordsFill) ReturnsOnErrorGenerated() conform.ID[Records] {
-	return c.Check("returns-on-error#generated")
 }
 
 // recordsPeek is the name of Records.Peek, with the identities of its
@@ -206,22 +92,10 @@ func (c recordsPeek) Smoke() conform.ID[Records] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Peek returns
-// without a panic for derived inputs.
-func (c recordsPeek) SmokeGenerated() conform.ID[Records] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Peek returns an error for
 // a cancelled context.
 func (c recordsPeek) Cancel() conform.ID[Records] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Peek returns an
-// error for a cancelled context.
-func (c recordsPeek) CancelGenerated() conform.ID[Records] {
-	return c.Check("cancel#generated")
 }
 
 // RecordsSuite returns the checks of Records, and the calls and the
@@ -236,9 +110,6 @@ func RecordsSuite() conform.Suite[Records] {
 				ID:          RecordsChecks.Read.Smoke(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *RecordsHandle) {
@@ -250,12 +121,9 @@ func RecordsSuite() conform.Suite[Records] {
 				Defect: recordsReadPanics,
 			},
 			{
-				ID:          RecordsChecks.Read.SmokeGenerated(),
+				ID:          RecordsChecks.Read.Smoke().Generated(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecordsHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[Request](), "req")
@@ -270,9 +138,6 @@ func RecordsSuite() conform.Suite[Records] {
 				ID:          RecordsChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *RecordsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -283,12 +148,9 @@ func RecordsSuite() conform.Suite[Records] {
 				Defect: recordsReadIgnoresCancel,
 			},
 			{
-				ID:          RecordsChecks.Read.CancelGenerated(),
+				ID:          RecordsChecks.Read.Cancel().Generated(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecordsHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[Request](), "req")
@@ -303,9 +165,6 @@ func RecordsSuite() conform.Suite[Records] {
 				ID:          RecordsChecks.Read.ReturnsOnError(),
 				Statement:   "Read returns the field of its request beside an error",
 				Claim:       spec.ReturnsOnError,
-				Probe:       spec.FieldBesideError,
-				Reason:      spec.FieldLostOnError,
-				Law:         spec.FailureReturnsTheRequestField,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *RecordsHandle) {
 					probe.FieldBesideError(h, func(ctx context.Context) (Result, error) {
@@ -317,12 +176,9 @@ func RecordsSuite() conform.Suite[Records] {
 				Defect: recordsReadDropsTheField,
 			},
 			{
-				ID:          RecordsChecks.Read.ReturnsOnErrorGenerated(),
+				ID:          RecordsChecks.Read.ReturnsOnError().Generated(),
 				Statement:   "Read returns the field of its request beside an error",
 				Claim:       spec.ReturnsOnError,
-				Probe:       spec.FieldBesideError,
-				Reason:      spec.FieldLostOnError,
-				Law:         spec.FailureReturnsTheRequestField,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecordsHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[Request](), "req")
@@ -336,9 +192,6 @@ func RecordsSuite() conform.Suite[Records] {
 				ID:          RecordsChecks.Fill.Smoke(),
 				Statement:   "Fill returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *RecordsHandle) {
@@ -350,12 +203,9 @@ func RecordsSuite() conform.Suite[Records] {
 				Defect: recordsFillPanics,
 			},
 			{
-				ID:          RecordsChecks.Fill.SmokeGenerated(),
+				ID:          RecordsChecks.Fill.Smoke().Generated(),
 				Statement:   "Fill returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecordsHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[Request](), "req")
@@ -370,9 +220,6 @@ func RecordsSuite() conform.Suite[Records] {
 				ID:          RecordsChecks.Fill.Cancel(),
 				Statement:   "Fill returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *RecordsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -383,12 +230,9 @@ func RecordsSuite() conform.Suite[Records] {
 				Defect: recordsFillIgnoresCancel,
 			},
 			{
-				ID:          RecordsChecks.Fill.CancelGenerated(),
+				ID:          RecordsChecks.Fill.Cancel().Generated(),
 				Statement:   "Fill returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecordsHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[Request](), "req")
@@ -403,9 +247,6 @@ func RecordsSuite() conform.Suite[Records] {
 				ID:          RecordsChecks.Fill.ReturnsOnError(),
 				Statement:   "Fill returns the field of its request beside an error",
 				Claim:       spec.ReturnsOnError,
-				Probe:       spec.FieldBesideError,
-				Reason:      spec.FieldLostOnError,
-				Law:         spec.FailureReturnsTheRequestField,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *RecordsHandle) {
 					probe.FieldBesideError(h, func(ctx context.Context) ([]byte, error) {
@@ -417,12 +258,9 @@ func RecordsSuite() conform.Suite[Records] {
 				Defect: recordsFillDropsTheField,
 			},
 			{
-				ID:          RecordsChecks.Fill.ReturnsOnErrorGenerated(),
+				ID:          RecordsChecks.Fill.ReturnsOnError().Generated(),
 				Statement:   "Fill returns the field of its request beside an error",
 				Claim:       spec.ReturnsOnError,
-				Probe:       spec.FieldBesideError,
-				Reason:      spec.FieldLostOnError,
-				Law:         spec.FailureReturnsTheRequestField,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecordsHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[Request](), "req")
@@ -436,9 +274,6 @@ func RecordsSuite() conform.Suite[Records] {
 				ID:          RecordsChecks.Peek.Smoke(),
 				Statement:   "Peek returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *RecordsHandle) {
@@ -450,12 +285,9 @@ func RecordsSuite() conform.Suite[Records] {
 				Defect: recordsPeekPanics,
 			},
 			{
-				ID:          RecordsChecks.Peek.SmokeGenerated(),
+				ID:          RecordsChecks.Peek.Smoke().Generated(),
 				Statement:   "Peek returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecordsHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[Request](), "req")
@@ -470,9 +302,6 @@ func RecordsSuite() conform.Suite[Records] {
 				ID:          RecordsChecks.Peek.Cancel(),
 				Statement:   "Peek returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *RecordsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -483,12 +312,9 @@ func RecordsSuite() conform.Suite[Records] {
 				Defect: recordsPeekIgnoresCancel,
 			},
 			{
-				ID:          RecordsChecks.Peek.CancelGenerated(),
+				ID:          RecordsChecks.Peek.Cancel().Generated(),
 				Statement:   "Peek returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecordsHandle, c *prop.Case) {
 					drawnReq := c.Draw(prop.Of[Request](), "req")

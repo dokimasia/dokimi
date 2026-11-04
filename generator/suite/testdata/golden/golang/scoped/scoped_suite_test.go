@@ -41,20 +41,7 @@ func TestHyphenateSuite(t *testing2.T) {
 				},
 				Defect: func(*scoped.HyphenateHandle) scoped.HyphenateFunc { return nil },
 			}),
-			conform2.Excuse(
-				scoped.HyphenateChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform2.Excuse(
-				scoped.HyphenateChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform2.Excuse(
-				scoped.HyphenateChecks.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform2.Excuse(
-				scoped.HyphenateChecks.DeterministicGenerated(),
+			conform2.ExcuseSuite[scoped.HyphenateFunc](
 				"the test applies the check of its option alone",
 			),
 		)
@@ -80,20 +67,7 @@ func TestHyphenateSuite(t *testing2.T) {
 				},
 				Defect: func(*scoped.HyphenateHandle) scoped.HyphenateFunc { return nil },
 			}),
-			conform2.Excuse(
-				scoped.HyphenateChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform2.Excuse(
-				scoped.HyphenateChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform2.Excuse(
-				scoped.HyphenateChecks.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform2.Excuse(
-				scoped.HyphenateChecks.DeterministicGenerated(),
+			conform2.ExcuseSuite[scoped.HyphenateFunc](
 				"the test applies the check of its option alone",
 			),
 		)

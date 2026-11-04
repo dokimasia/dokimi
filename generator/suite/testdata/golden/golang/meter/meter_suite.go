@@ -11,72 +11,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Meter:
-//
-// Meter.Count/smoke: Count returns without a panic for derived inputs.
-//
-// Meter.Count/smoke#generated: Count returns without a panic for derived
-// inputs.
-//
-// Meter.Count/cancel: Count returns an error for a cancelled context.
-//
-// Meter.Count/cancel#generated: Count returns an error for a cancelled
-// context.
-//
-// Meter.Count/zero-on-error: Count returns the zero value beside an error.
-//
-// Meter.Count/zero-on-error#generated: Count returns the zero value beside
-// an error.
-//
-// Meter.Record/smoke: Record returns without a panic for derived inputs.
-//
-// Meter.Record/smoke#generated: Record returns without a panic for derived
-// inputs.
-//
-// Meter.Record/cancel: Record returns an error for a cancelled context.
-//
-// Meter.Record/cancel#generated: Record returns an error for a cancelled
-// context.
-//
-// Meter.Merge/smoke: Merge returns without a panic for derived inputs.
-//
-// Meter.Merge/smoke#generated: Merge returns without a panic for derived
-// inputs.
-//
-// Meter.Merge/nil-safe: Merge returns without a panic for a nil argument.
-//
-// Meter.Merge/nil-safe#generated: Merge returns without a panic for a nil
-// argument.
-//
-// Meter.Total/smoke: Total returns without a panic for derived inputs.
-//
-// Meter.Total/deterministic: Total returns the same value for the same
-// inputs.
-
-// The derived checks of Meter that witness their laws at the shallow end:
-//
-// Meter.Count/smoke
-//
-// Meter.Record/smoke
-//
-// Meter.Merge/smoke
-//
-// Meter.Total/smoke
-//
-// Meter.Total/deterministic
-
-// The unclaimed classifications of Meter:
-//
-// The mixin:concurrent of Meter.Count has the stance needs. The claim
-// linearizable needs the param machineries=[reference] of the directive
-// suite.
-//
-// The shape:writer of Meter.Record has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Meter.Merge has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -113,34 +47,16 @@ func (c meterCount) Smoke() conform.ID[Meter] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Count returns
-// without a panic for derived inputs.
-func (c meterCount) SmokeGenerated() conform.ID[Meter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Count returns an error for
 // a cancelled context.
 func (c meterCount) Cancel() conform.ID[Meter] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Count returns an
-// error for a cancelled context.
-func (c meterCount) CancelGenerated() conform.ID[Meter] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Count returns the
 // zero value beside an error.
 func (c meterCount) ZeroOnError() conform.ID[Meter] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Count
-// returns the zero value beside an error.
-func (c meterCount) ZeroOnErrorGenerated() conform.ID[Meter] {
-	return c.Check("zero-on-error#generated")
 }
 
 // AllocationBudget returns the identity of the check
@@ -178,22 +94,10 @@ func (c meterRecord) Smoke() conform.ID[Meter] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Record returns
-// without a panic for derived inputs.
-func (c meterRecord) SmokeGenerated() conform.ID[Meter] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Record returns an error
 // for a cancelled context.
 func (c meterRecord) Cancel() conform.ID[Meter] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Record returns an
-// error for a cancelled context.
-func (c meterRecord) CancelGenerated() conform.ID[Meter] {
-	return c.Check("cancel#generated")
 }
 
 // LatencyBudget returns the identity of the check
@@ -214,22 +118,10 @@ func (c meterMerge) Smoke() conform.ID[Meter] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Merge returns
-// without a panic for derived inputs.
-func (c meterMerge) SmokeGenerated() conform.ID[Meter] {
-	return c.Check("smoke#generated")
-}
-
 // NilSafe returns the identity of the check that Merge returns without a
 // panic for a nil argument.
 func (c meterMerge) NilSafe() conform.ID[Meter] {
 	return c.Check("nil-safe")
-}
-
-// NilSafeGenerated returns the identity of the check that Merge returns
-// without a panic for a nil argument.
-func (c meterMerge) NilSafeGenerated() conform.ID[Meter] {
-	return c.Check("nil-safe#generated")
 }
 
 // meterTotal is the name of Meter.Total, with the identities of its
@@ -262,9 +154,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Count.Smoke(),
 				Statement:   "Count returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MeterHandle) {
@@ -276,12 +165,9 @@ func MeterSuite() conform.Suite[Meter] {
 				Defect: meterCountPanics,
 			},
 			{
-				ID:          MeterChecks.Count.SmokeGenerated(),
+				ID:          MeterChecks.Count.Smoke().Generated(),
 				Statement:   "Count returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MeterHandle, c *prop.Case) {
 					drawnUnit := c.Draw(prop.Of[Unit](), "unit")
@@ -296,9 +182,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Count.Cancel(),
 				Statement:   "Count returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MeterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -309,12 +192,9 @@ func MeterSuite() conform.Suite[Meter] {
 				Defect: meterCountIgnoresCancel,
 			},
 			{
-				ID:          MeterChecks.Count.CancelGenerated(),
+				ID:          MeterChecks.Count.Cancel().Generated(),
 				Statement:   "Count returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MeterHandle, c *prop.Case) {
 					drawnUnit := c.Draw(prop.Of[Unit](), "unit")
@@ -329,9 +209,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Count.ZeroOnError(),
 				Statement:   "Count returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MeterHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -341,12 +218,9 @@ func MeterSuite() conform.Suite[Meter] {
 				Defect: meterCountValueBeside,
 			},
 			{
-				ID:          MeterChecks.Count.ZeroOnErrorGenerated(),
+				ID:          MeterChecks.Count.ZeroOnError().Generated(),
 				Statement:   "Count returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MeterHandle, c *prop.Case) {
 					drawnUnit := c.Draw(prop.Of[Unit](), "unit")
@@ -360,9 +234,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Record.Smoke(),
 				Statement:   "Record returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MeterHandle) {
@@ -373,12 +244,9 @@ func MeterSuite() conform.Suite[Meter] {
 				Defect: meterRecordPanics,
 			},
 			{
-				ID:          MeterChecks.Record.SmokeGenerated(),
+				ID:          MeterChecks.Record.Smoke().Generated(),
 				Statement:   "Record returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MeterHandle, c *prop.Case) {
 					drawnSamples := c.Draw(prop.Of[Sample](), "samples")
@@ -392,9 +260,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Record.Cancel(),
 				Statement:   "Record returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MeterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -404,12 +269,9 @@ func MeterSuite() conform.Suite[Meter] {
 				Defect: meterRecordIgnoresCancel,
 			},
 			{
-				ID:          MeterChecks.Record.CancelGenerated(),
+				ID:          MeterChecks.Record.Cancel().Generated(),
 				Statement:   "Record returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MeterHandle, c *prop.Case) {
 					drawnSamples := c.Draw(prop.Of[Sample](), "samples")
@@ -423,9 +285,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Merge.Smoke(),
 				Statement:   "Merge returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MeterHandle) {
@@ -437,12 +296,9 @@ func MeterSuite() conform.Suite[Meter] {
 				Defect: meterMergePanics,
 			},
 			{
-				ID:          MeterChecks.Merge.SmokeGenerated(),
+				ID:          MeterChecks.Merge.Smoke().Generated(),
 				Statement:   "Merge returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MeterHandle, c *prop.Case) {
 					drawnS := c.Draw(prop.Of[*Sample](), "s")
@@ -457,9 +313,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Merge.NilSafe(),
 				Statement:   "Merge returns without a panic for a nil argument",
 				Claim:       spec.NilSafe,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NilArgumentIsAccepted,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MeterHandle) {
 					probe.Survives(h, func(ctx context.Context) error {
@@ -470,12 +323,9 @@ func MeterSuite() conform.Suite[Meter] {
 				Defect: meterMergePanics,
 			},
 			{
-				ID:          MeterChecks.Merge.NilSafeGenerated(),
+				ID:          MeterChecks.Merge.NilSafe().Generated(),
 				Statement:   "Merge returns without a panic for a nil argument",
 				Claim:       spec.NilSafe,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NilArgumentIsAccepted,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MeterHandle, c *prop.Case) {
 					drawnS := c.Draw(prop.Of[*Sample](), "s")
@@ -490,9 +340,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Total.Smoke(),
 				Statement:   "Total returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MeterHandle) {
@@ -507,9 +354,6 @@ func MeterSuite() conform.Suite[Meter] {
 				ID:          MeterChecks.Total.Deterministic(),
 				Statement:   "Total returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[Meter]{MeterChecks.Total.Smoke()},
@@ -884,29 +728,6 @@ func meterTotalDrifts(h *MeterHandle) Meter {
 	return &meterTotalDriftsDefect{meterOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Weigh:
-//
-// Weigh/smoke: Weigh returns without a panic for derived inputs.
-//
-// Weigh/smoke#generated: Weigh returns without a panic for derived inputs.
-//
-// Weigh/deterministic: Weigh returns the same value for the same inputs.
-//
-// Weigh/deterministic#generated: Weigh returns the same value for the same
-// inputs.
-
-// The derived checks of Weigh that witness their laws at the shallow end:
-//
-// Weigh/smoke
-//
-// Weigh/deterministic
-
-// The unclaimed classifications of Weigh:
-//
-// The mixin:concurrent of Weigh has the stance needs. The claim
-// linearizable needs the param machineries=[reference] of the directive
-// suite.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -936,22 +757,10 @@ func (c weighCallable) Smoke() conform.ID[WeighFunc] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Weigh returns
-// without a panic for derived inputs.
-func (c weighCallable) SmokeGenerated() conform.ID[WeighFunc] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Weigh returns the
 // same value for the same inputs.
 func (c weighCallable) Deterministic() conform.ID[WeighFunc] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Weigh
-// returns the same value for the same inputs.
-func (c weighCallable) DeterministicGenerated() conform.ID[WeighFunc] {
-	return c.Check("deterministic#generated")
 }
 
 // AllocationBudget returns the identity of the check
@@ -977,9 +786,6 @@ func WeighSuite() conform.Suite[WeighFunc] {
 				ID:          WeighChecks.Smoke(),
 				Statement:   "Weigh returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *WeighHandle) {
@@ -991,12 +797,9 @@ func WeighSuite() conform.Suite[WeighFunc] {
 				Defect: weighPanics,
 			},
 			{
-				ID:          WeighChecks.SmokeGenerated(),
+				ID:          WeighChecks.Smoke().Generated(),
 				Statement:   "Weigh returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *WeighHandle, c *prop.Case) {
 					drawnS := c.Draw(prop.Of[Sample](), "s")
@@ -1012,9 +815,6 @@ func WeighSuite() conform.Suite[WeighFunc] {
 				ID:          WeighChecks.Deterministic(),
 				Statement:   "Weigh returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[WeighFunc]{WeighChecks.Smoke()},
@@ -1027,14 +827,11 @@ func WeighSuite() conform.Suite[WeighFunc] {
 				Defect: weighDrifts,
 			},
 			{
-				ID:          WeighChecks.DeterministicGenerated(),
+				ID:          WeighChecks.Deterministic().Generated(),
 				Statement:   "Weigh returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[WeighFunc]{WeighChecks.SmokeGenerated()},
+				Entails:     []conform.ID[WeighFunc]{WeighChecks.Smoke().Generated()},
 				Property: func(h *WeighHandle, c *prop.Case) {
 					drawnS := c.Draw(prop.Of[Sample](), "s")
 					drawnDensity := c.Draw(prop.Of[float64](), "density")

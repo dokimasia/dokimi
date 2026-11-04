@@ -16,98 +16,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Lists:
-//
-// Lists.Begin/smoke: Begin returns without a panic for derived inputs.
-//
-// Lists.Begin/smoke#generated: Begin returns without a panic for derived
-// inputs.
-//
-// Lists.Begin/cancel: Begin returns an error for a cancelled context.
-//
-// Lists.Begin/cancel#generated: Begin returns an error for a cancelled
-// context.
-//
-// Lists.Begin/zero-on-error: Begin returns the zero value beside an error.
-//
-// Lists.Begin/zero-on-error#generated: Begin returns the zero value beside
-// an error.
-//
-// Lists.Commit/smoke: Commit returns without a panic for derived inputs.
-//
-// Lists.Commit/smoke#generated: Commit returns without a panic for derived
-// inputs.
-//
-// Lists.Commit/cancel: Commit returns an error for a cancelled context.
-//
-// Lists.Commit/cancel#generated: Commit returns an error for a cancelled
-// context.
-//
-// Lists.Rollback/smoke: Rollback returns without a panic for derived
-// inputs.
-//
-// Lists.Rollback/smoke#generated: Rollback returns without a panic for
-// derived inputs.
-//
-// Lists.Rollback/cancel: Rollback returns an error for a cancelled
-// context.
-//
-// Lists.Rollback/cancel#generated: Rollback returns an error for a
-// cancelled context.
-//
-// Lists.Append/smoke: Append returns without a panic for derived inputs.
-//
-// Lists.Append/smoke#generated: Append returns without a panic for derived
-// inputs.
-//
-// Lists.Append/cancel: Append returns an error for a cancelled context.
-//
-// Lists.Append/cancel#generated: Append returns an error for a cancelled
-// context.
-//
-// Lists.Append/serializable: every concurrent history of the transactions
-// of Lists has a serial order in which each read returns the same result.
-//
-// Lists.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Lists.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Lists.Get/cancel: Get returns an error for a cancelled context.
-//
-// Lists.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-
-// The derived checks of Lists that witness their laws at the shallow end:
-//
-// Lists.Begin/smoke
-//
-// Lists.Commit/smoke
-//
-// Lists.Rollback/smoke
-//
-// Lists.Append/smoke
-//
-// Lists.Get/smoke
-
-// The refused claims of Lists:
-//
-// Lists.Begin/tx: a parameter of the read of Begin selects neither a value
-// that commit takes nor a field of the written value. The remedy is to
-// align the name of the parameter of the read with a parameter or a field
-// of the write.
-
-// The unclaimed classifications of Lists:
-//
-// The shape:writer of Lists.Commit has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Lists.Rollback has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:multi-arg-writer of Lists.Append has the stance silent. A
-// write is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -146,34 +54,16 @@ func (c listsBegin) Smoke() conform.ID[Lists] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Begin returns
-// without a panic for derived inputs.
-func (c listsBegin) SmokeGenerated() conform.ID[Lists] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Begin returns an error for
 // a cancelled context.
 func (c listsBegin) Cancel() conform.ID[Lists] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Begin returns an
-// error for a cancelled context.
-func (c listsBegin) CancelGenerated() conform.ID[Lists] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Begin returns the
 // zero value beside an error.
 func (c listsBegin) ZeroOnError() conform.ID[Lists] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Begin
-// returns the zero value beside an error.
-func (c listsBegin) ZeroOnErrorGenerated() conform.ID[Lists] {
-	return c.Check("zero-on-error#generated")
 }
 
 // listsCommit is the name of Lists.Commit, with the identities of its
@@ -188,22 +78,10 @@ func (c listsCommit) Smoke() conform.ID[Lists] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Commit returns
-// without a panic for derived inputs.
-func (c listsCommit) SmokeGenerated() conform.ID[Lists] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Commit returns an error
 // for a cancelled context.
 func (c listsCommit) Cancel() conform.ID[Lists] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Commit returns an
-// error for a cancelled context.
-func (c listsCommit) CancelGenerated() conform.ID[Lists] {
-	return c.Check("cancel#generated")
 }
 
 // listsRollback is the name of Lists.Rollback, with the identities of its
@@ -218,22 +96,10 @@ func (c listsRollback) Smoke() conform.ID[Lists] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Rollback returns
-// without a panic for derived inputs.
-func (c listsRollback) SmokeGenerated() conform.ID[Lists] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Rollback returns an error
 // for a cancelled context.
 func (c listsRollback) Cancel() conform.ID[Lists] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Rollback returns
-// an error for a cancelled context.
-func (c listsRollback) CancelGenerated() conform.ID[Lists] {
-	return c.Check("cancel#generated")
 }
 
 // listsAppend is the name of Lists.Append, with the identities of its
@@ -248,22 +114,10 @@ func (c listsAppend) Smoke() conform.ID[Lists] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Append returns
-// without a panic for derived inputs.
-func (c listsAppend) SmokeGenerated() conform.ID[Lists] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c listsAppend) Cancel() conform.ID[Lists] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Append returns an
-// error for a cancelled context.
-func (c listsAppend) CancelGenerated() conform.ID[Lists] {
-	return c.Check("cancel#generated")
 }
 
 // Serializable returns the identity of the check that every concurrent
@@ -284,22 +138,10 @@ func (c listsGet) Smoke() conform.ID[Lists] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c listsGet) SmokeGenerated() conform.ID[Lists] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c listsGet) Cancel() conform.ID[Lists] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c listsGet) CancelGenerated() conform.ID[Lists] {
-	return c.Check("cancel#generated")
 }
 
 // ListsSuite returns the checks of Lists, and the calls and the budgets of
@@ -314,9 +156,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Begin.Smoke(),
 				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ListsHandle) {
@@ -328,12 +167,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsBeginPanics,
 			},
 			{
-				ID:          ListsChecks.Begin.SmokeGenerated(),
+				ID:          ListsChecks.Begin.Smoke().Generated(),
 				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnLabel := c.Draw(prop.Of[string](), "label")
@@ -348,9 +184,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Begin.Cancel(),
 				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ListsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -361,12 +194,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsBeginIgnoresCancel,
 			},
 			{
-				ID:          ListsChecks.Begin.CancelGenerated(),
+				ID:          ListsChecks.Begin.Cancel().Generated(),
 				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnLabel := c.Draw(prop.Of[string](), "label")
@@ -381,9 +211,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Begin.ZeroOnError(),
 				Statement:   "Begin returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ListsHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Tx, error) {
@@ -393,12 +220,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsBeginValueBeside,
 			},
 			{
-				ID:          ListsChecks.Begin.ZeroOnErrorGenerated(),
+				ID:          ListsChecks.Begin.ZeroOnError().Generated(),
 				Statement:   "Begin returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnLabel := c.Draw(prop.Of[string](), "label")
@@ -412,9 +236,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Commit.Smoke(),
 				Statement:   "Commit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ListsHandle) {
@@ -425,12 +246,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsCommitPanics,
 			},
 			{
-				ID:          ListsChecks.Commit.SmokeGenerated(),
+				ID:          ListsChecks.Commit.Smoke().Generated(),
 				Statement:   "Commit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[Tx](), "tx")
@@ -444,9 +262,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Commit.Cancel(),
 				Statement:   "Commit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ListsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -456,12 +271,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsCommitIgnoresCancel,
 			},
 			{
-				ID:          ListsChecks.Commit.CancelGenerated(),
+				ID:          ListsChecks.Commit.Cancel().Generated(),
 				Statement:   "Commit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[Tx](), "tx")
@@ -475,9 +287,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Rollback.Smoke(),
 				Statement:   "Rollback returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ListsHandle) {
@@ -488,12 +297,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsRollbackPanics,
 			},
 			{
-				ID:          ListsChecks.Rollback.SmokeGenerated(),
+				ID:          ListsChecks.Rollback.Smoke().Generated(),
 				Statement:   "Rollback returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[Tx](), "tx")
@@ -507,9 +313,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Rollback.Cancel(),
 				Statement:   "Rollback returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ListsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -519,12 +322,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsRollbackIgnoresCancel,
 			},
 			{
-				ID:          ListsChecks.Rollback.CancelGenerated(),
+				ID:          ListsChecks.Rollback.Cancel().Generated(),
 				Statement:   "Rollback returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[Tx](), "tx")
@@ -538,9 +338,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Append.Smoke(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ListsHandle) {
@@ -551,12 +348,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsAppendPanics,
 			},
 			{
-				ID:          ListsChecks.Append.SmokeGenerated(),
+				ID:          ListsChecks.Append.Smoke().Generated(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[Tx](), "tx")
@@ -572,9 +366,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ListsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -584,12 +375,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsAppendIgnoresCancel,
 			},
 			{
-				ID:          ListsChecks.Append.CancelGenerated(),
+				ID:          ListsChecks.Append.Cancel().Generated(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[Tx](), "tx")
@@ -605,9 +393,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Append.Serializable(),
 				Statement:   "every concurrent history of the transactions of Lists has a serial order in which each read returns the same result",
 				Claim:       spec.Serializable,
-				Probe:       spec.SerializableHistory,
-				Reason:      spec.NotSerializable,
-				Law:         spec.ConcurrentTransactionsAreSerializable,
 				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					probe.SerializableHistory(h, c, listsActions, 2)
@@ -618,9 +403,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ListsHandle) {
@@ -632,12 +414,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsGetPanics,
 			},
 			{
-				ID:          ListsChecks.Get.SmokeGenerated(),
+				ID:          ListsChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[Tx](), "tx")
@@ -653,9 +432,6 @@ func ListsSuite() conform.Suite[Lists] {
 				ID:          ListsChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ListsHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -666,12 +442,9 @@ func ListsSuite() conform.Suite[Lists] {
 				Defect: listsGetIgnoresCancel,
 			},
 			{
-				ID:          ListsChecks.Get.CancelGenerated(),
+				ID:          ListsChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ListsHandle, c *prop.Case) {
 					drawnTx := c.Draw(prop.Of[Tx](), "tx")
@@ -1384,43 +1157,6 @@ func listsGetCall(ctx context.Context, subject Lists, args []any) ([]any, error)
 	return []any{r0}, err
 }
 
-// The derived checks of Registers:
-//
-// Registers.Begin/smoke: Begin returns without a panic for derived inputs.
-//
-// Registers.Begin/cancel: Begin returns an error for a cancelled context.
-//
-// Registers.Begin/snapshot-isolation: every concurrent history of the
-// transactions of Registers has no anomaly that snapshot isolation
-// excludes.
-//
-// Registers.Latest/smoke: Latest returns without a panic for derived
-// inputs.
-//
-// Registers.Latest/cancel: Latest returns an error for a cancelled
-// context.
-
-// The derived checks of Registers that witness their laws at the shallow
-// end:
-//
-// Registers.Begin/smoke
-//
-// Registers.Latest/smoke
-
-// The refused claims of Registers:
-//
-// Registers.Begin/zero-on-error: eidos derives no sample of a result of
-// Begin. The remedy is to author a sample of the result type with the
-// directive sample.
-//
-// Registers.Begin/tx: eidos derives no sample of a result of Begin. The
-// remedy is to author a sample of the result type with the directive
-// sample.
-//
-// Registers.Latest/zero-on-error: eidos derives no sample of a result of
-// Latest. The remedy is to author a sample of the result type with the
-// directive sample.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1496,9 +1232,6 @@ func RegistersSuite() conform.Suite[Registers] {
 				ID:          RegistersChecks.Begin.Smoke(),
 				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *RegistersHandle) {
@@ -1513,9 +1246,6 @@ func RegistersSuite() conform.Suite[Registers] {
 				ID:          RegistersChecks.Begin.Cancel(),
 				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *RegistersHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1529,9 +1259,6 @@ func RegistersSuite() conform.Suite[Registers] {
 				ID:          RegistersChecks.Begin.SnapshotIsolation(),
 				Statement:   "every concurrent history of the transactions of Registers has no anomaly that snapshot isolation excludes",
 				Claim:       spec.SnapshotIsolation,
-				Probe:       spec.SnapshotHistory,
-				Reason:      spec.NotSnapshotIsolated,
-				Law:         spec.ConcurrentTransactionsAreSnapshotIsolated,
 				Machineries: []spec.MachineryID{spec.ConcurrentCallers, spec.GeneratedSequences},
 				Property: func(h *RegistersHandle, c *prop.Case) {
 					probe.SnapshotHistory(h, c, registersActions, 2)
@@ -1542,9 +1269,6 @@ func RegistersSuite() conform.Suite[Registers] {
 				ID:          RegistersChecks.Latest.Smoke(),
 				Statement:   "Latest returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *RegistersHandle) {
@@ -1559,9 +1283,6 @@ func RegistersSuite() conform.Suite[Registers] {
 				ID:          RegistersChecks.Latest.Cancel(),
 				Statement:   "Latest returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *RegistersHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2049,44 +1770,6 @@ func txnRollbackCall(ctx context.Context, subject Txn, args []any) ([]any, error
 	return nil, subject.Rollback(ctx)
 }
 
-// The derived checks of Latch:
-//
-// Latch.Begin/smoke: Begin returns without a panic for derived inputs.
-//
-// Latch.Commit/smoke: Commit returns without a panic for derived inputs.
-//
-// Latch.Commit/cancel: Commit returns an error for a cancelled context.
-//
-// Latch.Rollback/smoke: Rollback returns without a panic for derived
-// inputs.
-//
-// Latch.Rollback/cancel: Rollback returns an error for a cancelled
-// context.
-
-// The derived checks of Latch that witness their laws at the shallow end:
-//
-// Latch.Begin/smoke
-//
-// Latch.Commit/smoke
-//
-// Latch.Rollback/smoke
-
-// The refused claims of Latch:
-//
-// Latch.Begin/cancel: Begin cannot fail. The remedy is to give Begin an
-// error result.
-//
-// Latch.Begin/tx: Begin does not return exactly one value. The remedy is
-// to return one value from Begin.
-
-// The unclaimed classifications of Latch:
-//
-// The shape:lifecycle of Latch.Commit has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The shape:lifecycle of Latch.Rollback has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2169,9 +1852,6 @@ func LatchSuite() conform.Suite[Latch] {
 				ID:          LatchChecks.Begin.Smoke(),
 				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LatchHandle) {
@@ -2186,9 +1866,6 @@ func LatchSuite() conform.Suite[Latch] {
 				ID:          LatchChecks.Commit.Smoke(),
 				Statement:   "Commit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LatchHandle) {
@@ -2202,9 +1879,6 @@ func LatchSuite() conform.Suite[Latch] {
 				ID:          LatchChecks.Commit.Cancel(),
 				Statement:   "Commit returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LatchHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2217,9 +1891,6 @@ func LatchSuite() conform.Suite[Latch] {
 				ID:          LatchChecks.Rollback.Smoke(),
 				Statement:   "Rollback returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LatchHandle) {
@@ -2233,9 +1904,6 @@ func LatchSuite() conform.Suite[Latch] {
 				ID:          LatchChecks.Rollback.Cancel(),
 				Statement:   "Rollback returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LatchHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2507,42 +2175,6 @@ func latchRollbackIgnoresCancel(h *LatchHandle) Latch {
 	return &latchRollbackIgnoresCancelDefect{latchOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Driver:
-//
-// Driver.Begin/smoke: Begin returns without a panic for derived inputs.
-//
-// Driver.Begin/cancel: Begin returns an error for a cancelled context.
-
-// The derived checks of Driver that witness their laws at the shallow end:
-//
-// Driver.Begin/smoke
-
-// The refused claims of Driver:
-//
-// Driver.Begin/zero-on-error: eidos derives no sample of a result of
-// Begin. The remedy is to author a sample of the result type with the
-// directive sample.
-//
-// Driver.Begin/tx: eidos derives no sample of a result of Begin. The
-// remedy is to author a sample of the result type with the directive
-// sample.
-//
-// Driver.Commit/cancel: eidos derives no sample of the parameter tx of
-// Commit. The remedy is to author a sample of the parameter tx with the
-// directive sample.
-//
-// Driver.Rollback/cancel: eidos derives no sample of the parameter tx of
-// Rollback. The remedy is to author a sample of the parameter tx with the
-// directive sample.
-
-// The unclaimed classifications of Driver:
-//
-// The shape:writer of Driver.Commit has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Driver.Rollback has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2607,9 +2239,6 @@ func DriverSuite() conform.Suite[Driver] {
 				ID:          DriverChecks.Begin.Smoke(),
 				Statement:   "Begin returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DriverHandle) {
@@ -2624,9 +2253,6 @@ func DriverSuite() conform.Suite[Driver] {
 				ID:          DriverChecks.Begin.Cancel(),
 				Statement:   "Begin returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *DriverHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {

@@ -43,50 +43,7 @@ func TestCacheSuite(t *testing.T) {
 				},
 				Defect: func(*faults.CacheHandle) faults.Cache { return &cacheSubject{} },
 			}),
-			conform.Excuse(
-				faults.CacheChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Len.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Len.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.ServesTheStoredValue(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Cache]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -108,50 +65,7 @@ func TestCacheSuite(t *testing.T) {
 				},
 				Defect: func(*faults.CacheHandle) faults.Cache { return &cacheSubject{} },
 			}),
-			conform.Excuse(
-				faults.CacheChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Len.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Len.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CacheChecks.Get.ServesTheStoredValue(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Cache]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -166,10 +80,14 @@ func TestCacheSuite(t *testing.T) {
 	})
 }
 
+// cacheSuite is the suite of Cache that the tests of the planted defect of
+// a ceiling apply.
+var cacheSuite = faults.CacheSuite()
+
 // cacheIdle returns the planted defect of a ceiling of Cache with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func cacheIdle(h *faults.CacheHandle) faults.Cache {
-	return faults.CacheSuite().Calls[0].Over(h, func() {})
+	return cacheSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCacheSuiteBudgets applies the allocation ceilings of the suite of
@@ -182,49 +100,8 @@ func TestCacheSuiteBudgets(t *testing.T) {
 		cacheIdle,
 		conform.Ceilings(faults.CacheChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(faults.CacheChecks.Len.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			faults.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Len.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ServesTheStoredValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Cache](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -236,49 +113,8 @@ func FuzzCacheSuiteGet(f *testing.F) {
 		f,
 		faults.CacheChecks.Get.Callable,
 		cacheIdle,
-		conform.Excuse(
-			faults.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Len.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ServesTheStoredValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Cache](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -290,49 +126,8 @@ func FuzzCacheSuiteLen(f *testing.F) {
 		f,
 		faults.CacheChecks.Len.Callable,
 		cacheIdle,
-		conform.Excuse(
-			faults.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Len.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Len.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CacheChecks.Get.ServesTheStoredValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Cache](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -383,74 +178,7 @@ func TestWriterSuite(t *testing.T) {
 				},
 				Defect: func(*faults.WriterHandle) faults.Writer { return &writerSubject{} },
 			}),
-			conform.Excuse(
-				faults.WriterChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.NoPartialWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.NoPartialWriteGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.NoTraceOfAFailedCall(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Writer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -472,82 +200,20 @@ func TestWriterSuite(t *testing.T) {
 				},
 				Defect: func(*faults.WriterHandle) faults.Writer { return &writerSubject{} },
 			}),
-			conform.Excuse(
-				faults.WriterChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.NoPartialWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.NoPartialWriteGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Put.NoTraceOfAFailedCall(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.WriterChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Writer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// writerSuite is the suite of Writer that the tests of the planted defect
+// of a ceiling apply.
+var writerSuite = faults.WriterSuite()
+
 // writerIdle returns the planted defect of a ceiling of Writer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func writerIdle(h *faults.WriterHandle) faults.Writer {
-	return faults.WriterSuite().Calls[0].Over(h, func() {})
+	return writerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestWriterSuiteBudgets applies the allocation ceilings of the suite of
@@ -560,73 +226,8 @@ func TestWriterSuiteBudgets(t *testing.T) {
 		writerIdle,
 		conform.Ceilings(faults.WriterChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(faults.WriterChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			faults.WriterChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoPartialWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoPartialWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoTraceOfAFailedCall(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Writer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -638,73 +239,8 @@ func FuzzWriterSuitePut(f *testing.F) {
 		f,
 		faults.WriterChecks.Put.Callable,
 		writerIdle,
-		conform.Excuse(
-			faults.WriterChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoPartialWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoPartialWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoTraceOfAFailedCall(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Writer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -716,73 +252,8 @@ func FuzzWriterSuiteGet(f *testing.F) {
 		f,
 		faults.WriterChecks.Get.Callable,
 		writerIdle,
-		conform.Excuse(
-			faults.WriterChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoPartialWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoPartialWriteGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Put.NoTraceOfAFailedCall(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.WriterChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Writer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -833,26 +304,7 @@ func TestSyncerSuite(t *testing.T) {
 				},
 				Defect: func(*faults.SyncerHandle) faults.Syncer { return &syncerSubject{} },
 			}),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.RetrySucceeds(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.RetrySucceedsUnderFaults(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Syncer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -874,34 +326,20 @@ func TestSyncerSuite(t *testing.T) {
 				},
 				Defect: func(*faults.SyncerHandle) faults.Syncer { return &syncerSubject{} },
 			}),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.RetrySucceeds(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.SyncerChecks.Sync.RetrySucceedsUnderFaults(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Syncer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// syncerSuite is the suite of Syncer that the tests of the planted defect
+// of a ceiling apply.
+var syncerSuite = faults.SyncerSuite()
+
 // syncerIdle returns the planted defect of a ceiling of Syncer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func syncerIdle(h *faults.SyncerHandle) faults.Syncer {
-	return faults.SyncerSuite().Calls[0].Over(h, func() {})
+	return syncerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestSyncerSuiteBudgets applies the allocation ceilings of the suite of
@@ -913,25 +351,8 @@ func TestSyncerSuiteBudgets(t *testing.T) {
 		t,
 		syncerIdle,
 		conform.Ceilings(faults.SyncerChecks.Sync.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.RetrySucceeds(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.RetrySucceedsUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Syncer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -943,25 +364,8 @@ func FuzzSyncerSuiteSync(f *testing.F) {
 		f,
 		faults.SyncerChecks.Sync.Callable,
 		syncerIdle,
-		conform.Excuse(
-			faults.SyncerChecks.Sync.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.RetrySucceeds(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.SyncerChecks.Sync.RetrySucceedsUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Syncer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1009,102 +413,7 @@ func TestAccountSuite(t *testing.T) {
 				},
 				Defect: func(*faults.AccountHandle) faults.Account { return &accountSubject{} },
 			}),
-			conform.Excuse(
-				faults.AccountChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.Transaction(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.TransactionGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.TransactionUnderFaults(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.TransactionUnderFaultsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Account]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -1126,110 +435,20 @@ func TestAccountSuite(t *testing.T) {
 				},
 				Defect: func(*faults.AccountHandle) faults.Account { return &accountSubject{} },
 			}),
-			conform.Excuse(
-				faults.AccountChecks.Run.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.Transaction(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.TransactionGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.TransactionUnderFaults(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Run.TransactionUnderFaultsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Put.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.AccountChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Account]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// accountSuite is the suite of Account that the tests of the planted
+// defect of a ceiling apply.
+var accountSuite = faults.AccountSuite()
+
 // accountIdle returns the planted defect of a ceiling of Account with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func accountIdle(h *faults.AccountHandle) faults.Account {
-	return faults.AccountSuite().Calls[0].Over(h, func() {})
+	return accountSuite.Calls[0].Over(h, func() {})
 }
 
 // TestAccountSuiteBudgets applies the allocation ceilings of the suite of
@@ -1243,101 +462,8 @@ func TestAccountSuiteBudgets(t *testing.T) {
 		conform.Ceilings(faults.AccountChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(faults.AccountChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(faults.AccountChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			faults.AccountChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.Transaction(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Account](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1349,101 +475,8 @@ func FuzzAccountSuiteRun(f *testing.F) {
 		f,
 		faults.AccountChecks.Run.Callable,
 		accountIdle,
-		conform.Excuse(
-			faults.AccountChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.Transaction(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Account](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1455,101 +488,8 @@ func FuzzAccountSuitePut(f *testing.F) {
 		f,
 		faults.AccountChecks.Put.Callable,
 		accountIdle,
-		conform.Excuse(
-			faults.AccountChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.Transaction(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Account](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1561,101 +501,8 @@ func FuzzAccountSuiteGet(f *testing.F) {
 		f,
 		faults.AccountChecks.Get.Callable,
 		accountIdle,
-		conform.Excuse(
-			faults.AccountChecks.Run.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.Transaction(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionUnderFaults(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Run.TransactionUnderFaultsGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Put.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.AccountChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Account](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1709,22 +556,7 @@ func TestBreakerSuite(t *testing.T) {
 				},
 				Defect: func(*faults.BreakerHandle) faults.Breaker { return &breakerSubject{} },
 			}),
-			conform.Excuse(
-				faults.BreakerChecks.Do.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BreakerChecks.Do.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BreakerChecks.Do.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BreakerChecks.Do.FailsFast(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Breaker]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -1746,30 +578,20 @@ func TestBreakerSuite(t *testing.T) {
 				},
 				Defect: func(*faults.BreakerHandle) faults.Breaker { return &breakerSubject{} },
 			}),
-			conform.Excuse(
-				faults.BreakerChecks.Do.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BreakerChecks.Do.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BreakerChecks.Do.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BreakerChecks.Do.FailsFast(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Breaker]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// breakerSuite is the suite of Breaker that the tests of the planted
+// defect of a ceiling apply.
+var breakerSuite = faults.BreakerSuite()
+
 // breakerIdle returns the planted defect of a ceiling of Breaker with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func breakerIdle(h *faults.BreakerHandle) faults.Breaker {
-	return faults.BreakerSuite().Calls[0].Over(h, func() {})
+	return breakerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestBreakerSuiteBudgets applies the allocation ceilings of the suite of
@@ -1781,21 +603,8 @@ func TestBreakerSuiteBudgets(t *testing.T) {
 		t,
 		breakerIdle,
 		conform.Ceilings(faults.BreakerChecks.Do.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			faults.BreakerChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BreakerChecks.Do.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BreakerChecks.Do.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BreakerChecks.Do.FailsFast(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Breaker](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1807,21 +616,8 @@ func FuzzBreakerSuiteDo(f *testing.F) {
 		f,
 		faults.BreakerChecks.Do.Callable,
 		breakerIdle,
-		conform.Excuse(
-			faults.BreakerChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BreakerChecks.Do.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BreakerChecks.Do.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BreakerChecks.Do.FailsFast(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Breaker](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1870,38 +666,7 @@ func TestBalancerSuite(t *testing.T) {
 				},
 				Defect: func(*faults.BalancerHandle) faults.Balancer { return &balancerSubject{} },
 			}),
-			conform.Excuse(
-				faults.BalancerChecks.Route.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.KeepsItsInstance(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.KeepsItsInstanceGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Balancer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -1923,46 +688,20 @@ func TestBalancerSuite(t *testing.T) {
 				},
 				Defect: func(*faults.BalancerHandle) faults.Balancer { return &balancerSubject{} },
 			}),
-			conform.Excuse(
-				faults.BalancerChecks.Route.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.KeepsItsInstance(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.BalancerChecks.Route.KeepsItsInstanceGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Balancer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// balancerSuite is the suite of Balancer that the tests of the planted
+// defect of a ceiling apply.
+var balancerSuite = faults.BalancerSuite()
+
 // balancerIdle returns the planted defect of a ceiling of Balancer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func balancerIdle(h *faults.BalancerHandle) faults.Balancer {
-	return faults.BalancerSuite().Calls[0].Over(h, func() {})
+	return balancerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestBalancerSuiteBudgets applies the allocation ceilings of the suite of
@@ -1977,37 +716,8 @@ func TestBalancerSuiteBudgets(t *testing.T) {
 			faults.BalancerChecks.Route.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.KeepsItsInstance(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.KeepsItsInstanceGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Balancer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2019,37 +729,8 @@ func FuzzBalancerSuiteRoute(f *testing.F) {
 		f,
 		faults.BalancerChecks.Route.Callable,
 		balancerIdle,
-		conform.Excuse(
-			faults.BalancerChecks.Route.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.KeepsItsInstance(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.BalancerChecks.Route.KeepsItsInstanceGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Balancer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2097,62 +778,7 @@ func TestCopierSuite(t *testing.T) {
 				},
 				Defect: func(*faults.CopierHandle) faults.Copier { return &copierSubject{} },
 			}),
-			conform.Excuse(
-				faults.CopierChecks.Copy.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.ReleasesOnEveryPath(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Open.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Open.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Open.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Close.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Copier]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -2174,70 +800,20 @@ func TestCopierSuite(t *testing.T) {
 				},
 				Defect: func(*faults.CopierHandle) faults.Copier { return &copierSubject{} },
 			}),
-			conform.Excuse(
-				faults.CopierChecks.Copy.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.ReleasesOnEveryPath(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Open.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Open.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Open.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Close.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Close.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.CopierChecks.Close.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Copier]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// copierSuite is the suite of Copier that the tests of the planted defect
+// of a ceiling apply.
+var copierSuite = faults.CopierSuite()
+
 // copierIdle returns the planted defect of a ceiling of Copier with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func copierIdle(h *faults.CopierHandle) faults.Copier {
-	return faults.CopierSuite().Calls[0].Over(h, func() {})
+	return copierSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCopierSuiteBudgets applies the allocation ceilings of the suite of
@@ -2254,61 +830,8 @@ func TestCopierSuiteBudgets(t *testing.T) {
 			faults.CopierChecks.Close.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.ReleasesOnEveryPath(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Copier](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2320,61 +843,8 @@ func FuzzCopierSuiteCopy(f *testing.F) {
 		f,
 		faults.CopierChecks.Copy.Callable,
 		copierIdle,
-		conform.Excuse(
-			faults.CopierChecks.Copy.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.ReleasesOnEveryPath(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Copier](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2386,61 +856,8 @@ func FuzzCopierSuiteOpen(f *testing.F) {
 		f,
 		faults.CopierChecks.Open.Callable,
 		copierIdle,
-		conform.Excuse(
-			faults.CopierChecks.Copy.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.ReleasesOnEveryPath(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Copier](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2452,61 +869,8 @@ func FuzzCopierSuiteClose(f *testing.F) {
 		f,
 		faults.CopierChecks.Close.Callable,
 		copierIdle,
-		conform.Excuse(
-			faults.CopierChecks.Copy.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.ReleasesOnEveryPath(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Open.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.CopierChecks.Close.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Copier](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2567,44 +931,7 @@ func TestUndeclaredSuite(t *testing.T) {
 				},
 				Defect: func(*faults.UndeclaredHandle) faults.Undeclared { return &undeclaredSubject{} },
 			}),
-			conform.Excuse(
-				faults.UndeclaredChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.ZeroOnErrorGenerated(),
+			conform.ExcuseSuite[faults.Undeclared](
 				"the test applies the check of its option alone",
 			),
 		)
@@ -2634,54 +961,22 @@ func TestUndeclaredSuite(t *testing.T) {
 				},
 				Defect: func(*faults.UndeclaredHandle) faults.Undeclared { return &undeclaredSubject{} },
 			}),
-			conform.Excuse(
-				faults.UndeclaredChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.UndeclaredChecks.Get.ZeroOnErrorGenerated(),
+			conform.ExcuseSuite[faults.Undeclared](
 				"the test applies the check of its option alone",
 			),
 		)
 	})
 }
 
+// undeclaredSuite is the suite of Undeclared that the tests of the planted
+// defect of a ceiling apply.
+var undeclaredSuite = faults.UndeclaredSuite()
+
 // undeclaredIdle returns the planted defect of a ceiling of Undeclared
-// with a spend of nothing, a subject that answers each call at once.
+// with a spend of nothing. Each call of the defect returns its zero
+// results at once.
 func undeclaredIdle(h *faults.UndeclaredHandle) faults.Undeclared {
-	return faults.UndeclaredSuite().Calls[0].Over(h, func() {})
+	return undeclaredSuite.Calls[0].Over(h, func() {})
 }
 
 // TestUndeclaredSuiteBudgets applies the allocation ceilings of the suite
@@ -2700,45 +995,8 @@ func TestUndeclaredSuiteBudgets(t *testing.T) {
 			faults.UndeclaredChecks.Get.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Undeclared](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2750,45 +1008,8 @@ func FuzzUndeclaredSuitePut(f *testing.F) {
 		f,
 		faults.UndeclaredChecks.Put.Callable,
 		undeclaredIdle,
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Undeclared](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2800,45 +1021,8 @@ func FuzzUndeclaredSuiteGet(f *testing.F) {
 		f,
 		faults.UndeclaredChecks.Get.Callable,
 		undeclaredIdle,
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.UndeclaredChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Undeclared](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2889,38 +1073,7 @@ func TestGravitySuite(t *testing.T) {
 				},
 				Defect: func(*faults.GravityHandle) faults.Gravity { return &gravitySubject{} },
 			}),
-			conform.Excuse(
-				faults.GravityChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Gravity]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -2942,46 +1095,20 @@ func TestGravitySuite(t *testing.T) {
 				},
 				Defect: func(*faults.GravityHandle) faults.Gravity { return &gravitySubject{} },
 			}),
-			conform.Excuse(
-				faults.GravityChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.GravityChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.Gravity]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// gravitySuite is the suite of Gravity that the tests of the planted
+// defect of a ceiling apply.
+var gravitySuite = faults.GravitySuite()
+
 // gravityIdle returns the planted defect of a ceiling of Gravity with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func gravityIdle(h *faults.GravityHandle) faults.Gravity {
-	return faults.GravitySuite().Calls[0].Over(h, func() {})
+	return gravitySuite.Calls[0].Over(h, func() {})
 }
 
 // TestGravitySuiteBudgets applies the allocation ceilings of the suite of
@@ -2993,37 +1120,8 @@ func TestGravitySuiteBudgets(t *testing.T) {
 		t,
 		gravityIdle,
 		conform.Ceilings(faults.GravityChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			faults.GravityChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Gravity](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3035,37 +1133,8 @@ func FuzzGravitySuiteGet(f *testing.F) {
 		f,
 		faults.GravityChecks.Get.Callable,
 		gravityIdle,
-		conform.Excuse(
-			faults.GravityChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.GravityChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.Gravity](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3119,36 +1188,7 @@ func TestMirrorSuite(t *testing.T) {
 				},
 				Defect: func(*faults.MirrorHandle) faults.MirrorMethods { return &mirrorSubject{} },
 			}),
-			conform.Excuse(
-				faults.MirrorChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.ZeroOnErrorGenerated(),
+			conform.ExcuseSuite[faults.MirrorMethods](
 				"the test applies the check of its option alone",
 			),
 		)
@@ -3178,46 +1218,22 @@ func TestMirrorSuite(t *testing.T) {
 				},
 				Defect: func(*faults.MirrorHandle) faults.MirrorMethods { return &mirrorSubject{} },
 			}),
-			conform.Excuse(
-				faults.MirrorChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.MirrorChecks.Get.ZeroOnErrorGenerated(),
+			conform.ExcuseSuite[faults.MirrorMethods](
 				"the test applies the check of its option alone",
 			),
 		)
 	})
 }
 
+// mirrorSuite is the suite of Mirror that the tests of the planted defect
+// of a ceiling apply.
+var mirrorSuite = faults.MirrorSuite()
+
 // mirrorIdle returns the planted defect of a ceiling of Mirror with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func mirrorIdle(h *faults.MirrorHandle) faults.MirrorMethods {
-	return faults.MirrorSuite().Calls[0].Over(h, func() {})
+	return mirrorSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMirrorSuiteBudgets applies the allocation ceilings of the suite of
@@ -3229,37 +1245,8 @@ func TestMirrorSuiteBudgets(t *testing.T) {
 		t,
 		mirrorIdle,
 		conform.Ceilings(faults.MirrorChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			faults.MirrorChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.MirrorMethods](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3271,37 +1258,8 @@ func FuzzMirrorSuiteGet(f *testing.F) {
 		f,
 		faults.MirrorChecks.Get.Callable,
 		mirrorIdle,
-		conform.Excuse(
-			faults.MirrorChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.FailureIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.FailureIsReportedGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			faults.MirrorChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[faults.MirrorMethods](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3342,54 +1300,7 @@ func TestFetchSuite(t *testing.T) {
 				},
 				Defect: func(*faults.FetchHandle) faults.FetchFunc { return nil },
 			}),
-			conform.Excuse(
-				faults.FetchChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.RetrySucceeds(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.RetrySucceedsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.RetrySucceedsUnderFaults(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.RetrySucceedsUnderFaultsGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.FetchFunc]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -3408,54 +1319,7 @@ func TestFetchSuite(t *testing.T) {
 				},
 				Defect: func(*faults.FetchHandle) faults.FetchFunc { return nil },
 			}),
-			conform.Excuse(
-				faults.FetchChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.RetrySucceeds(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.RetrySucceedsGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.RetrySucceedsUnderFaults(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.FetchChecks.RetrySucceedsUnderFaultsGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.FetchFunc]("the test applies the check of its option alone"),
 		)
 	})
 }
@@ -3498,38 +1362,7 @@ func TestPickSuite(t *testing.T) {
 				},
 				Defect: func(*faults.PickHandle) faults.PickFunc { return nil },
 			}),
-			conform.Excuse(
-				faults.PickChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.KeepsItsInstance(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.KeepsItsInstanceGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.PickFunc]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -3548,38 +1381,7 @@ func TestPickSuite(t *testing.T) {
 				},
 				Defect: func(*faults.PickHandle) faults.PickFunc { return nil },
 			}),
-			conform.Excuse(
-				faults.PickChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.KeepsItsInstance(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.PickChecks.KeepsItsInstanceGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.PickFunc]("the test applies the check of its option alone"),
 		)
 	})
 }
@@ -3622,46 +1424,7 @@ func TestLoadSuite(t *testing.T) {
 				},
 				Defect: func(*faults.LoadHandle) faults.LoadFunc { return nil },
 			}),
-			conform.Excuse(
-				faults.LoadChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.ReleasesOnEveryPath(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.ReleasesOnEveryPathGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.LoadFunc]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -3680,46 +1443,7 @@ func TestLoadSuite(t *testing.T) {
 				},
 				Defect: func(*faults.LoadHandle) faults.LoadFunc { return nil },
 			}),
-			conform.Excuse(
-				faults.LoadChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.FailureIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.FailureIsReportedGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.ReleasesOnEveryPath(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				faults.LoadChecks.ReleasesOnEveryPathGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[faults.LoadFunc]("the test applies the check of its option alone"),
 		)
 	})
 }

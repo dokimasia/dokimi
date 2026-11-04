@@ -307,6 +307,10 @@ type Suite struct {
 	Errors      bool
 }
 
+// HasChecks reports that the suite has a check: a derived check or a check of
+// a consumer.
+func (s *Suite) HasChecks() bool { return len(s.Derived)+len(s.Checks) > 0 }
+
 // Names are the names of the declarations of the suite of a declaration such
 // as Store: the variable of the names of its callables StoreChecks, the
 // function of its checks StoreSuite, the two forms RunStoreSuite and
@@ -412,8 +416,10 @@ type Door struct {
 // test applies. Subject is the name of the subject of a conformance test, and
 // empty for the test of a suite. Excusals are the excusals of the subject in
 // the order of their directives. The test of a suite applies a check of its
-// own to the forms of the application, so its excusals are the checks of the
-// suite. Function reports that the declaration is a function, whose form Run
+// own to the forms of the application, so it excuses every check of the suite
+// through conform.ExcuseSuite. Excused reports that the suite of such a test
+// has a check, and that the test excuses it. Function reports that the
+// declaration is a function, whose form Run
 // takes the subject itself. Builds and Receives are the segments of the
 // checks that the test of a suite adds. The check of the form Run of the
 // suite of a function has the segment Receives, and each other check has
@@ -493,6 +499,7 @@ type Conformance struct {
 	Levels      []Level
 	Identities  []Identity
 	Cases       int64
+	Excused     bool
 	Function    bool
 	FromHandle  bool
 	Isolate     bool
@@ -503,10 +510,13 @@ type Conformance struct {
 // Field is the field of its callable in the names of the callables, as Get,
 // and empty for a function. Method is the method that returns the identity,
 // as KeepsTheItem or AllocationBudget, and ID is the identity, as
-// Store.Get/keeps-the-item.
+// Store.Get/keeps-the-item. Base is the method of the identity of the sample
+// binding of a generated binding, whose method Generated returns the identity,
+// and empty for any other check.
 type Identity struct {
 	Field  string
 	Method string
+	Base   string
 	ID     string
 }
 
@@ -536,11 +546,14 @@ type Target struct {
 // Excusal is one excusal of a check in the conformance test of a subject.
 // Field is the field of the callable of the check in the names of the
 // callables, as Get, and Method the method that returns the identity of the
-// check, as KeepsTheItem or LatencyBudget. Reason is the reason why the
-// subject does not pass the check.
+// check, as KeepsTheItem or LatencyBudget. Base is the method of the identity
+// of the sample binding of an excused generated binding, whose method
+// Generated returns the identity, and empty for any other check. Reason is
+// the reason why the subject does not pass the check.
 type Excusal struct {
 	Field  string
 	Method string
+	Base   string
 	Reason string
 }
 
@@ -1347,10 +1360,12 @@ func (g *generator) excusalsOf(
 		b := &bindings[i]
 		checks = append(checks, excusable{callable: b.callable, segment: b.segment, method: b.fn.Name})
 	}
-	for _, c := range g.derivationOf(m, e, declared, callables).Checks {
+	derived := g.derivationOf(m, e, declared, callables).Checks
+	base := bases(derived)
+	for _, c := range derived {
 		callable, segment, _ := strings.Cut(c.Identity, "/")
 		checks = append(checks, excusable{
-			callable: callable, segment: segment, method: naming.Pascal(strings.ReplaceAll(segment, "#", "-")),
+			callable: callable, segment: segment, method: methodOf(c.Identity), base: base[c.Identity],
 		})
 	}
 	for _, c := range callables {
@@ -1371,7 +1386,9 @@ func (g *generator) excusalsOf(
 		}
 		if at := slices.IndexFunc(checks, func(c excusable) bool { return c.identity() == identity }); at >= 0 {
 			_, field, _ := strings.Cut(callable, ".")
-			out = append(out, Excusal{Field: field, Method: checks[at].method, Reason: x.Params[ReasonParam].Str})
+			out = append(out, Excusal{
+				Field: field, Method: checks[at].method, Base: checks[at].base, Reason: x.Params[ReasonParam].Str,
+			})
 			continue
 		}
 		var ids []string
@@ -1419,11 +1436,13 @@ func (g *generator) derivationOf(
 }
 
 // excusable is a check that a subject can excuse: a check of a consumer, a
-// derived check, or the check of a ceiling of a budget. callable is its callable, as Store.Get,
-// segment the last part of its identity, and method the method of the names
-// of the callables that returns its identity.
+// derived check, or the check of a ceiling of a budget. callable is its
+// callable, as Store.Get, segment the last part of its identity, and method
+// the method of the names of the callables that returns its identity. base is
+// the method of the identity of the sample binding of a generated binding, and
+// empty for any other check.
 type excusable struct {
-	callable, segment, method string
+	callable, segment, method, base string
 }
 
 // identity returns the identity of the check, as Store.Get/keeps-the-item.
@@ -1667,18 +1686,9 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		&emit.Field{Name: subjectWord, Type: subject},
 		&emit.Field{Name: checksWord, Type: emitted(n.Checks)},
 	)
-	excused := make([]Excusal, 0, len(s.Derived)+len(s.Checks))
-	for i := range s.Derived {
-		d := &s.Derived[i]
-		excused = append(excused, Excusal{Field: d.Field, Method: d.Method, Reason: aloneReason})
-	}
-	for i := range s.Checks {
-		c := &s.Checks[i]
-		excused = append(excused, Excusal{Field: c.Field, Method: c.Method, Reason: aloneReason})
-	}
 	test := Conformance{
 		Test: e.JoinName(n.Suite, testWord), Declaration: s.Declaration, Builds: buildsSegment,
-		Receives: receivesSegment, Excusals: excused, Function: s.Func != nil,
+		Receives: receivesSegment, Excused: s.HasChecks(), Function: s.Func != nil,
 	}
 	allocated := slices.ContainsFunc(s.Calls, func(c Call) bool { return c.Budget.Allocs != nil }) ||
 		slices.ContainsFunc(s.Checks, func(c Check) bool { return c.Counted })
@@ -1774,10 +1784,6 @@ func (c *Conformance) benchmarks(e *sdk.Emitter, name string, allocated, concurr
 		c.Parallel = e.JoinName(parallelWord, c.Benchmark)
 	}
 }
-
-// aloneReason is the reason of each excusal of the test of a suite, which
-// applies a check of its own alone to the forms of the application.
-const aloneReason = "the test applies the check of its option alone"
 
 // buildsSegment and receivesSegment are the segments of the checks that the
 // test of a suite adds to the forms of its application, as the record of the

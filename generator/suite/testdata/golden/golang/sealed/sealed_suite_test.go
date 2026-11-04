@@ -43,34 +43,7 @@ func TestAEADSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.AEADHandle) sealed.AEAD { return &aeadSubject{} },
 			}),
-			conform.Excuse(
-				sealed.AEADChecks.Seal.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.Seal.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.Open.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.NonceSize.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.NonceSize.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.Overhead.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.Overhead.Deterministic(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.AEAD]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -92,42 +65,19 @@ func TestAEADSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.AEADHandle) sealed.AEAD { return &aeadSubject{} },
 			}),
-			conform.Excuse(
-				sealed.AEADChecks.Seal.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.Seal.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.Open.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.NonceSize.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.NonceSize.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.Overhead.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.AEADChecks.Overhead.Deterministic(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.AEAD]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// aeadSuite is the suite of AEAD that the tests of the planted defect of a
+// ceiling apply.
+var aeadSuite = sealed.AEADSuite()
+
 // aeadIdle returns the planted defect of a ceiling of AEAD with a spend of
-// nothing, a subject that answers each call at once.
+// nothing. Each call of the defect returns its zero results at once.
 func aeadIdle(h *sealed.AEADHandle) sealed.AEAD {
-	return sealed.AEADSuite().Calls[0].Over(h, func() {})
+	return aeadSuite.Calls[0].Over(h, func() {})
 }
 
 // TestAEADSuiteBudgets applies the allocation ceilings of the suite of
@@ -146,33 +96,8 @@ func TestAEADSuiteBudgets(t *testing.T) {
 			sealed.AEADChecks.Overhead.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.AEAD](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -184,33 +109,8 @@ func FuzzAEADSuiteSeal(f *testing.F) {
 		f,
 		sealed.AEADChecks.Seal.Callable,
 		aeadIdle,
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.AEAD](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -222,33 +122,8 @@ func FuzzAEADSuiteOpen(f *testing.F) {
 		f,
 		sealed.AEADChecks.Open.Callable,
 		aeadIdle,
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.AEAD](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -260,33 +135,8 @@ func FuzzAEADSuiteNonceSize(f *testing.F) {
 		f,
 		sealed.AEADChecks.NonceSize.Callable,
 		aeadIdle,
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.AEAD](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -298,33 +148,8 @@ func FuzzAEADSuiteOverhead(f *testing.F) {
 		f,
 		sealed.AEADChecks.Overhead.Callable,
 		aeadIdle,
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Seal.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Open.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.NonceSize.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.AEADChecks.Overhead.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.AEAD](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -388,30 +213,7 @@ func TestMetronomeSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.MetronomeHandle) sealed.Metronome { return &metronomeSubject{} },
 			}),
-			conform.Excuse(
-				sealed.MetronomeChecks.Tick.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Tick.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Tick.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Pace.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Pace.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Pace.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Metronome]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -439,38 +241,20 @@ func TestMetronomeSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.MetronomeHandle) sealed.Metronome { return &metronomeSubject{} },
 			}),
-			conform.Excuse(
-				sealed.MetronomeChecks.Tick.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Tick.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Tick.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Pace.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Pace.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MetronomeChecks.Pace.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Metronome]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// metronomeSuite is the suite of Metronome that the tests of the planted
+// defect of a ceiling apply.
+var metronomeSuite = sealed.MetronomeSuite()
+
 // metronomeIdle returns the planted defect of a ceiling of Metronome with
-// a spend of nothing, a subject that answers each call at once.
+// a spend of nothing. Each call of the defect returns its zero results at
+// once.
 func metronomeIdle(h *sealed.MetronomeHandle) sealed.Metronome {
-	return sealed.MetronomeSuite().Calls[0].Over(h, func() {})
+	return metronomeSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMetronomeSuiteBudgets applies the allocation ceilings of the suite
@@ -481,29 +265,8 @@ func TestMetronomeSuiteBudgets(t *testing.T) {
 	sealed.RunMetronomeBudgets(
 		t,
 		metronomeIdle,
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Metronome](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -515,29 +278,8 @@ func FuzzMetronomeSuiteTick(f *testing.F) {
 		f,
 		sealed.MetronomeChecks.Tick.Callable,
 		metronomeIdle,
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Metronome](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -549,29 +291,8 @@ func FuzzMetronomeSuitePace(f *testing.F) {
 		f,
 		sealed.MetronomeChecks.Pace.Callable,
 		metronomeIdle,
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Tick.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MetronomeChecks.Pace.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Metronome](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -622,50 +343,7 @@ func TestLockerSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.LockerHandle) sealed.Locker { return &lockerSubject{} },
 			}),
-			conform.Excuse(
-				sealed.LockerChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Put.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Put.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Put.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Locker]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -687,58 +365,20 @@ func TestLockerSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.LockerHandle) sealed.Locker { return &lockerSubject{} },
 			}),
-			conform.Excuse(
-				sealed.LockerChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Put.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Put.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Put.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.LockerChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Locker]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// lockerSuite is the suite of Locker that the tests of the planted defect
+// of a ceiling apply.
+var lockerSuite = sealed.LockerSuite()
+
 // lockerIdle returns the planted defect of a ceiling of Locker with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func lockerIdle(h *sealed.LockerHandle) sealed.Locker {
-	return sealed.LockerSuite().Calls[0].Over(h, func() {})
+	return lockerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestLockerSuiteBudgets applies the allocation ceilings of the suite of
@@ -750,49 +390,8 @@ func TestLockerSuiteBudgets(t *testing.T) {
 		t,
 		lockerIdle,
 		conform.Ceilings(sealed.LockerChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			sealed.LockerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Locker](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -804,49 +403,8 @@ func FuzzLockerSuitePut(f *testing.F) {
 		f,
 		sealed.LockerChecks.Put.Callable,
 		lockerIdle,
-		conform.Excuse(
-			sealed.LockerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Locker](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -858,49 +416,8 @@ func FuzzLockerSuiteGet(f *testing.F) {
 		f,
 		sealed.LockerChecks.Get.Callable,
 		lockerIdle,
-		conform.Excuse(
-			sealed.LockerChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.LockerChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Locker](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -951,46 +468,7 @@ func TestShelfSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.ShelfHandle) sealed.Shelf { return &shelfSubject{} },
 			}),
-			conform.Excuse(
-				sealed.ShelfChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.ReadAfterWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.ReadsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Shelf]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -1012,54 +490,19 @@ func TestShelfSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.ShelfHandle) sealed.Shelf { return &shelfSubject{} },
 			}),
-			conform.Excuse(
-				sealed.ShelfChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.ReadAfterWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.ShelfChecks.Get.ReadsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Shelf]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// shelfSuite is the suite of Shelf that the tests of the planted defect of
+// a ceiling apply.
+var shelfSuite = sealed.ShelfSuite()
+
 // shelfIdle returns the planted defect of a ceiling of Shelf with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func shelfIdle(h *sealed.ShelfHandle) sealed.Shelf {
-	return sealed.ShelfSuite().Calls[0].Over(h, func() {})
+	return shelfSuite.Calls[0].Over(h, func() {})
 }
 
 // TestShelfSuiteBudgets applies the allocation ceilings of the suite of
@@ -1071,45 +514,8 @@ func TestShelfSuiteBudgets(t *testing.T) {
 		t,
 		shelfIdle,
 		conform.Ceilings(sealed.ShelfChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			sealed.ShelfChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Shelf](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1121,45 +527,8 @@ func FuzzShelfSuitePut(f *testing.F) {
 		f,
 		sealed.ShelfChecks.Put.Callable,
 		shelfIdle,
-		conform.Excuse(
-			sealed.ShelfChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Shelf](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1171,45 +540,8 @@ func FuzzShelfSuiteGet(f *testing.F) {
 		f,
 		sealed.ShelfChecks.Get.Callable,
 		shelfIdle,
-		conform.Excuse(
-			sealed.ShelfChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.ShelfChecks.Get.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Shelf](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1260,14 +592,7 @@ func TestMixerSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.MixerHandle) sealed.Mixer { return &mixerSubject{} },
 			}),
-			conform.Excuse(
-				sealed.MixerChecks.Mix.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MixerChecks.Mix.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Mixer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -1289,22 +614,19 @@ func TestMixerSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.MixerHandle) sealed.Mixer { return &mixerSubject{} },
 			}),
-			conform.Excuse(
-				sealed.MixerChecks.Mix.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.MixerChecks.Mix.Cancel(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Mixer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// mixerSuite is the suite of Mixer that the tests of the planted defect of
+// a ceiling apply.
+var mixerSuite = sealed.MixerSuite()
+
 // mixerIdle returns the planted defect of a ceiling of Mixer with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func mixerIdle(h *sealed.MixerHandle) sealed.Mixer {
-	return sealed.MixerSuite().Calls[0].Over(h, func() {})
+	return mixerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMixerSuiteBudgets applies the allocation ceilings of the suite of
@@ -1315,13 +637,8 @@ func TestMixerSuiteBudgets(t *testing.T) {
 	sealed.RunMixerBudgets(
 		t,
 		mixerIdle,
-		conform.Excuse(
-			sealed.MixerChecks.Mix.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MixerChecks.Mix.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Mixer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1333,13 +650,8 @@ func FuzzMixerSuiteMix(f *testing.F) {
 		f,
 		sealed.MixerChecks.Mix.Callable,
 		mixerIdle,
-		conform.Excuse(
-			sealed.MixerChecks.Mix.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.MixerChecks.Mix.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Mixer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1387,30 +699,7 @@ func TestDepotSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.DepotHandle) sealed.Depot { return &depotSubject{} },
 			}),
-			conform.Excuse(
-				sealed.DepotChecks.Stock.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Stock.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Find.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Find.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Find.ReadAfterWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Find.ReadsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Depot]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -1432,38 +721,19 @@ func TestDepotSuite(t *testing.T) {
 				},
 				Defect: func(*sealed.DepotHandle) sealed.Depot { return &depotSubject{} },
 			}),
-			conform.Excuse(
-				sealed.DepotChecks.Stock.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Stock.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Find.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Find.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Find.ReadAfterWrite(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				sealed.DepotChecks.Find.ReadsEachLastWrite(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[sealed.Depot]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// depotSuite is the suite of Depot that the tests of the planted defect of
+// a ceiling apply.
+var depotSuite = sealed.DepotSuite()
+
 // depotIdle returns the planted defect of a ceiling of Depot with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func depotIdle(h *sealed.DepotHandle) sealed.Depot {
-	return sealed.DepotSuite().Calls[0].Over(h, func() {})
+	return depotSuite.Calls[0].Over(h, func() {})
 }
 
 // TestDepotSuiteBudgets applies the allocation ceilings of the suite of
@@ -1474,29 +744,8 @@ func TestDepotSuiteBudgets(t *testing.T) {
 	sealed.RunDepotBudgets(
 		t,
 		depotIdle,
-		conform.Excuse(
-			sealed.DepotChecks.Stock.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Stock.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Depot](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1508,29 +757,8 @@ func FuzzDepotSuiteStock(f *testing.F) {
 		f,
 		sealed.DepotChecks.Stock.Callable,
 		depotIdle,
-		conform.Excuse(
-			sealed.DepotChecks.Stock.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Stock.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Depot](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1542,29 +770,8 @@ func FuzzDepotSuiteFind(f *testing.F) {
 		f,
 		sealed.DepotChecks.Find.Callable,
 		depotIdle,
-		conform.Excuse(
-			sealed.DepotChecks.Stock.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Stock.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.ReadAfterWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			sealed.DepotChecks.Find.ReadsEachLastWrite(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[sealed.Depot](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }

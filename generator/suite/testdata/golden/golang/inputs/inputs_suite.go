@@ -12,118 +12,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Pipeline:
-//
-// Pipeline.Each/smoke: Each returns without a panic for derived inputs.
-//
-// Pipeline.Each/smoke#generated: Each returns without a panic for derived
-// inputs.
-//
-// Pipeline.Handle/smoke: Handle returns without a panic for derived
-// inputs.
-//
-// Pipeline.Handle/smoke#generated: Handle returns without a panic for
-// derived inputs.
-//
-// Pipeline.Do/smoke: Do returns without a panic for derived inputs.
-//
-// Pipeline.Do/smoke#generated: Do returns without a panic for derived
-// inputs.
-//
-// Pipeline.Notify/smoke: Notify returns without a panic for derived
-// inputs.
-//
-// Pipeline.Apply/smoke: Apply returns without a panic for derived inputs.
-//
-// Pipeline.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Pipeline.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Pipeline.Configure/smoke: Configure returns without a panic for derived
-// inputs.
-//
-// Pipeline.Configure/smoke#generated: Configure returns without a panic
-// for derived inputs.
-//
-// Pipeline.Label/smoke: Label returns without a panic for derived inputs.
-//
-// Pipeline.Label/smoke#generated: Label returns without a panic for
-// derived inputs.
-
-// The derived checks of Pipeline that witness their laws at the shallow
-// end:
-//
-// Pipeline.Each/smoke
-//
-// Pipeline.Handle/smoke
-//
-// Pipeline.Do/smoke
-//
-// Pipeline.Notify/smoke
-//
-// Pipeline.Apply/smoke
-//
-// Pipeline.Put/smoke
-//
-// Pipeline.Configure/smoke
-//
-// Pipeline.Label/smoke
-
-// The refused claims of Pipeline:
-//
-// Pipeline.Pump/cancel: eidos derives no sample of the parameter from of
-// Pump. The remedy is to author a sample of the parameter from with the
-// directive sample.
-//
-// Pipeline.Pump/zero-on-error: eidos derives no sample of the parameter
-// from of Pump. The remedy is to author a sample of the parameter from
-// with the directive sample.
-//
-// Pipeline.Fold/cancel: eidos derives no sample of the parameter items of
-// Fold. The remedy is to author a sample of the parameter items with the
-// directive sample.
-//
-// Pipeline.Count/deterministic: eidos derives no sample of the parameter
-// ints of Count. The remedy is to author a sample of the parameter ints
-// with the directive sample.
-
-// The unclaimed classifications of Pipeline:
-//
-// The shape:composite-writer of Pipeline.Merge has the stance silent. A
-// write is an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Pipeline.Each has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Pipeline.Handle has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Pipeline.Do has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Pipeline.Notify has the stance silent. A mutation
-// is an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Pipeline.Apply has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Pipeline.Fold has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:multi-arg-writer of Pipeline.Put has the stance silent. A
-// write is an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Pipeline.Spin has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Pipeline.Copy has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Pipeline.Subscribe has the stance silent. A
-// mutation is an input of the other checks, and its result is an error
-// alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -194,12 +82,6 @@ func (c pipelineEach) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Each returns
-// without a panic for derived inputs.
-func (c pipelineEach) SmokeGenerated() conform.ID[Pipeline] {
-	return c.Check("smoke#generated")
-}
-
 // pipelineHandle is the name of Pipeline.Handle, with the identities of
 // its checks.
 type pipelineHandle struct {
@@ -212,12 +94,6 @@ func (c pipelineHandle) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Handle returns
-// without a panic for derived inputs.
-func (c pipelineHandle) SmokeGenerated() conform.ID[Pipeline] {
-	return c.Check("smoke#generated")
-}
-
 // pipelineDo is the name of Pipeline.Do, with the identities of its
 // checks.
 type pipelineDo struct {
@@ -228,12 +104,6 @@ type pipelineDo struct {
 // for derived inputs.
 func (c pipelineDo) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
-}
-
-// SmokeGenerated returns the identity of the check that Do returns without
-// a panic for derived inputs.
-func (c pipelineDo) SmokeGenerated() conform.ID[Pipeline] {
-	return c.Check("smoke#generated")
 }
 
 // pipelineNotify is the name of Pipeline.Notify, with the identities of
@@ -278,12 +148,6 @@ func (c pipelinePut) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c pipelinePut) SmokeGenerated() conform.ID[Pipeline] {
-	return c.Check("smoke#generated")
-}
-
 // pipelineCount is the name of Pipeline.Count, with the identities of its
 // checks.
 type pipelineCount struct {
@@ -314,12 +178,6 @@ func (c pipelineConfigure) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Configure returns
-// without a panic for derived inputs.
-func (c pipelineConfigure) SmokeGenerated() conform.ID[Pipeline] {
-	return c.Check("smoke#generated")
-}
-
 // pipelineSubscribe is the name of Pipeline.Subscribe, with the identities
 // of its checks.
 type pipelineSubscribe struct {
@@ -338,12 +196,6 @@ func (c pipelineLabel) Smoke() conform.ID[Pipeline] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Label returns
-// without a panic for derived inputs.
-func (c pipelineLabel) SmokeGenerated() conform.ID[Pipeline] {
-	return c.Check("smoke#generated")
-}
-
 // PipelineSuite returns the checks of Pipeline, and the calls and the
 // budgets of its callables.
 func PipelineSuite() conform.Suite[Pipeline] {
@@ -356,9 +208,6 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				ID:          PipelineChecks.Each.Smoke(),
 				Statement:   "Each returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PipelineHandle) {
@@ -370,12 +219,9 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Defect: pipelineEachPanics,
 			},
 			{
-				ID:          PipelineChecks.Each.SmokeGenerated(),
+				ID:          PipelineChecks.Each.Smoke().Generated(),
 				Statement:   "Each returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PipelineHandle, c *prop.Case) {
 					fnResults := c.Draw(prop.List(prop.Of[bool]()), "fn")
@@ -400,9 +246,6 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				ID:          PipelineChecks.Handle.Smoke(),
 				Statement:   "Handle returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PipelineHandle) {
@@ -413,12 +256,9 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Defect: pipelineHandlePanics,
 			},
 			{
-				ID:          PipelineChecks.Handle.SmokeGenerated(),
+				ID:          PipelineChecks.Handle.Smoke().Generated(),
 				Statement:   "Handle returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PipelineHandle, c *prop.Case) {
 					hResults := c.Draw(
@@ -446,9 +286,6 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				ID:          PipelineChecks.Do.Smoke(),
 				Statement:   "Do returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PipelineHandle) {
@@ -460,12 +297,9 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Defect: pipelineDoPanics,
 			},
 			{
-				ID:          PipelineChecks.Do.SmokeGenerated(),
+				ID:          PipelineChecks.Do.Smoke().Generated(),
 				Statement:   "Do returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PipelineHandle, c *prop.Case) {
 					opResults0 := c.Draw(prop.List(prop.Of[int]()), "op-0")
@@ -500,9 +334,6 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				ID:          PipelineChecks.Notify.Smoke(),
 				Statement:   "Notify returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PipelineHandle) {
@@ -517,9 +348,6 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				ID:          PipelineChecks.Apply.Smoke(),
 				Statement:   "Apply returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PipelineHandle) {
@@ -534,9 +362,6 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				ID:          PipelineChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PipelineHandle) {
@@ -547,12 +372,9 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Defect: pipelinePutPanics,
 			},
 			{
-				ID:          PipelineChecks.Put.SmokeGenerated(),
+				ID:          PipelineChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PipelineHandle, c *prop.Case) {
 					drawnItem := c.Draw(prop.Of[Item](), "item")
@@ -568,9 +390,6 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				ID:          PipelineChecks.Configure.Smoke(),
 				Statement:   "Configure returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PipelineHandle) {
@@ -582,12 +401,9 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Defect: pipelineConfigurePanics,
 			},
 			{
-				ID:          PipelineChecks.Configure.SmokeGenerated(),
+				ID:          PipelineChecks.Configure.Smoke().Generated(),
 				Statement:   "Configure returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PipelineHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -602,9 +418,6 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				ID:          PipelineChecks.Label.Smoke(),
 				Statement:   "Label returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PipelineHandle) {
@@ -617,12 +430,9 @@ func PipelineSuite() conform.Suite[Pipeline] {
 				Defect: pipelineLabelPanics,
 			},
 			{
-				ID:          PipelineChecks.Label.SmokeGenerated(),
+				ID:          PipelineChecks.Label.Smoke().Generated(),
 				Statement:   "Label returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PipelineHandle, c *prop.Case) {
 					drawnTag := c.Draw(prop.Of[Tag](), "tag")

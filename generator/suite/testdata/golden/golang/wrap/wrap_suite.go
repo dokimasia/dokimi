@@ -13,64 +13,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Reach:
-//
-// Reach.Store/smoke#generated: Store returns without a panic for derived
-// inputs.
-//
-// Reach.Store/cancel#generated: Store returns an error for a cancelled
-// context.
-//
-// Reach.Current/smoke: Current returns without a panic for derived inputs.
-//
-// Reach.Current/cancel: Current returns an error for a cancelled context.
-//
-// Reach.Current/zero-on-error: Current returns the zero value beside an
-// error.
-//
-// Reach.Current/read-after-write#generated: Current returns what Store
-// stored before it.
-//
-// Reach.Current/reads-each-last-write: Current returns what Store wrote
-// right before it, over any sequence of calls.
-
-// The derived checks of Reach that witness their laws at the shallow end:
-//
-// Reach.Current/smoke
-//
-// Reach.Current/read-after-write#generated
-
-// The refused claims of Reach:
-//
-// Reach.Store/smoke: a sample of the check refers to a declaration that
-// the file of the suite cannot import. The remedy is to author a sample of
-// each input of Store with the directive sample.
-//
-// Reach.Store/cancel: a sample of the check refers to a declaration that
-// the file of the suite cannot import. The remedy is to author a sample of
-// each input of Store with the directive sample.
-//
-// Reach.Current/read-after-write: a sample of the check refers to a
-// declaration that the file of the suite cannot import. The remedy is to
-// author a sample of each input of Current with the directive sample.
-//
-// Reach.Gear/smoke: a sample of the check refers to a declaration that the
-// file of the suite cannot import. The remedy is to author a sample of
-// each input of Gear with the directive sample.
-//
-// Reach.Gear/cancel: a sample of the check refers to a declaration that
-// the file of the suite cannot import. The remedy is to author a sample of
-// each input of Gear with the directive sample.
-//
-// Reach.Gear/zero-on-error: a sample of the check refers to a declaration
-// that the file of the suite cannot import. The remedy is to author a
-// sample of each input of Gear with the directive sample.
-
-// The unclaimed classifications of Reach:
-//
-// The shape:writer of Reach.Store has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -99,18 +41,6 @@ type reachStore struct {
 	conform.Callable[Reach]
 }
 
-// SmokeGenerated returns the identity of the check that Store returns
-// without a panic for derived inputs.
-func (c reachStore) SmokeGenerated() conform.ID[Reach] {
-	return c.Check("smoke#generated")
-}
-
-// CancelGenerated returns the identity of the check that Store returns an
-// error for a cancelled context.
-func (c reachStore) CancelGenerated() conform.ID[Reach] {
-	return c.Check("cancel#generated")
-}
-
 // reachCurrent is the name of Reach.Current, with the identities of its
 // checks.
 type reachCurrent struct {
@@ -135,12 +65,6 @@ func (c reachCurrent) ZeroOnError() conform.ID[Reach] {
 	return c.Check("zero-on-error")
 }
 
-// ReadAfterWriteGenerated returns the identity of the check that Current
-// returns what Store stored before it.
-func (c reachCurrent) ReadAfterWriteGenerated() conform.ID[Reach] {
-	return c.Check("read-after-write#generated")
-}
-
 // ReadsEachLastWrite returns the identity of the check that Current
 // returns what Store wrote right before it, over any sequence of calls.
 func (c reachCurrent) ReadsEachLastWrite() conform.ID[Reach] {
@@ -161,12 +85,9 @@ func ReachSuite() conform.Suite[Reach] {
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Reach]{
 			{
-				ID:          ReachChecks.Store.SmokeGenerated(),
+				ID:          ReachChecks.Store.Smoke().Generated(),
 				Statement:   "Store returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ReachHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -177,12 +98,9 @@ func ReachSuite() conform.Suite[Reach] {
 				Defect: reachStorePanics,
 			},
 			{
-				ID:          ReachChecks.Store.CancelGenerated(),
+				ID:          ReachChecks.Store.Cancel().Generated(),
 				Statement:   "Store returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ReachHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -196,9 +114,6 @@ func ReachSuite() conform.Suite[Reach] {
 				ID:          ReachChecks.Current.Smoke(),
 				Statement:   "Current returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ReachHandle) {
@@ -213,9 +128,6 @@ func ReachSuite() conform.Suite[Reach] {
 				ID:          ReachChecks.Current.Cancel(),
 				Statement:   "Current returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ReachHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -229,9 +141,6 @@ func ReachSuite() conform.Suite[Reach] {
 				ID:          ReachChecks.Current.ZeroOnError(),
 				Statement:   "Current returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ReachHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (tool.Pitch, error) {
@@ -241,12 +150,9 @@ func ReachSuite() conform.Suite[Reach] {
 				Defect: reachCurrentValueBeside,
 			},
 			{
-				ID:          ReachChecks.Current.ReadAfterWriteGenerated(),
+				ID:          ReachChecks.Current.ReadAfterWrite().Generated(),
 				Statement:   "Current returns what Store stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *ReachHandle, c *prop.Case) {
@@ -265,9 +171,6 @@ func ReachSuite() conform.Suite[Reach] {
 				ID:          ReachChecks.Current.ReadsEachLastWrite(),
 				Statement:   "Current returns what Store wrote right before it, over any sequence of calls",
 				Claim:       spec.ReadsEachLastWrite,
-				Probe:       spec.ReadsReturnTheLastWrite,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[Reach]{ReachChecks.Current.ReadAfterWrite()},
 				Property: func(h *ReachHandle, c *prop.Case) {
@@ -704,32 +607,6 @@ func reachGearCall(ctx context.Context, subject Reach, args []any) ([]any, error
 	return []any{r0}, err
 }
 
-// The derived checks of Tuned:
-//
-// Tuned.Turn/smoke#generated: Turn returns without a panic for derived
-// inputs.
-
-// The refused claims of Tuned:
-//
-// Tuned.Tune/smoke: a sample of the check refers to a declaration that the
-// file of the suite cannot import. The remedy is to author a sample of
-// each input of Tune with the directive sample.
-//
-// Tuned.Turn/smoke: a sample of the check refers to a declaration that the
-// file of the suite cannot import. The remedy is to author a sample of
-// each input of Turn with the directive sample.
-
-// The unclaimed classifications of Tuned:
-//
-// The shape:writer of Tuned.Tune has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Tuned.Watch has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Tuned.Turn has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -768,12 +645,6 @@ type tunedTurn struct {
 	conform.Callable[Tuned]
 }
 
-// SmokeGenerated returns the identity of the check that Turn returns
-// without a panic for derived inputs.
-func (c tunedTurn) SmokeGenerated() conform.ID[Tuned] {
-	return c.Check("smoke#generated")
-}
-
 // TunedSuite returns the checks of Tuned, and the calls and the budgets of
 // its callables.
 func TunedSuite() conform.Suite[Tuned] {
@@ -783,12 +654,9 @@ func TunedSuite() conform.Suite[Tuned] {
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Tuned]{
 			{
-				ID:          TunedChecks.Turn.SmokeGenerated(),
+				ID:          TunedChecks.Turn.Smoke().Generated(),
 				Statement:   "Turn returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *TunedHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[tool.Dial](), "d")
@@ -1045,88 +913,6 @@ func tunedTurnPanics(h *TunedHandle) Tuned {
 	return &tunedTurnPanicsDefect{tunedOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Limited:
-//
-// Limited.Limit/smoke: Limit returns without a panic for derived inputs.
-//
-// Limited.Limit/smoke#generated: Limit returns without a panic for derived
-// inputs.
-//
-// Limited.Grip/smoke#generated: Grip returns without a panic for derived
-// inputs.
-//
-// Limited.Span/smoke#generated: Span returns without a panic for derived
-// inputs.
-//
-// Limited.Pitch/smoke#generated: Pitch returns without a panic for derived
-// inputs.
-//
-// Limited.Measure/smoke: Measure returns without a panic for derived
-// inputs.
-//
-// Limited.Measure/smoke#generated: Measure returns without a panic for
-// derived inputs.
-//
-// Limited.Phase/smoke: Phase returns without a panic for derived inputs.
-//
-// Limited.Phase/smoke#generated: Phase returns without a panic for derived
-// inputs.
-
-// The derived checks of Limited that witness their laws at the shallow
-// end:
-//
-// Limited.Limit/smoke
-//
-// Limited.Measure/smoke
-//
-// Limited.Phase/smoke
-
-// The refused claims of Limited:
-//
-// Limited.Grip/smoke: a sample of the check refers to a declaration that
-// the file of the suite cannot import. The remedy is to author a sample of
-// each input of Grip with the directive sample.
-//
-// Limited.Span/smoke: a sample of the check refers to a declaration that
-// the file of the suite cannot import. The remedy is to author a sample of
-// each input of Span with the directive sample.
-//
-// Limited.Pitch/smoke: a sample of the check refers to a declaration that
-// the file of the suite cannot import. The remedy is to author a sample of
-// each input of Pitch with the directive sample.
-
-// The unclaimed classifications of Limited:
-//
-// The shape:mutator of Limited.Limit has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Limited.Grip has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Limited.Clamp has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Limited.Frame has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Limited.Mount has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Limited.Span has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Limited.Pitch has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Limited.Measure has the stance silent. A mutation
-// is an input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Limited.Phase has the stance silent. A mutation is
-// an input of the other checks, and its result is an error alone.
-//
-// The shape:writer of Limited.Sense has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1175,22 +961,10 @@ func (c limitedLimit) Smoke() conform.ID[Limited] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Limit returns
-// without a panic for derived inputs.
-func (c limitedLimit) SmokeGenerated() conform.ID[Limited] {
-	return c.Check("smoke#generated")
-}
-
 // limitedGrip is the name of Limited.Grip, with the identities of its
 // checks.
 type limitedGrip struct {
 	conform.Callable[Limited]
-}
-
-// SmokeGenerated returns the identity of the check that Grip returns
-// without a panic for derived inputs.
-func (c limitedGrip) SmokeGenerated() conform.ID[Limited] {
-	return c.Check("smoke#generated")
 }
 
 // limitedClamp is the name of Limited.Clamp, with the identities of its
@@ -1217,22 +991,10 @@ type limitedSpan struct {
 	conform.Callable[Limited]
 }
 
-// SmokeGenerated returns the identity of the check that Span returns
-// without a panic for derived inputs.
-func (c limitedSpan) SmokeGenerated() conform.ID[Limited] {
-	return c.Check("smoke#generated")
-}
-
 // limitedPitch is the name of Limited.Pitch, with the identities of its
 // checks.
 type limitedPitch struct {
 	conform.Callable[Limited]
-}
-
-// SmokeGenerated returns the identity of the check that Pitch returns
-// without a panic for derived inputs.
-func (c limitedPitch) SmokeGenerated() conform.ID[Limited] {
-	return c.Check("smoke#generated")
 }
 
 // limitedMeasure is the name of Limited.Measure, with the identities of
@@ -1247,12 +1009,6 @@ func (c limitedMeasure) Smoke() conform.ID[Limited] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Measure returns
-// without a panic for derived inputs.
-func (c limitedMeasure) SmokeGenerated() conform.ID[Limited] {
-	return c.Check("smoke#generated")
-}
-
 // limitedPhase is the name of Limited.Phase, with the identities of its
 // checks.
 type limitedPhase struct {
@@ -1263,12 +1019,6 @@ type limitedPhase struct {
 // panic for derived inputs.
 func (c limitedPhase) Smoke() conform.ID[Limited] {
 	return c.Check("smoke")
-}
-
-// SmokeGenerated returns the identity of the check that Phase returns
-// without a panic for derived inputs.
-func (c limitedPhase) SmokeGenerated() conform.ID[Limited] {
-	return c.Check("smoke#generated")
 }
 
 // limitedSense is the name of Limited.Sense, with the identities of its
@@ -1289,9 +1039,6 @@ func LimitedSuite() conform.Suite[Limited] {
 				ID:          LimitedChecks.Limit.Smoke(),
 				Statement:   "Limit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LimitedHandle) {
@@ -1303,12 +1050,9 @@ func LimitedSuite() conform.Suite[Limited] {
 				Defect: limitedLimitPanics,
 			},
 			{
-				ID:          LimitedChecks.Limit.SmokeGenerated(),
+				ID:          LimitedChecks.Limit.Smoke().Generated(),
 				Statement:   "Limit returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LimitedHandle, c *prop.Case) {
 					drawnL := c.Draw(prop.Of[tool.Limits](), "l")
@@ -1320,12 +1064,9 @@ func LimitedSuite() conform.Suite[Limited] {
 				Defect: limitedLimitPanics,
 			},
 			{
-				ID:          LimitedChecks.Grip.SmokeGenerated(),
+				ID:          LimitedChecks.Grip.Smoke().Generated(),
 				Statement:   "Grip returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LimitedHandle, c *prop.Case) {
 					drawnG := c.Draw(prop.Of[tool.Grip](), "g")
@@ -1337,12 +1078,9 @@ func LimitedSuite() conform.Suite[Limited] {
 				Defect: limitedGripPanics,
 			},
 			{
-				ID:          LimitedChecks.Span.SmokeGenerated(),
+				ID:          LimitedChecks.Span.Smoke().Generated(),
 				Statement:   "Span returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LimitedHandle, c *prop.Case) {
 					drawnS := c.Draw(prop.Of[tool.Span](), "s")
@@ -1354,12 +1092,9 @@ func LimitedSuite() conform.Suite[Limited] {
 				Defect: limitedSpanPanics,
 			},
 			{
-				ID:          LimitedChecks.Pitch.SmokeGenerated(),
+				ID:          LimitedChecks.Pitch.Smoke().Generated(),
 				Statement:   "Pitch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LimitedHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -1374,9 +1109,6 @@ func LimitedSuite() conform.Suite[Limited] {
 				ID:          LimitedChecks.Measure.Smoke(),
 				Statement:   "Measure returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LimitedHandle) {
@@ -1388,12 +1120,9 @@ func LimitedSuite() conform.Suite[Limited] {
 				Defect: limitedMeasurePanics,
 			},
 			{
-				ID:          LimitedChecks.Measure.SmokeGenerated(),
+				ID:          LimitedChecks.Measure.Smoke().Generated(),
 				Statement:   "Measure returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LimitedHandle, c *prop.Case) {
 					drawnU := c.Draw(prop.Of[tool.Unit](), "u")
@@ -1408,9 +1137,6 @@ func LimitedSuite() conform.Suite[Limited] {
 				ID:          LimitedChecks.Phase.Smoke(),
 				Statement:   "Phase returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LimitedHandle) {
@@ -1422,12 +1148,9 @@ func LimitedSuite() conform.Suite[Limited] {
 				Defect: limitedPhasePanics,
 			},
 			{
-				ID:          LimitedChecks.Phase.SmokeGenerated(),
+				ID:          LimitedChecks.Phase.Smoke().Generated(),
 				Statement:   "Phase returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LimitedHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Phase](), "p")
@@ -2039,48 +1762,6 @@ func limitedPhasePanics(h *LimitedHandle) Limited {
 	return &limitedPhasePanicsDefect{limitedOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Played:
-//
-// Played.Play/smoke: Play returns without a panic for derived inputs.
-//
-// Played.Play/cancel: Play returns an error for a cancelled context.
-//
-// Played.StateAt/smoke#generated: StateAt returns without a panic for
-// derived inputs.
-//
-// Played.StateAt/cancel#generated: StateAt returns an error for a
-// cancelled context.
-//
-// Played.StateAt/zero-on-error#generated: StateAt returns the zero value
-// beside an error.
-
-// The derived checks of Played that witness their laws at the shallow end:
-//
-// Played.Play/smoke
-
-// The refused claims of Played:
-//
-// Played.Play/follows-its-graph: a sample of the check refers to a
-// declaration that the file of the suite cannot import. The remedy is to
-// author a sample of each input of Play with the directive sample.
-//
-// Played.StateAt/smoke: a sample of the check refers to a declaration that
-// the file of the suite cannot import. The remedy is to author a sample of
-// each input of StateAt with the directive sample.
-//
-// Played.StateAt/cancel: a sample of the check refers to a declaration
-// that the file of the suite cannot import. The remedy is to author a
-// sample of each input of StateAt with the directive sample.
-//
-// Played.StateAt/zero-on-error: a sample of the check refers to a
-// declaration that the file of the suite cannot import. The remedy is to
-// author a sample of each input of StateAt with the directive sample.
-
-// The unclaimed classifications of Played:
-//
-// The shape:lifecycle of Played.Play has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2125,24 +1806,6 @@ type playedStateAt struct {
 	conform.Callable[Played]
 }
 
-// SmokeGenerated returns the identity of the check that StateAt returns
-// without a panic for derived inputs.
-func (c playedStateAt) SmokeGenerated() conform.ID[Played] {
-	return c.Check("smoke#generated")
-}
-
-// CancelGenerated returns the identity of the check that StateAt returns
-// an error for a cancelled context.
-func (c playedStateAt) CancelGenerated() conform.ID[Played] {
-	return c.Check("cancel#generated")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that StateAt
-// returns the zero value beside an error.
-func (c playedStateAt) ZeroOnErrorGenerated() conform.ID[Played] {
-	return c.Check("zero-on-error#generated")
-}
-
 // PlayedSuite returns the checks of Played, and the calls and the budgets
 // of its callables.
 func PlayedSuite() conform.Suite[Played] {
@@ -2155,9 +1818,6 @@ func PlayedSuite() conform.Suite[Played] {
 				ID:          PlayedChecks.Play.Smoke(),
 				Statement:   "Play returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PlayedHandle) {
@@ -2171,9 +1831,6 @@ func PlayedSuite() conform.Suite[Played] {
 				ID:          PlayedChecks.Play.Cancel(),
 				Statement:   "Play returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *PlayedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2183,12 +1840,9 @@ func PlayedSuite() conform.Suite[Played] {
 				Defect: playedPlayIgnoresCancel,
 			},
 			{
-				ID:          PlayedChecks.StateAt.SmokeGenerated(),
+				ID:          PlayedChecks.StateAt.Smoke().Generated(),
 				Statement:   "StateAt returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PlayedHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -2200,12 +1854,9 @@ func PlayedSuite() conform.Suite[Played] {
 				Defect: playedStateAtPanics,
 			},
 			{
-				ID:          PlayedChecks.StateAt.CancelGenerated(),
+				ID:          PlayedChecks.StateAt.Cancel().Generated(),
 				Statement:   "StateAt returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PlayedHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -2217,12 +1868,9 @@ func PlayedSuite() conform.Suite[Played] {
 				Defect: playedStateAtIgnoresCancel,
 			},
 			{
-				ID:          PlayedChecks.StateAt.ZeroOnErrorGenerated(),
+				ID:          PlayedChecks.StateAt.ZeroOnError().Generated(),
 				Statement:   "StateAt returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PlayedHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -2496,48 +2144,6 @@ func playedStateAtValueBeside(h *PlayedHandle) Played {
 	return &playedStateAtValueBesideDefect{playedOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Gauged:
-//
-// Gauged.Fill/smoke: Fill returns without a panic for derived inputs.
-//
-// Gauged.Fill/cancel: Fill returns an error for a cancelled context.
-//
-// Gauged.LevelAt/smoke#generated: LevelAt returns without a panic for
-// derived inputs.
-//
-// Gauged.LevelAt/cancel#generated: LevelAt returns an error for a
-// cancelled context.
-//
-// Gauged.LevelAt/zero-on-error#generated: LevelAt returns the zero value
-// beside an error.
-
-// The derived checks of Gauged that witness their laws at the shallow end:
-//
-// Gauged.Fill/smoke
-
-// The refused claims of Gauged:
-//
-// Gauged.Fill/keeps-within-its-bounds: a sample of the check refers to a
-// declaration that the file of the suite cannot import. The remedy is to
-// author a sample of each input of Fill with the directive sample.
-//
-// Gauged.LevelAt/smoke: a sample of the check refers to a declaration that
-// the file of the suite cannot import. The remedy is to author a sample of
-// each input of LevelAt with the directive sample.
-//
-// Gauged.LevelAt/cancel: a sample of the check refers to a declaration
-// that the file of the suite cannot import. The remedy is to author a
-// sample of each input of LevelAt with the directive sample.
-//
-// Gauged.LevelAt/zero-on-error: a sample of the check refers to a
-// declaration that the file of the suite cannot import. The remedy is to
-// author a sample of each input of LevelAt with the directive sample.
-
-// The unclaimed classifications of Gauged:
-//
-// The shape:lifecycle of Gauged.Fill has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2582,24 +2188,6 @@ type gaugedLevelAt struct {
 	conform.Callable[Gauged]
 }
 
-// SmokeGenerated returns the identity of the check that LevelAt returns
-// without a panic for derived inputs.
-func (c gaugedLevelAt) SmokeGenerated() conform.ID[Gauged] {
-	return c.Check("smoke#generated")
-}
-
-// CancelGenerated returns the identity of the check that LevelAt returns
-// an error for a cancelled context.
-func (c gaugedLevelAt) CancelGenerated() conform.ID[Gauged] {
-	return c.Check("cancel#generated")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that LevelAt
-// returns the zero value beside an error.
-func (c gaugedLevelAt) ZeroOnErrorGenerated() conform.ID[Gauged] {
-	return c.Check("zero-on-error#generated")
-}
-
 // GaugedSuite returns the checks of Gauged, and the calls and the budgets
 // of its callables.
 func GaugedSuite() conform.Suite[Gauged] {
@@ -2612,9 +2200,6 @@ func GaugedSuite() conform.Suite[Gauged] {
 				ID:          GaugedChecks.Fill.Smoke(),
 				Statement:   "Fill returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *GaugedHandle) {
@@ -2628,9 +2213,6 @@ func GaugedSuite() conform.Suite[Gauged] {
 				ID:          GaugedChecks.Fill.Cancel(),
 				Statement:   "Fill returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *GaugedHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2640,12 +2222,9 @@ func GaugedSuite() conform.Suite[Gauged] {
 				Defect: gaugedFillIgnoresCancel,
 			},
 			{
-				ID:          GaugedChecks.LevelAt.SmokeGenerated(),
+				ID:          GaugedChecks.LevelAt.Smoke().Generated(),
 				Statement:   "LevelAt returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *GaugedHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -2657,12 +2236,9 @@ func GaugedSuite() conform.Suite[Gauged] {
 				Defect: gaugedLevelAtPanics,
 			},
 			{
-				ID:          GaugedChecks.LevelAt.CancelGenerated(),
+				ID:          GaugedChecks.LevelAt.Cancel().Generated(),
 				Statement:   "LevelAt returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *GaugedHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -2674,12 +2250,9 @@ func GaugedSuite() conform.Suite[Gauged] {
 				Defect: gaugedLevelAtIgnoresCancel,
 			},
 			{
-				ID:          GaugedChecks.LevelAt.ZeroOnErrorGenerated(),
+				ID:          GaugedChecks.LevelAt.ZeroOnError().Generated(),
 				Statement:   "LevelAt returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *GaugedHandle, c *prop.Case) {
 					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
@@ -2953,19 +2526,6 @@ func gaugedLevelAtValueBeside(h *GaugedHandle) Gauged {
 	return &gaugedLevelAtValueBesideDefect{gaugedOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Plain:
-//
-// Plain.Name/smoke: Name returns without a panic for derived inputs.
-//
-// Plain.Name/deterministic: Name returns the same value for the same
-// inputs.
-
-// The derived checks of Plain that witness their laws at the shallow end:
-//
-// Plain.Name/smoke
-//
-// Plain.Name/deterministic
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -3019,9 +2579,6 @@ func PlainSuite() conform.Suite[PlainMethods] {
 				ID:          PlainChecks.Name.Smoke(),
 				Statement:   "Name returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PlainHandle) {
@@ -3036,9 +2593,6 @@ func PlainSuite() conform.Suite[PlainMethods] {
 				ID:          PlainChecks.Name.Deterministic(),
 				Statement:   "Name returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[PlainMethods]{PlainChecks.Name.Smoke()},

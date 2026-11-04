@@ -27,10 +27,11 @@ import (
 //
 // Field and Type are the field and the type of the callable, as its
 // [Callable] contains them, and Method and Segment are the method and the
-// segment of its identity. Claim, Probe, Reason and Law are the names of the
-// constants of the package spec of the Go runtime, Machineries those of the
-// machineries of the check, the deepest first, and Entails the identities of
-// the shallower checks that the law of the check implies. Args are the
+// segment of its identity. Claim and Probe are the names of the constants of
+// the package spec of the Go runtime, Machineries those of the machineries of
+// the check, the deepest first, and Entails the identities of the shallower
+// checks that the law of the check implies. The runtime takes the reason code
+// and the law of the check from its claim. Args are the
 // arguments of the probe after the handle. Defect is the name of the function
 // that returns the planted defect, which every check with the same break of
 // the same callable shares. Bubble reports a probe that runs inside a
@@ -39,7 +40,11 @@ import (
 //
 // Generated reports a check whose inputs the property engine generates. The
 // template writes it as a property check that makes the draws Draws for each
-// case before it calls its probe.
+// case before it calls its probe. Base is the method of the identity of the
+// sample binding of a generated binding, as ZeroOnError, and empty for any
+// other check. The suite declares no method of the identity of a generated
+// binding, and names it through the method Generated of the identity of its
+// sample binding.
 //
 // Sequence reports a check that runs generated sequences. The template writes
 // it as a property check that passes the case to its probe, with the types
@@ -60,12 +65,11 @@ type Derived struct {
 	Field       string
 	Type        string
 	Method      string
+	Base        string
 	Segment     string
 	Statement   string
 	Claim       string
 	Probe       string
-	Reason      string
-	Law         string
 	Defect      string
 	Door        string
 	Whole       string
@@ -678,23 +682,42 @@ func goName[T ~string](id T) string { return naming.Pascal(string(id)) }
 // each instance of a contract has the id of the instance after its segment.
 func identityOf(s *Suite, c *derive.Check) (Callable, string, string) {
 	segment := c.Identity[strings.Index(c.Identity, "/")+1:]
-	method := naming.Pascal(strings.ReplaceAll(segment, "#", "-"))
 	i := slices.IndexFunc(s.Facts, func(f derive.Facts) bool { return f.Callable == c.Facts.Callable })
-	return s.Callables[i], method, segment
+	return s.Callables[i], methodOf(c.Identity), segment
+}
+
+// methodOf returns the name of the method that returns the identity of a
+// derived check: the segment of the identity in Pascal case, with the id of an
+// instance as a word of its own, as Expires0 for Store.Get/expires#0.
+func methodOf(identity string) string {
+	segment := identity[strings.Index(identity, "/")+1:]
+	return naming.Pascal(strings.ReplaceAll(segment, "#", "-"))
+}
+
+// bases returns the method of the identity of the sample binding of each
+// generated binding among checks, by the identity of the generated binding.
+// The map has no entry for the identity of any other check.
+func bases(checks []derive.Check) map[string]string {
+	out := make(map[string]string, len(checks))
+	for i := range checks {
+		out[derive.GeneratedOf(checks[i].Identity)] = methodOf(checks[i].Identity)
+	}
+	return out
 }
 
 // derived records into s the derived check of each check of the derivation of
 // s, with its planted defect. A generated binding draws the inputs of its
 // calls by the rules of the call generators of s.
 func (k *caller) derived(s *Suite) {
+	base := bases(s.Derivation.Checks)
 	for i := range s.Derivation.Checks {
 		c := &s.Derivation.Checks[i]
 		callable, method, segment := identityOf(s, c)
 		d := Derived{
-			Field: callable.Field, Type: callable.Type, Method: method, Segment: segment, Statement: c.Statement,
-			Claim: goName(c.Claim.ID), Probe: goName(c.Claim.Probe), Reason: goName(c.Claim.Defect.Reason),
-			Law: goName(c.Claim.Law), Shallow: c.Shallow, Bubble: slices.Contains(bubbled, c.Claim.Probe),
-			Generated: c.Generated, Cased: slices.Contains(cased, c.Claim.Probe),
+			Field: callable.Field, Type: callable.Type, Method: method, Base: base[c.Identity], Segment: segment,
+			Statement: c.Statement, Claim: goName(c.Claim.ID), Probe: goName(c.Claim.Probe), Shallow: c.Shallow,
+			Bubble: slices.Contains(bubbled, c.Claim.Probe), Generated: c.Generated,
+			Cased: slices.Contains(cased, c.Claim.Probe),
 		}
 		for _, m := range c.Machineries() {
 			d.Machineries = append(d.Machineries, goName(m))
@@ -705,7 +728,9 @@ func (k *caller) derived(s *Suite) {
 			}
 			j := slices.IndexFunc(s.Derivation.Checks, func(o derive.Check) bool { return o.Identity == e.Shallower })
 			shallow, shallowMethod, _ := identityOf(s, &s.Derivation.Checks[j])
-			d.Entails = append(d.Entails, Identity{Field: shallow.Field, Method: shallowMethod, ID: e.Shallower})
+			d.Entails = append(d.Entails, Identity{
+				Field: shallow.Field, Method: shallowMethod, Base: base[e.Shallower], ID: e.Shallower,
+			})
 		}
 		b := binder{k: k, check: c, s: s}
 		if c.Claim.Probe == spec.RedeliveriesArrive && !b.redelivers() {

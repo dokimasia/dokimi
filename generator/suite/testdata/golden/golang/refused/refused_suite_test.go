@@ -50,24 +50,7 @@ func TestHybridClockSuite(t *testing.T) {
 				},
 				Defect: func(*refused.HybridClockHandle) refused.HybridClock { return &hybridClockSubject{} },
 			}),
-			conform.Excuse(
-				refused.HybridClockChecks.Update.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.HybridClockChecks.Update.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.HybridClockChecks.MaxOffset.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.HybridClockChecks.MaxOffset.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.HybridClockChecks.MaxOffset.ZeroOnError(),
+			conform.ExcuseSuite[refused.HybridClock](
 				"the test applies the check of its option alone",
 			),
 		)
@@ -97,34 +80,22 @@ func TestHybridClockSuite(t *testing.T) {
 				},
 				Defect: func(*refused.HybridClockHandle) refused.HybridClock { return &hybridClockSubject{} },
 			}),
-			conform.Excuse(
-				refused.HybridClockChecks.Update.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.HybridClockChecks.Update.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.HybridClockChecks.MaxOffset.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.HybridClockChecks.MaxOffset.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.HybridClockChecks.MaxOffset.ZeroOnError(),
+			conform.ExcuseSuite[refused.HybridClock](
 				"the test applies the check of its option alone",
 			),
 		)
 	})
 }
 
+// hybridClockSuite is the suite of HybridClock that the tests of the
+// planted defect of a ceiling apply.
+var hybridClockSuite = refused.HybridClockSuite()
+
 // hybridClockIdle returns the planted defect of a ceiling of HybridClock
-// with a spend of nothing, a subject that answers each call at once.
+// with a spend of nothing. Each call of the defect returns its zero
+// results at once.
 func hybridClockIdle(h *refused.HybridClockHandle) refused.HybridClock {
-	return refused.HybridClockSuite().Calls[0].Over(h, func() {})
+	return hybridClockSuite.Calls[0].Over(h, func() {})
 }
 
 // TestHybridClockSuiteBudgets applies the allocation ceilings of the suite
@@ -143,25 +114,8 @@ func TestHybridClockSuiteBudgets(t *testing.T) {
 			refused.HybridClockChecks.MaxOffset.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			refused.HybridClockChecks.Update.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.Update.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[refused.HybridClock](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -174,25 +128,8 @@ func FuzzHybridClockSuiteUpdate(f *testing.F) {
 		f,
 		refused.HybridClockChecks.Update.Callable,
 		hybridClockIdle,
-		conform.Excuse(
-			refused.HybridClockChecks.Update.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.Update.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[refused.HybridClock](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -205,25 +142,8 @@ func FuzzHybridClockSuiteMaxOffset(f *testing.F) {
 		f,
 		refused.HybridClockChecks.MaxOffset.Callable,
 		hybridClockIdle,
-		conform.Excuse(
-			refused.HybridClockChecks.Update.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.Update.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.HybridClockChecks.MaxOffset.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[refused.HybridClock](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -278,22 +198,7 @@ func TestDoubledSuite(t *testing.T) {
 				},
 				Defect: func(*refused.DoubledHandle) refused.Doubled { return &doubledSubject{} },
 			}),
-			conform.Excuse(
-				refused.DoubledChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.DoubledChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.DoubledChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.DoubledChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[refused.Doubled]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -315,30 +220,20 @@ func TestDoubledSuite(t *testing.T) {
 				},
 				Defect: func(*refused.DoubledHandle) refused.Doubled { return &doubledSubject{} },
 			}),
-			conform.Excuse(
-				refused.DoubledChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.DoubledChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.DoubledChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.DoubledChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[refused.Doubled]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// doubledSuite is the suite of Doubled that the tests of the planted
+// defect of a ceiling apply.
+var doubledSuite = refused.DoubledSuite()
+
 // doubledIdle returns the planted defect of a ceiling of Doubled with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func doubledIdle(h *refused.DoubledHandle) refused.Doubled {
-	return refused.DoubledSuite().Calls[0].Over(h, func() {})
+	return doubledSuite.Calls[0].Over(h, func() {})
 }
 
 // TestDoubledSuiteBudgets applies the allocation ceilings of the suite of
@@ -353,21 +248,8 @@ func TestDoubledSuiteBudgets(t *testing.T) {
 			refused.DoubledChecks.Read.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			refused.DoubledChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.DoubledChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.DoubledChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.DoubledChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[refused.Doubled](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -379,21 +261,8 @@ func FuzzDoubledSuiteRead(f *testing.F) {
 		f,
 		refused.DoubledChecks.Read.Callable,
 		doubledIdle,
-		conform.Excuse(
-			refused.DoubledChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.DoubledChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.DoubledChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			refused.DoubledChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[refused.Doubled](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -434,12 +303,7 @@ func TestTitleSuite(t *testing.T) {
 				},
 				Defect: func(*refused.TitleHandle) refused.TitleFunc { return nil },
 			}),
-			conform.Excuse(
-				refused.TitleChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.TitleChecks.SmokeGenerated(),
+			conform.ExcuseSuite[refused.TitleFunc](
 				"the test applies the check of its option alone",
 			),
 		)
@@ -460,12 +324,7 @@ func TestTitleSuite(t *testing.T) {
 				},
 				Defect: func(*refused.TitleHandle) refused.TitleFunc { return nil },
 			}),
-			conform.Excuse(
-				refused.TitleChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				refused.TitleChecks.SmokeGenerated(),
+			conform.ExcuseSuite[refused.TitleFunc](
 				"the test applies the check of its option alone",
 			),
 		)

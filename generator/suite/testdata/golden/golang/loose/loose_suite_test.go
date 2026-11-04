@@ -43,14 +43,7 @@ func TestPrinterSuite(t *testing.T) {
 				},
 				Defect: func(*loose.PrinterHandle) loose.Printer { return &printerSubject{} },
 			}),
-			conform.Excuse(
-				loose.PrinterChecks.Print.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				loose.PrinterChecks.Print.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[loose.Printer]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -72,22 +65,20 @@ func TestPrinterSuite(t *testing.T) {
 				},
 				Defect: func(*loose.PrinterHandle) loose.Printer { return &printerSubject{} },
 			}),
-			conform.Excuse(
-				loose.PrinterChecks.Print.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				loose.PrinterChecks.Print.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[loose.Printer]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// printerSuite is the suite of Printer that the tests of the planted
+// defect of a ceiling apply.
+var printerSuite = loose.PrinterSuite()
+
 // printerIdle returns the planted defect of a ceiling of Printer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func printerIdle(h *loose.PrinterHandle) loose.Printer {
-	return loose.PrinterSuite().Calls[0].Over(h, func() {})
+	return printerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestPrinterSuiteBudgets applies the allocation ceilings of the suite of
@@ -102,13 +93,8 @@ func TestPrinterSuiteBudgets(t *testing.T) {
 			loose.PrinterChecks.Print.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			loose.PrinterChecks.Print.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			loose.PrinterChecks.Print.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[loose.Printer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -120,13 +106,8 @@ func FuzzPrinterSuitePrint(f *testing.F) {
 		f,
 		loose.PrinterChecks.Print.Callable,
 		printerIdle,
-		conform.Excuse(
-			loose.PrinterChecks.Print.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			loose.PrinterChecks.Print.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[loose.Printer](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -175,14 +156,7 @@ func TestRecorderSuite(t *testing.T) {
 				},
 				Defect: func(*loose.RecorderHandle) loose.Recorder { return &recorderSubject{} },
 			}),
-			conform.Excuse(
-				loose.RecorderChecks.Field.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				loose.RecorderChecks.Field.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[loose.Recorder]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -204,22 +178,20 @@ func TestRecorderSuite(t *testing.T) {
 				},
 				Defect: func(*loose.RecorderHandle) loose.Recorder { return &recorderSubject{} },
 			}),
-			conform.Excuse(
-				loose.RecorderChecks.Field.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				loose.RecorderChecks.Field.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[loose.Recorder]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// recorderSuite is the suite of Recorder that the tests of the planted
+// defect of a ceiling apply.
+var recorderSuite = loose.RecorderSuite()
+
 // recorderIdle returns the planted defect of a ceiling of Recorder with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func recorderIdle(h *loose.RecorderHandle) loose.Recorder {
-	return loose.RecorderSuite().Calls[0].Over(h, func() {})
+	return recorderSuite.Calls[0].Over(h, func() {})
 }
 
 // TestRecorderSuiteBudgets applies the allocation ceilings of the suite of
@@ -234,13 +206,8 @@ func TestRecorderSuiteBudgets(t *testing.T) {
 			loose.RecorderChecks.Field.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			loose.RecorderChecks.Field.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			loose.RecorderChecks.Field.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[loose.Recorder](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -252,13 +219,8 @@ func FuzzRecorderSuiteField(f *testing.F) {
 		f,
 		loose.RecorderChecks.Field.Callable,
 		recorderIdle,
-		conform.Excuse(
-			loose.RecorderChecks.Field.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			loose.RecorderChecks.Field.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[loose.Recorder](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -306,14 +268,7 @@ func TestJournalSuite(t *testing.T) {
 				},
 				Defect: func(*loose.JournalHandle) loose.Journal { return &journalSubject{} },
 			}),
-			conform.Excuse(
-				loose.JournalChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				loose.JournalChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[loose.Journal]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -335,22 +290,20 @@ func TestJournalSuite(t *testing.T) {
 				},
 				Defect: func(*loose.JournalHandle) loose.Journal { return &journalSubject{} },
 			}),
-			conform.Excuse(
-				loose.JournalChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				loose.JournalChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[loose.Journal]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// journalSuite is the suite of Journal that the tests of the planted
+// defect of a ceiling apply.
+var journalSuite = loose.JournalSuite()
+
 // journalIdle returns the planted defect of a ceiling of Journal with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func journalIdle(h *loose.JournalHandle) loose.Journal {
-	return loose.JournalSuite().Calls[0].Over(h, func() {})
+	return journalSuite.Calls[0].Over(h, func() {})
 }
 
 // TestJournalSuiteBudgets applies the allocation ceilings of the suite of
@@ -362,13 +315,8 @@ func TestJournalSuiteBudgets(t *testing.T) {
 		t,
 		journalIdle,
 		conform.Ceilings(loose.JournalChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			loose.JournalChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			loose.JournalChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[loose.Journal](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -380,13 +328,8 @@ func FuzzJournalSuitePut(f *testing.F) {
 		f,
 		loose.JournalChecks.Put.Callable,
 		journalIdle,
-		conform.Excuse(
-			loose.JournalChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			loose.JournalChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[loose.Journal](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -434,14 +377,7 @@ func TestPlainSuite(t *testing.T) {
 				},
 				Defect: func(*loose.PlainHandle) loose.Plain { return &plainSubject{} },
 			}),
-			conform.Excuse(
-				loose.PlainChecks.Print.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				loose.PlainChecks.Print.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[loose.Plain]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -463,22 +399,19 @@ func TestPlainSuite(t *testing.T) {
 				},
 				Defect: func(*loose.PlainHandle) loose.Plain { return &plainSubject{} },
 			}),
-			conform.Excuse(
-				loose.PlainChecks.Print.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				loose.PlainChecks.Print.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[loose.Plain]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// plainSuite is the suite of Plain that the tests of the planted defect of
+// a ceiling apply.
+var plainSuite = loose.PlainSuite()
+
 // plainIdle returns the planted defect of a ceiling of Plain with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func plainIdle(h *loose.PlainHandle) loose.Plain {
-	return loose.PlainSuite().Calls[0].Over(h, func() {})
+	return plainSuite.Calls[0].Over(h, func() {})
 }
 
 // TestPlainSuiteBudgets applies the allocation ceilings of the suite of
@@ -490,13 +423,8 @@ func TestPlainSuiteBudgets(t *testing.T) {
 		t,
 		plainIdle,
 		conform.Ceilings(loose.PlainChecks.Print.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			loose.PlainChecks.Print.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			loose.PlainChecks.Print.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[loose.Plain](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -508,13 +436,8 @@ func FuzzPlainSuitePrint(f *testing.F) {
 		f,
 		loose.PlainChecks.Print.Callable,
 		plainIdle,
-		conform.Excuse(
-			loose.PlainChecks.Print.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			loose.PlainChecks.Print.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[loose.Plain](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -587,10 +510,14 @@ func TestZonedSuite(t *testing.T) {
 	})
 }
 
+// zonedSuite is the suite of Zoned that the tests of the planted defect of
+// a ceiling apply.
+var zonedSuite = loose.ZonedSuite()
+
 // zonedIdle returns the planted defect of a ceiling of Zoned with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func zonedIdle(h *loose.ZonedHandle) loose.Zoned {
-	return loose.ZonedSuite().Calls[0].Over(h, func() {})
+	return zonedSuite.Calls[0].Over(h, func() {})
 }
 
 // TestZonedSuiteBudgets applies the allocation ceilings of the suite of

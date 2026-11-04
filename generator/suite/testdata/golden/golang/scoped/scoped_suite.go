@@ -11,26 +11,6 @@ import (
 	spec2 "go.dokimi.dev/spec"
 )
 
-// The derived checks of Hyphenate:
-//
-// Hyphenate/smoke: Hyphenate returns without a panic for derived inputs.
-//
-// Hyphenate/smoke#generated: Hyphenate returns without a panic for derived
-// inputs.
-//
-// Hyphenate/deterministic: Hyphenate returns the same value for the same
-// inputs.
-//
-// Hyphenate/deterministic#generated: Hyphenate returns the same value for
-// the same inputs.
-
-// The derived checks of Hyphenate that witness their laws at the shallow
-// end:
-//
-// Hyphenate/smoke
-//
-// Hyphenate/deterministic
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform2.CompatV1
 
@@ -61,22 +41,10 @@ func (c hyphenateCallable) Smoke() conform2.ID[HyphenateFunc] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Hyphenate returns
-// without a panic for derived inputs.
-func (c hyphenateCallable) SmokeGenerated() conform2.ID[HyphenateFunc] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Hyphenate returns
 // the same value for the same inputs.
 func (c hyphenateCallable) Deterministic() conform2.ID[HyphenateFunc] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Hyphenate
-// returns the same value for the same inputs.
-func (c hyphenateCallable) DeterministicGenerated() conform2.ID[HyphenateFunc] {
-	return c.Check("deterministic#generated")
 }
 
 // LatencyBudget returns the identity of the check
@@ -103,9 +71,6 @@ func HyphenateSuite() conform2.Suite[HyphenateFunc] {
 				ID:          HyphenateChecks.Smoke(),
 				Statement:   "Hyphenate returns without a panic for derived inputs",
 				Claim:       spec2.Smoke,
-				Probe:       spec2.Survives,
-				Reason:      spec2.Panicked,
-				Law:         spec2.NoPanicOnAnyInput,
 				Machineries: []spec2.MachineryID{spec2.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HyphenateHandle) {
@@ -117,12 +82,9 @@ func HyphenateSuite() conform2.Suite[HyphenateFunc] {
 				Defect: hyphenatePanics,
 			},
 			{
-				ID:          HyphenateChecks.SmokeGenerated(),
+				ID:          HyphenateChecks.Smoke().Generated(),
 				Statement:   "Hyphenate returns without a panic for derived inputs",
 				Claim:       spec2.Smoke,
-				Probe:       spec2.Survives,
-				Reason:      spec2.Panicked,
-				Law:         spec2.NoPanicOnAnyInput,
 				Machineries: []spec2.MachineryID{spec2.GeneratedInputs, spec2.NothingBeyondACaller},
 				Property: func(h *HyphenateHandle, c *prop2.Case) {
 					drawnTitle := c.Draw(prop2.Of[string](), "title")
@@ -137,9 +99,6 @@ func HyphenateSuite() conform2.Suite[HyphenateFunc] {
 				ID:          HyphenateChecks.Deterministic(),
 				Statement:   "Hyphenate returns the same value for the same inputs",
 				Claim:       spec2.Deterministic,
-				Probe:       spec2.RepeatAgrees,
-				Reason:      spec2.UnstableRepeat,
-				Law:         spec2.RepeatReturnsAlike,
 				Machineries: []spec2.MachineryID{spec2.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform2.ID[HyphenateFunc]{HyphenateChecks.Smoke()},
@@ -152,14 +111,11 @@ func HyphenateSuite() conform2.Suite[HyphenateFunc] {
 				Defect: hyphenateDrifts,
 			},
 			{
-				ID:          HyphenateChecks.DeterministicGenerated(),
+				ID:          HyphenateChecks.Deterministic().Generated(),
 				Statement:   "Hyphenate returns the same value for the same inputs",
 				Claim:       spec2.Deterministic,
-				Probe:       spec2.RepeatAgrees,
-				Reason:      spec2.UnstableRepeat,
-				Law:         spec2.RepeatReturnsAlike,
 				Machineries: []spec2.MachineryID{spec2.GeneratedInputs, spec2.NothingBeyondACaller},
-				Entails:     []conform2.ID[HyphenateFunc]{HyphenateChecks.SmokeGenerated()},
+				Entails:     []conform2.ID[HyphenateFunc]{HyphenateChecks.Smoke().Generated()},
 				Property: func(h *HyphenateHandle, c *prop2.Case) {
 					drawnTitle := c.Draw(prop2.Of[string](), "title")
 					probe2.RepeatAgrees(h, func(ctx context2.Context) (string, error) {

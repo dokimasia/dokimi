@@ -44,62 +44,7 @@ func TestPipelineSuite(t *testing.T) {
 				},
 				Defect: func(*inputs.PipelineHandle) inputs.Pipeline { return &pipelineSubject{} },
 			}),
-			conform.Excuse(
-				inputs.PipelineChecks.Each.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Each.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Handle.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Handle.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Do.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Do.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Notify.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Apply.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Configure.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Configure.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Label.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Label.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[inputs.Pipeline]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -121,70 +66,20 @@ func TestPipelineSuite(t *testing.T) {
 				},
 				Defect: func(*inputs.PipelineHandle) inputs.Pipeline { return &pipelineSubject{} },
 			}),
-			conform.Excuse(
-				inputs.PipelineChecks.Each.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Each.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Handle.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Handle.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Do.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Do.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Notify.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Apply.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Configure.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Configure.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Label.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				inputs.PipelineChecks.Label.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[inputs.Pipeline]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// pipelineSuite is the suite of Pipeline that the tests of the planted
+// defect of a ceiling apply.
+var pipelineSuite = inputs.PipelineSuite()
+
 // pipelineIdle returns the planted defect of a ceiling of Pipeline with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func pipelineIdle(h *inputs.PipelineHandle) inputs.Pipeline {
-	return inputs.PipelineSuite().Calls[0].Over(h, func() {})
+	return pipelineSuite.Calls[0].Over(h, func() {})
 }
 
 // TestPipelineSuiteBudgets applies the allocation ceilings of the suite of
@@ -236,61 +131,8 @@ func TestPipelineSuiteBudgets(t *testing.T) {
 			inputs.PipelineChecks.Label.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -302,61 +144,8 @@ func FuzzPipelineSuitePump(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Pump.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -368,61 +157,8 @@ func FuzzPipelineSuiteMerge(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Merge.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -434,61 +170,8 @@ func FuzzPipelineSuiteEach(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Each.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -500,61 +183,8 @@ func FuzzPipelineSuiteHandle(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Handle.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -566,61 +196,8 @@ func FuzzPipelineSuiteDo(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Do.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -632,61 +209,8 @@ func FuzzPipelineSuiteNotify(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Notify.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -698,61 +222,8 @@ func FuzzPipelineSuiteApply(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Apply.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -764,61 +235,8 @@ func FuzzPipelineSuiteFold(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Fold.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -830,61 +248,8 @@ func FuzzPipelineSuitePut(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Put.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -896,61 +261,8 @@ func FuzzPipelineSuiteCount(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Count.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -962,61 +274,8 @@ func FuzzPipelineSuiteSpin(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Spin.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1028,61 +287,8 @@ func FuzzPipelineSuiteCopy(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Copy.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1095,61 +301,8 @@ func FuzzPipelineSuiteConfigure(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Configure.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1162,61 +315,8 @@ func FuzzPipelineSuiteSubscribe(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Subscribe.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1228,61 +328,8 @@ func FuzzPipelineSuiteLabel(f *testing.F) {
 		f,
 		inputs.PipelineChecks.Label.Callable,
 		pipelineIdle,
-		conform.Excuse(
-			inputs.PipelineChecks.Each.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Each.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Handle.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Do.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Notify.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Apply.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Configure.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			inputs.PipelineChecks.Label.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[inputs.Pipeline](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }

@@ -144,21 +144,9 @@ func TestSuite(t *testing.T) {
 			expect.Equal(t, got.Data.Builds, "builds-the-subject", "the check of a factory has the segment Builds")
 			expect.Equal(t, got.Data.Receives, "receives-the-function",
 				"the check of the form Run of a function has the segment Receives")
-			alone := "the test applies the check of its option alone"
-			expect.Equal(t, got.Data.Excusals, []suite.Excusal{
-				{Field: "Get", Method: "Smoke", Reason: alone},
-				{Field: "Get", Method: "SmokeGenerated", Reason: alone},
-				{Field: "Get", Method: "Cancel", Reason: alone},
-				{Field: "Get", Method: "CancelGenerated", Reason: alone},
-				{Field: "Get", Method: "ZeroOnError", Reason: alone},
-				{Field: "Get", Method: "ZeroOnErrorGenerated", Reason: alone},
-				{Field: "Put", Method: "Smoke", Reason: alone},
-				{Field: "Put", Method: "SmokeGenerated", Reason: alone},
-				{Field: "Put", Method: "Cancel", Reason: alone},
-				{Field: "Put", Method: "CancelGenerated", Reason: alone},
-				{Field: "Get", Method: "KeepsTheItem", Reason: alone},
-				{Field: "Put", Method: "RefusesACancelledPut", Reason: alone},
-			}, "the test excuses each check of the suite where it applies a check of its own")
+			expect.True(t, got.Data.Excused,
+				"the test excuses the checks of the suite where it applies a check of its own")
+			expect.Empty(t, got.Data.Excusals, "the test of a suite has no excusal of a subject")
 			assert.NotNil(t, got.Decl, "the record of the test is a struct")
 			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
 			emitted := func(name string) emit.TypeRef { return emit.TypeRef{Spelling: name, Target: store, Emitted: true} }
@@ -1192,6 +1180,10 @@ func TestSuite(t *testing.T) {
 					Field: "Get", Method: "ZeroOnError",
 					Reason: "the store drops each item, so Get has no item to return",
 				},
+				{
+					Field: "Get", Method: "SmokeGenerated", Base: "Smoke",
+					Reason: "each generated call of Get takes the store a second",
+				},
 			}, "each excusal names the callable and the method of the identity of its check")
 			assert.NotNil(t, got.Decl, "the record of the test is a struct")
 			refs := got.Decl.Fields.Items()
@@ -2010,5 +2002,34 @@ func TestSuite(t *testing.T) {
 			expect.Empty(t, got.suites, "suite records no suite of the scripted struct Widget")
 			expect.Empty(t, got.findings, "suite reports nothing at Widget")
 		})
+	})
+
+	t.Run("HasChecks", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give suite.Suite
+			want bool
+		}{
+			{
+				name: "reports a suite with one derived check",
+				give: suite.Suite{Derived: []suite.Derived{{}}},
+				want: true,
+			},
+			{
+				name: "reports a suite with a check of the consumer alone",
+				give: suite.Suite{Checks: []suite.Check{{}}},
+				want: true,
+			},
+			{name: "reports no check of a suite without checks"},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				assert.Equal(t, tt.give.HasChecks(), tt.want, "HasChecks reports whether the suite has a check")
+			})
+		}
 	})
 }

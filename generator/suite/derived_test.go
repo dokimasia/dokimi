@@ -36,10 +36,16 @@ func TestDerived(t *testing.T) {
 			expect.Equal(t, d.Method, "ReadAfterWrite", "the method of the identity is the segment in Pascal case")
 			expect.Equal(t, d.Claim, "ReadAfterWrite", "the claim is the constant of the claim")
 			expect.Equal(t, d.Probe, "WriteThenRead", "the probe is the constant of the probe")
-			expect.Equal(t, d.Reason, "UnobservedWrite", "the reason is the constant of the reason of the defect")
-			expect.Equal(t, d.Law, "ReadReturnsTheWriteBeforeIt", "the law is the constant of the law")
 			expect.Equal(t, d.Machineries, []string{"NothingBeyondACaller"}, "the machineries are their constants")
 			expect.False(t, d.Bubble, "the probe runs outside a bubble")
+		})
+
+		t.Run("names the sample binding of a generated binding", func(t *testing.T) {
+			t.Parallel()
+
+			expect.Equal(t, derivedNamed(t, &got, "Get", "smoke#generated").Base, "Smoke",
+				"the generated binding names the method of the identity of its sample binding")
+			expect.Empty(t, derivedNamed(t, &got, "Get", "smoke").Base, "a sample binding names no other binding")
 		})
 
 		t.Run("passes the read and the write that returns the written value to a probe of a pair", func(t *testing.T) {

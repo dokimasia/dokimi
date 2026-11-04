@@ -13,51 +13,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of AEAD:
-//
-// AEAD.Seal/smoke: Seal returns without a panic for derived inputs.
-//
-// AEAD.Seal/deterministic: Seal returns the same value for the same
-// inputs.
-//
-// AEAD.Open/smoke: Open returns without a panic for derived inputs.
-//
-// AEAD.NonceSize/smoke: NonceSize returns without a panic for derived
-// inputs.
-//
-// AEAD.NonceSize/deterministic: NonceSize returns the same value for the
-// same inputs.
-//
-// AEAD.Overhead/smoke: Overhead returns without a panic for derived
-// inputs.
-//
-// AEAD.Overhead/deterministic: Overhead returns the same value for the
-// same inputs.
-
-// The derived checks of AEAD that witness their laws at the shallow end:
-//
-// AEAD.Seal/smoke
-//
-// AEAD.Seal/deterministic
-//
-// AEAD.Open/smoke
-//
-// AEAD.NonceSize/smoke
-//
-// AEAD.NonceSize/deterministic
-//
-// AEAD.Overhead/smoke
-//
-// AEAD.Overhead/deterministic
-
-// The unclaimed classifications of AEAD:
-//
-// The mixin:sample of AEAD.Seal has the stance silent. The mixin names the
-// builder of the inputs of each derived call of the callable.
-//
-// The mixin:sample of AEAD.Open has the stance silent. The mixin names the
-// builder of the inputs of each derived call of the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -158,9 +113,6 @@ func AEADSuite() conform.Suite[AEAD] {
 				ID:        AEADChecks.Seal.Smoke(),
 				Statement: "Seal returns without a panic for derived inputs",
 				Claim:     spec.Smoke,
-				Probe:     spec.Survives,
-				Reason:    spec.Panicked,
-				Law:       spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{
 					spec.InputsBuiltFromTheSubject,
 					spec.NothingBeyondACaller,
@@ -179,9 +131,6 @@ func AEADSuite() conform.Suite[AEAD] {
 				ID:        AEADChecks.Seal.Deterministic(),
 				Statement: "Seal returns the same value for the same inputs",
 				Claim:     spec.Deterministic,
-				Probe:     spec.RepeatAgrees,
-				Reason:    spec.UnstableRepeat,
-				Law:       spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{
 					spec.InputsBuiltFromTheSubject,
 					spec.NothingBeyondACaller,
@@ -201,9 +150,6 @@ func AEADSuite() conform.Suite[AEAD] {
 				ID:        AEADChecks.Open.Smoke(),
 				Statement: "Open returns without a panic for derived inputs",
 				Claim:     spec.Smoke,
-				Probe:     spec.Survives,
-				Reason:    spec.Panicked,
-				Law:       spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{
 					spec.InputsBuiltFromTheSubject,
 					spec.NothingBeyondACaller,
@@ -222,9 +168,6 @@ func AEADSuite() conform.Suite[AEAD] {
 				ID:          AEADChecks.NonceSize.Smoke(),
 				Statement:   "NonceSize returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *AEADHandle) {
@@ -239,9 +182,6 @@ func AEADSuite() conform.Suite[AEAD] {
 				ID:          AEADChecks.NonceSize.Deterministic(),
 				Statement:   "NonceSize returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[AEAD]{AEADChecks.NonceSize.Smoke()},
@@ -257,9 +197,6 @@ func AEADSuite() conform.Suite[AEAD] {
 				ID:          AEADChecks.Overhead.Smoke(),
 				Statement:   "Overhead returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *AEADHandle) {
@@ -274,9 +211,6 @@ func AEADSuite() conform.Suite[AEAD] {
 				ID:          AEADChecks.Overhead.Deterministic(),
 				Statement:   "Overhead returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[AEAD]{AEADChecks.Overhead.Smoke()},
@@ -597,37 +531,6 @@ func aeadOverheadDrifts(h *AEADHandle) AEAD {
 	return &aeadOverheadDriftsDefect{aeadOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Metronome:
-//
-// Metronome.Tick/smoke: Tick returns without a panic for derived inputs.
-//
-// Metronome.Tick/cancel: Tick returns an error for a cancelled context.
-//
-// Metronome.Tick/zero-on-error: Tick returns the zero value beside an
-// error.
-//
-// Metronome.Pace/smoke: Pace returns without a panic for derived inputs.
-//
-// Metronome.Pace/cancel: Pace returns an error for a cancelled context.
-//
-// Metronome.Pace/zero-on-error: Pace returns the zero value beside an
-// error.
-
-// The derived checks of Metronome that witness their laws at the shallow
-// end:
-//
-// Metronome.Tick/smoke
-//
-// Metronome.Pace/smoke
-
-// The unclaimed classifications of Metronome:
-//
-// The mixin:sample of Metronome.Tick has the stance silent. The mixin
-// names the builder of the inputs of each derived call of the callable.
-//
-// The mixin:sample of Metronome.Pace has the stance silent. The mixin
-// names the builder of the inputs of each derived call of the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -708,9 +611,6 @@ func MetronomeSuite() conform.Suite[Metronome] {
 				ID:          MetronomeChecks.Tick.Smoke(),
 				Statement:   "Tick returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MetronomeHandle) {
@@ -726,9 +626,6 @@ func MetronomeSuite() conform.Suite[Metronome] {
 				ID:          MetronomeChecks.Tick.Cancel(),
 				Statement:   "Tick returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MetronomeHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -743,9 +640,6 @@ func MetronomeSuite() conform.Suite[Metronome] {
 				ID:          MetronomeChecks.Tick.ZeroOnError(),
 				Statement:   "Tick returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MetronomeHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -759,9 +653,6 @@ func MetronomeSuite() conform.Suite[Metronome] {
 				ID:          MetronomeChecks.Pace.Smoke(),
 				Statement:   "Pace returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MetronomeHandle) {
@@ -777,9 +668,6 @@ func MetronomeSuite() conform.Suite[Metronome] {
 				ID:          MetronomeChecks.Pace.Cancel(),
 				Statement:   "Pace returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MetronomeHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -794,9 +682,6 @@ func MetronomeSuite() conform.Suite[Metronome] {
 				ID:          MetronomeChecks.Pace.ZeroOnError(),
 				Statement:   "Pace returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MetronomeHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -1065,50 +950,6 @@ func metronomePaceValueBeside(h *MetronomeHandle) Metronome {
 	return &metronomePaceValueBesideDefect{metronomeOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Locker:
-//
-// Locker.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Locker.Put/cancel: Put returns an error for a cancelled context.
-//
-// Locker.Put/synced-writes-survive: Get returns each value that Put wrote
-// with success before a crash at any persistence point.
-//
-// Locker.Put/no-torn-record: Get returns each value of Put whole or not at
-// all after a crash during a torn write.
-//
-// Locker.Put/full-medium-is-reported: Put fails on a full medium, and Get
-// returns each value as before the write.
-//
-// Locker.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Locker.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Locker.Get/cancel: Get returns an error for a cancelled context.
-//
-// Locker.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Locker.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Locker.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-
-// The derived checks of Locker that witness their laws at the shallow end:
-//
-// Locker.Put/smoke
-//
-// Locker.Get/smoke
-
-// The unclaimed classifications of Locker:
-//
-// The shape:composite-writer of Locker.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The mixin:sample of Locker.Put has the stance silent. The mixin names
-// the builder of the inputs of each derived call of the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1176,34 +1017,16 @@ func (c lockerGet) Smoke() conform.ID[Locker] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c lockerGet) SmokeGenerated() conform.ID[Locker] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c lockerGet) Cancel() conform.ID[Locker] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c lockerGet) CancelGenerated() conform.ID[Locker] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c lockerGet) ZeroOnError() conform.ID[Locker] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c lockerGet) ZeroOnErrorGenerated() conform.ID[Locker] {
-	return c.Check("zero-on-error#generated")
 }
 
 // LockerSuite returns the checks of Locker, and the calls and the budgets
@@ -1218,9 +1041,6 @@ func LockerSuite() conform.Suite[Locker] {
 				ID:          LockerChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LockerHandle) {
@@ -1235,9 +1055,6 @@ func LockerSuite() conform.Suite[Locker] {
 				ID:          LockerChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LockerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1251,9 +1068,6 @@ func LockerSuite() conform.Suite[Locker] {
 				ID:          LockerChecks.Put.SyncedWritesSurvive(),
 				Statement:   "Get returns each value that Put wrote with success before a crash at any persistence point",
 				Claim:       spec.SyncedWritesSurvive,
-				Probe:       spec.SurvivesEveryCrashPoint,
-				Reason:      spec.LostAcknowledgedWrite,
-				Law:         spec.AcknowledgedWriteSurvivesACrash,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *LockerHandle) {
 					probe.SurvivesEveryCrashPoint(h, probe.Durable[Locker, string]{
@@ -1306,9 +1120,6 @@ func LockerSuite() conform.Suite[Locker] {
 				ID:          LockerChecks.Put.NoTornRecord(),
 				Statement:   "Get returns each value of Put whole or not at all after a crash during a torn write",
 				Claim:       spec.NoTornRecord,
-				Probe:       spec.WholeAtEveryCrashPoint,
-				Reason:      spec.TornRecord,
-				Law:         spec.RecoveryReturnsWholeRecords,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *LockerHandle) {
 					probe.WholeAtEveryCrashPoint(h, probe.Durable[Locker, string]{
@@ -1361,9 +1172,6 @@ func LockerSuite() conform.Suite[Locker] {
 				ID:          LockerChecks.Put.FullMediumIsReported(),
 				Statement:   "Put fails on a full medium, and Get returns each value as before the write",
 				Claim:       spec.FullMediumIsReported,
-				Probe:       spec.RefusesOnAFullMedium,
-				Reason:      spec.HalfWrittenOnFull,
-				Law:         spec.RefusedWriteLeavesTheState,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *LockerHandle) {
 					probe.RefusesOnAFullMedium(h, probe.Durable[Locker, string]{
@@ -1416,9 +1224,6 @@ func LockerSuite() conform.Suite[Locker] {
 				ID:          LockerChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LockerHandle) {
@@ -1430,12 +1235,9 @@ func LockerSuite() conform.Suite[Locker] {
 				Defect: lockerGetPanics,
 			},
 			{
-				ID:          LockerChecks.Get.SmokeGenerated(),
+				ID:          LockerChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LockerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1450,9 +1252,6 @@ func LockerSuite() conform.Suite[Locker] {
 				ID:          LockerChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LockerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1463,12 +1262,9 @@ func LockerSuite() conform.Suite[Locker] {
 				Defect: lockerGetIgnoresCancel,
 			},
 			{
-				ID:          LockerChecks.Get.CancelGenerated(),
+				ID:          LockerChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LockerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1483,9 +1279,6 @@ func LockerSuite() conform.Suite[Locker] {
 				ID:          LockerChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LockerHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -1495,12 +1288,9 @@ func LockerSuite() conform.Suite[Locker] {
 				Defect: lockerGetValueBeside,
 			},
 			{
-				ID:          LockerChecks.Get.ZeroOnErrorGenerated(),
+				ID:          LockerChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LockerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1808,48 +1598,6 @@ func lockerGetValueBeside(h *LockerHandle) Locker {
 	return &lockerGetValueBesideDefect{lockerOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Shelf:
-//
-// Shelf.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Shelf.Put/cancel: Put returns an error for a cancelled context.
-//
-// Shelf.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Shelf.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Shelf.Get/cancel: Get returns an error for a cancelled context.
-//
-// Shelf.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Shelf.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Shelf.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Shelf.Get/read-after-write: Get returns what Put stored before it.
-//
-// Shelf.Get/reads-each-last-write: Get returns what Put wrote right before
-// it, over any sequence of calls.
-
-// The derived checks of Shelf that witness their laws at the shallow end:
-//
-// Shelf.Put/smoke
-//
-// Shelf.Get/smoke
-//
-// Shelf.Get/read-after-write
-
-// The unclaimed classifications of Shelf:
-//
-// The shape:composite-writer of Shelf.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The mixin:sample of Shelf.Put has the stance silent. The mixin names the
-// builder of the inputs of each derived call of the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1898,34 +1646,16 @@ func (c shelfGet) Smoke() conform.ID[Shelf] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c shelfGet) SmokeGenerated() conform.ID[Shelf] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c shelfGet) Cancel() conform.ID[Shelf] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c shelfGet) CancelGenerated() conform.ID[Shelf] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c shelfGet) ZeroOnError() conform.ID[Shelf] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c shelfGet) ZeroOnErrorGenerated() conform.ID[Shelf] {
-	return c.Check("zero-on-error#generated")
 }
 
 // ReadAfterWrite returns the identity of the check that Get returns what
@@ -1952,9 +1682,6 @@ func ShelfSuite() conform.Suite[Shelf] {
 				ID:          ShelfChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ShelfHandle) {
@@ -1969,9 +1696,6 @@ func ShelfSuite() conform.Suite[Shelf] {
 				ID:          ShelfChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ShelfHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1985,9 +1709,6 @@ func ShelfSuite() conform.Suite[Shelf] {
 				ID:          ShelfChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ShelfHandle) {
@@ -1999,12 +1720,9 @@ func ShelfSuite() conform.Suite[Shelf] {
 				Defect: shelfGetPanics,
 			},
 			{
-				ID:          ShelfChecks.Get.SmokeGenerated(),
+				ID:          ShelfChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ShelfHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -2019,9 +1737,6 @@ func ShelfSuite() conform.Suite[Shelf] {
 				ID:          ShelfChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ShelfHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2032,12 +1747,9 @@ func ShelfSuite() conform.Suite[Shelf] {
 				Defect: shelfGetIgnoresCancel,
 			},
 			{
-				ID:          ShelfChecks.Get.CancelGenerated(),
+				ID:          ShelfChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ShelfHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -2052,9 +1764,6 @@ func ShelfSuite() conform.Suite[Shelf] {
 				ID:          ShelfChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *ShelfHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
@@ -2064,12 +1773,9 @@ func ShelfSuite() conform.Suite[Shelf] {
 				Defect: shelfGetValueBeside,
 			},
 			{
-				ID:          ShelfChecks.Get.ZeroOnErrorGenerated(),
+				ID:          ShelfChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *ShelfHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -2083,9 +1789,6 @@ func ShelfSuite() conform.Suite[Shelf] {
 				ID:          ShelfChecks.Get.ReadAfterWrite(),
 				Statement:   "Get returns what Put stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *ShelfHandle) {
@@ -2105,9 +1808,6 @@ func ShelfSuite() conform.Suite[Shelf] {
 				ID:          ShelfChecks.Get.ReadsEachLastWrite(),
 				Statement:   "Get returns what Put wrote right before it, over any sequence of calls",
 				Claim:       spec.ReadsEachLastWrite,
-				Probe:       spec.ReadsReturnTheLastWrite,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[Shelf]{ShelfChecks.Get.ReadAfterWrite()},
 				Property: func(h *ShelfHandle, c *prop.Case) {
@@ -2471,24 +2171,6 @@ func shelfGetCall(ctx context.Context, subject Shelf, args []any) ([]any, error)
 	return []any{r0}, err
 }
 
-// The derived checks of Mixer:
-//
-// Mixer.Mix/smoke: Mix returns without a panic for derived inputs.
-//
-// Mixer.Mix/cancel: Mix returns an error for a cancelled context.
-
-// The derived checks of Mixer that witness their laws at the shallow end:
-//
-// Mixer.Mix/smoke
-
-// The unclaimed classifications of Mixer:
-//
-// The shape:multi-arg-writer of Mixer.Mix has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-//
-// The mixin:sample of Mixer.Mix has the stance silent. The mixin names the
-// builder of the inputs of each derived call of the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2536,9 +2218,6 @@ func MixerSuite() conform.Suite[Mixer] {
 				ID:          MixerChecks.Mix.Smoke(),
 				Statement:   "Mix returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MixerHandle) {
@@ -2554,9 +2233,6 @@ func MixerSuite() conform.Suite[Mixer] {
 				ID:          MixerChecks.Mix.Cancel(),
 				Statement:   "Mix returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MixerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2734,40 +2410,6 @@ func mixerMixIgnoresCancel(h *MixerHandle) Mixer {
 	return &mixerMixIgnoresCancelDefect{mixerOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Depot:
-//
-// Depot.Stock/smoke: Stock returns without a panic for derived inputs.
-//
-// Depot.Stock/cancel: Stock returns an error for a cancelled context.
-//
-// Depot.Find/smoke: Find returns without a panic for derived inputs.
-//
-// Depot.Find/cancel: Find returns an error for a cancelled context.
-//
-// Depot.Find/read-after-write: Find returns what Stock stored before it.
-//
-// Depot.Find/reads-each-last-write: Find returns what Stock wrote right
-// before it, over any sequence of calls.
-
-// The derived checks of Depot that witness their laws at the shallow end:
-//
-// Depot.Stock/smoke
-//
-// Depot.Find/smoke
-//
-// Depot.Find/read-after-write
-
-// The unclaimed classifications of Depot:
-//
-// The shape:writer of Depot.Stock has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The mixin:sample of Depot.Stock has the stance silent. The mixin names
-// the builder of the inputs of each derived call of the callable.
-//
-// The mixin:sample of Depot.Find has the stance silent. The mixin names
-// the builder of the inputs of each derived call of the callable.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2847,9 +2489,6 @@ func DepotSuite() conform.Suite[Depot] {
 				ID:          DepotChecks.Stock.Smoke(),
 				Statement:   "Stock returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DepotHandle) {
@@ -2864,9 +2503,6 @@ func DepotSuite() conform.Suite[Depot] {
 				ID:          DepotChecks.Stock.Cancel(),
 				Statement:   "Stock returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *DepotHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2880,9 +2516,6 @@ func DepotSuite() conform.Suite[Depot] {
 				ID:          DepotChecks.Find.Smoke(),
 				Statement:   "Find returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DepotHandle) {
@@ -2898,9 +2531,6 @@ func DepotSuite() conform.Suite[Depot] {
 				ID:          DepotChecks.Find.Cancel(),
 				Statement:   "Find returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *DepotHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2915,9 +2545,6 @@ func DepotSuite() conform.Suite[Depot] {
 				ID:          DepotChecks.Find.ReadAfterWrite(),
 				Statement:   "Find returns what Stock stored before it",
 				Claim:       spec.ReadAfterWrite,
-				Probe:       spec.WriteThenRead,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DepotHandle) {
@@ -2938,9 +2565,6 @@ func DepotSuite() conform.Suite[Depot] {
 				ID:          DepotChecks.Find.ReadsEachLastWrite(),
 				Statement:   "Find returns what Stock wrote right before it, over any sequence of calls",
 				Claim:       spec.ReadsEachLastWrite,
-				Probe:       spec.ReadsReturnTheLastWrite,
-				Reason:      spec.UnobservedWrite,
-				Law:         spec.ReadReturnsTheWriteBeforeIt,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
 				Entails:     []conform.ID[Depot]{DepotChecks.Find.ReadAfterWrite()},
 				Property: func(h *DepotHandle, c *prop.Case) {

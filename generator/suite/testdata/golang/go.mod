@@ -4,7 +4,7 @@ go 1.27.3
 
 require (
 	go.dokimi.dev/assert v0.17.0
-	go.dokimi.dev/conform v0.12.1
+	go.dokimi.dev/conform v0.12.2-0.20261104133330-c06eebc0ba19
 )
 
 require (

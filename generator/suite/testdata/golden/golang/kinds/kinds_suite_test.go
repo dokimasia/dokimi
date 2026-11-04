@@ -43,174 +43,7 @@ func TestParamsSuite(t *testing.T) {
 				},
 				Defect: func(*kinds.ParamsHandle) kinds.Params { return &paramsSubject{} },
 			}),
-			conform.Excuse(
-				kinds.ParamsChecks.Bool.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Bool.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int8.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int8.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int16.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int16.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int32.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int32.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int64.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int64.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint8.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint8.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint16.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint16.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint32.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint32.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint64.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint64.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uintptr.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Float32.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Float32.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Float64.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Float64.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Complex64.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Complex64.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Complex128.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Complex128.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Array.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Array.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Func.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Func.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Map.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Map.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Slice.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Slice.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.String.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.String.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Params]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -232,182 +65,20 @@ func TestParamsSuite(t *testing.T) {
 				},
 				Defect: func(*kinds.ParamsHandle) kinds.Params { return &paramsSubject{} },
 			}),
-			conform.Excuse(
-				kinds.ParamsChecks.Bool.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Bool.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int8.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int8.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int16.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int16.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int32.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int32.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int64.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Int64.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint8.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint8.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint16.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint16.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint32.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint32.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint64.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uint64.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uintptr.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Float32.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Float32.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Float64.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Float64.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Complex64.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Complex64.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Complex128.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Complex128.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Array.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Array.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Func.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Func.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Map.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Map.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Slice.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.Slice.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.String.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.ParamsChecks.String.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Params]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// paramsSuite is the suite of Params that the tests of the planted defect
+// of a ceiling apply.
+var paramsSuite = kinds.ParamsSuite()
+
 // paramsIdle returns the planted defect of a ceiling of Params with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func paramsIdle(h *kinds.ParamsHandle) kinds.Params {
-	return kinds.ParamsSuite().Calls[0].Over(h, func() {})
+	return paramsSuite.Calls[0].Over(h, func() {})
 }
 
 // TestParamsSuiteBudgets applies the allocation ceilings of the suite of
@@ -476,173 +147,8 @@ func TestParamsSuiteBudgets(t *testing.T) {
 			kinds.ParamsChecks.UnsafePointer.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -654,173 +160,8 @@ func FuzzParamsSuiteBool(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Bool.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -832,173 +173,8 @@ func FuzzParamsSuiteInt(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Int.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1010,173 +186,8 @@ func FuzzParamsSuiteInt8(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Int8.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1188,173 +199,8 @@ func FuzzParamsSuiteInt16(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Int16.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1366,173 +212,8 @@ func FuzzParamsSuiteInt32(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Int32.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1544,173 +225,8 @@ func FuzzParamsSuiteInt64(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Int64.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1722,173 +238,8 @@ func FuzzParamsSuiteUint(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Uint.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1900,173 +251,8 @@ func FuzzParamsSuiteUint8(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Uint8.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2078,173 +264,8 @@ func FuzzParamsSuiteUint16(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Uint16.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2256,173 +277,8 @@ func FuzzParamsSuiteUint32(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Uint32.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2434,173 +290,8 @@ func FuzzParamsSuiteUint64(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Uint64.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2612,173 +303,8 @@ func FuzzParamsSuiteUintptr(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Uintptr.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2790,173 +316,8 @@ func FuzzParamsSuiteFloat32(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Float32.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -2968,173 +329,8 @@ func FuzzParamsSuiteFloat64(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Float64.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3146,173 +342,8 @@ func FuzzParamsSuiteComplex64(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Complex64.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3324,173 +355,8 @@ func FuzzParamsSuiteComplex128(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Complex128.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3502,173 +368,8 @@ func FuzzParamsSuiteArray(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Array.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3680,173 +381,8 @@ func FuzzParamsSuiteChan(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Chan.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -3858,173 +394,8 @@ func FuzzParamsSuiteFunc(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Func.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -4036,173 +407,8 @@ func FuzzParamsSuiteInterface(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Interface.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -4214,173 +420,8 @@ func FuzzParamsSuiteMap(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Map.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -4392,173 +433,8 @@ func FuzzParamsSuitePtr(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Ptr.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -4570,173 +446,8 @@ func FuzzParamsSuiteSlice(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Slice.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -4748,173 +459,8 @@ func FuzzParamsSuiteString(f *testing.F) {
 		f,
 		kinds.ParamsChecks.String.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -4926,173 +472,8 @@ func FuzzParamsSuiteStruct(f *testing.F) {
 		f,
 		kinds.ParamsChecks.Struct.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -5105,173 +486,8 @@ func FuzzParamsSuiteUnsafePointer(f *testing.F) {
 		f,
 		kinds.ParamsChecks.UnsafePointer.Callable,
 		paramsIdle,
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Bool.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Int64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint8.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint16.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uint64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Uintptr.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float32.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Float64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex64.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Complex128.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Array.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Func.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Map.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.Slice.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.ParamsChecks.String.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Params](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -5394,14 +610,7 @@ func TestEverySuite(t *testing.T) {
 				},
 				Defect: func(*kinds.EveryHandle) kinds.Every { return &everySubject{} },
 			}),
-			conform.Excuse(
-				kinds.EveryChecks.Fields.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.EveryChecks.Elements.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Every]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -5423,22 +632,19 @@ func TestEverySuite(t *testing.T) {
 				},
 				Defect: func(*kinds.EveryHandle) kinds.Every { return &everySubject{} },
 			}),
-			conform.Excuse(
-				kinds.EveryChecks.Fields.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.EveryChecks.Elements.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Every]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// everySuite is the suite of Every that the tests of the planted defect of
+// a ceiling apply.
+var everySuite = kinds.EverySuite()
+
 // everyIdle returns the planted defect of a ceiling of Every with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func everyIdle(h *kinds.EveryHandle) kinds.Every {
-	return kinds.EverySuite().Calls[0].Over(h, func() {})
+	return everySuite.Calls[0].Over(h, func() {})
 }
 
 // TestEverySuiteBudgets applies the allocation ceilings of the suite of
@@ -5454,13 +660,8 @@ func TestEverySuiteBudgets(t *testing.T) {
 			kinds.EveryChecks.Elements.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			kinds.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Every](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -5472,13 +673,8 @@ func FuzzEverySuiteFields(f *testing.F) {
 		f,
 		kinds.EveryChecks.Fields.Callable,
 		everyIdle,
-		conform.Excuse(
-			kinds.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Every](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -5490,13 +686,8 @@ func FuzzEverySuiteElements(f *testing.F) {
 		f,
 		kinds.EveryChecks.Elements.Callable,
 		everyIdle,
-		conform.Excuse(
-			kinds.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Every](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -5508,13 +699,8 @@ func FuzzEverySuiteResults(f *testing.F) {
 		f,
 		kinds.EveryChecks.Results.Callable,
 		everyIdle,
-		conform.Excuse(
-			kinds.EveryChecks.Fields.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.EveryChecks.Elements.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Every](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -5593,10 +779,15 @@ func TestPlacerSuite(t *testing.T) {
 	})
 }
 
+// placerSuite is the suite of Placer that the tests of the planted defect
+// of a ceiling apply.
+var placerSuite = kinds.PlacerSuite()
+
 // placerIdle returns the planted defect of a ceiling of Placer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func placerIdle(h *kinds.PlacerHandle) kinds.Placer {
-	return kinds.PlacerSuite().Calls[0].Over(h, func() {})
+	return placerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestPlacerSuiteBudgets applies the allocation ceilings of the suite of
@@ -5688,10 +879,15 @@ func TestRouterSuite(t *testing.T) {
 	})
 }
 
+// routerSuite is the suite of Router that the tests of the planted defect
+// of a ceiling apply.
+var routerSuite = kinds.RouterSuite()
+
 // routerIdle returns the planted defect of a ceiling of Router with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func routerIdle(h *kinds.RouterHandle) kinds.Router {
-	return kinds.RouterSuite().Calls[0].Over(h, func() {})
+	return routerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestRouterSuiteBudgets applies the allocation ceilings of the suite of
@@ -5838,10 +1034,15 @@ func TestDrawerSuite(t *testing.T) {
 	})
 }
 
+// drawerSuite is the suite of Drawer that the tests of the planted defect
+// of a ceiling apply.
+var drawerSuite = kinds.DrawerSuite()
+
 // drawerIdle returns the planted defect of a ceiling of Drawer with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func drawerIdle(h *kinds.DrawerHandle) kinds.Drawer {
-	return kinds.DrawerSuite().Calls[0].Over(h, func() {})
+	return drawerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestDrawerSuiteBudgets applies the allocation ceilings of the suite of
@@ -5978,10 +1179,7 @@ func TestOddSuite(t *testing.T) {
 				},
 				Defect: func(*kinds.OddHandle) kinds.Odd { return &oddSubject{} },
 			}),
-			conform.Excuse(
-				kinds.OddChecks.Keep.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Odd]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -6003,18 +1201,19 @@ func TestOddSuite(t *testing.T) {
 				},
 				Defect: func(*kinds.OddHandle) kinds.Odd { return &oddSubject{} },
 			}),
-			conform.Excuse(
-				kinds.OddChecks.Keep.Smoke(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Odd]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// oddSuite is the suite of Odd that the tests of the planted defect of a
+// ceiling apply.
+var oddSuite = kinds.OddSuite()
+
 // oddIdle returns the planted defect of a ceiling of Odd with a spend of
-// nothing, a subject that answers each call at once.
+// nothing. Each call of the defect returns its zero results at once.
 func oddIdle(h *kinds.OddHandle) kinds.Odd {
-	return kinds.OddSuite().Calls[0].Over(h, func() {})
+	return oddSuite.Calls[0].Over(h, func() {})
 }
 
 // TestOddSuiteBudgets applies the allocation ceilings of the suite of Odd
@@ -6025,9 +1224,8 @@ func TestOddSuiteBudgets(t *testing.T) {
 		t,
 		oddIdle,
 		conform.Ceilings(kinds.OddChecks.Loop.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			kinds.OddChecks.Keep.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Odd](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6039,9 +1237,8 @@ func FuzzOddSuiteTag(f *testing.F) {
 		f,
 		kinds.OddChecks.Tag.Callable,
 		oddIdle,
-		conform.Excuse(
-			kinds.OddChecks.Keep.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Odd](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6053,9 +1250,8 @@ func FuzzOddSuiteKeep(f *testing.F) {
 		f,
 		kinds.OddChecks.Keep.Callable,
 		oddIdle,
-		conform.Excuse(
-			kinds.OddChecks.Keep.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Odd](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6067,9 +1263,8 @@ func FuzzOddSuiteEmbed(f *testing.F) {
 		f,
 		kinds.OddChecks.Embed.Callable,
 		oddIdle,
-		conform.Excuse(
-			kinds.OddChecks.Keep.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Odd](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6081,9 +1276,8 @@ func FuzzOddSuiteLoop(f *testing.F) {
 		f,
 		kinds.OddChecks.Loop.Callable,
 		oddIdle,
-		conform.Excuse(
-			kinds.OddChecks.Keep.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Odd](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6139,30 +1333,7 @@ func TestStdSuite(t *testing.T) {
 				},
 				Defect: func(*kinds.StdHandle) kinds.Std { return &stdSubject{} },
 			}),
-			conform.Excuse(
-				kinds.StdChecks.Within.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Within.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Pair.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Pair.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Meet.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Meet.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Std]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -6184,38 +1355,19 @@ func TestStdSuite(t *testing.T) {
 				},
 				Defect: func(*kinds.StdHandle) kinds.Std { return &stdSubject{} },
 			}),
-			conform.Excuse(
-				kinds.StdChecks.Within.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Within.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Pair.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Pair.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Meet.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				kinds.StdChecks.Meet.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[kinds.Std]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// stdSuite is the suite of Std that the tests of the planted defect of a
+// ceiling apply.
+var stdSuite = kinds.StdSuite()
+
 // stdIdle returns the planted defect of a ceiling of Std with a spend of
-// nothing, a subject that answers each call at once.
+// nothing. Each call of the defect returns its zero results at once.
 func stdIdle(h *kinds.StdHandle) kinds.Std {
-	return kinds.StdSuite().Calls[0].Over(h, func() {})
+	return stdSuite.Calls[0].Over(h, func() {})
 }
 
 // TestStdSuiteBudgets applies the allocation ceilings of the suite of Std
@@ -6235,29 +1387,8 @@ func TestStdSuiteBudgets(t *testing.T) {
 		conform.Ceilings(kinds.StdChecks.Hold.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(kinds.StdChecks.Pair.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(kinds.StdChecks.Meet.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6269,29 +1400,8 @@ func FuzzStdSuiteCopy(f *testing.F) {
 		f,
 		kinds.StdChecks.Copy.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6303,29 +1413,8 @@ func FuzzStdSuiteClose(f *testing.F) {
 		f,
 		kinds.StdChecks.Close.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6337,29 +1426,8 @@ func FuzzStdSuiteFrom(f *testing.F) {
 		f,
 		kinds.StdChecks.From.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6371,29 +1439,8 @@ func FuzzStdSuiteAt(f *testing.F) {
 		f,
 		kinds.StdChecks.At.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6405,29 +1452,8 @@ func FuzzStdSuiteLog(f *testing.F) {
 		f,
 		kinds.StdChecks.Log.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6439,29 +1465,8 @@ func FuzzStdSuiteBuffer(f *testing.F) {
 		f,
 		kinds.StdChecks.Buffer.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6473,29 +1478,8 @@ func FuzzStdSuiteLock(f *testing.F) {
 		f,
 		kinds.StdChecks.Lock.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6507,29 +1491,8 @@ func FuzzStdSuiteFail(f *testing.F) {
 		f,
 		kinds.StdChecks.Fail.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6541,29 +1504,8 @@ func FuzzStdSuiteWithin(f *testing.F) {
 		f,
 		kinds.StdChecks.Within.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6575,29 +1517,8 @@ func FuzzStdSuiteHold(f *testing.F) {
 		f,
 		kinds.StdChecks.Hold.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6609,29 +1530,8 @@ func FuzzStdSuitePair(f *testing.F) {
 		f,
 		kinds.StdChecks.Pair.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -6643,29 +1543,8 @@ func FuzzStdSuiteMeet(f *testing.F) {
 		f,
 		kinds.StdChecks.Meet.Callable,
 		stdIdle,
-		conform.Excuse(
-			kinds.StdChecks.Within.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Within.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Pair.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			kinds.StdChecks.Meet.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }

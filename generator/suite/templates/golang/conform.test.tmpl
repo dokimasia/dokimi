@@ -337,7 +337,7 @@ refers to.
 {{- $checks := spell (index .Decl.Fields.Items 2).Type}}
 {{- range .Data.Excusals}}
 		{{import "go.dokimi.dev/conform"}}.Excuse(
-			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
+			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{with .Base}}{{.}}().Generated(){{else}}{{suitePascal .Method}}(){{end}},
 			{{printf "%q" .Reason}},
 		),
 {{- end}}
@@ -409,28 +409,34 @@ test built last, by identity.
 
 {{- /*
 suite.idle writes the tests of the suite of an interface or a struct that run
-its applications on its planted defect with a spend of nothing, a subject that
-answers each call at once: the test of the allocation ceilings, a fuzz target
-of each callable and the benchmarks of the levels. A test without a level has
-no benchmark. The test of the allocation ceilings adds a ceiling of 0 to each
+its applications on its planted defect with a spend of nothing, which returns
+the zero results of each call at once: the test of the allocation ceilings, a
+fuzz target of each callable and the benchmarks of the levels. The tests take
+the planted defect from one build of the suite. A test without a level has no
+benchmark. The test of the allocation ceilings adds a ceiling of 0 to each
 level that Ceiled marks, which the planted defect falsifies first. It excuses
 every check of the suite, because a check that counts allocations runs with
 the ceilings.
 */}}
 {{- define "suite.idle"}}
 {{- $testing := import "testing"}}
+{{- $conform := import "go.dokimi.dev/conform"}}
 {{- $c := .Data}}
 {{- $refs := .Decl.Fields.Items}}
 {{- $suite := spell (index $refs 0).Type}}
 {{- $handle := spell (index $refs 3).Type}}
 {{- $subject := spell (index $refs 5).Type}}
 {{- $checks := spell (index $refs 6).Type}}
+{{- $built := printf "%sSuite" (suiteCamel $c.Declaration)}}
 {{- $idle := printf "%sIdle" (suiteCamel $c.Declaration)}}
-{{- $zero := "the planted defect of a ceiling answers each call with its zero results"}}
+{{- $zero := "the planted defect of a ceiling returns the zero results of each call"}}
 
-{{docs (wrapdocs (printf `%s returns the planted defect of a ceiling of %s with a spend of nothing, a subject that answers each call at once.` $idle $c.Declaration))}}
+{{docs (wrapdocs (printf `%s is the suite of %s that the tests of the planted defect of a ceiling apply.` $built $c.Declaration))}}
+{{- ""}}var {{$built}} = {{$suite}}()
+
+{{docs (wrapdocs (printf `%s returns the planted defect of a ceiling of %s with a spend of nothing. Each call of the defect returns its zero results at once.` $idle $c.Declaration))}}
 {{- ""}}func {{$idle}}(h *{{$handle}}) {{$subject}} {
-	return {{$suite}}().Calls[0].Over(h, func() {})
+	return {{$built}}.Calls[0].Over(h, func() {})
 }
 {{- $budgets := suitePascal $c.Budgets}}
 
@@ -441,14 +447,11 @@ the ceilings.
 		{{$idle}},
 {{- range $c.Levels}}
 {{- if .Ceiled}}
-		{{import "go.dokimi.dev/conform"}}.Ceilings({{$checks}}.{{.Field}}.Callable, {{import "go.dokimi.dev/conform"}}.Budget{Allocs: new(uint64(0))}),
+		{{$conform}}.Ceilings({{$checks}}.{{.Field}}.Callable, {{$conform}}.Budget{Allocs: new(uint64(0))}),
 {{- end}}
 {{- end}}
-{{- range $c.Excusals}}
-		{{import "go.dokimi.dev/conform"}}.Excuse(
-			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
-			{{printf "%q" $zero}},
-		),
+{{- if $c.Excused}}
+		{{$conform}}.ExcuseSuite[{{$subject}}]({{printf "%q" $zero}}),
 {{- end}}
 	)
 }
@@ -461,11 +464,8 @@ the ceilings.
 		f,
 		{{$checks}}.{{.Field}}.Callable,
 		{{$idle}},
-{{- range $c.Excusals}}
-		{{import "go.dokimi.dev/conform"}}.Excuse(
-			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
-			{{printf "%q" $zero}},
-		),
+{{- if $c.Excused}}
+		{{$conform}}.ExcuseSuite[{{$subject}}]({{printf "%q" $zero}}),
 {{- end}}
 	)
 }
@@ -499,15 +499,12 @@ the ceilings.
 {{- end}}
 
 {{- /*
-suite.alone writes the excusal of each check of the suite, because the test of
-the suite applies its own check alone.
+suite.alone writes the excusal of the checks of the suite, because the test of
+the suite applies its own check alone. It writes nothing for a suite without
+a check.
 */}}
 {{- define "suite.alone"}}
-{{- $checks := spell (index .Decl.Fields.Items 6).Type}}
-{{- range .Data.Excusals}}
-			{{import "go.dokimi.dev/conform"}}.Excuse(
-				{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
-				{{printf "%q" .Reason}},
-			),
+{{- if .Data.Excused}}
+			{{import "go.dokimi.dev/conform"}}.ExcuseSuite[{{spell (index .Decl.Fields.Items 5).Type}}]("the test applies the check of its option alone"),
 {{- end}}
 {{- end}}

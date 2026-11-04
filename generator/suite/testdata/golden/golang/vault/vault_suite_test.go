@@ -43,62 +43,7 @@ func TestVaultSuite(t *testing.T) {
 				},
 				Defect: func(*vault.VaultHandle) vault.Vault { return &vaultSubject{} },
 			}),
-			conform.Excuse(
-				vault.VaultChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.CorruptionIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[vault.Vault]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -120,70 +65,19 @@ func TestVaultSuite(t *testing.T) {
 				},
 				Defect: func(*vault.VaultHandle) vault.Vault { return &vaultSubject{} },
 			}),
-			conform.Excuse(
-				vault.VaultChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.CorruptionIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Put.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.VaultChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[vault.Vault]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// vaultSuite is the suite of Vault that the tests of the planted defect of
+// a ceiling apply.
+var vaultSuite = vault.VaultSuite()
+
 // vaultIdle returns the planted defect of a ceiling of Vault with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func vaultIdle(h *vault.VaultHandle) vault.Vault {
-	return vault.VaultSuite().Calls[0].Over(h, func() {})
+	return vaultSuite.Calls[0].Over(h, func() {})
 }
 
 // TestVaultSuiteBudgets applies the allocation ceilings of the suite of
@@ -196,61 +90,8 @@ func TestVaultSuiteBudgets(t *testing.T) {
 		vaultIdle,
 		conform.Ceilings(vault.VaultChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(vault.VaultChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			vault.VaultChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.CorruptionIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Vault](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -262,61 +103,8 @@ func FuzzVaultSuitePut(f *testing.F) {
 		f,
 		vault.VaultChecks.Put.Callable,
 		vaultIdle,
-		conform.Excuse(
-			vault.VaultChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.CorruptionIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Vault](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -328,61 +116,8 @@ func FuzzVaultSuiteGet(f *testing.F) {
 		f,
 		vault.VaultChecks.Get.Callable,
 		vaultIdle,
-		conform.Excuse(
-			vault.VaultChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.CorruptionIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Put.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.VaultChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Vault](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -433,58 +168,7 @@ func TestJournalSuite(t *testing.T) {
 				},
 				Defect: func(*vault.JournalHandle) vault.Journal { return &journalSubject{} },
 			}),
-			conform.Excuse(
-				vault.JournalChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[vault.Journal]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -506,66 +190,20 @@ func TestJournalSuite(t *testing.T) {
 				},
 				Defect: func(*vault.JournalHandle) vault.Journal { return &journalSubject{} },
 			}),
-			conform.Excuse(
-				vault.JournalChecks.Append.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Append.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.JournalChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[vault.Journal]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// journalSuite is the suite of Journal that the tests of the planted
+// defect of a ceiling apply.
+var journalSuite = vault.JournalSuite()
+
 // journalIdle returns the planted defect of a ceiling of Journal with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func journalIdle(h *vault.JournalHandle) vault.Journal {
-	return vault.JournalSuite().Calls[0].Over(h, func() {})
+	return journalSuite.Calls[0].Over(h, func() {})
 }
 
 // TestJournalSuiteBudgets applies the allocation ceilings of the suite of
@@ -581,57 +219,8 @@ func TestJournalSuiteBudgets(t *testing.T) {
 			conform.Budget{Allocs: new(uint64(0))},
 		),
 		conform.Ceilings(vault.JournalChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			vault.JournalChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Journal](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -643,57 +232,8 @@ func FuzzJournalSuiteAppend(f *testing.F) {
 		f,
 		vault.JournalChecks.Append.Callable,
 		journalIdle,
-		conform.Excuse(
-			vault.JournalChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Journal](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -705,57 +245,8 @@ func FuzzJournalSuiteGet(f *testing.F) {
 		f,
 		vault.JournalChecks.Get.Callable,
 		journalIdle,
-		conform.Excuse(
-			vault.JournalChecks.Append.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Append.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.JournalChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Journal](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -806,42 +297,7 @@ func TestLedgerSuite(t *testing.T) {
 				},
 				Defect: func(*vault.LedgerHandle) vault.Ledger { return &ledgerSubject{} },
 			}),
-			conform.Excuse(
-				vault.LedgerChecks.Record.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Record.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Record.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Record.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Record.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Lookup.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Lookup.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Lookup.ZeroOnMiss(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Lookup.ZeroOnMissGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[vault.Ledger]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -863,50 +319,20 @@ func TestLedgerSuite(t *testing.T) {
 				},
 				Defect: func(*vault.LedgerHandle) vault.Ledger { return &ledgerSubject{} },
 			}),
-			conform.Excuse(
-				vault.LedgerChecks.Record.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Record.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Record.SyncedWritesSurvive(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Record.NoTornRecord(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Record.FullMediumIsReported(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Lookup.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Lookup.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Lookup.ZeroOnMiss(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				vault.LedgerChecks.Lookup.ZeroOnMissGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[vault.Ledger]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// ledgerSuite is the suite of Ledger that the tests of the planted defect
+// of a ceiling apply.
+var ledgerSuite = vault.LedgerSuite()
+
 // ledgerIdle returns the planted defect of a ceiling of Ledger with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func ledgerIdle(h *vault.LedgerHandle) vault.Ledger {
-	return vault.LedgerSuite().Calls[0].Over(h, func() {})
+	return ledgerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestLedgerSuiteBudgets applies the allocation ceilings of the suite of
@@ -925,41 +351,8 @@ func TestLedgerSuiteBudgets(t *testing.T) {
 			vault.LedgerChecks.Lookup.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.ZeroOnMiss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.ZeroOnMissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Ledger](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -971,41 +364,8 @@ func FuzzLedgerSuiteRecord(f *testing.F) {
 		f,
 		vault.LedgerChecks.Record.Callable,
 		ledgerIdle,
-		conform.Excuse(
-			vault.LedgerChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.ZeroOnMiss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.ZeroOnMissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Ledger](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -1017,41 +377,8 @@ func FuzzLedgerSuiteLookup(f *testing.F) {
 		f,
 		vault.LedgerChecks.Lookup.Callable,
 		ledgerIdle,
-		conform.Excuse(
-			vault.LedgerChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.SyncedWritesSurvive(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.NoTornRecord(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Record.FullMediumIsReported(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.ZeroOnMiss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			vault.LedgerChecks.Lookup.ZeroOnMissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[vault.Ledger](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }

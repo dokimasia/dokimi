@@ -21,7 +21,6 @@
 {{- $over := suiteCamel $n.Over}}
 {{- $newOver := suiteCamel $n.NewOver}}
 {{- $subjects := suiteCamel $n.Subjects}}
-{{- template "suite.header" $c}}
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = {{$conform}}.CompatV1
@@ -82,7 +81,7 @@ var _ = {{$conform}}.CompatV1
 {{- end}}
 {{- end}}
 {{- range $c.Derived}}
-{{- if eq .Type $callable.Type}}
+{{- if and (eq .Type $callable.Type) (not .Base)}}
 
 {{docs (wrapdocs (printf `%s returns the identity of the check that %s.` .Method .Statement))}}
 {{- ""}}func (c {{$type}}) {{.Method}}() {{$conform}}.ID[{{$s}}] {
@@ -118,18 +117,15 @@ var _ = {{$conform}}.CompatV1
 		Checks: []{{$conform}}.Check[{{$s}}]{
 {{- range $c.Derived}}{{$spec := import "go.dokimi.dev/spec"}}{{$probe := import "go.dokimi.dev/conform/probe"}}
 			{
-				ID:          {{$checks}}{{with .Field}}.{{.}}{{end}}.{{.Method}}(),
+				ID:          {{$checks}}{{with .Field}}.{{.}}{{end}}.{{with .Base}}{{.}}().Generated(){{else}}{{.Method}}(){{end}},
 				Statement:   {{printf "%q" .Statement}},
 				Claim:       {{$spec}}.{{.Claim}},
-				Probe:       {{$spec}}.{{.Probe}},
-				Reason:      {{$spec}}.{{.Reason}},
-				Law:         {{$spec}}.{{.Law}},
 				Machineries: []{{$spec}}.MachineryID{ {{- range $i, $m := .Machineries}}{{if $i}}, {{end}}{{$spec}}.{{$m}}{{end -}} },
 {{- if .Shallow}}
 				Shallow:     true,
 {{- end}}
 {{- with .Entails}}
-				Entails:     []{{$conform}}.ID[{{$s}}]{ {{- range $i, $e := .}}{{if $i}}, {{end}}{{$checks}}{{with $e.Field}}.{{.}}{{end}}.{{$e.Method}}(){{end -}} },
+				Entails:     []{{$conform}}.ID[{{$s}}]{ {{- range $i, $e := .}}{{if $i}}, {{end}}{{$checks}}{{with $e.Field}}.{{.}}{{end}}.{{with $e.Base}}{{.}}().Generated(){{else}}{{$e.Method}}(){{end}}{{end -}} },
 {{- end}}
 {{- if .Sequence}}
 				Property: func(h *{{$handle}}, c *{{import "go.dokimi.dev/assert/prop"}}.Case) {
@@ -813,59 +809,6 @@ of one callable: the type that embeds the subject type and overrides the
 callable, with the function that wraps a fresh subject in it, or the function
 of a function suite that wraps the fresh function.
 */}}
-{{- /*
-suite.header writes the header of a suite: each derived check with its
-statement, each derived check that witnesses its law at the shallow end, each
-refused claim with its reason and its remedy, and each unclaimed
-classification with its stance and its note.
-*/}}
-{{- define "suite.header"}}
-{{- $c := .}}
-{{- with $c.Derived}}{{"\n"}}
-{{- range wrapdocs (printf "The derived checks of %s:" $c.Declaration)}}
-// {{.}}
-{{- end}}
-{{- range .}}
-//
-{{- range wrapdocs (printf "%s: %s." (suiteIdentity $c.Declaration (not $c.Func) .Field .Segment) .Statement)}}
-// {{.}}
-{{- end}}
-{{- end}}
-{{- end}}
-{{- $shallow := false}}{{range $c.Derived}}{{if .Shallow}}{{$shallow = true}}{{end}}{{end}}
-{{- if $shallow}}{{"\n"}}
-{{- range wrapdocs (printf "The derived checks of %s that witness their laws at the shallow end:" $c.Declaration)}}
-// {{.}}
-{{- end}}
-{{- range $c.Derived}}{{if .Shallow}}
-//
-// {{suiteIdentity $c.Declaration (not $c.Func) .Field .Segment}}
-{{- end}}{{end}}
-{{- end}}
-{{- with $c.Derivation.Refusals}}{{"\n"}}
-{{- range wrapdocs (printf "The refused claims of %s:" $c.Declaration)}}
-// {{.}}
-{{- end}}
-{{- range .}}
-//
-{{- range wrapdocs (printf "%s: %s. The remedy is to %s." (suiteIdentity $c.Declaration (not $c.Func) .Callable (print .Claim)) .Why .Remedy)}}
-// {{.}}
-{{- end}}
-{{- end}}
-{{- end}}
-{{- with $c.Derivation.Unclaimed}}{{"\n"}}
-{{- range wrapdocs (printf "The unclaimed classifications of %s:" $c.Declaration)}}
-// {{.}}
-{{- end}}
-{{- range .}}
-//
-{{- range wrapdocs (printf "The %s of %s has the stance %s. %s" .Classification (suiteIdentity $c.Declaration (not $c.Func) .Callable "") .Stance .Note)}}
-// {{.}}
-{{- end}}
-{{- end}}
-{{- end}}
-{{- end}}
-
 {{- define "suite.defect"}}
 {{- $d := .Defect}}
 {{- $new := suiteCamel $d.Name}}

@@ -49,70 +49,7 @@ func TestRecordsSuite(t *testing.T) {
 				},
 				Defect: func(*buffered.RecordsHandle) buffered.Records { return &recordsSubject{} },
 			}),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.ReturnsOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.ReturnsOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.ReturnsOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.ReturnsOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Peek.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Peek.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Peek.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Peek.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[buffered.Records]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -140,78 +77,20 @@ func TestRecordsSuite(t *testing.T) {
 				},
 				Defect: func(*buffered.RecordsHandle) buffered.Records { return &recordsSubject{} },
 			}),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.ReturnsOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Read.ReturnsOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.ReturnsOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Fill.ReturnsOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Peek.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Peek.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Peek.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				buffered.RecordsChecks.Peek.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[buffered.Records]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// recordsSuite is the suite of Records that the tests of the planted
+// defect of a ceiling apply.
+var recordsSuite = buffered.RecordsSuite()
+
 // recordsIdle returns the planted defect of a ceiling of Records with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func recordsIdle(h *buffered.RecordsHandle) buffered.Records {
-	return buffered.RecordsSuite().Calls[0].Over(h, func() {})
+	return recordsSuite.Calls[0].Over(h, func() {})
 }
 
 // TestRecordsSuiteBudgets applies the allocation ceilings of the suite of
@@ -234,69 +113,8 @@ func TestRecordsSuiteBudgets(t *testing.T) {
 			buffered.RecordsChecks.Peek.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.ReturnsOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.ReturnsOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.ReturnsOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.ReturnsOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[buffered.Records](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -308,69 +126,8 @@ func FuzzRecordsSuiteRead(f *testing.F) {
 		f,
 		buffered.RecordsChecks.Read.Callable,
 		recordsIdle,
-		conform.Excuse(
-			buffered.RecordsChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.ReturnsOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.ReturnsOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.ReturnsOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.ReturnsOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[buffered.Records](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -382,69 +139,8 @@ func FuzzRecordsSuiteFill(f *testing.F) {
 		f,
 		buffered.RecordsChecks.Fill.Callable,
 		recordsIdle,
-		conform.Excuse(
-			buffered.RecordsChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.ReturnsOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.ReturnsOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.ReturnsOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.ReturnsOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[buffered.Records](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -456,69 +152,8 @@ func FuzzRecordsSuitePeek(f *testing.F) {
 		f,
 		buffered.RecordsChecks.Peek.Callable,
 		recordsIdle,
-		conform.Excuse(
-			buffered.RecordsChecks.Read.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.ReturnsOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Read.ReturnsOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.ReturnsOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Fill.ReturnsOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			buffered.RecordsChecks.Peek.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[buffered.Records](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }

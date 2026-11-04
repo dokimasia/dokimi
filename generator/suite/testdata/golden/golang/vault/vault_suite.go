@@ -13,56 +13,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Vault:
-//
-// Vault.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Vault.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Vault.Put/cancel: Put returns an error for a cancelled context.
-//
-// Vault.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Vault.Put/synced-writes-survive: Get returns each value that Put wrote
-// with success before a crash at any persistence point.
-//
-// Vault.Put/no-torn-record: Get returns each value of Put whole or not at
-// all after a crash during a torn write.
-//
-// Vault.Put/corruption-is-reported: Get fails with the declared error of a
-// corrupted record, and returns no value of it.
-//
-// Vault.Put/full-medium-is-reported: Put fails on a full medium, and Get
-// returns each value as before the write.
-//
-// Vault.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Vault.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Vault.Get/cancel: Get returns an error for a cancelled context.
-//
-// Vault.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Vault.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Vault.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-
-// The derived checks of Vault that witness their laws at the shallow end:
-//
-// Vault.Put/smoke
-//
-// Vault.Get/smoke
-
-// The unclaimed classifications of Vault:
-//
-// The shape:composite-writer of Vault.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -94,22 +44,10 @@ func (c vaultPut) Smoke() conform.ID[Vault] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c vaultPut) SmokeGenerated() conform.ID[Vault] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c vaultPut) Cancel() conform.ID[Vault] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c vaultPut) CancelGenerated() conform.ID[Vault] {
-	return c.Check("cancel#generated")
 }
 
 // SyncedWritesSurvive returns the identity of the check that Get returns
@@ -149,34 +87,16 @@ func (c vaultGet) Smoke() conform.ID[Vault] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c vaultGet) SmokeGenerated() conform.ID[Vault] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c vaultGet) Cancel() conform.ID[Vault] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c vaultGet) CancelGenerated() conform.ID[Vault] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c vaultGet) ZeroOnError() conform.ID[Vault] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c vaultGet) ZeroOnErrorGenerated() conform.ID[Vault] {
-	return c.Check("zero-on-error#generated")
 }
 
 // VaultSuite returns the checks of Vault, and the calls and the budgets of
@@ -191,9 +111,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *VaultHandle) {
@@ -204,12 +121,9 @@ func VaultSuite() conform.Suite[Vault] {
 				Defect: vaultPutPanics,
 			},
 			{
-				ID:          VaultChecks.Put.SmokeGenerated(),
+				ID:          VaultChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *VaultHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -224,9 +138,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *VaultHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -236,12 +147,9 @@ func VaultSuite() conform.Suite[Vault] {
 				Defect: vaultPutIgnoresCancel,
 			},
 			{
-				ID:          VaultChecks.Put.CancelGenerated(),
+				ID:          VaultChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *VaultHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -256,9 +164,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Put.SyncedWritesSurvive(),
 				Statement:   "Get returns each value that Put wrote with success before a crash at any persistence point",
 				Claim:       spec.SyncedWritesSurvive,
-				Probe:       spec.SurvivesEveryCrashPoint,
-				Reason:      spec.LostAcknowledgedWrite,
-				Law:         spec.AcknowledgedWriteSurvivesACrash,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *VaultHandle) {
 					probe.SurvivesEveryCrashPoint(h, probe.Durable[Vault, string]{
@@ -295,9 +200,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Put.NoTornRecord(),
 				Statement:   "Get returns each value of Put whole or not at all after a crash during a torn write",
 				Claim:       spec.NoTornRecord,
-				Probe:       spec.WholeAtEveryCrashPoint,
-				Reason:      spec.TornRecord,
-				Law:         spec.RecoveryReturnsWholeRecords,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *VaultHandle) {
 					probe.WholeAtEveryCrashPoint(h, probe.Durable[Vault, string]{
@@ -334,9 +236,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Put.CorruptionIsReported(),
 				Statement:   "Get fails with the declared error of a corrupted record, and returns no value of it",
 				Claim:       spec.CorruptionIsReported,
-				Probe:       spec.ReportsEachFlippedBit,
-				Reason:      spec.UnreportedCorruption,
-				Law:         spec.CorruptedReadIsReported,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *VaultHandle) {
 					probe.ReportsEachFlippedBit(h, probe.Durable[Vault, string]{
@@ -373,9 +272,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Put.FullMediumIsReported(),
 				Statement:   "Put fails on a full medium, and Get returns each value as before the write",
 				Claim:       spec.FullMediumIsReported,
-				Probe:       spec.RefusesOnAFullMedium,
-				Reason:      spec.HalfWrittenOnFull,
-				Law:         spec.RefusedWriteLeavesTheState,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *VaultHandle) {
 					probe.RefusesOnAFullMedium(h, probe.Durable[Vault, string]{
@@ -412,9 +308,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *VaultHandle) {
@@ -426,12 +319,9 @@ func VaultSuite() conform.Suite[Vault] {
 				Defect: vaultGetPanics,
 			},
 			{
-				ID:          VaultChecks.Get.SmokeGenerated(),
+				ID:          VaultChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *VaultHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -446,9 +336,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *VaultHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -459,12 +346,9 @@ func VaultSuite() conform.Suite[Vault] {
 				Defect: vaultGetIgnoresCancel,
 			},
 			{
-				ID:          VaultChecks.Get.CancelGenerated(),
+				ID:          VaultChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *VaultHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -479,9 +363,6 @@ func VaultSuite() conform.Suite[Vault] {
 				ID:          VaultChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *VaultHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -491,12 +372,9 @@ func VaultSuite() conform.Suite[Vault] {
 				Defect: vaultGetValueBeside,
 			},
 			{
-				ID:          VaultChecks.Get.ZeroOnErrorGenerated(),
+				ID:          VaultChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *VaultHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -831,49 +709,6 @@ func vaultGetValueBeside(h *VaultHandle) Vault {
 	return &vaultGetValueBesideDefect{vaultOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Journal:
-//
-// Journal.Append/smoke: Append returns without a panic for derived inputs.
-//
-// Journal.Append/smoke#generated: Append returns without a panic for
-// derived inputs.
-//
-// Journal.Append/cancel: Append returns an error for a cancelled context.
-//
-// Journal.Append/cancel#generated: Append returns an error for a cancelled
-// context.
-//
-// Journal.Append/synced-writes-survive: Get returns each value that Append
-// wrote with success before a crash at any persistence point.
-//
-// Journal.Append/no-torn-record: Get returns each value of Append whole or
-// not at all after a crash during a torn write.
-//
-// Journal.Append/full-medium-is-reported: Append fails on a full medium,
-// and Get returns each value as before the write.
-//
-// Journal.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Journal.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Journal.Get/cancel: Get returns an error for a cancelled context.
-//
-// Journal.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Journal.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Journal.Get/zero-on-error#generated: Get returns the zero value beside
-// an error.
-
-// The derived checks of Journal that witness their laws at the shallow
-// end:
-//
-// Journal.Append/smoke
-//
-// Journal.Get/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -906,22 +741,10 @@ func (c journalAppend) Smoke() conform.ID[Journal] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Append returns
-// without a panic for derived inputs.
-func (c journalAppend) SmokeGenerated() conform.ID[Journal] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Append returns an error
 // for a cancelled context.
 func (c journalAppend) Cancel() conform.ID[Journal] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Append returns an
-// error for a cancelled context.
-func (c journalAppend) CancelGenerated() conform.ID[Journal] {
-	return c.Check("cancel#generated")
 }
 
 // SyncedWritesSurvive returns the identity of the check that Get returns
@@ -955,34 +778,16 @@ func (c journalGet) Smoke() conform.ID[Journal] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c journalGet) SmokeGenerated() conform.ID[Journal] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c journalGet) Cancel() conform.ID[Journal] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c journalGet) CancelGenerated() conform.ID[Journal] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c journalGet) ZeroOnError() conform.ID[Journal] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c journalGet) ZeroOnErrorGenerated() conform.ID[Journal] {
-	return c.Check("zero-on-error#generated")
 }
 
 // JournalSuite returns the checks of Journal, and the calls and the
@@ -997,9 +802,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Append.Smoke(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *JournalHandle) {
@@ -1011,12 +813,9 @@ func JournalSuite() conform.Suite[Journal] {
 				Defect: journalAppendPanics,
 			},
 			{
-				ID:          JournalChecks.Append.SmokeGenerated(),
+				ID:          JournalChecks.Append.Smoke().Generated(),
 				Statement:   "Append returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1032,9 +831,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Append.Cancel(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1045,12 +841,9 @@ func JournalSuite() conform.Suite[Journal] {
 				Defect: journalAppendIgnoresCancel,
 			},
 			{
-				ID:          JournalChecks.Append.CancelGenerated(),
+				ID:          JournalChecks.Append.Cancel().Generated(),
 				Statement:   "Append returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1066,9 +859,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Append.SyncedWritesSurvive(),
 				Statement:   "Get returns each value that Append wrote with success before a crash at any persistence point",
 				Claim:       spec.SyncedWritesSurvive,
-				Probe:       spec.SurvivesEveryCrashPoint,
-				Reason:      spec.LostAcknowledgedWrite,
-				Law:         spec.AcknowledgedWriteSurvivesACrash,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *JournalHandle) {
 					probe.SurvivesEveryCrashPoint(h, probe.Durable[Journal, string]{
@@ -1107,9 +897,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Append.NoTornRecord(),
 				Statement:   "Get returns each value of Append whole or not at all after a crash during a torn write",
 				Claim:       spec.NoTornRecord,
-				Probe:       spec.WholeAtEveryCrashPoint,
-				Reason:      spec.TornRecord,
-				Law:         spec.RecoveryReturnsWholeRecords,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *JournalHandle) {
 					probe.WholeAtEveryCrashPoint(h, probe.Durable[Journal, string]{
@@ -1148,9 +935,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Append.FullMediumIsReported(),
 				Statement:   "Append fails on a full medium, and Get returns each value as before the write",
 				Claim:       spec.FullMediumIsReported,
-				Probe:       spec.RefusesOnAFullMedium,
-				Reason:      spec.HalfWrittenOnFull,
-				Law:         spec.RefusedWriteLeavesTheState,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *JournalHandle) {
 					probe.RefusesOnAFullMedium(h, probe.Durable[Journal, string]{
@@ -1189,9 +973,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *JournalHandle) {
@@ -1203,12 +984,9 @@ func JournalSuite() conform.Suite[Journal] {
 				Defect: journalGetPanics,
 			},
 			{
-				ID:          JournalChecks.Get.SmokeGenerated(),
+				ID:          JournalChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1223,9 +1001,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1236,12 +1011,9 @@ func JournalSuite() conform.Suite[Journal] {
 				Defect: journalGetIgnoresCancel,
 			},
 			{
-				ID:          JournalChecks.Get.CancelGenerated(),
+				ID:          JournalChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1256,9 +1028,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *JournalHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -1268,12 +1037,9 @@ func JournalSuite() conform.Suite[Journal] {
 				Defect: journalGetValueBeside,
 			},
 			{
-				ID:          JournalChecks.Get.ZeroOnErrorGenerated(),
+				ID:          JournalChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1580,44 +1346,6 @@ func journalGetValueBeside(h *JournalHandle) Journal {
 	return &journalGetValueBesideDefect{journalOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Ledger:
-//
-// Ledger.Record/smoke: Record returns without a panic for derived inputs.
-//
-// Ledger.Record/smoke#generated: Record returns without a panic for
-// derived inputs.
-//
-// Ledger.Record/synced-writes-survive: Lookup returns each value that
-// Record wrote with success before a crash at any persistence point.
-//
-// Ledger.Record/no-torn-record: Lookup returns each value of Record whole
-// or not at all after a crash during a torn write.
-//
-// Ledger.Record/full-medium-is-reported: Record fails on a full medium,
-// and Lookup returns each value as before the write.
-//
-// Ledger.Lookup/smoke: Lookup returns without a panic for derived inputs.
-//
-// Ledger.Lookup/smoke#generated: Lookup returns without a panic for
-// derived inputs.
-//
-// Ledger.Lookup/zero-on-miss: Lookup returns the zero value beside a false
-// presence flag.
-//
-// Ledger.Lookup/zero-on-miss#generated: Lookup returns the zero value
-// beside a false presence flag.
-
-// The derived checks of Ledger that witness their laws at the shallow end:
-//
-// Ledger.Record/smoke
-//
-// Ledger.Lookup/smoke
-
-// The unclaimed classifications of Ledger:
-//
-// The shape:composite-writer of Ledger.Record has the stance silent. A
-// write is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1648,12 +1376,6 @@ type ledgerRecord struct {
 // panic for derived inputs.
 func (c ledgerRecord) Smoke() conform.ID[Ledger] {
 	return c.Check("smoke")
-}
-
-// SmokeGenerated returns the identity of the check that Record returns
-// without a panic for derived inputs.
-func (c ledgerRecord) SmokeGenerated() conform.ID[Ledger] {
-	return c.Check("smoke#generated")
 }
 
 // SyncedWritesSurvive returns the identity of the check that Lookup
@@ -1687,22 +1409,10 @@ func (c ledgerLookup) Smoke() conform.ID[Ledger] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Lookup returns
-// without a panic for derived inputs.
-func (c ledgerLookup) SmokeGenerated() conform.ID[Ledger] {
-	return c.Check("smoke#generated")
-}
-
 // ZeroOnMiss returns the identity of the check that Lookup returns the
 // zero value beside a false presence flag.
 func (c ledgerLookup) ZeroOnMiss() conform.ID[Ledger] {
 	return c.Check("zero-on-miss")
-}
-
-// ZeroOnMissGenerated returns the identity of the check that Lookup
-// returns the zero value beside a false presence flag.
-func (c ledgerLookup) ZeroOnMissGenerated() conform.ID[Ledger] {
-	return c.Check("zero-on-miss#generated")
 }
 
 // LedgerSuite returns the checks of Ledger, and the calls and the budgets
@@ -1717,9 +1427,6 @@ func LedgerSuite() conform.Suite[Ledger] {
 				ID:          LedgerChecks.Record.Smoke(),
 				Statement:   "Record returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LedgerHandle) {
@@ -1730,12 +1437,9 @@ func LedgerSuite() conform.Suite[Ledger] {
 				Defect: ledgerRecordPanics,
 			},
 			{
-				ID:          LedgerChecks.Record.SmokeGenerated(),
+				ID:          LedgerChecks.Record.Smoke().Generated(),
 				Statement:   "Record returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1750,9 +1454,6 @@ func LedgerSuite() conform.Suite[Ledger] {
 				ID:          LedgerChecks.Record.SyncedWritesSurvive(),
 				Statement:   "Lookup returns each value that Record wrote with success before a crash at any persistence point",
 				Claim:       spec.SyncedWritesSurvive,
-				Probe:       spec.SurvivesEveryCrashPoint,
-				Reason:      spec.LostAcknowledgedWrite,
-				Law:         spec.AcknowledgedWriteSurvivesACrash,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *LedgerHandle) {
 					probe.SurvivesEveryCrashPoint(h, probe.Durable[Ledger, string]{
@@ -1797,9 +1498,6 @@ func LedgerSuite() conform.Suite[Ledger] {
 				ID:          LedgerChecks.Record.NoTornRecord(),
 				Statement:   "Lookup returns each value of Record whole or not at all after a crash during a torn write",
 				Claim:       spec.NoTornRecord,
-				Probe:       spec.WholeAtEveryCrashPoint,
-				Reason:      spec.TornRecord,
-				Law:         spec.RecoveryReturnsWholeRecords,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *LedgerHandle) {
 					probe.WholeAtEveryCrashPoint(h, probe.Durable[Ledger, string]{
@@ -1844,9 +1542,6 @@ func LedgerSuite() conform.Suite[Ledger] {
 				ID:          LedgerChecks.Record.FullMediumIsReported(),
 				Statement:   "Record fails on a full medium, and Lookup returns each value as before the write",
 				Claim:       spec.FullMediumIsReported,
-				Probe:       spec.RefusesOnAFullMedium,
-				Reason:      spec.HalfWrittenOnFull,
-				Law:         spec.RefusedWriteLeavesTheState,
 				Machineries: []spec.MachineryID{spec.KillableProcessOrBreakableMedium},
 				Apply: func(h *LedgerHandle) {
 					probe.RefusesOnAFullMedium(h, probe.Durable[Ledger, string]{
@@ -1891,9 +1586,6 @@ func LedgerSuite() conform.Suite[Ledger] {
 				ID:          LedgerChecks.Lookup.Smoke(),
 				Statement:   "Lookup returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LedgerHandle) {
@@ -1905,12 +1597,9 @@ func LedgerSuite() conform.Suite[Ledger] {
 				Defect: ledgerLookupPanics,
 			},
 			{
-				ID:          LedgerChecks.Lookup.SmokeGenerated(),
+				ID:          LedgerChecks.Lookup.Smoke().Generated(),
 				Statement:   "Lookup returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1925,9 +1614,6 @@ func LedgerSuite() conform.Suite[Ledger] {
 				ID:          LedgerChecks.Lookup.ZeroOnMiss(),
 				Statement:   "Lookup returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
-				Probe:       spec.ZeroBesideFalse,
-				Reason:      spec.ValueBesideFalse,
-				Law:         spec.NoValueBesideAFalseFlag,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LedgerHandle) {
 					probe.ZeroBesideFalse(h, func(ctx context.Context) (string, bool) {
@@ -1937,12 +1623,9 @@ func LedgerSuite() conform.Suite[Ledger] {
 				Defect: ledgerLookupValueBesideAFalseFlag,
 			},
 			{
-				ID:          LedgerChecks.Lookup.ZeroOnMissGenerated(),
+				ID:          LedgerChecks.Lookup.ZeroOnMiss().Generated(),
 				Statement:   "Lookup returns the zero value beside a false presence flag",
 				Claim:       spec.ZeroOnMiss,
-				Probe:       spec.ZeroBesideFalse,
-				Reason:      spec.ValueBesideFalse,
-				Law:         spec.NoValueBesideAFalseFlag,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LedgerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")

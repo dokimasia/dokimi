@@ -43,70 +43,7 @@ func TestMeterSuite(t *testing.T) {
 				},
 				Defect: func(*meter.MeterHandle) meter.Meter { return &meterSubject{} },
 			}),
-			conform.Excuse(
-				meter.MeterChecks.Count.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Record.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Record.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Record.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Record.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Merge.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Merge.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Merge.NilSafe(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Merge.NilSafeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Total.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Total.Deterministic(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[meter.Meter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -128,70 +65,7 @@ func TestMeterSuite(t *testing.T) {
 				},
 				Defect: func(*meter.MeterHandle) meter.Meter { return &meterSubject{} },
 			}),
-			conform.Excuse(
-				meter.MeterChecks.Count.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Count.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Record.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Record.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Record.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Record.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Merge.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Merge.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Merge.NilSafe(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Merge.NilSafeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Total.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.MeterChecks.Total.Deterministic(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[meter.Meter]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -238,10 +112,14 @@ func TestMeterSuiteAllocs(t *testing.T) {
 	})
 }
 
+// meterSuite is the suite of Meter that the tests of the planted defect of
+// a ceiling apply.
+var meterSuite = meter.MeterSuite()
+
 // meterIdle returns the planted defect of a ceiling of Meter with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func meterIdle(h *meter.MeterHandle) meter.Meter {
-	return meter.MeterSuite().Calls[0].Over(h, func() {})
+	return meterSuite.Calls[0].Over(h, func() {})
 }
 
 // TestMeterSuiteBudgets applies the allocation ceilings of the suite of
@@ -254,69 +132,8 @@ func TestMeterSuiteBudgets(t *testing.T) {
 		meterIdle,
 		conform.Ceilings(meter.MeterChecks.Merge.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(meter.MeterChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			meter.MeterChecks.Count.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafe(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[meter.Meter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -328,69 +145,8 @@ func FuzzMeterSuiteCount(f *testing.F) {
 		f,
 		meter.MeterChecks.Count.Callable,
 		meterIdle,
-		conform.Excuse(
-			meter.MeterChecks.Count.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafe(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[meter.Meter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -402,69 +158,8 @@ func FuzzMeterSuiteRecord(f *testing.F) {
 		f,
 		meter.MeterChecks.Record.Callable,
 		meterIdle,
-		conform.Excuse(
-			meter.MeterChecks.Count.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafe(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[meter.Meter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -476,69 +171,8 @@ func FuzzMeterSuiteMerge(f *testing.F) {
 		f,
 		meter.MeterChecks.Merge.Callable,
 		meterIdle,
-		conform.Excuse(
-			meter.MeterChecks.Count.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafe(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[meter.Meter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -550,69 +184,8 @@ func FuzzMeterSuiteTotal(f *testing.F) {
 		f,
 		meter.MeterChecks.Total.Callable,
 		meterIdle,
-		conform.Excuse(
-			meter.MeterChecks.Count.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Count.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Record.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafe(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Merge.NilSafeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			meter.MeterChecks.Total.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[meter.Meter](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -671,22 +244,7 @@ func TestWeighSuite(t *testing.T) {
 				},
 				Defect: func(*meter.WeighHandle) meter.WeighFunc { return nil },
 			}),
-			conform.Excuse(
-				meter.WeighChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.WeighChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.WeighChecks.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.WeighChecks.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[meter.WeighFunc]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -705,22 +263,7 @@ func TestWeighSuite(t *testing.T) {
 				},
 				Defect: func(*meter.WeighHandle) meter.WeighFunc { return nil },
 			}),
-			conform.Excuse(
-				meter.WeighChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.WeighChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.WeighChecks.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				meter.WeighChecks.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[meter.WeighFunc]("the test applies the check of its option alone"),
 		)
 	})
 

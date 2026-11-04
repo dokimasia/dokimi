@@ -43,62 +43,7 @@ func TestKeeperSuite(t *testing.T) {
 				},
 				Defect: func(*durable.KeeperHandle) durable.Keeper { return &keeperSubject{} },
 			}),
-			conform.Excuse(
-				durable.KeeperChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Put.LeavesTheWholeValue(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.KeepsTheLastPut(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.ServesTheStoredValue(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[durable.Keeper]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -120,62 +65,7 @@ func TestKeeperSuite(t *testing.T) {
 				},
 				Defect: func(*durable.KeeperHandle) durable.Keeper { return &keeperSubject{} },
 			}),
-			conform.Excuse(
-				durable.KeeperChecks.Put.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Put.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Put.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Put.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.Cancel(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.CancelGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.ZeroOnError(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Put.LeavesTheWholeValue(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.KeepsTheLastPut(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				durable.KeeperChecks.Get.ServesTheStoredValue(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[durable.Keeper]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -208,10 +98,15 @@ func TestKeeperSuite(t *testing.T) {
 	})
 }
 
+// keeperSuite is the suite of Keeper that the tests of the planted defect
+// of a ceiling apply.
+var keeperSuite = durable.KeeperSuite()
+
 // keeperIdle returns the planted defect of a ceiling of Keeper with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func keeperIdle(h *durable.KeeperHandle) durable.Keeper {
-	return durable.KeeperSuite().Calls[0].Over(h, func() {})
+	return keeperSuite.Calls[0].Over(h, func() {})
 }
 
 // TestKeeperSuiteBudgets applies the allocation ceilings of the suite of
@@ -224,61 +119,8 @@ func TestKeeperSuiteBudgets(t *testing.T) {
 		keeperIdle,
 		conform.Ceilings(durable.KeeperChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(durable.KeeperChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			durable.KeeperChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.LeavesTheWholeValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.KeepsTheLastPut(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ServesTheStoredValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[durable.Keeper](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -290,61 +132,8 @@ func FuzzKeeperSuitePut(f *testing.F) {
 		f,
 		durable.KeeperChecks.Put.Callable,
 		keeperIdle,
-		conform.Excuse(
-			durable.KeeperChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.LeavesTheWholeValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.KeepsTheLastPut(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ServesTheStoredValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[durable.Keeper](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -356,61 +145,8 @@ func FuzzKeeperSuiteGet(f *testing.F) {
 		f,
 		durable.KeeperChecks.Get.Callable,
 		keeperIdle,
-		conform.Excuse(
-			durable.KeeperChecks.Put.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.Cancel(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.CancelGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ZeroOnError(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ZeroOnErrorGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Put.LeavesTheWholeValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.KeepsEachPutAcrossARestart(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.KeepsTheLastPut(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			durable.KeeperChecks.Get.ServesTheStoredValue(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[durable.Keeper](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }

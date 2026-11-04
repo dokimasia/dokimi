@@ -49,28 +49,7 @@ func TestCacheSuite(t *testing.T) {
 				},
 				Defect: func(*generic.CacheHandle) generic.Cache[int, int] { return &cacheSubject{} },
 			}),
-			conform.Excuse(
-				generic.CacheChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Get.ZeroOnMiss(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Get.ZeroOnMissGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Set.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Set.SmokeGenerated(),
+			conform.ExcuseSuite[generic.Cache[int, int]](
 				"the test applies the check of its option alone",
 			),
 		)
@@ -100,38 +79,21 @@ func TestCacheSuite(t *testing.T) {
 				},
 				Defect: func(*generic.CacheHandle) generic.Cache[int, int] { return &cacheSubject{} },
 			}),
-			conform.Excuse(
-				generic.CacheChecks.Get.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Get.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Get.ZeroOnMiss(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Get.ZeroOnMissGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Set.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				generic.CacheChecks.Set.SmokeGenerated(),
+			conform.ExcuseSuite[generic.Cache[int, int]](
 				"the test applies the check of its option alone",
 			),
 		)
 	})
 }
 
+// cacheSuite is the suite of Cache that the tests of the planted defect of
+// a ceiling apply.
+var cacheSuite = generic.CacheSuite()
+
 // cacheIdle returns the planted defect of a ceiling of Cache with a spend
-// of nothing, a subject that answers each call at once.
+// of nothing. Each call of the defect returns its zero results at once.
 func cacheIdle(h *generic.CacheHandle) generic.Cache[int, int] {
-	return generic.CacheSuite().Calls[0].Over(h, func() {})
+	return cacheSuite.Calls[0].Over(h, func() {})
 }
 
 // TestCacheSuiteBudgets applies the allocation ceilings of the suite of
@@ -144,29 +106,8 @@ func TestCacheSuiteBudgets(t *testing.T) {
 		cacheIdle,
 		conform.Ceilings(generic.CacheChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(generic.CacheChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
-		conform.Excuse(
-			generic.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.ZeroOnMiss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.ZeroOnMissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[generic.Cache[int, int]](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -178,29 +119,8 @@ func FuzzCacheSuiteGet(f *testing.F) {
 		f,
 		generic.CacheChecks.Get.Callable,
 		cacheIdle,
-		conform.Excuse(
-			generic.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.ZeroOnMiss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.ZeroOnMissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[generic.Cache[int, int]](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -212,29 +132,8 @@ func FuzzCacheSuiteSet(f *testing.F) {
 		f,
 		generic.CacheChecks.Set.Callable,
 		cacheIdle,
-		conform.Excuse(
-			generic.CacheChecks.Get.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.ZeroOnMiss(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Get.ZeroOnMissGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Set.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			generic.CacheChecks.Set.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[generic.Cache[int, int]](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }

@@ -12,41 +12,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Cache:
-//
-// Cache.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Cache.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Cache.Get/cancel: Get returns an error for a cancelled context.
-//
-// Cache.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Cache.Get/failure-is-reported: Get returns an error when a call of its
-// dependency fails.
-//
-// Cache.Get/failure-is-reported#generated: Get returns an error when a
-// call of its dependency fails.
-//
-// Cache.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Cache.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-//
-// Cache.Len/smoke: Len returns without a panic for derived inputs.
-//
-// Cache.Len/deterministic: Len returns the same value for the same inputs.
-
-// The derived checks of Cache that witness their laws at the shallow end:
-//
-// Cache.Get/smoke
-//
-// Cache.Len/smoke
-//
-// Cache.Len/deterministic
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -85,22 +50,10 @@ func (c cacheGet) Smoke() conform.ID[Cache] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c cacheGet) SmokeGenerated() conform.ID[Cache] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c cacheGet) Cancel() conform.ID[Cache] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c cacheGet) CancelGenerated() conform.ID[Cache] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Get returns an
@@ -109,22 +62,10 @@ func (c cacheGet) FailureIsReported() conform.ID[Cache] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Get
-// returns an error when a call of its dependency fails.
-func (c cacheGet) FailureIsReportedGenerated() conform.ID[Cache] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c cacheGet) ZeroOnError() conform.ID[Cache] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c cacheGet) ZeroOnErrorGenerated() conform.ID[Cache] {
-	return c.Check("zero-on-error#generated")
 }
 
 // cacheLen is the name of Cache.Len, with the identities of its checks.
@@ -156,9 +97,6 @@ func CacheSuite() conform.Suite[Cache] {
 				ID:          CacheChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CacheHandle) {
@@ -170,12 +108,9 @@ func CacheSuite() conform.Suite[Cache] {
 				Defect: cacheGetPanics,
 			},
 			{
-				ID:          CacheChecks.Get.SmokeGenerated(),
+				ID:          CacheChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -190,9 +125,6 @@ func CacheSuite() conform.Suite[Cache] {
 				ID:          CacheChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CacheHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -203,12 +135,9 @@ func CacheSuite() conform.Suite[Cache] {
 				Defect: cacheGetIgnoresCancel,
 			},
 			{
-				ID:          CacheChecks.Get.CancelGenerated(),
+				ID:          CacheChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -223,9 +152,6 @@ func CacheSuite() conform.Suite[Cache] {
 				ID:        CacheChecks.Get.FailureIsReported(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -239,12 +165,9 @@ func CacheSuite() conform.Suite[Cache] {
 				Defect: cacheGetSwallowsFailure,
 			},
 			{
-				ID:        CacheChecks.Get.FailureIsReportedGenerated(),
+				ID:        CacheChecks.Get.FailureIsReported().Generated(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -263,9 +186,6 @@ func CacheSuite() conform.Suite[Cache] {
 				ID:          CacheChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CacheHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
@@ -275,12 +195,9 @@ func CacheSuite() conform.Suite[Cache] {
 				Defect: cacheGetValueBeside,
 			},
 			{
-				ID:          CacheChecks.Get.ZeroOnErrorGenerated(),
+				ID:          CacheChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CacheHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -294,9 +211,6 @@ func CacheSuite() conform.Suite[Cache] {
 				ID:          CacheChecks.Len.Smoke(),
 				Statement:   "Len returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CacheHandle) {
@@ -311,9 +225,6 @@ func CacheSuite() conform.Suite[Cache] {
 				ID:          CacheChecks.Len.Deterministic(),
 				Statement:   "Len returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[Cache]{CacheChecks.Len.Smoke()},
@@ -582,69 +493,6 @@ func cacheLenDrifts(h *CacheHandle) Cache {
 	return &cacheLenDriftsDefect{cacheOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Writer:
-//
-// Writer.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Writer.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Writer.Put/cancel: Put returns an error for a cancelled context.
-//
-// Writer.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Writer.Put/failure-is-reported: Put returns an error when a call of its
-// dependency fails.
-//
-// Writer.Put/failure-is-reported#generated: Put returns an error when a
-// call of its dependency fails.
-//
-// Writer.Put/no-partial-write: Get finds no effect of a Put that failed
-// with its dependency.
-//
-// Writer.Put/no-partial-write#generated: Get finds no effect of a Put that
-// failed with its dependency.
-//
-// Writer.Put/no-trace-of-a-failed-call: Get finds no effect of a Put that
-// failed with its dependencies, over any sequence of calls.
-//
-// Writer.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Writer.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Writer.Get/cancel: Get returns an error for a cancelled context.
-//
-// Writer.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Writer.Get/failure-is-reported: Get returns an error when a call of its
-// dependency fails.
-//
-// Writer.Get/failure-is-reported#generated: Get returns an error when a
-// call of its dependency fails.
-//
-// Writer.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Writer.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-
-// The derived checks of Writer that witness their laws at the shallow end:
-//
-// Writer.Put/smoke
-//
-// Writer.Put/no-partial-write
-//
-// Writer.Put/no-partial-write#generated
-//
-// Writer.Get/smoke
-
-// The unclaimed classifications of Writer:
-//
-// The shape:writer of Writer.Put has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -676,22 +524,10 @@ func (c writerPut) Smoke() conform.ID[Writer] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c writerPut) SmokeGenerated() conform.ID[Writer] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c writerPut) Cancel() conform.ID[Writer] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c writerPut) CancelGenerated() conform.ID[Writer] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Put returns an
@@ -700,22 +536,10 @@ func (c writerPut) FailureIsReported() conform.ID[Writer] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Put
-// returns an error when a call of its dependency fails.
-func (c writerPut) FailureIsReportedGenerated() conform.ID[Writer] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // NoPartialWrite returns the identity of the check that Get finds no
 // effect of a Put that failed with its dependency.
 func (c writerPut) NoPartialWrite() conform.ID[Writer] {
 	return c.Check("no-partial-write")
-}
-
-// NoPartialWriteGenerated returns the identity of the check that Get finds
-// no effect of a Put that failed with its dependency.
-func (c writerPut) NoPartialWriteGenerated() conform.ID[Writer] {
-	return c.Check("no-partial-write#generated")
 }
 
 // NoTraceOfAFailedCall returns the identity of the check that Get finds no
@@ -736,22 +560,10 @@ func (c writerGet) Smoke() conform.ID[Writer] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c writerGet) SmokeGenerated() conform.ID[Writer] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c writerGet) Cancel() conform.ID[Writer] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c writerGet) CancelGenerated() conform.ID[Writer] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Get returns an
@@ -760,22 +572,10 @@ func (c writerGet) FailureIsReported() conform.ID[Writer] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Get
-// returns an error when a call of its dependency fails.
-func (c writerGet) FailureIsReportedGenerated() conform.ID[Writer] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c writerGet) ZeroOnError() conform.ID[Writer] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c writerGet) ZeroOnErrorGenerated() conform.ID[Writer] {
-	return c.Check("zero-on-error#generated")
 }
 
 // WriterSuite returns the checks of Writer, and the calls and the budgets
@@ -790,9 +590,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:          WriterChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *WriterHandle) {
@@ -803,12 +600,9 @@ func WriterSuite() conform.Suite[Writer] {
 				Defect: writerPutPanics,
 			},
 			{
-				ID:          WriterChecks.Put.SmokeGenerated(),
+				ID:          WriterChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *WriterHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[Value](), "v")
@@ -822,9 +616,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:          WriterChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *WriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -834,12 +625,9 @@ func WriterSuite() conform.Suite[Writer] {
 				Defect: writerPutIgnoresCancel,
 			},
 			{
-				ID:          WriterChecks.Put.CancelGenerated(),
+				ID:          WriterChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *WriterHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[Value](), "v")
@@ -853,9 +641,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:        WriterChecks.Put.FailureIsReported(),
 				Statement: "Put returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -868,12 +653,9 @@ func WriterSuite() conform.Suite[Writer] {
 				Defect: writerPutSwallowsFailure,
 			},
 			{
-				ID:        WriterChecks.Put.FailureIsReportedGenerated(),
+				ID:        WriterChecks.Put.FailureIsReported().Generated(),
 				Statement: "Put returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -891,9 +673,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:        WriterChecks.Put.NoPartialWrite(),
 				Statement: "Get finds no effect of a Put that failed with its dependency",
 				Claim:     spec.NoPartialWrite,
-				Probe:     spec.FailsWithoutEffect,
-				Reason:    spec.PartialWrite,
-				Law:       spec.FailedCallLeavesNoEffect,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -909,12 +688,9 @@ func WriterSuite() conform.Suite[Writer] {
 				Defect: writerGetHalfApplied,
 			},
 			{
-				ID:        WriterChecks.Put.NoPartialWriteGenerated(),
+				ID:        WriterChecks.Put.NoPartialWrite().Generated(),
 				Statement: "Get finds no effect of a Put that failed with its dependency",
 				Claim:     spec.NoPartialWrite,
-				Probe:     spec.FailsWithoutEffect,
-				Reason:    spec.PartialWrite,
-				Law:       spec.FailedCallLeavesNoEffect,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -935,9 +711,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:        WriterChecks.Put.NoTraceOfAFailedCall(),
 				Statement: "Get finds no effect of a Put that failed with its dependencies, over any sequence of calls",
 				Claim:     spec.NoTraceOfAFailedCall,
-				Probe:     spec.FailedCallsLeaveNoTrace,
-				Reason:    spec.PartialWrite,
-				Law:       spec.FailedCallLeavesNoEffect,
 				Machineries: []spec.MachineryID{
 					spec.GeneratedSequences,
 					spec.CallThatFailsOnDemand,
@@ -962,9 +735,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:          WriterChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *WriterHandle) {
@@ -976,12 +746,9 @@ func WriterSuite() conform.Suite[Writer] {
 				Defect: writerGetPanics,
 			},
 			{
-				ID:          WriterChecks.Get.SmokeGenerated(),
+				ID:          WriterChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *WriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -996,9 +763,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:          WriterChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *WriterHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1009,12 +773,9 @@ func WriterSuite() conform.Suite[Writer] {
 				Defect: writerGetIgnoresCancel,
 			},
 			{
-				ID:          WriterChecks.Get.CancelGenerated(),
+				ID:          WriterChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *WriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1029,9 +790,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:        WriterChecks.Get.FailureIsReported(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -1045,12 +803,9 @@ func WriterSuite() conform.Suite[Writer] {
 				Defect: writerGetSwallowsFailure,
 			},
 			{
-				ID:        WriterChecks.Get.FailureIsReportedGenerated(),
+				ID:        WriterChecks.Get.FailureIsReported().Generated(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -1069,9 +824,6 @@ func WriterSuite() conform.Suite[Writer] {
 				ID:          WriterChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *WriterHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
@@ -1081,12 +833,9 @@ func WriterSuite() conform.Suite[Writer] {
 				Defect: writerGetValueBeside,
 			},
 			{
-				ID:          WriterChecks.Get.ZeroOnErrorGenerated(),
+				ID:          WriterChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *WriterHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -1497,31 +1246,6 @@ func writerGetCall(ctx context.Context, subject Writer, args []any) ([]any, erro
 	return []any{r0}, err
 }
 
-// The derived checks of Syncer:
-//
-// Syncer.Sync/smoke: Sync returns without a panic for derived inputs.
-//
-// Syncer.Sync/cancel: Sync returns an error for a cancelled context.
-//
-// Syncer.Sync/failure-is-reported: Sync returns an error when a call of
-// its dependency fails.
-//
-// Syncer.Sync/retry-succeeds: Sync succeeds within the declared attempts.
-//
-// Syncer.Sync/retry-succeeds-under-faults: Sync succeeds within the
-// declared attempts after a call of its dependency fails.
-
-// The derived checks of Syncer that witness their laws at the shallow end:
-//
-// Syncer.Sync/smoke
-//
-// Syncer.Sync/retry-succeeds
-
-// The unclaimed classifications of Syncer:
-//
-// The shape:lifecycle of Syncer.Sync has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1589,9 +1313,6 @@ func SyncerSuite() conform.Suite[Syncer] {
 				ID:          SyncerChecks.Sync.Smoke(),
 				Statement:   "Sync returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *SyncerHandle) {
@@ -1605,9 +1326,6 @@ func SyncerSuite() conform.Suite[Syncer] {
 				ID:          SyncerChecks.Sync.Cancel(),
 				Statement:   "Sync returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *SyncerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -1620,9 +1338,6 @@ func SyncerSuite() conform.Suite[Syncer] {
 				ID:        SyncerChecks.Sync.FailureIsReported(),
 				Statement: "Sync returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -1638,9 +1353,6 @@ func SyncerSuite() conform.Suite[Syncer] {
 				ID:          SyncerChecks.Sync.RetrySucceeds(),
 				Statement:   "Sync succeeds within the declared attempts",
 				Claim:       spec.RetrySucceeds,
-				Probe:       spec.SucceedsWithin,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *SyncerHandle) {
@@ -1654,9 +1366,6 @@ func SyncerSuite() conform.Suite[Syncer] {
 				ID:        SyncerChecks.Sync.RetrySucceedsUnderFaults(),
 				Statement: "Sync succeeds within the declared attempts after a call of its dependency fails",
 				Claim:     spec.RetrySucceedsUnderFaults,
-				Probe:     spec.SucceedsAfterAFailure,
-				Reason:    spec.NeverConverged,
-				Law:       spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -1896,90 +1605,6 @@ func syncerSyncGivesUpEarly(h *SyncerHandle) Syncer {
 	return &syncerSyncGivesUpEarlyDefect{syncerOverEmbedded: h.Fresh(), h: h}
 }
 
-// The derived checks of Account:
-//
-// Account.Run/smoke: Run returns without a panic for derived inputs.
-//
-// Account.Run/smoke#generated: Run returns without a panic for derived
-// inputs.
-//
-// Account.Run/cancel: Run returns an error for a cancelled context.
-//
-// Account.Run/cancel#generated: Run returns an error for a cancelled
-// context.
-//
-// Account.Run/failure-is-reported: Run returns an error when a call of its
-// dependency fails.
-//
-// Account.Run/failure-is-reported#generated: Run returns an error when a
-// call of its dependency fails.
-//
-// Account.Run/transaction: Get finds nothing that a failed Run wrote
-// through Put.
-//
-// Account.Run/transaction#generated: Get finds nothing that a failed Run
-// wrote through Put.
-//
-// Account.Run/transaction-under-faults: Get finds nothing that Run wrote
-// through Put before its commit failed.
-//
-// Account.Run/transaction-under-faults#generated: Get finds nothing that
-// Run wrote through Put before its commit failed.
-//
-// Account.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Account.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Account.Put/cancel: Put returns an error for a cancelled context.
-//
-// Account.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Account.Put/failure-is-reported: Put returns an error when a call of its
-// dependency fails.
-//
-// Account.Put/failure-is-reported#generated: Put returns an error when a
-// call of its dependency fails.
-//
-// Account.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Account.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Account.Get/cancel: Get returns an error for a cancelled context.
-//
-// Account.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Account.Get/failure-is-reported: Get returns an error when a call of its
-// dependency fails.
-//
-// Account.Get/failure-is-reported#generated: Get returns an error when a
-// call of its dependency fails.
-//
-// Account.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Account.Get/zero-on-error#generated: Get returns the zero value beside
-// an error.
-
-// The derived checks of Account that witness their laws at the shallow
-// end:
-//
-// Account.Run/smoke
-//
-// Account.Put/smoke
-//
-// Account.Get/smoke
-
-// The unclaimed classifications of Account:
-//
-// The shape:writer of Account.Run has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:composite-writer of Account.Put has the stance silent. A write
-// is an input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2014,22 +1639,10 @@ func (c accountRun) Smoke() conform.ID[Account] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Run returns
-// without a panic for derived inputs.
-func (c accountRun) SmokeGenerated() conform.ID[Account] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Run returns an error for a
 // cancelled context.
 func (c accountRun) Cancel() conform.ID[Account] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Run returns an
-// error for a cancelled context.
-func (c accountRun) CancelGenerated() conform.ID[Account] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Run returns an
@@ -2038,34 +1651,16 @@ func (c accountRun) FailureIsReported() conform.ID[Account] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Run
-// returns an error when a call of its dependency fails.
-func (c accountRun) FailureIsReportedGenerated() conform.ID[Account] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // Transaction returns the identity of the check that Get finds nothing
 // that a failed Run wrote through Put.
 func (c accountRun) Transaction() conform.ID[Account] {
 	return c.Check("transaction")
 }
 
-// TransactionGenerated returns the identity of the check that Get finds
-// nothing that a failed Run wrote through Put.
-func (c accountRun) TransactionGenerated() conform.ID[Account] {
-	return c.Check("transaction#generated")
-}
-
 // TransactionUnderFaults returns the identity of the check that Get finds
 // nothing that Run wrote through Put before its commit failed.
 func (c accountRun) TransactionUnderFaults() conform.ID[Account] {
 	return c.Check("transaction-under-faults")
-}
-
-// TransactionUnderFaultsGenerated returns the identity of the check that
-// Get finds nothing that Run wrote through Put before its commit failed.
-func (c accountRun) TransactionUnderFaultsGenerated() conform.ID[Account] {
-	return c.Check("transaction-under-faults#generated")
 }
 
 // accountPut is the name of Account.Put, with the identities of its
@@ -2080,34 +1675,16 @@ func (c accountPut) Smoke() conform.ID[Account] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c accountPut) SmokeGenerated() conform.ID[Account] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c accountPut) Cancel() conform.ID[Account] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c accountPut) CancelGenerated() conform.ID[Account] {
-	return c.Check("cancel#generated")
-}
-
 // FailureIsReported returns the identity of the check that Put returns an
 // error when a call of its dependency fails.
 func (c accountPut) FailureIsReported() conform.ID[Account] {
 	return c.Check("failure-is-reported")
-}
-
-// FailureIsReportedGenerated returns the identity of the check that Put
-// returns an error when a call of its dependency fails.
-func (c accountPut) FailureIsReportedGenerated() conform.ID[Account] {
-	return c.Check("failure-is-reported#generated")
 }
 
 // accountGet is the name of Account.Get, with the identities of its
@@ -2122,22 +1699,10 @@ func (c accountGet) Smoke() conform.ID[Account] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c accountGet) SmokeGenerated() conform.ID[Account] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c accountGet) Cancel() conform.ID[Account] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c accountGet) CancelGenerated() conform.ID[Account] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Get returns an
@@ -2146,22 +1711,10 @@ func (c accountGet) FailureIsReported() conform.ID[Account] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Get
-// returns an error when a call of its dependency fails.
-func (c accountGet) FailureIsReportedGenerated() conform.ID[Account] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c accountGet) ZeroOnError() conform.ID[Account] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c accountGet) ZeroOnErrorGenerated() conform.ID[Account] {
-	return c.Check("zero-on-error#generated")
 }
 
 // AccountSuite returns the checks of Account, and the calls and the
@@ -2176,9 +1729,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:          AccountChecks.Run.Smoke(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *AccountHandle) {
@@ -2189,12 +1739,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountRunPanics,
 			},
 			{
-				ID:          AccountChecks.Run.SmokeGenerated(),
+				ID:          AccountChecks.Run.Smoke().Generated(),
 				Statement:   "Run returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AccountHandle, c *prop.Case) {
 					bodyResults := c.Draw(
@@ -2222,9 +1769,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:          AccountChecks.Run.Cancel(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AccountHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2234,12 +1778,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountRunIgnoresCancel,
 			},
 			{
-				ID:          AccountChecks.Run.CancelGenerated(),
+				ID:          AccountChecks.Run.Cancel().Generated(),
 				Statement:   "Run returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AccountHandle, c *prop.Case) {
 					bodyResults := c.Draw(
@@ -2267,9 +1808,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:        AccountChecks.Run.FailureIsReported(),
 				Statement: "Run returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -2282,12 +1820,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountRunSwallowsFailure,
 			},
 			{
-				ID:        AccountChecks.Run.FailureIsReportedGenerated(),
+				ID:        AccountChecks.Run.FailureIsReported().Generated(),
 				Statement: "Run returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -2319,9 +1854,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:          AccountChecks.Run.Transaction(),
 				Statement:   "Get finds nothing that a failed Run wrote through Put",
 				Claim:       spec.Transaction,
-				Probe:       spec.RollsBackOnFailure,
-				Reason:      spec.NotRolledBack,
-				Law:         spec.FailedScopeLeavesNothing,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AccountHandle) {
 					probe.RollsBackOnFailure(h, func(ctx context.Context, body probe.Act) error {
@@ -2336,12 +1868,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountGetKeepsFailedWrites,
 			},
 			{
-				ID:          AccountChecks.Run.TransactionGenerated(),
+				ID:          AccountChecks.Run.Transaction().Generated(),
 				Statement:   "Get finds nothing that a failed Run wrote through Put",
 				Claim:       spec.Transaction,
-				Probe:       spec.RollsBackOnFailure,
-				Reason:      spec.NotRolledBack,
-				Law:         spec.FailedScopeLeavesNothing,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AccountHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -2361,9 +1890,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:        AccountChecks.Run.TransactionUnderFaults(),
 				Statement: "Get finds nothing that Run wrote through Put before its commit failed",
 				Claim:     spec.TransactionUnderFaults,
-				Probe:     spec.RollsBackUnderFaults,
-				Reason:    spec.NotRolledBack,
-				Law:       spec.FailedCommitLeavesNothing,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -2381,12 +1907,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountGetCommitsOnFailure,
 			},
 			{
-				ID:        AccountChecks.Run.TransactionUnderFaultsGenerated(),
+				ID:        AccountChecks.Run.TransactionUnderFaults().Generated(),
 				Statement: "Get finds nothing that Run wrote through Put before its commit failed",
 				Claim:     spec.TransactionUnderFaults,
-				Probe:     spec.RollsBackUnderFaults,
-				Reason:    spec.NotRolledBack,
-				Law:       spec.FailedCommitLeavesNothing,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -2410,9 +1933,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:          AccountChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *AccountHandle) {
@@ -2423,12 +1943,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountPutPanics,
 			},
 			{
-				ID:          AccountChecks.Put.SmokeGenerated(),
+				ID:          AccountChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AccountHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -2443,9 +1960,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:          AccountChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AccountHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2455,12 +1969,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountPutIgnoresCancel,
 			},
 			{
-				ID:          AccountChecks.Put.CancelGenerated(),
+				ID:          AccountChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AccountHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -2475,9 +1986,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:        AccountChecks.Put.FailureIsReported(),
 				Statement: "Put returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -2490,12 +1998,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountPutSwallowsFailure,
 			},
 			{
-				ID:        AccountChecks.Put.FailureIsReportedGenerated(),
+				ID:        AccountChecks.Put.FailureIsReported().Generated(),
 				Statement: "Put returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -2514,9 +2019,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:          AccountChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *AccountHandle) {
@@ -2528,12 +2030,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountGetPanics,
 			},
 			{
-				ID:          AccountChecks.Get.SmokeGenerated(),
+				ID:          AccountChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AccountHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -2548,9 +2047,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:          AccountChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AccountHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -2561,12 +2057,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountGetIgnoresCancel,
 			},
 			{
-				ID:          AccountChecks.Get.CancelGenerated(),
+				ID:          AccountChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AccountHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -2581,9 +2074,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:        AccountChecks.Get.FailureIsReported(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -2597,12 +2087,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountGetSwallowsFailure,
 			},
 			{
-				ID:        AccountChecks.Get.FailureIsReportedGenerated(),
+				ID:        AccountChecks.Get.FailureIsReported().Generated(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -2621,9 +2108,6 @@ func AccountSuite() conform.Suite[Account] {
 				ID:          AccountChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *AccountHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
@@ -2633,12 +2117,9 @@ func AccountSuite() conform.Suite[Account] {
 				Defect: accountGetValueBeside,
 			},
 			{
-				ID:          AccountChecks.Get.ZeroOnErrorGenerated(),
+				ID:          AccountChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *AccountHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -3099,28 +2580,6 @@ func accountGetValueBeside(h *AccountHandle) Account {
 	return &accountGetValueBesideDefect{accountOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Breaker:
-//
-// Breaker.Do/smoke: Do returns without a panic for derived inputs.
-//
-// Breaker.Do/cancel: Do returns an error for a cancelled context.
-//
-// Breaker.Do/failure-is-reported: Do returns an error when a call of its
-// dependency fails.
-//
-// Breaker.Do/fails-fast: Do refuses a call without its operation after the
-// operation failed repeatedly.
-
-// The derived checks of Breaker that witness their laws at the shallow
-// end:
-//
-// Breaker.Do/smoke
-
-// The unclaimed classifications of Breaker:
-//
-// The shape:lifecycle of Breaker.Do has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -3180,9 +2639,6 @@ func BreakerSuite() conform.Suite[Breaker] {
 				ID:          BreakerChecks.Do.Smoke(),
 				Statement:   "Do returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BreakerHandle) {
@@ -3196,9 +2652,6 @@ func BreakerSuite() conform.Suite[Breaker] {
 				ID:          BreakerChecks.Do.Cancel(),
 				Statement:   "Do returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BreakerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -3211,9 +2664,6 @@ func BreakerSuite() conform.Suite[Breaker] {
 				ID:        BreakerChecks.Do.FailureIsReported(),
 				Statement: "Do returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -3229,9 +2679,6 @@ func BreakerSuite() conform.Suite[Breaker] {
 				ID:        BreakerChecks.Do.FailsFast(),
 				Statement: "Do refuses a call without its operation after the operation failed repeatedly",
 				Claim:     spec.FailsFast,
-				Probe:     spec.RefusesWithoutTheDependency,
-				Reason:    spec.NeverOpened,
-				Law:       spec.OpenBreakerSkipsTheOperation,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -3443,40 +2890,6 @@ func breakerDoNeverOpens(h *BreakerHandle) Breaker {
 	return &breakerDoNeverOpensDefect{breakerOverEmbedded: h.Fresh(), h: h}
 }
 
-// The derived checks of Balancer:
-//
-// Balancer.Route/smoke: Route returns without a panic for derived inputs.
-//
-// Balancer.Route/smoke#generated: Route returns without a panic for
-// derived inputs.
-//
-// Balancer.Route/cancel: Route returns an error for a cancelled context.
-//
-// Balancer.Route/cancel#generated: Route returns an error for a cancelled
-// context.
-//
-// Balancer.Route/failure-is-reported: Route returns an error when a call
-// of its dependency fails.
-//
-// Balancer.Route/failure-is-reported#generated: Route returns an error
-// when a call of its dependency fails.
-//
-// Balancer.Route/keeps-its-instance: Route sends each call with one key to
-// one instance.
-//
-// Balancer.Route/keeps-its-instance#generated: Route sends each call with
-// one key to one instance.
-
-// The derived checks of Balancer that witness their laws at the shallow
-// end:
-//
-// Balancer.Route/smoke
-
-// The unclaimed classifications of Balancer:
-//
-// The shape:writer of Balancer.Route has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -3507,22 +2920,10 @@ func (c balancerRoute) Smoke() conform.ID[Balancer] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Route returns
-// without a panic for derived inputs.
-func (c balancerRoute) SmokeGenerated() conform.ID[Balancer] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Route returns an error for
 // a cancelled context.
 func (c balancerRoute) Cancel() conform.ID[Balancer] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Route returns an
-// error for a cancelled context.
-func (c balancerRoute) CancelGenerated() conform.ID[Balancer] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Route returns
@@ -3531,22 +2932,10 @@ func (c balancerRoute) FailureIsReported() conform.ID[Balancer] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Route
-// returns an error when a call of its dependency fails.
-func (c balancerRoute) FailureIsReportedGenerated() conform.ID[Balancer] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // KeepsItsInstance returns the identity of the check that Route sends each
 // call with one key to one instance.
 func (c balancerRoute) KeepsItsInstance() conform.ID[Balancer] {
 	return c.Check("keeps-its-instance")
-}
-
-// KeepsItsInstanceGenerated returns the identity of the check that Route
-// sends each call with one key to one instance.
-func (c balancerRoute) KeepsItsInstanceGenerated() conform.ID[Balancer] {
-	return c.Check("keeps-its-instance#generated")
 }
 
 // BalancerSuite returns the checks of Balancer, and the calls and the
@@ -3561,9 +2950,6 @@ func BalancerSuite() conform.Suite[Balancer] {
 				ID:          BalancerChecks.Route.Smoke(),
 				Statement:   "Route returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *BalancerHandle) {
@@ -3574,12 +2960,9 @@ func BalancerSuite() conform.Suite[Balancer] {
 				Defect: balancerRoutePanics,
 			},
 			{
-				ID:          BalancerChecks.Route.SmokeGenerated(),
+				ID:          BalancerChecks.Route.Smoke().Generated(),
 				Statement:   "Route returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BalancerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -3593,9 +2976,6 @@ func BalancerSuite() conform.Suite[Balancer] {
 				ID:          BalancerChecks.Route.Cancel(),
 				Statement:   "Route returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *BalancerHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -3605,12 +2985,9 @@ func BalancerSuite() conform.Suite[Balancer] {
 				Defect: balancerRouteIgnoresCancel,
 			},
 			{
-				ID:          BalancerChecks.Route.CancelGenerated(),
+				ID:          BalancerChecks.Route.Cancel().Generated(),
 				Statement:   "Route returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *BalancerHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -3624,9 +3001,6 @@ func BalancerSuite() conform.Suite[Balancer] {
 				ID:        BalancerChecks.Route.FailureIsReported(),
 				Statement: "Route returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -3639,12 +3013,9 @@ func BalancerSuite() conform.Suite[Balancer] {
 				Defect: balancerRouteSwallowsFailure,
 			},
 			{
-				ID:        BalancerChecks.Route.FailureIsReportedGenerated(),
+				ID:        BalancerChecks.Route.FailureIsReported().Generated(),
 				Statement: "Route returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -3662,9 +3033,6 @@ func BalancerSuite() conform.Suite[Balancer] {
 				ID:        BalancerChecks.Route.KeepsItsInstance(),
 				Statement: "Route sends each call with one key to one instance",
 				Claim:     spec.KeepsItsInstance,
-				Probe:     spec.UsesOneInstance,
-				Reason:    spec.MovedInstance,
-				Law:       spec.OneKeyOneInstance,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -3677,12 +3045,9 @@ func BalancerSuite() conform.Suite[Balancer] {
 				Defect: balancerRouteBalancesEachCall,
 			},
 			{
-				ID:        BalancerChecks.Route.KeepsItsInstanceGenerated(),
+				ID:        BalancerChecks.Route.KeepsItsInstance().Generated(),
 				Statement: "Route sends each call with one key to one instance",
 				Claim:     spec.KeepsItsInstance,
-				Probe:     spec.UsesOneInstance,
-				Reason:    spec.MovedInstance,
-				Law:       spec.OneKeyOneInstance,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -3898,63 +3263,6 @@ func balancerRouteBalancesEachCall(h *BalancerHandle) Balancer {
 	return &balancerRouteBalancesEachCallDefect{balancerOverEmbedded: h.Fresh(), h: h}
 }
 
-// The derived checks of Copier:
-//
-// Copier.Copy/smoke: Copy returns without a panic for derived inputs.
-//
-// Copier.Copy/smoke#generated: Copy returns without a panic for derived
-// inputs.
-//
-// Copier.Copy/cancel: Copy returns an error for a cancelled context.
-//
-// Copier.Copy/cancel#generated: Copy returns an error for a cancelled
-// context.
-//
-// Copier.Copy/failure-is-reported: Copy returns an error when a call of
-// its dependency fails.
-//
-// Copier.Copy/failure-is-reported#generated: Copy returns an error when a
-// call of its dependency fails.
-//
-// Copier.Copy/releases-on-every-path: Copy releases each resource that it
-// acquired when a call of its dependency fails.
-//
-// Copier.Copy/releases-on-every-path#generated: Copy releases each
-// resource that it acquired when a call of its dependency fails.
-//
-// Copier.Open/smoke: Open returns without a panic for derived inputs.
-//
-// Copier.Open/cancel: Open returns an error for a cancelled context.
-//
-// Copier.Open/failure-is-reported: Open returns an error when a call of
-// its dependency fails.
-//
-// Copier.Close/smoke: Close returns without a panic for derived inputs.
-//
-// Copier.Close/cancel: Close returns an error for a cancelled context.
-//
-// Copier.Close/failure-is-reported: Close returns an error when a call of
-// its dependency fails.
-
-// The derived checks of Copier that witness their laws at the shallow end:
-//
-// Copier.Copy/smoke
-//
-// Copier.Open/smoke
-//
-// Copier.Close/smoke
-
-// The unclaimed classifications of Copier:
-//
-// The shape:writer of Copier.Copy has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:lifecycle of Copier.Open has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-//
-// The shape:lifecycle of Copier.Close has the stance silent. A lifecycle
-// call returns nothing that a check could compare.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -3989,22 +3297,10 @@ func (c copierCopy) Smoke() conform.ID[Copier] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Copy returns
-// without a panic for derived inputs.
-func (c copierCopy) SmokeGenerated() conform.ID[Copier] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Copy returns an error for
 // a cancelled context.
 func (c copierCopy) Cancel() conform.ID[Copier] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Copy returns an
-// error for a cancelled context.
-func (c copierCopy) CancelGenerated() conform.ID[Copier] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Copy returns an
@@ -4013,23 +3309,10 @@ func (c copierCopy) FailureIsReported() conform.ID[Copier] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Copy
-// returns an error when a call of its dependency fails.
-func (c copierCopy) FailureIsReportedGenerated() conform.ID[Copier] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ReleasesOnEveryPath returns the identity of the check that Copy releases
 // each resource that it acquired when a call of its dependency fails.
 func (c copierCopy) ReleasesOnEveryPath() conform.ID[Copier] {
 	return c.Check("releases-on-every-path")
-}
-
-// ReleasesOnEveryPathGenerated returns the identity of the check that Copy
-// releases each resource that it acquired when a call of its dependency
-// fails.
-func (c copierCopy) ReleasesOnEveryPathGenerated() conform.ID[Copier] {
-	return c.Check("releases-on-every-path#generated")
 }
 
 // copierOpen is the name of Copier.Open, with the identities of its
@@ -4092,9 +3375,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:          CopierChecks.Copy.Smoke(),
 				Statement:   "Copy returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CopierHandle) {
@@ -4105,12 +3385,9 @@ func CopierSuite() conform.Suite[Copier] {
 				Defect: copierCopyPanics,
 			},
 			{
-				ID:          CopierChecks.Copy.SmokeGenerated(),
+				ID:          CopierChecks.Copy.Smoke().Generated(),
 				Statement:   "Copy returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CopierHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -4124,9 +3401,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:          CopierChecks.Copy.Cancel(),
 				Statement:   "Copy returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -4136,12 +3410,9 @@ func CopierSuite() conform.Suite[Copier] {
 				Defect: copierCopyIgnoresCancel,
 			},
 			{
-				ID:          CopierChecks.Copy.CancelGenerated(),
+				ID:          CopierChecks.Copy.Cancel().Generated(),
 				Statement:   "Copy returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *CopierHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -4155,9 +3426,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:        CopierChecks.Copy.FailureIsReported(),
 				Statement: "Copy returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -4170,12 +3438,9 @@ func CopierSuite() conform.Suite[Copier] {
 				Defect: copierCopySwallowsFailure,
 			},
 			{
-				ID:        CopierChecks.Copy.FailureIsReportedGenerated(),
+				ID:        CopierChecks.Copy.FailureIsReported().Generated(),
 				Statement: "Copy returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -4193,9 +3458,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:        CopierChecks.Copy.ReleasesOnEveryPath(),
 				Statement: "Copy releases each resource that it acquired when a call of its dependency fails",
 				Claim:     spec.ReleasesOnEveryPath,
-				Probe:     spec.ReleasesWhatItAcquires,
-				Reason:    spec.LeakedResource,
-				Law:       spec.FailurePathReleases,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -4208,12 +3470,9 @@ func CopierSuite() conform.Suite[Copier] {
 				Defect: copierCopyOpensWithoutClosing,
 			},
 			{
-				ID:        CopierChecks.Copy.ReleasesOnEveryPathGenerated(),
+				ID:        CopierChecks.Copy.ReleasesOnEveryPath().Generated(),
 				Statement: "Copy releases each resource that it acquired when a call of its dependency fails",
 				Claim:     spec.ReleasesOnEveryPath,
-				Probe:     spec.ReleasesWhatItAcquires,
-				Reason:    spec.LeakedResource,
-				Law:       spec.FailurePathReleases,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -4231,9 +3490,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:          CopierChecks.Open.Smoke(),
 				Statement:   "Open returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CopierHandle) {
@@ -4247,9 +3503,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:          CopierChecks.Open.Cancel(),
 				Statement:   "Open returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -4262,9 +3515,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:        CopierChecks.Open.FailureIsReported(),
 				Statement: "Open returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -4280,9 +3530,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:          CopierChecks.Close.Smoke(),
 				Statement:   "Close returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *CopierHandle) {
@@ -4296,9 +3543,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:          CopierChecks.Close.Cancel(),
 				Statement:   "Close returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *CopierHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -4311,9 +3555,6 @@ func CopierSuite() conform.Suite[Copier] {
 				ID:        CopierChecks.Close.FailureIsReported(),
 				Statement: "Close returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -4710,50 +3951,6 @@ func copierCloseSwallowsFailure(h *CopierHandle) Copier {
 	return &copierCloseSwallowsFailureDefect{copierOverEmbedded: h.Fresh(), h: h}
 }
 
-// The derived checks of Undeclared:
-//
-// Undeclared.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Undeclared.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-//
-// Undeclared.Put/cancel: Put returns an error for a cancelled context.
-//
-// Undeclared.Put/cancel#generated: Put returns an error for a cancelled
-// context.
-//
-// Undeclared.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Undeclared.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Undeclared.Get/cancel: Get returns an error for a cancelled context.
-//
-// Undeclared.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Undeclared.Get/zero-on-error: Get returns the zero value beside an
-// error.
-//
-// Undeclared.Get/zero-on-error#generated: Get returns the zero value
-// beside an error.
-
-// The derived checks of Undeclared that witness their laws at the shallow
-// end:
-//
-// Undeclared.Put/smoke
-//
-// Undeclared.Get/smoke
-
-// The unclaimed classifications of Undeclared:
-//
-// The shape:writer of Undeclared.Put has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-//
-// The mixin:atomic of Undeclared.Put has the stance needs. The claim
-// no-partial-write needs the param machineries=[faults] of the directive
-// suite.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -4786,22 +3983,10 @@ func (c undeclaredPut) Smoke() conform.ID[Undeclared] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c undeclaredPut) SmokeGenerated() conform.ID[Undeclared] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Put returns an error for a
 // cancelled context.
 func (c undeclaredPut) Cancel() conform.ID[Undeclared] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Put returns an
-// error for a cancelled context.
-func (c undeclaredPut) CancelGenerated() conform.ID[Undeclared] {
-	return c.Check("cancel#generated")
 }
 
 // undeclaredGet is the name of Undeclared.Get, with the identities of its
@@ -4816,34 +4001,16 @@ func (c undeclaredGet) Smoke() conform.ID[Undeclared] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c undeclaredGet) SmokeGenerated() conform.ID[Undeclared] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c undeclaredGet) Cancel() conform.ID[Undeclared] {
 	return c.Check("cancel")
 }
 
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c undeclaredGet) CancelGenerated() conform.ID[Undeclared] {
-	return c.Check("cancel#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c undeclaredGet) ZeroOnError() conform.ID[Undeclared] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c undeclaredGet) ZeroOnErrorGenerated() conform.ID[Undeclared] {
-	return c.Check("zero-on-error#generated")
 }
 
 // UndeclaredSuite returns the checks of Undeclared, and the calls and the
@@ -4858,9 +4025,6 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				ID:          UndeclaredChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *UndeclaredHandle) {
@@ -4871,12 +4035,9 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				Defect: undeclaredPutPanics,
 			},
 			{
-				ID:          UndeclaredChecks.Put.SmokeGenerated(),
+				ID:          UndeclaredChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *UndeclaredHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[Value](), "v")
@@ -4890,9 +4051,6 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				ID:          UndeclaredChecks.Put.Cancel(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *UndeclaredHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -4902,12 +4060,9 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				Defect: undeclaredPutIgnoresCancel,
 			},
 			{
-				ID:          UndeclaredChecks.Put.CancelGenerated(),
+				ID:          UndeclaredChecks.Put.Cancel().Generated(),
 				Statement:   "Put returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *UndeclaredHandle, c *prop.Case) {
 					drawnV := c.Draw(prop.Of[Value](), "v")
@@ -4921,9 +4076,6 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				ID:          UndeclaredChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *UndeclaredHandle) {
@@ -4935,12 +4087,9 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				Defect: undeclaredGetPanics,
 			},
 			{
-				ID:          UndeclaredChecks.Get.SmokeGenerated(),
+				ID:          UndeclaredChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *UndeclaredHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -4955,9 +4104,6 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				ID:          UndeclaredChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *UndeclaredHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -4968,12 +4114,9 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				Defect: undeclaredGetIgnoresCancel,
 			},
 			{
-				ID:          UndeclaredChecks.Get.CancelGenerated(),
+				ID:          UndeclaredChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *UndeclaredHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -4988,9 +4131,6 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				ID:          UndeclaredChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *UndeclaredHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
@@ -5000,12 +4140,9 @@ func UndeclaredSuite() conform.Suite[Undeclared] {
 				Defect: undeclaredGetValueBeside,
 			},
 			{
-				ID:          UndeclaredChecks.Get.ZeroOnErrorGenerated(),
+				ID:          UndeclaredChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *UndeclaredHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -5252,34 +4389,6 @@ func undeclaredGetValueBeside(h *UndeclaredHandle) Undeclared {
 	return &undeclaredGetValueBesideDefect{undeclaredOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Gravity:
-//
-// Gravity.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Gravity.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Gravity.Get/cancel: Get returns an error for a cancelled context.
-//
-// Gravity.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Gravity.Get/failure-is-reported: Get returns an error when a call of its
-// dependency fails.
-//
-// Gravity.Get/failure-is-reported#generated: Get returns an error when a
-// call of its dependency fails.
-//
-// Gravity.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Gravity.Get/zero-on-error#generated: Get returns the zero value beside
-// an error.
-
-// The derived checks of Gravity that witness their laws at the shallow
-// end:
-//
-// Gravity.Get/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -5310,22 +4419,10 @@ func (c gravityGet) Smoke() conform.ID[Gravity] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c gravityGet) SmokeGenerated() conform.ID[Gravity] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c gravityGet) Cancel() conform.ID[Gravity] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c gravityGet) CancelGenerated() conform.ID[Gravity] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Get returns an
@@ -5334,22 +4431,10 @@ func (c gravityGet) FailureIsReported() conform.ID[Gravity] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Get
-// returns an error when a call of its dependency fails.
-func (c gravityGet) FailureIsReportedGenerated() conform.ID[Gravity] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c gravityGet) ZeroOnError() conform.ID[Gravity] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c gravityGet) ZeroOnErrorGenerated() conform.ID[Gravity] {
-	return c.Check("zero-on-error#generated")
 }
 
 // GravitySuite returns the checks of Gravity, and the calls and the
@@ -5364,9 +4449,6 @@ func GravitySuite() conform.Suite[Gravity] {
 				ID:          GravityChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *GravityHandle) {
@@ -5378,12 +4460,9 @@ func GravitySuite() conform.Suite[Gravity] {
 				Defect: gravityGetPanics,
 			},
 			{
-				ID:          GravityChecks.Get.SmokeGenerated(),
+				ID:          GravityChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *GravityHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -5398,9 +4477,6 @@ func GravitySuite() conform.Suite[Gravity] {
 				ID:          GravityChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *GravityHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -5411,12 +4487,9 @@ func GravitySuite() conform.Suite[Gravity] {
 				Defect: gravityGetIgnoresCancel,
 			},
 			{
-				ID:          GravityChecks.Get.CancelGenerated(),
+				ID:          GravityChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *GravityHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -5431,9 +4504,6 @@ func GravitySuite() conform.Suite[Gravity] {
 				ID:        GravityChecks.Get.FailureIsReported(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -5447,12 +4517,9 @@ func GravitySuite() conform.Suite[Gravity] {
 				Defect: gravityGetSwallowsFailure,
 			},
 			{
-				ID:        GravityChecks.Get.FailureIsReportedGenerated(),
+				ID:        GravityChecks.Get.FailureIsReported().Generated(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -5471,9 +4538,6 @@ func GravitySuite() conform.Suite[Gravity] {
 				ID:          GravityChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *GravityHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
@@ -5483,12 +4547,9 @@ func GravitySuite() conform.Suite[Gravity] {
 				Defect: gravityGetValueBeside,
 			},
 			{
-				ID:          GravityChecks.Get.ZeroOnErrorGenerated(),
+				ID:          GravityChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *GravityHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -5692,33 +4753,6 @@ func gravityGetValueBeside(h *GravityHandle) Gravity {
 	return &gravityGetValueBesideDefect{gravityOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Mirror:
-//
-// Mirror.Get/smoke: Get returns without a panic for derived inputs.
-//
-// Mirror.Get/smoke#generated: Get returns without a panic for derived
-// inputs.
-//
-// Mirror.Get/cancel: Get returns an error for a cancelled context.
-//
-// Mirror.Get/cancel#generated: Get returns an error for a cancelled
-// context.
-//
-// Mirror.Get/failure-is-reported: Get returns an error when a call of its
-// dependency fails.
-//
-// Mirror.Get/failure-is-reported#generated: Get returns an error when a
-// call of its dependency fails.
-//
-// Mirror.Get/zero-on-error: Get returns the zero value beside an error.
-//
-// Mirror.Get/zero-on-error#generated: Get returns the zero value beside an
-// error.
-
-// The derived checks of Mirror that witness their laws at the shallow end:
-//
-// Mirror.Get/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -5754,22 +4788,10 @@ func (c mirrorGet) Smoke() conform.ID[MirrorMethods] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Get returns
-// without a panic for derived inputs.
-func (c mirrorGet) SmokeGenerated() conform.ID[MirrorMethods] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Get returns an error for a
 // cancelled context.
 func (c mirrorGet) Cancel() conform.ID[MirrorMethods] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Get returns an
-// error for a cancelled context.
-func (c mirrorGet) CancelGenerated() conform.ID[MirrorMethods] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Get returns an
@@ -5778,22 +4800,10 @@ func (c mirrorGet) FailureIsReported() conform.ID[MirrorMethods] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Get
-// returns an error when a call of its dependency fails.
-func (c mirrorGet) FailureIsReportedGenerated() conform.ID[MirrorMethods] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Get returns the zero
 // value beside an error.
 func (c mirrorGet) ZeroOnError() conform.ID[MirrorMethods] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Get returns
-// the zero value beside an error.
-func (c mirrorGet) ZeroOnErrorGenerated() conform.ID[MirrorMethods] {
-	return c.Check("zero-on-error#generated")
 }
 
 // MirrorSuite returns the checks of Mirror, and the calls and the budgets
@@ -5808,9 +4818,6 @@ func MirrorSuite() conform.Suite[MirrorMethods] {
 				ID:          MirrorChecks.Get.Smoke(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *MirrorHandle) {
@@ -5822,12 +4829,9 @@ func MirrorSuite() conform.Suite[MirrorMethods] {
 				Defect: mirrorGetPanics,
 			},
 			{
-				ID:          MirrorChecks.Get.SmokeGenerated(),
+				ID:          MirrorChecks.Get.Smoke().Generated(),
 				Statement:   "Get returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MirrorHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -5842,9 +4846,6 @@ func MirrorSuite() conform.Suite[MirrorMethods] {
 				ID:          MirrorChecks.Get.Cancel(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MirrorHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -5855,12 +4856,9 @@ func MirrorSuite() conform.Suite[MirrorMethods] {
 				Defect: mirrorGetIgnoresCancel,
 			},
 			{
-				ID:          MirrorChecks.Get.CancelGenerated(),
+				ID:          MirrorChecks.Get.Cancel().Generated(),
 				Statement:   "Get returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MirrorHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -5875,9 +4873,6 @@ func MirrorSuite() conform.Suite[MirrorMethods] {
 				ID:        MirrorChecks.Get.FailureIsReported(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -5891,12 +4886,9 @@ func MirrorSuite() conform.Suite[MirrorMethods] {
 				Defect: mirrorGetSwallowsFailure,
 			},
 			{
-				ID:        MirrorChecks.Get.FailureIsReportedGenerated(),
+				ID:        MirrorChecks.Get.FailureIsReported().Generated(),
 				Statement: "Get returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -5915,9 +4907,6 @@ func MirrorSuite() conform.Suite[MirrorMethods] {
 				ID:          MirrorChecks.Get.ZeroOnError(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *MirrorHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
@@ -5927,12 +4916,9 @@ func MirrorSuite() conform.Suite[MirrorMethods] {
 				Defect: mirrorGetValueBeside,
 			},
 			{
-				ID:          MirrorChecks.Get.ZeroOnErrorGenerated(),
+				ID:          MirrorChecks.Get.ZeroOnError().Generated(),
 				Statement:   "Get returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *MirrorHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -6136,46 +5122,6 @@ func mirrorGetValueBeside(h *MirrorHandle) MirrorMethods {
 	return &mirrorGetValueBesideDefect{mirrorOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Fetch:
-//
-// Fetch/smoke: Fetch returns without a panic for derived inputs.
-//
-// Fetch/smoke#generated: Fetch returns without a panic for derived inputs.
-//
-// Fetch/cancel: Fetch returns an error for a cancelled context.
-//
-// Fetch/cancel#generated: Fetch returns an error for a cancelled context.
-//
-// Fetch/failure-is-reported: Fetch returns an error when a call of its
-// dependency fails.
-//
-// Fetch/failure-is-reported#generated: Fetch returns an error when a call
-// of its dependency fails.
-//
-// Fetch/zero-on-error: Fetch returns the zero value beside an error.
-//
-// Fetch/zero-on-error#generated: Fetch returns the zero value beside an
-// error.
-//
-// Fetch/retry-succeeds: Fetch succeeds within the declared attempts.
-//
-// Fetch/retry-succeeds#generated: Fetch succeeds within the declared
-// attempts.
-//
-// Fetch/retry-succeeds-under-faults: Fetch succeeds within the declared
-// attempts after a call of its dependency fails.
-//
-// Fetch/retry-succeeds-under-faults#generated: Fetch succeeds within the
-// declared attempts after a call of its dependency fails.
-
-// The derived checks of Fetch that witness their laws at the shallow end:
-//
-// Fetch/smoke
-//
-// Fetch/retry-succeeds
-//
-// Fetch/retry-succeeds#generated
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -6205,22 +5151,10 @@ func (c fetchCallable) Smoke() conform.ID[FetchFunc] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Fetch returns
-// without a panic for derived inputs.
-func (c fetchCallable) SmokeGenerated() conform.ID[FetchFunc] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Fetch returns an error for
 // a cancelled context.
 func (c fetchCallable) Cancel() conform.ID[FetchFunc] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Fetch returns an
-// error for a cancelled context.
-func (c fetchCallable) CancelGenerated() conform.ID[FetchFunc] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Fetch returns
@@ -6229,22 +5163,10 @@ func (c fetchCallable) FailureIsReported() conform.ID[FetchFunc] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Fetch
-// returns an error when a call of its dependency fails.
-func (c fetchCallable) FailureIsReportedGenerated() conform.ID[FetchFunc] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Fetch returns the
 // zero value beside an error.
 func (c fetchCallable) ZeroOnError() conform.ID[FetchFunc] {
 	return c.Check("zero-on-error")
-}
-
-// ZeroOnErrorGenerated returns the identity of the check that Fetch
-// returns the zero value beside an error.
-func (c fetchCallable) ZeroOnErrorGenerated() conform.ID[FetchFunc] {
-	return c.Check("zero-on-error#generated")
 }
 
 // RetrySucceeds returns the identity of the check that Fetch succeeds
@@ -6253,24 +5175,11 @@ func (c fetchCallable) RetrySucceeds() conform.ID[FetchFunc] {
 	return c.Check("retry-succeeds")
 }
 
-// RetrySucceedsGenerated returns the identity of the check that Fetch
-// succeeds within the declared attempts.
-func (c fetchCallable) RetrySucceedsGenerated() conform.ID[FetchFunc] {
-	return c.Check("retry-succeeds#generated")
-}
-
 // RetrySucceedsUnderFaults returns the identity of the check that Fetch
 // succeeds within the declared attempts after a call of its dependency
 // fails.
 func (c fetchCallable) RetrySucceedsUnderFaults() conform.ID[FetchFunc] {
 	return c.Check("retry-succeeds-under-faults")
-}
-
-// RetrySucceedsUnderFaultsGenerated returns the identity of the check that
-// Fetch succeeds within the declared attempts after a call of its
-// dependency fails.
-func (c fetchCallable) RetrySucceedsUnderFaultsGenerated() conform.ID[FetchFunc] {
-	return c.Check("retry-succeeds-under-faults#generated")
 }
 
 // FetchSuite returns the checks of Fetch, and the calls and the budgets of
@@ -6285,9 +5194,6 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				ID:          FetchChecks.Smoke(),
 				Statement:   "Fetch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FetchHandle) {
@@ -6299,12 +5205,9 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				Defect: fetchPanics,
 			},
 			{
-				ID:          FetchChecks.SmokeGenerated(),
+				ID:          FetchChecks.Smoke().Generated(),
 				Statement:   "Fetch returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FetchHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -6319,9 +5222,6 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				ID:          FetchChecks.Cancel(),
 				Statement:   "Fetch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FetchHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -6332,12 +5232,9 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				Defect: fetchIgnoresCancel,
 			},
 			{
-				ID:          FetchChecks.CancelGenerated(),
+				ID:          FetchChecks.Cancel().Generated(),
 				Statement:   "Fetch returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FetchHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -6352,9 +5249,6 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				ID:        FetchChecks.FailureIsReported(),
 				Statement: "Fetch returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -6368,12 +5262,9 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				Defect: fetchSwallowsFailure,
 			},
 			{
-				ID:        FetchChecks.FailureIsReportedGenerated(),
+				ID:        FetchChecks.FailureIsReported().Generated(),
 				Statement: "Fetch returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -6392,9 +5283,6 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				ID:          FetchChecks.ZeroOnError(),
 				Statement:   "Fetch returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *FetchHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
@@ -6404,12 +5292,9 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				Defect: fetchValueBeside,
 			},
 			{
-				ID:          FetchChecks.ZeroOnErrorGenerated(),
+				ID:          FetchChecks.ZeroOnError().Generated(),
 				Statement:   "Fetch returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *FetchHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -6423,9 +5308,6 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				ID:          FetchChecks.RetrySucceeds(),
 				Statement:   "Fetch succeeds within the declared attempts",
 				Claim:       spec.RetrySucceeds,
-				Probe:       spec.SucceedsWithin,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *FetchHandle) {
@@ -6437,12 +5319,9 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				Defect: fetchFailsAlways,
 			},
 			{
-				ID:          FetchChecks.RetrySucceedsGenerated(),
+				ID:          FetchChecks.RetrySucceeds().Generated(),
 				Statement:   "Fetch succeeds within the declared attempts",
 				Claim:       spec.RetrySucceeds,
-				Probe:       spec.SucceedsWithin,
-				Reason:      spec.NeverConverged,
-				Law:         spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Shallow:     true,
 				Property: func(h *FetchHandle, c *prop.Case) {
@@ -6458,9 +5337,6 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				ID:        FetchChecks.RetrySucceedsUnderFaults(),
 				Statement: "Fetch succeeds within the declared attempts after a call of its dependency fails",
 				Claim:     spec.RetrySucceedsUnderFaults,
-				Probe:     spec.SucceedsAfterAFailure,
-				Reason:    spec.NeverConverged,
-				Law:       spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -6475,18 +5351,15 @@ func FetchSuite() conform.Suite[FetchFunc] {
 				Defect: fetchGivesUpEarly,
 			},
 			{
-				ID:        FetchChecks.RetrySucceedsUnderFaultsGenerated(),
+				ID:        FetchChecks.RetrySucceedsUnderFaults().Generated(),
 				Statement: "Fetch succeeds within the declared attempts after a call of its dependency fails",
 				Claim:     spec.RetrySucceedsUnderFaults,
-				Probe:     spec.SucceedsAfterAFailure,
-				Reason:    spec.NeverConverged,
-				Law:       spec.CallConvergesWithinTheDeclaredAttempts,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
 					spec.NothingBeyondACaller,
 				},
-				Entails: []conform.ID[FetchFunc]{FetchChecks.RetrySucceedsGenerated()},
+				Entails: []conform.ID[FetchFunc]{FetchChecks.RetrySucceeds().Generated()},
 				Property: func(h *FetchHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
 					probe.SucceedsAfterAFailure(h, func(ctx context.Context) error {
@@ -6660,37 +5533,6 @@ func fetchGivesUpEarly(h *FetchHandle) FetchFunc {
 	}
 }
 
-// The derived checks of Pick:
-//
-// Pick/smoke: Pick returns without a panic for derived inputs.
-//
-// Pick/smoke#generated: Pick returns without a panic for derived inputs.
-//
-// Pick/cancel: Pick returns an error for a cancelled context.
-//
-// Pick/cancel#generated: Pick returns an error for a cancelled context.
-//
-// Pick/failure-is-reported: Pick returns an error when a call of its
-// dependency fails.
-//
-// Pick/failure-is-reported#generated: Pick returns an error when a call of
-// its dependency fails.
-//
-// Pick/keeps-its-instance: Pick sends each call with one key to one
-// instance.
-//
-// Pick/keeps-its-instance#generated: Pick sends each call with one key to
-// one instance.
-
-// The derived checks of Pick that witness their laws at the shallow end:
-//
-// Pick/smoke
-
-// The unclaimed classifications of Pick:
-//
-// The shape:writer of Pick has the stance silent. A write is an input of
-// the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -6720,22 +5562,10 @@ func (c pickCallable) Smoke() conform.ID[PickFunc] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Pick returns
-// without a panic for derived inputs.
-func (c pickCallable) SmokeGenerated() conform.ID[PickFunc] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Pick returns an error for
 // a cancelled context.
 func (c pickCallable) Cancel() conform.ID[PickFunc] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Pick returns an
-// error for a cancelled context.
-func (c pickCallable) CancelGenerated() conform.ID[PickFunc] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Pick returns an
@@ -6744,22 +5574,10 @@ func (c pickCallable) FailureIsReported() conform.ID[PickFunc] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Pick
-// returns an error when a call of its dependency fails.
-func (c pickCallable) FailureIsReportedGenerated() conform.ID[PickFunc] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // KeepsItsInstance returns the identity of the check that Pick sends each
 // call with one key to one instance.
 func (c pickCallable) KeepsItsInstance() conform.ID[PickFunc] {
 	return c.Check("keeps-its-instance")
-}
-
-// KeepsItsInstanceGenerated returns the identity of the check that Pick
-// sends each call with one key to one instance.
-func (c pickCallable) KeepsItsInstanceGenerated() conform.ID[PickFunc] {
-	return c.Check("keeps-its-instance#generated")
 }
 
 // PickSuite returns the checks of Pick, and the calls and the budgets of
@@ -6774,9 +5592,6 @@ func PickSuite() conform.Suite[PickFunc] {
 				ID:          PickChecks.Smoke(),
 				Statement:   "Pick returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PickHandle) {
@@ -6787,12 +5602,9 @@ func PickSuite() conform.Suite[PickFunc] {
 				Defect: pickPanics,
 			},
 			{
-				ID:          PickChecks.SmokeGenerated(),
+				ID:          PickChecks.Smoke().Generated(),
 				Statement:   "Pick returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PickHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -6806,9 +5618,6 @@ func PickSuite() conform.Suite[PickFunc] {
 				ID:          PickChecks.Cancel(),
 				Statement:   "Pick returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *PickHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -6818,12 +5627,9 @@ func PickSuite() conform.Suite[PickFunc] {
 				Defect: pickIgnoresCancel,
 			},
 			{
-				ID:          PickChecks.CancelGenerated(),
+				ID:          PickChecks.Cancel().Generated(),
 				Statement:   "Pick returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PickHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -6837,9 +5643,6 @@ func PickSuite() conform.Suite[PickFunc] {
 				ID:        PickChecks.FailureIsReported(),
 				Statement: "Pick returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -6852,12 +5655,9 @@ func PickSuite() conform.Suite[PickFunc] {
 				Defect: pickSwallowsFailure,
 			},
 			{
-				ID:        PickChecks.FailureIsReportedGenerated(),
+				ID:        PickChecks.FailureIsReported().Generated(),
 				Statement: "Pick returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -6875,9 +5675,6 @@ func PickSuite() conform.Suite[PickFunc] {
 				ID:        PickChecks.KeepsItsInstance(),
 				Statement: "Pick sends each call with one key to one instance",
 				Claim:     spec.KeepsItsInstance,
-				Probe:     spec.UsesOneInstance,
-				Reason:    spec.MovedInstance,
-				Law:       spec.OneKeyOneInstance,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -6890,12 +5687,9 @@ func PickSuite() conform.Suite[PickFunc] {
 				Defect: pickBalancesEachCall,
 			},
 			{
-				ID:        PickChecks.KeepsItsInstanceGenerated(),
+				ID:        PickChecks.KeepsItsInstance().Generated(),
 				Statement: "Pick sends each call with one key to one instance",
 				Claim:     spec.KeepsItsInstance,
-				Probe:     spec.UsesOneInstance,
-				Reason:    spec.MovedInstance,
-				Law:       spec.OneKeyOneInstance,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -7042,37 +5836,6 @@ func pickBalancesEachCall(h *PickHandle) PickFunc {
 	}
 }
 
-// The derived checks of Load:
-//
-// Load/smoke: Load returns without a panic for derived inputs.
-//
-// Load/smoke#generated: Load returns without a panic for derived inputs.
-//
-// Load/cancel: Load returns an error for a cancelled context.
-//
-// Load/cancel#generated: Load returns an error for a cancelled context.
-//
-// Load/failure-is-reported: Load returns an error when a call of its
-// dependency fails.
-//
-// Load/failure-is-reported#generated: Load returns an error when a call of
-// its dependency fails.
-//
-// Load/zero-on-error: Load returns the zero value beside an error.
-//
-// Load/zero-on-error#generated: Load returns the zero value beside an
-// error.
-//
-// Load/releases-on-every-path: Load releases each resource that it
-// acquired when a call of its dependency fails.
-//
-// Load/releases-on-every-path#generated: Load releases each resource that
-// it acquired when a call of its dependency fails.
-
-// The derived checks of Load that witness their laws at the shallow end:
-//
-// Load/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -7102,22 +5865,10 @@ func (c loadCallable) Smoke() conform.ID[LoadFunc] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Load returns
-// without a panic for derived inputs.
-func (c loadCallable) SmokeGenerated() conform.ID[LoadFunc] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Load returns an error for
 // a cancelled context.
 func (c loadCallable) Cancel() conform.ID[LoadFunc] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Load returns an
-// error for a cancelled context.
-func (c loadCallable) CancelGenerated() conform.ID[LoadFunc] {
-	return c.Check("cancel#generated")
 }
 
 // FailureIsReported returns the identity of the check that Load returns an
@@ -7126,35 +5877,16 @@ func (c loadCallable) FailureIsReported() conform.ID[LoadFunc] {
 	return c.Check("failure-is-reported")
 }
 
-// FailureIsReportedGenerated returns the identity of the check that Load
-// returns an error when a call of its dependency fails.
-func (c loadCallable) FailureIsReportedGenerated() conform.ID[LoadFunc] {
-	return c.Check("failure-is-reported#generated")
-}
-
 // ZeroOnError returns the identity of the check that Load returns the zero
 // value beside an error.
 func (c loadCallable) ZeroOnError() conform.ID[LoadFunc] {
 	return c.Check("zero-on-error")
 }
 
-// ZeroOnErrorGenerated returns the identity of the check that Load returns
-// the zero value beside an error.
-func (c loadCallable) ZeroOnErrorGenerated() conform.ID[LoadFunc] {
-	return c.Check("zero-on-error#generated")
-}
-
 // ReleasesOnEveryPath returns the identity of the check that Load releases
 // each resource that it acquired when a call of its dependency fails.
 func (c loadCallable) ReleasesOnEveryPath() conform.ID[LoadFunc] {
 	return c.Check("releases-on-every-path")
-}
-
-// ReleasesOnEveryPathGenerated returns the identity of the check that Load
-// releases each resource that it acquired when a call of its dependency
-// fails.
-func (c loadCallable) ReleasesOnEveryPathGenerated() conform.ID[LoadFunc] {
-	return c.Check("releases-on-every-path#generated")
 }
 
 // LoadSuite returns the checks of Load, and the calls and the budgets of
@@ -7169,9 +5901,6 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				ID:          LoadChecks.Smoke(),
 				Statement:   "Load returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *LoadHandle) {
@@ -7183,12 +5912,9 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				Defect: loadPanics,
 			},
 			{
-				ID:          LoadChecks.SmokeGenerated(),
+				ID:          LoadChecks.Smoke().Generated(),
 				Statement:   "Load returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LoadHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -7203,9 +5929,6 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				ID:          LoadChecks.Cancel(),
 				Statement:   "Load returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LoadHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -7216,12 +5939,9 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				Defect: loadIgnoresCancel,
 			},
 			{
-				ID:          LoadChecks.CancelGenerated(),
+				ID:          LoadChecks.Cancel().Generated(),
 				Statement:   "Load returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LoadHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -7236,9 +5956,6 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				ID:        LoadChecks.FailureIsReported(),
 				Statement: "Load returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -7252,12 +5969,9 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				Defect: loadSwallowsFailure,
 			},
 			{
-				ID:        LoadChecks.FailureIsReportedGenerated(),
+				ID:        LoadChecks.FailureIsReported().Generated(),
 				Statement: "Load returns an error when a call of its dependency fails",
 				Claim:     spec.FailureIsReported,
-				Probe:     spec.ReportsAFailedDependency,
-				Reason:    spec.SwallowedFailure,
-				Law:       spec.FailedDependencyIsReported,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,
@@ -7276,9 +5990,6 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				ID:          LoadChecks.ZeroOnError(),
 				Statement:   "Load returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *LoadHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (Value, error) {
@@ -7288,12 +5999,9 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				Defect: loadValueBeside,
 			},
 			{
-				ID:          LoadChecks.ZeroOnErrorGenerated(),
+				ID:          LoadChecks.ZeroOnError().Generated(),
 				Statement:   "Load returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *LoadHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -7307,9 +6015,6 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				ID:        LoadChecks.ReleasesOnEveryPath(),
 				Statement: "Load releases each resource that it acquired when a call of its dependency fails",
 				Claim:     spec.ReleasesOnEveryPath,
-				Probe:     spec.ReleasesWhatItAcquires,
-				Reason:    spec.LeakedResource,
-				Law:       spec.FailurePathReleases,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.NothingBeyondACaller,
@@ -7323,12 +6028,9 @@ func LoadSuite() conform.Suite[LoadFunc] {
 				Defect: loadOpensWithoutClosing,
 			},
 			{
-				ID:        LoadChecks.ReleasesOnEveryPathGenerated(),
+				ID:        LoadChecks.ReleasesOnEveryPath().Generated(),
 				Statement: "Load releases each resource that it acquired when a call of its dependency fails",
 				Claim:     spec.ReleasesOnEveryPath,
-				Probe:     spec.ReleasesWhatItAcquires,
-				Reason:    spec.LeakedResource,
-				Law:       spec.FailurePathReleases,
 				Machineries: []spec.MachineryID{
 					spec.CallThatFailsOnDemand,
 					spec.GeneratedInputs,

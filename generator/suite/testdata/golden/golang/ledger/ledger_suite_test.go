@@ -43,30 +43,7 @@ func TestLedgerSuite(t *testing.T) {
 				},
 				Defect: func(*ledger.LedgerHandle) ledger.Ledger { return &ledgerSubject{} },
 			}),
-			conform.Excuse(
-				ledger.LedgerChecks.Credit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Credit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Balance.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Balance.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Balance.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Balance.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[ledger.Ledger]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -88,38 +65,20 @@ func TestLedgerSuite(t *testing.T) {
 				},
 				Defect: func(*ledger.LedgerHandle) ledger.Ledger { return &ledgerSubject{} },
 			}),
-			conform.Excuse(
-				ledger.LedgerChecks.Credit.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Credit.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Balance.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Balance.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Balance.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				ledger.LedgerChecks.Balance.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[ledger.Ledger]("the test applies the check of its option alone"),
 		)
 	})
 }
 
+// ledgerSuite is the suite of Ledger that the tests of the planted defect
+// of a ceiling apply.
+var ledgerSuite = ledger.LedgerSuite()
+
 // ledgerIdle returns the planted defect of a ceiling of Ledger with a
-// spend of nothing, a subject that answers each call at once.
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
 func ledgerIdle(h *ledger.LedgerHandle) ledger.Ledger {
-	return ledger.LedgerSuite().Calls[0].Over(h, func() {})
+	return ledgerSuite.Calls[0].Over(h, func() {})
 }
 
 // TestLedgerSuiteBudgets applies the allocation ceilings of the suite of
@@ -138,29 +97,8 @@ func TestLedgerSuiteBudgets(t *testing.T) {
 			ledger.LedgerChecks.Balance.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
-		conform.Excuse(
-			ledger.LedgerChecks.Credit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Credit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[ledger.Ledger](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -172,29 +110,8 @@ func FuzzLedgerSuiteCredit(f *testing.F) {
 		f,
 		ledger.LedgerChecks.Credit.Callable,
 		ledgerIdle,
-		conform.Excuse(
-			ledger.LedgerChecks.Credit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Credit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[ledger.Ledger](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }
@@ -206,29 +123,8 @@ func FuzzLedgerSuiteBalance(f *testing.F) {
 		f,
 		ledger.LedgerChecks.Balance.Callable,
 		ledgerIdle,
-		conform.Excuse(
-			ledger.LedgerChecks.Credit.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Credit.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.Smoke(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.SmokeGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.Deterministic(),
-			"the planted defect of a ceiling answers each call with its zero results",
-		),
-		conform.Excuse(
-			ledger.LedgerChecks.Balance.DeterministicGenerated(),
-			"the planted defect of a ceiling answers each call with its zero results",
+		conform.ExcuseSuite[ledger.Ledger](
+			"the planted defect of a ceiling returns the zero results of each call",
 		),
 	)
 }

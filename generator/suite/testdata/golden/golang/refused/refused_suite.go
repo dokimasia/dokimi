@@ -10,40 +10,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of HybridClock:
-//
-// HybridClock.Update/smoke: Update returns without a panic for derived
-// inputs.
-//
-// HybridClock.Update/smoke#generated: Update returns without a panic for
-// derived inputs.
-//
-// HybridClock.MaxOffset/smoke: MaxOffset returns without a panic for
-// derived inputs.
-//
-// HybridClock.MaxOffset/cancel: MaxOffset returns an error for a cancelled
-// context.
-//
-// HybridClock.MaxOffset/zero-on-error: MaxOffset returns the zero value
-// beside an error.
-
-// The derived checks of HybridClock that witness their laws at the shallow
-// end:
-//
-// HybridClock.Update/smoke
-//
-// HybridClock.MaxOffset/smoke
-
-// The refused claims of HybridClock:
-//
-// HybridClock.Update/cancel: Update returns before it reads its context.
-// The remedy is to remove the directive refuse of the claim where Update
-// makes it.
-//
-// HybridClock.Update/zero-on-error: Update fails only for an instant
-// beyond the max offset of the clock. The remedy is to remove the
-// directive refuse of the claim where Update makes it.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -74,12 +40,6 @@ type hybridClockUpdate struct {
 // panic for derived inputs.
 func (c hybridClockUpdate) Smoke() conform.ID[HybridClock] {
 	return c.Check("smoke")
-}
-
-// SmokeGenerated returns the identity of the check that Update returns
-// without a panic for derived inputs.
-func (c hybridClockUpdate) SmokeGenerated() conform.ID[HybridClock] {
-	return c.Check("smoke#generated")
 }
 
 // hybridClockMaxOffset is the name of HybridClock.MaxOffset, with the
@@ -118,9 +78,6 @@ func HybridClockSuite() conform.Suite[HybridClock] {
 				ID:          HybridClockChecks.Update.Smoke(),
 				Statement:   "Update returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HybridClockHandle) {
@@ -132,12 +89,9 @@ func HybridClockSuite() conform.Suite[HybridClock] {
 				Defect: hybridClockUpdatePanics,
 			},
 			{
-				ID:          HybridClockChecks.Update.SmokeGenerated(),
+				ID:          HybridClockChecks.Update.Smoke().Generated(),
 				Statement:   "Update returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *HybridClockHandle, c *prop.Case) {
 					drawnObserved := c.Draw(prop.Of[int64](), "observed")
@@ -152,9 +106,6 @@ func HybridClockSuite() conform.Suite[HybridClock] {
 				ID:          HybridClockChecks.MaxOffset.Smoke(),
 				Statement:   "MaxOffset returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HybridClockHandle) {
@@ -169,9 +120,6 @@ func HybridClockSuite() conform.Suite[HybridClock] {
 				ID:          HybridClockChecks.MaxOffset.Cancel(),
 				Statement:   "MaxOffset returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *HybridClockHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -185,9 +133,6 @@ func HybridClockSuite() conform.Suite[HybridClock] {
 				ID:          HybridClockChecks.MaxOffset.ZeroOnError(),
 				Statement:   "MaxOffset returns the zero value beside an error",
 				Claim:       spec.ZeroOnError,
-				Probe:       spec.ZeroBesideError,
-				Reason:      spec.ValueBesideError,
-				Law:         spec.NoValueBesideAnError,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *HybridClockHandle) {
 					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
@@ -426,28 +371,6 @@ func hybridClockMaxOffsetValueBeside(h *HybridClockHandle) HybridClock {
 	return &hybridClockMaxOffsetValueBesideDefect{hybridClockOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Doubled:
-//
-// Doubled.Read/smoke: Read returns without a panic for derived inputs.
-//
-// Doubled.Read/smoke#generated: Read returns without a panic for derived
-// inputs.
-//
-// Doubled.Read/cancel: Read returns an error for a cancelled context.
-//
-// Doubled.Read/cancel#generated: Read returns an error for a cancelled
-// context.
-
-// The derived checks of Doubled that witness their laws at the shallow
-// end:
-//
-// Doubled.Read/smoke
-
-// The refused claims of Doubled:
-//
-// Doubled.Read/zero-on-error: Read never fails. The remedy is to remove
-// the directive refuse of the claim where Read makes it.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -478,22 +401,10 @@ func (c doubledRead) Smoke() conform.ID[Doubled] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Read returns
-// without a panic for derived inputs.
-func (c doubledRead) SmokeGenerated() conform.ID[Doubled] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Read returns an error for
 // a cancelled context.
 func (c doubledRead) Cancel() conform.ID[Doubled] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Read returns an
-// error for a cancelled context.
-func (c doubledRead) CancelGenerated() conform.ID[Doubled] {
-	return c.Check("cancel#generated")
 }
 
 // DoubledSuite returns the checks of Doubled, and the calls and the
@@ -508,9 +419,6 @@ func DoubledSuite() conform.Suite[Doubled] {
 				ID:          DoubledChecks.Read.Smoke(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DoubledHandle) {
@@ -522,12 +430,9 @@ func DoubledSuite() conform.Suite[Doubled] {
 				Defect: doubledReadPanics,
 			},
 			{
-				ID:          DoubledChecks.Read.SmokeGenerated(),
+				ID:          DoubledChecks.Read.Smoke().Generated(),
 				Statement:   "Read returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *DoubledHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -542,9 +447,6 @@ func DoubledSuite() conform.Suite[Doubled] {
 				ID:          DoubledChecks.Read.Cancel(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *DoubledHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -555,12 +457,9 @@ func DoubledSuite() conform.Suite[Doubled] {
 				Defect: doubledReadIgnoresCancel,
 			},
 			{
-				ID:          DoubledChecks.Read.CancelGenerated(),
+				ID:          DoubledChecks.Read.Cancel().Generated(),
 				Statement:   "Read returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *DoubledHandle, c *prop.Case) {
 					drawnKey := c.Draw(prop.Of[string](), "key")
@@ -725,21 +624,6 @@ func doubledReadIgnoresCancel(h *DoubledHandle) Doubled {
 	return &doubledReadIgnoresCancelDefect{doubledOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Title:
-//
-// Title/smoke: Title returns without a panic for derived inputs.
-//
-// Title/smoke#generated: Title returns without a panic for derived inputs.
-
-// The derived checks of Title that witness their laws at the shallow end:
-//
-// Title/smoke
-
-// The refused claims of Title:
-//
-// Title/deterministic: Title salts each name. The remedy is to remove the
-// directive refuse of the claim where Title makes it.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -769,12 +653,6 @@ func (c titleCallable) Smoke() conform.ID[TitleFunc] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Title returns
-// without a panic for derived inputs.
-func (c titleCallable) SmokeGenerated() conform.ID[TitleFunc] {
-	return c.Check("smoke#generated")
-}
-
 // TitleSuite returns the checks of Title, and the calls and the budgets of
 // its callables.
 func TitleSuite() conform.Suite[TitleFunc] {
@@ -787,9 +665,6 @@ func TitleSuite() conform.Suite[TitleFunc] {
 				ID:          TitleChecks.Smoke(),
 				Statement:   "Title returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *TitleHandle) {
@@ -801,12 +676,9 @@ func TitleSuite() conform.Suite[TitleFunc] {
 				Defect: titlePanics,
 			},
 			{
-				ID:          TitleChecks.SmokeGenerated(),
+				ID:          TitleChecks.Smoke().Generated(),
 				Statement:   "Title returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *TitleHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")

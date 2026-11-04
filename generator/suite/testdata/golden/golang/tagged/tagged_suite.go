@@ -10,85 +10,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Hasher:
-//
-// Hasher.HashTagged/smoke: HashTagged returns without a panic for derived
-// inputs.
-//
-// Hasher.HashTagged/smoke#generated: HashTagged returns without a panic
-// for derived inputs.
-//
-// Hasher.HashTagged/deterministic: HashTagged returns the same value for
-// the same inputs.
-//
-// Hasher.HashTagged/deterministic#generated: HashTagged returns the same
-// value for the same inputs.
-//
-// Hasher.CombineTagged/smoke: CombineTagged returns without a panic for
-// derived inputs.
-//
-// Hasher.CombineTagged/smoke#generated: CombineTagged returns without a
-// panic for derived inputs.
-//
-// Hasher.CombineTagged/deterministic: CombineTagged returns the same value
-// for the same inputs.
-//
-// Hasher.CombineTagged/deterministic#generated: CombineTagged returns the
-// same value for the same inputs.
-//
-// Hasher.HashRoles/smoke: HashRoles returns without a panic for derived
-// inputs.
-//
-// Hasher.HashRoles/deterministic: HashRoles returns the same value for the
-// same inputs.
-//
-// Hasher.Truncate/smoke: Truncate returns without a panic for derived
-// inputs.
-//
-// Hasher.Truncate/smoke#generated: Truncate returns without a panic for
-// derived inputs.
-//
-// Hasher.Truncate/deterministic: Truncate returns the same value for the
-// same inputs.
-//
-// Hasher.Truncate/deterministic#generated: Truncate returns the same value
-// for the same inputs.
-//
-// Hasher.Seal/smoke: Seal returns without a panic for derived inputs.
-//
-// Hasher.Seal/smoke#generated: Seal returns without a panic for derived
-// inputs.
-//
-// Hasher.Seal/cancel: Seal returns an error for a cancelled context.
-//
-// Hasher.Seal/cancel#generated: Seal returns an error for a cancelled
-// context.
-
-// The derived checks of Hasher that witness their laws at the shallow end:
-//
-// Hasher.HashTagged/smoke
-//
-// Hasher.HashTagged/deterministic
-//
-// Hasher.CombineTagged/smoke
-//
-// Hasher.CombineTagged/deterministic
-//
-// Hasher.HashRoles/smoke
-//
-// Hasher.HashRoles/deterministic
-//
-// Hasher.Truncate/smoke
-//
-// Hasher.Truncate/deterministic
-//
-// Hasher.Seal/smoke
-
-// The unclaimed classifications of Hasher:
-//
-// The shape:writer of Hasher.Seal has the stance silent. A write is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -127,22 +48,10 @@ func (c hasherHashTagged) Smoke() conform.ID[Hasher] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that HashTagged returns
-// without a panic for derived inputs.
-func (c hasherHashTagged) SmokeGenerated() conform.ID[Hasher] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that HashTagged returns
 // the same value for the same inputs.
 func (c hasherHashTagged) Deterministic() conform.ID[Hasher] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that HashTagged
-// returns the same value for the same inputs.
-func (c hasherHashTagged) DeterministicGenerated() conform.ID[Hasher] {
-	return c.Check("deterministic#generated")
 }
 
 // hasherCombineTagged is the name of Hasher.CombineTagged, with the
@@ -157,22 +66,10 @@ func (c hasherCombineTagged) Smoke() conform.ID[Hasher] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that CombineTagged
-// returns without a panic for derived inputs.
-func (c hasherCombineTagged) SmokeGenerated() conform.ID[Hasher] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that CombineTagged
 // returns the same value for the same inputs.
 func (c hasherCombineTagged) Deterministic() conform.ID[Hasher] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that
-// CombineTagged returns the same value for the same inputs.
-func (c hasherCombineTagged) DeterministicGenerated() conform.ID[Hasher] {
-	return c.Check("deterministic#generated")
 }
 
 // hasherHashRoles is the name of Hasher.HashRoles, with the identities of
@@ -205,22 +102,10 @@ func (c hasherTruncate) Smoke() conform.ID[Hasher] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Truncate returns
-// without a panic for derived inputs.
-func (c hasherTruncate) SmokeGenerated() conform.ID[Hasher] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Truncate returns
 // the same value for the same inputs.
 func (c hasherTruncate) Deterministic() conform.ID[Hasher] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Truncate
-// returns the same value for the same inputs.
-func (c hasherTruncate) DeterministicGenerated() conform.ID[Hasher] {
-	return c.Check("deterministic#generated")
 }
 
 // hasherSeal is the name of Hasher.Seal, with the identities of its
@@ -235,22 +120,10 @@ func (c hasherSeal) Smoke() conform.ID[Hasher] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Seal returns
-// without a panic for derived inputs.
-func (c hasherSeal) SmokeGenerated() conform.ID[Hasher] {
-	return c.Check("smoke#generated")
-}
-
 // Cancel returns the identity of the check that Seal returns an error for
 // a cancelled context.
 func (c hasherSeal) Cancel() conform.ID[Hasher] {
 	return c.Check("cancel")
-}
-
-// CancelGenerated returns the identity of the check that Seal returns an
-// error for a cancelled context.
-func (c hasherSeal) CancelGenerated() conform.ID[Hasher] {
-	return c.Check("cancel#generated")
 }
 
 // HasherSuite returns the checks of Hasher, and the calls and the budgets
@@ -265,9 +138,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.HashTagged.Smoke(),
 				Statement:   "HashTagged returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HasherHandle) {
@@ -279,12 +149,9 @@ func HasherSuite() conform.Suite[Hasher] {
 				Defect: hasherHashTaggedPanics,
 			},
 			{
-				ID:          HasherChecks.HashTagged.SmokeGenerated(),
+				ID:          HasherChecks.HashTagged.Smoke().Generated(),
 				Statement:   "HashTagged returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *HasherHandle, c *prop.Case) {
 					drawnData := c.Draw(prop.Of[[]byte](), "data")
@@ -299,9 +166,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.HashTagged.Deterministic(),
 				Statement:   "HashTagged returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[Hasher]{HasherChecks.HashTagged.Smoke()},
@@ -314,14 +178,11 @@ func HasherSuite() conform.Suite[Hasher] {
 				Defect: hasherHashTaggedDrifts,
 			},
 			{
-				ID:          HasherChecks.HashTagged.DeterministicGenerated(),
+				ID:          HasherChecks.HashTagged.Deterministic().Generated(),
 				Statement:   "HashTagged returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[Hasher]{HasherChecks.HashTagged.SmokeGenerated()},
+				Entails:     []conform.ID[Hasher]{HasherChecks.HashTagged.Smoke().Generated()},
 				Property: func(h *HasherHandle, c *prop.Case) {
 					drawnData := c.Draw(prop.Of[[]byte](), "data")
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
@@ -335,9 +196,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.CombineTagged.Smoke(),
 				Statement:   "CombineTagged returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HasherHandle) {
@@ -349,12 +207,9 @@ func HasherSuite() conform.Suite[Hasher] {
 				Defect: hasherCombineTaggedPanics,
 			},
 			{
-				ID:          HasherChecks.CombineTagged.SmokeGenerated(),
+				ID:          HasherChecks.CombineTagged.Smoke().Generated(),
 				Statement:   "CombineTagged returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *HasherHandle, c *prop.Case) {
 					drawnLeft := c.Draw(prop.Of[[32]byte](), "left")
@@ -370,9 +225,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.CombineTagged.Deterministic(),
 				Statement:   "CombineTagged returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[Hasher]{HasherChecks.CombineTagged.Smoke()},
@@ -385,14 +237,11 @@ func HasherSuite() conform.Suite[Hasher] {
 				Defect: hasherCombineTaggedDrifts,
 			},
 			{
-				ID:          HasherChecks.CombineTagged.DeterministicGenerated(),
+				ID:          HasherChecks.CombineTagged.Deterministic().Generated(),
 				Statement:   "CombineTagged returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[Hasher]{HasherChecks.CombineTagged.SmokeGenerated()},
+				Entails:     []conform.ID[Hasher]{HasherChecks.CombineTagged.Smoke().Generated()},
 				Property: func(h *HasherHandle, c *prop.Case) {
 					drawnLeft := c.Draw(prop.Of[[32]byte](), "left")
 					drawnRight := c.Draw(prop.Of[[32]byte](), "right")
@@ -407,9 +256,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.HashRoles.Smoke(),
 				Statement:   "HashRoles returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HasherHandle) {
@@ -424,9 +270,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.HashRoles.Deterministic(),
 				Statement:   "HashRoles returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[Hasher]{HasherChecks.HashRoles.Smoke()},
@@ -442,9 +285,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.Truncate.Smoke(),
 				Statement:   "Truncate returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HasherHandle) {
@@ -456,12 +296,9 @@ func HasherSuite() conform.Suite[Hasher] {
 				Defect: hasherTruncatePanics,
 			},
 			{
-				ID:          HasherChecks.Truncate.SmokeGenerated(),
+				ID:          HasherChecks.Truncate.Smoke().Generated(),
 				Statement:   "Truncate returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *HasherHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[[32]byte](), "d")
@@ -477,9 +314,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.Truncate.Deterministic(),
 				Statement:   "Truncate returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[Hasher]{HasherChecks.Truncate.Smoke()},
@@ -492,14 +326,11 @@ func HasherSuite() conform.Suite[Hasher] {
 				Defect: hasherTruncateDrifts,
 			},
 			{
-				ID:          HasherChecks.Truncate.DeterministicGenerated(),
+				ID:          HasherChecks.Truncate.Deterministic().Generated(),
 				Statement:   "Truncate returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[Hasher]{HasherChecks.Truncate.SmokeGenerated()},
+				Entails:     []conform.ID[Hasher]{HasherChecks.Truncate.Smoke().Generated()},
 				Property: func(h *HasherHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[[32]byte](), "d")
 					drawnN := c.Draw(prop.Of[Size](), "n")
@@ -514,9 +345,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.Seal.Smoke(),
 				Statement:   "Seal returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *HasherHandle) {
@@ -527,12 +355,9 @@ func HasherSuite() conform.Suite[Hasher] {
 				Defect: hasherSealPanics,
 			},
 			{
-				ID:          HasherChecks.Seal.SmokeGenerated(),
+				ID:          HasherChecks.Seal.Smoke().Generated(),
 				Statement:   "Seal returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *HasherHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[[32]byte](), "d")
@@ -546,9 +371,6 @@ func HasherSuite() conform.Suite[Hasher] {
 				ID:          HasherChecks.Seal.Cancel(),
 				Statement:   "Seal returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Apply: func(h *HasherHandle) {
 					probe.UnderCancelled(h, func(ctx context.Context) error {
@@ -558,12 +380,9 @@ func HasherSuite() conform.Suite[Hasher] {
 				Defect: hasherSealIgnoresCancel,
 			},
 			{
-				ID:          HasherChecks.Seal.CancelGenerated(),
+				ID:          HasherChecks.Seal.Cancel().Generated(),
 				Statement:   "Seal returns an error for a cancelled context",
 				Claim:       spec.Cancel,
-				Probe:       spec.UnderCancelled,
-				Reason:      spec.IgnoredCancel,
-				Law:         spec.CancelledContextIsReported,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *HasherHandle, c *prop.Case) {
 					drawnD := c.Draw(prop.Of[[32]byte](), "d")
@@ -982,24 +801,6 @@ func hasherSealIgnoresCancel(h *HasherHandle) Hasher {
 	return &hasherSealIgnoresCancelDefect{hasherOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Digest:
-//
-// Digest/smoke: Digest returns without a panic for derived inputs.
-//
-// Digest/smoke#generated: Digest returns without a panic for derived
-// inputs.
-//
-// Digest/deterministic: Digest returns the same value for the same inputs.
-//
-// Digest/deterministic#generated: Digest returns the same value for the
-// same inputs.
-
-// The derived checks of Digest that witness their laws at the shallow end:
-//
-// Digest/smoke
-//
-// Digest/deterministic
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1029,22 +830,10 @@ func (c digestCallable) Smoke() conform.ID[DigestFunc] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Digest returns
-// without a panic for derived inputs.
-func (c digestCallable) SmokeGenerated() conform.ID[DigestFunc] {
-	return c.Check("smoke#generated")
-}
-
 // Deterministic returns the identity of the check that Digest returns the
 // same value for the same inputs.
 func (c digestCallable) Deterministic() conform.ID[DigestFunc] {
 	return c.Check("deterministic")
-}
-
-// DeterministicGenerated returns the identity of the check that Digest
-// returns the same value for the same inputs.
-func (c digestCallable) DeterministicGenerated() conform.ID[DigestFunc] {
-	return c.Check("deterministic#generated")
 }
 
 // DigestSuite returns the checks of Digest, and the calls and the budgets
@@ -1059,9 +848,6 @@ func DigestSuite() conform.Suite[DigestFunc] {
 				ID:          DigestChecks.Smoke(),
 				Statement:   "Digest returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *DigestHandle) {
@@ -1073,12 +859,9 @@ func DigestSuite() conform.Suite[DigestFunc] {
 				Defect: digestPanics,
 			},
 			{
-				ID:          DigestChecks.SmokeGenerated(),
+				ID:          DigestChecks.Smoke().Generated(),
 				Statement:   "Digest returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *DigestHandle, c *prop.Case) {
 					drawnData := c.Draw(prop.Of[[]byte](), "data")
@@ -1093,9 +876,6 @@ func DigestSuite() conform.Suite[DigestFunc] {
 				ID:          DigestChecks.Deterministic(),
 				Statement:   "Digest returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Entails:     []conform.ID[DigestFunc]{DigestChecks.Smoke()},
@@ -1108,14 +888,11 @@ func DigestSuite() conform.Suite[DigestFunc] {
 				Defect: digestDrifts,
 			},
 			{
-				ID:          DigestChecks.DeterministicGenerated(),
+				ID:          DigestChecks.Deterministic().Generated(),
 				Statement:   "Digest returns the same value for the same inputs",
 				Claim:       spec.Deterministic,
-				Probe:       spec.RepeatAgrees,
-				Reason:      spec.UnstableRepeat,
-				Law:         spec.RepeatReturnsAlike,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Entails:     []conform.ID[DigestFunc]{DigestChecks.SmokeGenerated()},
+				Entails:     []conform.ID[DigestFunc]{DigestChecks.Smoke().Generated()},
 				Property: func(h *DigestHandle, c *prop.Case) {
 					drawnData := c.Draw(prop.Of[[]byte](), "data")
 					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {

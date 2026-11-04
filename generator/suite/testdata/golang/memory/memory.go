@@ -56,12 +56,14 @@ func NewClocked(handle any) *Clocked {
 
 // Forgetful is the store of items in memory that drops each item, so it
 // excuses the checks of Get and Put, and the derived check that Get returns
-// the zero value beside an error.
+// the zero value beside an error. It also excuses the generated binding of the
+// smoke check of Get alone.
 //
 //dokimi:subject store.Store new=NewForgetful
 //dokimi:excuse Store.Get/keeps-the-item reason="the store drops each item"
 //dokimi:excuse Store.Put/refuses-a-cancelled-put reason="the store drops each item before it reads the context"
 //dokimi:excuse Store.Get/zero-on-error reason="the store drops each item, so Get has no item to return"
+//dokimi:excuse Store.Get/smoke#generated reason="each generated call of Get takes the store a second"
 type Forgetful struct {
 	*Store
 }

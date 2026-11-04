@@ -12,18 +12,6 @@ import (
 	"go.dokimi.dev/spec"
 )
 
-// The derived checks of Printer:
-//
-// Printer.Print/smoke: Print returns without a panic for derived inputs.
-//
-// Printer.Print/smoke#generated: Print returns without a panic for derived
-// inputs.
-
-// The derived checks of Printer that witness their laws at the shallow
-// end:
-//
-// Printer.Print/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -54,12 +42,6 @@ func (c printerPrint) Smoke() conform.ID[Printer] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Print returns
-// without a panic for derived inputs.
-func (c printerPrint) SmokeGenerated() conform.ID[Printer] {
-	return c.Check("smoke#generated")
-}
-
 // PrinterSuite returns the checks of Printer, and the calls and the
 // budgets of its callables.
 func PrinterSuite() conform.Suite[Printer] {
@@ -72,9 +54,6 @@ func PrinterSuite() conform.Suite[Printer] {
 				ID:          PrinterChecks.Print.Smoke(),
 				Statement:   "Print returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PrinterHandle) {
@@ -86,12 +65,9 @@ func PrinterSuite() conform.Suite[Printer] {
 				Defect: printerPrintPanics,
 			},
 			{
-				ID:          PrinterChecks.Print.SmokeGenerated(),
+				ID:          PrinterChecks.Print.Smoke().Generated(),
 				Statement:   "Print returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PrinterHandle, c *prop.Case) {
 					drawnMsg := c.Draw(prop.Of[string](), "msg")
@@ -239,18 +215,6 @@ func printerPrintPanics(h *PrinterHandle) Printer {
 	return &printerPrintPanicsDefect{printerOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Recorder:
-//
-// Recorder.Field/smoke: Field returns without a panic for derived inputs.
-//
-// Recorder.Field/smoke#generated: Field returns without a panic for
-// derived inputs.
-
-// The derived checks of Recorder that witness their laws at the shallow
-// end:
-//
-// Recorder.Field/smoke
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -281,12 +245,6 @@ func (c recorderField) Smoke() conform.ID[Recorder] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Field returns
-// without a panic for derived inputs.
-func (c recorderField) SmokeGenerated() conform.ID[Recorder] {
-	return c.Check("smoke#generated")
-}
-
 // RecorderSuite returns the checks of Recorder, and the calls and the
 // budgets of its callables.
 func RecorderSuite() conform.Suite[Recorder] {
@@ -299,9 +257,6 @@ func RecorderSuite() conform.Suite[Recorder] {
 				ID:          RecorderChecks.Field.Smoke(),
 				Statement:   "Field returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *RecorderHandle) {
@@ -313,12 +268,9 @@ func RecorderSuite() conform.Suite[Recorder] {
 				Defect: recorderFieldPanics,
 			},
 			{
-				ID:          RecorderChecks.Field.SmokeGenerated(),
+				ID:          RecorderChecks.Field.Smoke().Generated(),
 				Statement:   "Field returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *RecorderHandle, c *prop.Case) {
 					drawnName := c.Draw(prop.Of[string](), "name")
@@ -466,23 +418,6 @@ func recorderFieldPanics(h *RecorderHandle) Recorder {
 	return &recorderFieldPanicsDefect{recorderOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Journal:
-//
-// Journal.Put/smoke: Put returns without a panic for derived inputs.
-//
-// Journal.Put/smoke#generated: Put returns without a panic for derived
-// inputs.
-
-// The derived checks of Journal that witness their laws at the shallow
-// end:
-//
-// Journal.Put/smoke
-
-// The unclaimed classifications of Journal:
-//
-// The shape:mutator of Journal.Put has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -513,12 +448,6 @@ func (c journalPut) Smoke() conform.ID[Journal] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Put returns
-// without a panic for derived inputs.
-func (c journalPut) SmokeGenerated() conform.ID[Journal] {
-	return c.Check("smoke#generated")
-}
-
 // JournalSuite returns the checks of Journal, and the calls and the
 // budgets of its callables.
 func JournalSuite() conform.Suite[Journal] {
@@ -531,9 +460,6 @@ func JournalSuite() conform.Suite[Journal] {
 				ID:          JournalChecks.Put.Smoke(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *JournalHandle) {
@@ -545,12 +471,9 @@ func JournalSuite() conform.Suite[Journal] {
 				Defect: journalPutPanics,
 			},
 			{
-				ID:          JournalChecks.Put.SmokeGenerated(),
+				ID:          JournalChecks.Put.Smoke().Generated(),
 				Statement:   "Put returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *JournalHandle, c *prop.Case) {
 					drawnE := c.Draw(prop.Of[Entry](), "e")
@@ -704,22 +627,6 @@ func journalPutPanics(h *JournalHandle) Journal {
 	return &journalPutPanicsDefect{journalOverEmbedded: h.Fresh()}
 }
 
-// The derived checks of Plain:
-//
-// Plain.Print/smoke: Print returns without a panic for derived inputs.
-//
-// Plain.Print/smoke#generated: Print returns without a panic for derived
-// inputs.
-
-// The derived checks of Plain that witness their laws at the shallow end:
-//
-// Plain.Print/smoke
-
-// The unclaimed classifications of Plain:
-//
-// The shape:mutator of Plain.Print has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -750,12 +657,6 @@ func (c plainPrint) Smoke() conform.ID[Plain] {
 	return c.Check("smoke")
 }
 
-// SmokeGenerated returns the identity of the check that Print returns
-// without a panic for derived inputs.
-func (c plainPrint) SmokeGenerated() conform.ID[Plain] {
-	return c.Check("smoke#generated")
-}
-
 // PlainSuite returns the checks of Plain, and the calls and the budgets of
 // its callables.
 func PlainSuite() conform.Suite[Plain] {
@@ -768,9 +669,6 @@ func PlainSuite() conform.Suite[Plain] {
 				ID:          PlainChecks.Print.Smoke(),
 				Statement:   "Print returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
 				Shallow:     true,
 				Apply: func(h *PlainHandle) {
@@ -782,12 +680,9 @@ func PlainSuite() conform.Suite[Plain] {
 				Defect: plainPrintPanics,
 			},
 			{
-				ID:          PlainChecks.Print.SmokeGenerated(),
+				ID:          PlainChecks.Print.Smoke().Generated(),
 				Statement:   "Print returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
-				Probe:       spec.Survives,
-				Reason:      spec.Panicked,
-				Law:         spec.NoPanicOnAnyInput,
 				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
 				Property: func(h *PlainHandle, c *prop.Case) {
 					drawnMsg := c.Draw(prop.Of[string](), "msg")
@@ -927,17 +822,6 @@ func (*plainPrintPanicsDefect) Print(p0 string) {
 func plainPrintPanics(h *PlainHandle) Plain {
 	return &plainPrintPanicsDefect{plainOverEmbedded: h.Fresh()}
 }
-
-// The unclaimed classifications of Zoned:
-//
-// The shape:mutator of Zoned.In has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Zoned.Scale has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
-//
-// The shape:mutator of Zoned.Ratio has the stance silent. A mutation is an
-// input of the other checks, and its result is an error alone.
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1

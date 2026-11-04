@@ -36,30 +36,7 @@ func TestSlugSuite(t *testing.T) {
 				},
 				Defect: func(*slug.SlugHandle) slug.SlugFunc { return nil },
 			}),
-			conform.Excuse(
-				slug.SlugChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.KeepsTheOrder(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.KeepsTheWords(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[slug.SlugFunc]("the test applies the check of its option alone"),
 		)
 	})
 
@@ -78,30 +55,7 @@ func TestSlugSuite(t *testing.T) {
 				},
 				Defect: func(*slug.SlugHandle) slug.SlugFunc { return nil },
 			}),
-			conform.Excuse(
-				slug.SlugChecks.Smoke(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.SmokeGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.Deterministic(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.DeterministicGenerated(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.KeepsTheOrder(),
-				"the test applies the check of its option alone",
-			),
-			conform.Excuse(
-				slug.SlugChecks.KeepsTheWords(),
-				"the test applies the check of its option alone",
-			),
+			conform.ExcuseSuite[slug.SlugFunc]("the test applies the check of its option alone"),
 		)
 	})
 

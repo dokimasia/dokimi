@@ -1,5 +1,12 @@
 # go.dokimi.dev/dokimi
 
+## 0.9.1
+
+### Patch Changes
+
+- c2a7f3d: Require `go.dokimi.dev/eidos/core` v0.13.1 and the releases of the other eidos modules that depend on it.
+- c2a7f3d: Require `go.dokimi.dev/spec` v0.4.1.
+
 ## 0.9.0
 
 ### Minor Changes

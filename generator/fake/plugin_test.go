@@ -14,7 +14,7 @@ import (
 
 	"go.dokimi.dev/dokimi/generator/fake"
 	"go.dokimi.dev/dokimi/internal/gentest"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // The packages of the Go tree that this spec alone reads.
@@ -28,7 +28,7 @@ const (
 // method is a method of a fake with the type of each result spelled.
 type method struct {
 	name, receiver, context, key, value, present string
-	effect                                       spec.Effect
+	effect                                       rules.Effect
 	results                                      []string
 }
 
@@ -80,23 +80,23 @@ func TestNew(t *testing.T) {
 			giveSubject string
 			wantNames   []string
 			wantTypes   []string
-			wantForm    spec.ReferenceFormID
-			wantState   spec.State
+			wantForm    rules.ReferenceFormID
+			wantState   rules.State
 			want        []method
 		}{
 			{
 				name:    "records a fake of a persister that keys its values by the field of the written value",
 				givePkg: storePackage, giveSubject: "Store",
 				wantNames: []string{"StoreFake", "NewStoreFake", "ErrStoreFakeNotFound"},
-				wantTypes: []string{"string", "Value", "Store"}, wantForm: "persister", wantState: spec.StateMap,
+				wantTypes: []string{"string", "Value", "Store"}, wantForm: "persister", wantState: rules.StateMap,
 				want: []method{
 					{
 						name: "Put", receiver: "f", context: "ctx", key: "v.Key", value: "v",
-						effect: spec.EffectStore, results: []string{"r0 Value", "error"},
+						effect: rules.EffectStore, results: []string{"r0 Value", "error"},
 					},
 					{
 						name: "Get", receiver: "f", context: "ctx", key: "key", present: "present",
-						effect: spec.EffectLoad, results: []string{"r0 Value", "error"},
+						effect: rules.EffectLoad, results: []string{"r0 Value", "error"},
 					},
 				},
 			},
@@ -104,77 +104,77 @@ func TestNew(t *testing.T) {
 				name:    "records a fake of a cache that keys its values by the parameter of the writer",
 				givePkg: cachePackage, giveSubject: "Cache",
 				wantNames: []string{"CacheFake", "NewCacheFake", "ErrNoValue"},
-				wantTypes: []string{"string", "Value", "Cache"}, wantForm: "cache", wantState: spec.StateMap,
+				wantTypes: []string{"string", "Value", "Cache"}, wantForm: "cache", wantState: rules.StateMap,
 				want: []method{
 					{
 						name: "Store", receiver: "f", context: "ctx", key: "key", value: "v",
-						effect: spec.EffectStore, results: []string{"error"},
+						effect: rules.EffectStore, results: []string{"error"},
 					},
 					{
 						name: "Lookup", receiver: "f", context: "ctx", key: "key", present: "present",
-						effect: spec.EffectLoad, results: []string{"r0 Value", "error"},
+						effect: rules.EffectLoad, results: []string{"r0 Value", "error"},
 					},
 					{
 						name: "Fetch", receiver: "f", context: "ctx", key: "key", present: "present",
-						effect: spec.EffectLoad, results: []string{"r0 Value", "error"},
+						effect: rules.EffectLoad, results: []string{"r0 Value", "error"},
 					},
 				},
 			},
 			{
 				name: "records a fake of an appender without a key and a sentinel", givePkg: logPackage,
 				giveSubject: "Log", wantNames: []string{"LogFake", "NewLogFake", ""},
-				wantTypes: []string{"", "Entry", "Log"}, wantForm: "appender", wantState: spec.StateList,
+				wantTypes: []string{"", "Entry", "Log"}, wantForm: "appender", wantState: rules.StateList,
 				want: []method{{
-					name: "Append", receiver: "f", context: "ctx", value: "e", effect: spec.EffectAppend,
+					name: "Append", receiver: "f", context: "ctx", value: "e", effect: rules.EffectAppend,
 					results: []string{"r0 int64", "error"},
 				}},
 			},
 			{
 				name: "records a fake of a store that takes a context and returns no error", givePkg: quietPackage,
 				giveSubject: "Quiet", wantNames: []string{"QuietFake", "NewQuietFake", "ErrQuietFakeNotFound"},
-				wantTypes: []string{"string", "Value", "Quiet"}, wantForm: "persister", wantState: spec.StateMap,
+				wantTypes: []string{"string", "Value", "Quiet"}, wantForm: "persister", wantState: rules.StateMap,
 				want: []method{
 					{
-						name: "Put", receiver: "f", key: "v.Key", value: "v", effect: spec.EffectStore,
+						name: "Put", receiver: "f", key: "v.Key", value: "v", effect: rules.EffectStore,
 						results: []string{},
 					},
 					{
 						name: "Get", receiver: "f", context: "ctx", key: "key", present: "present",
-						effect: spec.EffectLoad, results: []string{"r0 Value", "error"},
+						effect: rules.EffectLoad, results: []string{"r0 Value", "error"},
 					},
 				},
 			},
 			{
 				name: "records a fake of a generic cache over its type parameters", givePkg: genericPackage,
 				giveSubject: "Cache", wantNames: []string{"CacheFake", "NewCacheFake", "ErrCacheFakeNotFound"},
-				wantTypes: []string{"K", "V", "Cache"}, wantForm: "cache", wantState: spec.StateMap,
+				wantTypes: []string{"K", "V", "Cache"}, wantForm: "cache", wantState: rules.StateMap,
 				want: []method{
 					{
 						name: "Store", receiver: "f", context: "ctx", key: "key", value: "v",
-						effect: spec.EffectStore, results: []string{"error"},
+						effect: rules.EffectStore, results: []string{"error"},
 					},
 					{
 						name: "Lookup", receiver: "f", context: "ctx", key: "key", present: "present",
-						effect: spec.EffectLoad, results: []string{"r0 V", "error"},
+						effect: rules.EffectLoad, results: []string{"r0 V", "error"},
 					},
 					{
 						name: "Fetch", receiver: "f", context: "ctx", key: "key", present: "present",
-						effect: spec.EffectLoad, results: []string{"r0 V", "error"},
+						effect: rules.EffectLoad, results: []string{"r0 V", "error"},
 					},
 				},
 			},
 			{
 				name: "names the receiver and the locals apart from the parameters", givePkg: clashPackage,
 				giveSubject: "Shadow", wantNames: []string{"ShadowFake", "NewShadowFake", "ErrShadowFakeNotFound"},
-				wantTypes: []string{"string", "Value", "Shadow"}, wantForm: "persister", wantState: spec.StateMap,
+				wantTypes: []string{"string", "Value", "Shadow"}, wantForm: "persister", wantState: rules.StateMap,
 				want: []method{
 					{
 						name: "Put", receiver: "f0", context: "f", key: "r0.Present", value: "r0",
-						effect: spec.EffectStore, results: []string{"r00 Value", "error"},
+						effect: rules.EffectStore, results: []string{"r00 Value", "error"},
 					},
 					{
 						name: "Get", receiver: "f0", context: "f", key: "present", present: "present0",
-						effect: spec.EffectLoad, results: []string{"r0 Value", "error"},
+						effect: rules.EffectLoad, results: []string{"r0 Value", "error"},
 					},
 				},
 			},

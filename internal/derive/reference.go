@@ -8,16 +8,17 @@ import (
 	"reflect"
 
 	"go.dokimi.dev/eidos/plugin/shape"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
+	"go.dokimi.dev/spec"
 
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // Reference is the reference form that covers every callable of one
 // declaration, with the effect of each callable in the order of the
 // callables.
 type Reference struct {
-	Form      spec.ReferenceForm
+	Form      rules.ReferenceForm
 	Callables []Effected
 }
 
@@ -35,7 +36,7 @@ type Reference struct {
 // append appends, and -1 for a load.
 type Effected struct {
 	Facts  *Facts
-	Effect spec.Effect
+	Effect rules.Effect
 	Key    Argument
 	Value  int
 }
@@ -77,7 +78,7 @@ func ReferenceOf(decl []Facts) (Reference, *Unreferenced) {
 	for i := range decl {
 		ref.Callables[i] = Effected{Facts: &decl[i], Effect: effects[i], Value: -1}
 	}
-	if form.State == spec.StateList {
+	if form.State == rules.StateList {
 		refused = appends(ref.Callables)
 	} else {
 		refused = keys(ref.Callables)
@@ -92,11 +93,11 @@ func ReferenceOf(decl []Facts) (Reference, *Unreferenced) {
 // callables of decl and the effect of each callable. It judges each callable
 // with a role first, because the form of the roles decides whether a callable
 // without a role is a writer of the form.
-func formOf(decl []Facts) (spec.ReferenceForm, []spec.Effect, *Unreferenced) {
-	var form spec.ReferenceForm
+func formOf(decl []Facts) (rules.ReferenceForm, []rules.Effect, *Unreferenced) {
+	var form rules.ReferenceForm
 	var instance *shape.Membership
 	var first *Facts
-	effects := make([]spec.Effect, len(decl))
+	effects := make([]rules.Effect, len(decl))
 	for i := range decl {
 		f := &decl[i]
 		c := &f.Class
@@ -146,20 +147,20 @@ func formOf(decl []Facts) (spec.ReferenceForm, []spec.Effect, *Unreferenced) {
 
 // referenceOf returns the reference form of the contract, and false where the
 // spec has none.
-func referenceOf(contract shape.Contract) (spec.ReferenceForm, bool) {
-	for _, form := range spec.References() {
+func referenceOf(contract shape.Contract) (rules.ReferenceForm, bool) {
+	for _, form := range rules.References() {
 		if form.Contract == string(contract) {
 			return form, true
 		}
 	}
-	return spec.ReferenceForm{}, false
+	return rules.ReferenceForm{}, false
 }
 
 // keys binds the key and the value of each store and each load of a form of
 // the state map. It returns the refusal of the first callable whose key or
 // results the form does not cover.
 func keys(cs []Effected) *Unreferenced {
-	stores, loads := effected(cs, spec.EffectStore), effected(cs, spec.EffectLoad)
+	stores, loads := effected(cs, rules.EffectStore), effected(cs, rules.EffectLoad)
 	switch {
 	case len(stores) == 0:
 		f := loads[0].Facts
@@ -172,7 +173,7 @@ func keys(cs []Effected) *Unreferenced {
 		switch f := l.Facts; {
 		case len(f.Results) != 1:
 			return unreferenced(f, fmt.Sprintf("returns %d values", len(f.Results)))
-		case f.Signature.Errors == rules.ErrorsNone:
+		case f.Signature.Errors == sdkrules.ErrorsNone:
 			return unreferenced(f, "returns no error")
 		}
 	}
@@ -259,12 +260,12 @@ func appends(cs []Effected) *Unreferenced {
 
 // integer reports whether s is the shape of an integer type. Only the shape
 // of a number has a class.
-func integer(s *rules.TypeShape) bool {
-	return s.Class == rules.ScalarInt || s.Class == rules.ScalarUint
+func integer(s *sdkrules.TypeShape) bool {
+	return s.Class == sdkrules.ScalarInt || s.Class == sdkrules.ScalarUint
 }
 
 // effected returns the callables of cs with the effect, in order.
-func effected(cs []Effected, effect spec.Effect) []*Effected {
+func effected(cs []Effected, effect rules.Effect) []*Effected {
 	var out []*Effected
 	for i := range cs {
 		if cs[i].Effect == effect {

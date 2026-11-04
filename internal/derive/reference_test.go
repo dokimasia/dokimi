@@ -8,18 +8,19 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/eidos/plugin/shape"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // effected is the effect of one callable of a reference, with the binding of
 // its key and of its value.
 type effected struct {
 	callable string
-	effect   spec.Effect
+	effect   rules.Effect
 	key      derive.Argument
 	value    int
 }
@@ -60,16 +61,20 @@ func appending() derive.Facts {
 	return withRole(derive.Facts{
 		Declaration: "Store", Callable: "Append", ID: idOf("Append"),
 		Signature: signature(
-			"Append", true, inputs, []rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn,
+			"Append",
+			true,
+			inputs,
+			[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError},
+			sdkrules.ErrorsLastReturn,
 		),
 		Inputs:  inputs,
-		Results: []derive.Value{position(rules.ScalarInt)},
+		Results: []derive.Value{position(sdkrules.ScalarInt)},
 	}, "appender", "fn")
 }
 
 // position returns a value of an integer type of the class.
-func position(class rules.ScalarClass) derive.Value {
-	return derive.Value{Shape: rules.TypeShape{Form: symbol.FormScalar, Spelling: "int64", Class: class, Bits: 64}}
+func position(class sdkrules.ScalarClass) derive.Value {
+	return derive.Value{Shape: sdkrules.TypeShape{Form: symbol.FormScalar, Spelling: "int64", Class: class, Bits: 64}}
 }
 
 // withResults returns f with the results.
@@ -83,7 +88,7 @@ func withKeys(f derive.Facts, inputs ...derive.Value) derive.Facts {
 	f.Inputs = inputs
 	f.Signature.Params = f.Signature.Params[:1]
 	for _, in := range inputs {
-		f.Signature.Params = append(f.Signature.Params, rules.ParamView{Name: in.Name, Role: rules.ParamInput})
+		f.Signature.Params = append(f.Signature.Params, sdkrules.ParamView{Name: in.Name, Role: sdkrules.ParamInput})
 	}
 	return f
 }
@@ -107,23 +112,23 @@ func TestReference(t *testing.T) {
 			tests := []struct {
 				name     string
 				give     []derive.Facts
-				wantForm spec.ReferenceFormID
+				wantForm rules.ReferenceFormID
 				want     []effected
 			}{
 				{
 					name: "covers a persister by a store and a load of the field of the written value",
 					give: []derive.Facts{putting(), reading()}, wantForm: "persister",
 					want: []effected{
-						{callable: "Put", effect: spec.EffectStore, key: byField, value: 0},
-						{callable: "Get", effect: spec.EffectLoad, key: byField, value: -1},
+						{callable: "Put", effect: rules.EffectStore, key: byField, value: 0},
+						{callable: "Get", effect: rules.EffectLoad, key: byField, value: -1},
 					},
 				},
 				{
 					name: "covers a store that returns the value that it stores",
 					give: []derive.Facts{withResults(putting(), item("")), reading()}, wantForm: "persister",
 					want: []effected{
-						{callable: "Put", effect: spec.EffectStore, key: byField, value: 0},
-						{callable: "Get", effect: spec.EffectLoad, key: byField, value: -1},
+						{callable: "Put", effect: rules.EffectStore, key: byField, value: 0},
+						{callable: "Get", effect: rules.EffectLoad, key: byField, value: -1},
 					},
 				},
 				{
@@ -131,26 +136,26 @@ func TestReference(t *testing.T) {
 					give:     []derive.Facts{withShape(putting(), "answering-writer"), withShape(reading(), "reader")},
 					wantForm: "persister",
 					want: []effected{
-						{callable: "Put", effect: spec.EffectStore, key: byField, value: 0},
-						{callable: "Get", effect: spec.EffectLoad, key: byField, value: -1},
+						{callable: "Put", effect: rules.EffectStore, key: byField, value: 0},
+						{callable: "Get", effect: rules.EffectLoad, key: byField, value: -1},
 					},
 				},
 				{
 					name: "covers a cache by two loads and a writer of a shared parameter",
 					give: []derive.Facts{setting(), looking(), fetching()}, wantForm: "cache",
 					want: []effected{
-						{callable: "Set", effect: spec.EffectStore, key: byParam, value: 1},
-						{callable: "Lookup", effect: spec.EffectLoad, key: byParam, value: -1},
-						{callable: "Fetch", effect: spec.EffectLoad, key: byParam, value: -1},
+						{callable: "Set", effect: rules.EffectStore, key: byParam, value: 1},
+						{callable: "Lookup", effect: rules.EffectLoad, key: byParam, value: -1},
+						{callable: "Fetch", effect: rules.EffectLoad, key: byParam, value: -1},
 					},
 				},
 				{
 					name: "binds the key of each store and the key of a load by the first store",
 					give: []derive.Facts{setting(), withShape(putter(), shape.Writer), looking()}, wantForm: "cache",
 					want: []effected{
-						{callable: "Set", effect: spec.EffectStore, key: byParam, value: 1},
-						{callable: "Put", effect: spec.EffectStore, key: byField, value: 0},
-						{callable: "Lookup", effect: spec.EffectLoad, key: byParam, value: -1},
+						{callable: "Set", effect: rules.EffectStore, key: byParam, value: 1},
+						{callable: "Put", effect: rules.EffectStore, key: byField, value: 0},
+						{callable: "Lookup", effect: rules.EffectLoad, key: byParam, value: -1},
 					},
 				},
 				{
@@ -158,10 +163,10 @@ func TestReference(t *testing.T) {
 					give:     []derive.Facts{putting(), reading(), withKeys(renamed(reading(), "Find"), text("ID"))},
 					wantForm: "persister",
 					want: []effected{
-						{callable: "Put", effect: spec.EffectStore, key: byField, value: 0},
-						{callable: "Get", effect: spec.EffectLoad, key: byField, value: -1},
+						{callable: "Put", effect: rules.EffectStore, key: byField, value: 0},
+						{callable: "Get", effect: rules.EffectLoad, key: byField, value: -1},
 						{
-							callable: "Find", effect: spec.EffectLoad, value: -1,
+							callable: "Find", effect: rules.EffectLoad, value: -1,
 							key: derive.Argument{Name: "ID", Kind: derive.ArgField, Field: "ID"},
 						},
 					},
@@ -169,13 +174,13 @@ func TestReference(t *testing.T) {
 				{
 					name: "covers an appender by an append of its one input", give: []derive.Facts{appending()},
 					wantForm: "appender",
-					want:     []effected{{callable: "Append", effect: spec.EffectAppend, value: 0}},
+					want:     []effected{{callable: "Append", effect: rules.EffectAppend, value: 0}},
 				},
 				{
 					name:     "covers an append whose position is unsigned",
-					give:     []derive.Facts{withResults(appending(), position(rules.ScalarUint))},
+					give:     []derive.Facts{withResults(appending(), position(sdkrules.ScalarUint))},
 					wantForm: "appender",
-					want:     []effected{{callable: "Append", effect: spec.EffectAppend, value: 0}},
+					want:     []effected{{callable: "Append", effect: rules.EffectAppend, value: 0}},
 				},
 			}
 			for _, tt := range tests {
@@ -291,7 +296,7 @@ func TestReference(t *testing.T) {
 				},
 				{
 					name:         "refuses a load without an error",
-					give:         []derive.Facts{putting(), withErrors(reading(), rules.ErrorsNone)},
+					give:         []derive.Facts{putting(), withErrors(reading(), sdkrules.ErrorsNone)},
 					wantCallable: "Get", wantDetail: "returns no error",
 				},
 				{
@@ -326,7 +331,7 @@ func TestReference(t *testing.T) {
 				},
 				{
 					name:         "refuses an append whose position is no integer",
-					give:         []derive.Facts{withResults(appending(), position(rules.ScalarFloat))},
+					give:         []derive.Facts{withResults(appending(), position(sdkrules.ScalarFloat))},
 					wantCallable: "Append", wantDetail: "returns no integer position",
 				},
 				{

@@ -8,8 +8,7 @@ import (
 
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/symbol"
-
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/spec"
 )
 
 // consumed are the machineries that a consumer supplies through a door of the

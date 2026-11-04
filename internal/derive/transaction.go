@@ -8,10 +8,11 @@ import (
 	"slices"
 
 	"go.dokimi.dev/eidos/plugin/shape"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // Transaction is the scope of the transactions of a claim with the gate
@@ -47,13 +48,13 @@ const readParam = "read"
 
 // transactional reports whether the claim c has the gate transactions. The
 // write of such a claim can be a method of the handle that a begin returns.
-func transactional(c *spec.Claim) bool { return slices.Contains(c.Gates, spec.Transactions) }
+func transactional(c *rules.Claim) bool { return slices.Contains(c.Gates, spec.Transactions) }
 
 // licensee returns the callable that has the licence l of the claim c on
 // behalf of the callable g: g itself, or a method of the handle that g
 // returns for a claim with the gate transactions. It returns nil where
 // neither has the licence.
-func licensee(c *spec.Claim, l *spec.Licence, g *Facts) *Facts {
+func licensee(c *rules.Claim, l *rules.Licence, g *Facts) *Facts {
 	if holds(l, g) {
 		return g
 	}
@@ -132,7 +133,7 @@ func scope(write, begin *Facts, instance string, decl []Facts) (*Transaction, bo
 // locate returns the part that match accepts: a callable of decl that takes
 // the handle as an input, or a method of the handle that begin returns. It
 // returns false where neither has such a callable.
-func locate(begin *Facts, handle *rules.TypeShape, decl []Facts, match func(f *Facts) bool) (Part, bool) {
+func locate(begin *Facts, handle *sdkrules.TypeShape, decl []Facts, match func(f *Facts) bool) (Part, bool) {
 	for i := range decl {
 		f := &decl[i]
 		if !match(f) {
@@ -190,6 +191,6 @@ func playsIn(f *Facts, role shape.Role, instance string) bool {
 // counted reports whether a value of the shape s is an integer or a string,
 // which a counter of the case can give each write of the case. Only a number
 // has a scalar class.
-func counted(s *rules.TypeShape) bool {
-	return s.Form == symbol.FormText || s.Class == rules.ScalarInt || s.Class == rules.ScalarUint
+func counted(s *sdkrules.TypeShape) bool {
+	return s.Form == symbol.FormText || s.Class == sdkrules.ScalarInt || s.Class == sdkrules.ScalarUint
 }

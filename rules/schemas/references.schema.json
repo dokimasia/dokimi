@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "properties": {
+    "references": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "contract": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "map",
+              "list"
+            ]
+          },
+          "roles": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "store",
+                "load",
+                "append"
+              ]
+            }
+          },
+          "writers": {
+            "type": "string",
+            "enum": [
+              "store",
+              "load",
+              "append"
+            ]
+          },
+          "since": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract",
+          "state",
+          "roles",
+          "since"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "references"
+  ],
+  "additionalProperties": false
+}

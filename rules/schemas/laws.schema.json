@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "laws": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "depth": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*$"
+          },
+          "distinct-from": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "law": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*$"
+                },
+                "case": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "law",
+                "case"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "depth",
+          "distinct-from"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "laws"
+  ],
+  "additionalProperties": false
+}

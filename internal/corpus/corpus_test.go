@@ -13,10 +13,10 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/files"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/corpus"
 	"go.dokimi.dev/dokimi/internal/report"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // header is the comment lines that open a file of expected outcomes.

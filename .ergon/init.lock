@@ -64,7 +64,7 @@
     {
       "path": ".github/workflows/ci.yml",
       "producer": "github",
-      "sha256": "22d9b7bc2ad6102625ddd91352f46f41f9dd9dd74730ff3e47fd22c7809cdaa7"
+      "sha256": "f3c6dc611200c39dead228510d2b5c3d975cdc6dd1582e5eda24dc12d0e2c9dc"
     },
     {
       "path": ".github/workflows/codeql.yml",
@@ -138,7 +138,7 @@
       "path": "Makefile",
       "producer": "common",
       "local": "ed6b649ae7c605cd6eb29ea77e9f204423fcfe353eefd9fc43be25617a94cd78",
-      "sha256": "75bb404869f55c2644bb402ef4f3b2e05fa14822a90b762efc99613e3d1c90d9"
+      "sha256": "31653688177ac2b25c00f5ce0d0f907d55026276b21338d32efe94ede2d60bc5"
     },
     {
       "path": "NOTICE",

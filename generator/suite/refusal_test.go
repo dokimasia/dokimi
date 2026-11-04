@@ -9,10 +9,10 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // refusedBy returns the refusal of the claim of the callable by the

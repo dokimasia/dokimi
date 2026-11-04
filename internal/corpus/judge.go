@@ -8,9 +8,10 @@ import (
 	"slices"
 	"strings"
 
+	"go.dokimi.dev/spec"
+
 	"go.dokimi.dev/dokimi/internal/derive"
 	"go.dokimi.dev/dokimi/internal/report"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // The kinds of a key in the generation of a fixture. The status of a line of

@@ -18,9 +18,8 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/files"
 	"go.dokimi.dev/eidos/cli"
+	"go.dokimi.dev/spec"
 	gocli "go.stealthscale.io/cli"
-
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // The files of a corpus of Go without a suite: the fixture enum/x with its

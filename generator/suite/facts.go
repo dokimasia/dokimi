@@ -11,12 +11,13 @@ import (
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/meta"
 	"go.dokimi.dev/eidos/sdk/node"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/annotator/defaults"
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // runtime contains the machineries that the runtime supplies to every check.
@@ -72,7 +73,7 @@ func (k *caller) derive(declaration string, syms []symbol.Symbol, calls []Call) 
 	}
 	// The callables of one declaration have distinct names, so their keys
 	// differ and Derive returns no error.
-	d, _ := derive.Derive(facts, spec.Claims(), k.g.machineriesOfDeclaration(k.m, &k.origin), runtime, draws)
+	d, _ := derive.Derive(facts, rules.Claims(), k.g.machineriesOfDeclaration(k.m, &k.origin), runtime, draws)
 	return facts, d
 }
 
@@ -98,7 +99,7 @@ func (k *caller) factsOf(sym symbol.Symbol) derive.Facts {
 		params = d.Params
 	}
 	for _, p := range view.Params {
-		if p.Role != rules.ParamInput {
+		if p.Role != sdkrules.ParamInput {
 			continue
 		}
 		var subject symbol.Identity
@@ -111,7 +112,7 @@ func (k *caller) factsOf(sym symbol.Symbol) derive.Facts {
 	}
 	var none symbol.Identity
 	for _, r := range view.Returns {
-		if r.Role == rules.ReturnValue {
+		if r.Role == sdkrules.ReturnValue {
 			f.Results = append(f.Results, k.valueOf(&none, r.Name, r.Ref))
 		}
 	}
@@ -156,13 +157,13 @@ func (k *caller) valueOf(subject *symbol.Identity, name string, ref *node.TypeRe
 	v := derive.Value{Name: name, Shape: k.b.TypeOf(ref), Fields: k.fieldsOf(ref)}
 	v.Zero, v.HasZero = k.b.ZeroValue(ref)
 	sample, alternate := k.b.View().Authored(k.b.Source(), *subject, ref)
-	if !sample.OK() && sample.Refusal == rules.RefusedNone {
+	if !sample.OK() && sample.Refusal == sdkrules.RefusedNone {
 		if value, declared := k.defaultOf(ref); declared {
-			sample = rules.Of(value)
+			sample = sdkrules.Of(value)
 		}
 	}
 	derived, derivedAlternate := k.b.Source().DeriveSamples(ref, name, k.b.View())
-	v.Samples[0], v.Samples[1] = rules.Complete(sample, alternate, derived, derivedAlternate)
+	v.Samples[0], v.Samples[1] = sdkrules.Complete(sample, alternate, derived, derivedAlternate)
 	return v
 }
 

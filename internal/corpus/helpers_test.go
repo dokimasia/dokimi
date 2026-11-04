@@ -6,9 +6,10 @@ package corpus_test
 import (
 	"slices"
 
+	"go.dokimi.dev/spec"
+
 	"go.dokimi.dev/dokimi/internal/corpus"
 	"go.dokimi.dev/dokimi/internal/report"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // The fixture of the specs, its subject, its control and its fake.

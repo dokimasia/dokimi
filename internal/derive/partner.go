@@ -9,10 +9,11 @@ import (
 	"strings"
 
 	"go.dokimi.dev/eidos/sdk/directive"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // ArgumentKind is the source of one argument of the read of a pair.
@@ -77,8 +78,8 @@ type Pair struct {
 // write as the partner of the pair. It returns the gate partner-arguments
 // instead when a parameter of read selects nothing of write, beside the pair
 // of the partner without a read and a write.
-func Pairing(read, write *Facts) (*Pair, *spec.Gate) {
-	return paired(spec.ModeNamed, write, read, write)
+func Pairing(read, write *Facts) (*Pair, *rules.Gate) {
+	return paired(rules.ModeNamed, write, read, write)
 }
 
 // Partner resolves the partner p of a claim on the callable of f, among the
@@ -94,22 +95,22 @@ func Pairing(read, write *Facts) (*Pair, *spec.Gate) {
 // probe calls the partner by its name takes that pair. The mode paired takes
 // the one other callable whose read pairs with the callable of f by the rule
 // of [Pairing], and whose result is the value that f writes.
-func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
+func Partner(p *rules.Partner, f *Facts, decl []Facts) (*Pair, *rules.Gate) {
 	switch p.Mode {
-	case spec.ModeNamed, spec.ModeInterposed:
+	case rules.ModeNamed, rules.ModeInterposed:
 		partner, gate := named(p.Param, f, decl)
 		if gate != nil {
 			return nil, gate
 		}
 		pair, gate := paired(p.Mode, partner, f, partner)
-		if gate != nil && p.Mode == spec.ModeNamed && len(f.Results) == 0 && len(partner.Results) > 0 {
+		if gate != nil && p.Mode == rules.ModeNamed && len(f.Results) == 0 && len(partner.Results) > 0 {
 			// A callable without a value whose parameters select nothing of
 			// its named partner writes what the partner reads, as Add writes
 			// the total that Total observes.
 			return paired(p.Mode, partner, partner, f)
 		}
 		return pair, gate
-	case spec.ModeReader, spec.ModeRewriter:
+	case rules.ModeReader, rules.ModeRewriter:
 		partner, gate := named(p.Param, f, decl)
 		if p.Param == "" {
 			partner, gate = role(p, f, decl)
@@ -118,7 +119,7 @@ func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 			return nil, gate
 		}
 		return paired(p.Mode, partner, partner, f)
-	case spec.ModeDerived:
+	case rules.ModeDerived:
 		if fieldOf(p.Param, f) == nil {
 			return nil, gateOf(spec.PartnerFound)
 		}
@@ -132,7 +133,7 @@ func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 			return nil, gate
 		}
 		return paired(p.Mode, partner, f, partner)
-	case spec.ModePaired:
+	case rules.ModePaired:
 		// A read that does not pair with f has no written value.
 		partner, gate := one(f, decl, func(c *Facts) bool {
 			pair, _ := Pairing(c, f)
@@ -142,7 +143,7 @@ func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 			return nil, gate
 		}
 		return paired(p.Mode, partner, partner, f)
-	case spec.ModeRole:
+	case rules.ModeRole:
 		partner, gate := role(p, f, decl)
 		if gate != nil {
 			return nil, gate
@@ -175,7 +176,7 @@ func takes(write, read *Facts) bool {
 
 // named returns the callable of decl that the param key of a classification
 // of f names.
-func named(key string, f *Facts, decl []Facts) (*Facts, *spec.Gate) {
+func named(key string, f *Facts, decl []Facts) (*Facts, *rules.Gate) {
 	id, ok := paramID(key, f)
 	if ok {
 		for i := range decl {
@@ -218,7 +219,7 @@ func paramID(key string, f *Facts) (symbol.Identity, bool) {
 
 // role returns the callable of decl with the role of p in a contract
 // instance of f.
-func role(p *spec.Partner, f *Facts, decl []Facts) (*Facts, *spec.Gate) {
+func role(p *rules.Partner, f *Facts, decl []Facts) (*Facts, *rules.Gate) {
 	return one(f, decl, func(c *Facts) bool {
 		for _, m := range f.Class.Contracts {
 			for _, n := range c.Class.Contracts {
@@ -233,7 +234,7 @@ func role(p *spec.Partner, f *Facts, decl []Facts) (*Facts, *spec.Gate) {
 
 // establishing returns the pair of the one other callable of decl with the
 // classification of p whose arguments the read of f binds.
-func establishing(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
+func establishing(p *rules.Partner, f *Facts, decl []Facts) (*Pair, *rules.Gate) {
 	var found *Pair
 	classified := false
 	for i := range decl {
@@ -262,7 +263,7 @@ func establishing(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 }
 
 // one returns the one other callable of decl that match accepts.
-func one(f *Facts, decl []Facts, match func(c *Facts) bool) (*Facts, *spec.Gate) {
+func one(f *Facts, decl []Facts, match func(c *Facts) bool) (*Facts, *rules.Gate) {
 	var found *Facts
 	for i := range decl {
 		c := &decl[i]
@@ -281,7 +282,7 @@ func one(f *Facts, decl []Facts, match func(c *Facts) bool) (*Facts, *spec.Gate)
 }
 
 // hasClassification reports whether c has the shape or the mixin of p.
-func hasClassification(c *Facts, p *spec.Partner) bool {
+func hasClassification(c *Facts, p *rules.Partner) bool {
 	if p.Shape != "" {
 		return c.Class.Shape == p.Shape
 	}
@@ -299,7 +300,7 @@ func hasClassification(c *Facts, p *spec.Partner) bool {
 // the field of the written value of their name, or are the written values
 // themselves. The second write changes that field or the whole value, so the
 // two writes store two keys.
-func paired(mode spec.PartnerMode, partner, read, write *Facts) (*Pair, *spec.Gate) {
+func paired(mode rules.PartnerMode, partner, read, write *Facts) (*Pair, *rules.Gate) {
 	pair := &Pair{Partner: partner, Read: read, Write: write, Written: -1}
 	batch := batched(read)
 	if len(read.Results) > 0 {
@@ -318,7 +319,7 @@ func paired(mode spec.PartnerMode, partner, read, write *Facts) (*Pair, *spec.Ga
 	}
 	inputs := read.Inputs
 	for _, param := range read.Signature.Params {
-		if param.Role == rules.ParamContext {
+		if param.Role == sdkrules.ParamContext {
 			pair.Arguments = append(pair.Arguments, Argument{Name: param.Name, Kind: ArgContext})
 			continue
 		}
@@ -336,7 +337,7 @@ func paired(mode spec.PartnerMode, partner, read, write *Facts) (*Pair, *spec.Ga
 		}
 		pair.Changed = keys.Field
 	}
-	if mode != spec.ModeInterposed && mode != spec.ModeRewriter {
+	if mode != rules.ModeInterposed && mode != rules.ModeRewriter {
 		return pair, nil
 	}
 	pair.Changed = changed(pair, write)
@@ -387,7 +388,7 @@ func argumentOf(value *Value, variadic bool, write *Facts, written int) (Argumen
 // variadic input and returns a list as its first value.
 func batched(f *Facts) bool {
 	return len(f.Results) > 0 && f.Results[0].Shape.Form == symbol.FormList &&
-		slices.ContainsFunc(f.Signature.Params, func(p rules.ParamView) bool { return p.Variadic })
+		slices.ContainsFunc(f.Signature.Params, func(p sdkrules.ParamView) bool { return p.Variadic })
 }
 
 // changed returns the first field of the written value that no argument of
@@ -407,7 +408,7 @@ func changed(pair *Pair, write *Facts) string {
 }
 
 // gateOf returns the gate id of the spec.
-func gateOf(id spec.GateID) *spec.Gate {
-	g, _ := spec.GateOf(id)
+func gateOf(id spec.GateID) *rules.Gate {
+	g, _ := rules.GateOf(id)
 	return &g
 }

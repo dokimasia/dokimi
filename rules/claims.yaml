@@ -1,0 +1,1603 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The rules of the claims of the spec: the classifications of the shape catalog that license each
+# claim, the gates that bind it, the inputs and partners of its check, and the clause of its
+# planted defect. The key of each entry is the identifier of a claim of the spec.
+claims:
+  smoke:
+    generator: suite
+    licences:
+      - callable: true
+    gates: [returns-unaided, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} panics"
+  cancel:
+    generator: suite
+    licences:
+      - context: true
+    gates: [cancellation, failure, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} ignores the context"
+  failure-is-reported:
+    generator: suite
+    licences:
+      - callable: true
+    gates: [failure, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} returns no error when its dependency fails"
+  zero-on-error:
+    generator: suite
+    licences:
+      - shape: reader
+      - shape: aggregator
+      - shape: answering-writer
+      - shape: stream-consumer
+    unless: default-on-error
+    gates: [failure, returns-beside-error, one-value, value-samples, returns-unaided, context-or-input, returns-before-cancel, returns-no-field]
+    inputs:
+      call: {from: callable}
+      zero: {from: zero}
+    clause: "a {declaration} whose {callable} returns a value beside an error"
+  returns-on-error:
+    generator: suite
+    licences:
+      - mixin: returns-on-error
+    gates: [failure, returns-beside-error, one-value, value-samples, returns-unaided, context-or-input, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+      field: {from: param, param: result, default: "."}
+      want: {from: param, param: field}
+    clause: "a {declaration} whose {callable} returns the zero value of its result in place of the field of its request"
+  zeroes-on-error:
+    generator: suite
+    licences:
+      - shape: multi-reader
+      - shape: multi-aggregator
+    gates: [failure, returns-beside-error, two-values, value-samples, returns-unaided, context-or-input, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+      zero: {from: zero}
+    clause: "a {declaration} whose {callable} returns values beside an error"
+  zero-on-miss:
+    generator: suite
+    licences:
+      - shape: reader-with-bool
+    gates: [presence-flag, one-value, value-samples, returns-unaided, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+      zero: {from: zero}
+    clause: "a {declaration} whose {callable} returns a value beside a false presence flag"
+  zeroes-on-miss:
+    generator: suite
+    licences:
+      - shape: lookup
+    gates: [presence-flag, two-values, value-samples, returns-unaided, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+      zero: {from: zero}
+    clause: "a {declaration} whose {callable} returns values beside a false presence flag"
+  nil-on-miss:
+    generator: suite
+    licences:
+      - shape: pointer-reader
+    gates: [one-value, optional-value, returns-unaided, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} returns a value for an input that nothing stored"
+  miss-is-zero:
+    generator: suite
+    licences:
+      - shape: reader-no-error
+    gates: [one-value, value-samples, returns-unaided, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+      zero: {from: zero}
+    clause: "a {declaration} whose {callable} returns a value for an input that nothing stored"
+  deterministic:
+    generator: suite
+    licences:
+      - shape: computation
+    gates: [one-value, value-samples, returns-unaided, returns-before-cancel, stable-subject]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} returns another value on the repeat"
+    entails: [smoke]
+  predicate:
+    generator: suite
+    licences:
+      - shape: predicate
+    gates: [one-value, returns-unaided, returns-before-cancel, stable-subject]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} returns another answer on the repeat"
+  repeat-survives:
+    generator: suite
+    licences:
+      - shape: void-lifecycle
+    gates: [no-value, returns-unaided, returns-before-cancel]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} panics on the repeat"
+  miss:
+    generator: suite
+    licences:
+      - mixin: not-found
+    gates: [failure, one-value]
+    inputs:
+      call: {from: callable}
+      sentinel: {from: param, param: sentinel}
+    clause: "a {declaration} whose {callable} fails with another error for a miss"
+  idempotent:
+    generator: suite
+    licences:
+      - mixin: idempotent
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} fails on the second call"
+  cacheable:
+    generator: suite
+    licences:
+      - mixin: cacheable
+    gates: [one-value]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} returns another value on the repeat"
+  pure:
+    generator: suite
+    licences:
+      - mixin: pure
+    gates: [one-value]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} returns another value on the repeat"
+  commutative:
+    generator: suite
+    licences:
+      - mixin: commutative
+    gates: [two-inputs-of-one-type, one-value]
+    inputs:
+      call: {from: callable}
+      first: {from: input, position: 0}
+      second: {from: input, position: 1}
+    clause: "a {declaration} whose {callable} ignores its second input"
+  associative:
+    generator: suite
+    licences:
+      - mixin: associative
+    gates: [two-inputs-of-one-type, result-of-the-input-type]
+    inputs:
+      call: {from: callable}
+      first: {from: input, position: 0}
+      second: {from: input, position: 1}
+      third: {from: input, position: 1, sample: 1}
+    clause: "a {declaration} whose {callable} keeps the value of its first call"
+  read-after-write:
+    generator: suite
+    licences:
+      - mixin: read-after-write
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: named, param: write}
+    inputs:
+      read: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} returns a value that {write} did not write"
+  causal:
+    generator: suite
+    licences:
+      - mixin: causal
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      read: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} returns a value that {write} did not write"
+  read-your-writes:
+    generator: suite
+    licences:
+      - mixin: read-your-writes
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      read: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} returns a value that {write} did not write"
+  monotonic-writes:
+    generator: suite
+    licences:
+      - mixin: monotonic-writes
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      read: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} returns a value that {write} did not write"
+  point-in-time:
+    generator: suite
+    licences:
+      - mixin: point-in-time
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: interposed, param: write}
+    inputs:
+      read: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} returns another value on the second read"
+  no-duplicates:
+    generator: suite
+    licences:
+      - mixin: no-duplicates
+    gates: [cancellation, list-value]
+    partners:
+      write: {mode: establishing, shape: writer}
+    inputs:
+      drain: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} returns one element twice"
+  stable-order:
+    generator: suite
+    licences:
+      - mixin: stable-order
+    gates: [cancellation, list-value]
+    partners:
+      write: {mode: establishing, shape: writer}
+    inputs:
+      drain: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} reorders the elements between calls"
+  permutation:
+    generator: suite
+    licences:
+      - mixin: permutation
+    gates: [cancellation, list-value]
+    partners:
+      write: {mode: establishing, shape: writer}
+    inputs:
+      drain: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} loses what {write} wrote"
+  over-match:
+    generator: suite
+    licences:
+      - mixin: over-match
+    gates: [cancellation, list-value]
+    partners:
+      write: {mode: establishing, shape: writer}
+    inputs:
+      drain: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} loses what {write} wrote"
+  monotonic:
+    generator: suite
+    licences:
+      - mixin: monotonic
+    gates: [one-value, ordered-value, value-samples]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} returns less than its previous result"
+  monotonic-reads:
+    generator: suite
+    licences:
+      - mixin: monotonic-reads
+    gates: [cancellation, one-value, value-samples]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      read: {from: callable}
+      write: {from: partner, partner: write}
+      version: {from: param, param: version}
+    clause: "a {declaration} whose {callable} returns an older version on the second read"
+  writes-follow-reads:
+    generator: suite
+    licences:
+      - mixin: writes-follow-reads
+    gates: [cancellation, one-value, value-samples, write-returns-the-value]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      read: {from: callable}
+      write: {from: partner, partner: write}
+      version: {from: param, param: version}
+    clause: "a {declaration} whose {write} is not ordered after the read before it"
+  xss-safe:
+    generator: suite
+    licences:
+      - mixin: xss-safe
+    gates: [cancellation, one-value]
+    inputs:
+      call: {from: callable}
+      unsafe: {from: param, param: unsafe}
+    clause: "a {declaration} whose {callable} returns its input unchanged"
+  injection-safe:
+    generator: suite
+    licences:
+      - mixin: injection-safe
+    gates: [cancellation, failure]
+    partners:
+      read: {mode: reader, param: read}
+    inputs:
+      write: {from: callable}
+      read: {from: partner, partner: read}
+    clause: "a {declaration} whose {callable} returns success and stores nothing"
+  total:
+    generator: suite
+    licences:
+      - mixin: total
+        needs-param: edge
+    gates: [failure]
+    inputs:
+      call: {from: callable}
+      edge: {from: param, param: edge}
+    clause: "a {declaration} whose {callable} fails at the edge of its domain"
+  validates:
+    generator: suite
+    licences:
+      - mixin: validates
+    gates: [cancellation, failure]
+    partners:
+      validate: {mode: named, param: fn}
+    inputs:
+      call: {from: callable}
+      validate: {from: partner, partner: validate}
+      invalid: {from: param, param: invalid}
+    clause: "a {declaration} whose {callable} accepts a value that {validate} refuses"
+  nil-safe:
+    generator: suite
+    licences:
+      - mixin: nil-safe
+    gates: [optional-input]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} panics on nil"
+  lifecycle-after-close:
+    generator: suite
+    licences:
+      - mixin: lifecycle-after-close
+    gates: [cancellation, failure]
+    partners:
+      close: {mode: named, param: close}
+    inputs:
+      call: {from: callable}
+      close: {from: partner, partner: close}
+      sentinel: {from: param, param: sentinel}
+    clause: "a {declaration} whose {callable} works on after {close}"
+  order-after:
+    generator: suite
+    licences:
+      - mixin: order-after
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      sentinel: {from: param, param: unready}
+    clause: "a {declaration} whose {callable} succeeds before its predecessor ran"
+  ready-after:
+    generator: suite
+    licences:
+      - mixin: order-after
+    gates: [cancellation, failure]
+    partners:
+      ready: {mode: named, param: fn}
+    inputs:
+      call: {from: callable}
+      ready: {from: partner, partner: ready}
+    clause: "a {declaration} whose {callable} fails also after {ready}"
+  settles:
+    generator: suite
+    licences:
+      - mixin: eventually
+    gates: [cancellation, failure]
+    partners:
+      settle: {mode: named, param: settle}
+      observe: {mode: named, param: observe}
+    inputs:
+      call: {from: callable}
+      settle: {from: partner, partner: settle}
+      observe: {from: partner, partner: observe}
+    clause: "a {declaration} whose {observe} returns nothing, settled or not"
+  within:
+    generator: suite
+    licences:
+      - mixin: timeout
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      budget: {from: param, param: duration}
+      clock: {from: clock}
+    clause: "a {declaration} whose {callable} waits longer than its budget"
+  windowed:
+    generator: suite
+    licences:
+      - mixin: windowed
+    gates: [cancellation, failure]
+    partners:
+      count: {mode: named, param: count}
+    inputs:
+      call: {from: callable}
+      count: {from: partner, partner: count}
+      window: {from: param, param: window}
+      clock: {from: clock}
+    clause: "a {declaration} whose {count} keeps every {callable} however far the clock moves"
+  scheduled:
+    generator: suite
+    licences:
+      - mixin: scheduled
+    gates: [cancellation, failure]
+    partners:
+      count: {mode: named, param: runs}
+    inputs:
+      call: {from: callable}
+      count: {from: partner, partner: count}
+      clock: {from: clock}
+    clause: "a {declaration} that runs each task of {callable} the moment it registers"
+  time-aware:
+    generator: suite
+    licences:
+      - mixin: time-aware
+    gates: [cancellation, one-value]
+    partners:
+      put: {mode: establishing, shape: writer}
+    inputs:
+      call: {from: callable}
+      put: {from: partner, partner: put}
+      clock: {from: clock}
+    clause: "a {declaration} whose {callable} returns the same value however far the clock moves"
+  steady:
+    generator: suite
+    licences:
+      - mixin: time-aware
+    gates: [cancellation, one-value]
+    partners:
+      put: {mode: establishing, shape: writer}
+    inputs:
+      call: {from: callable}
+      put: {from: partner, partner: put}
+      clock: {from: clock}
+    clause: "a {declaration} whose {callable} returns another value while nothing moved"
+  expires:
+    generator: suite
+    licences:
+      - mixin: ttl
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: named, param: put}
+    inputs:
+      read: {from: callable}
+      write: {from: partner, partner: write}
+      lifetime: {from: param, param: duration}
+      sentinel: {from: param, param: not-found}
+      clock: {from: clock}
+    clause: "a {declaration} whose {callable} returns an entry after its lifetime"
+  delete-removes:
+    generator: suite
+    licences:
+      - mixin: delete-removes
+    gates: [cancellation, failure]
+    partners:
+      read: {mode: named, param: read}
+      put: {mode: establishing, shape: writer}
+    inputs:
+      call: {from: callable}
+      put: {from: partner, partner: put}
+      read: {from: partner, partner: read}
+      sentinel: {from: param, param: sentinel}
+    clause: "a {declaration} whose {read} returns a key after {callable}"
+  side-effect:
+    generator: suite
+    licences:
+      - mixin: side-effect
+    gates: [cancellation, failure]
+    partners:
+      observe: {mode: named, param: observe}
+    inputs:
+      call: {from: callable}
+      observe: {from: partner, partner: observe}
+    clause: "a {declaration} whose {callable} leaves {observe} unchanged"
+  poisonable:
+    generator: suite
+    licences:
+      - mixin: poisonable
+    gates: [failure]
+    partners:
+      induce: {mode: named, param: induce}
+    inputs:
+      call: {from: callable}
+      induce: {from: partner, partner: induce}
+    clause: "a {declaration} whose {callable} succeeds after {induce}"
+  tamper-evident:
+    generator: suite
+    licences:
+      - mixin: tamper-evident
+    gates: [cancellation, failure]
+    partners:
+      tamper: {mode: named, param: tamper}
+      verify: {mode: named, param: verify}
+    inputs:
+      call: {from: callable}
+      verify: {from: partner, partner: verify}
+      tamper: {from: partner, partner: tamper}
+    clause: "a {declaration} whose {verify} returns no error after {tamper}"
+  retry-succeeds-tx:
+    generator: suite
+    licences:
+      - mixin: retry-succeeds
+        needs-param: attempts
+        with: {contract: tx, role: commit}
+    gates: [cancellation, failure]
+    partners:
+      begin: {mode: role, role: begin}
+    inputs:
+      call: {from: callable}
+      begin: {from: partner, partner: begin}
+      attempts: {from: param, param: attempts}
+    clause: "a {declaration} whose {callable} never succeeds"
+  retry-succeeds:
+    generator: suite
+    licences:
+      - mixin: retry-succeeds
+        needs-param: attempts
+        conflicts: [{contract: tx, role: commit}]
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      attempts: {from: param, param: attempts}
+    clause: "a {declaration} whose {callable} never succeeds"
+  retry-succeeds-under-faults:
+    generator: suite
+    licences:
+      - mixin: retry-succeeds
+        needs-param: attempts
+        conflicts: [{contract: tx, role: commit}]
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      attempts: {from: param, param: attempts}
+    clause: "a {declaration} whose {callable} keeps failing once its dependency failed"
+    entails: [retry-succeeds]
+  hooks:
+    generator: suite
+    licences:
+      - mixin: hooks
+    gates: [cancellation, failure]
+    partners:
+      register: {mode: named, param: register}
+    inputs:
+      call: {from: callable}
+      register: {from: partner, partner: register}
+    clause: "a {declaration} whose {register} never installs the hook"
+  accumulates:
+    generator: suite
+    licences:
+      - mixin: accumulates
+    gates: [cancellation, failure]
+    partners:
+      observe: {mode: named, param: observe}
+    inputs:
+      call: {from: callable}
+      observe: {from: partner, partner: observe}
+    clause: "a {declaration} whose repeated {callable} has one effect"
+  partition:
+    generator: suite
+    licences:
+      - mixin: partition
+    gates: [cancellation, failure]
+    partners:
+      read: {mode: reader, param: read}
+    inputs:
+      write: {from: callable}
+      read: {from: partner, partner: read}
+    clause: "a {declaration} whose {callable} keeps no partition"
+  persister:
+    generator: suite
+    licences:
+      - contract: persister
+        role: writer
+    gates: [cancellation, one-value]
+    partners:
+      read: {mode: role, role: reader}
+    inputs:
+      write: {from: callable}
+      read: {from: partner, partner: read}
+    clause: "a {declaration} whose {callable} returns success and stores nothing"
+  chain-causal:
+    generator: suite
+    licences:
+      - contract: chain
+        role: append
+        with: {mixin: causal}
+    gates: [cancellation, failure]
+    partners:
+      replay: {mode: role, role: replay}
+    inputs:
+      call: {from: callable}
+      replay: {from: partner, partner: replay}
+    clause: "a {declaration} whose {replay} returns the history of {callable} reversed"
+  chain:
+    generator: suite
+    licences:
+      - contract: chain
+        role: append
+    gates: [cancellation, failure]
+    partners:
+      replay: {mode: role, role: replay}
+    inputs:
+      call: {from: callable}
+      replay: {from: partner, partner: replay}
+    clause: "a {declaration} whose {callable} returns success and appends nothing"
+  appender:
+    generator: suite
+    licences:
+      - contract: appender
+        role: fn
+    gates: [one-value, ordered-value, value-samples]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} returns a position that is not above the last"
+  codec:
+    generator: suite
+    licences:
+      - contract: codec
+        role: forward
+    gates: [cancellation, one-value, exact-fidelity]
+    partners:
+      inverse: {mode: role, role: inverse}
+    inputs:
+      call: {from: callable}
+      inverse: {from: partner, partner: inverse}
+    clause: "a {declaration} whose {callable} returns another encoding on every call"
+  if-absent:
+    generator: suite
+    licences:
+      - contract: if-absent
+        role: writer
+        conflicts: [{mixin: idempotent}]
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      sentinel: {from: param, param: conflict}
+    clause: "a {declaration} whose {callable} accepts the duplicate"
+  lease:
+    generator: suite
+    licences:
+      - contract: lease
+        role: acquire
+        conflicts: [{mixin: idempotent}]
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      sentinel: {from: param, param: taken}
+    clause: "a {declaration} whose {callable} grants a lease that it holds"
+  cas:
+    generator: suite
+    licences:
+      - contract: cas
+        role: writer
+        conflicts: [{mixin: idempotent}]
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      sentinel: {from: param, param: mismatch}
+    clause: "a {declaration} whose {callable} accepts a write on a version that it has moved past"
+  if-match:
+    generator: suite
+    licences:
+      - contract: if-match
+        role: writer
+        needs-param: field
+    gates: [cancellation, failure]
+    partners:
+      match: {mode: role, role: match}
+    inputs:
+      call: {from: callable}
+      match: {from: partner, partner: match}
+    clause: "a {declaration} whose {callable} accepts a write that {match} rejects"
+  cursor:
+    generator: suite
+    licences:
+      - contract: cursor
+        role: next
+    gates: [cancellation, failure]
+    partners:
+      close: {mode: role, role: close}
+    inputs:
+      call: {from: callable}
+      close: {from: partner, partner: close}
+      sentinel: {from: param, param: sentinel}
+    clause: "a {declaration} whose {callable} keeps draining after {close}"
+  cursor-open:
+    generator: suite
+    licences:
+      - contract: cursor
+        role: open
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      close: {from: param, param: close-method}
+      after: {from: param, param: next-method}
+      sentinel: {from: param, param: sentinel}
+    clause: "a {declaration} whose {callable} returns a cursor that drains after its close"
+  rate-limit:
+    generator: suite
+    licences:
+      - contract: rate-limit
+        role: fn
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      burst: {from: param, param: burst}
+      sentinel: {from: param, param: limited}
+    clause: "a {declaration} whose {callable} admits calls past the declared burst"
+  leader-election:
+    generator: suite
+    licences:
+      - contract: leader-election
+        role: campaign
+    gates: [cancellation, failure]
+    partners:
+      resign: {mode: role, role: resign}
+      leading: {mode: role, role: is-leader}
+    inputs:
+      call: {from: callable}
+      resign: {from: partner, partner: resign}
+      leading: {from: partner, partner: leading}
+    clause: "a {declaration} whose {leading} reports leadership after {resign}"
+  transaction:
+    generator: suite
+    licences:
+      - contract: transaction
+        role: fn
+    gates: [cancellation, failure]
+    partners:
+      write: {mode: named, param: write}
+      read: {mode: named, param: read}
+    inputs:
+      call: {from: callable}
+      write: {from: partner, partner: write}
+      read: {from: partner, partner: read}
+      sentinel: {from: param, param: not-found}
+    clause: "a {declaration} whose {callable} keeps what a failed body wrote"
+  transaction-under-faults:
+    generator: suite
+    licences:
+      - contract: transaction
+        role: fn
+    gates: [cancellation, failure]
+    partners:
+      write: {mode: named, param: write}
+      read: {mode: named, param: read}
+    inputs:
+      call: {from: callable}
+      write: {from: partner, partner: write}
+      read: {from: partner, partner: read}
+      sentinel: {from: param, param: not-found}
+    clause: "a {declaration} whose {read} finds what {callable} wrote before its commit failed"
+  fails-fast:
+    generator: suite
+    licences:
+      - contract: circuit-breaker
+        role: fn
+    gates: [failure]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} keeps calling an operation that keeps failing"
+  keeps-its-instance:
+    generator: suite
+    licences:
+      - mixin: sticky
+        needs-param: key
+    gates: [returns-unaided]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} sends each call to another instance"
+  releases-on-every-path:
+    generator: suite
+    licences:
+      - mixin: leak-free
+        needs-param: open
+    gates: [failure]
+    inputs:
+      call: {from: callable}
+      open: {from: param, param: open}
+      close: {from: param, param: close}
+    clause: "a {declaration} whose {callable} keeps a resource that it acquired before a failure"
+  cache:
+    generator: suite
+    licences:
+      - contract: cache
+        role: cache
+    gates: [cancellation, one-value, value-samples]
+    partners:
+      backing: {mode: role, role: backing}
+      put: {mode: establishing, shape: writer}
+    inputs:
+      call: {from: callable}
+      backing: {from: partner, partner: backing}
+      put: {from: partner, partner: put}
+    clause: "a {declaration} whose {callable} returns a value that {backing} never had"
+  tx:
+    generator: suite
+    licences:
+      - contract: tx
+        role: begin
+    gates: [cancellation, one-value, value-samples]
+    partners:
+      commit: {mode: role, role: commit}
+      rollback: {mode: role, role: rollback}
+    inputs:
+      call: {from: callable}
+      close: {from: partner, partner: commit}
+      after: {from: partner, partner: rollback}
+      sentinel: {from: param, param: closed}
+    clause: "a {declaration} whose {rollback} settles a transaction that {commit} settled"
+  pool:
+    generator: suite
+    licences:
+      - contract: pool
+        role: get
+    gates: [cancellation, one-value]
+    partners:
+      put: {mode: role, role: put}
+    inputs:
+      call: {from: callable}
+      put: {from: partner, partner: put}
+    clause: "a {declaration} whose {put} refuses what {callable} lent"
+  pagination:
+    generator: suite
+    licences:
+      - contract: pagination
+        role: reader
+        needs-param: cursor
+    gates: [cancellation, one-value]
+    inputs:
+      call: {from: callable}
+      cursor: {from: param, param: cursor}
+    clause: "a {declaration} whose {callable} returns the first page to every cursor"
+  saga:
+    generator: suite
+    licences:
+      - contract: saga
+        role: step
+    gates: [cancellation, failure]
+    partners:
+      compensate: {mode: role, role: compensate}
+    inputs:
+      call: {from: callable}
+      compensate: {from: partner, partner: compensate}
+    clause: "a {declaration} whose {compensate} refuses the step of {callable}"
+  batch-writer:
+    generator: suite
+    licences:
+      - contract: batch-writer
+        role: writer
+        needs-param: refused
+    gates: [cancellation, failure]
+    partners:
+      reader: {mode: role, role: reader}
+    inputs:
+      call: {from: callable}
+      reader: {from: partner, partner: reader}
+      refused: {from: param, param: refused}
+      zero: {from: zero}
+    clause: "a {declaration} whose {callable} files a part of a write that it refused"
+  no-partial-write:
+    generator: suite
+    licences:
+      - mixin: atomic
+        needs-param: read
+    gates: [failure]
+    partners:
+      read: {mode: reader, param: read}
+    inputs:
+      call: {from: callable}
+      read: {from: partner, partner: read}
+    clause: "a {declaration} whose {read} finds a part of a {callable} that failed"
+  updater:
+    generator: suite
+    licences:
+      - contract: updater
+        role: writer
+    gates: [cancellation, failure]
+    partners:
+      read: {mode: rewriter, role: reader}
+    inputs:
+      call: {from: callable}
+      read: {from: partner, partner: read}
+    clause: "a {declaration} whose {callable} keeps the first write"
+  upserter:
+    generator: suite
+    licences:
+      - contract: upserter
+        role: writer
+    gates: [cancellation, failure]
+    partners:
+      read: {mode: rewriter, role: reader}
+    inputs:
+      call: {from: callable}
+      read: {from: partner, partner: read}
+    clause: "a {declaration} whose second {callable} lands where {read} cannot find it"
+  reads-each-key:
+    generator: suite
+    licences:
+      - shape: batch-reader
+    gates: [cancellation, list-value]
+    partners:
+      write: {mode: establishing, shape: writer}
+    inputs:
+      call: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} drops the value of its last key"
+  fresh-reports-no-poison:
+    generator: suite
+    licences:
+      - shape: poison-accessor
+    gates: [failure]
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} reports an error for a fresh receiver"
+  streams-what-was-stored:
+    generator: suite
+    licences:
+      - shape: stream-reader
+    gates: [cancellation, list-value]
+    partners:
+      write: {mode: establishing, shape: writer}
+    inputs:
+      drain: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} loses what {write} stored"
+  respects-its-bounds:
+    generator: suite
+    licences:
+      - mixin: indexed
+    gates: [failure]
+    partners:
+      by: {mode: named, param: by}
+    inputs:
+      call: {from: callable}
+      size: {from: partner, partner: by}
+    clause: "a {declaration} whose {callable} admits the position equal to the size"
+  agrees-with-its-sibling:
+    generator: suite
+    licences:
+      - mixin: wrapped-via
+    gates: [returns-unaided, one-value]
+    partners:
+      fn: {mode: named, param: fn}
+    inputs:
+      call: {from: callable}
+      sibling: {from: partner, partner: fn}
+    clause: "a {declaration} whose {callable} stops calling {fn}"
+  verifies-what-it-appended:
+    generator: suite
+    licences:
+      - contract: chain
+        role: verify
+    gates: [failure]
+    partners:
+      append: {mode: role, role: append}
+    inputs:
+      call: {from: callable}
+      append: {from: partner, partner: append}
+    clause: "a {declaration} whose {callable} reports a change of a chain that {append} produced"
+  release-frees-the-lease:
+    generator: suite
+    licences:
+      - contract: lease
+        role: acquire
+        conflicts: [{mixin: idempotent}]
+    gates: [cancellation, failure]
+    partners:
+      release: {mode: role, role: release}
+    inputs:
+      call: {from: callable}
+      release: {from: partner, partner: release}
+    clause: "a {declaration} whose {release} keeps the lease"
+  counts-each-loan:
+    generator: suite
+    licences:
+      - contract: pool
+        role: stats
+    gates: [one-value]
+    partners:
+      get: {mode: role, role: get}
+    inputs:
+      call: {from: callable}
+      get: {from: partner, partner: get}
+    clause: "a {declaration} whose {callable} reports the same stats after {get} lends an object"
+  never-goes-back:
+    generator: suite
+    licences:
+      - mixin: monotonic
+    gates: [one-value, ordered-value, value-samples]
+    inputs:
+      actions: {from: declaration}
+      read: {from: callable}
+    clause: "a {declaration} whose {callable} returns its first result again from its fourth call on"
+    entails: [monotonic]
+  reads-never-go-back:
+    generator: suite
+    licences:
+      - mixin: monotonic-reads
+    gates: [cancellation, one-value, value-samples]
+    inputs:
+      actions: {from: declaration}
+      read: {from: callable}
+      version: {from: param, param: version}
+    clause: "a {declaration} whose {callable} returns its first value again from its fourth call on"
+    entails: [monotonic-reads]
+  keeps-its-order:
+    generator: suite
+    licences:
+      - mixin: stable-order
+    gates: [cancellation, list-value]
+    inputs:
+      actions: {from: declaration}
+      drain: {from: callable}
+    clause: "a {declaration} whose {callable} reverses its elements from its fourth call on"
+    entails: [stable-order]
+  writes-apply-in-order:
+    generator: suite
+    licences:
+      - mixin: monotonic-writes
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      actions: {from: declaration}
+      write: {from: partner, partner: write}
+      read: {from: callable}
+      version: {from: param, param: version}
+    clause: "a {declaration} whose {write} stores nothing from its fourth call on"
+    entails: [monotonic-writes]
+  reads-follow-own-writes:
+    generator: suite
+    licences:
+      - mixin: read-your-writes
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      actions: {from: declaration}
+      read: {from: callable}
+      write: {from: partner, partner: write}
+      readback: {from: callable}
+      version: {from: param, param: version}
+    clause: "a {declaration} whose {callable} returns its first value again from its fourth call on"
+    entails: [read-your-writes]
+  writes-follow-their-reads:
+    generator: suite
+    licences:
+      - mixin: writes-follow-reads
+    gates: [cancellation, one-value, value-samples, write-returns-the-value]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      actions: {from: declaration}
+      write: {from: partner, partner: write}
+      read: {from: callable}
+      readback: {from: callable}
+      version: {from: param, param: version}
+    clause: "a {declaration} whose {write} returns the version 0 from its fourth call on"
+    entails: [writes-follow-reads]
+  appends-keep-ascending:
+    generator: suite
+    licences:
+      - contract: appender
+        role: fn
+    gates: [one-value, ordered-value, value-samples]
+    inputs:
+      actions: {from: declaration}
+      append: {from: callable}
+    clause: "a {declaration} whose {callable} returns the position 0 from its fourth call on"
+    entails: [appender]
+  replays-in-order-over-sequences:
+    generator: suite
+    licences:
+      - contract: chain
+        role: append
+        with: {mixin: causal}
+    gates: [cancellation, failure]
+    partners:
+      replay: {mode: role, role: replay}
+    inputs:
+      actions: {from: declaration}
+      replay: {from: partner, partner: replay}
+      stamp: {from: param, param: version}
+    clause: "a {declaration} whose {replay} reverses its entries from its fourth call on"
+    entails: [chain-causal]
+  yields-each-once:
+    generator: suite
+    licences:
+      - mixin: no-duplicates
+    gates: [cancellation, list-value]
+    inputs:
+      actions: {from: declaration}
+      drain: {from: callable}
+    clause: "a {declaration} whose {callable} yields its first element twice from its fourth call on"
+    entails: [no-duplicates]
+  drains-keep-what-went-in:
+    generator: suite
+    licences:
+      - mixin: over-match
+    gates: [cancellation, list-value]
+    partners:
+      write: {mode: establishing, shape: writer}
+    inputs:
+      actions: {from: declaration}
+      drain: {from: callable}
+      write: {from: partner, partner: write}
+      written: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} drops its last element from its fourth call on"
+    entails: [over-match]
+  drains-gain-exactly-what-went-in:
+    generator: suite
+    licences:
+      - mixin: permutation
+    gates: [cancellation, list-value]
+    partners:
+      write: {mode: establishing, shape: writer}
+    inputs:
+      actions: {from: declaration}
+      drain: {from: callable}
+      write: {from: partner, partner: write}
+      written: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} drops its last element from its fourth call on"
+    entails: [permutation]
+  compounds-over-sequences:
+    generator: suite
+    licences:
+      - mixin: accumulates
+    gates: [cancellation, failure]
+    partners:
+      observe: {mode: named, param: observe}
+    inputs:
+      actions: {from: declaration}
+      call: {from: callable}
+      observe: {from: partner, partner: observe}
+    clause: "a {declaration} whose {callable} does nothing from its fourth call on"
+    entails: [accumulates]
+  reads-each-last-write:
+    generator: suite
+    licences:
+      - mixin: read-after-write
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: named, param: write}
+    inputs:
+      actions: {from: declaration}
+      write: {from: partner, partner: write}
+      readback: {from: callable}
+      written: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} returns its first value again from its fourth call on"
+    entails: [read-after-write]
+  persists-each-last-write:
+    generator: suite
+    licences:
+      - contract: persister
+        role: writer
+    gates: [cancellation, one-value]
+    partners:
+      read: {mode: role, role: reader}
+    inputs:
+      actions: {from: declaration}
+      write: {from: callable}
+      readback: {from: partner, partner: read}
+      written: {from: callable}
+    clause: "a {declaration} whose {callable} does nothing from its fourth call on"
+    entails: [persister]
+  cache-agrees-over-sequences:
+    generator: suite
+    licences:
+      - contract: cache
+        role: cache
+    gates: [cancellation, one-value, value-samples]
+    partners:
+      backing: {mode: role, role: backing}
+    inputs:
+      actions: {from: declaration}
+      read: {from: callable}
+      backing: {from: partner, partner: backing}
+    clause: "a {declaration} whose {callable} returns its first value again from its fourth call on"
+    entails: [cache]
+  agrees-with-the-reference:
+    generator: suite
+    scope: declaration
+    licences:
+      - declaration: true
+    gates: [returns-a-value]
+    inputs:
+      actions: {from: declaration}
+      reference: {from: declaration}
+    clause: "a {declaration} whose first callable with a value result returns another value from its fourth call on"
+  linearizable:
+    generator: suite
+    scope: declaration
+    licences:
+      - mixin: concurrent
+    gates: [returns-a-value]
+    inputs:
+      actions: {from: declaration}
+      reference: {from: declaration}
+    clause: "a {declaration} whose first callable with a value result returns another value while another call is in progress"
+  serializable:
+    generator: suite
+    scope: declaration
+    licences:
+      - mixin: serializable
+        needs-param: read
+    gates: [transactions]
+    inputs:
+      actions: {from: declaration}
+    clause: "a {declaration} whose read returns the write of a transaction that has not committed"
+  snapshot-isolation:
+    generator: suite
+    scope: declaration
+    licences:
+      - mixin: snapshot-isolation
+        needs-param: read
+    gates: [transactions]
+    inputs:
+      actions: {from: declaration}
+    clause: "a {declaration} whose commit applies the writes of its transaction without the snapshot of the transaction"
+  reads-agree-under-concurrency:
+    generator: suite
+    licences:
+      - mixin: concurrent-readers
+    gates: [returns-a-value]
+    inputs:
+      actions: {from: declaration}
+      read: {from: callable}
+      again: {from: callable}
+    clause: "a {declaration} whose {callable} returns the results of another read that overlaps it"
+  computes-once:
+    generator: suite
+    licences:
+      - contract: single-flight
+        role: fn
+    inputs:
+      call: {from: callable}
+    clause: "a {declaration} whose {callable} computes its result for each call"
+  one-holder-at-a-time:
+    generator: suite
+    licences:
+      - contract: lease
+        role: acquire
+        conflicts: [{mixin: idempotent}]
+    gates: [cancellation, failure]
+    inputs:
+      call: {from: callable}
+      sentinel: {from: param, param: taken}
+    clause: "a {declaration} whose {callable} grants a lease to two calls at once"
+    entails: [lease]
+  pins-the-snapshot-under-writes:
+    generator: suite
+    licences:
+      - mixin: point-in-time
+    gates: [cancellation, one-value]
+    partners:
+      write: {mode: interposed, param: write}
+    inputs:
+      actions: {from: declaration}
+      read: {from: callable}
+      write: {from: partner, partner: write}
+    clause: "a {declaration} whose {callable} returns the value of another read that overlaps it"
+    entails: [point-in-time]
+  causal-history:
+    generator: suite
+    licences:
+      - mixin: causal
+    gates: [cancellation, one-value, write-returns-the-value]
+    partners:
+      write: {mode: derived, param: version}
+    inputs:
+      actions: {from: declaration}
+      read: {from: callable}
+      write: {from: partner, partner: write}
+      version: {from: param, param: version}
+    clause: "a {declaration} whose {callable} returns the version of another read that overlaps it"
+    entails: [causal]
+  keeps-within-its-bounds:
+    generator: suite
+    licences:
+      - mixin: bounded
+    gates: [countable-use]
+    partners:
+      observe: {mode: named, param: observe}
+    inputs:
+      actions: {from: declaration}
+      observe: {from: partner, partner: observe}
+      min: {from: param, param: min, default: "0"}
+      limit: {from: param, param: limit}
+    clause: "a {declaration} whose {observe} reports a use above the limit from its fourth call on"
+  merges-in-any-order:
+    generator: suite
+    licences:
+      - mixin: crdt-merge
+    gates: [takes-a-replica]
+    partners:
+      write: {mode: named, param: write}
+      read: {mode: named, param: read}
+    inputs:
+      actions: {from: declaration}
+      apply: {from: declaration}
+      merge: {from: callable}
+      write: {from: partner, partner: write}
+      read: {from: partner, partner: read}
+    clause: "a {declaration} whose {callable} ignores the other replica"
+  follows-its-graph:
+    generator: suite
+    licences:
+      - contract: workflow
+        role: fn
+    gates: [graph-of-states]
+    partners:
+      observe: {mode: named, param: observe}
+    inputs:
+      actions: {from: declaration}
+      fn: {from: callable}
+      observe: {from: partner, partner: observe}
+      transitions: {from: param, param: transitions}
+    clause: "a {declaration} whose {callable} makes its transition twice from its fourth call on"
+  conserves-the-quantity:
+    generator: suite
+    licences:
+      - mixin: conservative
+    gates: [numeric-total]
+    partners:
+      observe: {mode: named, param: observe}
+    inputs:
+      actions: {from: declaration}
+      call: {from: callable}
+      observe: {from: partner, partner: observe}
+    clause: "a {declaration} whose {observe} reads one unit more on each call"
+  no-trace-of-a-failed-call:
+    generator: suite
+    licences:
+      - mixin: atomic
+        needs-param: read
+    gates: [failure]
+    partners:
+      read: {mode: reader, param: read}
+    inputs:
+      actions: {from: declaration}
+      call: {from: callable}
+      readback: {from: partner, partner: read}
+    clause: "a {declaration} whose {read} finds a part of a failed {callable} from its fourth read on"
+    entails: [no-partial-write]
+  iteration-sees-mutations:
+    generator: suite
+    licences:
+      - mixin: stream-reflects-mutations
+    gates: [stream-mutations]
+    partners:
+      mutate: {mode: named, param: mutate}
+      delete: {mode: named, param: delete}
+    inputs:
+      actions: {from: declaration}
+      stream: {from: callable}
+      mutate: {from: partner, partner: mutate}
+      delete: {from: partner, partner: delete}
+      written: {from: partner, partner: mutate}
+      removed: {from: partner, partner: delete}
+    clause: "a {declaration} whose {callable} iterates a copy of its source"
+  synced-writes-survive:
+    generator: suite
+    licences:
+      - mixin: durable
+    gates: [failure]
+    partners:
+      read: {mode: paired}
+    inputs:
+      durable: {from: partner, partner: read}
+    clause: "a {declaration} over a medium whose syncs persist nothing"
+  no-torn-record:
+    generator: suite
+    licences:
+      - mixin: durable
+    gates: [failure]
+    partners:
+      read: {mode: paired}
+    inputs:
+      durable: {from: partner, partner: read}
+    clause: "a {declaration} whose {callable} writes the zero value under the key before its first value"
+  corruption-is-reported:
+    generator: suite
+    licences:
+      - mixin: durable
+        needs-param: corrupt
+    gates: [failure]
+    partners:
+      read: {mode: paired}
+    inputs:
+      durable: {from: partner, partner: read}
+      corrupt: {from: param, param: corrupt}
+    clause: "a {declaration} whose {read} returns the zero value of a corrupted record"
+  full-medium-is-reported:
+    generator: suite
+    licences:
+      - mixin: durable
+    gates: [failure]
+    partners:
+      read: {mode: paired}
+    inputs:
+      durable: {from: partner, partner: read}
+    clause: "a {declaration} over a medium that reports a full write as written"
+  delivers-each-append:
+    generator: suite
+    licences:
+      - contract: outbox
+        role: append
+    gates: [delivers-on-a-channel]
+    partners:
+      subscribe: {mode: role, role: subscribe}
+    inputs:
+      actions: {from: declaration}
+      append: {from: callable}
+      subscribe: {from: partner, partner: subscribe}
+      written: {from: callable}
+    clause: "a {declaration} whose {callable} records nothing from its fourth call on"
+  delivers-by-its-mode:
+    generator: suite
+    licences:
+      - contract: publisher
+        role: publish
+    gates: [delivers-on-a-channel]
+    partners:
+      subscribe: {mode: role, role: subscribe}
+    inputs:
+      actions: {from: declaration}
+      publish: {from: callable}
+      subscribe: {from: partner, partner: subscribe}
+      written: {from: callable}
+      mode: {from: param, param: mode}
+    clause: "a {declaration} whose {callable} breaks its delivery mode from its fourth call on"
+  redelivers-on-demand:
+    generator: suite
+    licences:
+      - contract: publisher
+        role: redeliver
+    gates: [delivers-on-a-channel, at-least-once-mode]
+    partners:
+      publish: {mode: role, role: publish}
+      subscribe: {mode: role, role: subscribe}
+    inputs:
+      actions: {from: declaration}
+      publish: {from: partner, partner: publish}
+      redeliver: {from: callable}
+      subscribe: {from: partner, partner: subscribe}
+      written: {from: partner, partner: publish}
+      redelivered: {from: callable}
+    clause: "a {declaration} whose {callable} does nothing from its fourth call on"
+  watch-sees-each-trigger:
+    generator: suite
+    licences:
+      - contract: watcher
+        role: watch
+    gates: [subscription-methods]
+    partners:
+      trigger: {mode: role, role: trigger}
+    inputs:
+      actions: {from: declaration}
+      watch: {from: callable}
+      trigger: {from: partner, partner: trigger}
+      next: {from: param, param: next}
+      stop: {from: param, param: stop}
+      retrigger: {from: partner, partner: trigger}
+      watch-key: {from: callable}
+      trigger-key: {from: partner, partner: trigger}
+      triggered: {from: partner, partner: trigger}
+    clause: "a {declaration} whose {trigger} does nothing from its fourth call on"
+  values-in-order:
+    generator: enum
+    gates: [members, list-function]
+    inputs:
+      members: {from: members}
+      list: {from: list}
+    clause: "a {declaration} whose list lacks its last variant"
+  distinct-names:
+    generator: enum
+    gates: [two-members, outside-value]
+    inputs:
+      members: {from: members}
+      name: {from: name}
+      outside: {from: outside}
+    clause: "a {declaration} whose second variant renders the text of the first"
+  valid-members:
+    generator: enum
+    gates: [members, valid-function, outside-value]
+    inputs:
+      members: {from: members}
+      valid: {from: valid}
+      outside: {from: outside}
+    clause: "a {declaration} whose last variant is not valid"
+  parses-back:
+    generator: enum
+    gates: [members, parse-function]
+    inputs:
+      members: {from: members}
+      parse: {from: parse}
+      name: {from: name}
+    clause: "a {declaration} whose parse function returns the first variant for every text"
+  encodes-text:
+    generator: enum
+    gates: [members, text-encoding]
+    inputs:
+      members: {from: members}
+      name: {from: name}
+    clause: "a {declaration} whose every variant encodes the text of the first"
+  decodes-text:
+    generator: enum
+    gates: [members, text-encoding]
+    inputs:
+      members: {from: members}
+      name: {from: name}
+    clause: "a {declaration} whose every text decodes to the first variant"
+  error-messages:
+    generator: sentinel
+    unless: {param: prefix, value: "off"}
+    gates: [error-values]
+    inputs:
+      values: {from: error-values}
+      opening: {from: param, param: prefix}
+    clause: "a {declaration} whose second error value has the message of the first"
+  distinct-errors:
+    generator: sentinel
+    gates: [two-error-values]
+    inputs:
+      values: {from: error-values}
+      neighbours: {from: param, param: no-overlap-with}
+    clause: "a {declaration} whose second error value is its first"
+  error-type-messages:
+    generator: sentinel
+    unless: {param: prefix, value: "off"}
+    gates: [error-types]
+    inputs:
+      types: {from: error-types}
+      opening: {from: param, param: prefix}
+    clause: "a {declaration} whose error type has a message without the opening"
+  is-agrees:
+    generator: sentinel
+    gates: [self-comparing-type]
+    inputs:
+      types: {from: error-types}
+      values: {from: error-values}
+    clause: "a {declaration} whose error type matches every error"
+  unwraps-the-cause:
+    generator: sentinel
+    gates: [error-cause]
+    inputs:
+      causes: {from: causes}
+    clause: "a {declaration} whose error type returns no cause"
+  distinct-error-types:
+    generator: sentinel
+    gates: [two-error-types]
+    inputs:
+      types: {from: error-types}
+    clause: "a {declaration} whose error type matches a value of another error type"
+  replies-once:
+    generator: sim
+    inputs: {}
+    clause: "a {declaration} whose machine returns each reply twice"
+  replies-before-stop:
+    generator: sim
+    inputs: {}
+    clause: "a {declaration} whose machine drops its replies on the stop event"
+  quiet-after-stop:
+    generator: sim
+    inputs: {}
+    clause: "a {declaration} whose machine starts a call on the stop event"
+  quiet-after-error:
+    generator: sim
+    inputs: {}
+    clause: "a {declaration} whose machine returns effects after it reports an error"
+  fresh-tokens:
+    generator: sim
+    inputs: {}
+    clause: "a {declaration} whose machine starts its first call or wait again with its token"

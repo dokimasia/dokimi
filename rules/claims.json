@@ -1,0 +1,4445 @@
+{
+  "claims": {
+    "accumulates": {
+      "generator": "suite",
+      "clause": "a {declaration} whose repeated {callable} has one effect",
+      "licences": [
+        {
+          "mixin": "accumulates"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "observe",
+          "from": "partner",
+          "partner": "observe"
+        }
+      ],
+      "partners": [
+        {
+          "name": "observe",
+          "mode": "named",
+          "param": "observe"
+        }
+      ]
+    },
+    "agrees-with-its-sibling": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} stops calling {fn}",
+      "licences": [
+        {
+          "mixin": "wrapped-via"
+        }
+      ],
+      "gates": [
+        "returns-unaided",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "sibling",
+          "from": "partner",
+          "partner": "fn"
+        }
+      ],
+      "partners": [
+        {
+          "name": "fn",
+          "mode": "named",
+          "param": "fn"
+        }
+      ]
+    },
+    "agrees-with-the-reference": {
+      "generator": "suite",
+      "scope": "declaration",
+      "clause": "a {declaration} whose first callable with a value result returns another value from its fourth call on",
+      "licences": [
+        {
+          "declaration": true
+        }
+      ],
+      "gates": [
+        "returns-a-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "reference",
+          "from": "declaration"
+        }
+      ]
+    },
+    "appender": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a position that is not above the last",
+      "licences": [
+        {
+          "contract": "appender",
+          "role": "fn"
+        }
+      ],
+      "gates": [
+        "one-value",
+        "ordered-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "appends-keep-ascending": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns the position 0 from its fourth call on",
+      "licences": [
+        {
+          "contract": "appender",
+          "role": "fn"
+        }
+      ],
+      "gates": [
+        "one-value",
+        "ordered-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "append",
+          "from": "callable"
+        }
+      ],
+      "entails": [
+        "appender"
+      ]
+    },
+    "associative": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} keeps the value of its first call",
+      "licences": [
+        {
+          "mixin": "associative"
+        }
+      ],
+      "gates": [
+        "two-inputs-of-one-type",
+        "result-of-the-input-type"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "first",
+          "from": "input"
+        },
+        {
+          "name": "second",
+          "from": "input",
+          "position": 1
+        },
+        {
+          "name": "third",
+          "from": "input",
+          "sample": 1,
+          "position": 1
+        }
+      ]
+    },
+    "batch-writer": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} files a part of a write that it refused",
+      "licences": [
+        {
+          "contract": "batch-writer",
+          "role": "writer",
+          "needs-param": "refused"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "reader",
+          "from": "partner",
+          "partner": "reader"
+        },
+        {
+          "name": "refused",
+          "from": "param",
+          "param": "refused"
+        },
+        {
+          "name": "zero",
+          "from": "zero"
+        }
+      ],
+      "partners": [
+        {
+          "name": "reader",
+          "mode": "role",
+          "role": "reader"
+        }
+      ]
+    },
+    "cache": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value that {backing} never had",
+      "licences": [
+        {
+          "contract": "cache",
+          "role": "cache"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "backing",
+          "from": "partner",
+          "partner": "backing"
+        },
+        {
+          "name": "put",
+          "from": "partner",
+          "partner": "put"
+        }
+      ],
+      "partners": [
+        {
+          "name": "backing",
+          "mode": "role",
+          "role": "backing"
+        },
+        {
+          "name": "put",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "cache-agrees-over-sequences": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns its first value again from its fourth call on",
+      "licences": [
+        {
+          "contract": "cache",
+          "role": "cache"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "backing",
+          "from": "partner",
+          "partner": "backing"
+        }
+      ],
+      "partners": [
+        {
+          "name": "backing",
+          "mode": "role",
+          "role": "backing"
+        }
+      ],
+      "entails": [
+        "cache"
+      ]
+    },
+    "cacheable": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns another value on the repeat",
+      "licences": [
+        {
+          "mixin": "cacheable"
+        }
+      ],
+      "gates": [
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "cancel": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} ignores the context",
+      "licences": [
+        {
+          "context": true
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "cas": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} accepts a write on a version that it has moved past",
+      "licences": [
+        {
+          "contract": "cas",
+          "role": "writer",
+          "conflicts": [
+            {
+              "mixin": "idempotent"
+            }
+          ]
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "mismatch"
+        }
+      ]
+    },
+    "causal": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value that {write} did not write",
+      "licences": [
+        {
+          "mixin": "causal"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ]
+    },
+    "causal-history": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns the version of another read that overlaps it",
+      "licences": [
+        {
+          "mixin": "causal"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "write-returns-the-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "version",
+          "from": "param",
+          "param": "version"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ],
+      "entails": [
+        "causal"
+      ]
+    },
+    "chain": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns success and appends nothing",
+      "licences": [
+        {
+          "contract": "chain",
+          "role": "append"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "replay",
+          "from": "partner",
+          "partner": "replay"
+        }
+      ],
+      "partners": [
+        {
+          "name": "replay",
+          "mode": "role",
+          "role": "replay"
+        }
+      ]
+    },
+    "chain-causal": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {replay} returns the history of {callable} reversed",
+      "licences": [
+        {
+          "contract": "chain",
+          "role": "append",
+          "with": {
+            "mixin": "causal"
+          }
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "replay",
+          "from": "partner",
+          "partner": "replay"
+        }
+      ],
+      "partners": [
+        {
+          "name": "replay",
+          "mode": "role",
+          "role": "replay"
+        }
+      ]
+    },
+    "codec": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns another encoding on every call",
+      "licences": [
+        {
+          "contract": "codec",
+          "role": "forward"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "exact-fidelity"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "inverse",
+          "from": "partner",
+          "partner": "inverse"
+        }
+      ],
+      "partners": [
+        {
+          "name": "inverse",
+          "mode": "role",
+          "role": "inverse"
+        }
+      ]
+    },
+    "commutative": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} ignores its second input",
+      "licences": [
+        {
+          "mixin": "commutative"
+        }
+      ],
+      "gates": [
+        "two-inputs-of-one-type",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "first",
+          "from": "input"
+        },
+        {
+          "name": "second",
+          "from": "input",
+          "position": 1
+        }
+      ]
+    },
+    "compounds-over-sequences": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} does nothing from its fourth call on",
+      "licences": [
+        {
+          "mixin": "accumulates"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "observe",
+          "from": "partner",
+          "partner": "observe"
+        }
+      ],
+      "partners": [
+        {
+          "name": "observe",
+          "mode": "named",
+          "param": "observe"
+        }
+      ],
+      "entails": [
+        "accumulates"
+      ]
+    },
+    "computes-once": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} computes its result for each call",
+      "licences": [
+        {
+          "contract": "single-flight",
+          "role": "fn"
+        }
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "conserves-the-quantity": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {observe} reads one unit more on each call",
+      "licences": [
+        {
+          "mixin": "conservative"
+        }
+      ],
+      "gates": [
+        "numeric-total"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "observe",
+          "from": "partner",
+          "partner": "observe"
+        }
+      ],
+      "partners": [
+        {
+          "name": "observe",
+          "mode": "named",
+          "param": "observe"
+        }
+      ]
+    },
+    "corruption-is-reported": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {read} returns the zero value of a corrupted record",
+      "licences": [
+        {
+          "mixin": "durable",
+          "needs-param": "corrupt"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "durable",
+          "from": "partner",
+          "partner": "read"
+        },
+        {
+          "name": "corrupt",
+          "from": "param",
+          "param": "corrupt"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "paired"
+        }
+      ]
+    },
+    "counts-each-loan": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} reports the same stats after {get} lends an object",
+      "licences": [
+        {
+          "contract": "pool",
+          "role": "stats"
+        }
+      ],
+      "gates": [
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "get",
+          "from": "partner",
+          "partner": "get"
+        }
+      ],
+      "partners": [
+        {
+          "name": "get",
+          "mode": "role",
+          "role": "get"
+        }
+      ]
+    },
+    "cursor": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} keeps draining after {close}",
+      "licences": [
+        {
+          "contract": "cursor",
+          "role": "next"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "close",
+          "from": "partner",
+          "partner": "close"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "sentinel"
+        }
+      ],
+      "partners": [
+        {
+          "name": "close",
+          "mode": "role",
+          "role": "close"
+        }
+      ]
+    },
+    "cursor-open": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a cursor that drains after its close",
+      "licences": [
+        {
+          "contract": "cursor",
+          "role": "open"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "close",
+          "from": "param",
+          "param": "close-method"
+        },
+        {
+          "name": "after",
+          "from": "param",
+          "param": "next-method"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "sentinel"
+        }
+      ]
+    },
+    "decodes-text": {
+      "generator": "enum",
+      "clause": "a {declaration} whose every text decodes to the first variant",
+      "gates": [
+        "members",
+        "text-encoding"
+      ],
+      "inputs": [
+        {
+          "name": "members",
+          "from": "members"
+        },
+        {
+          "name": "name",
+          "from": "name"
+        }
+      ]
+    },
+    "delete-removes": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {read} returns a key after {callable}",
+      "licences": [
+        {
+          "mixin": "delete-removes"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "put",
+          "from": "partner",
+          "partner": "put"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "sentinel"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "named",
+          "param": "read"
+        },
+        {
+          "name": "put",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "delivers-by-its-mode": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} breaks its delivery mode from its fourth call on",
+      "licences": [
+        {
+          "contract": "publisher",
+          "role": "publish"
+        }
+      ],
+      "gates": [
+        "delivers-on-a-channel"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "publish",
+          "from": "callable"
+        },
+        {
+          "name": "subscribe",
+          "from": "partner",
+          "partner": "subscribe"
+        },
+        {
+          "name": "written",
+          "from": "callable"
+        },
+        {
+          "name": "mode",
+          "from": "param",
+          "param": "mode"
+        }
+      ],
+      "partners": [
+        {
+          "name": "subscribe",
+          "mode": "role",
+          "role": "subscribe"
+        }
+      ]
+    },
+    "delivers-each-append": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} records nothing from its fourth call on",
+      "licences": [
+        {
+          "contract": "outbox",
+          "role": "append"
+        }
+      ],
+      "gates": [
+        "delivers-on-a-channel"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "append",
+          "from": "callable"
+        },
+        {
+          "name": "subscribe",
+          "from": "partner",
+          "partner": "subscribe"
+        },
+        {
+          "name": "written",
+          "from": "callable"
+        }
+      ],
+      "partners": [
+        {
+          "name": "subscribe",
+          "mode": "role",
+          "role": "subscribe"
+        }
+      ]
+    },
+    "deterministic": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns another value on the repeat",
+      "licences": [
+        {
+          "shape": "computation"
+        }
+      ],
+      "gates": [
+        "one-value",
+        "value-samples",
+        "returns-unaided",
+        "returns-before-cancel",
+        "stable-subject"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ],
+      "entails": [
+        "smoke"
+      ]
+    },
+    "distinct-error-types": {
+      "generator": "sentinel",
+      "clause": "a {declaration} whose error type matches a value of another error type",
+      "gates": [
+        "two-error-types"
+      ],
+      "inputs": [
+        {
+          "name": "types",
+          "from": "error-types"
+        }
+      ]
+    },
+    "distinct-errors": {
+      "generator": "sentinel",
+      "clause": "a {declaration} whose second error value is its first",
+      "gates": [
+        "two-error-values"
+      ],
+      "inputs": [
+        {
+          "name": "values",
+          "from": "error-values"
+        },
+        {
+          "name": "neighbours",
+          "from": "param",
+          "param": "no-overlap-with"
+        }
+      ]
+    },
+    "distinct-names": {
+      "generator": "enum",
+      "clause": "a {declaration} whose second variant renders the text of the first",
+      "gates": [
+        "two-members",
+        "outside-value"
+      ],
+      "inputs": [
+        {
+          "name": "members",
+          "from": "members"
+        },
+        {
+          "name": "name",
+          "from": "name"
+        },
+        {
+          "name": "outside",
+          "from": "outside"
+        }
+      ]
+    },
+    "drains-gain-exactly-what-went-in": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} drops its last element from its fourth call on",
+      "licences": [
+        {
+          "mixin": "permutation"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "drain",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "written",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ],
+      "entails": [
+        "permutation"
+      ]
+    },
+    "drains-keep-what-went-in": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} drops its last element from its fourth call on",
+      "licences": [
+        {
+          "mixin": "over-match"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "drain",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "written",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ],
+      "entails": [
+        "over-match"
+      ]
+    },
+    "encodes-text": {
+      "generator": "enum",
+      "clause": "a {declaration} whose every variant encodes the text of the first",
+      "gates": [
+        "members",
+        "text-encoding"
+      ],
+      "inputs": [
+        {
+          "name": "members",
+          "from": "members"
+        },
+        {
+          "name": "name",
+          "from": "name"
+        }
+      ]
+    },
+    "error-messages": {
+      "generator": "sentinel",
+      "clause": "a {declaration} whose second error value has the message of the first",
+      "unless": {
+        "param": "prefix",
+        "value": "off"
+      },
+      "gates": [
+        "error-values"
+      ],
+      "inputs": [
+        {
+          "name": "values",
+          "from": "error-values"
+        },
+        {
+          "name": "opening",
+          "from": "param",
+          "param": "prefix"
+        }
+      ]
+    },
+    "error-type-messages": {
+      "generator": "sentinel",
+      "clause": "a {declaration} whose error type has a message without the opening",
+      "unless": {
+        "param": "prefix",
+        "value": "off"
+      },
+      "gates": [
+        "error-types"
+      ],
+      "inputs": [
+        {
+          "name": "types",
+          "from": "error-types"
+        },
+        {
+          "name": "opening",
+          "from": "param",
+          "param": "prefix"
+        }
+      ]
+    },
+    "expires": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns an entry after its lifetime",
+      "licences": [
+        {
+          "mixin": "ttl"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "lifetime",
+          "from": "param",
+          "param": "duration"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "not-found"
+        },
+        {
+          "name": "clock",
+          "from": "clock"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "named",
+          "param": "put"
+        }
+      ]
+    },
+    "fails-fast": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} keeps calling an operation that keeps failing",
+      "licences": [
+        {
+          "contract": "circuit-breaker",
+          "role": "fn"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "failure-is-reported": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns no error when its dependency fails",
+      "licences": [
+        {
+          "callable": true
+        }
+      ],
+      "gates": [
+        "failure",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "follows-its-graph": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} makes its transition twice from its fourth call on",
+      "licences": [
+        {
+          "contract": "workflow",
+          "role": "fn"
+        }
+      ],
+      "gates": [
+        "graph-of-states"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "fn",
+          "from": "callable"
+        },
+        {
+          "name": "observe",
+          "from": "partner",
+          "partner": "observe"
+        },
+        {
+          "name": "transitions",
+          "from": "param",
+          "param": "transitions"
+        }
+      ],
+      "partners": [
+        {
+          "name": "observe",
+          "mode": "named",
+          "param": "observe"
+        }
+      ]
+    },
+    "fresh-reports-no-poison": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} reports an error for a fresh receiver",
+      "licences": [
+        {
+          "shape": "poison-accessor"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "fresh-tokens": {
+      "generator": "sim",
+      "clause": "a {declaration} whose machine starts its first call or wait again with its token",
+      "inputs": []
+    },
+    "full-medium-is-reported": {
+      "generator": "suite",
+      "clause": "a {declaration} over a medium that reports a full write as written",
+      "licences": [
+        {
+          "mixin": "durable"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "durable",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "paired"
+        }
+      ]
+    },
+    "hooks": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {register} never installs the hook",
+      "licences": [
+        {
+          "mixin": "hooks"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "register",
+          "from": "partner",
+          "partner": "register"
+        }
+      ],
+      "partners": [
+        {
+          "name": "register",
+          "mode": "named",
+          "param": "register"
+        }
+      ]
+    },
+    "idempotent": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} fails on the second call",
+      "licences": [
+        {
+          "mixin": "idempotent"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "if-absent": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} accepts the duplicate",
+      "licences": [
+        {
+          "contract": "if-absent",
+          "role": "writer",
+          "conflicts": [
+            {
+              "mixin": "idempotent"
+            }
+          ]
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "conflict"
+        }
+      ]
+    },
+    "if-match": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} accepts a write that {match} rejects",
+      "licences": [
+        {
+          "contract": "if-match",
+          "role": "writer",
+          "needs-param": "field"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "match",
+          "from": "partner",
+          "partner": "match"
+        }
+      ],
+      "partners": [
+        {
+          "name": "match",
+          "mode": "role",
+          "role": "match"
+        }
+      ]
+    },
+    "injection-safe": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns success and stores nothing",
+      "licences": [
+        {
+          "mixin": "injection-safe"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "write",
+          "from": "callable"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "reader",
+          "param": "read"
+        }
+      ]
+    },
+    "is-agrees": {
+      "generator": "sentinel",
+      "clause": "a {declaration} whose error type matches every error",
+      "gates": [
+        "self-comparing-type"
+      ],
+      "inputs": [
+        {
+          "name": "types",
+          "from": "error-types"
+        },
+        {
+          "name": "values",
+          "from": "error-values"
+        }
+      ]
+    },
+    "iteration-sees-mutations": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} iterates a copy of its source",
+      "licences": [
+        {
+          "mixin": "stream-reflects-mutations"
+        }
+      ],
+      "gates": [
+        "stream-mutations"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "stream",
+          "from": "callable"
+        },
+        {
+          "name": "mutate",
+          "from": "partner",
+          "partner": "mutate"
+        },
+        {
+          "name": "delete",
+          "from": "partner",
+          "partner": "delete"
+        },
+        {
+          "name": "written",
+          "from": "partner",
+          "partner": "mutate"
+        },
+        {
+          "name": "removed",
+          "from": "partner",
+          "partner": "delete"
+        }
+      ],
+      "partners": [
+        {
+          "name": "mutate",
+          "mode": "named",
+          "param": "mutate"
+        },
+        {
+          "name": "delete",
+          "mode": "named",
+          "param": "delete"
+        }
+      ]
+    },
+    "keeps-its-instance": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} sends each call to another instance",
+      "licences": [
+        {
+          "mixin": "sticky",
+          "needs-param": "key"
+        }
+      ],
+      "gates": [
+        "returns-unaided"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "keeps-its-order": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} reverses its elements from its fourth call on",
+      "licences": [
+        {
+          "mixin": "stable-order"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "drain",
+          "from": "callable"
+        }
+      ],
+      "entails": [
+        "stable-order"
+      ]
+    },
+    "keeps-within-its-bounds": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {observe} reports a use above the limit from its fourth call on",
+      "licences": [
+        {
+          "mixin": "bounded"
+        }
+      ],
+      "gates": [
+        "countable-use"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "observe",
+          "from": "partner",
+          "partner": "observe"
+        },
+        {
+          "name": "min",
+          "from": "param",
+          "param": "min",
+          "default": "0"
+        },
+        {
+          "name": "limit",
+          "from": "param",
+          "param": "limit"
+        }
+      ],
+      "partners": [
+        {
+          "name": "observe",
+          "mode": "named",
+          "param": "observe"
+        }
+      ]
+    },
+    "leader-election": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {leading} reports leadership after {resign}",
+      "licences": [
+        {
+          "contract": "leader-election",
+          "role": "campaign"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "resign",
+          "from": "partner",
+          "partner": "resign"
+        },
+        {
+          "name": "leading",
+          "from": "partner",
+          "partner": "leading"
+        }
+      ],
+      "partners": [
+        {
+          "name": "resign",
+          "mode": "role",
+          "role": "resign"
+        },
+        {
+          "name": "leading",
+          "mode": "role",
+          "role": "is-leader"
+        }
+      ]
+    },
+    "lease": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} grants a lease that it holds",
+      "licences": [
+        {
+          "contract": "lease",
+          "role": "acquire",
+          "conflicts": [
+            {
+              "mixin": "idempotent"
+            }
+          ]
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "taken"
+        }
+      ]
+    },
+    "lifecycle-after-close": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} works on after {close}",
+      "licences": [
+        {
+          "mixin": "lifecycle-after-close"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "close",
+          "from": "partner",
+          "partner": "close"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "sentinel"
+        }
+      ],
+      "partners": [
+        {
+          "name": "close",
+          "mode": "named",
+          "param": "close"
+        }
+      ]
+    },
+    "linearizable": {
+      "generator": "suite",
+      "scope": "declaration",
+      "clause": "a {declaration} whose first callable with a value result returns another value while another call is in progress",
+      "licences": [
+        {
+          "mixin": "concurrent"
+        }
+      ],
+      "gates": [
+        "returns-a-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "reference",
+          "from": "declaration"
+        }
+      ]
+    },
+    "merges-in-any-order": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} ignores the other replica",
+      "licences": [
+        {
+          "mixin": "crdt-merge"
+        }
+      ],
+      "gates": [
+        "takes-a-replica"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "apply",
+          "from": "declaration"
+        },
+        {
+          "name": "merge",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "named",
+          "param": "write"
+        },
+        {
+          "name": "read",
+          "mode": "named",
+          "param": "read"
+        }
+      ]
+    },
+    "miss": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} fails with another error for a miss",
+      "licences": [
+        {
+          "mixin": "not-found"
+        }
+      ],
+      "gates": [
+        "failure",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "sentinel"
+        }
+      ]
+    },
+    "miss-is-zero": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value for an input that nothing stored",
+      "licences": [
+        {
+          "shape": "reader-no-error"
+        }
+      ],
+      "gates": [
+        "one-value",
+        "value-samples",
+        "returns-unaided",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "zero",
+          "from": "zero"
+        }
+      ]
+    },
+    "monotonic": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns less than its previous result",
+      "licences": [
+        {
+          "mixin": "monotonic"
+        }
+      ],
+      "gates": [
+        "one-value",
+        "ordered-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "monotonic-reads": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns an older version on the second read",
+      "licences": [
+        {
+          "mixin": "monotonic-reads"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "version",
+          "from": "param",
+          "param": "version"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ]
+    },
+    "monotonic-writes": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value that {write} did not write",
+      "licences": [
+        {
+          "mixin": "monotonic-writes"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ]
+    },
+    "never-goes-back": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns its first result again from its fourth call on",
+      "licences": [
+        {
+          "mixin": "monotonic"
+        }
+      ],
+      "gates": [
+        "one-value",
+        "ordered-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        }
+      ],
+      "entails": [
+        "monotonic"
+      ]
+    },
+    "nil-on-miss": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value for an input that nothing stored",
+      "licences": [
+        {
+          "shape": "pointer-reader"
+        }
+      ],
+      "gates": [
+        "one-value",
+        "optional-value",
+        "returns-unaided",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "nil-safe": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} panics on nil",
+      "licences": [
+        {
+          "mixin": "nil-safe"
+        }
+      ],
+      "gates": [
+        "optional-input"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "no-duplicates": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns one element twice",
+      "licences": [
+        {
+          "mixin": "no-duplicates"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "drain",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "no-partial-write": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {read} finds a part of a {callable} that failed",
+      "licences": [
+        {
+          "mixin": "atomic",
+          "needs-param": "read"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "reader",
+          "param": "read"
+        }
+      ]
+    },
+    "no-torn-record": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} writes the zero value under the key before its first value",
+      "licences": [
+        {
+          "mixin": "durable"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "durable",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "paired"
+        }
+      ]
+    },
+    "no-trace-of-a-failed-call": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {read} finds a part of a failed {callable} from its fourth read on",
+      "licences": [
+        {
+          "mixin": "atomic",
+          "needs-param": "read"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "readback",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "reader",
+          "param": "read"
+        }
+      ],
+      "entails": [
+        "no-partial-write"
+      ]
+    },
+    "one-holder-at-a-time": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} grants a lease to two calls at once",
+      "licences": [
+        {
+          "contract": "lease",
+          "role": "acquire",
+          "conflicts": [
+            {
+              "mixin": "idempotent"
+            }
+          ]
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "taken"
+        }
+      ],
+      "entails": [
+        "lease"
+      ]
+    },
+    "order-after": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} succeeds before its predecessor ran",
+      "licences": [
+        {
+          "mixin": "order-after"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "unready"
+        }
+      ]
+    },
+    "over-match": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} loses what {write} wrote",
+      "licences": [
+        {
+          "mixin": "over-match"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "drain",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "pagination": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns the first page to every cursor",
+      "licences": [
+        {
+          "contract": "pagination",
+          "role": "reader",
+          "needs-param": "cursor"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "cursor",
+          "from": "param",
+          "param": "cursor"
+        }
+      ]
+    },
+    "parses-back": {
+      "generator": "enum",
+      "clause": "a {declaration} whose parse function returns the first variant for every text",
+      "gates": [
+        "members",
+        "parse-function"
+      ],
+      "inputs": [
+        {
+          "name": "members",
+          "from": "members"
+        },
+        {
+          "name": "parse",
+          "from": "parse"
+        },
+        {
+          "name": "name",
+          "from": "name"
+        }
+      ]
+    },
+    "partition": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} keeps no partition",
+      "licences": [
+        {
+          "mixin": "partition"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "write",
+          "from": "callable"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "reader",
+          "param": "read"
+        }
+      ]
+    },
+    "permutation": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} loses what {write} wrote",
+      "licences": [
+        {
+          "mixin": "permutation"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "drain",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "persister": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns success and stores nothing",
+      "licences": [
+        {
+          "contract": "persister",
+          "role": "writer"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "write",
+          "from": "callable"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "role",
+          "role": "reader"
+        }
+      ]
+    },
+    "persists-each-last-write": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} does nothing from its fourth call on",
+      "licences": [
+        {
+          "contract": "persister",
+          "role": "writer"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "write",
+          "from": "callable"
+        },
+        {
+          "name": "readback",
+          "from": "partner",
+          "partner": "read"
+        },
+        {
+          "name": "written",
+          "from": "callable"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "role",
+          "role": "reader"
+        }
+      ],
+      "entails": [
+        "persister"
+      ]
+    },
+    "pins-the-snapshot-under-writes": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns the value of another read that overlaps it",
+      "licences": [
+        {
+          "mixin": "point-in-time"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "interposed",
+          "param": "write"
+        }
+      ],
+      "entails": [
+        "point-in-time"
+      ]
+    },
+    "point-in-time": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns another value on the second read",
+      "licences": [
+        {
+          "mixin": "point-in-time"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "interposed",
+          "param": "write"
+        }
+      ]
+    },
+    "poisonable": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} succeeds after {induce}",
+      "licences": [
+        {
+          "mixin": "poisonable"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "induce",
+          "from": "partner",
+          "partner": "induce"
+        }
+      ],
+      "partners": [
+        {
+          "name": "induce",
+          "mode": "named",
+          "param": "induce"
+        }
+      ]
+    },
+    "pool": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {put} refuses what {callable} lent",
+      "licences": [
+        {
+          "contract": "pool",
+          "role": "get"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "put",
+          "from": "partner",
+          "partner": "put"
+        }
+      ],
+      "partners": [
+        {
+          "name": "put",
+          "mode": "role",
+          "role": "put"
+        }
+      ]
+    },
+    "predicate": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns another answer on the repeat",
+      "licences": [
+        {
+          "shape": "predicate"
+        }
+      ],
+      "gates": [
+        "one-value",
+        "returns-unaided",
+        "returns-before-cancel",
+        "stable-subject"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "pure": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns another value on the repeat",
+      "licences": [
+        {
+          "mixin": "pure"
+        }
+      ],
+      "gates": [
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "quiet-after-error": {
+      "generator": "sim",
+      "clause": "a {declaration} whose machine returns effects after it reports an error",
+      "inputs": []
+    },
+    "quiet-after-stop": {
+      "generator": "sim",
+      "clause": "a {declaration} whose machine starts a call on the stop event",
+      "inputs": []
+    },
+    "rate-limit": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} admits calls past the declared burst",
+      "licences": [
+        {
+          "contract": "rate-limit",
+          "role": "fn"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "burst",
+          "from": "param",
+          "param": "burst"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "limited"
+        }
+      ]
+    },
+    "read-after-write": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value that {write} did not write",
+      "licences": [
+        {
+          "mixin": "read-after-write"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "named",
+          "param": "write"
+        }
+      ]
+    },
+    "read-your-writes": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value that {write} did not write",
+      "licences": [
+        {
+          "mixin": "read-your-writes"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ]
+    },
+    "reads-agree-under-concurrency": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns the results of another read that overlaps it",
+      "licences": [
+        {
+          "mixin": "concurrent-readers"
+        }
+      ],
+      "gates": [
+        "returns-a-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "again",
+          "from": "callable"
+        }
+      ]
+    },
+    "reads-each-key": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} drops the value of its last key",
+      "licences": [
+        {
+          "shape": "batch-reader"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "reads-each-last-write": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns its first value again from its fourth call on",
+      "licences": [
+        {
+          "mixin": "read-after-write"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "readback",
+          "from": "callable"
+        },
+        {
+          "name": "written",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "named",
+          "param": "write"
+        }
+      ],
+      "entails": [
+        "read-after-write"
+      ]
+    },
+    "reads-follow-own-writes": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns its first value again from its fourth call on",
+      "licences": [
+        {
+          "mixin": "read-your-writes"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "readback",
+          "from": "callable"
+        },
+        {
+          "name": "version",
+          "from": "param",
+          "param": "version"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ],
+      "entails": [
+        "read-your-writes"
+      ]
+    },
+    "reads-never-go-back": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns its first value again from its fourth call on",
+      "licences": [
+        {
+          "mixin": "monotonic-reads"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "version",
+          "from": "param",
+          "param": "version"
+        }
+      ],
+      "entails": [
+        "monotonic-reads"
+      ]
+    },
+    "ready-after": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} fails also after {ready}",
+      "licences": [
+        {
+          "mixin": "order-after"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "ready",
+          "from": "partner",
+          "partner": "ready"
+        }
+      ],
+      "partners": [
+        {
+          "name": "ready",
+          "mode": "named",
+          "param": "fn"
+        }
+      ]
+    },
+    "redelivers-on-demand": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} does nothing from its fourth call on",
+      "licences": [
+        {
+          "contract": "publisher",
+          "role": "redeliver"
+        }
+      ],
+      "gates": [
+        "delivers-on-a-channel",
+        "at-least-once-mode"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "publish",
+          "from": "partner",
+          "partner": "publish"
+        },
+        {
+          "name": "redeliver",
+          "from": "callable"
+        },
+        {
+          "name": "subscribe",
+          "from": "partner",
+          "partner": "subscribe"
+        },
+        {
+          "name": "written",
+          "from": "partner",
+          "partner": "publish"
+        },
+        {
+          "name": "redelivered",
+          "from": "callable"
+        }
+      ],
+      "partners": [
+        {
+          "name": "publish",
+          "mode": "role",
+          "role": "publish"
+        },
+        {
+          "name": "subscribe",
+          "mode": "role",
+          "role": "subscribe"
+        }
+      ]
+    },
+    "release-frees-the-lease": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {release} keeps the lease",
+      "licences": [
+        {
+          "contract": "lease",
+          "role": "acquire",
+          "conflicts": [
+            {
+              "mixin": "idempotent"
+            }
+          ]
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "release",
+          "from": "partner",
+          "partner": "release"
+        }
+      ],
+      "partners": [
+        {
+          "name": "release",
+          "mode": "role",
+          "role": "release"
+        }
+      ]
+    },
+    "releases-on-every-path": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} keeps a resource that it acquired before a failure",
+      "licences": [
+        {
+          "mixin": "leak-free",
+          "needs-param": "open"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "open",
+          "from": "param",
+          "param": "open"
+        },
+        {
+          "name": "close",
+          "from": "param",
+          "param": "close"
+        }
+      ]
+    },
+    "repeat-survives": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} panics on the repeat",
+      "licences": [
+        {
+          "shape": "void-lifecycle"
+        }
+      ],
+      "gates": [
+        "no-value",
+        "returns-unaided",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "replays-in-order-over-sequences": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {replay} reverses its entries from its fourth call on",
+      "licences": [
+        {
+          "contract": "chain",
+          "role": "append",
+          "with": {
+            "mixin": "causal"
+          }
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "replay",
+          "from": "partner",
+          "partner": "replay"
+        },
+        {
+          "name": "stamp",
+          "from": "param",
+          "param": "version"
+        }
+      ],
+      "partners": [
+        {
+          "name": "replay",
+          "mode": "role",
+          "role": "replay"
+        }
+      ],
+      "entails": [
+        "chain-causal"
+      ]
+    },
+    "replies-before-stop": {
+      "generator": "sim",
+      "clause": "a {declaration} whose machine drops its replies on the stop event",
+      "inputs": []
+    },
+    "replies-once": {
+      "generator": "sim",
+      "clause": "a {declaration} whose machine returns each reply twice",
+      "inputs": []
+    },
+    "respects-its-bounds": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} admits the position equal to the size",
+      "licences": [
+        {
+          "mixin": "indexed"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "size",
+          "from": "partner",
+          "partner": "by"
+        }
+      ],
+      "partners": [
+        {
+          "name": "by",
+          "mode": "named",
+          "param": "by"
+        }
+      ]
+    },
+    "retry-succeeds": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} never succeeds",
+      "licences": [
+        {
+          "mixin": "retry-succeeds",
+          "needs-param": "attempts",
+          "conflicts": [
+            {
+              "contract": "tx",
+              "role": "commit"
+            }
+          ]
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "attempts",
+          "from": "param",
+          "param": "attempts"
+        }
+      ]
+    },
+    "retry-succeeds-tx": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} never succeeds",
+      "licences": [
+        {
+          "mixin": "retry-succeeds",
+          "with": {
+            "contract": "tx",
+            "role": "commit"
+          },
+          "needs-param": "attempts"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "begin",
+          "from": "partner",
+          "partner": "begin"
+        },
+        {
+          "name": "attempts",
+          "from": "param",
+          "param": "attempts"
+        }
+      ],
+      "partners": [
+        {
+          "name": "begin",
+          "mode": "role",
+          "role": "begin"
+        }
+      ]
+    },
+    "retry-succeeds-under-faults": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} keeps failing once its dependency failed",
+      "licences": [
+        {
+          "mixin": "retry-succeeds",
+          "needs-param": "attempts",
+          "conflicts": [
+            {
+              "contract": "tx",
+              "role": "commit"
+            }
+          ]
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "attempts",
+          "from": "param",
+          "param": "attempts"
+        }
+      ],
+      "entails": [
+        "retry-succeeds"
+      ]
+    },
+    "returns-on-error": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns the zero value of its result in place of the field of its request",
+      "licences": [
+        {
+          "mixin": "returns-on-error"
+        }
+      ],
+      "gates": [
+        "failure",
+        "returns-beside-error",
+        "one-value",
+        "value-samples",
+        "returns-unaided",
+        "context-or-input",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "field",
+          "from": "param",
+          "param": "result",
+          "default": "."
+        },
+        {
+          "name": "want",
+          "from": "param",
+          "param": "field"
+        }
+      ]
+    },
+    "saga": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {compensate} refuses the step of {callable}",
+      "licences": [
+        {
+          "contract": "saga",
+          "role": "step"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "compensate",
+          "from": "partner",
+          "partner": "compensate"
+        }
+      ],
+      "partners": [
+        {
+          "name": "compensate",
+          "mode": "role",
+          "role": "compensate"
+        }
+      ]
+    },
+    "scheduled": {
+      "generator": "suite",
+      "clause": "a {declaration} that runs each task of {callable} the moment it registers",
+      "licences": [
+        {
+          "mixin": "scheduled"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "count",
+          "from": "partner",
+          "partner": "count"
+        },
+        {
+          "name": "clock",
+          "from": "clock"
+        }
+      ],
+      "partners": [
+        {
+          "name": "count",
+          "mode": "named",
+          "param": "runs"
+        }
+      ]
+    },
+    "serializable": {
+      "generator": "suite",
+      "scope": "declaration",
+      "clause": "a {declaration} whose read returns the write of a transaction that has not committed",
+      "licences": [
+        {
+          "mixin": "serializable",
+          "needs-param": "read"
+        }
+      ],
+      "gates": [
+        "transactions"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        }
+      ]
+    },
+    "settles": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {observe} returns nothing, settled or not",
+      "licences": [
+        {
+          "mixin": "eventually"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "settle",
+          "from": "partner",
+          "partner": "settle"
+        },
+        {
+          "name": "observe",
+          "from": "partner",
+          "partner": "observe"
+        }
+      ],
+      "partners": [
+        {
+          "name": "settle",
+          "mode": "named",
+          "param": "settle"
+        },
+        {
+          "name": "observe",
+          "mode": "named",
+          "param": "observe"
+        }
+      ]
+    },
+    "side-effect": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} leaves {observe} unchanged",
+      "licences": [
+        {
+          "mixin": "side-effect"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "observe",
+          "from": "partner",
+          "partner": "observe"
+        }
+      ],
+      "partners": [
+        {
+          "name": "observe",
+          "mode": "named",
+          "param": "observe"
+        }
+      ]
+    },
+    "smoke": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} panics",
+      "licences": [
+        {
+          "callable": true
+        }
+      ],
+      "gates": [
+        "returns-unaided",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        }
+      ]
+    },
+    "snapshot-isolation": {
+      "generator": "suite",
+      "scope": "declaration",
+      "clause": "a {declaration} whose commit applies the writes of its transaction without the snapshot of the transaction",
+      "licences": [
+        {
+          "mixin": "snapshot-isolation",
+          "needs-param": "read"
+        }
+      ],
+      "gates": [
+        "transactions"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        }
+      ]
+    },
+    "stable-order": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} reorders the elements between calls",
+      "licences": [
+        {
+          "mixin": "stable-order"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "drain",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "steady": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns another value while nothing moved",
+      "licences": [
+        {
+          "mixin": "time-aware"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "put",
+          "from": "partner",
+          "partner": "put"
+        },
+        {
+          "name": "clock",
+          "from": "clock"
+        }
+      ],
+      "partners": [
+        {
+          "name": "put",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "streams-what-was-stored": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} loses what {write} stored",
+      "licences": [
+        {
+          "shape": "stream-reader"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "drain",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "synced-writes-survive": {
+      "generator": "suite",
+      "clause": "a {declaration} over a medium whose syncs persist nothing",
+      "licences": [
+        {
+          "mixin": "durable"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "durable",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "paired"
+        }
+      ]
+    },
+    "tamper-evident": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {verify} returns no error after {tamper}",
+      "licences": [
+        {
+          "mixin": "tamper-evident"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "verify",
+          "from": "partner",
+          "partner": "verify"
+        },
+        {
+          "name": "tamper",
+          "from": "partner",
+          "partner": "tamper"
+        }
+      ],
+      "partners": [
+        {
+          "name": "tamper",
+          "mode": "named",
+          "param": "tamper"
+        },
+        {
+          "name": "verify",
+          "mode": "named",
+          "param": "verify"
+        }
+      ]
+    },
+    "time-aware": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns the same value however far the clock moves",
+      "licences": [
+        {
+          "mixin": "time-aware"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "put",
+          "from": "partner",
+          "partner": "put"
+        },
+        {
+          "name": "clock",
+          "from": "clock"
+        }
+      ],
+      "partners": [
+        {
+          "name": "put",
+          "mode": "establishing",
+          "shape": "writer"
+        }
+      ]
+    },
+    "total": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} fails at the edge of its domain",
+      "licences": [
+        {
+          "mixin": "total",
+          "needs-param": "edge"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "edge",
+          "from": "param",
+          "param": "edge"
+        }
+      ]
+    },
+    "transaction": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} keeps what a failed body wrote",
+      "licences": [
+        {
+          "contract": "transaction",
+          "role": "fn"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "not-found"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "named",
+          "param": "write"
+        },
+        {
+          "name": "read",
+          "mode": "named",
+          "param": "read"
+        }
+      ]
+    },
+    "transaction-under-faults": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {read} finds what {callable} wrote before its commit failed",
+      "licences": [
+        {
+          "contract": "transaction",
+          "role": "fn"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "not-found"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "named",
+          "param": "write"
+        },
+        {
+          "name": "read",
+          "mode": "named",
+          "param": "read"
+        }
+      ]
+    },
+    "tx": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {rollback} settles a transaction that {commit} settled",
+      "licences": [
+        {
+          "contract": "tx",
+          "role": "begin"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "value-samples"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "close",
+          "from": "partner",
+          "partner": "commit"
+        },
+        {
+          "name": "after",
+          "from": "partner",
+          "partner": "rollback"
+        },
+        {
+          "name": "sentinel",
+          "from": "param",
+          "param": "closed"
+        }
+      ],
+      "partners": [
+        {
+          "name": "commit",
+          "mode": "role",
+          "role": "commit"
+        },
+        {
+          "name": "rollback",
+          "mode": "role",
+          "role": "rollback"
+        }
+      ]
+    },
+    "unwraps-the-cause": {
+      "generator": "sentinel",
+      "clause": "a {declaration} whose error type returns no cause",
+      "gates": [
+        "error-cause"
+      ],
+      "inputs": [
+        {
+          "name": "causes",
+          "from": "causes"
+        }
+      ]
+    },
+    "updater": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} keeps the first write",
+      "licences": [
+        {
+          "contract": "updater",
+          "role": "writer"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "rewriter",
+          "role": "reader"
+        }
+      ]
+    },
+    "upserter": {
+      "generator": "suite",
+      "clause": "a {declaration} whose second {callable} lands where {read} cannot find it",
+      "licences": [
+        {
+          "contract": "upserter",
+          "role": "writer"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "read",
+          "from": "partner",
+          "partner": "read"
+        }
+      ],
+      "partners": [
+        {
+          "name": "read",
+          "mode": "rewriter",
+          "role": "reader"
+        }
+      ]
+    },
+    "valid-members": {
+      "generator": "enum",
+      "clause": "a {declaration} whose last variant is not valid",
+      "gates": [
+        "members",
+        "valid-function",
+        "outside-value"
+      ],
+      "inputs": [
+        {
+          "name": "members",
+          "from": "members"
+        },
+        {
+          "name": "valid",
+          "from": "valid"
+        },
+        {
+          "name": "outside",
+          "from": "outside"
+        }
+      ]
+    },
+    "validates": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} accepts a value that {validate} refuses",
+      "licences": [
+        {
+          "mixin": "validates"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "validate",
+          "from": "partner",
+          "partner": "validate"
+        },
+        {
+          "name": "invalid",
+          "from": "param",
+          "param": "invalid"
+        }
+      ],
+      "partners": [
+        {
+          "name": "validate",
+          "mode": "named",
+          "param": "fn"
+        }
+      ]
+    },
+    "values-in-order": {
+      "generator": "enum",
+      "clause": "a {declaration} whose list lacks its last variant",
+      "gates": [
+        "members",
+        "list-function"
+      ],
+      "inputs": [
+        {
+          "name": "members",
+          "from": "members"
+        },
+        {
+          "name": "list",
+          "from": "list"
+        }
+      ]
+    },
+    "verifies-what-it-appended": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} reports a change of a chain that {append} produced",
+      "licences": [
+        {
+          "contract": "chain",
+          "role": "verify"
+        }
+      ],
+      "gates": [
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "append",
+          "from": "partner",
+          "partner": "append"
+        }
+      ],
+      "partners": [
+        {
+          "name": "append",
+          "mode": "role",
+          "role": "append"
+        }
+      ]
+    },
+    "watch-sees-each-trigger": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {trigger} does nothing from its fourth call on",
+      "licences": [
+        {
+          "contract": "watcher",
+          "role": "watch"
+        }
+      ],
+      "gates": [
+        "subscription-methods"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "watch",
+          "from": "callable"
+        },
+        {
+          "name": "trigger",
+          "from": "partner",
+          "partner": "trigger"
+        },
+        {
+          "name": "next",
+          "from": "param",
+          "param": "next"
+        },
+        {
+          "name": "stop",
+          "from": "param",
+          "param": "stop"
+        },
+        {
+          "name": "retrigger",
+          "from": "partner",
+          "partner": "trigger"
+        },
+        {
+          "name": "watch-key",
+          "from": "callable"
+        },
+        {
+          "name": "trigger-key",
+          "from": "partner",
+          "partner": "trigger"
+        },
+        {
+          "name": "triggered",
+          "from": "partner",
+          "partner": "trigger"
+        }
+      ],
+      "partners": [
+        {
+          "name": "trigger",
+          "mode": "role",
+          "role": "trigger"
+        }
+      ]
+    },
+    "windowed": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {count} keeps every {callable} however far the clock moves",
+      "licences": [
+        {
+          "mixin": "windowed"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "count",
+          "from": "partner",
+          "partner": "count"
+        },
+        {
+          "name": "window",
+          "from": "param",
+          "param": "window"
+        },
+        {
+          "name": "clock",
+          "from": "clock"
+        }
+      ],
+      "partners": [
+        {
+          "name": "count",
+          "mode": "named",
+          "param": "count"
+        }
+      ]
+    },
+    "within": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} waits longer than its budget",
+      "licences": [
+        {
+          "mixin": "timeout"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "failure"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "budget",
+          "from": "param",
+          "param": "duration"
+        },
+        {
+          "name": "clock",
+          "from": "clock"
+        }
+      ]
+    },
+    "writes-apply-in-order": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {write} stores nothing from its fourth call on",
+      "licences": [
+        {
+          "mixin": "monotonic-writes"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "version",
+          "from": "param",
+          "param": "version"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ],
+      "entails": [
+        "monotonic-writes"
+      ]
+    },
+    "writes-follow-reads": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {write} is not ordered after the read before it",
+      "licences": [
+        {
+          "mixin": "writes-follow-reads"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "value-samples",
+        "write-returns-the-value"
+      ],
+      "inputs": [
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "version",
+          "from": "param",
+          "param": "version"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ]
+    },
+    "writes-follow-their-reads": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {write} returns the version 0 from its fourth call on",
+      "licences": [
+        {
+          "mixin": "writes-follow-reads"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value",
+        "value-samples",
+        "write-returns-the-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "write",
+          "from": "partner",
+          "partner": "write"
+        },
+        {
+          "name": "read",
+          "from": "callable"
+        },
+        {
+          "name": "readback",
+          "from": "callable"
+        },
+        {
+          "name": "version",
+          "from": "param",
+          "param": "version"
+        }
+      ],
+      "partners": [
+        {
+          "name": "write",
+          "mode": "derived",
+          "param": "version"
+        }
+      ],
+      "entails": [
+        "writes-follow-reads"
+      ]
+    },
+    "xss-safe": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns its input unchanged",
+      "licences": [
+        {
+          "mixin": "xss-safe"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "one-value"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "unsafe",
+          "from": "param",
+          "param": "unsafe"
+        }
+      ]
+    },
+    "yields-each-once": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} yields its first element twice from its fourth call on",
+      "licences": [
+        {
+          "mixin": "no-duplicates"
+        }
+      ],
+      "gates": [
+        "cancellation",
+        "list-value"
+      ],
+      "inputs": [
+        {
+          "name": "actions",
+          "from": "declaration"
+        },
+        {
+          "name": "drain",
+          "from": "callable"
+        }
+      ],
+      "entails": [
+        "no-duplicates"
+      ]
+    },
+    "zero-on-error": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value beside an error",
+      "unless": {
+        "mixin": "default-on-error"
+      },
+      "licences": [
+        {
+          "shape": "reader"
+        },
+        {
+          "shape": "aggregator"
+        },
+        {
+          "shape": "answering-writer"
+        },
+        {
+          "shape": "stream-consumer"
+        }
+      ],
+      "gates": [
+        "failure",
+        "returns-beside-error",
+        "one-value",
+        "value-samples",
+        "returns-unaided",
+        "context-or-input",
+        "returns-before-cancel",
+        "returns-no-field"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "zero",
+          "from": "zero"
+        }
+      ]
+    },
+    "zero-on-miss": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns a value beside a false presence flag",
+      "licences": [
+        {
+          "shape": "reader-with-bool"
+        }
+      ],
+      "gates": [
+        "presence-flag",
+        "one-value",
+        "value-samples",
+        "returns-unaided",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "zero",
+          "from": "zero"
+        }
+      ]
+    },
+    "zeroes-on-error": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns values beside an error",
+      "licences": [
+        {
+          "shape": "multi-reader"
+        },
+        {
+          "shape": "multi-aggregator"
+        }
+      ],
+      "gates": [
+        "failure",
+        "returns-beside-error",
+        "two-values",
+        "value-samples",
+        "returns-unaided",
+        "context-or-input",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "zero",
+          "from": "zero"
+        }
+      ]
+    },
+    "zeroes-on-miss": {
+      "generator": "suite",
+      "clause": "a {declaration} whose {callable} returns values beside a false presence flag",
+      "licences": [
+        {
+          "shape": "lookup"
+        }
+      ],
+      "gates": [
+        "presence-flag",
+        "two-values",
+        "value-samples",
+        "returns-unaided",
+        "returns-before-cancel"
+      ],
+      "inputs": [
+        {
+          "name": "call",
+          "from": "callable"
+        },
+        {
+          "name": "zero",
+          "from": "zero"
+        }
+      ]
+    }
+  }
+}

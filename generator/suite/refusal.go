@@ -12,9 +12,9 @@ import (
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/meta"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // RefuseDirective withdraws a derived claim of a callable for every subject

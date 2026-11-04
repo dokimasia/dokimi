@@ -8,11 +8,12 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/eidos/plugin/shape"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // fieldID returns the identity of the field name of Item.
@@ -46,7 +47,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{get, putter()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -65,7 +66,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{put, getter()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "observe", Mode: spec.ModeNamed, Param: "observe"},
+				&rules.Partner{Name: "observe", Mode: rules.ModeNamed, Param: "observe"},
 				&decl[0],
 				decl,
 			)
@@ -80,13 +81,13 @@ func TestPartner(t *testing.T) {
 			save := putter()
 			save.Callable, save.ID = "Save", idOf("Save")
 			save.Signature = signature("Save", true, save.Inputs,
-				[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+				[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError}, sdkrules.ErrorsLastReturn)
 			save.Results = []derive.Value{item("")}
 			get := withParam(getter(), "read-after-write", "write", idOf("Save"))
 			decl := []derive.Facts{get, save}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -97,17 +98,17 @@ func TestPartner(t *testing.T) {
 
 		t.Run("keeps the named read of a callable without a value whose parameters it binds", func(t *testing.T) {
 			t.Parallel()
-			body := derive.Value{Name: "body", Shape: rules.TypeShape{Form: symbol.FormFunc}}
+			body := derive.Value{Name: "body", Shape: sdkrules.TypeShape{Form: symbol.FormFunc}}
 			run := derive.Facts{
 				Declaration: "Store", Callable: "Run", ID: idOf("Run"),
-				Signature: signature("Run", true, []derive.Value{body}, []rules.ReturnRole{rules.ReturnError},
-					rules.ErrorsLastReturn),
+				Signature: signature("Run", true, []derive.Value{body}, []sdkrules.ReturnRole{sdkrules.ReturnError},
+					sdkrules.ErrorsLastReturn),
 				Inputs: []derive.Value{body},
 			}
 			decl := []derive.Facts{withParam(run, "tx", "read", idOf("Get")), getter()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "read", Mode: spec.ModeNamed, Param: "read"},
+				&rules.Partner{Name: "read", Mode: rules.ModeNamed, Param: "read"},
 				&decl[0],
 				decl,
 			)
@@ -123,13 +124,13 @@ func TestPartner(t *testing.T) {
 				get := getter()
 				get.Inputs = []derive.Value{text("id"), text("name")}
 				get.Signature = signature("Get", true, get.Inputs,
-					[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+					[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError}, sdkrules.ErrorsLastReturn)
 				peek := getter()
 				peek.Callable, peek.ID = "Peek", idOf("Peek")
 				decl := []derive.Facts{withParam(get, "read-after-write", "write", idOf("Peek")), peek}
 
 				_, gate := derive.Partner(
-					&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+					&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 					&decl[0],
 					decl,
 				)
@@ -145,7 +146,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{put, getter()}
 
 			_, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeInterposed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeInterposed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -156,17 +157,17 @@ func TestPartner(t *testing.T) {
 
 		t.Run("leaves a function parameter of the read to the probe", func(t *testing.T) {
 			t.Parallel()
-			body := derive.Value{Name: "body", Shape: rules.TypeShape{Form: symbol.FormFunc}}
+			body := derive.Value{Name: "body", Shape: sdkrules.TypeShape{Form: symbol.FormFunc}}
 			run := derive.Facts{
 				Declaration: "Store", Callable: "Run", ID: idOf("Run"),
-				Signature: signature("Run", true, []derive.Value{body}, []rules.ReturnRole{rules.ReturnError},
-					rules.ErrorsLastReturn),
+				Signature: signature("Run", true, []derive.Value{body}, []sdkrules.ReturnRole{sdkrules.ReturnError},
+					sdkrules.ErrorsLastReturn),
 				Inputs: []derive.Value{body},
 			}
 			decl := []derive.Facts{withParam(run, "transaction", "write", idOf("Put")), putter()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -181,13 +182,21 @@ func TestPartner(t *testing.T) {
 		t.Run("leaves each parameter of the read to its own sample for a write without inputs", func(t *testing.T) {
 			t.Parallel()
 			closer := derive.Facts{
-				Declaration: "Store", Callable: "Close", ID: idOf("Close"),
-				Signature: signature("Close", true, nil, []rules.ReturnRole{rules.ReturnError}, rules.ErrorsLastReturn),
+				Declaration: "Store",
+				Callable:    "Close",
+				ID:          idOf("Close"),
+				Signature: signature(
+					"Close",
+					true,
+					nil,
+					[]sdkrules.ReturnRole{sdkrules.ReturnError},
+					sdkrules.ErrorsLastReturn,
+				),
 			}
 			decl := []derive.Facts{withParam(getter(), "lifecycle-after-close", "close", idOf("Close")), closer}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "close", Mode: spec.ModeNamed, Param: "close"},
+				&rules.Partner{Name: "close", Mode: rules.ModeNamed, Param: "close"},
 				&decl[0],
 				decl,
 			)
@@ -205,7 +214,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{get, keyedPutter()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -221,20 +230,20 @@ func TestPartner(t *testing.T) {
 			read := derive.Facts{
 				Declaration: "Store", Callable: "Read", ID: idOf("Read"),
 				Signature: signature("Read", true, readInputs,
-					[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn),
+					[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError}, sdkrules.ErrorsLastReturn),
 				Inputs: readInputs, Results: []derive.Value{text("")},
 			}
 			writeInputs := []derive.Value{text("key"), text("value")}
 			write := derive.Facts{
 				Declaration: "Store", Callable: "Write", ID: idOf("Write"),
-				Signature: signature("Write", true, writeInputs, []rules.ReturnRole{rules.ReturnError},
-					rules.ErrorsLastReturn),
+				Signature: signature("Write", true, writeInputs, []sdkrules.ReturnRole{sdkrules.ReturnError},
+					sdkrules.ErrorsLastReturn),
 				Inputs: writeInputs,
 			}
 			decl := []derive.Facts{withParam(read, "read-after-write", "write", idOf("Write")), write}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -248,20 +257,20 @@ func TestPartner(t *testing.T) {
 			read := derive.Facts{
 				Declaration: "Store", Callable: "Latest", ID: idOf("Latest"),
 				Signature: signature("Latest", true, nil,
-					[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn),
+					[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError}, sdkrules.ErrorsLastReturn),
 				Results: []derive.Value{text("")},
 			}
 			writeInputs := []derive.Value{item("it"), text("value")}
 			write := derive.Facts{
 				Declaration: "Store", Callable: "Note", ID: idOf("Note"),
-				Signature: signature("Note", true, writeInputs, []rules.ReturnRole{rules.ReturnError},
-					rules.ErrorsLastReturn),
+				Signature: signature("Note", true, writeInputs, []sdkrules.ReturnRole{sdkrules.ReturnError},
+					sdkrules.ErrorsLastReturn),
 				Inputs: writeInputs,
 			}
 			decl := []derive.Facts{withParam(read, "read-after-write", "write", idOf("Note")), write}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -276,7 +285,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{put, getter()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "read", Mode: spec.ModeReader, Param: "read"},
+				&rules.Partner{Name: "read", Mode: rules.ModeReader, Param: "read"},
 				&decl[0],
 				decl,
 			)
@@ -292,7 +301,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{get, putter(), marker()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
+				&rules.Partner{Name: "write", Mode: rules.ModeDerived, Param: "version"},
 				&decl[0],
 				decl,
 			)
@@ -309,7 +318,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{put, get}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "read", Mode: spec.ModeRole, Role: "reader"},
+				&rules.Partner{Name: "read", Mode: rules.ModeRole, Role: "reader"},
 				&decl[0],
 				decl,
 			)
@@ -324,7 +333,7 @@ func TestPartner(t *testing.T) {
 			// (Item, error), has a value of its own beside the read.
 			stored := withRole(putter(), "persister", "writer")
 			stored.Results = []derive.Value{item("")}
-			stored.Signature.Returns = []rules.ReturnView{{Role: rules.ReturnValue}, {Role: rules.ReturnError}}
+			stored.Signature.Returns = []sdkrules.ReturnView{{Role: sdkrules.ReturnValue}, {Role: sdkrules.ReturnError}}
 			tests := []struct {
 				name      string
 				giveFirst int
@@ -342,7 +351,7 @@ func TestPartner(t *testing.T) {
 					decl := []derive.Facts{stored, withRole(getter(), "persister", "reader")}
 
 					got, gate := derive.Partner(
-						&spec.Partner{Name: "partner", Mode: spec.ModeRole, Role: shape.Role(tt.giveRole)},
+						&rules.Partner{Name: "partner", Mode: rules.ModeRole, Role: shape.Role(tt.giveRole)},
 						&decl[tt.giveFirst],
 						decl,
 					)
@@ -367,8 +376,8 @@ func TestPartner(t *testing.T) {
 					"Mark",
 					true,
 					markInputs,
-					[]rules.ReturnRole{rules.ReturnError},
-					rules.ErrorsLastReturn,
+					[]sdkrules.ReturnRole{sdkrules.ReturnError},
+					sdkrules.ErrorsLastReturn,
 				),
 				Inputs: markInputs,
 			}, "persister", "writer")
@@ -390,7 +399,7 @@ func TestPartner(t *testing.T) {
 					decl := []derive.Facts{mark, withRole(getter(), "persister", "reader")}
 
 					got, gate := derive.Partner(
-						&spec.Partner{Name: "partner", Mode: spec.ModeRole, Role: shape.Role(tt.giveRole)},
+						&rules.Partner{Name: "partner", Mode: rules.ModeRole, Role: shape.Role(tt.giveRole)},
 						&decl[tt.giveFirst],
 						decl,
 					)
@@ -411,15 +420,23 @@ func TestPartner(t *testing.T) {
 					inputs := []derive.Value{text("in")}
 					return withRole(derive.Facts{
 						Declaration: "Store", Callable: name, ID: idOf(name),
-						Signature: signature(name, true, inputs,
-							[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn),
+						Signature: signature(
+							name,
+							true,
+							inputs,
+							[]sdkrules.ReturnRole{
+								sdkrules.ReturnValue,
+								sdkrules.ReturnError,
+							},
+							sdkrules.ErrorsLastReturn,
+						),
 						Inputs: inputs, Results: []derive.Value{text("")},
 					}, "codec", shape.Role(role))
 				}
 				decl := []derive.Facts{coded("Encode", "forward"), coded("Decode", "inverse")}
 
 				got, gate := derive.Partner(
-					&spec.Partner{Name: "inverse", Mode: spec.ModeRole, Role: "inverse"},
+					&rules.Partner{Name: "inverse", Mode: rules.ModeRole, Role: "inverse"},
 					&decl[0],
 					decl,
 				)
@@ -437,9 +454,9 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{cache, backing}
 
 			got, gate := derive.Partner(
-				&spec.Partner{
+				&rules.Partner{
 					Name: "backing",
-					Mode: spec.ModeRole,
+					Mode: rules.ModeRole,
 					Role: "backing",
 				},
 				&decl[0],
@@ -456,9 +473,9 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{getter(), withShape(putter(), "writer")}
 
 			got, gate := derive.Partner(
-				&spec.Partner{
+				&rules.Partner{
 					Name:  "put",
-					Mode:  spec.ModeEstablishing,
+					Mode:  rules.ModeEstablishing,
 					Shape: "writer",
 				},
 				&decl[0],
@@ -475,7 +492,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{get, putter()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeInterposed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeInterposed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -491,9 +508,9 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{put, get}
 
 			got, gate := derive.Partner(
-				&spec.Partner{
+				&rules.Partner{
 					Name: "read",
-					Mode: spec.ModeRewriter,
+					Mode: rules.ModeRewriter,
 					Role: "reader",
 				},
 				&decl[0],
@@ -512,7 +529,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{get, put}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeRole, Role: "writer"},
+				&rules.Partner{Name: "write", Mode: rules.ModeRole, Role: "writer"},
 				&decl[0],
 				decl,
 			)
@@ -528,9 +545,9 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{getter(), put}
 
 			got, gate := derive.Partner(
-				&spec.Partner{
+				&rules.Partner{
 					Name:  "put",
-					Mode:  spec.ModeEstablishing,
+					Mode:  rules.ModeEstablishing,
 					Mixin: "idempotent",
 				},
 				&decl[0],
@@ -559,7 +576,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{put, otherContract, otherInstance, otherRole, get}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "read", Mode: spec.ModeRole, Role: "reader"},
+				&rules.Partner{Name: "read", Mode: rules.ModeRole, Role: "reader"},
 				&decl[0],
 				decl,
 			)
@@ -575,7 +592,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{put, mark}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "compensate", Mode: spec.ModeRole, Role: "compensate"},
+				&rules.Partner{Name: "compensate", Mode: rules.ModeRole, Role: "compensate"},
 				&decl[0],
 				decl,
 			)
@@ -590,7 +607,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{get, withShape(putter(), "writer"), withShape(hasher(), "writer")}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "put", Mode: spec.ModeEstablishing, Shape: "writer"},
+				&rules.Partner{Name: "put", Mode: rules.ModeEstablishing, Shape: "writer"},
 				&decl[0],
 				decl,
 			)
@@ -607,14 +624,14 @@ func TestPartner(t *testing.T) {
 				"Get",
 				true,
 				get.Inputs,
-				[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError},
-				rules.ErrorsLastReturn,
+				[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError},
+				sdkrules.ErrorsLastReturn,
 			)
 			get = withParam(get, "read-after-write", "write", idOf("Put"))
 			decl := []derive.Facts{get, putter()}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -630,7 +647,7 @@ func TestPartner(t *testing.T) {
 			decl := []derive.Facts{get, onlyID(putter())}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -643,12 +660,12 @@ func TestPartner(t *testing.T) {
 			t.Parallel()
 			set := keyedPutter()
 			set.Inputs = append([]derive.Value(nil), set.Inputs...)
-			set.Inputs[0].Shape = rules.TypeShape{Form: symbol.FormScalar, Spelling: "int"}
+			set.Inputs[0].Shape = sdkrules.TypeShape{Form: symbol.FormScalar, Spelling: "int"}
 			get := withParam(getter(), "read-after-write", "write", idOf("Set"))
 			decl := []derive.Facts{get, set}
 
 			got, gate := derive.Partner(
-				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				&decl[0],
 				decl,
 			)
@@ -666,7 +683,7 @@ func TestPartner(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{batchGetter("ids"), withShape(putter(), "writer")}
 
-			got, gate := derive.Partner(&spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+			got, gate := derive.Partner(&rules.Partner{Name: "write", Mode: rules.ModeEstablishing, Shape: "writer"},
 				&decl[0], decl)
 
 			assert.Nil(t, gate, "the partner binds")
@@ -681,12 +698,12 @@ func TestPartner(t *testing.T) {
 		t.Run("binds the keys of a batch read to the written value of their name", func(t *testing.T) {
 			t.Parallel()
 			has := batchGetter("ids")
-			has.Results = []derive.Value{{Shape: rules.TypeShape{
-				Form: symbol.FormList, Spelling: "[]string", Elems: []rules.TypeShape{text("").Shape},
+			has.Results = []derive.Value{{Shape: sdkrules.TypeShape{
+				Form: symbol.FormList, Spelling: "[]string", Elems: []sdkrules.TypeShape{text("").Shape},
 			}}}
 			decl := []derive.Facts{has, withShape(marker(), "writer")}
 
-			got, gate := derive.Partner(&spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+			got, gate := derive.Partner(&rules.Partner{Name: "write", Mode: rules.ModeEstablishing, Shape: "writer"},
 				&decl[0], decl)
 
 			assert.Nil(t, gate, "the partner binds")
@@ -703,11 +720,11 @@ func TestPartner(t *testing.T) {
 			find := getter()
 			find.Inputs = []derive.Value{text("ids")}
 			find.Signature = signature("Find", true, find.Inputs,
-				[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+				[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError}, sdkrules.ErrorsLastReturn)
 			find.Signature.Params[1].Variadic = true
 			decl := []derive.Facts{find, withShape(putter(), "writer")}
 
-			got, gate := derive.Partner(&spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+			got, gate := derive.Partner(&rules.Partner{Name: "write", Mode: rules.ModeEstablishing, Shape: "writer"},
 				&decl[0], decl)
 
 			assert.Nil(t, gate, "the partner binds")
@@ -720,10 +737,10 @@ func TestPartner(t *testing.T) {
 			list := batchGetter("ids")
 			list.Inputs = nil
 			list.Signature = signature("List", true, nil,
-				[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+				[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError}, sdkrules.ErrorsLastReturn)
 			decl := []derive.Facts{list, withShape(putter(), "writer")}
 
-			got, gate := derive.Partner(&spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+			got, gate := derive.Partner(&rules.Partner{Name: "write", Mode: rules.ModeEstablishing, Shape: "writer"},
 				&decl[0], decl)
 
 			assert.Nil(t, gate, "the partner binds")
@@ -757,7 +774,7 @@ func TestPartner(t *testing.T) {
 					t.Parallel()
 
 					got, gate := derive.Partner(
-						&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+						&rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 						&tt.giveDecl[0],
 						tt.giveDecl,
 					)
@@ -771,19 +788,19 @@ func TestPartner(t *testing.T) {
 
 		tests := []struct {
 			name     string
-			give     spec.Partner
+			give     rules.Partner
 			giveDecl []derive.Facts
 			want     spec.GateID
 		}{
 			{
 				name:     "refuses with partner-found for an establishing mixin that no callable has",
-				give:     spec.Partner{Name: "put", Mode: spec.ModeEstablishing, Mixin: "idempotent"},
+				give:     rules.Partner{Name: "put", Mode: rules.ModeEstablishing, Mixin: "idempotent"},
 				giveDecl: []derive.Facts{getter(), withShape(putter(), "writer"), keyedPutter()},
 				want:     spec.PartnerFound,
 			},
 			{
 				name: "refuses with partner-found for a derived write of a callable without a value",
-				give: spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeDerived, Param: "version"},
 				giveDecl: []derive.Facts{
 					withParam(putter(), "causal", "version", fieldID("ID")), keyedPutter(),
 				},
@@ -791,7 +808,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-found for a field that the value of the read lacks",
-				give: spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeDerived, Param: "version"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "causal", "version", fieldID("Gone")), keyedPutter(),
 				},
@@ -799,13 +816,13 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name:     "refuses with partner-found for a derived write without the param",
-				give:     spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
+				give:     rules.Partner{Name: "write", Mode: rules.ModeDerived, Param: "version"},
 				giveDecl: []derive.Facts{getter(), keyedPutter()},
 				want:     spec.PartnerFound,
 			},
 			{
 				name: "refuses with partner-arguments for a named read without a value",
-				give: spec.Partner{Name: "read", Mode: spec.ModeReader, Param: "read"},
+				give: rules.Partner{Name: "read", Mode: rules.ModeReader, Param: "read"},
 				giveDecl: []derive.Facts{
 					withParam(putter(), "injection-safe", "read", idOf("Mark")), marker(),
 				},
@@ -813,7 +830,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-arguments for a named partner without a value of a callable without one",
-				give: spec.Partner{Name: "observe", Mode: spec.ModeNamed, Param: "observe"},
+				give: rules.Partner{Name: "observe", Mode: rules.ModeNamed, Param: "observe"},
 				giveDecl: []derive.Facts{
 					withParam(keyedPutter(), "accumulates", "observe", idOf("Mark")), marker(),
 				},
@@ -821,7 +838,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-found for a param whose value is no callable",
-				give: spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "read-after-write", "write", "Put"), putter(), reader(),
 				},
@@ -829,7 +846,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-arguments for a field of another type",
-				give: spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "read-after-write", "write", idOf("Put")), intID(putter()),
 				},
@@ -837,13 +854,13 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name:     "refuses with partner-found for a named read that the classification does not name",
-				give:     spec.Partner{Name: "read", Mode: spec.ModeReader, Param: "read"},
+				give:     rules.Partner{Name: "read", Mode: rules.ModeReader, Param: "read"},
 				giveDecl: []derive.Facts{putter(), getter()},
 				want:     spec.PartnerFound,
 			},
 			{
 				name: "refuses with partner-found for a classification that names another param",
-				give: spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "read-after-write", "read", idOf("Put")), putter(),
 				},
@@ -851,9 +868,9 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-arguments for an establishing write that the read cannot select",
-				give: spec.Partner{
+				give: rules.Partner{
 					Name:  "put",
-					Mode:  spec.ModeEstablishing,
+					Mode:  rules.ModeEstablishing,
 					Shape: "writer",
 				},
 				giveDecl: []derive.Facts{
@@ -863,7 +880,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-arguments for a write that takes no value of the read",
-				give: spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "read-after-write", "write", idOf("Hash")), hasher(),
 				},
@@ -871,7 +888,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with rewritable for an interposed write that takes no value of the read",
-				give: spec.Partner{Name: "write", Mode: spec.ModeInterposed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeInterposed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "point-in-time", "write", idOf("Mark")), marker(),
 				},
@@ -879,7 +896,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-found for a param that names no callable of the declaration",
-				give: spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "read-after-write", "write", idOf("Gone")), putter(),
 				},
@@ -887,13 +904,13 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name:     "refuses with partner-found for a classification without the param",
-				give:     spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				give:     rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				giveDecl: []derive.Facts{getter(), putter()},
 				want:     spec.PartnerFound,
 			},
 			{
 				name: "refuses with partner-arguments for a parameter that selects nothing of the write",
-				give: spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(reader(), "read-after-write", "write", idOf("Put")), putter(),
 				},
@@ -901,7 +918,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with one-partner for two callables that take the value of the field",
-				give: spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeDerived, Param: "version"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "causal", "version", fieldID("ID")), keyedPutter(), putter(),
 				},
@@ -909,7 +926,7 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-found for a value of the field that no other callable takes",
-				give: spec.Partner{Name: "write", Mode: spec.ModeDerived, Param: "version"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeDerived, Param: "version"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "causal", "version", fieldID("ID")), marker(),
 				},
@@ -917,9 +934,9 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-found for a role that no callable plays",
-				give: spec.Partner{
+				give: rules.Partner{
 					Name: "read",
-					Mode: spec.ModeRole,
+					Mode: rules.ModeRole,
 					Role: "reader",
 				},
 				giveDecl: []derive.Facts{withRole(putter(), "persister", "writer"), getter()},
@@ -927,9 +944,9 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with one-partner for two establishing writes",
-				give: spec.Partner{
+				give: rules.Partner{
 					Name:  "put",
-					Mode:  spec.ModeEstablishing,
+					Mode:  rules.ModeEstablishing,
 					Shape: "writer",
 				},
 				giveDecl: []derive.Facts{
@@ -939,9 +956,9 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name: "refuses with partner-found for an establishing write that the declaration lacks",
-				give: spec.Partner{
+				give: rules.Partner{
 					Name:  "put",
-					Mode:  spec.ModeEstablishing,
+					Mode:  rules.ModeEstablishing,
 					Shape: "writer",
 				},
 				giveDecl: []derive.Facts{getter(), putter()},
@@ -949,19 +966,19 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name:     "refuses with partner-arguments for the keys of a batch read that name no field",
-				give:     spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				give:     rules.Partner{Name: "write", Mode: rules.ModeEstablishing, Shape: "writer"},
 				giveDecl: []derive.Facts{batchGetter("tags"), withShape(putter(), "writer")},
 				want:     spec.PartnerArguments,
 			},
 			{
 				name:     "refuses with partner-arguments for the keys of a batch read that share another input",
-				give:     spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				give:     rules.Partner{Name: "write", Mode: rules.ModeEstablishing, Shape: "writer"},
 				giveDecl: []derive.Facts{batchGetter("ids"), withShape(keyedPutter(), "writer")},
 				want:     spec.PartnerArguments,
 			},
 			{
 				name: "refuses with partner-arguments for the keys of a named batch read that share another input",
-				give: spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeNamed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(batchGetter("ids"), "read-after-write", "write", idOf("Set")), keyedPutter(),
 				},
@@ -969,13 +986,13 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name:     "refuses with partner-arguments for a batch read whose write writes no element",
-				give:     spec.Partner{Name: "write", Mode: spec.ModeEstablishing, Shape: "writer"},
+				give:     rules.Partner{Name: "write", Mode: rules.ModeEstablishing, Shape: "writer"},
 				giveDecl: []derive.Facts{batchGetter("ids"), withShape(marker(), "writer")},
 				want:     spec.PartnerArguments,
 			},
 			{
 				name: "refuses with rewritable for a written value whose every field the read selects by",
-				give: spec.Partner{Name: "write", Mode: spec.ModeInterposed, Param: "write"},
+				give: rules.Partner{Name: "write", Mode: rules.ModeInterposed, Param: "write"},
 				giveDecl: []derive.Facts{
 					withParam(getter(), "point-in-time", "write", idOf("Put")), onlyID(putter()),
 				},
@@ -983,19 +1000,19 @@ func TestPartner(t *testing.T) {
 			},
 			{
 				name:     "refuses with partner-found for a write that no read pairs with",
-				give:     spec.Partner{Name: "read", Mode: spec.ModePaired},
+				give:     rules.Partner{Name: "read", Mode: rules.ModePaired},
 				giveDecl: []derive.Facts{putter(), hasher(), withShape(reader(), "reader")},
 				want:     spec.PartnerFound,
 			},
 			{
 				name:     "refuses with partner-found for a write of no value that a read returns",
-				give:     spec.Partner{Name: "read", Mode: spec.ModePaired},
+				give:     rules.Partner{Name: "read", Mode: rules.ModePaired},
 				giveDecl: []derive.Facts{marker(), getter()},
 				want:     spec.PartnerFound,
 			},
 			{
 				name:     "refuses with one-partner for a write that two reads pair with",
-				give:     spec.Partner{Name: "read", Mode: spec.ModePaired},
+				give:     rules.Partner{Name: "read", Mode: rules.ModePaired},
 				giveDecl: []derive.Facts{putter(), getter(), renamed(getter(), "Find")},
 				want:     spec.OnePartner,
 			},
@@ -1015,7 +1032,7 @@ func TestPartner(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{putter(), hasher(), getter()}
 
-			got, gate := derive.Partner(&spec.Partner{Name: "read", Mode: spec.ModePaired}, &decl[0], decl)
+			got, gate := derive.Partner(&rules.Partner{Name: "read", Mode: rules.ModePaired}, &decl[0], decl)
 
 			assert.Nil(t, gate, "Get pairs with Put")
 			assert.Equal(t, []any{got.Partner.Callable, got.Read.Callable, got.Write.Callable, got.Written},
@@ -1077,10 +1094,14 @@ func TestPartner(t *testing.T) {
 func batchGetter(keys string) derive.Facts {
 	inputs := []derive.Value{text(keys)}
 	sig := signature(
-		"GetMany", true, inputs, []rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn,
+		"GetMany",
+		true,
+		inputs,
+		[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError},
+		sdkrules.ErrorsLastReturn,
 	)
 	sig.Params[1].Variadic = true
-	items := rules.TypeShape{Form: symbol.FormList, Spelling: "[]Item", Elems: []rules.TypeShape{item("").Shape}}
+	items := sdkrules.TypeShape{Form: symbol.FormList, Spelling: "[]Item", Elems: []sdkrules.TypeShape{item("").Shape}}
 	return derive.Facts{
 		Declaration: "Store", Callable: "GetMany", ID: idOf("GetMany"),
 		Signature: sig, Inputs: inputs, Results: []derive.Value{{Shape: items}},
@@ -1098,7 +1119,9 @@ func hasher() derive.Facts {
 // intID returns f with a written value whose field ID is an int.
 func intID(f derive.Facts) derive.Facts {
 	f.Inputs = append([]derive.Value(nil), f.Inputs...)
-	f.Inputs[0].Fields = []derive.Field{{Name: "ID", Shape: rules.TypeShape{Form: symbol.FormScalar, Spelling: "int"}}}
+	f.Inputs[0].Fields = []derive.Field{
+		{Name: "ID", Shape: sdkrules.TypeShape{Form: symbol.FormScalar, Spelling: "int"}},
+	}
 	return f
 }
 

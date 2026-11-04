@@ -18,12 +18,12 @@ import (
 	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/position"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/annotator/fault"
 	"go.dokimi.dev/dokimi/internal/lang"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // ID is the name of the plugin.
@@ -702,8 +702,8 @@ func (g *generator) concludeFunction(m *sdk.FunctionMatch, _ part, st *sdk.Stamp
 }
 
 // unsigned reports whether the type ref is an unsigned integer type.
-func unsigned(b *rules.Bound, ref *node.TypeRef) bool {
-	switch rules.Unaliased(ref, b.View()).Spelling {
+func unsigned(b *sdkrules.Bound, ref *node.TypeRef) bool {
+	switch sdkrules.Unaliased(ref, b.View()).Spelling {
 	case "uint", "uint8", "uint16", "uint32", "uint64", "uintptr":
 		return true
 	}
@@ -719,7 +719,7 @@ type invocation struct {
 	g       *generator
 	event   *node.TypeRef
 	effect  *node.TypeRef
-	b       rules.Bound
+	b       sdkrules.Bound
 	pkg     symbol.Identity
 	refused bool
 }
@@ -762,8 +762,8 @@ func (in *invocation) model() (Model, bool) {
 	}
 	model := Model{
 		Machine: i.Name,
-		Event:   rules.EmitRef(in.event),
-		Effect:  rules.EmitRef(in.effect),
+		Event:   sdkrules.EmitRef(in.event),
+		Effect:  sdkrules.EmitRef(in.effect),
 		Names: Names{
 			Anatomy:    naming.Camel(i.Name + "Anatomy"),
 			Perform:    naming.Camel(performWord + i.Name),
@@ -814,7 +814,7 @@ func (in *invocation) machine() {
 
 // isError reports whether the type ref is the type error.
 func (in *invocation) isError(ref *node.TypeRef) bool {
-	return in.b.TypeOf(ref).Ref == rules.WellKnownError
+	return in.b.TypeOf(ref).Ref == sdkrules.WellKnownError
 }
 
 // stepForm reports whether the method has the form Step(ev E, out []F) []F
@@ -949,7 +949,7 @@ func (in *invocation) replied(s *node.Struct) bool {
 // field of a reply token.
 func (in *invocation) lifecycleOf(s *node.Struct) Lifecycle {
 	f := in.tokenFields(s, replyKind)[0]
-	return Lifecycle{Type: refOf(s), Token: rules.EmitRef(f.Type), Field: f.Name}
+	return Lifecycle{Type: refOf(s), Token: sdkrules.EmitRef(f.Type), Field: f.Name}
 }
 
 // tokenFields returns the fields of the struct s whose type is a token of
@@ -1064,7 +1064,7 @@ func (in *invocation) called(f *node.Struct, callee *symbol.Identity) (*Call, bo
 	}
 	sig, _ := in.b.CallableOf(method)
 	for _, p := range sig.Params {
-		if p.Role == rules.ParamContext {
+		if p.Role == sdkrules.ParamContext {
 			call.Args = append(call.Args, Arg{Context: true})
 			continue
 		}
@@ -1077,7 +1077,7 @@ func (in *invocation) called(f *node.Struct, callee *symbol.Identity) (*Call, bo
 		call.Args = append(call.Args, Arg{Field: name})
 	}
 	for _, r := range sig.Returns {
-		if r.Role == rules.ReturnError {
+		if r.Role == sdkrules.ReturnError {
 			call.Fails = true
 			continue
 		}
@@ -1151,7 +1151,7 @@ func (in *invocation) instances(f *node.Struct) ([]*emit.TypeRef, bool) {
 	}
 	out := make([]*emit.TypeRef, 0, len(union.Elems))
 	for _, term := range union.Elems {
-		out = append(out, &emit.TypeRef{Spelling: f.Name, Target: f.ID, Args: []*emit.TypeRef{rules.EmitRef(term)}})
+		out = append(out, &emit.TypeRef{Spelling: f.Name, Target: f.ID, Args: []*emit.TypeRef{sdkrules.EmitRef(term)}})
 	}
 	return out, true
 }
@@ -1272,7 +1272,7 @@ func (in *invocation) bindSpec(model *Model, fn *node.Function) {
 	case spec.From:
 		model.Spec = spec
 	default:
-		model.Spec, model.State = spec, rules.EmitRef(fn.Returns[0].Type.Args[0])
+		model.Spec, model.State = spec, sdkrules.EmitRef(fn.Returns[0].Type.Args[0])
 	}
 }
 
@@ -1393,7 +1393,7 @@ func (in *invocation) outcome(ref *node.TypeRef) bool {
 // name of the module sim at the event and the effect interfaces of the
 // machine, such as *sim.World[E, F].
 func (in *invocation) machined(ref *node.TypeRef, name string) bool {
-	t := rules.Unaliased(pointed(ref), in.b.View())
+	t := sdkrules.Unaliased(pointed(ref), in.b.View())
 	return named(t, simPackage, name) && slices.EqualFunc(t.Args, []*node.TypeRef{in.event, in.effect}, sameTarget)
 }
 
@@ -1508,7 +1508,7 @@ func statementOf(fn *node.Function) string {
 // sim, on the machine interface named machine.
 func rulesOf(machine string) []Rule {
 	var out []Rule
-	claims := spec.Claims()
+	claims := rules.Claims()
 	for i := range claims {
 		c := &claims[i]
 		if c.Generator != string(Word) {

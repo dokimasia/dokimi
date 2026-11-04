@@ -1,0 +1,226 @@
+{
+  "type": "object",
+  "properties": {
+    "claims": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "generator": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "clause": {
+            "type": "string"
+          },
+          "unless": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "properties": {
+              "mixin": {
+                "type": "string"
+              },
+              "param": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "licences": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "shape": {
+                  "type": "string"
+                },
+                "mixin": {
+                  "type": "string"
+                },
+                "contract": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "with": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "shape": {
+                      "type": "string"
+                    },
+                    "mixin": {
+                      "type": "string"
+                    },
+                    "contract": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "needs-param": {
+                  "type": "string"
+                },
+                "conflicts": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "shape": {
+                        "type": "string"
+                      },
+                      "mixin": {
+                        "type": "string"
+                      },
+                      "contract": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "callable": {
+                  "type": "boolean"
+                },
+                "context": {
+                  "type": "boolean"
+                },
+                "declaration": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "gates": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*$"
+            }
+          },
+          "inputs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "param": {
+                  "type": "string"
+                },
+                "default": {
+                  "type": "string"
+                },
+                "partner": {
+                  "type": "string"
+                },
+                "sample": {
+                  "type": "integer"
+                },
+                "position": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "name",
+                "from"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "partners": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string"
+                },
+                "param": {
+                  "type": "string"
+                },
+                "shape": {
+                  "type": "string"
+                },
+                "mixin": {
+                  "type": "string"
+                },
+                "contract": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "mode"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "entails": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*$"
+            }
+          }
+        },
+        "required": [
+          "generator",
+          "clause",
+          "inputs"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "claims"
+  ],
+  "additionalProperties": false
+}

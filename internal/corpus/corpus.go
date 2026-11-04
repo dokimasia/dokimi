@@ -21,10 +21,10 @@ import (
 	"strings"
 	"syscall"
 
+	"go.dokimi.dev/spec"
 	"go.yaml.in/yaml/v3"
 
 	"go.dokimi.dev/dokimi/internal/report"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // ErrFile is the error of a file of expected outcomes or of an overlay that

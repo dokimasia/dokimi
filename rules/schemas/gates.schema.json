@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "gates": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "passes": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          },
+          "remedy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "passes",
+          "why",
+          "remedy"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "gates"
+  ],
+  "additionalProperties": false
+}

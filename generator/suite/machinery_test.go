@@ -11,10 +11,10 @@ import (
 	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/eidos/sdk/meta"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 func TestMachinery(t *testing.T) {

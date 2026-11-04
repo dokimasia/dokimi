@@ -9,11 +9,12 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 func TestGate(t *testing.T) {
@@ -46,7 +47,7 @@ func TestGate(t *testing.T) {
 			},
 			{
 				name: "fails returns-beside-error for a thrown error", giveGate: spec.ReturnsBesideError,
-				give: withErrors(reader(), rules.ErrorsThrown), want: false,
+				give: withErrors(reader(), sdkrules.ErrorsThrown), want: false,
 			},
 			{
 				name:     "passes cancellation for a callable with a context",
@@ -193,7 +194,7 @@ func TestGate(t *testing.T) {
 				give: derive.Facts{
 					Declaration: "Store", Callable: "Count",
 					Signature: signature("Count", false, nil,
-						[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn),
+						[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError}, sdkrules.ErrorsLastReturn),
 					Results: []derive.Value{text("")},
 				},
 			},
@@ -299,7 +300,7 @@ func TestGate(t *testing.T) {
 			t.Parallel()
 			f := reader()
 
-			for _, g := range spec.Gates() {
+			for _, g := range rules.Gates() {
 				_, defined := derive.Passes(g.ID, &f)
 				expect.Equal(t, defined, !slices.Contains(derive.OtherGates, g.ID),
 					"the gate "+string(g.ID)+" has a condition, or another part of the derivation judges it")

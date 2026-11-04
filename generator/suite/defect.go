@@ -13,11 +13,12 @@ import (
 	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/node"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // Defect is the planted defect of the derived checks with one break of one
@@ -315,7 +316,7 @@ func partnerOf(c *derive.Check, name string) *derive.Pair {
 	if pair, ok := c.Pairs[name]; ok {
 		return pair
 	}
-	i := slices.IndexFunc(c.Claim.Partners, func(p spec.Partner) bool { return string(p.Role) == name })
+	i := slices.IndexFunc(c.Claim.Partners, func(p rules.Partner) bool { return string(p.Role) == name })
 	return c.Pairs[c.Claim.Partners[i].Name]
 }
 
@@ -360,7 +361,7 @@ const (
 // defect returns the planted defect of the check c, and whether s already has
 // it, because each break of each callable has one planted defect.
 func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
-	form, _ := spec.DefectFormOf(c.Claim.Defect.Form)
+	form, _ := rules.DefectFormOf(c.Claim.Defect.Form)
 	f := c.Facts
 	if partner, ok := strings.CutPrefix(form.Changes, "partner:"); ok {
 		f = partnerOf(c, partner).Partner
@@ -456,8 +457,8 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 // guard sets the parameter of the context of the callable of f on d, and
 // whether d returns the error of a cancelled context first.
 func guard(d *Defect, f *derive.Facts) {
-	if ctx := slices.IndexFunc(f.Signature.Params, func(p rules.ParamView) bool {
-		return p.Role == rules.ParamContext
+	if ctx := slices.IndexFunc(f.Signature.Params, func(p sdkrules.ParamView) bool {
+		return p.Role == sdkrules.ParamContext
 	}); ctx >= 0 {
 		d.Context = d.Args[ctx]
 		d.Guards = hasError(f) && !slices.Contains(cancelling, d.Body)
@@ -581,11 +582,11 @@ func (k *caller) outcomesOf(f *derive.Facts) []Outcome {
 	for i, r := range f.Signature.Returns {
 		res := Outcome{Name: "r" + strconv.Itoa(i)}
 		switch r.Role {
-		case rules.ReturnError:
+		case sdkrules.ReturnError:
 			res.Role = roleError
-		case rules.ReturnOkBool:
+		case sdkrules.ReturnOkBool:
 			res.Role = roleFlag
-		case rules.ReturnStream:
+		case sdkrules.ReturnStream:
 			// The sample of a stream is an empty stream of its elements.
 			res.Role = roleValue
 			res.Sample = &Expr{}

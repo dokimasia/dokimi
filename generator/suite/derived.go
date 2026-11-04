@@ -14,11 +14,12 @@ import (
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/node"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // Derived is one check that a claim of the conformance spec derives for a
@@ -868,8 +869,8 @@ func (b *binder) refuse(sl *slot) Arg {
 }
 
 // binding returns the binding of the input name of the claim of the check.
-func (b *binder) binding(name string) *spec.Binding {
-	i := slices.IndexFunc(b.check.Claim.Inputs, func(in spec.Binding) bool { return in.Input == name })
+func (b *binder) binding(name string) *rules.Binding {
+	i := slices.IndexFunc(b.check.Claim.Inputs, func(in rules.Binding) bool { return in.Input == name })
 	return &b.check.Claim.Inputs[i]
 }
 
@@ -877,7 +878,7 @@ func (b *binder) binding(name string) *spec.Binding {
 // the check, or the partner that the binding names.
 func (b *binder) facts(name string) (*derive.Facts, *derive.Pair) {
 	in := b.binding(name)
-	if in.Kind == spec.FromPartner {
+	if in.Kind == rules.FromPartner {
 		pair := b.check.Pairs[in.Partner]
 		return pair.Partner, pair
 	}
@@ -997,7 +998,7 @@ func (b *binder) arg(sl *slot) Arg {
 	case formHandle:
 		call, _ := b.facts(sl.of)
 		in.handle = b.k.resultRef(call, 0)
-		if bound := b.binding(sl.name); bound.Kind == spec.FromParam {
+		if bound := b.binding(sl.name); bound.Kind == rules.FromParam {
 			in.method = nameOf(b.param(bound.Param))
 			return Arg{Closure: b.k.closure(in)}
 		}
@@ -1124,7 +1125,7 @@ func (b *binder) handleMethod(sl *slot) (*HandleMethod, *derive.Facts, bool) {
 	fits := len(s.Params) == 0 && len(s.Returns) == 0
 	if sl.form == formNext {
 		fits = len(s.Params) == 1 && is(&s.Params[0].Ref.Target, timePackage, durationType) &&
-			slices.ContainsFunc(s.Returns, func(r rules.ReturnView) bool { return r.Role == rules.ReturnOkBool })
+			slices.ContainsFunc(s.Returns, func(r sdkrules.ReturnView) bool { return r.Role == sdkrules.ReturnOkBool })
 	}
 	return &HandleMethod{Type: b.k.typeOf(handle), Name: name}, &f, fits
 }

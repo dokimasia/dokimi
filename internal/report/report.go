@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/spec"
 )
 
 // keyPrefix starts the key of each attribute event of a suite record, which

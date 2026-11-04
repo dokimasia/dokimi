@@ -10,11 +10,12 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk/emit"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // runtime are the machineries that the runtime supplies to every check.
@@ -52,11 +53,11 @@ func drawsAll(*derive.Check) bool { return true }
 
 // claimOn returns a claim of the suite with the licence l, the gates and the
 // machinery nothing-beyond-a-caller.
-func claimOn(id spec.ClaimID, l spec.Licence, gates ...spec.GateID) spec.Claim {
-	return spec.Claim{
-		ID: id, Generator: "suite", Licences: []spec.Licence{l}, Gates: gates,
+func claimOn(id spec.ClaimID, l rules.Licence, gates ...spec.GateID) rules.Claim {
+	return rules.Claim{
+		ID: id, Generator: "suite", Licences: []rules.Licence{l}, Gates: gates,
 		Law: spec.NoValueBesideAnError, Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
-		Statement: "{callable} holds", Defect: spec.Defect{Clause: "a {declaration} that breaks"},
+		Statement: "{callable} holds", Clause: "a {declaration} that breaks",
 	}
 }
 
@@ -70,7 +71,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withShape(reader(), "reader")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(
@@ -99,7 +100,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withShape(withRefusedSample(reader()), "reader")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Refusals, []derive.Refusal{{
@@ -113,7 +114,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withShape(pure(), "computation")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.False(
@@ -127,7 +128,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withMixins(withShape(reader(), "reader"), "runs-until-cancelled")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Empty(t, identities(got), "the reader gets no check")
@@ -147,7 +148,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withMixins(writer(), "runs-until-cancelled", "idempotent")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Put/idempotent"},
@@ -158,7 +159,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withMixins(withShape(reader(), "reader"), "default-on-error")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.False(
@@ -179,7 +180,7 @@ func TestDerive(t *testing.T) {
 				get := withParam(withMixins(getter(), "ttl"), "ttl", "put", idOf("Put"))
 				decl := []derive.Facts{get, putter()}
 
-				got, err := derive.Derive(decl, spec.Claims(), nil, []spec.MachineryID{spec.NothingBeyondACaller}, nil)
+				got, err := derive.Derive(decl, rules.Claims(), nil, []spec.MachineryID{spec.NothingBeyondACaller}, nil)
 
 				assert.NoError(t, err, "the declaration derives")
 				assert.False(t, slices.Contains(identities(got), "Store.Get/expires"), "the claim needs a clock")
@@ -195,7 +196,7 @@ func TestDerive(t *testing.T) {
 			get := withParam(withMixins(getter(), "read-after-write"), "read-after-write", "write", idOf("Put"))
 			decl := []derive.Facts{get, putter()}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			check := checkOf(t, got, "Store.Get/read-after-write")
@@ -207,7 +208,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withMixins(getter(), "read-after-write"), putter()}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.True(t, slices.ContainsFunc(got.Refusals, func(r derive.Refusal) bool {
@@ -220,7 +221,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withMixins(getter(), "not-found")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.True(t, slices.Contains(got.Refusals, derive.Refusal{
@@ -234,7 +235,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withShape(putter(), "writer")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Unclaimed, []derive.Unclaimed{{
@@ -257,7 +258,7 @@ func TestDerive(t *testing.T) {
 			}
 			decl := []derive.Facts{get, backing, withShape(putter(), "writer")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.True(t, slices.Contains(identities(got), "Store.Get/cache#a"), "the first instance has its id")
@@ -268,10 +269,10 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			hash := withShape(pure(), "computation")
 			hash.Inputs = append([]derive.Value(nil), hash.Inputs...)
-			hash.Inputs[0].Samples[0] = rules.Refused(rules.RefusedNoLiteral)
+			hash.Inputs[0].Samples[0] = sdkrules.Refused(sdkrules.RefusedNoLiteral)
 			decl := []derive.Facts{hash}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Empty(t, got.Checks, "no claim binds without samples of the input")
@@ -333,13 +334,13 @@ func TestDerive(t *testing.T) {
 					t.Parallel()
 					hash := withShape(pure(), "computation")
 					hash.Inputs = append([]derive.Value(nil), hash.Inputs...)
-					hash.Inputs[0].Samples[0] = rules.Of(tt.give)
+					hash.Inputs[0].Samples[0] = sdkrules.Of(tt.give)
 					hash.Inputs[0].Samples[1] = hash.Inputs[0].Samples[0]
 					if tt.giveRefused >= 0 {
-						hash.Inputs[0].Samples[tt.giveRefused] = rules.Refused(rules.RefusedNoLiteral)
+						hash.Inputs[0].Samples[tt.giveRefused] = sdkrules.Refused(sdkrules.RefusedNoLiteral)
 					}
 
-					got, err := derive.Derive([]derive.Facts{hash}, spec.Claims(), nil, runtime, nil)
+					got, err := derive.Derive([]derive.Facts{hash}, rules.Claims(), nil, runtime, nil)
 
 					assert.NoError(t, err, "the declaration derives")
 					assert.Equal(t, identities(got), tt.want,
@@ -355,7 +356,7 @@ func TestDerive(t *testing.T) {
 			begin := withRole(putter(), "tx", "begin")
 			decl := []derive.Facts{commit, begin}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.True(
@@ -375,7 +376,7 @@ func TestDerive(t *testing.T) {
 			get := withParam(withMixins(getter(), "retry-succeeds"), "retry-succeeds", "other", int64(3))
 			decl := []derive.Facts{get}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.False(
@@ -392,9 +393,9 @@ func TestDerive(t *testing.T) {
 
 		t.Run("names the param of a machinery of the consumer that the declaration does not state", func(t *testing.T) {
 			t.Parallel()
-			table := []spec.Claim{{
+			table := []rules.Claim{{
 				ID: "agrees", Generator: "suite", Law: spec.ReadReturnsTheWriteBeforeIt,
-				Licences:    []spec.Licence{{Shape: "reader"}},
+				Licences:    []rules.Licence{{Shape: "reader"}},
 				Machineries: []spec.MachineryID{spec.ReferenceImplementation},
 			}}
 			decl := []derive.Facts{withShape(reader(), "reader")}
@@ -410,7 +411,7 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds only the claims of the generator suite", func(t *testing.T) {
 			t.Parallel()
-			table := []spec.Claim{claimOn("own", spec.Licence{Callable: true})}
+			table := []rules.Claim{claimOn("own", rules.Licence{Callable: true})}
 			table[0].Generator = "enum"
 
 			got, err := derive.Derive([]derive.Facts{reader()}, table, nil, runtime, nil)
@@ -421,12 +422,12 @@ func TestDerive(t *testing.T) {
 
 		t.Run("leaves out the stance of a classification that a claim binds or withdraws", func(t *testing.T) {
 			t.Parallel()
-			bound := claimOn("bound", spec.Licence{Shape: "writer"})
-			withdrawn := claimOn("withdrawn", spec.Licence{Mixin: "deprecated"})
-			withdrawn.Unless = &spec.Unless{Mixin: "deprecated"}
+			bound := claimOn("bound", rules.Licence{Shape: "writer"})
+			withdrawn := claimOn("withdrawn", rules.Licence{Mixin: "deprecated"})
+			withdrawn.Unless = &rules.Unless{Mixin: "deprecated"}
 			decl := []derive.Facts{withMixins(withShape(putter(), "writer"), "deprecated")}
 
-			got, err := derive.Derive(decl, []spec.Claim{bound, withdrawn}, nil, runtime, nil)
+			got, err := derive.Derive(decl, []rules.Claim{bound, withdrawn}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Put/bound"}, "the claim of the writer binds")
@@ -441,7 +442,7 @@ func TestDerive(t *testing.T) {
 				{Contract: "single-flight", Role: "fn", ID: "b"},
 			}
 
-			got, err := derive.Derive([]derive.Facts{flight}, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{flight}, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Unclaimed, []derive.Unclaimed{{
@@ -452,12 +453,12 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds a claim of one contract instance without the id of the instance", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("one", spec.Licence{Contract: "cache", Role: "cache"})
+			c := claimOn("one", rules.Licence{Contract: "cache", Role: "cache"})
 			get := getter()
 			get.Class.Contracts = []shape.Membership{{Contract: "cache", Role: "cache", ID: "a"}}
 			other := withRole(withRole(reader(), "cache", "backing"), "pool", "cache")
 
-			got, err := derive.Derive([]derive.Facts{get, other}, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{get, other}, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(
@@ -471,14 +472,14 @@ func TestDerive(t *testing.T) {
 
 		t.Run("adds the id of the instance to the key of a claim that binds twice", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("twice", spec.Licence{Contract: "cache", Role: "cache"})
+			c := claimOn("twice", rules.Licence{Contract: "cache", Role: "cache"})
 			get := getter()
 			get.Class.Contracts = []shape.Membership{
 				{Contract: "cache", Role: "cache", ID: "a"},
 				{Contract: "cache", Role: "cache", ID: "b"},
 			}
 
-			got, err := derive.Derive([]derive.Facts{get}, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{get}, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Checks[1].Key, "store.get/twice#b", "the key has the id of the instance")
@@ -486,16 +487,16 @@ func TestDerive(t *testing.T) {
 
 		t.Run("adds the id of the instance to the key of a refusal of a claim that binds twice", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("twice", spec.Licence{Contract: "cache", Role: "cache"})
+			c := claimOn("twice", rules.Licence{Contract: "cache", Role: "cache"})
 			get := getter()
 			get.Class.Contracts = []shape.Membership{
 				{Contract: "cache", Role: "cache", ID: "a"},
 				{Contract: "cache", Role: "cache", ID: "b"},
 			}
 			get.Inputs = append([]derive.Value(nil), get.Inputs...)
-			get.Inputs[0].Samples[0] = rules.Refused(rules.RefusedNoLiteral)
+			get.Inputs[0].Samples[0] = sdkrules.Refused(sdkrules.RefusedNoLiteral)
 
-			got, err := derive.Derive([]derive.Facts{get}, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{get}, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, []string{got.Refusals[0].Key, got.Refusals[1].Key},
@@ -504,12 +505,12 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds a claim with of a callable that has both classifications alone", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("both", spec.Licence{
-				Shape: "reader", With: &spec.Classification{Mixin: "causal"},
+			c := claimOn("both", rules.Licence{
+				Shape: "reader", With: &rules.Classification{Mixin: "causal"},
 			})
 			decl := []derive.Facts{withShape(reader(), "reader"), withMixins(withShape(getter(), "reader"), "causal")}
 
-			got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive(decl, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Get/both"}, "only the reader with the mixin causal binds")
@@ -517,14 +518,14 @@ func TestDerive(t *testing.T) {
 
 		t.Run("matches a contract without a role and a classification of another form", func(t *testing.T) {
 			t.Parallel()
-			anyRole := claimOn("any-role", spec.Licence{
-				Shape: "reader", With: &spec.Classification{Contract: "cache"},
+			anyRole := claimOn("any-role", rules.Licence{
+				Shape: "reader", With: &rules.Classification{Contract: "cache"},
 			})
-			mixin := claimOn("mixin", spec.Licence{Mixin: "causal"})
+			mixin := claimOn("mixin", rules.Licence{Mixin: "causal"})
 			get := withRole(withShape(getter(), "reader"), "cache", "backing")
 			other := withRole(withMixins(withShape(reader(), "lookup"), "pure"), "pool", "get")
 
-			got, err := derive.Derive([]derive.Facts{get, other}, []spec.Claim{anyRole, mixin}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{get, other}, []rules.Claim{anyRole, mixin}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(
@@ -537,14 +538,14 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds a claim with a role of a contract only on a callable that plays the role", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("commit", spec.Licence{
-				Shape: "reader", With: &spec.Classification{Contract: "tx", Role: "commit"},
+			c := claimOn("commit", rules.Licence{
+				Shape: "reader", With: &rules.Classification{Contract: "tx", Role: "commit"},
 			})
 			begin := withRole(withShape(getter(), "reader"), "tx", "begin")
 			otherContract := withRole(withShape(reader(), "reader"), "saga", "commit")
 			commit := withRole(withShape(lookup(), "reader"), "tx", "commit")
 
-			got, err := derive.Derive([]derive.Facts{begin, otherContract, commit}, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{begin, otherContract, commit}, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(
@@ -557,10 +558,10 @@ func TestDerive(t *testing.T) {
 
 		t.Run("judges a gate with a condition and leaves a gate of the partners to the partners", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("gated", spec.Licence{Callable: true}, spec.PartnerFound, spec.Failure)
+			c := claimOn("gated", rules.Licence{Callable: true}, spec.PartnerFound, spec.Failure)
 			decl := []derive.Facts{reader(), pure()}
 
-			got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive(decl, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Read/gated"}, "the callable that can fail binds")
@@ -576,7 +577,7 @@ func TestDerive(t *testing.T) {
 			)
 			decl := []derive.Facts{get, putter()}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.True(
@@ -589,12 +590,12 @@ func TestDerive(t *testing.T) {
 
 		t.Run("adds an edge only to an entailed claim that binds on the callable", func(t *testing.T) {
 			t.Parallel()
-			deeper := claimOn("deeper", spec.Licence{Callable: true})
+			deeper := claimOn("deeper", rules.Licence{Callable: true})
 			deeper.Entails = []spec.ClaimID{"absent", "shallower"}
-			shallower := claimOn("shallower", spec.Licence{Callable: true})
-			other := claimOn("other", spec.Licence{Callable: true})
+			shallower := claimOn("shallower", rules.Licence{Callable: true})
+			other := claimOn("other", rules.Licence{Callable: true})
 
-			claims := []spec.Claim{deeper, other, shallower}
+			claims := []rules.Claim{deeper, other, shallower}
 			got, err := derive.Derive([]derive.Facts{reader()}, claims, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
@@ -606,7 +607,7 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withShape(reader(), "reader")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, drawsAll)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, drawsAll)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{
@@ -626,7 +627,7 @@ func TestDerive(t *testing.T) {
 			decl := []derive.Facts{withShape(reader(), "reader")}
 			draws := func(c *derive.Check) bool { return c.Claim.ID != spec.Cancel }
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, draws)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, draws)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{
@@ -637,12 +638,12 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds a claim of generated inputs alone, without a case", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("combines", spec.Licence{Callable: true})
+			c := claimOn("combines", rules.Licence{Callable: true})
 			c.Machineries = []spec.MachineryID{spec.GeneratedInputs}
 			c.Law = spec.CombiningIgnoresTheOrder
 			supplied := append(slices.Clone(runtime), spec.GeneratedInputs)
 
-			got, err := derive.Derive([]derive.Facts{combiner()}, []spec.Claim{c}, nil, supplied, drawsAll)
+			got, err := derive.Derive([]derive.Facts{combiner()}, []rules.Claim{c}, nil, supplied, drawsAll)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Merge/combines"},
@@ -655,14 +656,14 @@ func TestDerive(t *testing.T) {
 
 		t.Run("adds -generated to the id of the instance of a claim that binds twice", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("twice", spec.Licence{Contract: "cache", Role: "cache"})
+			c := claimOn("twice", rules.Licence{Contract: "cache", Role: "cache"})
 			get := getter()
 			get.Class.Contracts = []shape.Membership{
 				{Contract: "cache", Role: "cache", ID: "a"},
 				{Contract: "cache", Role: "cache", ID: "b"},
 			}
 
-			got, err := derive.Derive([]derive.Facts{get}, []spec.Claim{c}, nil, runtime, drawsAll)
+			got, err := derive.Derive([]derive.Facts{get}, []rules.Claim{c}, nil, runtime, drawsAll)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{
@@ -680,7 +681,7 @@ func TestDerive(t *testing.T) {
 			)
 			decl := []derive.Facts{get, putter(), withShape(pure(), "computation")}
 
-			got, err := derive.Derive(decl, spec.Claims(), nil, runtime, drawsAll)
+			got, err := derive.Derive(decl, rules.Claims(), nil, runtime, drawsAll)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.True(t, checkOf(t, got, "Store.Get/read-after-write#generated").Shallow,
@@ -693,12 +694,12 @@ func TestDerive(t *testing.T) {
 
 		t.Run("lists generated-inputs before nothing-beyond-a-caller in a generated binding", func(t *testing.T) {
 			t.Parallel()
-			faults := claimOn("faults", spec.Licence{Callable: true})
+			faults := claimOn("faults", rules.Licence{Callable: true})
 			faults.Machineries = []spec.MachineryID{spec.CallThatFailsOnDemand, spec.NothingBeyondACaller}
-			clock := claimOn("clock", spec.Licence{Callable: true})
+			clock := claimOn("clock", rules.Licence{Callable: true})
 			clock.Machineries = []spec.MachineryID{spec.ClockTheRunAdvances}
-			plain := claimOn("plain", spec.Licence{Callable: true})
-			table := []spec.Claim{faults, clock, plain}
+			plain := claimOn("plain", rules.Licence{Callable: true})
+			table := []rules.Claim{faults, clock, plain}
 			suite := []spec.MachineryID{spec.CallThatFailsOnDemand}
 
 			got, err := derive.Derive([]derive.Facts{reader()}, table, suite, runtime, drawsAll)
@@ -727,7 +728,13 @@ func TestDerive(t *testing.T) {
 			built.SubjectBuilder = true
 
 			got, err := derive.Derive(
-				[]derive.Facts{built}, []spec.Claim{claimOn("plain", spec.Licence{Callable: true})}, nil, runtime, nil,
+				[]derive.Facts{
+					built,
+				},
+				[]rules.Claim{claimOn("plain", rules.Licence{Callable: true})},
+				nil,
+				runtime,
+				nil,
 			)
 
 			assert.NoError(t, err, "the declaration derives")
@@ -748,7 +755,7 @@ func TestDerive(t *testing.T) {
 			put := putter()
 			put.SubjectBuilder = true
 
-			got, err := derive.Derive([]derive.Facts{get, put}, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{get, put}, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			read, smoke := checkOf(t, got, "Store.Get/read-after-write"), checkOf(t, got, "Store.Get/smoke")
@@ -757,7 +764,7 @@ func TestDerive(t *testing.T) {
 			assert.NotContains(t, smoke.Machineries(), spec.InputsBuiltFromTheSubject,
 				"a check without a partner takes the samples of its own callable")
 
-			plain, err := derive.Derive([]derive.Facts{get, putter()}, spec.Claims(), nil, runtime, nil)
+			plain, err := derive.Derive([]derive.Facts{get, putter()}, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			unbuilt := checkOf(t, plain, "Store.Get/read-after-write")
@@ -767,11 +774,17 @@ func TestDerive(t *testing.T) {
 
 		t.Run("adds the edge of two claims between their generated bindings", func(t *testing.T) {
 			t.Parallel()
-			deeper := claimOn("deeper", spec.Licence{Callable: true})
+			deeper := claimOn("deeper", rules.Licence{Callable: true})
 			deeper.Entails = []spec.ClaimID{"shallower"}
-			shallower := claimOn("shallower", spec.Licence{Callable: true})
+			shallower := claimOn("shallower", rules.Licence{Callable: true})
 
-			got, err := derive.Derive([]derive.Facts{reader()}, []spec.Claim{deeper, shallower}, nil, runtime, drawsAll)
+			got, err := derive.Derive(
+				[]derive.Facts{reader()},
+				[]rules.Claim{deeper, shallower},
+				nil,
+				runtime,
+				drawsAll,
+			)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Edges, []derive.Edge{
@@ -782,10 +795,10 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds a claim of a declaration once, on its first callable that passes the gates", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("whole", spec.Licence{Declaration: true}, spec.ReturnsAValue)
+			c := claimOn("whole", rules.Licence{Declaration: true}, spec.ReturnsAValue)
 			decl := []derive.Facts{writer(), reader(), pure()}
 
-			got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive(decl, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store/whole"}, "the declaration binds the claim once")
@@ -796,10 +809,10 @@ func TestDerive(t *testing.T) {
 
 		t.Run("refuses a claim of a declaration on its first callable where none passes the gates", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("whole", spec.Licence{Declaration: true}, spec.ReturnsAValue)
+			c := claimOn("whole", rules.Licence{Declaration: true}, spec.ReturnsAValue)
 			decl := []derive.Facts{writer(), withMixins(reader(), "waits")}
 
-			got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive(decl, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Refusals, []derive.Refusal{{
@@ -812,11 +825,11 @@ func TestDerive(t *testing.T) {
 		t.Run("binds a claim of a declaration that a mixin licenses once, on its first callable with the mixin "+
 			"that passes the gates", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("whole", spec.Licence{Mixin: "concurrent"}, spec.ReturnsAValue)
-			c.Scope = spec.ScopeDeclaration
+			c := claimOn("whole", rules.Licence{Mixin: "concurrent"}, spec.ReturnsAValue)
+			c.Scope = rules.ScopeDeclaration
 			decl := []derive.Facts{withMixins(writer(), "concurrent"), withMixins(reader(), "concurrent"), pure()}
 
-			got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive(decl, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store/whole"}, "the declaration binds the claim once")
@@ -829,11 +842,11 @@ func TestDerive(t *testing.T) {
 		t.Run("refuses a claim of a declaration that a mixin licenses on its first callable with the mixin",
 			func(t *testing.T) {
 				t.Parallel()
-				c := claimOn("whole", spec.Licence{Mixin: "concurrent"}, spec.ReturnsAValue)
-				c.Scope = spec.ScopeDeclaration
+				c := claimOn("whole", rules.Licence{Mixin: "concurrent"}, spec.ReturnsAValue)
+				c.Scope = rules.ScopeDeclaration
 				decl := []derive.Facts{reader(), withMixins(writer(), "concurrent")}
 
-				got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+				got, err := derive.Derive(decl, []rules.Claim{c}, nil, runtime, nil)
 
 				assert.NoError(t, err, "the declaration derives")
 				assert.Empty(t, got.Checks, "no callable with the mixin returns a value")
@@ -845,10 +858,10 @@ func TestDerive(t *testing.T) {
 
 		t.Run("licenses no claim of a declaration without a callable that has its mixin", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("whole", spec.Licence{Mixin: "concurrent"})
-			c.Scope = spec.ScopeDeclaration
+			c := claimOn("whole", rules.Licence{Mixin: "concurrent"})
+			c.Scope = rules.ScopeDeclaration
 
-			got, err := derive.Derive([]derive.Facts{reader(), writer()}, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{reader(), writer()}, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Empty(t, got.Checks, "no callable has the mixin")
@@ -859,9 +872,9 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			slug := pure()
 			slug.Declaration, slug.Callable = "", "Slug"
-			c := claimOn("whole", spec.Licence{Declaration: true}, spec.ReturnsAValue)
+			c := claimOn("whole", rules.Licence{Declaration: true}, spec.ReturnsAValue)
 
-			got, err := derive.Derive([]derive.Facts{slug}, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{slug}, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Slug/whole"}, "the function is its own declaration")
@@ -869,10 +882,10 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds a claim whose input has the default of a param that the classification lacks", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("bounded", spec.Licence{Callable: true})
-			c.Inputs = []spec.Binding{{Input: "min", Kind: spec.FromParam, Param: "min", Default: "0"}}
+			c := claimOn("bounded", rules.Licence{Callable: true})
+			c.Inputs = []rules.Binding{{Input: "min", Kind: rules.FromParam, Param: "min", Default: "0"}}
 
-			got, err := derive.Derive([]derive.Facts{reader()}, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{reader()}, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Read/bounded"}, "the default stands in for the param")
@@ -880,11 +893,11 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds a claim of generated sequences without a generated binding", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("sequences", spec.Licence{Callable: true})
+			c := claimOn("sequences", rules.Licence{Callable: true})
 			c.Machineries = []spec.MachineryID{spec.GeneratedSequences}
 			supplied := append(slices.Clone(runtime), spec.GeneratedSequences)
 
-			got, err := derive.Derive([]derive.Facts{reader()}, []spec.Claim{c}, nil, supplied, drawsAll)
+			got, err := derive.Derive([]derive.Facts{reader()}, []rules.Claim{c}, nil, supplied, drawsAll)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Read/sequences"},
@@ -894,14 +907,14 @@ func TestDerive(t *testing.T) {
 
 		t.Run("binds a claim of generated sequences on a callable whose input has no sample", func(t *testing.T) {
 			t.Parallel()
-			c := claimOn("sequences", spec.Licence{Callable: true})
+			c := claimOn("sequences", rules.Licence{Callable: true})
 			c.Machineries = []spec.MachineryID{spec.GeneratedSequences}
 			supplied := append(slices.Clone(runtime), spec.GeneratedSequences)
 			hash := pure()
 			hash.Inputs = append([]derive.Value(nil), hash.Inputs...)
-			hash.Inputs[0].Samples[0] = rules.Refused(rules.RefusedNoLiteral)
+			hash.Inputs[0].Samples[0] = sdkrules.Refused(sdkrules.RefusedNoLiteral)
 
-			got, err := derive.Derive([]derive.Facts{hash}, []spec.Claim{c}, nil, supplied, nil)
+			got, err := derive.Derive([]derive.Facts{hash}, []rules.Claim{c}, nil, supplied, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Hash/sequences"},
@@ -914,16 +927,16 @@ func TestDerive(t *testing.T) {
 			// two do not bind.
 			set := withMixins(withParam(keyedPutter(), "merging", "write", idOf("Mark")), "merging")
 			sequences := append(slices.Clone(runtime), spec.GeneratedSequences)
-			claimOf := func(probe spec.ProbeID, input string, m spec.MachineryID) spec.Claim {
-				c := claimOn("sequences", spec.Licence{Mixin: "merging"})
+			claimOf := func(probe spec.ProbeID, input string, m spec.MachineryID) rules.Claim {
+				c := claimOn("sequences", rules.Licence{Mixin: "merging"})
 				c.Machineries, c.Probe = []spec.MachineryID{m}, probe
-				c.Partners = []spec.Partner{{Name: "write", Mode: spec.ModeNamed, Param: "write"}}
-				c.Inputs = []spec.Binding{{Input: input, Kind: spec.FromPartner, Partner: "write"}}
+				c.Partners = []rules.Partner{{Name: "write", Mode: rules.ModeNamed, Param: "write"}}
+				c.Inputs = []rules.Binding{{Input: input, Kind: rules.FromPartner, Partner: "write"}}
 				return c
 			}
 			tests := []struct {
 				name      string
-				give      spec.Claim
+				give      rules.Claim
 				giveFacts derive.Facts
 				want      []string
 				wantGates []spec.GateID
@@ -968,7 +981,7 @@ func TestDerive(t *testing.T) {
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
 
-					got, err := derive.Derive([]derive.Facts{tt.giveFacts, marker()}, []spec.Claim{tt.give}, nil,
+					got, err := derive.Derive([]derive.Facts{tt.giveFacts, marker()}, []rules.Claim{tt.give}, nil,
 						sequences, nil)
 
 					assert.NoError(t, err, "the declaration derives")
@@ -982,19 +995,19 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			set := keyedPutter()
 			set.Class.Params = map[string]shape.Params{"merging": {"write": idOf("Mark"), "read": idOf("Get")}}
-			c := claimOn("sequences", spec.Licence{Callable: true})
+			c := claimOn("sequences", rules.Licence{Callable: true})
 			c.Machineries, c.Probe = []spec.MachineryID{spec.GeneratedSequences}, spec.EachCallMovesTheObservation
-			c.Partners = []spec.Partner{
-				{Name: "write", Mode: spec.ModeNamed, Param: "write"},
-				{Name: "read", Mode: spec.ModeNamed, Param: "read"},
+			c.Partners = []rules.Partner{
+				{Name: "write", Mode: rules.ModeNamed, Param: "write"},
+				{Name: "read", Mode: rules.ModeNamed, Param: "read"},
 			}
-			c.Inputs = []spec.Binding{
-				{Input: "call", Kind: spec.FromPartner, Partner: "write"},
-				{Input: "observe", Kind: spec.FromPartner, Partner: "read"},
+			c.Inputs = []rules.Binding{
+				{Input: "call", Kind: rules.FromPartner, Partner: "write"},
+				{Input: "observe", Kind: rules.FromPartner, Partner: "read"},
 			}
 			supplied := append(slices.Clone(runtime), spec.GeneratedSequences)
 
-			got, err := derive.Derive([]derive.Facts{set, marker(), getter()}, []spec.Claim{c}, nil, supplied, nil)
+			got, err := derive.Derive([]derive.Facts{set, marker(), getter()}, []rules.Claim{c}, nil, supplied, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			check := checkOf(t, got, "Store.Set/sequences")
@@ -1011,12 +1024,12 @@ func TestDerive(t *testing.T) {
 				f := putter()
 				f.Callable, f.ID = name, idOf(name)
 				f.Signature = signature(name, true, f.Inputs,
-					[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn)
+					[]sdkrules.ReturnRole{sdkrules.ReturnValue, sdkrules.ReturnError}, sdkrules.ErrorsLastReturn)
 				f.Results = []derive.Value{result}
 				return f
 			}
-			c := claimOn("writes", spec.Licence{Mixin: "versioned"}, spec.WriteReturnsTheValue)
-			c.Partners = []spec.Partner{{Name: "write", Mode: spec.ModeNamed, Param: "write"}}
+			c := claimOn("writes", rules.Licence{Mixin: "versioned"}, spec.WriteReturnsTheValue)
+			c.Partners = []rules.Partner{{Name: "write", Mode: rules.ModeNamed, Param: "write"}}
 			tests := []struct {
 				name      string
 				giveWrite derive.Facts
@@ -1043,7 +1056,7 @@ func TestDerive(t *testing.T) {
 					t.Parallel()
 					get := withMixins(withParam(getter(), "versioned", "write", tt.giveWrite.ID), "versioned")
 
-					got, err := derive.Derive([]derive.Facts{get, tt.giveWrite}, []spec.Claim{c}, nil, runtime, nil)
+					got, err := derive.Derive([]derive.Facts{get, tt.giveWrite}, []rules.Claim{c}, nil, runtime, nil)
 
 					assert.NoError(t, err, "the declaration derives")
 					assert.Equal(t, gatesOf(got), tt.want, "the claim refuses a write that returns no value of Get")
@@ -1056,9 +1069,9 @@ func TestDerive(t *testing.T) {
 			t.Parallel()
 			slug := pure()
 			slug.Declaration, slug.Callable = "", "Slug"
-			c := claimOn("own", spec.Licence{Callable: true})
+			c := claimOn("own", rules.Licence{Callable: true})
 
-			got, err := derive.Derive([]derive.Facts{slug}, []spec.Claim{c}, nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{slug}, []rules.Claim{c}, nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, got.Checks[0].Identity, "Slug/own", "the identity has no declaration")
@@ -1071,7 +1084,7 @@ func TestDerive(t *testing.T) {
 			read := withShape(reader(), "reader")
 			read.Refused = map[spec.ClaimID]string{spec.ZeroOnError: "Read fails only for a closed store"}
 
-			got, err := derive.Derive([]derive.Facts{read}, spec.Claims(), nil, runtime, drawsAll)
+			got, err := derive.Derive([]derive.Facts{read}, rules.Claims(), nil, runtime, drawsAll)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{
@@ -1089,7 +1102,7 @@ func TestDerive(t *testing.T) {
 			read := withShape(reader(), "reader")
 			read.Refused = map[spec.ClaimID]string{spec.Smoke: "Read panics for a key that no store has"}
 
-			got, err := derive.Derive([]derive.Facts{read}, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{read}, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Read/cancel", "Store.Read/zero-on-error"},
@@ -1103,7 +1116,7 @@ func TestDerive(t *testing.T) {
 			hash := withShape(pure(), "computation")
 			hash.Refused = map[spec.ClaimID]string{spec.Deterministic: "Hash salts each call"}
 
-			got, err := derive.Derive([]derive.Facts{hash}, spec.Claims(), nil, runtime, nil)
+			got, err := derive.Derive([]derive.Facts{hash}, rules.Claims(), nil, runtime, nil)
 
 			assert.NoError(t, err, "the declaration derives")
 			assert.Equal(t, identities(got), []string{"Store.Hash/smoke"}, "the entailed claim binds")
@@ -1134,7 +1147,7 @@ func TestDerive(t *testing.T) {
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
 
-					got, err := derive.Derive([]derive.Facts{tt.give}, spec.Claims(), nil, runtime, nil)
+					got, err := derive.Derive([]derive.Facts{tt.give}, rules.Claims(), nil, runtime, nil)
 
 					assert.NoError(t, err, "the declaration derives")
 					assert.True(t, slices.ContainsFunc(got.Refusals, func(r derive.Refusal) bool {
@@ -1152,7 +1165,7 @@ func TestDerive(t *testing.T) {
 				read := withParam(withMixins(withShape(reader(), "reader"), "returns-on-error"), "returns-on-error",
 					"field", symbol.Identity{Name: "Dst"})
 
-				got, err := derive.Derive([]derive.Facts{read}, spec.Claims(), nil, runtime, nil)
+				got, err := derive.Derive([]derive.Facts{read}, rules.Claims(), nil, runtime, nil)
 
 				assert.NoError(t, err, "the declaration derives")
 				assert.Equal(t, identities(got),
@@ -1172,7 +1185,7 @@ func TestDerive(t *testing.T) {
 			a.Callable, b.Callable = "ReadAll", "Read_All"
 			decl := []derive.Facts{a, b}
 
-			_, err := derive.Derive(decl, spec.Claims(), nil, runtime, nil)
+			_, err := derive.Derive(decl, rules.Claims(), nil, runtime, nil)
 
 			assert.ErrorIs(t, err, derive.ErrKey, "two callables share the key store.read-all")
 		})
@@ -1184,7 +1197,7 @@ func TestDerive(t *testing.T) {
 		t.Run("refuses a check by a gate with the reason and the remedy of the gate", func(t *testing.T) {
 			t.Parallel()
 			facts := []derive.Facts{withShape(reader(), "reader")}
-			derived, err := derive.Derive(facts, spec.Claims(), nil, runtime, nil)
+			derived, err := derive.Derive(facts, rules.Claims(), nil, runtime, nil)
 			assert.NoError(t, err, "the declaration derives")
 			check := checkOf(t, derived, "Store.Read/zero-on-error")
 
@@ -1205,7 +1218,7 @@ func TestDerive(t *testing.T) {
 			}
 			decl := []derive.Facts{watch, withRole(keyedPutter(), "watcher", "trigger")}
 			sequences := append(slices.Clone(runtime), spec.GeneratedSequences)
-			derived, err := derive.Derive(decl, spec.Claims(), nil, sequences, nil)
+			derived, err := derive.Derive(decl, rules.Claims(), nil, sequences, nil)
 			assert.NoError(t, err, "the declaration derives")
 			check := checkOf(t, derived, "Store.Get/watch-sees-each-trigger")
 

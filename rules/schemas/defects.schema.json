@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "forms": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "changes": {
+            "type": "string"
+          },
+          "min-steps": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "changes",
+          "min-steps"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "forms"
+  ],
+  "additionalProperties": false
+}

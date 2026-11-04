@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/report"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 func TestReport(t *testing.T) {

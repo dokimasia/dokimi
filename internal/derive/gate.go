@@ -10,8 +10,7 @@ import (
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
-
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/spec"
 )
 
 // conditions contains the condition of each gate of the spec over the facts

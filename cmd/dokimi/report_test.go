@@ -14,8 +14,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/files"
-
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/spec"
 )
 
 // The names of the file of go test -json and of the file of a mutation record

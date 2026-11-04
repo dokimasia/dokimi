@@ -15,6 +15,7 @@ require (
 	go.dokimi.dev/eidos/lang/typescript v0.5.0
 	go.dokimi.dev/eidos/plugin/shape v0.3.1-0.20261102195551-8f3aeb587120
 	go.dokimi.dev/eidos/sdk v0.9.0
+	go.dokimi.dev/spec v0.3.1-0.20261104090305-45feafee31e0
 	go.stealthscale.io/cli v0.7.0
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/mod v0.42.0

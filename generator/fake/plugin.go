@@ -16,14 +16,14 @@ import (
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/plugin"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/derive"
 	"go.dokimi.dev/dokimi/internal/lang"
 	"go.dokimi.dev/dokimi/internal/nametemplate"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // ID is the name of the plugin.
@@ -105,8 +105,8 @@ type Model struct {
 	New       string
 	Absent    string
 	Subject   string
-	Form      spec.ReferenceFormID
-	State     spec.State
+	Form      rules.ReferenceFormID
+	State     rules.State
 	Witnesses []*emit.TypeRef
 	Methods   []Method
 }
@@ -125,7 +125,7 @@ type Model struct {
 type Method struct {
 	Name     string
 	Receiver string
-	Effect   spec.Effect
+	Effect   rules.Effect
 	Context  string
 	Key      string
 	Value    string
@@ -189,7 +189,7 @@ type invocation struct {
 	m *sdk.InterfaceMatch
 	p golangPart
 	e *sdk.Emitter
-	b rules.Bound
+	b sdkrules.Bound
 }
 
 // generate records the fake of the interface of m and its test.
@@ -289,12 +289,12 @@ func (in *invocation) factsOf(method *node.Method) derive.Facts {
 		Class: shape.OfDeclaration(in.m, method.ID), Signature: view,
 	}
 	for _, p := range view.Params {
-		if p.Role == rules.ParamInput {
+		if p.Role == sdkrules.ParamInput {
 			f.Inputs = append(f.Inputs, in.valueOf(p.Name, p.Ref))
 		}
 	}
 	for _, r := range view.Returns {
-		if r.Role == rules.ReturnValue {
+		if r.Role == sdkrules.ReturnValue {
 			f.Results = append(f.Results, in.valueOf(r.Name, r.Ref))
 		}
 	}
@@ -323,7 +323,7 @@ func (in *invocation) valueOf(name string, ref *node.TypeRef) derive.Value {
 func (in *invocation) keyed(ref *derive.Reference, methods []*node.Method) string {
 	for k := range ref.Callables {
 		c := &ref.Callables[k]
-		if c.Effect != spec.EffectLoad {
+		if c.Effect != rules.EffectLoad {
 			continue
 		}
 		key := keyParam(methods[k], c.Key.Name)
@@ -357,7 +357,7 @@ func (in *invocation) record(ref *derive.Reference, methods []*node.Method, witn
 		Fake: name, New: in.e.JoinName(name, newWord), Subject: i.Name, Form: ref.Form.ID, State: ref.Form.State,
 	}
 	for _, w := range witnesses {
-		model.Witnesses = append(model.Witnesses, rules.EmitRef(w))
+		model.Witnesses = append(model.Witnesses, sdkrules.EmitRef(w))
 	}
 	model.Guard = &emit.TypeRef{Spelling: i.Name, Target: i.ID, Args: model.Witnesses}
 	for k, method := range methods {
@@ -368,7 +368,7 @@ func (in *invocation) record(ref *derive.Reference, methods []*node.Method, witn
 		in.typesOf(&model, &ref.Callables[k], method)
 	}
 	record := []symbol.Symbol{fake, &emit.Function{Origin: i.ID, Name: model.New, Visibility: symbol.VisibilityPublic}}
-	if model.State == spec.StateMap {
+	if model.State == rules.StateMap {
 		model.Absent = absent
 		record = append(record, &emit.Variable{Origin: i.ID, Name: absent, Visibility: symbol.VisibilityPublic})
 	}
@@ -405,34 +405,34 @@ func (in *invocation) methodOf(c *derive.Effected, method *node.Method, mirrored
 	taken := make(map[string]bool, len(params))
 	var inputs []string
 	out := Method{Name: method.Name, Effect: c.Effect}
-	errs := c.Facts.Signature.Errors != rules.ErrorsNone
+	errs := c.Facts.Signature.Errors != sdkrules.ErrorsNone
 	for k, p := range params {
 		taken[p.Name] = true
 		switch c.Facts.Signature.Params[k].Role {
-		case rules.ParamContext:
+		case sdkrules.ParamContext:
 			if errs {
 				out.Context = p.Name
 			}
-		case rules.ParamInput:
+		case sdkrules.ParamInput:
 			inputs = append(inputs, p.Name)
 		}
 	}
 	out.Receiver = naming.Unique(taken, receiverName)
 	switch c.Effect {
-	case spec.EffectLoad:
+	case rules.EffectLoad:
 		out.Key = c.Key.Name
 		out.Present = naming.Unique(taken, presentLocal)
-	case spec.EffectStore:
+	case rules.EffectStore:
 		out.Value = inputs[c.Value]
 		out.Key = c.Key.Param
 		if c.Key.Kind == derive.ArgField {
 			out.Key = in.p.field(out.Value, c.Key.Field)
 		}
-	case spec.EffectAppend:
+	case rules.EffectAppend:
 		out.Value = inputs[c.Value]
 	}
 	for k, r := range mirrored.Returns.Items() {
-		result := Result{Type: r.Type, Error: c.Facts.Signature.Returns[k].Role == rules.ReturnError}
+		result := Result{Type: r.Type, Error: c.Facts.Signature.Returns[k].Role == sdkrules.ReturnError}
 		if !result.Error {
 			result.Local = naming.Unique(taken, resultLocal+strconv.Itoa(k))
 		}
@@ -448,14 +448,14 @@ func (in *invocation) methodOf(c *derive.Effected, method *node.Method, mirrored
 // each load returns, so the loads set the types of a map.
 func (*invocation) typesOf(model *Model, c *derive.Effected, method *node.Method) {
 	switch c.Effect {
-	case spec.EffectStore:
-	case spec.EffectLoad:
-		model.Key = rules.EmitRef(keyParam(method, c.Key.Name).Type)
-		model.Value = rules.EmitRef(method.Returns[0].Type)
-	case spec.EffectAppend:
-		at := slices.IndexFunc(c.Facts.Signature.Params, func(p rules.ParamView) bool {
-			return p.Role == rules.ParamInput
+	case rules.EffectStore:
+	case rules.EffectLoad:
+		model.Key = sdkrules.EmitRef(keyParam(method, c.Key.Name).Type)
+		model.Value = sdkrules.EmitRef(method.Returns[0].Type)
+	case rules.EffectAppend:
+		at := slices.IndexFunc(c.Facts.Signature.Params, func(p sdkrules.ParamView) bool {
+			return p.Role == sdkrules.ParamInput
 		})
-		model.Value = rules.EmitRef(method.Params[at].Type)
+		model.Value = sdkrules.EmitRef(method.Params[at].Type)
 	}
 }

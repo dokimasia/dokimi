@@ -1,0 +1,376 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The rules of the laws of the spec: the machinery at which a check witnesses each law in full,
+# and the laws that each law differs from.
+laws:
+  no-panic-on-any-input:
+    depth: generated-inputs
+    distinct-from: []
+  cancelled-context-is-reported:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  no-value-beside-an-error:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  no-value-beside-a-false-flag:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  miss-returns-the-zero:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  repeat-returns-alike:
+    depth: generated-inputs
+    distinct-from: []
+  repeated-call-survives:
+    depth: nothing-beyond-a-caller
+    distinct-from:
+      - law: no-panic-on-any-input
+        case: A subject that survives the first call and panics on the second.
+  miss-reports-the-declared-sentinel:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  repeat-is-accepted:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  read-returns-the-write-before-it:
+    depth: generated-sequences
+    distinct-from: []
+  read-observes-its-causal-past:
+    depth: concurrent-callers
+    distinct-from: []
+  read-observes-its-own-writes:
+    depth: generated-sequences
+    distinct-from: []
+  writes-apply-in-issue-order:
+    depth: generated-sequences
+    distinct-from: []
+  read-keeps-its-snapshot:
+    depth: concurrent-callers
+    distinct-from: []
+  no-element-is-drained-twice:
+    depth: generated-sequences
+    distinct-from: []
+  two-drains-agree-on-order:
+    depth: generated-sequences
+    distinct-from: []
+  drain-gains-exactly-what-went-in:
+    depth: generated-sequences
+    distinct-from:
+      - law: drain-keeps-what-went-in
+        case: A drain that returns each written element and one element that nobody wrote.
+  drain-keeps-what-went-in:
+    depth: generated-sequences
+    distinct-from: []
+  results-never-decrease:
+    depth: generated-sequences
+    distinct-from: []
+  reads-never-go-backwards:
+    depth: generated-sequences
+    distinct-from: []
+  write-follows-the-read-before-it:
+    depth: generated-sequences
+    distinct-from: []
+  unsafe-value-does-not-survive:
+    depth: generated-inputs
+    distinct-from: []
+  unsafe-value-is-kept-as-data:
+    depth: generated-inputs
+    distinct-from:
+      - law: read-returns-the-write-before-it
+        case: A store that returns derived values and changes the control characters of the unsafe value.
+  call-accepts-its-declared-domain:
+    depth: generated-inputs
+    distinct-from: []
+  declared-invalid-value-is-refused:
+    depth: generated-inputs
+    distinct-from: []
+  nil-argument-is-accepted:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  work-after-close-is-refused:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  call-refuses-before-its-predecessor:
+    depth: nothing-beyond-a-caller
+    distinct-from:
+      - law: call-works-after-its-predecessor
+        case: A subject that refuses every call, before the predecessor and after it.
+  call-works-after-its-predecessor:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  effect-arrives-once-settled:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  call-returns-within-its-budget:
+    depth: clock-the-run-advances
+    distinct-from: []
+  count-covers-a-bounded-window:
+    depth: clock-the-run-advances
+    distinct-from: []
+  task-runs-once-its-instant-passes:
+    depth: clock-the-run-advances
+    distinct-from: []
+  result-depends-on-the-clock:
+    depth: clock-the-run-advances
+    distinct-from:
+      - law: result-is-stable-while-the-clock-stops
+        case: A subject that reads the wall clock in place of the clock that it was given.
+  result-is-stable-while-the-clock-stops:
+    depth: clock-the-run-advances
+    distinct-from: []
+  entry-lapses-on-the-clock:
+    depth: clock-the-run-advances
+    distinct-from: []
+  delete-makes-the-key-unreadable:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  call-moves-the-named-observation:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  induced-failure-latches:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  tamper-is-detected:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  call-converges-once-its-scope-is-open:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  call-converges-within-the-declared-attempts:
+    depth: call-that-fails-on-demand
+    distinct-from: []
+  registered-hook-runs:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  repeated-calls-compound:
+    depth: generated-sequences
+    distinct-from: []
+  one-partition-does-not-serve-another:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  history-replays-in-its-stamped-order:
+    depth: generated-sequences
+    distinct-from: []
+  admitted-entry-grows-the-replay:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  append-returns-above-the-last:
+    depth: generated-sequences
+    distinct-from:
+      - law: results-never-decrease
+        case: An append that returns the same position twice.
+  encoding-survives-its-round-trip:
+    depth: generated-inputs
+    distinct-from: []
+  write-is-refused-where-its-key-exists:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  granted-lease-is-not-granted-twice:
+    depth: concurrent-callers
+    distinct-from: []
+  write-is-refused-on-a-stale-version:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  write-is-refused-where-the-predicate-rejects-it:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  burst-is-spent-then-refused:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  resigned-leadership-is-released:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  failed-scope-leaves-nothing:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  failed-commit-leaves-nothing:
+    depth: call-that-fails-on-demand
+    distinct-from:
+      - law: failed-scope-leaves-nothing
+        case: A scope that rolls back a failed commit and keeps what a failed body wrote.
+  failed-dependency-is-reported:
+    depth: call-that-fails-on-demand
+    distinct-from: []
+  failed-call-leaves-no-effect:
+    depth: generated-sequences
+    distinct-from:
+      - law: refused-write-leaves-nothing
+        case: A writer that keeps nothing of a refused value and keeps a part of a write whose dependency failed.
+  open-breaker-skips-the-operation:
+    depth: call-that-fails-on-demand
+    distinct-from: []
+  one-key-one-instance:
+    depth: call-that-fails-on-demand
+    distinct-from: []
+  failure-path-releases:
+    depth: call-that-fails-on-demand
+    distinct-from: []
+  cache-agrees-with-its-backing:
+    depth: generated-sequences
+    distinct-from: []
+  settled-transaction-is-not-settled-again:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  borrowed-value-is-taken-back:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  walk-resumes-where-it-left-off:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  compensation-accepts-its-step:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  refused-write-leaves-nothing:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  second-write-replaces-the-first:
+    depth: nothing-beyond-a-caller
+    distinct-from:
+      - law: repeated-write-keeps-one-key
+        case: A store that accumulates the two writes under one key.
+  repeated-write-keeps-one-key:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  variants-are-listed-in-order:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  each-variant-has-its-own-text:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  only-the-variants-are-valid:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  text-parses-to-its-variant:
+    depth: generated-inputs
+    distinct-from: []
+  variant-encodes-its-text:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  text-decodes-to-its-variant:
+    depth: generated-inputs
+    distinct-from: []
+  error-value-has-its-own-message:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  error-values-are-distinct:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  error-type-has-its-own-message:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  self-compared-type-agrees-with-identity:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  error-type-returns-its-cause:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  error-types-are-distinct:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  combining-ignores-the-order:
+    depth: generated-inputs
+    distinct-from: []
+  combining-ignores-the-grouping:
+    depth: generated-inputs
+    distinct-from: []
+  batch-read-returns-each-stored-value:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  fresh-receiver-is-healthy:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  positions-are-below-the-size:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  wrapper-returns-what-its-sibling-returns:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  appended-chain-verifies:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  released-lease-is-granted-again:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  stats-move-with-a-loan:
+    depth: nothing-beyond-a-caller
+    distinct-from: []
+  every-sequence-agrees-with-the-reference:
+    depth: generated-sequences
+    distinct-from: []
+  use-is-within-its-bounds:
+    depth: generated-sequences
+    distinct-from: []
+  merge-order-does-not-matter:
+    depth: generated-sequences
+    distinct-from: []
+  states-follow-the-graph:
+    depth: generated-sequences
+    distinct-from: []
+  moves-conserve-the-total:
+    depth: generated-sequences
+    distinct-from: []
+  iteration-reflects-its-source:
+    depth: generated-sequences
+    distinct-from: []
+  each-append-is-delivered:
+    depth: generated-sequences
+    distinct-from: []
+  deliveries-follow-the-mode:
+    depth: generated-sequences
+    distinct-from: []
+  redelivery-delivers-again:
+    depth: generated-sequences
+    distinct-from: []
+  watch-returns-each-trigger:
+    depth: generated-sequences
+    distinct-from: []
+  no-second-reply:
+    depth: simulated-system
+    distinct-from: []
+  stop-replies-to-each-call:
+    depth: simulated-system
+    distinct-from: []
+  no-effect-after-stop:
+    depth: simulated-system
+    distinct-from: []
+  no-effect-after-error:
+    depth: simulated-system
+    distinct-from: []
+  no-reused-token:
+    depth: simulated-system
+    distinct-from: []
+  concurrent-history-is-linearizable:
+    depth: concurrent-callers
+    distinct-from: []
+  reads-beside-reads-return-what-one-read-returns:
+    depth: concurrent-callers
+    distinct-from: []
+  calls-at-once-share-one-computation:
+    depth: concurrent-callers
+    distinct-from: []
+  acknowledged-write-survives-a-crash:
+    depth: killable-process-or-breakable-medium
+    distinct-from: []
+  recovery-returns-whole-records:
+    depth: killable-process-or-breakable-medium
+    distinct-from: []
+  corrupted-read-is-reported:
+    depth: killable-process-or-breakable-medium
+    distinct-from: []
+  refused-write-leaves-the-state:
+    depth: killable-process-or-breakable-medium
+    distinct-from: []
+  failure-returns-the-request-field:
+    depth: nothing-beyond-a-caller
+    distinct-from:
+      - law: no-value-beside-an-error
+        case: A read that returns the zero value beside an error for a request whose field is not the zero value.
+  concurrent-transactions-are-serializable:
+    depth: concurrent-callers
+    distinct-from: []
+  concurrent-transactions-are-snapshot-isolated:
+    depth: concurrent-callers
+    distinct-from:
+      - law: concurrent-transactions-are-serializable
+        case: Two transactions that each read the key that the other writes and both commit, a write skew that snapshot isolation permits.

@@ -12,9 +12,9 @@ import (
 
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/plugin"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // LockTag is the tag of the family of the lock, and LockName the name of the

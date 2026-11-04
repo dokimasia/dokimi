@@ -14,9 +14,9 @@ import (
 	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // The words of the names of the parts of the generated sequences: the function

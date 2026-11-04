@@ -14,10 +14,11 @@ import (
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // ErrKey is the error of [Derive] for two callables of a declaration whose
@@ -52,7 +53,7 @@ type Facts struct {
 	Handle []Facts
 
 	// Signature is the normalized view of the callable.
-	Signature rules.Callable
+	Signature sdkrules.Callable
 
 	// SubjectBuilder reports that a builder that takes the subject returns
 	// the inputs of each derived call of the callable, as the mixin sample of
@@ -73,9 +74,9 @@ type Value struct {
 
 	// Samples are two distinct samples of the type, or the reasons why
 	// eidos refuses them.
-	Samples [2]rules.Sample
+	Samples [2]sdkrules.Sample
 
-	Shape rules.TypeShape
+	Shape sdkrules.TypeShape
 
 	HasZero bool
 }
@@ -83,7 +84,7 @@ type Value struct {
 // Field is one field of a struct type.
 type Field struct {
 	Name  string
-	Shape rules.TypeShape
+	Shape sdkrules.TypeShape
 }
 
 // Key returns the key of the callable of f, which joins it across languages:
@@ -136,7 +137,7 @@ type Suite struct {
 // Check is one claim bound to one callable.
 type Check struct {
 	// Claim is the claim of the check, and Facts the facts of its callable.
-	Claim *spec.Claim
+	Claim *rules.Claim
 	Facts *Facts
 
 	// Pairs contains the partner of each name of a partner of the claim.
@@ -248,7 +249,7 @@ type Edge struct {
 // classification that licenses it, and the id of the contract instance where
 // the claim binds once for each instance.
 type licensing struct {
-	licence        *spec.Licence
+	licence        *rules.Licence
 	classification string
 	instance       string
 }
@@ -275,7 +276,7 @@ type licensing struct {
 // Derive returns an error that wraps [ErrKey] for two callables of decl
 // whose names have one key.
 func Derive(
-	decl []Facts, table []spec.Claim, suite, runtime []spec.MachineryID, draws func(c *Check) bool,
+	decl []Facts, table []rules.Claim, suite, runtime []spec.MachineryID, draws func(c *Check) bool,
 ) (Suite, error) {
 	d := derivation{supplied: slices.Concat(suite, runtime), draws: draws}
 	keys := map[string]string{}
@@ -303,7 +304,7 @@ type derivation struct {
 
 // callable adds the checks, the refusals, the unclaimed classifications and
 // the edges of the callable of f to the suite of d.
-func (d *derivation) callable(f *Facts, decl []Facts, table []spec.Claim) {
+func (d *derivation) callable(f *Facts, decl []Facts, table []rules.Claim) {
 	out, supplied := &d.out, d.supplied
 	covered := map[string]bool{}
 	needs := map[string]string{}
@@ -356,7 +357,7 @@ func (d *derivation) callable(f *Facts, decl []Facts, table []spec.Claim) {
 			)
 			continue
 		}
-		if u, ok := spec.UnclaimedOf(cls); ok {
+		if u, ok := rules.UnclaimedOf(cls); ok {
 			out.Unclaimed = append(
 				out.Unclaimed,
 				Unclaimed{Classification: cls, Callable: f.Callable, Key: key, Stance: u.Stance, Note: u.Note},
@@ -380,17 +381,17 @@ func cover(covered map[string]bool, licensings []licensing) {
 // transactions, and the write of the scope is the callable of its statement
 // and its clause. The identity of a claim of a declaration opens with the
 // declaration, as Store/agrees-with-the-reference.
-func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, bool) {
+func bind(c *rules.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, bool) {
 	everyCallable := l.licence.Callable
 	names := namesOf(f)
 	identity := f.qualified() + "/" + string(c.ID)
-	if l.licence.Declaration || c.Scope == spec.ScopeDeclaration {
+	if l.licence.Declaration || c.Scope == rules.ScopeDeclaration {
 		identity = names["declaration"] + "/" + string(c.ID)
 	}
 	if l.instance != "" {
 		identity += "#" + l.instance
 	}
-	refuse := func(gate *spec.Gate, names map[string]string) (Check, *Refusal, bool) {
+	refuse := func(gate *rules.Gate, names map[string]string) (Check, *Refusal, bool) {
 		if everyCallable {
 			return Check{}, nil, true
 		}
@@ -420,7 +421,7 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		}
 	}
 	for _, b := range c.Inputs {
-		if b.Kind == spec.FromParam && b.Default == "" && !hasClassParam(f, b.Param) {
+		if b.Kind == rules.FromParam && b.Default == "" && !hasClassParam(f, b.Param) {
 			return refuse(gateOf(spec.ClassificationParams), mapWith(names, "param", b.Param))
 		}
 	}
@@ -437,11 +438,11 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 		pairs[p.Name] = pair
 		names[p.Name] = pair.Partner.Callable
 	}
-	law, _ := spec.LawOf(c.Law)
+	law, _ := rules.LawOf(c.Law)
 	return Check{
 		Claim: c, Facts: f, Pairs: pairs, Transaction: tx,
 		Identity: identity, Key: spec.Key(identity),
-		Statement: fill(c.Statement, names), Clause: fill(c.Defect.Clause, names),
+		Statement: fill(c.Statement, names), Clause: fill(c.Clause, names),
 		Shallow:   !slices.Contains(c.Machineries, law.Depth),
 		Generated: slices.Contains(c.Machineries, spec.GeneratedInputs),
 	}, nil, false
@@ -451,12 +452,12 @@ func bind(c *spec.Claim, l licensing, f *Facts, decl []Facts) (Check, *Refusal, 
 // name only as inputs of the kinds operation and call. Its probe calls such a
 // partner by its name or with its own samples, so the arguments of the
 // partner need no binding.
-func unbound(c *spec.Claim, name string) bool {
+func unbound(c *rules.Claim, name string) bool {
 	if !slices.Contains(c.Machineries, spec.GeneratedSequences) {
 		return false
 	}
 	probe, _ := spec.ProbeOf(c.Probe)
-	return !slices.ContainsFunc(c.Inputs, func(b spec.Binding) bool {
+	return !slices.ContainsFunc(c.Inputs, func(b rules.Binding) bool {
 		if b.Partner != name {
 			return false
 		}
@@ -486,7 +487,7 @@ func generatedOf(c *Check) Check {
 	g.Identity = GeneratedOf(g.Identity)
 	g.Key = spec.Key(g.Identity)
 	g.Generated = true
-	law, _ := spec.LawOf(g.Claim.Law)
+	law, _ := rules.LawOf(g.Claim.Law)
 	g.Shallow = !slices.Contains(g.Machineries(), law.Depth)
 	return g
 }
@@ -509,7 +510,7 @@ func Refuse(c *Check, id spec.GateID) Refusal {
 
 // refusal returns the refusal of the claim on the callable of f by gate. The
 // reason and the remedy of the refusal are those of gate with names in place.
-func refusal(claim spec.ClaimID, f *Facts, key string, gate *spec.Gate, names map[string]string) Refusal {
+func refusal(claim spec.ClaimID, f *Facts, key string, gate *rules.Gate, names map[string]string) Refusal {
 	return Refusal{
 		Claim: claim, Callable: f.Callable, Key: key, Gate: gate.ID,
 		Why: fill(gate.Why, names), Remedy: fill(gate.Remedy, names),
@@ -534,11 +535,11 @@ func namesOf(f *Facts) map[string]string {
 // whose licence is a classification, that callable is among the callables
 // with the classification. For a claim with the gate transactions, it can
 // also be the begin of a handle with a method of the classification.
-func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
+func licensed(c *rules.Claim, f *Facts, decl []Facts) []licensing {
 	var out []licensing
 	for li := range c.Licences {
 		l := &c.Licences[li]
-		if slices.ContainsFunc(l.Conflicts, func(cls spec.Classification) bool { return has(f, cls) }) {
+		if slices.ContainsFunc(l.Conflicts, func(cls rules.Classification) bool { return has(f, cls) }) {
 			continue
 		}
 		if l.With != nil && !has(f, *l.With) {
@@ -555,7 +556,7 @@ func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 			if f == anchorOf(c, decl, func(*Facts) bool { return true }) {
 				out = append(out, licensing{licence: l})
 			}
-		case c.Scope == spec.ScopeDeclaration:
+		case c.Scope == rules.ScopeDeclaration:
 			if f == anchorOf(c, decl, func(g *Facts) bool { return licensee(c, l, g) != nil }) {
 				out = append(out, licensing{licence: l, classification: labelOf(l.Classification)})
 			}
@@ -582,7 +583,7 @@ func licensed(c *spec.Claim, f *Facts, decl []Facts) []licensing {
 
 // holds reports whether the callable of f has the classification of the
 // licence l, with the param that l needs.
-func holds(l *spec.Licence, f *Facts) bool {
+func holds(l *rules.Licence, f *Facts) bool {
 	return has(f, l.Classification) && (l.NeedsParam == "" || hasClassParam(f, l.NeedsParam))
 }
 
@@ -590,7 +591,7 @@ func holds(l *spec.Licence, f *Facts) bool {
 // binds: the first callable that candidate accepts and that passes the gates
 // of c, or the first callable that candidate accepts where none passes. It
 // returns nil where candidate accepts no callable.
-func anchorOf(c *spec.Claim, decl []Facts, candidate func(f *Facts) bool) *Facts {
+func anchorOf(c *rules.Claim, decl []Facts, candidate func(f *Facts) bool) *Facts {
 	var first *Facts
 	for i := range decl {
 		f := &decl[i]
@@ -619,7 +620,7 @@ func failing(gates []spec.GateID, f *Facts) (spec.GateID, bool) {
 }
 
 // has reports whether the callable of f has the classification cls.
-func has(f *Facts, cls spec.Classification) bool {
+func has(f *Facts, cls rules.Classification) bool {
 	switch {
 	case cls.Shape != "":
 		return f.Class.Shape == cls.Shape
@@ -651,7 +652,7 @@ func hasClassParam(f *Facts, key string) bool {
 }
 
 // labelOf returns the classification in the form of an entry of unclaimed.
-func labelOf(cls spec.Classification) string {
+func labelOf(cls rules.Classification) string {
 	switch {
 	case cls.Shape != "":
 		return "shape:" + string(cls.Shape)
@@ -669,10 +670,10 @@ func labelOf(cls spec.Classification) string {
 func classificationsOf(f *Facts) []string {
 	out := []string{"shape:" + string(f.Class.Shape)}
 	for _, m := range f.Class.Mixins {
-		out = append(out, labelOf(spec.Classification{Mixin: m}))
+		out = append(out, labelOf(rules.Classification{Mixin: m}))
 	}
 	for _, m := range f.Class.Contracts {
-		label := labelOf(spec.Classification{Contract: m.Contract, Role: m.Role})
+		label := labelOf(rules.Classification{Contract: m.Contract, Role: m.Role})
 		if !slices.Contains(out, label) {
 			out = append(out, label)
 		}

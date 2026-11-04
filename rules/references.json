@@ -1,0 +1,31 @@
+{
+  "references": {
+    "appender": {
+      "contract": "appender",
+      "state": "list",
+      "roles": {
+        "fn": "append"
+      },
+      "since": "1.1.0"
+    },
+    "cache": {
+      "contract": "cache",
+      "state": "map",
+      "roles": {
+        "backing": "load",
+        "cache": "load"
+      },
+      "writers": "store",
+      "since": "1.1.0"
+    },
+    "persister": {
+      "contract": "persister",
+      "state": "map",
+      "roles": {
+        "reader": "load",
+        "writer": "store"
+      },
+      "since": "1.1.0"
+    }
+  }
+}

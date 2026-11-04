@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "unclaimed": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "stance": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*$"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stance",
+          "note"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "unclaimed"
+  ],
+  "additionalProperties": false
+}

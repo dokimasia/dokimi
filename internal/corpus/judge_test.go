@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/corpus"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // The positions of the lines of the lock of [outcome].

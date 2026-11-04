@@ -11,7 +11,7 @@ import (
 	"slices"
 	"strings"
 
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/spec"
 )
 
 // The kind and the version of the records of mutate-spec that ReadMutations

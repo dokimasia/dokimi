@@ -1,0 +1,342 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The rules of the defect forms of the spec: what each form changes, and the fewest steps of a
+# sequence that shows it.
+forms:
+  panics:
+    changes: callable
+    min-steps: 1
+  panics-on-repeat:
+    changes: callable
+    min-steps: 2
+  succeeds-always:
+    changes: callable
+    min-steps: 1
+  fails-always:
+    changes: callable
+    min-steps: 1
+  reports-another-error:
+    changes: callable
+    min-steps: 1
+  ignores-the-predicate:
+    changes: callable
+    min-steps: 2
+  refuses-repeat:
+    changes: callable
+    min-steps: 2
+  ignores-cancel:
+    changes: callable
+    min-steps: 1
+  value-beside:
+    changes: callable
+    min-steps: 1
+  values-beside:
+    changes: callable
+    min-steps: 1
+  value-beside-a-false-flag:
+    changes: callable
+    min-steps: 1
+  values-beside-a-false-flag:
+    changes: callable
+    min-steps: 1
+  invents-a-pointer:
+    changes: callable
+    min-steps: 1
+  invents-a-value:
+    changes: callable
+    min-steps: 1
+  drifts:
+    changes: callable
+    min-steps: 2
+  descends:
+    changes: callable
+    min-steps: 2
+  stamps-the-past:
+    changes: partner:write
+    min-steps: 3
+  version-descends:
+    changes: callable
+    min-steps: 3
+  answers-a-sample:
+    changes: callable
+    min-steps: 1
+  reads-another-value:
+    changes: callable
+    min-steps: 2
+  stores-nothing:
+    changes: callable
+    min-steps: 2
+  drains-twice:
+    changes: callable
+    min-steps: 2
+  reorders-drain:
+    changes: callable
+    min-steps: 3
+  drains-nothing:
+    changes: callable
+    min-steps: 2
+  echoes:
+    changes: callable
+    min-steps: 1
+  accepts-the-invalid:
+    changes: callable
+    min-steps: 2
+  observation-unmoved:
+    changes: partner:observe
+    min-steps: 2
+  verify-silent:
+    changes: partner:verify
+    min-steps: 3
+  settles-twice:
+    changes: partner:rollback
+    min-steps: 3
+  count-drifts:
+    changes: partner:count
+    min-steps: 3
+  slow:
+    changes: callable
+    min-steps: 1
+  read-survives-delete:
+    changes: partner:read
+    min-steps: 3
+  swallows-hooks:
+    changes: partner:register
+    min-steps: 2
+  replays-reversed:
+    changes: partner:replay
+    min-steps: 3
+  opens-a-live-handle:
+    changes: callable
+    min-steps: 3
+  leads-on:
+    changes: partner:is-leader
+    min-steps: 3
+  keeps-failed-writes:
+    changes: partner:read
+    min-steps: 2
+  commits-on-failure:
+    changes: partner:read
+    min-steps: 2
+  swallows-failure:
+    changes: callable
+    min-steps: 1
+  half-applied:
+    changes: partner:read
+    min-steps: 2
+  gives-up-early:
+    changes: callable
+    min-steps: 2
+  never-opens:
+    changes: callable
+    min-steps: 2
+  balances-each-call:
+    changes: callable
+    min-steps: 2
+  opens-without-closing:
+    changes: callable
+    min-steps: 1
+  put-refuses:
+    changes: partner:put
+    min-steps: 2
+  compensation-refuses:
+    changes: partner:compensate
+    min-steps: 2
+  files-refused-write:
+    changes: partner:reader
+    min-steps: 2
+  serves-one-page:
+    changes: callable
+    min-steps: 2
+  drops-a-variant:
+    changes: values
+    min-steps: 1
+  shares-a-text:
+    changes: name
+    min-steps: 1
+  rejects-a-variant:
+    changes: valid
+    min-steps: 1
+  parses-to-the-first:
+    changes: parse
+    min-steps: 1
+  encodes-the-first-text:
+    changes: encode
+    min-steps: 1
+  decodes-to-the-first:
+    changes: decode
+    min-steps: 1
+  repeats-a-message:
+    changes: error-values
+    min-steps: 1
+  repeated-error:
+    changes: error-values
+    min-steps: 1
+  drops-the-opening:
+    changes: error-types
+    min-steps: 1
+  matches-everything:
+    changes: error-types
+    min-steps: 1
+  loses-the-cause:
+    changes: error-types
+    min-steps: 1
+  matches-other-types:
+    changes: error-types
+    min-steps: 1
+  ignores-the-second-input:
+    changes: callable
+    min-steps: 2
+  keeps-its-first-result:
+    changes: callable
+    min-steps: 4
+  drops-the-last-key:
+    changes: callable
+    min-steps: 2
+  reports-poison:
+    changes: callable
+    min-steps: 1
+  admits-the-size:
+    changes: callable
+    min-steps: 2
+  stops-delegating:
+    changes: callable
+    min-steps: 2
+  reports-tamper:
+    changes: callable
+    min-steps: 2
+  release-keeps-the-lease:
+    changes: partner:release
+    min-steps: 3
+  frozen-stats:
+    changes: callable
+    min-steps: 2
+  goes-back-after-three:
+    changes: callable
+    min-steps: 4
+  reads-the-past-after-three:
+    changes: callable
+    min-steps: 4
+  reorders-after-three:
+    changes: callable
+    min-steps: 4
+  reorders-writes-after-three:
+    changes: partner:write
+    min-steps: 4
+  reads-a-stale-version-after-three:
+    changes: callable
+    min-steps: 4
+  stamps-the-past-after-three:
+    changes: partner:write
+    min-steps: 4
+  descends-after-three:
+    changes: callable
+    min-steps: 4
+  reverses-after-three:
+    changes: partner:replay
+    min-steps: 4
+  repeats-after-three:
+    changes: callable
+    min-steps: 4
+  drops-after-three:
+    changes: callable
+    min-steps: 4
+  drops-a-repeat-after-three:
+    changes: callable
+    min-steps: 4
+  reads-a-stale-value-after-three:
+    changes: callable
+    min-steps: 4
+  drops-a-write-after-three:
+    changes: callable
+    min-steps: 4
+  serves-a-stale-value-after-three:
+    changes: callable
+    min-steps: 4
+  diverges-after-three:
+    changes: declaration
+    min-steps: 4
+  grows-past-the-limit-after-three:
+    changes: partner:observe
+    min-steps: 4
+  ignores-the-other-replica:
+    changes: callable
+    min-steps: 1
+  admits-any-transition-after-three:
+    changes: callable
+    min-steps: 4
+  leaks-one-unit:
+    changes: partner:observe
+    min-steps: 2
+  half-applied-after-three:
+    changes: partner:read
+    min-steps: 4
+  iterates-a-copy:
+    changes: callable
+    min-steps: 1
+  drops-appends-after-three:
+    changes: callable
+    min-steps: 4
+  breaks-the-mode-after-three:
+    changes: callable
+    min-steps: 4
+  skips-a-redelivery-after-three:
+    changes: callable
+    min-steps: 4
+  misses-updates-after-three:
+    changes: partner:trigger
+    min-steps: 4
+  replies-twice:
+    changes: machine
+    min-steps: 1
+  forgets-a-call-on-stop:
+    changes: machine
+    min-steps: 2
+  writes-after-stop:
+    changes: machine
+    min-steps: 2
+  steps-after-error:
+    changes: machine
+    min-steps: 2
+  reuses-a-token:
+    changes: machine
+    min-steps: 2
+  racy-read-write:
+    changes: declaration
+    min-steps: 2
+  racy-read:
+    changes: callable
+    min-steps: 2
+  computes-per-call:
+    changes: callable
+    min-steps: 2
+  racy-pin:
+    changes: callable
+    min-steps: 2
+  racy-causal-read:
+    changes: callable
+    min-steps: 2
+  check-then-grant:
+    changes: callable
+    min-steps: 2
+  acknowledges-before-sync:
+    changes: medium
+    min-steps: 1
+  trusts-a-partial-record:
+    changes: callable
+    min-steps: 1
+  ignores-checksum:
+    changes: partner:read
+    min-steps: 1
+  hides-a-full-medium:
+    changes: medium
+    min-steps: 1
+  drops-the-field:
+    changes: callable
+    min-steps: 1
+  reads-uncommitted:
+    changes: declaration
+    min-steps: 2
+  writes-without-a-snapshot:
+    changes: declaration
+    min-steps: 2

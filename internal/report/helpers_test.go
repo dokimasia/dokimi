@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/spec"
 )
 
 // record returns the JSON of a suite record of the declaration Store in the

@@ -6,7 +6,9 @@ package corpus
 import (
 	"strings"
 
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/spec"
+
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // Update returns expected with the declarations of each fixture rewritten
@@ -46,7 +48,7 @@ func declarationsOf(o *Outcome) map[string]Declaration {
 		}
 		switch status {
 		case kindCheck:
-			c, _ := spec.ClaimOf(spec.ClaimID(claim))
+			c, _ := rules.ClaimOf(spec.ClaimID(claim))
 			d.Checks[key] = Check{
 				Claim: spec.ClaimID(claim), Law: c.Law, Reason: c.Defect.Reason, Partners: partnersOf(f[4]),
 			}

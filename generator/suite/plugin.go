@@ -19,10 +19,10 @@ import (
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
 	"go.dokimi.dev/dokimi/internal/lang"
-	"go.dokimi.dev/dokimi/spec"
 )
 
 // ID is the name of the plugin.

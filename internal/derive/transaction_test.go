@@ -9,45 +9,48 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/eidos/plugin/shape"
-	"go.dokimi.dev/eidos/sdk/rules"
+	sdkrules "go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/internal/derive"
-	"go.dokimi.dev/dokimi/spec"
+	"go.dokimi.dev/dokimi/rules"
 )
 
 // The shapes of the values of a transaction: the handle Tx, a key, an int
 // value and the list of the values of a key. A float value, an unsigned value
 // and the address of a value fit no history, or another one.
 var (
-	txShape    = rules.TypeShape{Form: symbol.FormReference, Spelling: "Tx"}
-	intShape   = rules.Scalar("int", rules.ScalarInt, 0)
-	listShape  = rules.TypeShape{Form: symbol.FormList, Spelling: "[]int", Elems: []rules.TypeShape{intShape}}
-	floatShape = rules.Scalar("float64", rules.ScalarFloat, 0)
-	uintShape  = rules.Scalar("uint", rules.ScalarUint, 0)
-	addrShape  = rules.TypeShape{Form: symbol.FormOptional, Spelling: "*int", Elems: []rules.TypeShape{intShape}}
+	txShape    = sdkrules.TypeShape{Form: symbol.FormReference, Spelling: "Tx"}
+	intShape   = sdkrules.Scalar("int", sdkrules.ScalarInt, 0)
+	listShape  = sdkrules.TypeShape{Form: symbol.FormList, Spelling: "[]int", Elems: []sdkrules.TypeShape{intShape}}
+	floatShape = sdkrules.Scalar("float64", sdkrules.ScalarFloat, 0)
+	uintShape  = sdkrules.Scalar("uint", sdkrules.ScalarUint, 0)
+	addrShape  = sdkrules.TypeShape{Form: symbol.FormOptional, Spelling: "*int", Elems: []sdkrules.TypeShape{intShape}}
 )
 
 // listOf returns the shape of a list of the values of the shape s.
-func listOf(s rules.TypeShape) rules.TypeShape {
-	return rules.TypeShape{Form: symbol.FormList, Spelling: "[]" + s.Spelling, Elems: []rules.TypeShape{s}}
+func listOf(s sdkrules.TypeShape) sdkrules.TypeShape {
+	return sdkrules.TypeShape{Form: symbol.FormList, Spelling: "[]" + s.Spelling, Elems: []sdkrules.TypeShape{s}}
 }
 
 // valueOf returns a value named name of the shape s.
-func valueOf(name string, s rules.TypeShape) derive.Value { return derive.Value{Name: name, Shape: s} }
+func valueOf(name string, s sdkrules.TypeShape) derive.Value {
+	return derive.Value{Name: name, Shape: s}
+}
 
 // part returns the facts of the callable name of the declaration decl, with
 // a context, the inputs and the results, an error, and the role of the
 // contract tx. A part without a role has the empty role.
 func part(decl, name string, role shape.Role, inputs, results []derive.Value) derive.Facts {
-	returns := make([]rules.ReturnRole, 0, len(results)+1)
+	returns := make([]sdkrules.ReturnRole, 0, len(results)+1)
 	for range results {
-		returns = append(returns, rules.ReturnValue)
+		returns = append(returns, sdkrules.ReturnValue)
 	}
 	f := derive.Facts{
 		Declaration: decl, Callable: name,
 		ID:        symbol.Identity{Lang: golang, Package: "example.com/store", Owner: decl, Name: name},
-		Signature: signature(name, true, inputs, append(returns, rules.ReturnError), rules.ErrorsLastReturn),
+		Signature: signature(name, true, inputs, append(returns, sdkrules.ReturnError), sdkrules.ErrorsLastReturn),
 		Inputs:    inputs, Results: results,
 	}
 	if role != "" {
@@ -97,10 +100,10 @@ func handled() []derive.Facts {
 // machineries of concurrent transactions.
 func isolation(t *testing.T, id spec.ClaimID, decl []derive.Facts) derive.Suite {
 	t.Helper()
-	c, ok := spec.ClaimOf(id)
+	c, ok := rules.ClaimOf(id)
 	assert.True(t, ok, "the spec has the claim "+string(id))
 	supplied := append(slices.Clone(runtime), spec.ConcurrentCallers, spec.GeneratedSequences)
-	got, err := derive.Derive(decl, []spec.Claim{c}, nil, supplied, nil)
+	got, err := derive.Derive(decl, []rules.Claim{c}, nil, supplied, nil)
 	assert.NoError(t, err, "the declaration derives")
 	return got
 }
@@ -403,12 +406,12 @@ func TestTransaction(t *testing.T) {
 		t.Run("leaves the methods of a handle out of a claim of the declaration without the gate transactions",
 			func(t *testing.T) {
 				t.Parallel()
-				c := claimOn("whole", spec.Licence{Mixin: "concurrent"})
-				c.Scope = spec.ScopeDeclaration
+				c := claimOn("whole", rules.Licence{Mixin: "concurrent"})
+				c.Scope = rules.ScopeDeclaration
 				decl := handled()
 				decl[0].Handle[3] = withMixins(decl[0].Handle[3], "concurrent")
 
-				got, err := derive.Derive(decl, []spec.Claim{c}, nil, runtime, nil)
+				got, err := derive.Derive(decl, []rules.Claim{c}, nil, runtime, nil)
 
 				assert.NoError(t, err, "the declaration derives")
 				assert.Empty(t, got.Checks, "a mixin of a method of the handle licenses no other claim")

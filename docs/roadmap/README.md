@@ -70,7 +70,7 @@ flowchart LR
 | 12 | [0018](0018-deliveries-iterations-totals-and-faults.md) Deliveries, iterations, totals and failed calls are judged over generated sequences | Done | 0010 | unscheduled |
 | 13 | [0015](0015-a-simulation-of-sans-io-machines.md) A system of sans-IO machines runs in a deterministic simulation | In progress | 0009, 0010 | unscheduled |
 | 14 | [0011](0011-concurrent-callers.md) Concurrent callers are checked for linearizability | Done | 0009, 0010 | unscheduled |
-| 15 | [0019](0019-the-isolation-levels-of-transactions.md) Transactions are checked for their isolation level | In progress | 0011 | unscheduled |
+| 15 | [0019](0019-the-isolation-levels-of-transactions.md) Transactions are checked for their isolation level | Done | 0011 | unscheduled |
 | 16 | [0012](0012-verified-fakes.md) A downstream team uses a verified fake | Done | 0003, 0004 | unscheduled |
 | 17 | [0013](0013-a-breakable-medium.md) A durable subject survives a breakable medium | Done | 0003, 0015 | unscheduled |
 | 18 | [0014](0014-dead-and-subsumed-checks.md) A report names dead and subsumed checks | Done | 0005 | unscheduled |

@@ -1,5 +1,20 @@
 # go.dokimi.dev/dokimi
 
+## 0.9.0
+
+### Minor Changes
+
+- d9b82f1: Add the claim `returns-on-error`, which checks that a failed call returns the field of its request.
+- c4b00ef: Add the claims `serializable` and `snapshot-isolation`, which check the histories of concurrent transactions.
+- d9b82f1: Add the directive `refuse`, which withdraws a derived claim of a callable with a reason.
+- 3b93926: Refuse the claims `deterministic` and `predicate` of a callable with the mixin `time-aware` or `side-effect`.
+- b08c44f: Add `--mutation` to `dokimi report`, which reports the dead and the subsumed checks of the records of mutation runs.
+- d9b82f1: Take the inputs of each derived call of a callable from the builder of its mixin `sample`.
+
+### Patch Changes
+
+- 9e701f9: Leave out `StrictKanon` for an enumeration that kanon encodes as a `kanon.Validator`.
+
 ## 0.8.0
 
 ### Minor Changes

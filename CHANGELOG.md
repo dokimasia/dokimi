@@ -10,6 +10,13 @@
 - 3b93926: Refuse the claims `deterministic` and `predicate` of a callable with the mixin `time-aware` or `side-effect`.
 - b08c44f: Add `--mutation` to `dokimi report`, which reports the dead and the subsumed checks of the records of mutation runs.
 - d9b82f1: Take the inputs of each derived call of a callable from the builder of its mixin `sample`.
+- e41c924: **Breaking:** Remove the header comment of a generated Go suite.
+- e41c924: **Breaking:** Name a generated binding as `StoreChecks.Get.ZeroOnError().Generated()` in place of its identity method `ZeroOnErrorGenerated`.
+- e41c924: Excuse the checks of a suite in its generated Go tests with one `conform.ExcuseSuite`.
+- e41c924: Leave the probe, the reason code and the law out of a generated derived check, which conform takes from its claim.
+- e41c924: Build the suite of a declaration once in each generated Go test file that applies its planted defect of a ceiling.
+- 903079f: **Breaking:** Remove the constructors `New<Double>Delayed` and `New<Double>Failing` of a generated Go double.
+- 903079f: Check the arguments, the hook `OnRecord`, the reset and the fixed results of each method of a generated Go double through `stub.Behaviour` and `stub.ResetBehaviour`.
 
 ### Patch Changes
 
